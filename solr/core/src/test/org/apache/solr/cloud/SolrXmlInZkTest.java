@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,9 +53,18 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private ConfigSolr cfg;
 
+  private SolrDispatchFilter solrDispatchFilter;
+
   @Before
-  public void beforeClass() {
+  public void before() {
     System.setProperty("solr.solrxml.location", "zookeeper");
+  }
+  
+  @After
+  public void after() {
+    if (solrDispatchFilter != null) {
+      solrDispatchFilter.destroy();
+    }
   }
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
@@ -96,8 +106,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     Method method = SolrDispatchFilter.class.getDeclaredMethod("loadConfigSolr", SolrResourceLoader.class);
     method.setAccessible(true);
-
-    Object obj = method.invoke(new SolrDispatchFilter(), new SolrResourceLoader(null));
+    if (solrDispatchFilter != null) solrDispatchFilter.destroy();
+    solrDispatchFilter = new SolrDispatchFilter();
+    Object obj = method.invoke(solrDispatchFilter, new SolrResourceLoader(null));
     cfg = (ConfigSolr) obj;
 
     log.info("####SETUP_END " + getTestName());
@@ -200,7 +211,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       Method method = SolrDispatchFilter.class.getDeclaredMethod("loadConfigSolr", SolrResourceLoader.class);
       method.setAccessible(true);
-      method.invoke(new SolrDispatchFilter(), new SolrResourceLoader(null));
+      if (solrDispatchFilter != null) solrDispatchFilter.destroy();
+      solrDispatchFilter = new SolrDispatchFilter();
+      method.invoke(solrDispatchFilter, new SolrResourceLoader(null));
       fail("Should have thrown an exception");
     } catch (InvocationTargetException ite) {
       assertTrue("Should be catching a SolrException", ite.getTargetException() instanceof SolrException);

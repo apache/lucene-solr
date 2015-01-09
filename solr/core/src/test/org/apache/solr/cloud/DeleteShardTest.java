@@ -147,11 +147,14 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    baseClient.setConnectionTimeout(15000);
-    baseClient.setSoTimeout(60000);
-    baseClient.request(request);
-    baseClient.shutdown();
+    HttpSolrClient baseServer = new HttpSolrClient(baseUrl);
+    try {
+      baseServer.setConnectionTimeout(15000);
+      baseServer.setSoTimeout(60000);
+      baseServer.request(request);
+    } finally {
+      baseServer.shutdown();
+    }
   }
 
   protected void setSliceState(String slice, String state) throws SolrServerException, IOException,

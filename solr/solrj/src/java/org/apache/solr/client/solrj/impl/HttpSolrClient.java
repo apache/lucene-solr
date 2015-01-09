@@ -754,7 +754,7 @@ public class HttpSolrClient extends SolrClient {
   @Override
   public void shutdown() {
     if (httpClient != null && internalClient) {
-      httpClient.getConnectionManager().shutdown();
+      HttpClientUtil.close(httpClient);
     }
   }
 

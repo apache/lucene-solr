@@ -16,6 +16,7 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +25,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -32,6 +32,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -39,9 +40,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
-public class RestTestHarness extends BaseTestHarness {
+public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private HttpClient httpClient = HttpClientUtil.createClient(new
+  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
       ModifiableSolrParams());
   
   public RestTestHarness(RESTfulServerProvider serverProvider) {
@@ -194,5 +195,10 @@ public class RestTestHarness extends BaseTestHarness {
     } finally {
       EntityUtils.consumeQuietly(entity);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    httpClient.close();
   }
 }

@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -40,8 +39,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -62,9 +61,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class SolrZkClient implements Closeable {
-  // These should *only* be used for debugging or monitoring purposes
-  public static final AtomicLong numOpens = new AtomicLong();
-  public static final AtomicLong numCloses = new AtomicLong();
   
   static final String NEWL = System.getProperty("line.separator");
 
@@ -183,7 +179,7 @@ public class SolrZkClient implements Closeable {
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    numOpens.incrementAndGet();
+    assert ObjectReleaseTracker.track(this);
     if (zkACLProvider == null) {
       this.zkACLProvider = createZkACLProvider();
     } else {
@@ -644,7 +640,7 @@ public class SolrZkClient implements Closeable {
       connManager.close();
       closeCallbackExecutor();
     }
-    numCloses.incrementAndGet();
+    assert ObjectReleaseTracker.release(this);
   }
 
   public boolean isClosed() {

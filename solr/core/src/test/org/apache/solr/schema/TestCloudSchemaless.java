@@ -27,6 +27,7 @@ import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Before;
 import org.restlet.ext.servlet.ServerServlet;
@@ -57,6 +58,14 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     useJettyDataDir = false;
 
     System.setProperty("numShards", Integer.toString(sliceCount));
+  }
+  
+  @After
+  public void teardDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
   }
 
   public TestCloudSchemaless() {

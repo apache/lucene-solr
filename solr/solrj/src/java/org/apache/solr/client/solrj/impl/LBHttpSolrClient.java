@@ -457,7 +457,7 @@ public class LBHttpSolrClient extends SolrClient {
       aliveCheckExecutor.shutdownNow();
     }
     if(clientIsInternal) {
-      httpClient.getConnectionManager().shutdown();
+      HttpClientUtil.close(httpClient);
     }
   }
 

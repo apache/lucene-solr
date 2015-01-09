@@ -17,6 +17,9 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import static java.util.Arrays.asList;
+import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
@@ -44,13 +47,11 @@ import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 
 public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
@@ -69,11 +70,25 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
+  }
 
   @Override
   public void doTest() throws Exception {
     setupHarnesses();
-    reloadTest();
+    try {
+      reloadTest();
+    } finally {
+      for (RestTestHarness h : restTestHarnesses) {
+        h.close();
+      }
+    }
   }
 
   private void reloadTest() throws Exception {

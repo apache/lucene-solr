@@ -36,6 +36,7 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -379,7 +380,7 @@ public class SolrCLI {
     return wasCommError;
   }
   
-  public static HttpClient getHttpClient() {
+  public static CloseableHttpClient getHttpClient() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
@@ -388,10 +389,10 @@ public class SolrCLI {
   }
   
   @SuppressWarnings("deprecation")
-  public static void closeHttpClient(HttpClient httpClient) {
+  public static void closeHttpClient(CloseableHttpClient httpClient) {
     if (httpClient != null) {
       try {
-        httpClient.getConnectionManager().shutdown();
+        HttpClientUtil.close(httpClient);
       } catch (Exception exc) {
         // safe to ignore, we're just shutting things down
       }
@@ -403,7 +404,7 @@ public class SolrCLI {
    */
   public static Map<String,Object> getJson(String getUrl) throws Exception {
     Map<String,Object> json = null;
-    HttpClient httpClient = getHttpClient();
+    CloseableHttpClient httpClient = getHttpClient();
     try {
       json = getJson(httpClient, getUrl, 2);
     } finally {
@@ -595,7 +596,7 @@ public class SolrCLI {
 
       int exitCode = 0;
       String systemInfoUrl = solrUrl+"admin/info/system";
-      HttpClient httpClient = getHttpClient();
+      CloseableHttpClient httpClient = getHttpClient();
       try {
         // hit Solr to get system info
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
@@ -1075,7 +1076,7 @@ public class SolrCLI {
           solrUrl += "/";
 
         String systemInfoUrl = solrUrl+"admin/info/system";
-        HttpClient httpClient = getHttpClient();
+        CloseableHttpClient httpClient = getHttpClient();
         try {
           // hit Solr to get system info
           Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
@@ -1098,7 +1099,7 @@ public class SolrCLI {
           }
           zkHost = zookeeper;
         } finally {
-          closeHttpClient(httpClient);
+          HttpClientUtil.close(httpClient);
         }
       }
 
@@ -1319,7 +1320,7 @@ public class SolrCLI {
       String coreName = cli.getOptionValue("name");
 
       String systemInfoUrl = solrUrl+"admin/info/system";
-      HttpClient httpClient = getHttpClient();
+      CloseableHttpClient httpClient = getHttpClient();
       String solrHome = null;
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);

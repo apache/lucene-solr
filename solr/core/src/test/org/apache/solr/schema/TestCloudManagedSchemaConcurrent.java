@@ -16,6 +16,12 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -25,24 +31,16 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.zookeeper.data.Stat;
-
-import org.junit.BeforeClass;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 
 public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
@@ -66,6 +64,14 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "true");
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
   }
 
   @Override
@@ -352,8 +358,11 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
         return coreUrl.endsWith("/") ? coreUrl.substring(0, coreUrl.length()-1) : coreUrl;
       }
     });
-
-    addFieldTypePut(harness, "fooInt", 15);
+    try {
+      addFieldTypePut(harness, "fooInt", 15);
+    } finally {
+      harness.close();
+    }
 
     // go into ZK to get the version of the managed schema after the update
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
@@ -410,21 +419,24 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
         return replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl;
       }
     });
-
-    long waitMs = waitSecs * 1000L;
-    if (waitMs > 0) Thread.sleep(waitMs); // wait a moment for the zk watcher to fire
-
     try {
-      testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
-    } catch (Exception exc) {
-      if (retry) {
-        // brief wait before retrying
-        Thread.sleep(waitMs > 0 ? waitMs : 2000L);
-
+      long waitMs = waitSecs * 1000L;
+      if (waitMs > 0) Thread.sleep(waitMs); // wait a moment for the zk watcher to fire
+  
+      try {
         testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
-      } else {
-        throw exc;
+      } catch (Exception exc) {
+        if (retry) {
+          // brief wait before retrying
+          Thread.sleep(waitMs > 0 ? waitMs : 2000L);
+  
+          testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
+        } else {
+          throw exc;
+        }
       }
+    } finally {
+      testHarness.close();
     }
   }
 

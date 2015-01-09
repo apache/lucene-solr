@@ -23,8 +23,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 
-import java.util.Arrays;
-
 /**
  * Test for QueryComponent's distributed querying
  *

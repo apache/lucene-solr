@@ -784,7 +784,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         if (log.isWarnEnabled()) {
           for (Error error : errors) {
-            log.warn("Error sending update", error.e);
+            log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.e);
           }
         }
       }

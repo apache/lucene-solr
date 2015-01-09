@@ -14,11 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.schema;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
@@ -28,10 +34,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
-
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
@@ -86,6 +89,7 @@ public class TestBinaryField extends SolrJettyTestBase {
     client.commit();
 
     QueryResponse resp = client.query(new SolrQuery("*:*"));
+    client.shutdown();
     SolrDocumentList res = resp.getResults();
     List<Bean> beans = resp.getBeans(Bean.class);
     assertEquals(3, res.size());

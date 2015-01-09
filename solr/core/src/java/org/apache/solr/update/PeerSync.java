@@ -296,20 +296,20 @@ public class PeerSync  {
         boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
         if (connectTimeoutExceptionInChain || solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
             || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
-          log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
+          log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success", srsp.getException());
 
           return true;
         }
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
-        log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success");
+        log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success", srsp.getException());
         return true;
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
         log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success. " +
-            "Perhaps /get is not registered?");
+            "Perhaps /get is not registered?", srsp.getException());
         return true;
       }
       

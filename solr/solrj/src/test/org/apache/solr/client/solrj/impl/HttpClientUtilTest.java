@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.auth.AuthScope;
@@ -28,6 +29,7 @@ import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.BrowserCompatHostnameVerifier;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.params.HttpConnectionParams;
@@ -39,9 +41,9 @@ import org.junit.Test;
 public class HttpClientUtilTest {
 
   @Test
-  public void testNoParamsSucceeds() {
-    HttpClient clien = HttpClientUtil.createClient(null);
-    clien.getConnectionManager().shutdown();
+  public void testNoParamsSucceeds() throws IOException {
+    CloseableHttpClient client = HttpClientUtil.createClient(null);
+    client.close();
   }
 
   @Test
@@ -57,26 +59,29 @@ public class HttpClientUtilTest {
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 42345);
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
     DefaultHttpClient client = (DefaultHttpClient) HttpClientUtil.createClient(params);
-    assertEquals(12345, HttpConnectionParams.getConnectionTimeout(client.getParams()));
-    assertEquals(PoolingClientConnectionManager.class, client.getConnectionManager().getClass());
-    assertEquals(22345, ((PoolingClientConnectionManager)client.getConnectionManager()).getMaxTotal());
-    assertEquals(32345, ((PoolingClientConnectionManager)client.getConnectionManager()).getDefaultMaxPerRoute());
-    assertEquals(42345, HttpConnectionParams.getSoTimeout(client.getParams()));
-    assertEquals(HttpClientUtil.NO_RETRY, client.getHttpRequestRetryHandler());
-    assertEquals("pass", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getPassword());
-    assertEquals("user", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getUserPrincipal().getName());
-    assertEquals(true, client.getParams().getParameter(ClientPNames.HANDLE_REDIRECTS));
-    client.getConnectionManager().shutdown();
+    try {
+      assertEquals(12345, HttpConnectionParams.getConnectionTimeout(client.getParams()));
+      assertEquals(PoolingClientConnectionManager.class, client.getConnectionManager().getClass());
+      assertEquals(22345, ((PoolingClientConnectionManager)client.getConnectionManager()).getMaxTotal());
+      assertEquals(32345, ((PoolingClientConnectionManager)client.getConnectionManager()).getDefaultMaxPerRoute());
+      assertEquals(42345, HttpConnectionParams.getSoTimeout(client.getParams()));
+      assertEquals(HttpClientUtil.NO_RETRY, client.getHttpRequestRetryHandler());
+      assertEquals("pass", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getPassword());
+      assertEquals("user", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getUserPrincipal().getName());
+      assertEquals(true, client.getParams().getParameter(ClientPNames.HANDLE_REDIRECTS));
+    } finally {
+      client.close();
+    }
   }
   
   @Test
-  public void testReplaceConfigurer(){
+  public void testReplaceConfigurer() throws IOException{
     
     try {
     final AtomicInteger counter = new AtomicInteger();
     HttpClientConfigurer custom = new HttpClientConfigurer(){
       @Override
-      protected void configure(DefaultHttpClient httpClient, SolrParams config) {
+      public void configure(DefaultHttpClient httpClient, SolrParams config) {
         super.configure(httpClient, config);
         counter.set(config.getInt("custom-param", -1));
       }
@@ -87,7 +92,7 @@ public class HttpClientUtilTest {
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("custom-param", 5);
-    HttpClientUtil.createClient(params).getConnectionManager().shutdown();
+    HttpClientUtil.createClient(params).close();
     assertEquals(5, counter.get());
     } finally {
       //restore default configurer
@@ -98,26 +103,36 @@ public class HttpClientUtilTest {
   
   @Test
   @SuppressWarnings("deprecation")
-  public void testSSLSystemProperties() {
+  public void testSSLSystemProperties() throws IOException {
+    CloseableHttpClient client = HttpClientUtil.createClient(null);
     try {
       SSLTestConfig.setSSLSystemProperties();
       assertNotNull("HTTPS scheme could not be created using the javax.net.ssl.* system properties.", 
-          HttpClientUtil.createClient(null).getConnectionManager().getSchemeRegistry().get("https"));
+          client.getConnectionManager().getSchemeRegistry().get("https"));
       
       System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      client.close();
+      client = HttpClientUtil.createClient(null);
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(client).getClass());
       
       System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
-      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      client.close();
+      client = HttpClientUtil.createClient(null);
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(client).getClass());
       
       System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "");
-      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      client.close();
+      client = HttpClientUtil.createClient(null);
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(client).getClass());
       
       System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "false");
-      assertEquals(AllowAllHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      client.close();
+      client = HttpClientUtil.createClient(null);
+      assertEquals(AllowAllHostnameVerifier.class, getHostnameVerifier(client).getClass());
     } finally {
       SSLTestConfig.clearSSLSystemProperties();
       System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+      client.close();
     }
   }
   

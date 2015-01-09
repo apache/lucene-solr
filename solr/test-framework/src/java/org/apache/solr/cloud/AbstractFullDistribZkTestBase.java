@@ -265,6 +265,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     client.getLbClient().getHttpClient().getParams()
         .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 30000);
+    client.getLbClient().getHttpClient().getParams()
+    .setParameter(CoreConnectionPNames.SO_TIMEOUT, 60000);
     return client;
   }
   
@@ -1475,7 +1477,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         retry = false;
       }
       cnt++;
-      if (cnt > 20) break;
+      if (cnt > 30) break;
       Thread.sleep(2000);
     } while (retry);
   }
@@ -1498,7 +1500,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Set<String> theShards = shardToJetty.keySet();
       String failMessage = null;
       for (String shard : theShards) {
-        failMessage = checkShardConsistency(shard, true, false);
+        try {
+          failMessage = checkShardConsistency(shard, true, true);
+        } catch (Exception e) {
+          // we might hit a node we just stopped
+          failMessage="hit exception:" + e.getMessage();
+        }
       }
       
       if (failMessage != null) {
@@ -1508,7 +1515,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         retry = false;
       }
       cnt++;
-      if (cnt > 20) break;
+      if (cnt > 40) break;
       Thread.sleep(2000);
     } while (retry);
   }
@@ -1574,8 +1581,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         log.error("", e);
       }
     }
-    clients.clear();
-    jettys.clear();
+    super.destroyServers();
   }
   
   protected CollectionAdminResponse createCollection(String collectionName, int numShards, int replicationFactor, int maxShardsPerNode) throws SolrServerException, IOException {
@@ -1857,10 +1863,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    baseClient.setConnectionTimeout(15000);
-    baseClient.setSoTimeout(60000 * 5);
-    NamedList r = baseClient.request(request);
-    baseClient.shutdown();
+    NamedList r;
+    try {
+      baseClient.setConnectionTimeout(15000);
+      baseClient.setSoTimeout(60000 * 5);
+      r = baseClient.request(request);
+    } finally {
+      baseClient.shutdown();
+    }
     return r;
   }
 
@@ -1905,7 +1915,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       assertNotNull("No Slice for "+shardId, shard);
       allReplicasUp = true; // assume true
       Collection<Replica> replicas = shard.getReplicas();
-      assertTrue(replicas.size() == rf);
+      assertTrue("Did not find correct number of replicas. Expected:" + rf + " Found:" + replicas.size(), replicas.size() == rf);
+      
       leader = shard.getLeader();
       assertNotNull(leader);
       log.info("Found "+replicas.size()+" replicas and leader on "+

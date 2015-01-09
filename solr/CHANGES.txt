@@ -649,6 +649,9 @@ Other Changes
 * SOLR-6918: No need to log exceptions (as warn) generated when creating MBean stats if
   the core is shutting down (Timothy Potter)
 
+* SOLR-6932: All HttpClient ConnectionManagers and SolrJ clients should always be shutdown
+  in tests and regular code. (Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

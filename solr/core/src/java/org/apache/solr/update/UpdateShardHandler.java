@@ -22,12 +22,14 @@ import java.util.concurrent.Executors;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.ConfigSolr;
 import org.slf4j.Logger;
@@ -42,7 +44,7 @@ public class UpdateShardHandler {
   
   private PoolingClientConnectionManager clientConnectionManager;
   
-  private final HttpClient client;
+  private final CloseableHttpClient client;
 
   public UpdateShardHandler(ConfigSolr cfg) {
     
@@ -51,7 +53,6 @@ public class UpdateShardHandler {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     }
-    
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (cfg != null) {
@@ -84,6 +85,7 @@ public class UpdateShardHandler {
     } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
+      IOUtils.closeQuietly(client);
       clientConnectionManager.shutdown();
     }
   }

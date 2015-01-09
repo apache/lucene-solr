@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,6 +64,7 @@ import org.junit.BeforeClass;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -231,8 +233,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     try {
-      NamedList<Object> resp = createNewSolrClient("", baseUrl)
-          .request(request);
+      makeRequest(baseUrl, request);
       fail("Expected to fail, because collection is not in clusterstate");
     } catch (RemoteSolrException e) {
       
@@ -256,7 +257,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     if (secondConfigSet) {
       createCmd.setCollectionConfigName("conf1");
     }
-    createNewSolrClient("", baseUrl).request(createCmd);
+
+    makeRequest(baseUrl, createCmd);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.DELETE.toString());
@@ -264,7 +266,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    NamedList<Object> resp = createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
     
     checkForMissingCollection(collectionName);
     
@@ -278,7 +280,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     if (secondConfigSet) {
       params.set("collection.configName", "conf1");
     }
-    resp = createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
   }
   
   
@@ -286,11 +288,21 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
     // now try to remove a collection when a couple of its nodes are down
     if (secondConfigSet) {
-      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
-          createNewSolrClient("", baseUrl), null, "conf2");
+      SolrClient client = createNewSolrClient("", baseUrl);
+      try {
+        createCollection(null, "halfdeletedcollection2", 3, 3, 6, client, null,
+            "conf2");
+      } finally {
+        client.shutdown();
+      }
     } else {
-      createCollection(null, "halfdeletedcollection2", 3, 3, 6,
-          createNewSolrClient("", baseUrl), null);
+      SolrClient client = createNewSolrClient("", baseUrl);
+      try {
+        createCollection(null, "halfdeletedcollection2", 3, 3, 6,
+          client, null);
+      } finally {
+        client.shutdown();
+      }
     }
     
     waitForRecoveriesToFinish("halfdeletedcollection2", false);
@@ -313,7 +325,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
-    createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
     
     long timeout = System.currentTimeMillis() + 10000;
     while (cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2")) {
@@ -329,6 +341,16 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   }
 
+  private NamedList<Object> makeRequest(String baseUrl, SolrRequest request)
+      throws SolrServerException, IOException {
+    SolrClient client = createNewSolrClient("", baseUrl);
+    try {
+      return client.request(request);
+    } finally {
+      client.shutdown();
+    }
+  }
+
   private void testErrorHandling() throws Exception {
     final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
     
@@ -342,9 +364,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     boolean gotExp = false;
-    NamedList<Object> resp = null;
     try {
-      resp = createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       gotExp = true;
     }
@@ -364,9 +385,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
-    resp = null;
     try {
-      resp = createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       gotExp = true;
     }
@@ -386,7 +406,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     gotExp = false;
     try {
-      resp = createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       gotExp = true;
     }
@@ -404,9 +424,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
-    resp = null;
     try {
-      resp = createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       gotExp = true;
     }
@@ -425,9 +444,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
-    resp = null;
     try {
-      resp = createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       gotExp = true;
     }
@@ -446,7 +464,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     if (secondConfigSet) {
       createCmd.setCollectionConfigName("conf1");
     }
-    createNewSolrClient("", baseUrl).request(createCmd);
+    makeRequest(baseUrl, createCmd);
     
     createCmd = new Create();
     createCmd.setCoreName("halfcollection_shard1_replica1");
@@ -457,7 +475,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     if (secondConfigSet) {
       createCmd.setCollectionConfigName("conf1");
     }
-    createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(1))).request(createCmd);
+    makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), createCmd);
     
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
@@ -477,7 +495,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
-    resp = createNewSolrClient("", baseUrl).request(request);
+    NamedList<Object> resp = makeRequest(baseUrl, request);;
     
     SimpleOrderedMap success = (SimpleOrderedMap) resp.get("success");
     SimpleOrderedMap failure = (SimpleOrderedMap) resp.get("failure");
@@ -507,15 +525,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       createCmd.setCollectionConfigName("conf1");
     }
     
-    createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(1)))
-        .request(createCmd);
+    makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), createCmd);
     
     // try and create a SolrCore with no collection name
     createCmd.setCollection(null);
     createCmd.setCoreName("corewithnocollection2");
     
-    createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(1)))
-        .request(createCmd);
+    makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), createCmd);
     
     // in both cases, the collection should have default to the core name
     cloudClient.getZkStateReader().updateClusterState(true);
@@ -542,7 +558,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
     
     List<Integer> numShardsNumReplicaList = new ArrayList<>();
     numShardsNumReplicaList.add(2);
@@ -743,7 +759,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // we can use this client because we just want base url
     final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
     
-    createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
 
     // reloads make take a short while
     boolean allTimesAreCorrect = waitForReloads(collectionName, urlToTimeBefore);
@@ -759,7 +775,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
  
-    createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
     
     // ensure its out of the state
     checkForMissingCollection(collectionName);
@@ -775,7 +791,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
  
     boolean exp = false;
     try {
-      createNewSolrClient("", baseUrl).request(request);
+      makeRequest(baseUrl, request);
     } catch (SolrException e) {
       exp = true;
     }
@@ -795,7 +811,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    createNewSolrClient("", baseUrl).request(request);
+    makeRequest(baseUrl, request);
     
     List<Integer> list = new ArrayList<>(2);
     list.add(1);

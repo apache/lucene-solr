@@ -22,6 +22,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -43,6 +44,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -449,30 +451,34 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testCompression() throws Exception {
     HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/debug/foo");
-    SolrQuery q = new SolrQuery("*:*");
-    
-    // verify request header gets set
-    DebugServlet.clear();
     try {
-      client.query(q);
-    } catch (Throwable t) {}
-    assertNull(DebugServlet.headers.get("Accept-Encoding"));
-    client.setAllowCompression(true);
-    try {
-      client.query(q);
-    } catch (Throwable t) {}
-    assertNotNull(DebugServlet.headers.get("Accept-Encoding"));
-    client.setAllowCompression(false);
-    try {
-      client.query(q);
-    } catch (Throwable t) {}
-    assertNull(DebugServlet.headers.get("Accept-Encoding"));
+      SolrQuery q = new SolrQuery("*:*");
+      
+      // verify request header gets set
+      DebugServlet.clear();
+      try {
+        client.query(q);
+      } catch (Throwable t) {}
+      assertNull(DebugServlet.headers.get("Accept-Encoding"));
+      client.setAllowCompression(true);
+      try {
+        client.query(q);
+      } catch (Throwable t) {}
+      assertNotNull(DebugServlet.headers.get("Accept-Encoding"));
+      client.setAllowCompression(false);
+      try {
+        client.query(q);
+      } catch (Throwable t) {}
+      assertNull(DebugServlet.headers.get("Accept-Encoding"));
+    } finally {
+      client.shutdown();
+    }
     
     // verify server compresses output
     HttpGet get = new HttpGet(jetty.getBaseUrl().toString() + "/collection1" +
                               "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
-    HttpClient httpclient = HttpClientUtil.createClient(null);
+    CloseableHttpClient httpclient = HttpClientUtil.createClient(null);
     HttpEntity entity = null;
     try {
       HttpResponse response = httpclient.execute(get);
@@ -484,23 +490,28 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       if(entity!=null) {
         entity.getContent().close();
       }
-      httpclient.getConnectionManager().shutdown();
+      httpclient.close();
     }
     
     // verify compressed response can be handled
     client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1");
-    client.setAllowCompression(true);
-    q = new SolrQuery("foo");
-    QueryResponse response = client.query(q);
-    assertEquals(0, response.getStatus());
-    client.shutdown();
+    try {
+      client.setAllowCompression(true);
+      SolrQuery q = new SolrQuery("foo");
+      QueryResponse response = client.query(q);
+      assertEquals(0, response.getStatus());
+    } finally {
+      client.shutdown();
+    }
   }
   
   @Test
-  public void testSetParametersExternalClient(){
-    HttpClient httpClient = HttpClientUtil.createClient(null);
+  public void testSetParametersExternalClient() throws IOException{
+    
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString(),
-                                               httpClient);
+        httpClient);
+    try {
     try {
       solrClient.setMaxTotalConnections(1);
       fail("Operation should not succeed.");
@@ -509,21 +520,27 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       solrClient.setDefaultMaxConnectionsPerHost(1);
       fail("Operation should not succeed.");
     } catch (UnsupportedOperationException e) {}
-    solrClient.shutdown();
-    httpClient.getConnectionManager().shutdown();
+
+    } finally {
+      solrClient.shutdown();
+      httpClient.close();
+    }
   }
 
   @Test
   public void testGetRawStream() throws SolrServerException, IOException{
-    HttpClient client = HttpClientUtil.createClient(null);
-    HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1",
-                                               client, null);
-    QueryRequest req = new QueryRequest();
-    NamedList response = solrClient.request(req);
-    InputStream stream = (InputStream)response.get("stream");
-    assertNotNull(stream);
-    stream.close();
-    client.getConnectionManager().shutdown();
+    CloseableHttpClient client = HttpClientUtil.createClient(null);
+    try {
+      HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1",
+                                                 client, null);
+      QueryRequest req = new QueryRequest();
+      NamedList response = solrClient.request(req);
+      InputStream stream = (InputStream)response.get("stream");
+      assertNotNull(stream);
+      stream.close();
+    } finally {
+      client.close();
+    }
   }
 
   /**
@@ -599,53 +616,56 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testQueryString() throws Exception {
     HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() +
                                                "/debug/foo");
-
-    // test without request query params
-    DebugServlet.clear();
-    client.setQueryParams(setOf("serverOnly"));
-    UpdateRequest req = new UpdateRequest();
-    setReqParamsOf(req, "serverOnly", "notServer");
     try {
-      client.request(req);
-    } catch (Throwable t) {}
-    verifyServletState(client, req);
-
-    // test without server query params
-    DebugServlet.clear();
-    client.setQueryParams(setOf());
-    req = new UpdateRequest();
-    req.setQueryParams(setOf("requestOnly"));
-    setReqParamsOf(req, "requestOnly", "notRequest");
-    try {
-      client.request(req);
-    } catch (Throwable t) {}
-    verifyServletState(client, req);
-
-    // test with both request and server query params
-    DebugServlet.clear();
-    req = new UpdateRequest();
-    client.setQueryParams(setOf("serverOnly", "both"));
-    req.setQueryParams(setOf("requestOnly", "both"));
-    setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-     try {
-      client.request(req);
-    } catch (Throwable t) {}
-    verifyServletState(client, req);
-
-    // test with both request and server query params with single stream
-    DebugServlet.clear();
-    req = new UpdateRequest();
-    req.add(new SolrInputDocument());
-    client.setQueryParams(setOf("serverOnly", "both"));
-    req.setQueryParams(setOf("requestOnly", "both"));
-    setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-     try {
-      client.request(req);
-    } catch (Throwable t) {}
-    // NOTE: single stream requests send all the params
-    // as part of the query string.  So add "neither" to the request
-    // so it passes the verification step.
-    req.setQueryParams(setOf("requestOnly", "both", "neither"));
-    verifyServletState(client, req);
+      // test without request query params
+      DebugServlet.clear();
+      client.setQueryParams(setOf("serverOnly"));
+      UpdateRequest req = new UpdateRequest();
+      setReqParamsOf(req, "serverOnly", "notServer");
+      try {
+        client.request(req);
+      } catch (Throwable t) {}
+      verifyServletState(client, req);
+  
+      // test without server query params
+      DebugServlet.clear();
+      client.setQueryParams(setOf());
+      req = new UpdateRequest();
+      req.setQueryParams(setOf("requestOnly"));
+      setReqParamsOf(req, "requestOnly", "notRequest");
+      try {
+        client.request(req);
+      } catch (Throwable t) {}
+      verifyServletState(client, req);
+  
+      // test with both request and server query params
+      DebugServlet.clear();
+      req = new UpdateRequest();
+      client.setQueryParams(setOf("serverOnly", "both"));
+      req.setQueryParams(setOf("requestOnly", "both"));
+      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+       try {
+        client.request(req);
+      } catch (Throwable t) {}
+      verifyServletState(client, req);
+  
+      // test with both request and server query params with single stream
+      DebugServlet.clear();
+      req = new UpdateRequest();
+      req.add(new SolrInputDocument());
+      client.setQueryParams(setOf("serverOnly", "both"));
+      req.setQueryParams(setOf("requestOnly", "both"));
+      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+       try {
+        client.request(req);
+      } catch (Throwable t) {}
+      // NOTE: single stream requests send all the params
+      // as part of the query string.  So add "neither" to the request
+      // so it passes the verification step.
+      req.setQueryParams(setOf("requestOnly", "both", "neither"));
+      verifyServletState(client, req);
+    } finally {
+      client.shutdown();
+    }
   }
 }

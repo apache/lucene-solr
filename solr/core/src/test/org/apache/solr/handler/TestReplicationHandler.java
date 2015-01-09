@@ -905,6 +905,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         repeater.tearDown();
         repeaterJetty = null;
       }
+      if (repeaterClient != null) {
+        repeaterClient.shutdown();
+      }
     }
     
   }

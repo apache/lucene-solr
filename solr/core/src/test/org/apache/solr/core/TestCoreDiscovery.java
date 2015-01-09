@@ -110,7 +110,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private CoreContainer init() throws Exception {
     final CoreContainer cores = new CoreContainer();
-    cores.load();
+    try {
+      cores.load();
+    } catch (Exception e) {
+      cores.shutdown();
+      throw e;
+    }
     return cores;
   }
 

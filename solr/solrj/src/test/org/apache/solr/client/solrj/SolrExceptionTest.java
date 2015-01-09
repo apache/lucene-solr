@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
-import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -34,15 +34,16 @@ public class SolrExceptionTest extends LuceneTestCase {
     // this is a very simple test and most of the test should be considered verified 
     // if the compiler won't let you by without the try/catch
     boolean gotExpectedError = false;
+    CloseableHttpClient httpClient = null;
     try {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
-      HttpClient httpClient = HttpClientUtil.createClient(null);
+      httpClient = HttpClientUtil.createClient(null);
       HttpClientUtil.setConnectionTimeout(httpClient,  1);
       SolrClient client = new HttpSolrClient("http://[ff01::114]:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
-      client.shutdown();
+      httpClient.close();
     } catch (SolrServerException sse) {
       gotExpectedError = true;
       /***
@@ -50,6 +51,8 @@ public class SolrExceptionTest extends LuceneTestCase {
               //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
               || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
       ***/
+    } finally {
+      if (httpClient != null) HttpClientUtil.close(httpClient);
     }
     assertTrue(gotExpectedError);
   }

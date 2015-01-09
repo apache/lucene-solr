@@ -525,11 +525,14 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    baseClient.setConnectionTimeout(30000);
-    baseClient.setSoTimeout(60000 * 5);
-    baseClient.request(request);
-    baseClient.shutdown();
+    HttpSolrClient baseServer = new HttpSolrClient(baseUrl);
+    try {
+      baseServer.setConnectionTimeout(30000);
+      baseServer.setSoTimeout(60000 * 5);
+      baseServer.request(request);
+    } finally {
+      baseServer.shutdown();
+    }
   }
 
   protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n) throws Exception {

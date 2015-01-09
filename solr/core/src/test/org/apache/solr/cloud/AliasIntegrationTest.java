@@ -17,6 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -37,10 +41,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -179,7 +179,8 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     client = new HttpSolrClient(buildUrl(port) + "/testalias");
     res = client.query(query);
     assertEquals(5, res.getResults().getNumFound());
-    
+    client.shutdown();
+    client = null;
     
     // now without collections param
     query = new SolrQuery("*:*");
@@ -213,26 +214,32 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     // try a std client
     // search 1 and 2, but have no collections param
     query = new SolrQuery("*:*");
-    HttpSolrClient httpclient = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
-    res = httpclient.query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    httpclient.shutdown();
-    httpclient = null;
+    client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
+    try {
+      res = client.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+    } finally {
+      client.shutdown();
+      client = null;
+    }
     
     createAlias("testalias", "collection2");
     
     // a second alias
     createAlias("testalias2", "collection2");
     
-    httpclient = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
-    SolrInputDocument doc8 = getDoc(id, 11, i1, -600, tlong, 600, t1,
-        "humpty dumpy4 sat on a walls");
-    httpclient.add(doc8);
-    httpclient.commit();
-    res = httpclient.query(query);
-    assertEquals(3, res.getResults().getNumFound());
-    httpclient.shutdown();
-    httpclient = null;
+    client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
+    try {
+      SolrInputDocument doc8 = getDoc(id, 11, i1, -600, tlong, 600, t1,
+          "humpty dumpy4 sat on a walls");
+      client.add(doc8);
+      client.commit();
+      res = client.query(query);
+      assertEquals(3, res.getResults().getNumFound());
+    } finally {
+      client.shutdown();
+      client = null;
+    }
     
     createAlias("testalias", "collection2,collection1");
     
@@ -257,21 +264,24 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
       throws SolrServerException, IOException {
     SolrClient client = createNewSolrClient("",
         getBaseUrl((HttpSolrClient) clients.get(0)));
-    if (random().nextBoolean()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("collections", collections);
-      params.set("name", alias);
-      params.set("action", CollectionAction.CREATEALIAS.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-      client.request(request);
-    } else {
-      CreateAlias request = new CreateAlias();
-      request.setAliasName(alias);
-      request.setAliasedCollections(collections);
-      request.process(client);
+    try {
+      if (random().nextBoolean()) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set("collections", collections);
+        params.set("name", alias);
+        params.set("action", CollectionAction.CREATEALIAS.toString());
+        QueryRequest request = new QueryRequest(params);
+        request.setPath("/admin/collections");
+        client.request(request);
+      } else {
+        CreateAlias request = new CreateAlias();
+        request.setAliasName(alias);
+        request.setAliasedCollections(collections);
+        request.process(client);
+      }
+    } finally {
+      client.shutdown();
     }
-    client.shutdown();
   }
   
   private void deleteAlias(String alias) throws SolrServerException,

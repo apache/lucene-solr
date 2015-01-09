@@ -17,10 +17,17 @@
 
 package org.apache.solr.client.solrj;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -39,12 +46,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 /**
  * Test for LBHttpSolrClient
@@ -61,7 +63,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(TestLBHttpSolrClient.class);
 
   SolrInstance[] solr = new SolrInstance[3];
-  HttpClient httpClient;
+  CloseableHttpClient httpClient;
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
@@ -123,7 +125,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         aSolr.tearDown();
       }
     }
-    httpClient.getConnectionManager().shutdown();
+    httpClient.close();
     super.tearDown();
   }
 
@@ -205,23 +207,26 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 250);
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 250);
-    HttpClient myHttpClient = HttpClientUtil.createClient(params);
-
-    LBHttpSolrClient client = new LBHttpSolrClient(myHttpClient, s);
-    client.setAliveCheckInterval(500);
-
-    // Kill a server and test again
-    solr[1].jetty.stop();
-    solr[1].jetty = null;
-
-    // query the servers
-    for (String value : s)
-      client.query(new SolrQuery("*:*"));
-
-    // Start the killed server once again
-    solr[1].startJetty();
-    // Wait for the alive check to complete
-    waitForServer(30000, client, 3, "solr1");
+    CloseableHttpClient myHttpClient = HttpClientUtil.createClient(params);
+    try {
+      LBHttpSolrClient client = new LBHttpSolrClient(myHttpClient, s);
+      client.setAliveCheckInterval(500);
+  
+      // Kill a server and test again
+      solr[1].jetty.stop();
+      solr[1].jetty = null;
+  
+      // query the servers
+      for (String value : s)
+        client.query(new SolrQuery("*:*"));
+  
+      // Start the killed server once again
+      solr[1].startJetty();
+      // Wait for the alive check to complete
+      waitForServer(30000, client, 3, "solr1");
+    } finally {
+      myHttpClient.close();
+    }
   }
   
   // wait maximum ms for serverName to come back up
