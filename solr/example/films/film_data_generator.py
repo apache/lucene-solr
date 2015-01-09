@@ -104,10 +104,6 @@ def do_query(filmlist, cursor=""):
 
 if __name__ == "__main__":
   filmlist = []
-  #Adding 1 entry manually to play nice with schemaless mode
-  firstFilm = {'directed_by': ['Wes Anderson'], 'initial_release_date': '2014-03-28', 'genre': ['Comedy'],
-   'name': 'The Grand Budapest Hotel', 'id': '/en/001'}
-  filmlist.append(firstFilm)
   cursor = do_query(filmlist)
   i=0
   while(cursor):
