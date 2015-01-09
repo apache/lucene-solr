@@ -1242,4 +1242,122 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  public void testOnlyDeletesTriggersMergeOnClose() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(1);
+    iwc.setMergePolicy(mp);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int i=0;i<38;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.commit();
+
+    for(int i=0;i<18;i++) {
+      w.deleteDocuments(new Term("id", ""+i));
+    }
+
+    w.close();
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.leaves().size());
+    r.close();
+
+    dir.close();
+  }
+
+  public void testOnlyDeletesTriggersMergeOnGetReader() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(1);
+    iwc.setMergePolicy(mp);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int i=0;i<38;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.commit();
+
+    for(int i=0;i<18;i++) {
+      w.deleteDocuments(new Term("id", ""+i));
+    }
+
+    // First one triggers, but does not reflect, the merge:
+    DirectoryReader.open(w, true).close();
+    IndexReader r =DirectoryReader.open(w, true);
+    assertEquals(1, r.leaves().size());
+    r.close();
+
+    w.close();
+    dir.close();
+  }
+
+  public void testOnlyDeletesTriggersMergeOnFlush() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(1);
+    iwc.setMergePolicy(mp);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    iwc.setMaxBufferedDeleteTerms(18);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int i=0;i<38;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.commit();
+
+    for(int i=0;i<18;i++) {
+      w.deleteDocuments(new Term("id", ""+i));
+    }
+    w.commit();
+
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.leaves().size());
+    r.close();
+
+    w.close();
+    dir.close();
+  }
+
+  public void testOnlyDeletesDeleteAllDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(1);
+    iwc.setMergePolicy(mp);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    iwc.setMaxBufferedDeleteTerms(18);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int i=0;i<38;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.commit();
+
+    for(int i=0;i<38;i++) {
+      w.deleteDocuments(new Term("id", ""+i));
+    }
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    assertEquals(0, r.leaves().size());
+    assertEquals(0, r.maxDoc());
+    r.close();
+
+    w.close();
+    dir.close();
+  }
 }

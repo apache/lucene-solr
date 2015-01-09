@@ -138,6 +138,8 @@ New Features
   QueryScorer and WeighedSpanTermExtractor now have setUsePayloads(bool).
   (David Smiley)
 
+* LUCENE-6166: Deletions (alone) can now trigger new merges.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
