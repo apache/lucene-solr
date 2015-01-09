@@ -402,7 +402,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     poolReaders = true;
     DirectoryReader r = null;
     doBeforeFlush();
-    boolean anySegmentFlushed = false;
+    boolean anyChanges = false;
     /*
      * for releasing a NRT reader we must ensure that 
      * DW doesn't add any segments or deletes until we are
@@ -415,8 +415,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         boolean success = false;
         try {
-          anySegmentFlushed = docWriter.flushAllThreads();
-          if (!anySegmentFlushed) {
+          anyChanges = docWriter.flushAllThreads();
+          if (!anyChanges) {
             // prevent double increment since docWriter#doFlush increments the flushcount
             // if we flushed anything.
             flushCount.incrementAndGet();
@@ -426,7 +426,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // reader; in theory we could instead do similar retry logic,
           // just like we do when loading segments_N
           synchronized(this) {
-            maybeApplyDeletes(applyAllDeletes);
+            anyChanges |= maybeApplyDeletes(applyAllDeletes);
             r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
@@ -450,7 +450,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-      if (anySegmentFlushed) {
+      if (anyChanges) {
         maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
       if (infoStream.isEnabled("IW")) {
@@ -2996,6 +2996,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
+  /** Returns true a segment was flushed or deletes were applied. */
   private boolean doFlush(boolean applyAllDeletes) throws IOException {
     if (tragedy != null) {
       throw new IllegalStateException("this writer hit an unrecoverable error; cannot flush", tragedy);
@@ -3010,12 +3011,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "  start flush: applyAllDeletes=" + applyAllDeletes);
         infoStream.message("IW", "  index before flush " + segString());
       }
-      final boolean anySegmentFlushed;
+      boolean anyChanges = false;
       
       synchronized (fullFlushLock) {
       boolean flushSuccess = false;
         try {
-          anySegmentFlushed = docWriter.flushAllThreads();
+          anyChanges = docWriter.flushAllThreads();
+          if (!anyChanges) {
+            // flushCount is incremented in flushAllThreads
+            flushCount.incrementAndGet();
+        }
           flushSuccess = true;
         } finally {
           docWriter.finishFullFlush(flushSuccess);
@@ -3023,14 +3028,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
       synchronized(this) {
-        maybeApplyDeletes(applyAllDeletes);
+        anyChanges |= maybeApplyDeletes(applyAllDeletes);
         doAfterFlush();
-        if (!anySegmentFlushed) {
-          // flushCount is incremented in flushAllThreads
-          flushCount.incrementAndGet();
-        }
         success = true;
-        return anySegmentFlushed;
+        return anyChanges;
       }
     } catch (AbortingException | OutOfMemoryError tragedy) {
       tragicEvent(tragedy, "doFlush");
@@ -3045,18 +3046,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
   
-  final synchronized void maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
+  final synchronized boolean maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
     if (applyAllDeletes) {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "apply all deletes during flush");
       }
-      applyAllDeletesAndUpdates();
+      return applyAllDeletesAndUpdates();
     } else if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedUpdatesStream.numTerms() + " bytesUsed=" + bufferedUpdatesStream.ramBytesUsed());
     }
+
+    return false;
   }
   
-  final synchronized void applyAllDeletesAndUpdates() throws IOException {
+  final synchronized boolean applyAllDeletesAndUpdates() throws IOException {
     flushDeletesCount.incrementAndGet();
     final BufferedUpdatesStream.ApplyDeletesResult result;
     if (infoStream.isEnabled("IW")) {
@@ -3084,6 +3087,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       checkpoint();
     }
     bufferedUpdatesStream.prune(segmentInfos);
+    return result.anyDeletes;
   }
 
   // for testing only
@@ -4580,7 +4584,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       purge(forcePurge);
     } finally {
-      applyAllDeletesAndUpdates();
+      if (applyAllDeletesAndUpdates()) {
+        maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+      }
       flushCount.incrementAndGet();
     }
   }
