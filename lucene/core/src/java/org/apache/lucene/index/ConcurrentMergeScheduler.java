@@ -722,7 +722,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       }
     }
 
-    newMerge.rateLimiter.setMBPerSec(targetMBPerSec);
+    double rate;
+
+    if (newMerge.maxNumSegments != -1) {
+      rate = forceMergeMBPerSec;
+    } else {
+      rate = targetMBPerSec;
+    }
+    newMerge.rateLimiter.setMBPerSec(rate);
     targetMBPerSecChanged();
   }
 
