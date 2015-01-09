@@ -860,24 +860,9 @@
        (SearchHandler) can be registered multiple times with different
        names (and different init parameters)
     -->
-  <requestHandler name="/browse" class="solr.SearchHandler">
+  <requestHandler name="/browse" class="solr.SearchHandler" useParams="query,facets,velocity,browse">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
-
-      <!-- VelocityResponseWriter settings -->
-      <str name="wt">velocity</str>
-      <str name="v.template">browse</str>
-      <str name="v.layout">layout</str>
-
-      <!-- Query settings -->
-      <str name="defType">edismax</str>
-      <str name="q.alt">*:*</str>
-      <str name="rows">10</str>
-      <str name="fl">*,score</str>
-
-      <!-- Faceting defaults -->
-      <str name="facet">on</str>
-      <str name="facet.mincount">1</str>
     </lst>
   </requestHandler>
 
@@ -1541,8 +1526,9 @@
   <!--
      Custom response writers can be declared as needed...
     -->
-  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy"/>
-
+  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
+    <str name="template.base.dir">${velocity.template.base.dir:}</str>
+  </queryResponseWriter>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

@@ -285,6 +285,9 @@ New Features
 
 * SOLR-6766: Expose HdfsDirectoryFactory Block Cache statistics via JMX.
   (Mike Drob, Mark Miller)
+
+* SOLR-2035: Add a VelocityResponseWriter $resource tool for locale-specific string lookups.
+  (Erik Hatcher)
   
 Bug Fixes
 ----------------------
@@ -651,6 +654,8 @@ Other Changes
 
 * SOLR-6932: All HttpClient ConnectionManagers and SolrJ clients should always be shutdown
   in tests and regular code. (Mark Miller)
+
+* SOLR-1723: VelocityResponseWriter improvements (Erik Hatcher)
 
 ==================  4.10.3 ==================
 
