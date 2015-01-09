@@ -2532,7 +2532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
-      TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(mergeDirectory);
+      TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
       SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
                                          false, codec, null, StringHelper.randomId(), new HashMap<>());
@@ -4679,14 +4679,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
         ensureOpen();
 
+        // Paranoia defense: if this trips we have a bug somewhere...
+        IndexWriter.this.ensureOpen(false);
+
         // This Directory is only supposed to be used during merging,
         // so all writes should have MERGE context, else there is a bug 
         // somewhere that is failing to pass down the right IOContext:
         assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
-        IndexOutput output = in.createOutput(name, context);
+
         MergeRateLimiter rateLimiter = rateLimiters.get();
         assert rateLimiter != null;
-        return new RateLimitedIndexOutput(rateLimiter, output);
+
+        return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
       }
     };
   }

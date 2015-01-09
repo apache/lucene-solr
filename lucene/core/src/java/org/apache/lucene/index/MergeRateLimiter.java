@@ -125,6 +125,10 @@ public class MergeRateLimiter extends RateLimiter {
 
   /** Returns NO if no pause happened, STOPPED if pause because rate was 0.0 (merge is stopped), PAUSED if paused with a normal rate limit. */
   private synchronized PauseResult maybePause(long bytes, long curNS) throws MergePolicy.MergeAbortedException {
+
+    // Now is a good time to abort the merge:
+    checkAbort();
+
     double secondsToPause = (bytes/1024./1024.) / mbPerSec;
 
     // Time we should sleep until; this is purely instantaneous
@@ -149,9 +153,6 @@ public class MergeRateLimiter extends RateLimiter {
 
     int sleepMS = (int) (curPauseNS / 1000000);
     int sleepNS = (int) (curPauseNS % 1000000);
-
-    // Now is a good time to abort the merge:
-    checkAbort();
 
     double rate = mbPerSec;
 

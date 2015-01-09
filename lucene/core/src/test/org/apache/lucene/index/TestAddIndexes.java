@@ -955,9 +955,15 @@ public class TestAddIndexes extends LuceneTestCase {
       System.out.println("TEST: now force rollback");
     }
     c.didClose = true;
+    MergeScheduler ms = c.writer2.getConfig().getMergeScheduler();
+
     c.writer2.rollback();
 
     c.joinThreads();
+
+    if (ms instanceof ConcurrentMergeScheduler) {
+      assertEquals(0, ((ConcurrentMergeScheduler) ms).mergeThreadCount());
+    }
 
     c.closeDir();
 
