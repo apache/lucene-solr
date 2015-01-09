@@ -398,7 +398,7 @@ public class SimplePostTool {
      "Data can be read from files specified as commandline args,\n"+
      "URLs specified as args, as raw commandline arg strings or via STDIN.\n"+
      "Examples:\n"+
-     "  java -jar post.jar *.xml\n"+
+     "  java -Dc=gettingstarted -jar post.jar *.xml\n"+
      "  java -Ddata=args -Dc=gettingstarted -jar post.jar '<delete><id>42</id></delete>'\n"+
      "  java -Ddata=stdin -Dc=gettingstarted -jar post.jar < hd.xml\n"+
      "  java -Ddata=web -Dc=gettingstarted -jar post.jar http://example.com/\n"+

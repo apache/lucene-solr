@@ -87,7 +87,7 @@ To add documents to the index, use the post.jar (or post.sh script) in
 the example/exampledocs subdirectory (while Solr is running), for example:
 
      cd example/exampledocs
-     java -jar -Dc=<collection_name> post.jar *.xml
+     java -Dc=<collection_name> -jar post.jar *.xml
 Or:  sh post.sh *.xml
 
 For more information about Solr examples please read...
