@@ -38,6 +38,7 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.HttpEntityWrapper;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.SystemDefaultHttpClient;
@@ -54,7 +55,6 @@ import org.slf4j.LoggerFactory;
  * Utility class for creating/configuring httpclient instances. 
  */
 public class HttpClientUtil {
-  
   // socket timeout measured in ms, closes a socket if read
   // takes longer than x ms to complete. throws
   // java.net.SocketTimeoutException: Read timed out exception
@@ -109,7 +109,7 @@ public class HttpClientUtil {
    *          http client configuration, if null a client with default
    *          configuration (no additional configuration) is created. 
    */
-  public static HttpClient createClient(final SolrParams params) {
+  public static CloseableHttpClient createClient(final SolrParams params) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
@@ -123,7 +123,7 @@ public class HttpClientUtil {
    * Creates new http client by using the provided configuration.
    * 
    */
-  public static HttpClient createClient(final SolrParams params, ClientConnectionManager cm) {
+  public static CloseableHttpClient createClient(final SolrParams params, ClientConnectionManager cm) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
@@ -140,6 +140,14 @@ public class HttpClientUtil {
   public static void configureClient(final DefaultHttpClient httpClient,
       SolrParams config) {
     configurer.configure(httpClient,  config);
+  }
+  
+  public static void close(HttpClient httpClient) { 
+    if (httpClient instanceof CloseableHttpClient) {
+      org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
+    } else {
+      httpClient.getConnectionManager().shutdown();
+    }
   }
 
   /**
@@ -267,6 +275,14 @@ public class HttpClientUtil {
       SSLSocketFactory sslSocketFactory = (SSLSocketFactory) httpsScheme.getSchemeSocketFactory();
       sslSocketFactory.setHostnameVerifier(hostNameVerifier);
     }
+  }
+  
+  public static void setStaleCheckingEnabled(final HttpClient httpClient, boolean enabled) {
+    HttpConnectionParams.setStaleCheckingEnabled(httpClient.getParams(), enabled);
+  }
+  
+  public static void setTcpNoDelay(final HttpClient httpClient, boolean tcpNoDelay) {
+    HttpConnectionParams.setTcpNoDelay(httpClient.getParams(), tcpNoDelay);
   }
   
   private static class UseCompressionRequestInterceptor implements

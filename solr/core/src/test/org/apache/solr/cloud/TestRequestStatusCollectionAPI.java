@@ -218,8 +218,10 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    baseClient.setConnectionTimeout(15000);
-    return baseClient.request(request);
+    HttpSolrClient baseServer = new HttpSolrClient(baseUrl);
+    baseServer.setConnectionTimeout(15000);
+    NamedList<Object> resp = baseServer.request(request);
+    baseServer.shutdown();
+    return resp;
   }
 }

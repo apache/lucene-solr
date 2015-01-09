@@ -218,9 +218,11 @@ public class ChaosMonkey {
       if (filter != null) {
         CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
         if (cores != null) {
-          int zklocalport = ((InetSocketAddress) cores.getZkController()
-              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-          IpTables.blockPort(zklocalport);
+          if (cores.isZooKeeperAware()) {
+            int zklocalport = ((InetSocketAddress) cores.getZkController()
+                .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+            IpTables.blockPort(zklocalport);
+          }
         }
       }
     }
@@ -591,9 +593,11 @@ public class ChaosMonkey {
       if (filter != null) {
         CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
         if (cores != null) {
-          int zklocalport = ((InetSocketAddress) cores.getZkController()
-              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-          IpTables.unblockPort(zklocalport);
+          if (cores.isZooKeeperAware()) {
+            int zklocalport = ((InetSocketAddress) cores.getZkController()
+                .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+            IpTables.unblockPort(zklocalport);
+          }
         }
       }
     }

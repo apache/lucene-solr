@@ -3,14 +3,15 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.io.IOException;
+
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
-
-import java.net.MalformedURLException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,19 +39,30 @@ public class LBHttpSolrClientTest {
    * Test method for {@link LBHttpSolrClient#LBHttpSolrClient(org.apache.http.client.HttpClient, org.apache.solr.client.solrj.ResponseParser, java.lang.String[])}.
    * 
    * Validate that the parser passed in is used in the <code>HttpSolrClient</code> instances created.
-   * 
-   * @throws MalformedURLException If URL is invalid, no URL passed, so won't happen.
    */
   @Test
-  public void testLBHttpSolrClientHttpClientResponseParserStringArray() throws MalformedURLException {
-    LBHttpSolrClient testClient = new LBHttpSolrClient(HttpClientUtil.createClient(new ModifiableSolrParams()), (ResponseParser) null);
+  public void testLBHttpSolrClientHttpClientResponseParserStringArray() throws IOException {
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+    LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, (ResponseParser) null);
     HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080");
-    assertNull("Generated server should have null parser.", httpSolrClient.getParser());
-
-    ResponseParser parser = new BinaryResponseParser();
-    testClient = new LBHttpSolrClient(HttpClientUtil.createClient(new ModifiableSolrParams()), parser);
-    httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080");
-    assertEquals("Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
+    try {
+      assertNull("Generated server should have null parser.", httpSolrClient.getParser());
+    } finally {
+      httpSolrClient.shutdown();
+      testClient.shutdown();
+      httpClient.close();
+    }
+    try {
+      ResponseParser parser = new BinaryResponseParser();
+      httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+      testClient = new LBHttpSolrClient(httpClient, parser);
+      httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080");
+      assertEquals("Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
+    } finally {
+      httpSolrClient.shutdown();
+      testClient.shutdown();
+      httpClient.close();
+    }
   }
   
 }

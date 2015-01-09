@@ -17,6 +17,10 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import static java.util.Arrays.asList;
+import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.noggit.ObjectBuilder.getVal;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -44,14 +48,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.After;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
-import static org.noggit.ObjectBuilder.getVal;
 
 
 public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
@@ -69,6 +70,14 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         }
       });
       restTestHarnesses.add(harness);
+    }
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
     }
   }
 
@@ -133,15 +142,24 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     Set<String> errmessages = new HashSet<>();
     for(int i =1;i<2;i++){//make it  ahigher number
       RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-      payload = payload.replaceAll("CACHENAME" , cacheName);
-      String val1 = String.valueOf(10 * i + 1);
-      payload = payload.replace("CACHEVAL1", val1);
-      String val2 = String.valueOf(10 * i + 2);
-      payload = payload.replace("CACHEVAL2", val2);
-      String val3 = String.valueOf(10 * i + 3);
-      payload = payload.replace("CACHEVAL3", val3);
-
-      String response = publisher.post("/config?wt=json", SolrTestCaseJ4.json(payload));
+      String response;
+      String val1;
+      String val2;
+      String val3;
+      try {
+        payload = payload.replaceAll("CACHENAME" , cacheName);
+        val1 = String.valueOf(10 * i + 1);
+        payload = payload.replace("CACHEVAL1", val1);
+        val2 = String.valueOf(10 * i + 2);
+        payload = payload.replace("CACHEVAL2", val2);
+        val3 = String.valueOf(10 * i + 3);
+        payload = payload.replace("CACHEVAL3", val3);
+  
+        response = publisher.post("/config?wt=json", SolrTestCaseJ4.json(payload));
+      } finally {
+        publisher.close();
+      }
+      
       Map map = (Map) getVal(new JSONParser(new StringReader(response)));
       Object errors = map.get("errors");
       if(errors!= null){

@@ -26,6 +26,7 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,16 +56,18 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     }
   }
 
-
+  @After
+  public void testDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness r : restTestHarnesses) {
+      r.close();
+    }
+  }
 
   @Override
   public void doTest() throws Exception {
-
    setupHarnesses();
    dynamicLoading();
-
-
-
   }
 
   private void dynamicLoading() throws Exception {
@@ -200,7 +203,5 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     zipOut.close();
     return bos.getByteBuffer();
   }
-
-
 
 }

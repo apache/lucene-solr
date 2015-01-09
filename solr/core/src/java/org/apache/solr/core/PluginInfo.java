@@ -40,7 +40,7 @@ public class PluginInfo implements MapSerializable{
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
-  public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
+  public PluginInfo(String type, Map<String, String> attrs, NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     this.className = attrs.get(CLASS_NAME);

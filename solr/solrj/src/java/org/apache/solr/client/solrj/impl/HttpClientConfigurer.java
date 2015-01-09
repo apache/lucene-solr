@@ -29,7 +29,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class HttpClientConfigurer {
   
-  protected void configure(DefaultHttpClient httpClient, SolrParams config) {
+  public void configure(DefaultHttpClient httpClient, SolrParams config) {
     
     if (config.get(HttpClientUtil.PROP_MAX_CONNECTIONS) != null) {
       HttpClientUtil.setMaxConnections(httpClient,

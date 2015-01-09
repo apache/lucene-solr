@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,15 +41,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.hdfs.HdfsBasicDistributedZk2Test;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.apache.solr.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

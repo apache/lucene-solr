@@ -1055,7 +1055,7 @@ public class CloudSolrClient extends SolrClient {
     }
     
     if (clientIsInternal && myClient!=null) {
-      myClient.getConnectionManager().shutdown();
+      HttpClientUtil.close(myClient);
     }
 
     if(this.threadPool != null && !this.threadPool.isShutdown()) {

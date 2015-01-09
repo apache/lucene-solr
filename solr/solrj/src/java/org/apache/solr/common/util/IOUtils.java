@@ -1,8 +1,7 @@
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.Closeable;
 
-import org.apache.solr.core.HdfsDirectoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -71,6 +71,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   private List<Overseer> overseers = new ArrayList<>();
   private List<ZkStateReader> readers = new ArrayList<>();
+  private List<HttpShardHandlerFactory> httpShardHandlerFactorys = new ArrayList<>();
+  private List<UpdateShardHandler> updateShardHandlers = new ArrayList<>();
   
   private String collection = "collection1";
   
@@ -205,6 +207,16 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader.close();
     }
     readers.clear();
+    
+    for (HttpShardHandlerFactory handlerFactory : httpShardHandlerFactorys) {
+      handlerFactory.close();
+    }
+    httpShardHandlerFactorys.clear();
+    
+    for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
+      updateShardHandler.close();
+    }
+    updateShardHandlers.clear();
   }
 
   @Test
@@ -1118,8 +1130,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
     }
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(null);
+    updateShardHandlers.add(updateShardHandler);
+    HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+    httpShardHandlerFactorys.add(httpShardHandlerFactory);
     Overseer overseer = new Overseer(
-        new HttpShardHandlerFactory().getShardHandler(), updateShardHandler, "/admin/cores", reader, null, new MockConfigSolr());
+        httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null, new MockConfigSolr());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));

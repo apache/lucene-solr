@@ -195,7 +195,12 @@ public class CoreContainer {
   public static CoreContainer createAndLoad(String solrHome, File configFile) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     CoreContainer cc = new CoreContainer(loader, ConfigSolr.fromFile(loader, configFile));
-    cc.load();
+    try {
+      cc.load();
+    } catch (Exception e) {
+      cc.shutdown();
+      throw e;
+    }
     return cc;
   }
   
@@ -341,10 +346,9 @@ public class CoreContainer {
     }
 
     try {
-      coreAdminHandler.shutdown();
+      if (coreAdminHandler != null) coreAdminHandler.shutdown();
     } catch (Exception e) {
-      log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.");
-      e.printStackTrace();
+      log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
     }
 
     try {

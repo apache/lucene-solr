@@ -38,6 +38,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
@@ -48,7 +49,6 @@ import org.apache.solr.store.blockcache.Metrics;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.HdfsUtil;
-import org.apache.solr.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

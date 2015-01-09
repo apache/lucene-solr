@@ -17,15 +17,17 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.Replica;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
 
 /**
  * Tests leader-initiated recovery scenarios after a leader node fails
@@ -109,10 +111,20 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // indexing during a partition
     // doc should be on leader and 1 replica
     sendDoc(5);
-
-    assertDocExists(getHttpSolrClient(leader, testCollectionName), testCollectionName, "5");
-    assertDocExists(getHttpSolrClient(notLeaders.get(1), testCollectionName), testCollectionName, "5");
-
+    
+    HttpSolrClient server = getHttpSolrClient(leader, testCollectionName);
+    try {
+      assertDocExists(server, testCollectionName, "5");
+    } finally {
+      server.shutdown();
+    }
+    try {
+      server = getHttpSolrClient(notLeaders.get(1), testCollectionName);
+      assertDocExists(server, testCollectionName, "5");
+    } finally {
+      server.shutdown();
+    }
+  
     Thread.sleep(sleepMsBeforeHealPartition);
     
     String shouldNotBeNewLeaderNode = notLeaders.get(0).getNodeName();
@@ -160,12 +172,14 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
             printClusterStateInfo(testCollectionName),
         participatingReplicas.size() >= 2);
 
+    
     sendDoc(6);
+
 
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas)
       replicasToCheck.add(stillUp.getName());
-    waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 20);
+    waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 90);
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 6);
 
     // try to clean up

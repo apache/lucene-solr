@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,6 +30,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.After;
@@ -46,7 +48,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slow
-@SuppressSSL
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 20;
@@ -290,7 +292,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
-    private HttpClient httpClient = HttpClientUtil.createClient(null);
+    private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
     private ConcurrentUpdateSolrClient cusc;
@@ -389,7 +391,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       stop = true;
       cusc.blockUntilFinished();
       cusc.shutdownNow();
-      httpClient.getConnectionManager().shutdown();
+      IOUtils.closeQuietly(httpClient);
     }
 
     @Override

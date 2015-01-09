@@ -40,7 +40,10 @@ abstract public class RestTestBase extends SolrJettyTestBase {
   protected static RestTestHarness restTestHarness;
 
   @AfterClass
-  public static void cleanUpHarness() {
+  public static void cleanUpHarness() throws IOException {
+    if (restTestHarness != null) {
+      restTestHarness.close();
+    }
     restTestHarness = null;
   }
 

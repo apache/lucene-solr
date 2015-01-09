@@ -67,17 +67,20 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
-    solrServer.request(req);
-    ModifiableSolrParams qparams = new ModifiableSolrParams();
-    qparams.add("q", "*:*");
-    QueryResponse qres = solrServer.query(qparams);
-    SolrDocumentList results = qres.getResults();
-    assertEquals(2, results.getNumFound());
-    SolrDocument doc = results.get(0);
-    assertEquals("1", doc.getFieldValue("id"));
-    assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
-    solrServer.shutdown();
+    HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
+    try {
+      solrClient.request(req);
+      ModifiableSolrParams qparams = new ModifiableSolrParams();
+      qparams.add("q", "*:*");
+      QueryResponse qres = solrClient.query(qparams);
+      SolrDocumentList results = qres.getResults();
+      assertEquals(2, results.getNumFound());
+      SolrDocument doc = results.get(0);
+      assertEquals("1", doc.getFieldValue("id"));
+      assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
+    } finally {
+      solrClient.shutdown();
+    }
   }
 
   @Test

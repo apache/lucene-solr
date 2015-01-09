@@ -35,6 +35,7 @@ import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +54,20 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    for (RestTestHarness r : restTestHarnesses) {
+      r.close();
+    }
+  }
 
   @Override
   public void doTest() throws Exception {
     setupHarnesses();
     testReqHandlerAPIs();
     testReqParams();
-
   }
 
   private void testReqHandlerAPIs() throws Exception {

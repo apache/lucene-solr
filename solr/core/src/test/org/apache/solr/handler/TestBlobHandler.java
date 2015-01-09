@@ -60,46 +60,48 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   private void doBlobHandlerTest() throws Exception {
     SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+    try {
+      CollectionAdminResponse response1;
+      CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
+      createCollectionRequest.setCollectionName(".system");
+      createCollectionRequest.setNumShards(1);
+      createCollectionRequest.setReplicationFactor(2);
+      response1 = createCollectionRequest.process(client);
+      assertEquals(0, response1.getStatus());
+      assertTrue(response1.isSuccess());
+      DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
+      Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
-    CollectionAdminResponse response1;
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-    createCollectionRequest.setCollectionName(".system");
-    createCollectionRequest.setNumShards(1);
-    createCollectionRequest.setReplicationFactor(2);
-    response1 = createCollectionRequest.process(client);
-    assertEquals(0, response1.getStatus());
-    assertTrue(response1.isSuccess());
-    DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
-    Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
+      String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+      String url = baseUrl + "/.system/config/requestHandler";
+      Map map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
+      assertNotNull(map);
+      assertEquals("solr.BlobHandler", getObjectByPath(map, true, Arrays.asList(
+          "config",
+          "requestHandler",
+          "/blob",
+          "class")));
 
-    String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-    String url = baseUrl + "/.system/config/requestHandler";
-    Map map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
-    assertNotNull(map);
-    assertEquals("solr.BlobHandler", getObjectByPath(map, true, Arrays.asList(
-        "config",
-        "requestHandler",
-        "/blob",
-        "class")));
+      byte[] bytarr  = new byte[1024];
+      for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
+      byte[] bytarr2  = new byte[2048];
+      for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
+      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
+      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
 
-    byte[] bytarr  = new byte[1024];
-    for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
-    byte[] bytarr2  = new byte[2048];
-    for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
-    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
-    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
+      url = baseUrl + "/.system/blob/test/1";
+      map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
+      List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
+      assertNotNull(""+map, l);
+      assertTrue("" + map, l.size() > 0);
+      map = (Map) l.get(0);
+      assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
 
-    url = baseUrl + "/.system/blob/test/1";
-    map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
-    List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
-    assertNotNull(""+map, l);
-    assertTrue("" + map, l.size() > 0);
-    map = (Map) l.get(0);
-    assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
-
-    compareInputAndOutput(baseUrl+"/.system/blob/test?wt=filestream", bytarr2);
-    compareInputAndOutput(baseUrl+"/.system/blob/test/1?wt=filestream", bytarr);
-
+      compareInputAndOutput(baseUrl+"/.system/blob/test?wt=filestream", bytarr2);
+      compareInputAndOutput(baseUrl+"/.system/blob/test/1?wt=filestream", bytarr);
+    } finally {
+      client.shutdown();
+    }
   }
 
   public static  void createSysColl(SolrClient client) throws SolrServerException, IOException {

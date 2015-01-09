@@ -58,7 +58,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.IOUtils;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.stats.Clock;
 import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;

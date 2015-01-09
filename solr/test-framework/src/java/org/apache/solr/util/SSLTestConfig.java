@@ -90,7 +90,7 @@ public class SSLTestConfig extends SSLConfig {
   
   private class SSLHttpClientConfigurer extends HttpClientConfigurer {
     @SuppressWarnings("deprecation")
-    protected void configure(DefaultHttpClient httpClient, SolrParams config) {
+    public void configure(DefaultHttpClient httpClient, SolrParams config) {
       super.configure(httpClient, config);
       SchemeRegistry registry = httpClient.getConnectionManager().getSchemeRegistry();
       // Make sure no tests cheat by using HTTP
