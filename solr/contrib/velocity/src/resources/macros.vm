@@ -1,0 +1,3 @@
+## placeholder for users to specify their own macros
+## This file is needed for the "builtin" resource loader as Velocity requires all macro library files exist.
+## This is the file we want users to override to add their own macros.

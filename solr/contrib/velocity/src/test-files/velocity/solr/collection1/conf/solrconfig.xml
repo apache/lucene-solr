@@ -16,65 +16,12 @@
  limitations under the License.
 -->
 
-<!-- 
-     For more details about configurations options that may appear in
-     this file, see http://wiki.apache.org/solr/SolrConfigXml. 
--->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <indexConfig>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
 
-  <lib dir="../../contrib/velocity/lib" />
-  <lib dir="../../dist/" regex="solr-velocity-\d.*\.jar" />
-  <dataDir>${solr.data.dir:}</dataDir>
+  <!--<lib dir="../../contrib/velocity/lib" />-->
+  <!--<lib dir="../../dist/" regex="solr-velocity-\d.*\.jar" />-->
 
-
-  <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
-
-  <updateHandler class="solr.DirectUpdateHandler2">
-  </updateHandler>
-  
-  <query>
-    <maxBooleanClauses>1024</maxBooleanClauses>
-    <filterCache class="solr.FastLRUCache"
-                 size="512"
-                 initialSize="512"
-                 autowarmCount="0"/>
-    <queryResultCache class="solr.LRUCache"
-                     size="512"
-                     initialSize="512"
-                     autowarmCount="0"/>
-    <documentCache class="solr.LRUCache"
-                   size="512"
-                   initialSize="512"
-                   autowarmCount="0"/>
-    <enableLazyFieldLoading>true</enableLazyFieldLoading>
-
-   <queryResultWindowSize>20</queryResultWindowSize>
-   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
-    <listener event="newSearcher" class="solr.QuerySenderListener">
-      <arr name="queries">
-      </arr>
-    </listener>
-    <listener event="firstSearcher" class="solr.QuerySenderListener">
-      <arr name="queries">
-        <lst>
-          <str name="q">static firstSearcher warming in solrconfig.xml</str>
-        </lst>
-      </arr>
-    </listener>
-    <useColdSearcher>false</useColdSearcher>
-    <maxWarmingSearchers>2</maxWarmingSearchers>
-
-  </query>
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true"
-                    multipartUploadLimitInKB="2048000" />
-    <httpCaching never304="true" />
-  </requestDispatcher>
 
   <requestHandler name="search" class="solr.SearchHandler" default="true">
      <lst name="defaults">
@@ -83,13 +30,9 @@
      </lst>
     </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
-  <!-- Legacy config for the admin interface -->
-  <admin>
-    <defaultQuery>*:*</defaultQuery>
-  </admin>
-
+  <queryResponseWriter name="velocityWithInitProps" class="solr.VelocityResponseWriter">
+    <str name="init.properties.file">velocity-init.properties</str>
+  </queryResponseWriter>
 </config>

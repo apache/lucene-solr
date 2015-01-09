@@ -2,14 +2,14 @@
 <div>
   <span>Options:</span>
 
-  #if($request.params.get('debugQuery'))
+  #if($debug)
     <a href="#url_for_home?#q#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end">
       disable debug</a>
   #else
     <a href="#url_for_lens&debug=true&fl=*,score">enable debug</a>
   #end
   -
-  <a href="#url_for_lens&wt=xml#if($request.params.get('debugQuery'))&debug=true#end">XML results</a>
+  <a href="#url_for_lens&wt=xml#if($debug)&debug=true#end">XML results</a> ## TODO: Add links for other formats, maybe dynamically?
 
 </div>
 

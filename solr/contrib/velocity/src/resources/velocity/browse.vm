@@ -1,5 +1,3 @@
-#set($params = $request.params)
-
 ## Show Error Message, if any
 <div class="error">
   #parse("error.vm")
@@ -7,11 +5,11 @@
 
 <div class="query-box">
   <form id="query-form" action="#{url_for_home}" method="GET">
-    Find:
-    <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
+    $resource.find:
+    <input type="text" id="q" name="q" value="$!esc.html($request.params.get('q'))"/>
     <input type="submit"/>
 
-    #if($request.params.get('debugQuery'))
+    #if($debug) ## TODO: this would automatically happen when arbitrary parameters are kept on URLs
       <input type="hidden" name="debug" value="true"/>
     #end
     #foreach($fq in $request.params.getParams('fq'))
@@ -19,7 +17,7 @@
     #end
 
     <div class="constraints">
-      #foreach($fq in $params.getParams('fq'))
+      #foreach($fq in $request.params.getParams('fq'))
         #set($previous_fq_count=$velocityCount - 1)
         #if($fq != '')
           &gt;
@@ -29,7 +27,7 @@
     </div>
 
     <div class="parsed_query_header">
-      #if($request.params.get('debugQuery'))
+      #if($debug)
         <a href="#" onclick='jQuery(this).siblings("div").toggle(); return false;'>toggle parsed query</a>
         <div class="parsed_query" style="display:none">$response.response.debug.parsedquery</div>
       #end
@@ -46,11 +44,10 @@
   <span>
     <span class="results-found">$page.results_found</span>
     results found in
-    ${response.responseHeader.QTime} ms
+    ${response.responseHeader.QTime}ms
   </span>
 
-  Page <span class="page-num">$page.current_page_number</span>
-    of <span class="page-count">$page.page_count</span>
+  $resource.page_of.insert($page.current_page_number,$page.page_count)
 </div>
 
 ## Render Results, actual matching docs
@@ -59,13 +56,12 @@
 </div>
 
 <div class="pagination">
-  #link_to_previous_page("previous")
+  #link_to_previous_page
 
   <span class="results-found">$page.results_found</span>
   results found.
 
-  Page <span class="page-num">$page.current_page_number</span>
-    of <span class="page-count">$page.page_count</span>
+  $resource.page_of.insert($page.current_page_number,$page.page_count)
 
-  #link_to_next_page("next")
+  #link_to_next_page
 </div>

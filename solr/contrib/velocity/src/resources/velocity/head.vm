@@ -3,9 +3,12 @@
  *#
 
   <title>Solr browse: #core_name</title>
+
   <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
   <link rel="icon" type="image/x-icon" href="#{url_root}/img/favicon.ico"/>
   <link rel="shortcut icon" type="image/x-icon" href="#{url_root}/img/favicon.ico"/>
+
   <script type="text/javascript" src="#{url_root}/js/lib/jquery-1.7.2.min.js"></script>
 
   <style>
@@ -16,17 +19,6 @@
 
     #head{
       width: 100%;
-    }
-    .array-field {
-      border: 2px solid #474747;
-      background: #FFE9D8;
-      padding: 5px;
-      margin: 5px;
-    }
-
-    .array-field-list li {
-      list-style: circle;
-      margin-left: 20px;
     }
 
     .parsed_query_header {
@@ -47,7 +39,11 @@
     }
 
     a {
-      color: #43a4b1;
+      color: #305CB3;
+    }
+
+    em {
+      color: #FF833D;
     }
 
     .facets {
@@ -61,7 +57,7 @@
     }
 
     .facets h2 {
-      background: #EA897E;
+      background: #D9411E;
       padding: 2px 5px;
     }
 
@@ -82,18 +78,9 @@
       font-weight: bold;
     }
 
-    .highlight {
-      color: white;
-      background-color: gray;
-      border: 1px black solid;
-    }
-
-    .highlight-box {
-      margin-left: 15px;
-    }
-
     .field-name {
       font-weight: bold;
+      // align="right" valign="top"
     }
 
     .highlighted-facet-field {
