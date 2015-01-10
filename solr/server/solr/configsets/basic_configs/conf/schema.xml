@@ -510,7 +510,7 @@
      special relevancy modes: score=overlapRatio|area|area2D (local-param to the query).  DocValues is recommended for
      relevancy. -->
     <fieldType name="bbox" class="solr.BBoxField"
-               geo="true" units="degrees" numberType="_bbox_coord" />
+               geo="true" distanceUnits="kilometers" numberType="_bbox_coord" />
     <fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
 
    <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
