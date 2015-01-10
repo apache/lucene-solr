@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.util.Objects;
+
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -224,13 +226,7 @@ public final class NumericTokenStream extends TokenStream {
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + precisionStep;
-      result = prime * result + shift;
-      result = prime * result + Long.hashCode(value);
-      result = prime * result + valueSize;
-      return result;
+      return Objects.hash(precisionStep, shift, value, valueSize);
     }
 
     @Override

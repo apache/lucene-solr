@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * A TokenStream used internally by {@link org.apache.lucene.spatial.prefix.PrefixTreeStrategy}.
@@ -134,11 +135,7 @@ class CellTokenStream extends TokenStream {
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + ((cell == null) ? 0 : cell.hashCode());
-      result = prime * result + Boolean.hashCode(omitLeafByte);
-      return result;
+      return Objects.hash(cell, omitLeafByte);
     }
 
     @Override
