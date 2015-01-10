@@ -212,6 +212,39 @@ public final class NumericTokenStream extends TokenStream {
       final NumericTermAttribute a = (NumericTermAttribute) target;
       a.init(value, valueSize, precisionStep, shift);
     }
+    
+    @Override
+    public NumericTermAttributeImpl clone() {
+      NumericTermAttributeImpl t = (NumericTermAttributeImpl)super.clone();
+      // Do a deep clone
+      t.bytes = new BytesRefBuilder();
+      t.bytes.copyBytes(bytes.get());
+      return t;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + precisionStep;
+      result = prime * result + shift;
+      result = prime * result + Long.hashCode(value);
+      result = prime * result + valueSize;
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      NumericTermAttributeImpl other = (NumericTermAttributeImpl) obj;
+      if (precisionStep != other.precisionStep) return false;
+      if (shift != other.shift) return false;
+      if (value != other.value) return false;
+      if (valueSize != other.valueSize) return false;
+      return true;
+    }
   }
   
   /**
