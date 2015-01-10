@@ -19,7 +19,9 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.analysis.NumericTokenStream.NumericTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.tokenattributes.TestCharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
@@ -30,6 +32,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   static final int ivalue = 123456;
 
   public void testLongStream() throws Exception {
+    @SuppressWarnings("resource")
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     assertNotNull(bytesAtt);
@@ -54,6 +57,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   }
 
   public void testIntStream() throws Exception {
+    @SuppressWarnings("resource")
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     assertNotNull(bytesAtt);
@@ -93,6 +97,8 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     } catch (IllegalStateException e) {
       // pass
     }
+    
+    stream.close();
   }
   
   public static interface TestAttribute extends CharTermAttribute {}
@@ -112,6 +118,15 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     } catch (IllegalArgumentException iae) {
       assertTrue(iae.getMessage().startsWith("NumericTokenStream does not support"));
     }
+    stream.close();
+  }
+  
+  public void testAttributeClone() throws Exception {
+    NumericTermAttributeImpl att = new NumericTermAttributeImpl();
+    NumericTermAttributeImpl copy = TestCharTermAttributeImpl.assertCloneIsEqual(att);
+    assertNotSame(att.getBytesRef(), copy.getBytesRef());
+    NumericTermAttributeImpl copy2 = TestCharTermAttributeImpl.assertCopyIsEqual(att);
+    assertNotSame(att.getBytesRef(), copy2.getBytesRef());
   }
   
 }

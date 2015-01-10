@@ -124,6 +124,35 @@ class CellTokenStream extends TokenStream {
       fillBytesRef();
       reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
     }
+
+    @Override
+    public CellTermAttributeImpl clone() {
+      final CellTermAttributeImpl clone = (CellTermAttributeImpl) super.clone();
+      clone.bytes = BytesRef.deepCopyOf(bytes);
+      return clone;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((cell == null) ? 0 : cell.hashCode());
+      result = prime * result + Boolean.hashCode(omitLeafByte);
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      CellTermAttributeImpl other = (CellTermAttributeImpl) obj;
+      if (cell == null) {
+        if (other.cell != null) return false;
+      } else if (!cell.equals(other.cell)) return false;
+      if (omitLeafByte != other.omitLeafByte) return false;
+      return true;
+    }
   }
 
   public CellTokenStream() {

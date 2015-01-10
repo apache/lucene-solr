@@ -433,6 +433,9 @@ Bug Fixes
   been returning the offsets of just the matching tokens in the group when
   there's a distinction. (David Smiley)
   
+* LUCENE-6173: NumericTermAttribute and spatial/CellTokenStream do not clone
+  their BytesRef(Builder)s. Also equals/hashCode was missing.  (Uwe Schindler)
+  
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
