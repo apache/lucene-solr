@@ -660,6 +660,8 @@ Other Changes
 
 * SOLR-1723: VelocityResponseWriter improvements (Erik Hatcher)
 
+* SOLR-6324: Set finite default timeouts for select and update. (Ramkumar Aiyengar via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
