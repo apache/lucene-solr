@@ -1770,9 +1770,8 @@ New Features
 * SOLR-5320: Added support for tri-level compositeId routing.
   (Anshum Gupta via shalin)
   
-* SOLR-5287,SOLR-5522,SOLR-5446,SOLR-5456,SOLR-5539,SOLR-5458:
-  Admin UI - Added a new "Files" conf directory browser/file viewer.
-  (steffkes, Erick Erickson)
+* SOLR-5458: Admin UI - Added a new "Files" conf directory browser/file viewer.
+  (steffkes)
 
 * SOLR-5447, SOLR-5490: Add a QParserPlugin for Lucene's SimpleQueryParser.
   (Jack Conradson via shalin)
