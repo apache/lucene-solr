@@ -329,11 +329,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (!snapPullLock.tryLock())
       return false;
     try {
-      tempSnapPuller = snapPuller;
       if (masterUrl != null) {
+        if (tempSnapPuller != null && tempSnapPuller != snapPuller) {
+          tempSnapPuller.destroy();
+        }
+        
         NamedList<Object> nl = solrParams.toNamedList();
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
+      } else {
+        tempSnapPuller = snapPuller;
       }
       return tempSnapPuller.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
@@ -1000,6 +1005,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       public void preClose(SolrCore core) {
         if (snapPuller != null) {
           snapPuller.destroy();
+        }
+        if (tempSnapPuller != null && tempSnapPuller != snapPuller) {
+          tempSnapPuller.destroy();
         }
       }
 
