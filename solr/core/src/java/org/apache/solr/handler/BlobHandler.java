@@ -253,7 +253,11 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
       "<updateHandler class='solr.DirectUpdateHandler2'>\n" +
       "  <updateLog>\n" +
       "    <str name='dir'>${solr.ulog.dir:}</str>\n" +
-      "  </updateLog>\n" +
+      "  </updateLog>\n     " +
+      "  <autoCommit> \n" +
+      "       <maxDocs>1</maxDocs> \n" +
+      "       <openSearcher>true</openSearcher> \n" +
+      "  </autoCommit>" +
       "</updateHandler>\n" +
       "<requestHandler name='standard' class='solr.StandardRequestHandler' default='true' />\n" +
       "<requestHandler name='/analysis/field' startup='lazy' class='solr.FieldAnalysisRequestHandler' />\n" +
