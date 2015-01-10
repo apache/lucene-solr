@@ -60,7 +60,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testParamResourceLoaderDisabled() throws Exception {
-    org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
+    VelocityResponseWriter vrw = new VelocityResponseWriter();
     // by default param resource loader is disabled, no need to set it here
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"custom",
         SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"custom","$response.response.response_data");
@@ -76,7 +76,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFileResourceLoader() throws Exception {
-    org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
+    VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<String>();
     nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
     vrw.init(nl);
@@ -145,6 +145,32 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
         VelocityResponseWriter.TEMPLATE, "numFound",
         VelocityResponseWriter.JSON,"foo",
         VelocityResponseWriter.LAYOUT,"layout")));
+  }
+
+  @Test
+  public void testContentType() throws Exception {
+    VelocityResponseWriter vrw = new VelocityResponseWriter();
+    NamedList<String> nl = new NamedList<String>();
+    vrw.init(nl);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+
+    // with v.json=wrf, content type should default to application/json
+    assertEquals("application/json;charset=UTF-8",
+        vrw.getContentType(req(VelocityResponseWriter.TEMPLATE, "numFound",
+            VelocityResponseWriter.JSON, "wrf"), rsp));
+
+    // with no v.json specified, the default text/html should be returned
+    assertEquals("text/html;charset=UTF-8",
+        vrw.getContentType(req(VelocityResponseWriter.TEMPLATE, "numFound"), rsp));
+
+    // if v.contentType is specified, that should be used, even if v.json is specified
+    assertEquals("text/plain",
+        vrw.getContentType(req(VelocityResponseWriter.TEMPLATE, "numFound",
+            VelocityResponseWriter.CONTENT_TYPE,"text/plain"), rsp));
+    assertEquals("text/plain",
+        vrw.getContentType(req(VelocityResponseWriter.TEMPLATE, "numFound",
+            VelocityResponseWriter.JSON,"wrf",
+            VelocityResponseWriter.CONTENT_TYPE,"text/plain"), rsp));
   }
 
 }

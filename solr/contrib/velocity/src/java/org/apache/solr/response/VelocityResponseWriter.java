@@ -73,6 +73,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   public static final String TEMPLATE_EXTENSION = ".vm";
   public static final String DEFAULT_CONTENT_TYPE = "text/html;charset=UTF-8";
+  public static final String JSON_CONTENT_TYPE = "application/json;charset=UTF-8";
 
   private File fileResourceLoaderBaseDir;
   private boolean paramsResourceLoaderEnabled;
@@ -127,7 +128,10 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return request.getParams().get(CONTENT_TYPE, DEFAULT_CONTENT_TYPE);
+    String contentType = request.getParams().get(CONTENT_TYPE);
+
+    // Use the v.contentType specified, or either of the default content types depending on the presence of v.json
+    return (contentType != null) ? contentType : ((request.getParams().get(JSON) == null) ? DEFAULT_CONTENT_TYPE : JSON_CONTENT_TYPE);
   }
 
   @Override
