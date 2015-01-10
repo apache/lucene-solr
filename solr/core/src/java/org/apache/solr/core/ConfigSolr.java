@@ -33,6 +33,7 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -142,6 +143,9 @@ public abstract class ConfigSolr {
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY = 10000;
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION = 60000;
+  
+  public static final int DEFAULT_DISTRIBUPDATECONNTIMEOUT = 60000;
+  public static final int DEFAULT_DISTRIBUPDATESOTIMEOUT = 600000;
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
 
@@ -182,11 +186,11 @@ public abstract class ConfigSolr {
   }
 
   public int getDistributedConnectionTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0);
+    return get(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT);
   }
 
   public int getDistributedSocketTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
+    return get(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATESOTIMEOUT);
   }
   
   public int getMaxUpdateConnections() {
