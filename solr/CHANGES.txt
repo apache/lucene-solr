@@ -415,6 +415,9 @@ Bug Fixes
 * SOLR-6839: Direct routing with CloudSolrServer will ignore the Overwrite document option.
   (Mark Miller)
 
+* SOLR-6793: ReplicationHandler does not destroy all of it's created SnapPullers.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 
