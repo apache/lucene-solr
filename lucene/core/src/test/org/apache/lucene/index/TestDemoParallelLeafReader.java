@@ -803,6 +803,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         // We write tiny docs, so we need tiny floor to avoid O(N^2) merging:
         tmp.setFloorSegmentMB(.01);
         iwc.setMergePolicy(tmp);
+        if (TEST_NIGHTLY) {
+          // during nightly tests, we might use too many files if we arent careful
+          iwc.setUseCompoundFile(true);
+        }
         return iwc;
       }
 
