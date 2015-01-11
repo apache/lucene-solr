@@ -225,6 +225,10 @@ function print_usage() {
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_core -n mycore -c /tmp/myconfig"
     echo ""
+    echo "  -p <port>       Port of a local Solr instance where you want to create the new core"
+    echo "                    If not specified, the script will search the local system for a running"
+    echo "                    Solr instance and will use the port of the first server it finds."
+    echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
     echo "Usage: solr create_collection [-n name] [-c configset] [-shards #] [-replicationFactor #]"
@@ -245,6 +249,9 @@ function print_usage() {
     echo ""
     echo "  -replicationFactor <#>  Number of copies of each document in the collection, default is 1 (no replication)"
     echo ""
+    echo "  -p <port>       Port of a local Solr instance where you want to create the new collection"
+    echo "                    If not specified, the script will search the local system for a running"
+    echo "                    Solr instance and will use the port of the first server it finds."
     echo ""
   fi
 } # end print_usage

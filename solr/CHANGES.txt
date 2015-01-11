@@ -418,6 +418,9 @@ Bug Fixes
 * SOLR-6793: ReplicationHandler does not destroy all of it's created SnapPullers.
   (Mark Miller)
 
+* SOLR-6946: Document -p port option for the create_core and create_collection actions in
+  bin/solr (Timothy Potter)
+
 Optimizations
 ----------------------
 

@@ -201,6 +201,10 @@ echo       sample_techproducts_configs: Example configuration with many optional
 echo          demonstrate the full power of Solr
 echo       If not specified, default is: data_driven_schema_configs
 echo.
+echo   -p port       Port of a local Solr instance where you want to create the new core
+echo                  If not specified, the script will search the local system for a running
+echo                  Solr instance and will use the port of the first server it finds.
+echo.
 goto done
 
 :create_collection_usage
@@ -219,6 +223,10 @@ echo.
 echo   -shards #             Number of shards to split the collection into
 echo.
 echo   -replicationFactor #  Number of copies of each document in the collection
+echo.
+echo   -p port       Port of a local Solr instance where you want to create the new collection
+echo                  If not specified, the script will search the local system for a running
+echo                  Solr instance and will use the port of the first server it finds.
 echo.
 goto done
 
