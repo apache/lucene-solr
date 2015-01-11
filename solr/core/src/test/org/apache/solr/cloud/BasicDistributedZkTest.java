@@ -333,7 +333,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set("commitWithin", 10);
     add(cloudClient, params , getDoc("id", 300));
     
-    long timeout = System.currentTimeMillis() + 30000;
+    long timeout = System.currentTimeMillis() + 45000;
     while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
       if (timeout <= System.currentTimeMillis()) {
         fail("commitWithin did not work");
