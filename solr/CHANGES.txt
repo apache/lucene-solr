@@ -427,6 +427,9 @@ Bug Fixes
 * SOLR-6946: Document -p port option for the create_core and create_collection actions in
   bin/solr (Timothy Potter)
 
+* SOLR-6923: AutoAddReplicas also consults live_nodes to see if a state change has happened.
+  (Varun Thacker via Anshum Gupta)
+
 Optimizations
 ----------------------
 
