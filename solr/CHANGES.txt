@@ -291,6 +291,9 @@ New Features
 
 * SOLR-6916: Toggle payload support for the default highlighter via hl.payloads.  It's auto
   enabled when the index has payloads. (David Smiley)
+
+* SOLR-6581: Efficient DocValues support and numeric collapse field implementations 
+  for Collapse and Expand (Joel Bernstein)
   
 Bug Fixes
 ----------------------
