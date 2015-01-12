@@ -856,7 +856,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
     print('      startup done')
     # Create the techproducts config (used to be collection1)
-    subprocess.call(['bin/solr','create_core','-n','techproducts','-c','sample_techproducts_configs'])
+    subprocess.call(['bin/solr','create_core','-c','techproducts','-d','sample_techproducts_configs'])
     os.chdir('example')
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')

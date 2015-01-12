@@ -674,6 +674,13 @@ Other Changes
 
 * SOLR-6324: Set finite default timeouts for select and update. (Ramkumar Aiyengar via Mark Miller)
 
+* SOLR-6952: bin/solr create action should copy configset directory instead of reusing
+  an existing configset in ZooKeeper by default (Timothy Potter)
+
+* SOLR-6933: bin/solr should provide a single "create" action that creates a core
+  or collection depending on whether Solr is running in standalone or cloud mode
+  (Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

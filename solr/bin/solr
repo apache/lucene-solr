@@ -123,7 +123,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create_core, create_collection"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -209,49 +209,76 @@ function print_usage() {
     echo ""
     echo "  NOTE: This command will show the status of all running Solr servers"
     echo ""
+  elif [ "$CMD" == "create" ]; then
+    echo ""
+    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port]"
+    echo ""
+    echo "  Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
+    echo "  mode (collection). In other words, this action detects which mode Solr is running in, and then takes"
+    echo "  the appropriate action (either create_core or create_collection). For detailed usage instructions, do:"
+    echo ""
+    echo "    bin/solr create_core -help"
+    echo ""
+    echo "       or"
+    echo ""
+    echo "    bin/solr create_collection -help"
+    echo ""
   elif [ "$CMD" == "create_core" ]; then
     echo ""
-    echo "Usage: solr create_core [-n name] [-c configset]"
+    echo "Usage: solr create_core [-c core] [-d confdir] [-p port]"
     echo ""
-    echo "  -n <name>       Name of core to create"
+    echo "  -c <core>     Name of core to create"
     echo ""
-    echo "  -c <configset>  Name of configuration directory to use, built-in options are:"
+    echo "  -d <confdir>  Configuration directory to copy when creating the new core, built-in options are:"
+    echo ""
     echo "      basic_configs: Minimal Solr configuration"
     echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
+    echo ""
     echo "      If not specified, default is: data_driven_schema_configs"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
-    echo "      one of the built-in configurations, such as: bin/solr create_core -n mycore -c /tmp/myconfig"
+    echo "      one of the built-in configurations, such as: bin/solr create_core -c mycore -d /tmp/myconfig"
     echo ""
-    echo "  -p <port>       Port of a local Solr instance where you want to create the new core"
-    echo "                    If not specified, the script will search the local system for a running"
-    echo "                    Solr instance and will use the port of the first server it finds."
+    echo "  -p <port>     Port of a local Solr instance where you want to create the new core"
+    echo "                  If not specified, the script will search the local system for a running"
+    echo "                  Solr instance and will use the port of the first server it finds."
     echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
-    echo "Usage: solr create_collection [-n name] [-c configset] [-shards #] [-replicationFactor #]"
+    echo "Usage: solr create_collection [-c collection] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port]"
     echo ""
-    echo "  -n <name>               Name of collection to create"
+    echo "  -c <collection>         Name of collection to create"
     echo ""
-    echo "  -c <configset>          Name of configuration directory to use, built-in options are:"
+    echo "  -d <confdir>            Configuration directory to copy when creating the new collection, built-in options are:"
+    echo ""
     echo "      basic_configs: Minimal Solr configuration"
     echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
+    echo ""
     echo "      If not specified, default is: data_driven_schema_configs"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
-    echo "      one of the built-in configurations, such as: bin/solr create_collection -n mycoll -c /tmp/myconfig"
+    echo "      one of the built-in configurations, such as: bin/solr create_collection -c mycoll -d /tmp/myconfig"
+    echo ""
+    echo "      By default the script will upload the specified confdir directory into ZooKeeper using the same"
+    echo "      name as the collection (-c) option. Alternatively, if you want to reuse an existing directory"
+    echo "      or create a confdir in ZooKeeper that can be shared by multiple collections, use the -n option"
+    echo ""
+    echo "  -n <configName>         Name the configuration directory in ZooKeeper; by default, the configuration"
+    echo "                            will be uploaded to ZooKeeper using the collection name (-c), but if you want"
+    echo "                            to use an existing directory or override the name of the configuration in"
+    echo "                            ZooKeeper, then use the -c option."
     echo ""
     echo "  -shards <#>             Number of shards to split the collection into; default is 1"
     echo ""
     echo "  -replicationFactor <#>  Number of copies of each document in the collection, default is 1 (no replication)"
     echo ""
-    echo "  -p <port>       Port of a local Solr instance where you want to create the new collection"
-    echo "                    If not specified, the script will search the local system for a running"
-    echo "                    Solr instance and will use the port of the first server it finds."
+    echo "  -p <port>               Port of a local Solr instance where you want to create the new collection"
+    echo "                            If not specified, the script will search the local system for a running"
+    echo "                            Solr instance and will use the port of the first server it finds."
     echo ""
   fi
 } # end print_usage
@@ -486,32 +513,36 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 fi
 
 # create a core or collection
-if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
+if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
 
-  CREATE_TYPE=collection
   CREATE_NUM_SHARDS=1
   CREATE_REPFACT=1
-  if [ "$SCRIPT_CMD" == "create_core" ]; then
-    CREATE_TYPE=core
-  fi
 
   if [ $# -gt 0 ]; then
     while true; do
       case $1 in
-          -n|-name)
+          -c|-core|-collection)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "$CREATE_TYPE name is required when using the $1 option!"
+                print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
                 exit 1
               fi
               CREATE_NAME=$2
               shift 2
           ;;
-          -c|-configset)
+          -n|-confname)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Configset name is required when using the $1 option!"
+                print_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
                 exit 1
               fi
-              CREATE_CONFIGSET="$2"
+              CREATE_CONFNAME="$2"
+              shift 2
+          ;;
+          -d|-confdir)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
+                exit 1
+              fi
+              CREATE_CONFDIR="$2"
               shift 2
           ;;
           -s|-shards)
@@ -558,20 +589,25 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     done
   fi
 
-  if [ -z "$CREATE_CONFIGSET" ]; then
-    CREATE_CONFIGSET=data_driven_schema_configs
+  if [ -z "$CREATE_CONFDIR" ]; then
+    CREATE_CONFDIR=data_driven_schema_configs
   fi
 
-  # validate the configset arg
-  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFIGSET" && ! -d "$CREATE_CONFIGSET" ]]; then
-    echo -e "\nSpecified configset $CREATE_CONFIGSET not found!\n"
+  # validate the confdir arg
+  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
+    echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
     exit 1
   fi
 
   if [ -z "$CREATE_NAME" ]; then
-    echo "$CREATE_TYPE name is required!"
+    echo "Name (-c) argument is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
+  fi
+
+  # If not defined, use the collection name for the name of the configuration in ZooKeeper
+  if [ -z "$CREATE_CONFNAME" ]; then
+    CREATE_CONFNAME=$CREATE_NAME
   fi
 
   if [ -z "$CREATE_PORT" ]; then
@@ -586,17 +622,19 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
   fi
 
   if [ -z "$CREATE_PORT" ]; then
-    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_TYPE $CREATE_NAME"
+    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_NAME!"
     exit 1
   fi
 
-  if [ "$SCRIPT_CMD" == "create_collection" ]; then
-    run_tool create_collection -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
-      -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$CREATE_PORT/solr
+  if [ "$SCRIPT_CMD" == "create_core" ]; then
+    run_tool create_core -name $CREATE_NAME -solrUrl http://localhost:$CREATE_PORT/solr \
+      -confdir $CREATE_CONFDIR -configsetsDir $SOLR_TIP/server/solr/configsets
     exit $?
   else
-    run_tool create_core -name $CREATE_NAME -solrUrl http://localhost:$CREATE_PORT/solr \
-      -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
+    run_tool $SCRIPT_CMD -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
+      -confname $CREATE_CONFNAME -confdir $CREATE_CONFDIR \
+      -configsetsDir $SOLR_TIP/server/solr/configsets \
+      -solrUrl http://localhost:$CREATE_PORT/solr
     exit $?
   fi
 fi
@@ -1211,18 +1249,11 @@ if [ "$EXAMPLE" != "cloud" ]; then
       EXAMPLE_NAME=$EXAMPLE
     fi
 
-    if [ "$SOLR_MODE" == "solrcloud" ]; then
-      run_tool create_collection -name $EXAMPLE_NAME -shards 1 -replicationFactor 1 \
-        -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
-      if [ $? -ne 0 ]; then
-        exit 1
-      fi
-    else
-      run_tool create_core -name $EXAMPLE_NAME -solrUrl http://localhost:$SOLR_PORT/solr \
-        -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
-      if [ $? -ne 0 ]; then
-        exit 1
-      fi
+    run_tool create -name $EXAMPLE_NAME -shards 1 -replicationFactor 1 \
+      -confname $EXAMPLE_NAME -confdir $EXAMPLE_CONFIGSET \
+      -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+    if [ $? -ne 0 ]; then
+      exit 1
     fi
 
     if [ "$EXAMPLE" == "techproducts" ]; then
@@ -1253,7 +1284,7 @@ else
   fi
 
   echo -e "\nStarting up SolrCloud node1 on port ${CLOUD_PORTS[0]} using command:\n"
-  echo -e "solr start -cloud -s $SOLR_HOME -p $SOLR_PORT $DASHZ $DASHM $DASHA\n\n"
+  echo -e "solr start -cloud -s example/cloud/node1/solr -p $SOLR_PORT $DASHZ $DASHM $DASHA\n\n"
     
   # can't launch this node in the foreground else we can't run anymore commands
   launch_solr "false" "$ADDITIONAL_CMD_OPTS"
@@ -1270,7 +1301,7 @@ else
     ndx=$[$s+1]
     next_port=${CLOUD_PORTS[$s]}
     echo -e "\n\nStarting node$ndx on port $next_port using command:\n"
-    echo -e "solr start -cloud -s $SOLR_TIP/example/cloud/node$ndx/solr -p $next_port -z $zk_host $DASHM $DASHA \n\n"
+    echo -e "solr start -cloud -s example/cloud/node$ndx/solr -p $next_port -z $zk_host $DASHM $DASHA \n\n"
     # call this script again with correct args for next node    
     $SOLR_TIP/bin/solr start -cloud -s $SOLR_TIP/example/cloud/node$ndx/solr -p $next_port -z $zk_host $DASHM $DASHA
   done
@@ -1329,7 +1360,7 @@ else
         CLOUD_CONFIG=data_driven_schema_configs
       fi
 
-      # validate the configset arg
+      # validate the confdir arg
       if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CLOUD_CONFIG" && ! -d "$CLOUD_CONFIG" ]]; then
         echo -e "\nOops! Specified configuration $CLOUD_CONFIG not found!"
         read -e -p "Choose one of: basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
@@ -1342,7 +1373,9 @@ else
   fi
    
   run_tool create_collection -name $CLOUD_COLLECTION -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
-    -config $CLOUD_CONFIG -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+    -confname $CLOUD_COLLECTION -confdir $CLOUD_CONFIG \
+    -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+
   echo -e "\n\nSolrCloud example running, please visit http://localhost:$SOLR_PORT/solr \n\n"
 fi
 

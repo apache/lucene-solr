@@ -76,6 +76,11 @@ IF "%1"=="healthcheck" (
   SHIFT
   goto parse_healthcheck_args
 )
+IF "%1"=="create" (
+  set SCRIPT_CMD=create
+  SHIFT
+  goto parse_create_args
+)
 IF "%1"=="create_core" (
   set SCRIPT_CMD=create_core
   SHIFT
@@ -98,6 +103,7 @@ IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto healthcheck_usage
+IF "%SCRIPT_CMD%"=="create" goto create_usage
 IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
 IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
 goto done
@@ -105,7 +111,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create_core, create_collection
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -188,45 +194,80 @@ goto done
 @echo.
 goto done
 
+:create_usage
+echo.
+echo Usage: solr create [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port]
+echo.
+echo   Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
+echo   mode (collection). In other words, this action detects which mode Solr is running in, and then takes
+echo   the appropriate action (either create_core or create_collection). For detailed usage instructions, do:
+echo.
+echo     bin\solr create_core -help
+echo.
+echo        or
+echo.
+echo     bin\solr create_collection -help
+echo.
+goto done
+
 :create_core_usage
 echo.
-echo Usage: solr create_core [-n name] [-c configset]
+echo Usage: solr create_core [-c name] [-d confdir] [-p port]
 echo.
-echo   -n name       Name of core to create
+echo   -c name     Name of core to create
 echo.
-echo   -c configset  Name of configuration directory to use, valid options are:
+echo   -d confdir  Configuration directory to copy when creating the new core, built-in options are:
+echo.
 echo       basic_configs: Minimal Solr configuration
 echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
+echo.
 echo       If not specified, default is: data_driven_schema_configs
 echo.
-echo   -p port       Port of a local Solr instance where you want to create the new core
-echo                  If not specified, the script will search the local system for a running
-echo                  Solr instance and will use the port of the first server it finds.
+echo       Alternatively, you can pass the path to your own configuration directory instead of using
+echo       one of the built-in configurations, such as: bin\solr create_core -c mycore -d c:/tmp/myconfig
+echo.
+echo   -p port     Port of a local Solr instance where you want to create the new core
+echo                 If not specified, the script will search the local system for a running
+echo                 Solr instance and will use the port of the first server it finds.
 echo.
 goto done
 
 :create_collection_usage
 echo.
-echo Usage: solr create_collection [-n name] [-c configset] [-shards #] [-replicationFactor #]
+echo Usage: solr create_collection [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port]
 echo.
-echo   -n name               Name of collection to create
+echo   -c name               Name of collection to create
 echo.
-echo   -c configset          Name of configuration directory to use, valid options are:
+echo   -d confdir            Configuration directory to copy when creating the new collection, built-in options are:
+echo.
 echo       basic_configs: Minimal Solr configuration
 echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
+echo.
 echo       If not specified, default is: data_driven_schema_configs
+echo.
+echo       Alternatively, you can pass the path to your own configuration directory instead of using
+echo       one of the built-in configurations, such as: bin\solr create_collection -c mycoll -d c:/tmp/myconfig
+echo.
+echo       By default the script will upload the specified confdir directory into ZooKeeper using the same
+echo         name as the collection (-c) option. Alternatively, if you want to reuse an existing directory
+echo         or create a confdir in ZooKeeper that can be shared by multiple collections, use the -n option
+echo.
+echo   -n configName         Name the configuration directory in ZooKeeper; by default, the configuration
+echo                             will be uploaded to ZooKeeper using the collection name (-c), but if you want
+echo                             to use an existing directory or override the name of the configuration in
+echo                              ZooKeeper, then use the -c option.
 echo.
 echo   -shards #             Number of shards to split the collection into
 echo.
 echo   -replicationFactor #  Number of copies of each document in the collection
 echo.
-echo   -p port       Port of a local Solr instance where you want to create the new collection
-echo                  If not specified, the script will search the local system for a running
-echo                  Solr instance and will use the port of the first server it finds.
+echo   -p port               Port of a local Solr instance where you want to create the new collection
+echo                           If not specified, the script will search the local system for a running
+echo                           Solr instance and will use the port of the first server it finds.
 echo.
 goto done
 
@@ -758,12 +799,12 @@ IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
       org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE_NAME! -shards 1 -replicationFactor 1 ^
-      -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
+      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
   ) ELSE (
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
       org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl http://localhost:%SOLR_PORT%/solr ^
-      -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
+      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
   )
 )
 
@@ -929,7 +970,7 @@ goto create_collection
 "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI create_collection -name !CLOUD_COLLECTION! -shards !CLOUD_NUM_SHARDS! -replicationFactor !CLOUD_REPFACT! ^
-  -config !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
+  -confdir !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
 
 echo.
 echo SolrCloud example is running, please visit http://localhost:%NODE1_PORT%/solr"
@@ -996,26 +1037,38 @@ goto done
 
 :parse_create_args
 IF [%1]==[] goto run_create
-IF "%1"=="-c" goto set_create_config
-IF "%1"=="-configset" goto set_create_config
-IF "%1"=="-n" goto set_create_name
-IF "%1"=="-name" goto set_create_name
+IF "%1"=="-c" goto set_create_name
+IF "%1"=="-core" goto set_create_name
+IF "%1"=="-collection" goto set_create_name
+IF "%1"=="-d" goto set_create_confdir
+IF "%1"=="-confdir" goto set_create_confdir
+IF "%1"=="-n" goto set_create_confname
+IF "%1"=="-confname" goto set_create_confname
+IF "%1"=="-s" goto set_create_shards
 IF "%1"=="-shards" goto set_create_shards
+IF "%1"=="-rf" goto set_create_rf
 IF "%1"=="-replicationFactor" goto set_create_rf
 IF "%1"=="-p" goto set_create_port
+IF "%1"=="-port" goto set_create_port
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 goto run_create
 
-:set_create_configset
-set CREATE_CONFIGSET=%~2
+:set_create_name
+set CREATE_NAME=%~2
 SHIFT
 SHIFT
 goto parse_create_args
 
-:set_create_name
-set CREATE_NAME=%~2
+:set_create_confdir
+set CREATE_CONFDIR=%~2
+SHIFT
+SHIFT
+goto parse_create_args
+
+:set_create_confname
+set CREATE_CONFNAME=%~2
 SHIFT
 SHIFT
 goto parse_create_args
@@ -1040,12 +1093,13 @@ goto parse_create_args
 
 :run_create
 IF "!CREATE_NAME!"=="" (
-  set "SCRIPT_ERROR=Name (-n) is a required parameter for %SCRIPT_CMD%"
+  set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
   goto invalid_cmd_line
 )
-IF "!CREATE_CONFIGSET!"=="" set CREATE_CONFIGSET=data_driven_schema_configs
+IF "!CREATE_CONFDIR!"=="" set CREATE_CONFDIR=data_driven_schema_configs
 IF "!CREATE_NUM_SHARDS!"=="" set CREATE_NUM_SHARDS=1
 IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
+IF "!CREATE_CONFNAME!"=="" set CREATE_CONFNAME=!CREATE_NAME!
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
@@ -1064,19 +1118,18 @@ if "!CREATE_PORT!"=="" (
   goto err
 )
 
-@echo Found Solr node running on port !CREATE_PORT!
-
 if "%SCRIPT_CMD%"=="create_core" (
   "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME!  -solrUrl http://localhost:!CREATE_PORT!/solr ^
-    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
+    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME! -solrUrl http://localhost:!CREATE_PORT!/solr ^
+    -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
 ) else (
   "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI create_collection -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
-    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI create -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
+  -confname !CREATE_CONFNAME! -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
 )
+
 goto done
 
 :invalid_cmd_line
@@ -1097,6 +1150,8 @@ IF "%FIRST_ARG%"=="start" (
   goto stop_usage
 ) ELSE IF "%FIRST_ARG%"=="healthcheck" (
   goto healthcheck_usage
+) ELSE IF "%FIRST_ARG%"=="create" (
+  goto create_usage
 ) ELSE IF "%FIRST_ARG%"=="create_core" (
   goto create_core_usage
 ) ELSE IF "%FIRST_ARG%"=="create_collection" (
