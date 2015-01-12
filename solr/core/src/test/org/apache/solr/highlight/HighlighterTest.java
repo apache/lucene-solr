@@ -17,17 +17,27 @@
 
 package org.apache.solr.highlight;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.SpanPayloadCheckQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -1052,5 +1062,38 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
     );
 
+  }
+
+  @Test
+  public void payloadFilteringSpanQuery() throws IOException {
+    clearIndex();
+
+    String FIELD_NAME = "payloadDelimited";
+    assertU(adoc("id", "0", FIELD_NAME, "word|7 word|2"));
+    assertU(commit());
+
+    //We search at a lower level than typical Solr tests because there's no QParser for payloads
+
+    //Create query matching this payload
+    Query query = new SpanPayloadCheckQuery(new SpanTermQuery(new Term(FIELD_NAME, "word")),
+        Collections.singleton(new byte[]{0,0,0,7}));//bytes for integer 7
+
+    //invoke highlight component... the hard way
+    final SearchComponent hlComp = h.getCore().getSearchComponent("highlight");
+    SolrQueryRequest req = req("hl", "true", "hl.fl", FIELD_NAME, HighlightParams.USE_PHRASE_HIGHLIGHTER, "true");
+    try {
+      SolrQueryResponse resp = new SolrQueryResponse();
+      ResponseBuilder rb = new ResponseBuilder(req, resp, Collections.singletonList(hlComp));
+      rb.setHighlightQuery(query);
+      rb.setResults(req.getSearcher().getDocListAndSet(query, (DocSet) null, null, 0, 1));
+      //highlight:
+      hlComp.prepare(rb);
+      hlComp.process(rb);
+      //inspect response
+      final String[] snippets = (String[]) resp.getValues().findRecursive("highlighting", "0", FIELD_NAME);
+      assertEquals("<em>word|7</em> word|2", snippets[0]);
+    } finally {
+      req.close();
+    }
   }
 }

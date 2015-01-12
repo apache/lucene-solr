@@ -214,7 +214,7 @@ New Features
 * SOLR-6605: Make ShardHandlerFactory maxConnections configurable.
   (Christine Poerschke via shalin)
 
-* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
+* SOLR-6585: RequestHandlers can optionally handle sub paths as well (Noble Paul)
 
 * SOLR-6617: /update/json/docs path will use fully qualified node names by default
              (Noble Paul)
@@ -288,6 +288,9 @@ New Features
 
 * SOLR-2035: Add a VelocityResponseWriter $resource tool for locale-specific string lookups.
   (Erik Hatcher)
+
+* SOLR-6916: Toggle payload support for the default highlighter via hl.payloads.  It's auto
+  enabled when the index has payloads. (David Smiley)
   
 Bug Fixes
 ----------------------

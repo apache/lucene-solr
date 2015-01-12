@@ -240,16 +240,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param request The SolrQueryRequest
    */
   private QueryScorer getSpanQueryScorer(Query query, String fieldName, TokenStream tokenStream, SolrQueryRequest request) {
-    boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
-    boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM, true);
-    QueryScorer scorer;
-    if (reqFieldMatch) {
-      scorer = new QueryScorer(query, fieldName);
-    }
-    else {
-      scorer = new QueryScorer(query, null);
-    }
-    scorer.setExpandMultiTermQuery(highlightMultiTerm);
+    QueryScorer scorer = new QueryScorer(query,
+        request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false) ? fieldName : null);
+    scorer.setExpandMultiTermQuery(request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM, true));
+    scorer.setUsePayloads(request.getParams().getFieldBool(fieldName, HighlightParams.PAYLOADS,
+        request.getSearcher().getLeafReader().getFieldInfos().fieldInfo(fieldName).hasPayloads()));
     return scorer;
   }
 
@@ -608,7 +603,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       if (summaries.length > 0) 
       docSummaries.add(fieldName, summaries);
     }
-    // no summeries made, copy text from alternate field
+    // no summaries made, copy text from alternate field
     if (summaries == null || summaries.length == 0) {
       alternateField( docSummaries, params, doc, fieldName );
     }
