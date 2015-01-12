@@ -303,7 +303,7 @@ public class SimplePostTool {
     currentDepth = 0;
     // Skip posting files if special param "-" given  
     if (!args[0].equals("-")) {
-      info("Posting files to base url " + solrUrl + (!auto?" using content-type "+(type==null?DEFAULT_CONTENT_TYPE:type):"")+"..");
+      info("Posting files to [base] url " + solrUrl + (!auto?" using content-type "+(type==null?DEFAULT_CONTENT_TYPE:type):"")+"...");
       if(auto)
         info("Entering auto mode. File endings considered are "+fileTypes);
       if(recursive > 0)
@@ -314,7 +314,7 @@ public class SimplePostTool {
   }
 
   private void doArgsMode() {
-    info("POSTing args to " + solrUrl + "..");
+    info("POSTing args to " + solrUrl + "...");
     for (String a : args) {
       postData(stringToStream(a), null, out, type, solrUrl);
     }
@@ -355,7 +355,7 @@ public class SimplePostTool {
   }
 
   private void doStdinMode() {
-    info("POSTing stdin to " + solrUrl + "..");
+    info("POSTing stdin to " + solrUrl + "...");
     postData(System.in, null, out, type, solrUrl);    
   }
 
@@ -380,7 +380,7 @@ public class SimplePostTool {
     (USAGE_STRING_SHORT+"\n\n" +
      "Supported System Properties and their defaults:\n"+
      "  -Dc=<core/collection>\n"+
-     "  -Durl=<solr-update-url> (overrides -Dc option if specified)\n"+
+     "  -Durl=<base Solr update URL> (overrides -Dc option if specified)\n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
@@ -729,7 +729,7 @@ public class SimplePostTool {
    * Does a simple commit operation 
    */
   public void commit() {
-    info("COMMITting Solr index changes to " + solrUrl + "..");
+    info("COMMITting Solr index changes to " + solrUrl + "...");
     doGet(appendParam(solrUrl.toString(), "commit=true"));
   }
 
@@ -737,7 +737,7 @@ public class SimplePostTool {
    * Does a simple optimize operation 
    */
   public void optimize() {
-    info("Performing an OPTIMIZE to " + solrUrl + "..");
+    info("Performing an OPTIMIZE to " + solrUrl + "...");
     doGet(appendParam(solrUrl.toString(), "optimize=true"));
   }
 
@@ -769,6 +769,7 @@ public class SimplePostTool {
     InputStream is = null;
     try {
       URL url = solrUrl;
+      String suffix = "";
       if(auto) {
         if(type == null) {
           type = guessType(file);
@@ -778,7 +779,8 @@ public class SimplePostTool {
             // Default handler
           } else {
             // SolrCell
-            String urlStr = appendUrlPath(solrUrl, "/extract").toString();
+            suffix = "/extract";
+            String urlStr = appendUrlPath(solrUrl, suffix).toString();
             if(urlStr.indexOf("resource.name")==-1)
               urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
             if(urlStr.indexOf("literal.id")==-1)
@@ -792,7 +794,7 @@ public class SimplePostTool {
       } else {
         if(type == null) type = DEFAULT_CONTENT_TYPE;
       }
-      info("POSTing file " + file.getName() + (auto?" ("+type+")":""));
+      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix);
       is = new FileInputStream(file);
       postData(is, (int)file.length(), output, type, url);
     } catch (IOException e) {
