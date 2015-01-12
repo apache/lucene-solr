@@ -17,7 +17,7 @@
 -->
 
 <!-- 
-  After posting this to SOLR with post.sh, searching for "êâîôû" from 
+  After posting this to SOLR with post.jar, searching for "êâîôû" from
   the solr/admin/ search page must return this document.
  -->
 
