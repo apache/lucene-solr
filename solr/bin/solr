@@ -1049,7 +1049,7 @@ if [ "$SOLR_MODE" == "solrcloud" ]; then
     
 fi
 
-# These are useful for attaching remove profilers like VisualVM/JConsole
+# These are useful for attaching remote profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
 
   if [ -z "$RMI_PORT" ]; then
