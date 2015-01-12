@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -125,55 +124,6 @@ public class TestBooleanScorer extends LuceneTestCase {
     assertEquals("hit should have been docID=3000", 3000, hits.get(0).intValue());
     ir.close();
     directory.close();
-  }
-
-  public void testMoreThan32ProhibitedClauses() throws Exception {
-    final Directory d = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    doc.add(new TextField("field", "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33", Field.Store.NO));
-    w.addDocument(doc);
-    doc = new Document();
-    doc.add(new TextField("field", "33", Field.Store.NO));
-    w.addDocument(doc);
-    final IndexReader r = w.getReader();
-    w.close();
-    // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
-    final IndexSearcher s = newSearcher(r, true, false);
-
-    final BooleanQuery q = new BooleanQuery();
-    for(int term=0;term<33;term++) {
-      q.add(new BooleanClause(new TermQuery(new Term("field", ""+term)),
-                              BooleanClause.Occur.MUST_NOT));
-    }
-    q.add(new BooleanClause(new TermQuery(new Term("field", "33")),
-                            BooleanClause.Occur.SHOULD));
-                            
-    final int[] count = new int[1];
-    s.search(q, new SimpleCollector() {
-    
-      @Override
-      public void setScorer(Scorer scorer) {
-        // Make sure we got BooleanScorer:
-        final Class<?> clazz = scorer.getClass();
-        assertEquals("Scorer is implemented by wrong class", FakeScorer.class.getName(), clazz.getName());
-      }
-      
-      @Override
-      public void collect(int doc) {
-        count[0]++;
-      }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
-      }
-    });
-
-    assertEquals(1, count[0]);
-    
-    r.close();
-    d.close();
   }
 
   /** Throws UOE if Weight.scorer is called */
