@@ -113,7 +113,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   @Test
   public void testTypeSupported() {
     assertTrue(t_web.typeSupported("application/pdf"));
-    assertTrue(t_web.typeSupported("text/xml"));
+    assertTrue(t_web.typeSupported("application/xml"));
     assertFalse(t_web.typeSupported("text/foo"));
 
     t_web.fileTypes = "doc,xls,ppt";
