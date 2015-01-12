@@ -681,6 +681,9 @@ Other Changes
   or collection depending on whether Solr is running in standalone or cloud mode
   (Timothy Potter)
 
+* SOLR-6496: LBHttpSolrClient stops server retries after the timeAllowed threshold is met.
+  (Steve Davids, Anshum Gupta)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
