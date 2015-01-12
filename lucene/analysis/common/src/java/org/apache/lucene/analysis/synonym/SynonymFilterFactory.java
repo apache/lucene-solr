@@ -102,7 +102,6 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     }
 
     if (tokenizerFactory != null) {
-      assureMatchVersion();
       tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
       for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext();) {
         String key = itr.next();

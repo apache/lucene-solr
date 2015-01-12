@@ -74,7 +74,6 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   /** Creates a new HyphenationCompoundWordTokenFilterFactory */
   public HyphenationCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
-    assureMatchVersion();
     dictFile = get(args, "dictionary");
     encoding = get(args, "encoding");
     hypFile = require(args, "hyphenator");

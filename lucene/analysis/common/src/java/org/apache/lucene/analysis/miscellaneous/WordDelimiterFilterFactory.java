@@ -63,7 +63,6 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   /** Creates a new WordDelimiterFilterFactory */
   public WordDelimiterFilterFactory(Map<String, String> args) {
     super(args);
-    assureMatchVersion();
     int flags = 0;
     if (getInt(args, "generateWordParts", 1) != 0) {
       flags |= GENERATE_WORD_PARTS;

@@ -55,7 +55,6 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (dictionaryFiles != null) {
-      assureMatchVersion();
       List<String> files = splitFileNames(dictionaryFiles);
       if (files.size() > 0) {
         StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(ignoreCase);
