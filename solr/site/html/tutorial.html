@@ -131,16 +131,14 @@ These commands can be in a
 <p>
 The <span class="codefrag">exampledocs</span> directory contains sample files
 showing of the types of commands Solr accepts, as well as a java utility 
-for posting them from the command line (a <span class="codefrag">post.sh</span>
-shell script is also available, but for this tutorial we'll use the 
-cross-platform Java client. Run <span class="codefrag">java -jar post.jar -h</span> so see it's various options).  
+for posting them from the command line.  Run <span class="codefrag">java -jar post.jar -h</span> so see it's various options.
 </p>
 <p> To try this, open a new terminal window, enter the exampledocs directory, 
-and run "<span class="codefrag">java -jar post.jar</span>" on some of the XML 
+and run "<span class="codefrag">java -Dc=collection_name -jar post.jar</span>" on some of the XML
 files in that directory.
 </p>
 <pre class="code">
-user:~/solr/example/exampledocs$ <strong>java -jar post.jar solr.xml monitor.xml</strong>
+user:~/solr/example/exampledocs$ <strong>java -Dc=techproducts -jar post.jar solr.xml monitor.xml</strong>
 SimplePostTool: version 1.4
 SimplePostTool: POSTing files to http://localhost:8983/solr/update..
 SimplePostTool: POSTing file solr.xml
@@ -160,7 +158,7 @@ You can index all of the sample data, using the following command
 (assuming your command line shell supports the *.xml notation):
 </p>
 <pre class="code">
-user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
+user:~/solr/example/exampledocs$ <strong>java -Dc=techproducts -jar post.jar *.xml</strong>
 SimplePostTool: version 1.4
 SimplePostTool: POSTing files to http://localhost:8983/solr/update..
 SimplePostTool: POSTing file gb18030-example.xml

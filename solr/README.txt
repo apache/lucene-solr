@@ -83,12 +83,11 @@ For instance, if you want to run the Solr Data Import Handler example, do:
 Indexing Documents
 ---------------
 
-To add documents to the index, use the post.jar (or post.sh script) in
+To add documents to the index, use the post.jar in
 the example/exampledocs subdirectory (while Solr is running), for example:
 
      cd example/exampledocs
      java -Dc=<collection_name> -jar post.jar *.xml
-Or:  sh post.sh *.xml
 
 For more information about Solr examples please read...
 
