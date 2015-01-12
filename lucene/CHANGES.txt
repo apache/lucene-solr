@@ -199,6 +199,9 @@ Optimizations
 * LUCENE-6145: Make EarlyTerminatingSortingCollector able to early-terminate
   when the sort order is a prefix of the index-time order. (Adrien Grand)
 
+* LUCENE-6178: Score boolean queries containing MUST_NOT clauses with BooleanScorer2,
+  to use skip list data and avoid unnecessary scoring. (Adrien Grand, Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

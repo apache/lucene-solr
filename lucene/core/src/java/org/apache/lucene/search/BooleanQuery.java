@@ -330,7 +330,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // BooleanScorer2...
           return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
         } else if (c.isProhibited()) {
-          prohibited.add(subScorer);
+          // TODO: there are some cases where BooleanScorer could do this faster
+          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
         } else {
           optional.add(subScorer);
         }
