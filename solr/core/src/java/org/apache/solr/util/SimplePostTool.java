@@ -130,7 +130,7 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_WEB);
     
     mimeMap = new HashMap<>();
-    mimeMap.put("xml", "text/xml");
+    mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
     mimeMap.put("pdf", "application/pdf");
@@ -775,7 +775,7 @@ public class SimplePostTool {
           type = guessType(file);
         }
         if(type != null) {
-          if(type.equals("text/xml") || type.equals("text/csv") || type.equals("application/json")) {
+          if(type.equals("application/xml") || type.equals("text/csv") || type.equals("application/json")) {
             // Default handler
           } else {
             // SolrCell
