@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +86,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private volatile boolean isClosed;
   private ZkStateReader zkStateReader;
   private final Cache<String,Long> baseUrlForBadNodes;
+  private Set<String> liveNodes = Collections.EMPTY_SET;
 
   private final int workLoopDelay;
   private final int waitAfterExpiration;
@@ -151,11 +153,13 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       return;
     }
     if (clusterState != null) {
-      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0) {
+      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0 &&
+          liveNodes.equals(clusterState.getLiveNodes())) {
         // nothing has changed, no work to do
         return;
       }
-      
+
+      liveNodes = clusterState.getLiveNodes();
       lastClusterStateVersion = clusterState.getZkClusterStateVersion();
       Set<String> collections = clusterState.getCollections();
       for (final String collection : collections) {
