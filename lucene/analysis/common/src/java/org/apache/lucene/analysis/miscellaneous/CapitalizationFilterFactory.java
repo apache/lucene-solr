@@ -78,7 +78,6 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
   /** Creates a new CapitalizationFilterFactory */
   public CapitalizationFilterFactory(Map<String, String> args) {
     super(args);
-    assureMatchVersion();
     boolean ignoreCase = getBoolean(args, KEEP_IGNORE_CASE, false);
     Set<String> k = getSet(args, KEEP);
     if (k != null) {

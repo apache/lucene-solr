@@ -48,7 +48,6 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
   /** Creates a new DictionaryCompoundWordTokenFilterFactory */
   public DictionaryCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
-    assureMatchVersion();
     dictFile = require(args, "dictionary");
     minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
     minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);

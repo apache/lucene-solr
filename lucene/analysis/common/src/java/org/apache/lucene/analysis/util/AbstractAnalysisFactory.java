@@ -70,7 +70,7 @@ public abstract class AbstractAnalysisFactory {
     originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     if (version == null) {
-      luceneMatchVersion = null;
+      luceneMatchVersion = Version.LATEST;
     } else {
       try {
         luceneMatchVersion = Version.parseLeniently(version);
@@ -83,16 +83,6 @@ public abstract class AbstractAnalysisFactory {
   
   public final Map<String,String> getOriginalArgs() {
     return originalArgs;
-  }
-
-   /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create()}
-   * or {@link org.apache.lucene.analysis.util.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)} methods,
-   * to inform user, that for this factory a {@link #luceneMatchVersion} is required */
-  protected final void assureMatchVersion() {
-    if (luceneMatchVersion == null) {
-      throw new IllegalArgumentException("Configuration Error: Factory '" + this.getClass().getName() +
-        "' needs a 'luceneMatchVersion' parameter");
-    }
   }
 
   public final Version getLuceneMatchVersion() {
@@ -241,7 +231,6 @@ public abstract class AbstractAnalysisFactory {
    */
   protected final CharArraySet getWordSet(ResourceLoader loader,
       String wordFiles, boolean ignoreCase) throws IOException {
-    assureMatchVersion();
     List<String> files = splitFileNames(wordFiles);
     CharArraySet words = null;
     if (files.size() > 0) {
@@ -267,7 +256,6 @@ public abstract class AbstractAnalysisFactory {
    * except the input is in snowball format. */
   protected final CharArraySet getSnowballWordSet(ResourceLoader loader,
       String wordFiles, boolean ignoreCase) throws IOException {
-    assureMatchVersion();
     List<String> files = splitFileNames(wordFiles);
     CharArraySet words = null;
     if (files.size() > 0) {
