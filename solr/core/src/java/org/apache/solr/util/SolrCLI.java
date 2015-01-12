@@ -127,7 +127,7 @@ public class SolrCLI {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
-          System.err.println("\nERROR:"+excMsg+"\n");
+          System.err.println("\nERROR: "+excMsg+"\n");
           exitStatus = 1;
         } else {
           throw exc;
@@ -215,6 +215,8 @@ public class SolrCLI {
       return new CreateCollectionTool();
     else if ("create_core".equals(toolType))
       return new CreateCoreTool();
+    else if ("create".equals(toolType))
+      return new CreateTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -235,6 +237,7 @@ public class SolrCLI {
     formatter.printHelp("api", getToolOptions(new ApiTool()));
     formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
     formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
+    formatter.printHelp("create", getToolOptions(new CreateTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -993,6 +996,64 @@ public class SolrCLI {
     }
   } // end HealthcheckTool
 
+  private static final Option[] CREATE_COLLECTION_OPTIONS = new Option[] {
+    OptionBuilder
+        .withArgName("HOST")
+        .hasArg()
+        .isRequired(false)
+        .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+        .create("zkHost"),
+        OptionBuilder
+            .withArgName("HOST")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
+            .create("solrUrl"),
+        OptionBuilder
+            .withArgName("NAME")
+            .hasArg()
+            .isRequired(true)
+            .withDescription("Name of collection to create.")
+            .create("name"),
+        OptionBuilder
+            .withArgName("#")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Number of shards; default is 1")
+            .create("shards"),
+        OptionBuilder
+            .withArgName("#")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Number of copies of each document across the collection (replicas per shard); default is 1")
+            .create("replicationFactor"),
+        OptionBuilder
+            .withArgName("#")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
+            .create("maxShardsPerNode"),
+        OptionBuilder
+            .withArgName("NAME")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Configuration directory to copy when creating the new collection; default is "+DEFAULT_CONFIG_SET)
+            .create("confdir"),
+        OptionBuilder
+            .withArgName("NAME")
+            .hasArg()
+            .isRequired(false)
+            .withDescription("Configuration name; default is the collection name")
+            .create("confname"),
+        OptionBuilder
+            .withArgName("DIR")
+            .hasArg()
+            .isRequired(true)
+            .withDescription("Path to configsets directory on the local system.")
+            .create("configsetsDir")
+  };
+
+
   /**
    * Supports create_collection command in the bin/solr script.
    */
@@ -1006,56 +1067,7 @@ public class SolrCLI {
     @SuppressWarnings("static-access")
     @Override
     public Option[] getOptions() {
-      return new Option[] {
-          OptionBuilder
-              .withArgName("HOST")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .withArgName("HOST")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
-              .create("solrUrl"),
-          OptionBuilder
-              .withArgName("NAME")
-              .hasArg()
-              .isRequired(true)
-              .withDescription("Name of collection to create.")
-              .create("name"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Number of shards; default is 1")
-              .create("shards"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Number of copies of each document across the collection (replicas per shard); default is 1")
-              .create("replicationFactor"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
-              .create("maxShardsPerNode"),
-          OptionBuilder
-              .withArgName("NAME")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Name of the configuration for this collection; default is "+DEFAULT_CONFIG_SET)
-              .create("config"),
-          OptionBuilder
-              .withArgName("DIR")
-              .hasArg()
-              .isRequired(true)
-              .withDescription("Path to configsets directory on the local system.")
-              .create("configsetsDir")
-      };
+      return CREATE_COLLECTION_OPTIONS;
     }
 
     public int runTool(CommandLine cli) throws Exception {
@@ -1137,6 +1149,8 @@ public class SolrCLI {
             "there is at least 1 live node in the cluster.");
       String firstLiveNode = liveNodes.iterator().next();
 
+      String collectionName = cli.getOptionValue("name");
+
       // build a URL to create the collection
       int numShards = optionAsInt(cli, "shards", 1);
       int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
@@ -1150,48 +1164,51 @@ public class SolrCLI {
         maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
       }
 
-      String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
-      String configSetNameInZk = configSet;
-      File configSetDir = null;
-      // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
-      File possibleConfigDir = new File(configSet);
-      if (possibleConfigDir.isDirectory()) {
-        configSetDir = possibleConfigDir;
-        configSetNameInZk = possibleConfigDir.getName();
+      String confname = cli.getOptionValue("confname", collectionName);
+      boolean configExistsInZk =
+          cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/"+confname, true);
+
+      if (configExistsInZk) {
+        System.out.println("Re-using existing configuration directory "+confname);
       } else {
-        File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
-        if (!configsetsDir.isDirectory())
-          throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
-
-        // upload the configset if it exists
-        configSetDir = new File(configsetsDir, configSet);
-        if (!configSetDir.isDirectory()) {
-          throw new FileNotFoundException("Specified config " + configSet +
-              " not found in " + configsetsDir.getAbsolutePath());
-        }
-      }
-
-      File confDir = new File(configSetDir, "conf");
-      if (!confDir.isDirectory()) {
-        // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
-        if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
-          confDir = configSetDir;
+        String configSet = cli.getOptionValue("confdir", DEFAULT_CONFIG_SET);
+        File configSetDir = null;
+        // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
+        File possibleConfigDir = new File(configSet);
+        if (possibleConfigDir.isDirectory()) {
+          configSetDir = possibleConfigDir;
         } else {
-          System.err.println("Specified configuration directory "+configSetDir.getAbsolutePath()+
-              " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
-          return 1;
-        }
-      }
+          File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
+          if (!configsetsDir.isDirectory())
+            throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
 
-      // test to see if that config exists in ZK
-      if (!cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/"+configSetNameInZk, true)) {
+          // upload the configset if it exists
+          configSetDir = new File(configsetsDir, configSet);
+          if (!configSetDir.isDirectory()) {
+            throw new FileNotFoundException("Specified config " + configSet +
+                " not found in " + configsetsDir.getAbsolutePath());
+          }
+        }
+
+        File confDir = new File(configSetDir, "conf");
+        if (!confDir.isDirectory()) {
+          // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
+          if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
+            confDir = configSetDir;
+          } else {
+            System.err.println("Specified configuration directory "+configSetDir.getAbsolutePath()+
+                " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
+            return 1;
+          }
+        }
+
+        // test to see if that config exists in ZK
         System.out.println("Uploading "+confDir.getAbsolutePath()+
-            " for config "+configSetNameInZk+" to ZooKeeper at "+cloudSolrClient.getZkHost());
-        ZkController.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confDir, configSetNameInZk);
+            " for config "+confname+" to ZooKeeper at "+cloudSolrClient.getZkHost());
+        ZkController.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confDir, confname);
       }
 
       String baseUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
-      String collectionName = cli.getOptionValue("name");
 
       // since creating a collection is a heavy-weight operation, check for existence first
       String collectionListUrl = baseUrl+"/admin/collections?action=list";
@@ -1211,7 +1228,7 @@ public class SolrCLI {
               numShards,
               replicationFactor,
               maxShardsPerNode,
-              configSetNameInZk);
+              confname);
 
       System.out.println("\nCreating new collection '"+collectionName+"' using command:\n"+createCollectionUrl+"\n");
 
@@ -1282,8 +1299,8 @@ public class SolrCLI {
               .withArgName("CONFIG")
               .hasArg()
               .isRequired(false)
-              .withDescription("Name of the configuration for this core; default is "+DEFAULT_CONFIG_SET)
-              .create("config"),
+              .withDescription("Configuration directory to copy when creating the new core; default is "+DEFAULT_CONFIG_SET)
+              .create("confdir"),
           OptionBuilder
               .withArgName("DIR")
               .hasArg()
@@ -1304,7 +1321,7 @@ public class SolrCLI {
       if (!configsetsDir.isDirectory())
         throw new FileNotFoundException(configsetsDir.getAbsolutePath() + " not found!");
 
-      String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
+      String configSet = cli.getOptionValue("confdir", DEFAULT_CONFIG_SET);
       File configSetDir = new File(configsetsDir, configSet);
       if (!configSetDir.isDirectory()) {
         // we allow them to pass a directory instead of a configset name
@@ -1312,7 +1329,7 @@ public class SolrCLI {
         if (possibleConfigDir.isDirectory()) {
           configSetDir = possibleConfigDir;
         } else {
-          throw new FileNotFoundException("Specified config " + configSet +
+          throw new FileNotFoundException("Specified config directory " + configSet +
               " not found in " + configsetsDir.getAbsolutePath());
         }
       }
@@ -1415,4 +1432,47 @@ public class SolrCLI {
       return exists;
     }
   } // end CreateCoreTool class
+
+  public static class CreateTool implements Tool {
+
+    @Override
+    public String getName() {
+      return "create";
+    }
+
+    @SuppressWarnings("static-access")
+    @Override
+    public Option[] getOptions() {
+      return CREATE_COLLECTION_OPTIONS;
+    }
+
+    @Override
+    public int runTool(CommandLine cli) throws Exception {
+
+      String solrUrl = cli.getOptionValue("solrUrl", "http://localhost:8983/solr");
+      if (!solrUrl.endsWith("/"))
+        solrUrl += "/";
+
+      String systemInfoUrl = solrUrl+"admin/info/system";
+      CloseableHttpClient httpClient = getHttpClient();
+
+      int result = -1;
+      Tool tool = null;
+      try {
+        Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
+        if ("solrcloud".equals(systemInfo.get("mode"))) {
+          tool = new CreateCollectionTool();
+        } else {
+          tool = new CreateCoreTool();
+        }
+        result = tool.runTool(cli);
+      } finally {
+        closeHttpClient(httpClient);
+      }
+
+      return result;
+    }
+
+  } // end CreateTool class
+
 }
