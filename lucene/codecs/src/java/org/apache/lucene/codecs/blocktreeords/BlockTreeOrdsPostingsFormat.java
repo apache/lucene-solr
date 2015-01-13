@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -56,9 +57,8 @@ public class BlockTreeOrdsPostingsFormat extends PostingsFormat {
   public BlockTreeOrdsPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("BlockTreeOrds");
     this.minTermBlockSize = minTermBlockSize;
-    assert minTermBlockSize > 1;
     this.maxTermBlockSize = maxTermBlockSize;
-    assert minTermBlockSize <= maxTermBlockSize;
+    BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
   }
 
   @Override

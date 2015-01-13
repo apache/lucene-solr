@@ -77,6 +77,7 @@ public class IDVersionPostingsFormat extends PostingsFormat {
     super("IDVersion");
     this.minTermsInBlock = minTermsInBlock;
     this.maxTermsInBlock = maxTermsInBlock;
+    BlockTreeTermsWriter.validateSettings(minTermsInBlock, maxTermsInBlock);
   }
 
   @Override
