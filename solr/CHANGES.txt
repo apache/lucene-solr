@@ -435,6 +435,8 @@ Bug Fixes
 * SOLR-6923: AutoAddReplicas also consults live_nodes to see if a state change has happened.
   (Varun Thacker via Anshum Gupta)
 
+* SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
+
 Optimizations
 ----------------------
 

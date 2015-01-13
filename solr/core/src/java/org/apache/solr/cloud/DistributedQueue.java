@@ -122,10 +122,13 @@ public class DistributedQueue {
     for (String childName : childNames) {
       if (childName != null) {
         try {
-          ZkNodeProps message = ZkNodeProps.load(zookeeper.getData(dir + "/" + childName, null, null, true));
-          if (message.containsKey(OverseerCollectionProcessor.ASYNC)) {
-            LOG.info(">>>> {}", message.get(OverseerCollectionProcessor.ASYNC));
-            if(message.get(OverseerCollectionProcessor.ASYNC).equals(requestId)) return true;
+          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
+          if (data != null) {
+            ZkNodeProps message = ZkNodeProps.load(data);
+            if (message.containsKey(OverseerCollectionProcessor.ASYNC)) {
+              LOG.debug(">>>> {}", message.get(OverseerCollectionProcessor.ASYNC));
+              if(message.get(OverseerCollectionProcessor.ASYNC).equals(requestId)) return true;
+            }
           }
         } catch (KeeperException.NoNodeException e) {
           // Another client removed the node first, try next
