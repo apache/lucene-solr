@@ -79,7 +79,11 @@ grant {
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
+  
+  // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
+  permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
+  
   permission javax.security.auth.kerberos.ServicePermission "krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "accept";
