@@ -413,10 +413,9 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
   public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("Lucene50");
+    BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
-    assert minTermBlockSize > 1;
     this.maxTermBlockSize = maxTermBlockSize;
-    assert minTermBlockSize <= maxTermBlockSize;
   }
 
   @Override

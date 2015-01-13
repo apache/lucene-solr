@@ -255,16 +255,15 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
                               int maxItemsInBlock)
     throws IOException
   {
+    validateSettings(minItemsInBlock, maxItemsInBlock);
+
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
-    }
-    if (maxItemsInBlock <= 0) {
-      throw new IllegalArgumentException("maxItemsInBlock must be >= 1; got " + maxItemsInBlock);
     }
     if (minItemsInBlock > maxItemsInBlock) {
       throw new IllegalArgumentException("maxItemsInBlock must be >= minItemsInBlock; got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
     }
-    if (2*(minItemsInBlock-1) > maxItemsInBlock) {
+    if (maxItemsInBlock < 2*(minItemsInBlock-1)) {
       throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
     }
 
@@ -306,6 +305,20 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   /** Writes the index file trailer. */
   private void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
     indexOut.writeLong(dirStart);    
+  }
+
+  /** Throws {@code IllegalArgumentException} if any of these settings
+   *  is invalid. */
+  public static void validateSettings(int minItemsInBlock, int maxItemsInBlock) {
+    if (minItemsInBlock <= 1) {
+      throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
+    }
+    if (minItemsInBlock > maxItemsInBlock) {
+      throw new IllegalArgumentException("maxItemsInBlock must be >= minItemsInBlock; got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
+    }
+    if (2*(minItemsInBlock-1) > maxItemsInBlock) {
+      throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
+    }
   }
 
   @Override
