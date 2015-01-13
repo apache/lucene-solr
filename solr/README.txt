@@ -156,7 +156,7 @@ Instructions for Building Apache Solr from Source
    for building, testing, and packaging Solr.
   
    NOTE: 
-   To see Solr in action, you may want to use the "ant example" command to build
+   To see Solr in action, you may want to use the "ant server" command to build
    and package Solr into the server/webapps directory. See also server/README.txt.
 
 

@@ -699,6 +699,9 @@ Other Changes
 * SOLR-6943: HdfsDirectoryFactory should fall back to system props for most of it's config
   if it is not found in solrconfig.xml. (Mark Miller, Mike Drob)
 
+* SOLR-6926: "ant example" makes no sense anymore - should be "ant server" 
+  (Ramkumar Aiyengar, Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

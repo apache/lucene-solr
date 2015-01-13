@@ -20,8 +20,8 @@
   
   <target name="usage" description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
-    <echo message="Use 'ant example' to create a runnable example configuration." />
-    <echo message="Use 'ant run-example' to create and run the example." />
+    <echo message="Use 'ant server' to create the Solr server." />
+    <echo message="Use 'bin/solr' to run the Solr after it is created." />
     <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
@@ -38,9 +38,9 @@
   <!-- ========================================================================= -->
   <!-- ============================== USER TASKS =============================== -->
   <!-- ========================================================================= -->
- 
-  <target name="example" description="Creates a runnable example configuration."
-          depends="dist-contrib,build-war">
+
+  <target name="server" depends="dist-contrib,server-war"
+          description="Creates a Solr server">
     <jar destfile="${example}/exampledocs/post.jar"
          basedir="${dest}/solr-core/classes/java"
          includes="org/apache/solr/util/SimplePostTool*.class">
@@ -51,10 +51,10 @@
     <delete includeemptydirs="true">
       <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
     </delete>
-    <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
+    <echo>See ${common-solr.dir}/README.txt for how to run the Solr server.</echo>
   </target>
   
-  <target name="run-example" depends="example"
+  <target name="run-example" depends="server"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
@@ -337,7 +337,7 @@
   
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, build-war" />
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib" />
  
   <target name="dist-test-framework" depends="init-dist"
           description="Creates the Solr test-framework JAR.">
@@ -351,9 +351,9 @@
     <contrib-crawl target="dist" failonerror="true" />
   </target>
   
-  <target name="build-war"
+  <target name="server-war"
           description="Creates the Solr WAR Distribution file.">
-    <ant dir="webapp" target="dist" inheritall="false">
+    <ant dir="webapp" target="server-war" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -450,7 +450,7 @@
       <param name="called.from.create-package" value="true"/>
       <target name="init-dist"/>
       <target name="dist"/>
-      <target name="example"/>
+      <target name="server"/>
       <target name="documentation"/>
     </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
