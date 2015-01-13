@@ -166,16 +166,16 @@ if [ ! -d "$SOLR_EXTRACT_DIR" ]; then
   exit 1
 fi
 
+if [ -z "$SOLR_SERVICE" ]; then
+  SOLR_SERVICE=solr
+fi
+
 if [ -z "$SOLR_VAR_DIR" ]; then
-  SOLR_VAR_DIR=/var/solr
+  SOLR_VAR_DIR=/var/$SOLR_SERVICE
 fi
 
 if [ -z "$SOLR_USER" ]; then
   SOLR_USER=solr
-fi
-
-if [ -z "$SOLR_SERVICE" ]; then
-  SOLR_SERVICE=solr
 fi
 
 if [ -z "$SOLR_PORT" ]; then
@@ -183,7 +183,7 @@ if [ -z "$SOLR_PORT" ]; then
 fi
 
 if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
-  echo -e "\nERROR: /etc/init.d/$SOLR_SERVICE already exists! Perhaps solr is already setup as a service on this host?\n" 1>&2
+  echo -e "\nERROR: /etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host?\n" 1>&2
   exit 1
 fi
 
