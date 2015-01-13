@@ -158,6 +158,9 @@ Upgrading from Solr 4.x
   comprised of minX minY maxX maxY that should now be replaced with
   ENVELOPE(minX, maxX, maxY, minY).
 
+* Due to changes in the underlying commons-codec package, users of the BeiderMorseFilterFactory 
+  will need to rebuild their indexes after upgrading.  See LUCENE-6058 for more details.
+
 Detailed Change List
 ----------------------
 
