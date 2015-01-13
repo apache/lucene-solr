@@ -287,6 +287,11 @@ public class ZkTestServer {
     public void runFromConfig(ServerConfig config) throws IOException {
       log.info("Starting server");
       try {
+        // ZooKeeper maintains a static collection of AuthenticationProviders, so
+        // we make sure the SASL provider is loaded so that it can be used in
+        // subsequent tests.
+        System.setProperty("zookeeper.authProvider.1",
+          "org.apache.zookeeper.server.auth.SASLAuthenticationProvider");
         // Note that this thread isn't going to be doing anything else,
         // so rather than spawning another thread, we will just call
         // run() in this thread.
