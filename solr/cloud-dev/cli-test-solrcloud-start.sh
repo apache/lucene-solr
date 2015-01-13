@@ -16,7 +16,7 @@ rm -r -f server/solr/zoo_data
 rm -r -f server/solr/data
 rm -f server/server.log
 
-ant example dist
+ant server dist
 
 cp -r -f server server2
 cp -r -f server server3
