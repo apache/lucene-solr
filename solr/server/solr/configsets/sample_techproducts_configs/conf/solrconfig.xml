@@ -117,23 +117,7 @@
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
-    
-         
-    <!-- These will be used if you are using the solr.HdfsDirectoryFactory,
-         otherwise they will be ignored. If you don't plan on using hdfs,
-         you can safely remove this section. -->      
-    <!-- The root directory that collection data should be written to. -->     
-    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <!-- The hadoop configuration files to use for the hdfs client. -->    
-    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
-    <!-- Enable/Disable the hdfs cache. -->    
-    <str name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</str>
-    <!-- Enable/Disable using one global cache for all SolrCores. 
-         The settings used will be from the first HdfsDirectoryFactory created. -->    
-    <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
-    
-  </directoryFactory> 
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene

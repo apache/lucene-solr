@@ -61,7 +61,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   public static final String BLOCKCACHE_ENABLED = "solr.hdfs.blockcache.enabled";
   public static final String BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";
   public static final String BLOCKCACHE_READ_ENABLED = "solr.hdfs.blockcache.read.enabled";
-  public static final String BLOCKCACHE_WRITE_ENABLED = "solr.hdfs.blockcache.write.enabled";
+  public static final String BLOCKCACHE_WRITE_ENABLED = "solr.hdfs.blockcache.write.enabled"; // currently buggy and disabled
   
   public static final String NRTCACHINGDIRECTORY_ENABLE = "solr.hdfs.nrtcachingdirectory.enable";
   public static final String NRTCACHINGDIRECTORY_MAXMERGESIZEMB = "solr.hdfs.nrtcachingdirectory.maxmergesizemb";
@@ -96,13 +96,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   public void init(NamedList args) {
     params = SolrParams.toSolrParams(args);
-    this.hdfsDataDir = params.get(HDFS_HOME);
+    this.hdfsDataDir = getConfig(HDFS_HOME, null);
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
       this.hdfsDataDir = null;
     } else {
       LOG.info(HDFS_HOME + "=" + this.hdfsDataDir);
     }
-    boolean kerberosEnabled = params.getBool(KERBEROS_ENABLED, false);
+    boolean kerberosEnabled = getConfig(KERBEROS_ENABLED, false);
     LOG.info("Solr Kerberos Authentication "
         + (kerberosEnabled ? "enabled" : "disabled"));
     if (kerberosEnabled) {
@@ -132,6 +132,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+    assert params != null : "init must be called before create";
     LOG.info("creating directory factory for path {}", path);
     Configuration conf = getConf();
     
@@ -139,25 +140,19 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       metrics = MetricsHolder.metrics;
     }
     
-    boolean blockCacheEnabled = params.getBool(BLOCKCACHE_ENABLED, true);
-    boolean blockCacheGlobal = params.getBool(BLOCKCACHE_GLOBAL, false); // default to false for back compat
-    boolean blockCacheReadEnabled = params.getBool(BLOCKCACHE_READ_ENABLED, true);
-    boolean blockCacheWriteEnabled = params.getBool(BLOCKCACHE_WRITE_ENABLED, false);
-    
-    if (blockCacheWriteEnabled) {
-      LOG.warn("Using " + BLOCKCACHE_WRITE_ENABLED + " is currently buggy and can result in readers seeing a corrupted view of the index.");
-    }
+    boolean blockCacheEnabled = getConfig(BLOCKCACHE_ENABLED, true);
+    boolean blockCacheGlobal = getConfig(BLOCKCACHE_GLOBAL, false); // default to false for back compat
+    boolean blockCacheReadEnabled = getConfig(BLOCKCACHE_READ_ENABLED, true);
     
     final Directory dir;
     if (blockCacheEnabled && dirContext != DirContext.META_DATA) {
-      int numberOfBlocksPerBank = params.getInt(NUMBEROFBLOCKSPERBANK, 16384);
+      int numberOfBlocksPerBank = getConfig(NUMBEROFBLOCKSPERBANK, 16384);
       
       int blockSize = BlockDirectory.BLOCK_SIZE;
       
-      int bankCount = params.getInt(BLOCKCACHE_SLAB_COUNT, 1);
+      int bankCount = getConfig(BLOCKCACHE_SLAB_COUNT, 1);
       
-      boolean directAllocation = params.getBool(
-          BLOCKCACHE_DIRECT_MEMORY_ALLOCATION, true);
+      boolean directAllocation = getConfig(BLOCKCACHE_DIRECT_MEMORY_ALLOCATION, true);
       
       int slabSize = numberOfBlocksPerBank * blockSize;
       LOG.info(
@@ -168,8 +163,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           new Object[] {slabSize, bankCount,
               ((long) bankCount * (long) slabSize)});
       
-      int bufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", 128);
-      int bufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
+      int bufferSize = getConfig("solr.hdfs.blockcache.bufferstore.buffersize", 128);
+      int bufferCount = getConfig("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
       
       BlockCache blockCache = getBlockDirectoryCache(numberOfBlocksPerBank,
           blockSize, bankCount, directAllocation, slabSize,
@@ -177,25 +172,51 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
       HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), lockFactory, conf);
-      dir = new BlockDirectory(path, hdfsDirectory, cache, null,
-          blockCacheReadEnabled, blockCacheWriteEnabled);
+      dir = new BlockDirectory(path, hdfsDirectory, cache, null, blockCacheReadEnabled, false);
     } else {
       dir = new HdfsDirectory(new Path(path), lockFactory, conf);
     }
     
-    boolean nrtCachingDirectory = params.getBool(NRTCACHINGDIRECTORY_ENABLE, true);
+    boolean nrtCachingDirectory = getConfig(NRTCACHINGDIRECTORY_ENABLE, true);
     if (nrtCachingDirectory) {
-      double nrtCacheMaxMergeSizeMB = params.getInt(
-          NRTCACHINGDIRECTORY_MAXMERGESIZEMB, 16);
-      double nrtCacheMaxCacheMB = params.getInt(NRTCACHINGDIRECTORY_MAXCACHEMB,
-          192);
+      double nrtCacheMaxMergeSizeMB = getConfig(NRTCACHINGDIRECTORY_MAXMERGESIZEMB, 16);
+      double nrtCacheMaxCacheMB = getConfig(NRTCACHINGDIRECTORY_MAXCACHEMB, 192);
       
-      return new NRTCachingDirectory(dir, nrtCacheMaxMergeSizeMB,
-          nrtCacheMaxCacheMB);
+      return new NRTCachingDirectory(dir, nrtCacheMaxMergeSizeMB, nrtCacheMaxCacheMB);
     }
     return dir;
   }
 
+  boolean getConfig(String name, boolean defaultValue) {
+    Boolean value = params.getBool(name);
+    if (value == null) {
+      String sysValue = System.getProperty(name);
+      if (sysValue != null) {
+        value = Boolean.valueOf(sysValue);
+      }
+    }
+    return value == null ? defaultValue : value;
+  }
+  
+  int getConfig(String name, int defaultValue) {
+    Integer value = params.getInt(name);
+    if (value == null) {
+      String sysValue = System.getProperty(name);
+      if (sysValue != null) {
+        value = Integer.parseInt(sysValue);
+      }
+    }
+    return value == null ? defaultValue : value;
+  }
+
+  String getConfig(String name, String defaultValue) {
+    String value = params.get(name);
+    if (value == null) {
+      value = System.getProperty(name);
+    }
+    return value == null ? defaultValue : value;
+  }
+  
   private BlockCache getBlockDirectoryCache(int numberOfBlocksPerBank, int blockSize, int bankCount,
       boolean directAllocation, int slabSize, int bufferSize, int bufferCount, boolean staticBlockCache) {
     if (!staticBlockCache) {
@@ -252,7 +273,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   private Configuration getConf() {
     Configuration conf = new Configuration();
-    confDir = params.get(CONFIG_DIRECTORY, null);
+    confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);
     return conf;
   }
@@ -329,12 +350,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
   
   private void initKerberos() {
-    String keytabFile = params.get(KERBEROS_KEYTAB, "").trim();
+    String keytabFile = getConfig(KERBEROS_KEYTAB, "").trim();
     if (keytabFile.length() == 0) {
       throw new IllegalArgumentException(KERBEROS_KEYTAB + " required because "
           + KERBEROS_ENABLED + " set to true");
     }
-    String principal = params.get(KERBEROS_PRINCIPAL, "");
+    String principal = getConfig(KERBEROS_PRINCIPAL, "");
     if (principal.length() == 0) {
       throw new IllegalArgumentException(KERBEROS_PRINCIPAL
           + " required because " + KERBEROS_ENABLED + " set to true");
