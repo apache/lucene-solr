@@ -229,7 +229,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   }
 
-  public static void testForResponseElement(RestTestHarness harness,
+  public static Map testForResponseElement(RestTestHarness harness,
                                             String testServerBaseUrl,
                                             String uri,
                                             CloudSolrClient cloudSolrServer,List<String> jsonPath,
@@ -257,6 +257,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     }
 
     assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(m)), success);
+    return m;
   }
 
   public void testReqParams() throws Exception{
