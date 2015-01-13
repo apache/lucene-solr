@@ -39,6 +39,10 @@ public class HdfsTestUtil {
   private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
   public static MiniDFSCluster setupClass(String dir) throws Exception {
+    return setupClass(dir, true);
+  }
+  
+  public static MiniDFSCluster setupClass(String dir, boolean safeModeTesting) throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
       Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
 
@@ -68,20 +72,21 @@ public class HdfsTestUtil {
 
     System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
     
-    
-    NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
-    
-    int rnd = LuceneTestCase.random().nextInt(10000);
-    Timer timer = new Timer();
-    timer.schedule(new TimerTask() {
+    if (safeModeTesting) {
+      NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
       
-      @Override
-      public void run() {
-        NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
-      }
-    }, rnd);
-    
-    timers.put(dfsCluster, timer);
+      int rnd = LuceneTestCase.random().nextInt(10000);
+      Timer timer = new Timer();
+      timer.schedule(new TimerTask() {
+        
+        @Override
+        public void run() {
+          NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
+        }
+      }, rnd);
+      
+      timers.put(dfsCluster, timer);
+    }
     
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
     

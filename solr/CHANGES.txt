@@ -691,6 +691,9 @@ Other Changes
 
 * SOLR-6904: Removed deprecated Circle & rect syntax. See upgrading notes.  (David Smiley)
 
+* SOLR-6943: HdfsDirectoryFactory should fall back to system props for most of it's config
+  if it is not found in solrconfig.xml. (Mark Miller, Mike Drob)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
