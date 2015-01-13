@@ -452,7 +452,6 @@ public class ZkStateReader implements Closeable {
       synchronized (this) {
         if (watchedCollections.contains(s)) {
           DocCollection live = getCollectionLive(this, s);
-          assert live != null;
           if (live != null) {
             watchedCollectionStates.put(s, live);
             // if it is a watched collection, add too
