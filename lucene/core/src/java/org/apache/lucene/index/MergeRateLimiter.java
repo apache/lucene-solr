@@ -36,8 +36,7 @@ public class MergeRateLimiter extends RateLimiter {
   private final static int MIN_PAUSE_CHECK_MSEC = 25;
   volatile long totalBytesWritten;
 
-  // By default no IO limit:
-  double mbPerSec = Double.POSITIVE_INFINITY;
+  double mbPerSec;
   private long lastNS;
   private long minPauseCheckBytes;
   private boolean abort;
@@ -51,6 +50,9 @@ public class MergeRateLimiter extends RateLimiter {
   /** Sole constructor. */
   public MergeRateLimiter(MergePolicy.OneMerge merge) {
     this.merge = merge;
+
+    // Initially no IO limit; use setter here so minPauseCheckBytes is set:
+    setMBPerSec(Double.POSITIVE_INFINITY);
   }
 
   @Override
