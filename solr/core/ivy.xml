@@ -19,13 +19,14 @@
 <ivy-module version="2.0"  xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="core"/>
   
-  <configurations defaultconfmapping="compile->master;compile.hadoop->master;test->master;test.DfsMiniCluster->master">
+  <configurations defaultconfmapping="compile->master;compile.hadoop->master;test->master;test.DfsMiniCluster->master;test.MiniKdc->master">
     <!-- artifacts in the "compile" and "compile.hadoop" configurations will go into solr/core/lib/ -->
     <conf name="compile" transitive="false"/>
     <conf name="compile.hadoop" transitive="false"/>
-    <!-- artifacts in the "test" and "test.DfsMiniCluster" configuration will go into solr/core/test-lib/ -->
+    <!-- artifacts in the "test", "test.DfsMiniCluster", and "test.MiniKdc" configuration will go into solr/core/test-lib/ -->
     <conf name="test" transitive="false"/>
     <conf name="test.DfsMiniCluster" transitive="false"/>
+    <conf name="test.MiniKdc" transitive="false"/>
   </configurations>
 
   <dependencies>
@@ -77,6 +78,10 @@
     <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster"/>
     <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test.DfsMiniCluster"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster"/>
+
+    <!-- Hadoop MiniKdc Dependencies-->
+    <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-all" rev="${/org.apache.directory.server/apacheds-all}" conf="test.MiniKdc"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
