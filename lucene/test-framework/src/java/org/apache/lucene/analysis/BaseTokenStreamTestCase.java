@@ -260,7 +260,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
 
     if (ts.incrementToken()) {
-      fail("TokenStream has more tokens than expected (expected count=" + output.length + "); extra token=" + termAtt.toString());
+      fail("TokenStream has more tokens than expected (expected count=" + output.length + "); extra token=" + termAtt);
     }
 
     // repeat our extra safety checks for end()
