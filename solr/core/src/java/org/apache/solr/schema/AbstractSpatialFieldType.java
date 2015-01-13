@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -36,7 +35,6 @@ import com.google.common.cache.CacheBuilder;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.io.LegacyShapeReadWriterFormat;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -114,17 +112,6 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
-
-    //replace legacy rect format with ENVELOPE
-    String wbStr = args.get("worldBounds");
-    if (wbStr != null && !wbStr.toUpperCase(Locale.ROOT).startsWith("ENVELOPE")) {
-      log.warn("Using old worldBounds format? Should use ENVELOPE(xMin, xMax, yMax, yMin).");
-      String[] parts = wbStr.split(" ");//"xMin yMin xMax yMax"
-      if (parts.length == 4) {
-        args.put("worldBounds",
-            "ENVELOPE(" + parts[0] + ", " + parts[2] + ", " + parts[3] + ", " + parts[1] + ")");
-      } //else likely eventual exception
-    }
 
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<>(args);
@@ -237,18 +224,17 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected Shape parseShape(String str) {
     if (str.length() == 0)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty string shape");
-    //In Solr trunk we only support "lat, lon" (or x y) as an additional format; in v4.0 we do the
-    // weird Circle & Rect formats too (Spatial4j LegacyShapeReadWriterFormat).
-    try {
-      Shape shape = LegacyShapeReadWriterFormat.readShapeOrNull(str, ctx);
-      if (shape != null)
-        return shape;
-      return ctx.readShapeFromWkt(str);
-    } catch (Exception e) {
-      String message = e.getMessage();
-      if (!message.contains(str))
-        message = "Couldn't parse shape '" + str + "' because: " + message;
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
+    if (Character.isLetter(str.charAt(0))) {//WKT starts with a letter
+      try {
+        return ctx.readShapeFromWkt(str);
+      } catch (Exception e) {
+        String message = e.getMessage();
+        if (!message.contains(str))
+          message = "Couldn't parse shape '" + str + "' because: " + message;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
+      }
+    } else {
+      return SpatialUtils.parsePointSolrException(str, ctx);
     }
   }
 

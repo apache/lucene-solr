@@ -47,9 +47,6 @@
     <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
                numberType="tdouble" distanceUnits="degrees"/>
 
-    <fieldType name="stqpt_u_oldworldbounds"  class="solr.SpatialTermQueryPrefixTreeFieldType"
-               geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" distanceUnits="degrees"/>
-
     <fieldType name="bbox" class="solr.BBoxField"
                numberType="tdoubleDV" distanceUnits="degrees"/>
   </types>

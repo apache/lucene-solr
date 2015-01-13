@@ -26,11 +26,8 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.schema.AbstractSpatialFieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -72,13 +69,13 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   public void testBadShapeParse400() {
     assertQEx(null, req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!field f="+fieldName+"}Intersects(NonexistentShape(89.9,-130 d=9))"), 400);
+        "fq", "{!field f=" + fieldName + "}Intersects(NonexistentShape(89.9,-130 d=9))"), 400);
     assertQEx(null, req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!field f="+fieldName+"}Intersects(NonexistentShape(89.9,-130 d=9"), 400);//missing parens
+        "fq", "{!field f=" + fieldName + "}Intersects(NonexistentShape(89.9,-130 d=9"), 400);//missing parens
     assertQEx(null, req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!field f="+fieldName+"}Intersectssss"), 400);
+        "fq", "{!field f=" + fieldName + "}Intersectssss"), 400);
 
     ignoreException("NonexistentShape");
     try {
@@ -158,8 +155,8 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(req(
-        "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!bbox sfield="+fieldName+" pt="+IN+" d=9}"),
+            "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
+            "fq", "{!bbox sfield=" + fieldName + " pt=" + IN + " d=9}"),
         "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
   }
 
@@ -359,37 +356,6 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         , "/response/docs/[0]/id=='101'"
         , "/response/docs/[0]/score==0.99862987"//dist to 3,5
     );
-  }
-
-  @Test
-  public void solr4OldShapeSyntax() throws Exception {
-    assumeFalse("Mostly just valid for prefix-tree", fieldName.equals("pointvector"));
-
-    //we also test that the old syntax is parsed in worldBounds in the schema
-    {
-      IndexSchema schema = h.getCore().getLatestSchema();
-      AbstractSpatialFieldType type = (AbstractSpatialFieldType) schema.getFieldTypeByName("stqpt_u_oldworldbounds");
-      SpatialContext ctx = type.getStrategy("foo").getSpatialContext();
-      assertEquals(new RectangleImpl(0, 1000, 0, 1000, ctx), ctx.getWorldBounds());
-    }
-
-    //syntax supported in Solr 4 but not beyond
-    //   See Spatial4j LegacyShapeReadWriterFormat
-    String rect = "-74.093 41.042 -69.347 44.558";//minX minY maxX maxY
-    String circ = "Circle(4.56,1.23 d=0.0710)";
-
-    //show we can index this (without an error)
-    assertU(adoc("id", "rect", fieldName, rect));
-    if (!fieldName.equals("bbox")) {
-      assertU(adoc("id", "circ", fieldName, circ));
-      assertU(commit());
-    }
-
-    //only testing no error
-    assertJQ(req("q", "{!field f=" + fieldName + "}Intersects(" + rect + ")"));
-    if (!fieldName.equals("bbox")) {
-      assertJQ(req("q", "{!field f=" + fieldName + "}Intersects(" + circ + ")"));
-    }
   }
 
   @Test

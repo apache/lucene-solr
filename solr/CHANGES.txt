@@ -153,6 +153,11 @@ Upgrading from Solr 4.x
   solrconfig.xml. Solr defaults to using NRT searchers regardless of the value in configuration
   and a warning is logged on startup if the solrconfig.xml has <nrtMode> specified.
 
+* There was an old spatial syntax to specify a circle using Circle(x,y d=...) which should be
+  replaced with simply using {!geofilt} (if you can) or BUFFER(POINT(x y),d). Likewise a rect syntax
+  comprised of minX minY maxX maxY that should now be replaced with
+  ENVELOPE(minX, maxX, maxY, minY).
+
 Detailed Change List
 ----------------------
 
@@ -683,6 +688,8 @@ Other Changes
 
 * SOLR-6496: LBHttpSolrClient stops server retries after the timeAllowed threshold is met.
   (Steve Davids, Anshum Gupta)
+
+* SOLR-6904: Removed deprecated Circle & rect syntax. See upgrading notes.  (David Smiley)
 
 ==================  4.10.3 ==================
 
