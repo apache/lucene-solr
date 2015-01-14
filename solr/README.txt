@@ -89,14 +89,10 @@ For more information about Solr examples please read...
 
  * example/solr/README.txt
    For more information about the "Solr Home" and Solr specific configuration
- * http://lucene.apache.org/solr/tutorial.html
-   For a Tutorial using this example configuration
- * http://wiki.apache.org/solr/SolrResources
+ * http://lucene.apache.org/solr/quickstart.html
+   For a Quick Start guide
+ * http://lucene.apache.org/solr/resources.html
    For a list of other tutorials and introductory articles.
-
-A tutorial is available at:
-
-   http://lucene.apache.org/solr/tutorial.html
 
 or linked from "docs/index.html" in a binary distribution.
 
