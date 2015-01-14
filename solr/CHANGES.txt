@@ -202,7 +202,7 @@ New Features
   (hossman)
 
 * SOLR-6485: ReplicationHandler should have an option to throttle the speed of
-  replication (Varun Thacker, NOble Paul)
+  replication (Varun Thacker, Noble Paul)
 
 * SOLR-6543: Give HttpSolrClient the ability to send PUT requests (Gregory Chanan)
 
@@ -305,6 +305,8 @@ New Features
 
 * SOLR-6581: Efficient DocValues support and numeric collapse field implementations 
   for Collapse and Expand (Joel Bernstein)
+
+* SOLR-6937: In schemaless mode ,replace spaces and special characters with underscore (Noble Paul)
   
 Bug Fixes
 ----------------------

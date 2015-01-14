@@ -258,12 +258,14 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     assertEquals(10, cnt.get());
   }
   
-  protected void assertNumFound(String query, int num)
+  protected QueryResponse assertNumFound(String query, int num)
       throws SolrServerException, IOException {
     QueryResponse rsp = getSolrClient().query(new SolrQuery(query));
     if (num != rsp.getResults().getNumFound()) {
       fail("expected: " + num + " but had: " + rsp.getResults().getNumFound()
           + " :: " + rsp.getResults());
     }
+    return rsp;
+
   }
 }
