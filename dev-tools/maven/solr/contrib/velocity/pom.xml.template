@@ -62,10 +62,18 @@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>${module-path}/src/resources</directory>
+      </resource>
+    </resources>
     <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
     <testResources>
       <testResource>
         <directory>${module-path}/src/test-files</directory>
+      </testResource>
+      <testResource>
+        <directory>${module-path}/src/test/velocity</directory>
       </testResource>
       <testResource>
         <directory>${top-level}/dev-tools/maven/solr</directory>
