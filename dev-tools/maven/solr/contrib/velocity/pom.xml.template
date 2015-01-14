@@ -73,7 +73,10 @@
         <directory>${module-path}/src/test-files</directory>
       </testResource>
       <testResource>
-        <directory>${module-path}/src/test/velocity</directory>
+        <directory>${module-path}/src/test</directory>
+        <includes>
+          <include>velocity/*.properties</include>
+        </includes>
       </testResource>
       <testResource>
         <directory>${top-level}/dev-tools/maven/solr</directory>
