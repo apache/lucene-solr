@@ -282,7 +282,7 @@ New Features
 * SOLR-6879: Have an option to disable autoAddReplicas temporarily for all collections.
   (Varun Thacker via Steve Rowe)
 
-* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
+* SOLR-6435: Add bin/post script to simplify posting content to Solr (Erik Hatcher)
 
 * SOLR-6761: Ability to ignore commit and/or optimize requests from clients when running in
   SolrCloud mode using the IgnoreCommitOptimizeUpdateProcessorFactory. (Timothy Potter)
