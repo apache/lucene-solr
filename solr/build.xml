@@ -151,7 +151,7 @@
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
       via string parameter, that must be splitted by the XSL at '|'.
     --> 
-    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl" force="true">
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/index.xsl" force="true">
       <outputproperty name="method" value="html"/>
       <outputproperty name="version" value="4.0"/>
       <outputproperty name="encoding" value="UTF-8"/>
@@ -162,12 +162,12 @@
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="SYSTEM_REQUIREMENTS.txt"/>
-      <globmapper from="*.txt" to="*.html"/>
+      <fileset dir="site/"/>
+      <globmapper from="*.mdtext" to="*.html"/>
     </pegdown>
 
     <copy todir="${javadoc.dir}">
-      <fileset dir="site/html" includes="**/*"/>
+      <fileset dir="site/assets/" />
     </copy>
   </target>
 
