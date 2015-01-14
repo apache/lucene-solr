@@ -1379,7 +1379,7 @@
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
     <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
-      <str name="pattern">[^\w-]</str>
+      <str name="pattern">[^\w-\.]</str>
       <str name="replacement">_</str>
     </processor>
     <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
