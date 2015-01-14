@@ -259,6 +259,8 @@ New Features
 
 * SOLR-6581: Efficient DocValues support and numeric collapse field implementations 
   for Collapse and Expand (Joel Bernstein)
+
+* SOLR-6937: In schemaless mode ,replace spaces and special characters with underscore (Noble Paul)
   
 
 Bug Fixes
