@@ -445,6 +445,9 @@ Bug Fixes
 
 * SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
 
+* SOLR-6764: Field types need to be re-informed after reloading a managed schema from ZK
+  (Timothy Potter)
+
 Optimizations
 ----------------------
 

@@ -560,34 +560,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       aware.inform(newSchema);
     
     // looks good for the add, notify ResoureLoaderAware objects
-    for (FieldType fieldType : fieldTypeList) {      
-          
-      // must inform any sub-components used in the 
-      // tokenizer chain if they are ResourceLoaderAware    
-      if (fieldType.supportsAnalyzers()) {
-        Analyzer indexAnalyzer = fieldType.getIndexAnalyzer();
-        if (indexAnalyzer != null && indexAnalyzer instanceof TokenizerChain)
-          informResourceLoaderAwareObjectsInChain((TokenizerChain)indexAnalyzer);
-        
-        Analyzer queryAnalyzer = fieldType.getQueryAnalyzer();
-        // ref comparison is correct here (vs. equals) as they may be the same
-        // object in which case, we don't need to inform twice ... however, it's
-        // actually safe to call inform multiple times on an object anyway
-        if (queryAnalyzer != null && 
-            queryAnalyzer != indexAnalyzer && 
-            queryAnalyzer instanceof TokenizerChain)
-          informResourceLoaderAwareObjectsInChain((TokenizerChain)queryAnalyzer);
-
-        // if fieldType is a TextField, it might have a multi-term analyzer
-        if (fieldType instanceof TextField) {
-          TextField textFieldType = (TextField)fieldType;
-          Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
-          if (multiTermAnalyzer != null && multiTermAnalyzer != indexAnalyzer &&
-              multiTermAnalyzer != queryAnalyzer && multiTermAnalyzer instanceof TokenizerChain)
-            informResourceLoaderAwareObjectsInChain((TokenizerChain)multiTermAnalyzer);
-        }
-      }      
-    }
+    for (FieldType fieldType : fieldTypeList)
+      informResourceLoaderAwareObjectsForFieldType(fieldType);
 
     newSchema.refreshAnalyzers();
 
@@ -611,7 +585,39 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     return newSchema;
-  }  
+  }
+
+  /**
+   * Informs analyzers used by a fieldType.
+   */
+  protected void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
+    // must inform any sub-components used in the
+    // tokenizer chain if they are ResourceLoaderAware
+    if (!fieldType.supportsAnalyzers())
+      return;
+
+    Analyzer indexAnalyzer = fieldType.getIndexAnalyzer();
+    if (indexAnalyzer != null && indexAnalyzer instanceof TokenizerChain)
+      informResourceLoaderAwareObjectsInChain((TokenizerChain)indexAnalyzer);
+
+    Analyzer queryAnalyzer = fieldType.getQueryAnalyzer();
+    // ref comparison is correct here (vs. equals) as they may be the same
+    // object in which case, we don't need to inform twice ... however, it's
+    // actually safe to call inform multiple times on an object anyway
+    if (queryAnalyzer != null &&
+        queryAnalyzer != indexAnalyzer &&
+        queryAnalyzer instanceof TokenizerChain)
+      informResourceLoaderAwareObjectsInChain((TokenizerChain)queryAnalyzer);
+
+    // if fieldType is a TextField, it might have a multi-term analyzer
+    if (fieldType instanceof TextField) {
+      TextField textFieldType = (TextField)fieldType;
+      Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
+      if (multiTermAnalyzer != null && multiTermAnalyzer != indexAnalyzer &&
+          multiTermAnalyzer != queryAnalyzer && multiTermAnalyzer instanceof TokenizerChain)
+        informResourceLoaderAwareObjectsInChain((TokenizerChain)multiTermAnalyzer);
+    }
+  }
   
   @Override
   public SchemaField newField(String fieldName, String fieldType, Map<String,?> options) {
@@ -786,6 +792,11 @@ public final class ManagedIndexSchema extends IndexSchema {
       for (SchemaAware aware : newSchema.schemaAware) {
         aware.inform(newSchema);
       }
+
+      // notify analyzers and other objects for our fieldTypes
+      for (FieldType fieldType : newSchema.fieldTypes.values())
+        informResourceLoaderAwareObjectsForFieldType(fieldType);
+
       newSchema.refreshAnalyzers();
       newSchema.schemaZkVersion = schemaZkVersion;
     } catch (SolrException e) {
