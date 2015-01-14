@@ -20,7 +20,10 @@ package org.apache.solr.search;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
@@ -72,6 +75,70 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     String group = types.get(0);
     String hint = "";
     testCollapseQueries(group, hint, true);
+  }
+
+  @Test
+
+  public void testMergeBoost() throws Exception {
+
+    Set<Integer> boosted = new HashSet();
+    Set<Integer> results = new HashSet();
+
+    for(int i=0; i<200; i++) {
+      boosted.add(random().nextInt(1000));
+    }
+
+    for(int i=0; i<200; i++) {
+      results.add(random().nextInt(1000));
+    }
+
+    int[] boostedArray = new int[boosted.size()];
+    int[] resultsArray = new int[results.size()];
+
+    Iterator<Integer> boostIt = boosted.iterator();
+    int index = 0;
+    while(boostIt.hasNext()) {
+      boostedArray[index++] = boostIt.next();
+    }
+
+    Iterator<Integer> resultsIt = results.iterator();
+    index = 0;
+    while(resultsIt.hasNext()) {
+      resultsArray[index++] = resultsIt.next();
+    }
+
+    Arrays.sort(boostedArray);
+    Arrays.sort(resultsArray);
+
+    CollapsingQParserPlugin.MergeBoost mergeBoost = new CollapsingQParserPlugin.MergeBoost(boostedArray);
+
+    List<Integer> boostedResults = new ArrayList();
+
+    for(int i=0; i<resultsArray.length; i++) {
+      int result = resultsArray[i];
+      if(mergeBoost.boost(result)) {
+        boostedResults.add(result);
+      }
+    }
+
+    List<Integer> controlResults = new ArrayList();
+
+    for(int i=0; i<resultsArray.length; i++) {
+      int result = resultsArray[i];
+      if(Arrays.binarySearch(boostedArray, result) > -1) {
+        controlResults.add(result);
+      }
+    }
+
+    if(boostedResults.size() == controlResults.size()) {
+      for(int i=0; i<boostedResults.size(); i++) {
+        if(!boostedResults.get(i).equals(controlResults.get(i).intValue())) {
+          throw new Exception("boosted results do not match control results, boostedResults size:"+boostedResults.toString()+", controlResults size:"+controlResults.toString());
+        }
+      }
+    } else {
+      throw new Exception("boosted results do not match control results, boostedResults size:"+boostedResults.toString()+", controlResults size:"+controlResults.toString());
+    }
   }
 
 
@@ -427,5 +494,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!collapse field="+group+" "+optional_min_or_max+"}");
     assertQ(req(params), "*[count(//doc)=0]");
   }
+
 
 }
