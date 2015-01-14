@@ -101,6 +101,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         "{\"first-second\" : \"name\"}" +
         "{\"x+y\" : \"name\"}" +
         "{\"p%q\" : \"name\"}" +
+        "{\"p.q\" : \"name\"}" +
         "{\"a&b\" : \"name\"}"
         ;
     HttpClient httpClient = client.getHttpClient();
@@ -116,6 +117,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         "first-second",
         "a_b",
         "p_q",
+        "p.q",
         "x_y");
     HashSet set = new HashSet();
     QueryResponse rsp = assertNumFound("*:*", expected.size());
