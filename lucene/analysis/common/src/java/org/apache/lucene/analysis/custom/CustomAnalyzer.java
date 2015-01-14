@@ -48,7 +48,7 @@ import org.apache.lucene.util.Version;
  * {@link TokenFilterFactory}, and {@link CharFilterFactory}.
  * <p>You can create an instance of this Analyzer using the builder:
  * <pre class="prettyprint">
- * Analyzer ana = CustomAnalyzer.builder(Path.get(&quot;/path/to/config/dir&quot;))
+ * Analyzer ana = CustomAnalyzer.builder(Paths.get(&quot;/path/to/config/dir&quot;))
  *   .withTokenizer(&quot;standard&quot;)
  *   .addTokenFilter(&quot;standard&quot;)
  *   .addTokenFilter(&quot;lowercase&quot;)
