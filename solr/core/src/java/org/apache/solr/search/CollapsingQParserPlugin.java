@@ -1993,7 +1993,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class MergeBoost {
+  static class MergeBoost {
 
     private int[] boostDocs;
     private int index = 0;
