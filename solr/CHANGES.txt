@@ -447,6 +447,9 @@ Bug Fixes
 
 * SOLR-6764: Field types need to be re-informed after reloading a managed schema from ZK
   (Timothy Potter)
+  
+* SOLR-6931: We should do a limited retry when using HttpClient. 
+ (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
 
 Optimizations
 ----------------------

@@ -223,7 +223,12 @@ public class LBHttpSolrClient extends SolrClient {
     this.parser = parser;
     if (httpClient == null) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(HttpClientUtil.PROP_USE_RETRY, false);
+      if (solrServerUrl.length > 1) {
+        // we prefer retrying another server
+        params.set(HttpClientUtil.PROP_USE_RETRY, false);
+      } else {
+        params.set(HttpClientUtil.PROP_USE_RETRY, true);
+      }
       this.httpClient = HttpClientUtil.createClient(params);
     } else {
       this.httpClient = httpClient;
