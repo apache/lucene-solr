@@ -236,7 +236,7 @@ New Features
 
 * SOLR-6770: Add/edit param sets and use them in Requests (Noble Paul)
   
-* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
+* SOLR-6435: Add bin/post script to simplify posting content to Solr (Erik Hatcher)
 
 * SOLR-6761: Ability to ignore commit and/or optimize requests from clients when running in
   SolrCloud mode using the IgnoreCommitOptimizeUpdateProcessorFactory. (Timothy Potter)

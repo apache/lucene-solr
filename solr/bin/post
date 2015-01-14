@@ -14,17 +14,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage:
-#  bin/post <collection> <file(s)|url> [<params to SimplePostTool>]
-#  bin/post gettingstarted http://lucidworks.com [recursive=1] [delay=1]
-#  bin/post tehfiles ~/Documents
-#  bin/post signals LATEST-signals.csv
-#  bin/post records article*.xml
-#  bin/post wizbang events.json
+# TODO wishlist:
+# - handle stdin as well, such that `cat foo.csv | bin/post my_collection` works
+# - bin/post collection "file with spaces.csv" does not work, breaks arguments at whitespace apparently.
+# - support arbitrary posting like - java -Ddata=args org.apache.solr.util.SimplePostTool "<delete><id>SP2514N</id></delete>"
+# - convert OPTIONS (key=val pass-through to SPT) to standard 'nix switches
 
-# TODO: handle stdin as well, such that `cat foo.csv | bin/post my_collection` works
+# ====== Common code copied/adapted from bin/solr (TODO: centralize/share this kind of thing)
 
-# ====== Common code copied from bin/solr (TODO: centralize/share this kind of thing)
+THIS_SCRIPT="$0"
+
+# Resolve symlinks to this script
+while [ -h "$THIS_SCRIPT" ] ; do
+  ls=`ls -ld "$THIS_SCRIPT"`
+  # Drop everything prior to ->
+  link=`expr "$ls" : '.*-> \(.*\)$'`
+  if expr "$link" : '/.*' > /dev/null; then
+    THIS_SCRIPT="$link"
+  else
+    THIS_SCRIPT=`dirname "$THIS_SCRIPT"`/"$link"
+  fi
+done
+
+SOLR_TIP=`dirname "$THIS_SCRIPT"`/..
+SOLR_TIP=`cd "$SOLR_TIP"; pwd`
+
 if [ -n "$SOLR_JAVA_HOME" ]; then
   JAVA=$SOLR_JAVA_HOME/bin/java
 elif [ -n "$JAVA_HOME" ]; then
@@ -44,10 +58,43 @@ $JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool!
 
 # ===== post specific code
 
+TOOL_JAR=$SOLR_TIP/dist/solr-core-*.jar
+
 function print_usage() {
   echo ""
-  echo "Usage: post <collection/core> <file|directory|url> [OPTIONS]"
+  echo "Usage: post -c <collection/core> <files|directories|urls> [OPTIONS]"
   echo "    or post -help"
+  echo ""
+  echo "   collection name defaults to DEFAULT_SOLR_COLLECTION if not specified"
+  echo ""
+  echo "OPTIONS"
+  echo "======="
+  echo "  Solr options:"
+  echo "    url=<base Solr update URL> (overrides collection, host, and port)"
+  echo "    host=<host> (default: localhost)"
+  echo "    port=<port> (default: 8983)"
+  echo "    commit=yes|no (default: yes)"
+  echo ""
+  echo "  Web crawl options:"
+  echo "    recursive=<depth> (default: 1)"
+  echo "    delay=<seconds> (default=10)"
+  echo ""
+  echo "  Directory crawl options:"
+  echo "    delay=<seconds> (default=0)"
+  echo ""
+  echo "  Other options:"
+  echo "    filetypes=<type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
+  echo "    params=\"<key>=<value>[&<key>=<value>...]\" (values must be URL-encoded)"
+  echo "    out=yes|no (default=no; yes outputs Solr response to console)"
+  echo ""
+  echo ""
+  echo "Examples:"
+  echo ""
+  echo "JSON file: $THIS_SCRIPT -c wizbang events.json"
+  echo "XML files: $THIS_SCRIPT -c records article*.xml"
+  echo "CSV file: $THIS_SCRIPT -c signals LATEST-signals.csv"
+  echo "Directory of files: $THIS_SCRIPT -c myfiles ~/Documents"
+  echo "Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com recursive=2 delay=1"
   echo ""
 } # end print_usage
 
@@ -57,62 +104,74 @@ if [[ $# -eq 1 && ("$1" == "-help" || "$1" == "-h" || "$1" == "-usage") ]]; then
 fi
 
 
-TOOL_JAR=dist/solr-core-*.jar
+COLLECTION=$DEFAULT_SOLR_COLLECTION
+PROPS="-Dauto=yes"
+RECURSIVE=""
+FILES=()
+URLS=()
 
-COLLECTION=$1; shift
-
-# TODO: fix globbing issues... bin/post collection *.xml doens't work as expected (only first file indexed?)
-# TODO: fix bin/post *.xml issues, where collection isn't specified, so it assumes first passed file name is collection name
-
-# TODO: Check that $COLLECTION actually exists?   How to determine if user omitted collection name as first param?
-# "$JAVA" -classpath "$TOOL_JAR" org.apache.solr.util.SolrCLI $* # except can't easily check for core existence with SolrCLI?
-# TODO: also need a more general way to set the URL (or just server or port) rather than passing url=... at the end.
-
-echo "Collection:" $COLLECTION
-
-PROPS="-Dc=$COLLECTION"
-PARAMS=""
-
-echo -n "Data mode: "
-if [[ $1 == http* ]]; then
-  echo "WEB"
-  PROPS="$PROPS -Ddata=web"
-  PARAMS=$1; shift
-else
-  if [[ -d $1 ]]; then
-    # Directory
-    echo "DIRECTORY"
-    PROPS="$PROPS -Ddata=files -Dauto -Drecursive"
-    PARAMS=$1; shift
-  else
-    # Not a URL or existing directory, assume file(s)
-    echo "FILE"
-    FILE=$1; shift
-    EXTENSION="${FILE##*.}"
-
-    PARAMS=$FILE
-
-    if [[ $EXTENSION == xml || $EXTENSION == csv || $EXTENSION == json ]]; then
-      # Solr /update supported type (default being application/xml).
-      if [[ $EXTENSION == csv ]]; then
-        PROPS="$PROPS -Dtype=text/csv"
-      fi
-      if [[ $EXTENSION == json ]]; then
-        PROPS="$PROPS -Dtype=application/json"
-      fi
-    else
-      PROPS="$PROPS -Dauto=yes"
-    fi
-
-  fi
-fi
-
-# Add all additonal trailing script parameters as system properties to SPT (eg. bin/post core_name ~/Documents depth=1)
 while [ $# -gt 0 ]; do
-  PROPS="$PROPS -D$1"
+  # TODO: natively handle the optional parameters to SPT
+  #       but for now they can be specified as bin/post -c collection-name delay=5 http://lucidworks.com
+  if [[ "$1" == "-c" ]]; then
+    # Pull out collection name
+    shift
+    COLLECTION=$1
+  else
+    # General argument, either a file, directory, URL, or param[=val]
+    if [[ -d "$1" ]]; then
+      # Directory
+#      echo "$1: DIRECTORY"
+      MODE="files"
+      RECURSIVE="-Drecursive=yes"
+      FILES+=("$1")
+    elif [[ -f "$1" ]]; then
+      # File
+#      echo "$1: FILE"
+      MODE="files"
+      FILES+=("$1")
+    elif [[ "$1" == http* ]]; then
+      # URL
+#      echo "$1: URL"
+      MODE="web"
+      URLS+=("$1")
+    else
+      # Not a file, directory or URL.  Consider it a property to SPT
+#      echo "$1: PROP"
+      PROPS="$PROPS -D$1"
+    fi
+  fi
   shift
 done
 
-echo "$JAVA" -classpath "$TOOL_JAR" $PROPS org.apache.solr.util.SimplePostTool $PARAMS
-$JAVA -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+# Check for errors
+if [[ ${#FILES[@]} != 0 && ${#URLS[@]} != 0 ]]; then
+  echo -e "\nCombining files (or directories) and URLs is not supported.  Post them separately.\n"
+  exit 1
+fi
 
+if [[ ${#FILES[@]} == 0 && ${#URLS[@]} == 0 ]]; then
+  echo -e "\nNo files, directories, or URLs were specified.  See '$THIS_SCRIPT -h' for usage instructions.\n"
+  exit 1
+fi
+
+if [[ $COLLECTION == "" ]]; then
+  echo -e "\nCollection must be specified.  Use -c <collection name> or set DEFAULT_SOLR_COLLECTION in your environment.\n"
+  exit 1
+fi
+
+PARAMS=""
+if [[ $FILES != "" ]]; then
+  MODE="files"
+  PARAMS=("${FILES[@]}")
+fi
+
+if [[ $URLS != "" ]]; then
+  MODE="web"
+  PARAMS=("${URLS[@]}")
+fi
+
+PROPS="$PROPS -Dc=$COLLECTION -Ddata=$MODE $RECURSIVE"
+
+#echo "$JAVA" -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+"$JAVA" -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
