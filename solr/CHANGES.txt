@@ -403,6 +403,9 @@ Bug Fixes
 
 * SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
 
+* SOLR-6931: We should do a limited retry when using HttpClient. 
+ (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
+
 Optimizations
 ----------------------
 
