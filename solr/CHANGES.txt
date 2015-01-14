@@ -54,6 +54,9 @@ Other Changes
 * SOLR-6895: Deprecated SolrServer classes have been removed (Alan Woodward,
   Erik Hatcher)
 
+==================  5.1.0 ==================
+(No Changes)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

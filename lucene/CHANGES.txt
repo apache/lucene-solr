@@ -29,6 +29,9 @@ API Changes
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 
+======================= Lucene 5.1.0 =======================
+(No Changes)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features
