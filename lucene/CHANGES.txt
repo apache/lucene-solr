@@ -143,6 +143,12 @@ New Features
 
 * LUCENE-6166: Deletions (alone) can now trigger new merges.  (Mike McCandless)
 
+* LUCENE-6177: Add CustomAnalyzer that allows to configure analyzers
+  like you do in Solr's index schema. This class has a builder API to configure
+  Tokenizers, TokenFilters, and CharFilters based on their SPI names
+  and parameters as documented by the corresponding factories.
+  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
