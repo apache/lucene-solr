@@ -17,7 +17,7 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-  <info organisation="org.apache.solr" module="example"/>
+  <info organisation="org.apache.solr" module="server"/>
   <configurations defaultconfmapping="jetty->master;start->master;servlet->master;logging->master">
     <conf name="jetty" description="jetty jars" transitive="false"/>
     <conf name="start" description="jetty start jar" transitive="false"/>
