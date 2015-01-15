@@ -70,22 +70,22 @@ function print_usage() {
   echo "OPTIONS"
   echo "======="
   echo "  Solr options:"
-  echo "    url=<base Solr update URL> (overrides collection, host, and port)"
-  echo "    host=<host> (default: localhost)"
-  echo "    port=<port> (default: 8983)"
-  echo "    commit=yes|no (default: yes)"
+  echo "    -url <base Solr update URL> (overrides collection, host, and port)"
+  echo "    -host <host> (default: localhost)"
+  echo "    -port <port> (default: 8983)"
+  echo "    -commit yes|no (default: yes)"
   echo ""
   echo "  Web crawl options:"
-  echo "    recursive=<depth> (default: 1)"
-  echo "    delay=<seconds> (default=10)"
+  echo "    -recursive <depth> (default: 1)"
+  echo "    -delay <seconds> (default=10)"
   echo ""
   echo "  Directory crawl options:"
-  echo "    delay=<seconds> (default=0)"
+  echo "    -delay <seconds> (default=0)"
   echo ""
   echo "  Other options:"
-  echo "    filetypes=<type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
-  echo "    params=\"<key>=<value>[&<key>=<value>...]\" (values must be URL-encoded)"
-  echo "    out=yes|no (default=no; yes outputs Solr response to console)"
+  echo "    -filetypes <type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
+  echo "    -params \"<key>=<value>[&<key>=<value>...]\" (values must be URL-encoded; these pass through to Solr update request)"
+  echo "    -out yes|no (default=no; yes outputs Solr response to console)"
   echo ""
   echo ""
   echo "Examples:"
@@ -94,7 +94,7 @@ function print_usage() {
   echo "XML files: $THIS_SCRIPT -c records article*.xml"
   echo "CSV file: $THIS_SCRIPT -c signals LATEST-signals.csv"
   echo "Directory of files: $THIS_SCRIPT -c myfiles ~/Documents"
-  echo "Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com recursive=2 delay=1"
+  echo "Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com -recursive 2 -delay 1"
   echo ""
 } # end print_usage
 
@@ -113,32 +113,38 @@ URLS=()
 while [ $# -gt 0 ]; do
   # TODO: natively handle the optional parameters to SPT
   #       but for now they can be specified as bin/post -c collection-name delay=5 http://lucidworks.com
-  if [[ "$1" == "-c" ]]; then
-    # Pull out collection name
-    shift
-    COLLECTION=$1
+
+  if [[ -d "$1" ]]; then
+    # Directory
+#    echo "$1: DIRECTORY"
+    MODE="files"
+    RECURSIVE="-Drecursive=yes"
+    FILES+=("$1")
+  elif [[ -f "$1" ]]; then
+    # File
+#    echo "$1: FILE"
+    MODE="files"
+    FILES+=("$1")
+  elif [[ "$1" == http* ]]; then
+    # URL
+#    echo "$1: URL"
+    MODE="web"
+    URLS+=("$1")
   else
-    # General argument, either a file, directory, URL, or param[=val]
-    if [[ -d "$1" ]]; then
-      # Directory
-#      echo "$1: DIRECTORY"
-      MODE="files"
-      RECURSIVE="-Drecursive=yes"
-      FILES+=("$1")
-    elif [[ -f "$1" ]]; then
-      # File
-#      echo "$1: FILE"
-      MODE="files"
-      FILES+=("$1")
-    elif [[ "$1" == http* ]]; then
-      # URL
-#      echo "$1: URL"
-      MODE="web"
-      URLS+=("$1")
+    if [[ $1 == -* ]]; then
+      if [[ $1 == "-c" ]]; then
+        # Special case, pull out collection name
+        shift
+        COLLECTION=$1
+      else
+        key=${1:1}
+        shift
+#       echo "$1: PROP"
+        PROPS="$PROPS -D$key=$1"
+      fi
     else
-      # Not a file, directory or URL.  Consider it a property to SPT
-#      echo "$1: PROP"
-      PROPS="$PROPS -D$1"
+      echo -e "\nUnrecognized argument: $1\n"
+      exit 1
     fi
   fi
   shift

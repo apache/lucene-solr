@@ -15,7 +15,7 @@ This data consists of the following fields:
        bin/solr start
 
    * Create a "films" core:
-       bin/solr create_core -n films -c data_driven_schema_configs
+       bin/solr create -c films
 
    * Set the schema on a couple of fields that Solr would otherwise guess differently (than we'd like) about:
 curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
@@ -33,12 +33,12 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
 
    * Now let's index the data, using one of these three commands:
 
-     - JSON: bin/post films example/films/films.json
-     - XML: bin/post films example/films/films.xml
+     - JSON: bin/post -c films example/films/films.json
+     - XML: bin/post -c films example/films/films.xml
      - CSV: bin/post \
-                  films \
+                  -c films \
                   example/films/films.csv \
-                  "params=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+                  -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 
    * Let's get searching!
      - Search for 'Batman':
@@ -98,7 +98,7 @@ bin/solr stop
 rm server/logs/*.log
 rm -Rf server/solr/films/
 bin/solr start
-bin/solr create_core -n films -c data_driven_schema_configs
+bin/solr create -c films
 curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
     "add-field" : {
         "name":"name",
@@ -111,7 +111,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
         "stored":true
     }
 }'
-bin/post films example/films/films.json
+bin/post -c films example/films/films.json
 curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
 "update" : {
   "facets": {
