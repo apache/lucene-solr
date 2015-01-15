@@ -93,3 +93,7 @@ you should override PayloadAttributeImpl.clone() to do a shallow clone instead.
 Bulk scorers must now always collect documents in order. If you have custom
 collectors, the acceptsDocsOutOfOrder method has been removed and collectors
 can safely assume that they will be collected in order.
+
+## Renamed "Atomic" to "Leaf" for segment readers (LUCENE-5569)
+
+AtomicReader and AtomicReaderContext are now called LeafReader and LeafReaderContext, respectively.
