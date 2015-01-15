@@ -27,16 +27,9 @@ public class MultiCollectorTest extends LuceneTestCase {
 
   private static class DummyCollector extends SimpleCollector {
 
-    boolean acceptsDocsOutOfOrderCalled = false;
     boolean collectCalled = false;
     boolean setNextReaderCalled = false;
     boolean setScorerCalled = false;
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      acceptsDocsOutOfOrderCalled = true;
-      return true;
-    }
 
     @Override
     public void collect(int doc) throws IOException {
@@ -70,7 +63,6 @@ public class MultiCollectorTest extends LuceneTestCase {
     Collector c = MultiCollector.wrap(new DummyCollector(), null, new DummyCollector());
     assertTrue(c instanceof MultiCollector);
     final LeafCollector ac = c.getLeafCollector(null);
-    assertTrue(ac.acceptsDocsOutOfOrder());
     ac.collect(1);
     c.getLeafCollector(null);
     c.getLeafCollector(null).setScorer(null);
@@ -93,13 +85,11 @@ public class MultiCollectorTest extends LuceneTestCase {
     DummyCollector[] dcs = new DummyCollector[] { new DummyCollector(), new DummyCollector() };
     Collector c = MultiCollector.wrap(dcs);
     LeafCollector ac = c.getLeafCollector(null);
-    assertTrue(ac.acceptsDocsOutOfOrder());
     ac.collect(1);
     ac = c.getLeafCollector(null);
     ac.setScorer(null);
 
     for (DummyCollector dc : dcs) {
-      assertTrue(dc.acceptsDocsOutOfOrderCalled);
       assertTrue(dc.collectCalled);
       assertTrue(dc.setNextReaderCalled);
       assertTrue(dc.setScorerCalled);

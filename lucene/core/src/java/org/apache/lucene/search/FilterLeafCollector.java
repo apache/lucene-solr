@@ -44,11 +44,6 @@ public class FilterLeafCollector implements LeafCollector {
   }
 
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return in.acceptsDocsOutOfOrder();
-  }
-
-  @Override
   public String toString() {
     return getClass().getSimpleName() + "(" + in + ")";
   }

@@ -219,7 +219,6 @@ public class QueryUtils {
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
     final List<LeafReaderContext> readerContextArray = s.getTopReaderContext().leaves();
-    if (s.createNormalizedWeight(q).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
     final int next_op = 1;
@@ -323,11 +322,6 @@ public class QueryUtils {
             this.scorer = null;
             lastDoc[0] = -1;
           }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return false;
-          }
         });
 
         if (lastReader[0] != null) {
@@ -408,10 +402,6 @@ public class QueryUtils {
         lastReader[0] = context.reader();
         lastDoc[0] = -1;
         liveDocs = context.reader().getLiveDocs();
-      }
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return false;
       }
     });
 

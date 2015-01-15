@@ -109,11 +109,6 @@ public abstract class AbstractGroupFacetCollector extends SimpleCollector {
   public void setScorer(Scorer scorer) throws IOException {
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
-
   /**
    * The grouped facet result. Containing grouped facet entries, total count and total missing count.
    */

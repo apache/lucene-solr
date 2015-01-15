@@ -321,11 +321,6 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
   }
 
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
-  }
-
-  @Override
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     docBase = readerContext.docBase;
     for (int i=0; i<comparators.length; i++) {

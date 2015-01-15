@@ -45,11 +45,6 @@ abstract class TermsCollector extends SimpleCollector {
     return collectorTerms;
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
-
   /**
    * Chooses the right {@link TermsCollector} implementation.
    *

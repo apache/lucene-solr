@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
@@ -305,21 +305,19 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder,
-                                 Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
-      if (scoreDocsInOrder || minNrShouldMatch > 1) {
+      if (minNrShouldMatch > 1) {
         // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
         // but the same is even true of pure conjunctions...
-        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, acceptDocs);
       }
 
-      List<BulkScorer> prohibited = new ArrayList<BulkScorer>();
       List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        BulkScorer subScorer = w.bulkScorer(context, false, acceptDocs);
+        BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -328,16 +326,20 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // TODO: there are some cases where BooleanScorer
           // would handle conjunctions faster than
           // BooleanScorer2...
-          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, acceptDocs);
         } else if (c.isProhibited()) {
           // TODO: there are some cases where BooleanScorer could do this faster
-          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, acceptDocs);
         } else {
           optional.add(subScorer);
         }
       }
 
-      return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
+      if (optional.size() == 0) {
+        return null;
+      }
+
+      return new BooleanScorer(this, disableCoord, maxCoord, optional);
     }
 
     @Override
@@ -430,30 +432,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, required.size(), coords()); 
         }
       }
-    }
-    
-    @Override
-    public boolean scoresDocsOutOfOrder() {
-      if (minNrShouldMatch > 1) {
-        // BS2 (in-order) will be used by scorer()
-        return false;
-      }
-      int optionalCount = 0;
-      for (BooleanClause c : clauses) {
-        if (c.isRequired()) {
-          // BS2 (in-order) will be used by scorer()
-          return false;
-        } else if (!c.isProhibited()) {
-          optionalCount++;
-        }
-      }
-      
-      if (optionalCount == minNrShouldMatch) {
-        return false; // BS2 (in-order) will be used, as this means conjunction
-      }
-      
-      // scorer() will return an out-of-order scorer if requested.
-      return true;
     }
     
     private Scorer req(List<Scorer> required, boolean disableCoord) {

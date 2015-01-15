@@ -68,11 +68,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
         public void setScorer(Scorer scorer) {
           // Don't do anything. Assign scores in random
         }
-        
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
       };
     }
 

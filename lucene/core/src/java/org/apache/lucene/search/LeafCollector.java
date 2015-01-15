@@ -56,14 +56,9 @@ import java.io.IOException;
  *         bits.set(docBase + doc);
  *       }
  *
- *       // accept docs out of order (for a BitSet it doesn't matter)
- *       public boolean acceptsDocsOutOfOrder() {
- *         return true;
- *       }
- *          
  *     };
  *   }
- *      
+ *
  * });
  * </pre>
  *
@@ -97,23 +92,5 @@ public interface LeafCollector {
    * Doing so can slow searches by an order of magnitude or more.
    */
   void collect(int doc) throws IOException;
-
-  /**
-   * Return <code>true</code> if this collector does not
-   * require the matching docIDs to be delivered in int sort
-   * order (smallest to largest) to {@link #collect}.
-   *
-   * <p> Most Lucene Query implementations will visit
-   * matching docIDs in order.  However, some queries
-   * (currently limited to certain cases of {@link
-   * BooleanQuery}) can achieve faster searching if the
-   * <code>Collector</code> allows them to deliver the
-   * docIDs out of order.</p>
-   *
-   * <p> Many collectors don't mind getting docIDs out of
-   * order, so it's important to return <code>true</code>
-   * here.
-   */
-  boolean acceptsDocsOutOfOrder();
 
 }

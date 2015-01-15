@@ -155,14 +155,6 @@ public class FacetsCollector extends SimpleCollector {
   }
 
   @Override
-  public final boolean acceptsDocsOutOfOrder() {
-    // If we are keeping scores then we require in-order
-    // because we append each score to the float[] and
-    // expect that they correlate in order to the hits:
-    return keepScores == false;
-  }
-
-  @Override
   public final void collect(int doc) throws IOException {
     docs.addDoc(doc);
     if (keepScores) {
@@ -284,14 +276,9 @@ public class FacetsCollector extends SimpleCollector {
                                                (FieldDoc) after,
                                                fillFields,
                                                doDocScores,
-                                               doMaxScore,
-                                               false);
+                                               doMaxScore);
     } else {
-      // TODO: can we pass the right boolean for
-      // in-order instead of hardwired to false...?  we'd
-      // need access to the protected IS.search methods
-      // taking Weight... could use reflection...
-      hitsCollector = TopScoreDocCollector.create(n, after, false);
+      hitsCollector = TopScoreDocCollector.create(n, after);
     }
     searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
     return hitsCollector.topDocs();

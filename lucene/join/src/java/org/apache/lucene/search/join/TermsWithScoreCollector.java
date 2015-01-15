@@ -57,11 +57,6 @@ abstract class TermsWithScoreCollector extends SimpleCollector {
     this.scorer = scorer;
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
-
   /**
    * Chooses the right {@link TermsWithScoreCollector} implementation.
    *

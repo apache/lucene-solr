@@ -134,14 +134,14 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, acceptDocs);
       } else {
         assert query != null && innerWeight != null;
-        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, acceptDocs);
         if (bulkScorer == null) {
           return null;
         }
@@ -168,11 +168,6 @@ public class ConstantScoreQuery extends Query {
         return null;
       }
       return new ConstantScorer(disi, this, queryWeight);
-    }
-
-    @Override
-    public boolean scoresDocsOutOfOrder() {
-      return (innerWeight != null) ? innerWeight.scoresDocsOutOfOrder() : false;
     }
 
     @Override

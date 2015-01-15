@@ -72,11 +72,6 @@ public class BooleanQueryTst {
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return true;
-    }
-
-    @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }

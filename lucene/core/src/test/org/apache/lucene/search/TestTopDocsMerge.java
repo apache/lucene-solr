@@ -198,7 +198,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       final TopDocs topHits;
       if (sort == null) {
         if (useFrom) {
-          TopScoreDocCollector c = TopScoreDocCollector.create(numHits, random().nextBoolean());
+          TopScoreDocCollector c = TopScoreDocCollector.create(numHits);
           searcher.search(query, c);
           from = TestUtil.nextInt(random(), 0, numHits - 1);
           size = numHits - from;
@@ -217,7 +217,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
           topHits = searcher.search(query, numHits);
         }
       } else {
-        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, random().nextBoolean());
+        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
         searcher.search(query, c);
         if (useFrom) {
           from = TestUtil.nextInt(random(), 0, numHits - 1);
@@ -261,7 +261,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (sort == null) {
           subHits = subSearcher.search(w, numHits);
         } else {
-          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, random().nextBoolean());
+          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
           subSearcher.search(w, c);
           subHits = c.topDocs(0, numHits);
         }

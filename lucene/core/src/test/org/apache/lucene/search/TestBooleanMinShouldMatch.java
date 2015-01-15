@@ -93,7 +93,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         assertEquals("result count", expected, h.length);
         //System.out.println("TEST: now check");
         // bs2
-        TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
+        TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
         s.search(q, collector);
         ScoreDoc[] h2 = collector.topDocs().scoreDocs;
         if (expected != h2.length) {

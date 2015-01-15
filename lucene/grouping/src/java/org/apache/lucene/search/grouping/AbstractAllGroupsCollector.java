@@ -62,8 +62,4 @@ public abstract class AbstractAllGroupsCollector<GROUP_VALUE_TYPE> extends Simpl
   @Override
   public void setScorer(Scorer scorer) throws IOException {}
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
 }

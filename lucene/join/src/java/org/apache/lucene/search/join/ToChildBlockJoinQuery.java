@@ -154,11 +154,6 @@ public class ToChildBlockJoinQuery extends Query {
       throw new UnsupportedOperationException(getClass().getName() +
                                               " cannot explain match on parent document");
     }
-
-    @Override
-    public boolean scoresDocsOutOfOrder() {
-      return false;
-    }
   }
 
   static class ToChildBlockJoinScorer extends Scorer {

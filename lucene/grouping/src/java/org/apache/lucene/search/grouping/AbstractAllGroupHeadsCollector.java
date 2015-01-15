@@ -126,11 +126,6 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
     groupHead.updateDocHead(doc);
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
-  }
-
   /**
    * Contains the result of group head retrieval.
    * To prevent new object creations of this class for every collect.

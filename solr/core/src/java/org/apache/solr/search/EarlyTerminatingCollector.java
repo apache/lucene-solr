@@ -63,16 +63,6 @@ public class EarlyTerminatingCollector extends FilterCollector {
 
     return new FilterLeafCollector(super.getLeafCollector(context)) {
 
-      /**
-       * This collector requires that docs be collected in order, otherwise
-       * the computed number of scanned docs in the resulting
-       * {@link EarlyTerminatingCollectorException} will be meaningless.
-       */
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return false;
-      }
-
       @Override
       public void collect(int doc) throws IOException {
         super.collect(doc);

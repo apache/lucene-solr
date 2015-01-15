@@ -248,10 +248,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
       this.boostedPriority = boostedPriority;
       Sort sort = cmd.getSort();
       if(sort == null) {
-        this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length),true);
+        this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
       } else {
         sort = sort.rewrite(searcher);
-        this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true, true);
+        this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
       }
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
