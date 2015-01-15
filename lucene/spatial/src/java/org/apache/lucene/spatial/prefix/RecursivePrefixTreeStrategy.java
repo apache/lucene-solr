@@ -17,6 +17,9 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,9 +31,6 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
@@ -56,13 +56,15 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   // and a LegacyPrefixTree.
   protected boolean pruneLeafyBranches = true;
 
-  protected boolean pointsOnly = false;//if true, there are no leaves
-
   protected boolean multiOverlappingIndexedShapes = true;
 
   public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid, fieldName);
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
+  }
+
+  public int getPrefixGridScanLevel() {
+    return prefixGridScanLevel;
   }
 
   /**
@@ -77,15 +79,17 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     this.prefixGridScanLevel = prefixGridScanLevel;
   }
 
-  /** True if only indexed points shall be supported. There are no "leafs" in such a case.  See
-   *  {@link IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
-  public void setPointsOnly(boolean pointsOnly) {
-    this.pointsOnly = pointsOnly;
+  public boolean isMultiOverlappingIndexedShapes() {
+    return multiOverlappingIndexedShapes;
   }
 
   /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
   public void setMultiOverlappingIndexedShapes(boolean multiOverlappingIndexedShapes) {
     this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
+  }
+
+  public boolean isPruneLeafyBranches() {
+    return pruneLeafyBranches;
   }
 
   /** An optional hint affecting non-point shapes: it will
