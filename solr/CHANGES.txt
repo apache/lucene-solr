@@ -713,6 +713,9 @@ Other Changes
 * SOLR-6926: "ant example" makes no sense anymore - should be "ant server" 
   (Ramkumar Aiyengar, Timothy Potter)
 
+* SOLR-6982: bin/solr and SolrCLI should support SSL-related Java System Properties
+  (Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

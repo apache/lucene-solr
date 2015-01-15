@@ -6,7 +6,7 @@
 @REM  (the "License"); you may not use this file except in compliance with
 @REM  the License.  You may obtain a copy of the License at
 @REM
-@REM      http://www.apache.org/licenses/LICENSE-2.0
+@REM      !SOLR_URL_SCHEME!://www.apache.org/licenses/LICENSE-2.0
 @REM
 @REM  Unless required by applicable law or agreed to in writing, software
 @REM  distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,6 +35,11 @@ REM vars set in the include file can be overridden with
 REM command line args
 IF "%SOLR_INCLUDE%"=="" set "SOLR_INCLUDE=%SOLR_TIP%\bin\solr.in.cmd"
 IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
+
+REM URL scheme for contacting Solr
+set SOLR_URL_SCHEME=http
+IF DEFINED SOLR_SSL_OPTS set SOLR_URL_SCHEME=https
+IF NOT DEFINED SOLR_SSL_OPTS set SOLR_SSL_OPTS=
 
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
@@ -599,7 +604,7 @@ IF "%SCRIPT_CMD%"=="stop" (
           for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find ":!SOME_SOLR_PORT!"') do (
             @echo Stopping Solr running on port !SOME_SOLR_PORT!
             set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
-            "%JAVA%" -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
             del %SOLR_TIP%\bin\solr-!SOME_SOLR_PORT!.port
             timeout /T 5
             REM Kill it if it is still running after the graceful shutdown
@@ -617,7 +622,7 @@ IF "%SCRIPT_CMD%"=="stop" (
       set found_it=1
       @echo Stopping Solr running on port %SOLR_PORT%
       set /A STOP_PORT=%SOLR_PORT% - 1000
-      "%JAVA%" -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+      "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
       del %SOLR_TIP%\bin\solr-%SOLR_PORT%.port
       timeout /T 5
       REM Kill it if it is still running after the graceful shutdown
@@ -755,6 +760,11 @@ IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "%SOLR_SSL_OPTS%"=="" (
+  set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_PORT%"
+  IF DEFINED SOLR_SSL_PORT set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_SSL_PORT%"
+  set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
+)
 IF NOT "%LOG4J_CONFIG%"=="" set "START_OPTS=%START_OPTS% -Dlog4j.configuration=%LOG4J_CONFIG%"
 
 cd "%SOLR_SERVER_DIR%"
@@ -796,14 +806,14 @@ IF "%EXAMPLE%"=="techproducts" (
 IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
   timeout /T 10
   IF "%SOLR_MODE%"=="solrcloud" (
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
       org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE_NAME! -shards 1 -replicationFactor 1 ^
-      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
+      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr
   ) ELSE (
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl http://localhost:%SOLR_PORT%/solr ^
+      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr ^
       -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
   )
 )
@@ -811,14 +821,14 @@ IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
 IF "%EXAMPLE%"=="techproducts" (
   @echo.
   @echo Indexing tech product example docs from %SOLR_TIP%\example\exampledocs
-  "%JAVA%" -Durl=http://localhost:%SOLR_PORT%/solr/%EXAMPLE%/update -jar %SOLR_TIP%/example/exampledocs/post.jar %SOLR_TIP%/example/exampledocs/*.xml
+  "%JAVA%" %SOLR_SSL_OPTS% -Durl=!SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr/%EXAMPLE%/update -jar %SOLR_TIP%/example/exampledocs/post.jar %SOLR_TIP%/example/exampledocs/*.xml
 )
 
 @echo.
 IF NOT "%EXAMPLE%"=="" (
   @echo Solr %EXAMPLE% example launched successfully.
 )
-@echo Direct your Web browser to http://localhost:%SOLR_PORT%/solr to visit the Solr Admin UI
+@echo Direct your Web browser to !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr to visit the Solr Admin UI
 @echo.
 
 goto done
@@ -967,13 +977,13 @@ echo !CLOUD_CONFIG!
 goto create_collection
 
 :create_collection
-"%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI create_collection -name !CLOUD_COLLECTION! -shards !CLOUD_NUM_SHARDS! -replicationFactor !CLOUD_REPFACT! ^
   -confdir !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
 
 echo.
-echo SolrCloud example is running, please visit http://localhost:%NODE1_PORT%/solr"
+echo SolrCloud example is running, please visit !SOLR_URL_SCHEME!://localhost:%NODE1_PORT%/solr"
 echo.
 
 REM End of interactive cloud example
@@ -992,9 +1002,9 @@ for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"
         @echo.
         set has_info=1
         echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-        "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+        "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
           -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-          org.apache.solr.util.SolrCLI status -solr http://localhost:!SOME_SOLR_PORT!/solr
+          org.apache.solr.util.SolrCLI status -solr !SOLR_URL_SCHEME!://localhost:!SOME_SOLR_PORT!/solr
         @echo.
       )
     )
@@ -1030,7 +1040,7 @@ goto parse_healthcheck_args
 :run_healthcheck
 IF NOT DEFINED HEALTHCHECK_COLLECTION goto healthcheck_usage
 IF NOT DEFINED HEALTHCHECK_ZK_HOST set "HEALTHCHECK_ZK_HOST=localhost:9983"
-"%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !HEALTHCHECK_ZK_HOST!
 goto done
@@ -1119,15 +1129,15 @@ if "!CREATE_PORT!"=="" (
 )
 
 if "%SCRIPT_CMD%"=="create_core" (
-  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME! -solrUrl http://localhost:!CREATE_PORT!/solr ^
+    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME! -solrUrl !SOLR_URL_SCHEME!://localhost:!CREATE_PORT!/solr ^
     -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
 ) else (
-  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI create -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
-  -confname !CREATE_CONFNAME! -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
+  -confname !CREATE_CONFNAME! -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl !SOLR_URL_SCHEME!://localhost:!CREATE_PORT!/solr
 )
 
 goto done

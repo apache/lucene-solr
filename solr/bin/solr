@@ -112,6 +112,12 @@ fi
 # test that Java exists and is executable on this server
 $JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run Solr! Please install Java 7 or 8 before running this script."; exit 1; }
 
+# URL scheme for contacting Solr
+SOLR_URL_SCHEME=http
+if [ -n "$SOLR_SSL_OPTS" ]; then
+  SOLR_URL_SCHEME=https
+fi
+
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
@@ -336,7 +342,7 @@ function run_tool() {
     (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && jar xf $DEFAULT_SERVER_DIR/webapps/solr.war)    
   fi
   
-  "$JAVA" -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
+  "$JAVA" $SOLR_SSL_OPTS -Dsolr.install.dir=$SOLR_TIP -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI $*
 
@@ -355,7 +361,7 @@ function get_info() {
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solr http://localhost:$port/solr
+          run_tool status -solr $SOLR_URL_SCHEME://localhost:$port/solr
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
@@ -372,7 +378,7 @@ function get_info() {
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status -solr http://localhost:$port/solr
+            run_tool status -solr $SOLR_URL_SCHEME://localhost:$port/solr
             echo ""
           fi
       done
@@ -395,7 +401,7 @@ function stop_solr() {
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    $JAVA -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
+    $JAVA $SOLR_SSL_OPTS -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
     (sleep 5) &
     spinner $!
     rm -f $SOLR_PID_DIR/solr-$SOLR_PORT.pid
@@ -627,14 +633,14 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ "$SCRIPT_CMD" == "create_core" ]; then
-    run_tool create_core -name $CREATE_NAME -solrUrl http://localhost:$CREATE_PORT/solr \
+    run_tool create_core -name $CREATE_NAME -solrUrl $SOLR_URL_SCHEME://localhost:$CREATE_PORT/solr \
       -confdir $CREATE_CONFDIR -configsetsDir $SOLR_TIP/server/solr/configsets
     exit $?
   else
     run_tool $SCRIPT_CMD -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
       -confname $CREATE_CONFNAME -confdir $CREATE_CONFDIR \
       -configsetsDir $SOLR_TIP/server/solr/configsets \
-      -solrUrl http://localhost:$CREATE_PORT/solr
+      -solrUrl $SOLR_URL_SCHEME://localhost:$CREATE_PORT/solr
     exit $?
   fi
 fi
@@ -1141,6 +1147,16 @@ function launch_solr() {
     fi
   fi
 
+  # If SSL-related system props are set, add them to SOLR_OPTS
+  if [ -n "$SOLR_SSL_OPTS" ]; then
+    # If using SSL and jetty.ssl.port not set explicitly, use the jetty.port
+    SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_PORT"
+    if [ -n "$SOLR_SSL_PORT" ]; then
+      SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_SSL_PORT"
+    fi
+    SOLR_OPTS="$SOLR_OPTS $SOLR_SSL_OPTS $SSL_PORT_PROP"
+  fi
+
   if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
     echo -e "    JAVA            = $JAVA"
@@ -1251,17 +1267,17 @@ if [ "$EXAMPLE" != "cloud" ]; then
 
     run_tool create -name $EXAMPLE_NAME -shards 1 -replicationFactor 1 \
       -confname $EXAMPLE_NAME -confdir $EXAMPLE_CONFIGSET \
-      -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+      -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr
     if [ $? -ne 0 ]; then
       exit 1
     fi
 
     if [ "$EXAMPLE" == "techproducts" ]; then
       echo "Indexing tech product example docs from $SOLR_TIP/example/exampledocs"
-      "$JAVA" -Durl=http://localhost:$SOLR_PORT/solr/$EXAMPLE/update -jar $SOLR_TIP/example/exampledocs/post.jar $SOLR_TIP/example/exampledocs/*.xml
+      "$JAVA" $SOLR_SSL_OPTS -Durl=$SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr/$EXAMPLE/update -jar $SOLR_TIP/example/exampledocs/post.jar $SOLR_TIP/example/exampledocs/*.xml
     fi
 
-    echo -e "\nSolr $EXAMPLE example launched successfully. Direct your Web browser to http://localhost:$SOLR_PORT/solr to visit the Solr Admin UI\n"
+    echo -e "\nSolr $EXAMPLE example launched successfully. Direct your Web browser to $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr to visit the Solr Admin UI\n"
   fi
 else
   #
@@ -1374,9 +1390,9 @@ else
    
   run_tool create_collection -name $CLOUD_COLLECTION -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
     -confname $CLOUD_COLLECTION -confdir $CLOUD_CONFIG \
-    -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+    -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr
 
-  echo -e "\n\nSolrCloud example running, please visit http://localhost:$SOLR_PORT/solr \n\n"
+  echo -e "\n\nSolrCloud example running, please visit $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr \n\n"
 fi
 
 exit $?
