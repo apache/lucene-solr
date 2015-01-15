@@ -29,10 +29,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeFacets;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.spatial.prefix.tree.PrefixTreeFacetCounter;
 
 import static org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 
@@ -76,13 +77,13 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
   /** Calculates facets between {@code start} and {@code end} to a detail level one greater than that provided by the
    * arguments. For example providing March to October of 2014 would return facets to the day level of those months.
    * This is just a convenience method.
-   * @see #calcFacets(IndexReaderContext, Bits, Shape, int)
+   * @see #calcFacets(IndexReaderContext, Filter, Shape, int)
    */
-  public Facets calcFacets(IndexReaderContext context, final Bits acceptDocs, UnitNRShape start, UnitNRShape end)
+  public Facets calcFacets(IndexReaderContext context, Filter filter, UnitNRShape start, UnitNRShape end)
       throws IOException {
-    Shape filter = getGrid().toRangeShape(start, end);
+    Shape facetRange = getGrid().toRangeShape(start, end);
     int detailLevel = Math.max(start.getLevel(), end.getLevel()) + 1;
-    return calcFacets(context, acceptDocs, filter, detailLevel);
+    return calcFacets(context, filter, facetRange, detailLevel);
   }
 
   /**
@@ -92,9 +93,50 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
    * {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape#getLevel()}.
    * Facet computation is implemented by navigating the underlying indexed terms efficiently.
    */
-  public Facets calcFacets(IndexReaderContext context, final Bits acceptDocs, Shape facetRange, int level)
+  public Facets calcFacets(IndexReaderContext context, Filter filter, Shape facetRange, final int level)
       throws IOException {
-    return NumberRangePrefixTreeFacets.compute(this, context, acceptDocs, facetRange, level);
+    final Facets facets = new Facets(level);
+    PrefixTreeFacetCounter.compute(this, context, filter, facetRange, level,
+        new PrefixTreeFacetCounter.FacetVisitor() {
+          Facets.FacetParentVal parentFacet;
+          UnitNRShape parentShape;
+
+          @Override
+          public void visit(Cell cell, int count) {
+            if (cell.getLevel() < level - 1) {//some ancestor of parent facet level, direct or distant
+              parentFacet = null;//reset
+              parentShape = null;//reset
+              facets.topLeaves += count;
+            } else if (cell.getLevel() == level - 1) {//parent
+              //set up FacetParentVal
+              setupParent((UnitNRShape) cell.getShape());
+              parentFacet.parentLeaves += count;
+            } else {//at facet level
+              UnitNRShape unitShape = (UnitNRShape) cell.getShape();
+              UnitNRShape unitShapeParent = unitShape.getShapeAtLevel(unitShape.getLevel() - 1);
+              if (parentFacet == null || !parentShape.equals(unitShapeParent)) {
+                setupParent(unitShapeParent);
+              }
+              //lazy init childCounts
+              if (parentFacet.childCounts == null) {
+                parentFacet.childCounts = new int[parentFacet.childCountsLen];
+              }
+              parentFacet.childCounts[unitShape.getValAtLevel(cell.getLevel())] += count;
+            }
+          }
+
+          private void setupParent(UnitNRShape unitShape) {
+            parentShape = unitShape.clone();
+            //Look for existing parentFacet (from previous segment), or create anew if needed
+            parentFacet = facets.parents.get(parentShape);
+            if (parentFacet == null) {//didn't find one; make a new one
+              parentFacet = new Facets.FacetParentVal();
+              parentFacet.childCountsLen = getGrid().getNumSubCells(parentShape);
+              facets.parents.put(parentShape, parentFacet);
+            }
+          }
+        });
+    return facets;
   }
 
   /** Facet response information */
