@@ -91,7 +91,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
   @Override
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
     // TODO: shouldn't we AssertingCollector.wrap(collector) here?
-    super.search(leaves, AssertingWeight.wrap(random, weight), collector);
+    super.search(leaves, AssertingWeight.wrap(random, weight), AssertingCollector.wrap(random, collector));
   }
 
   @Override
