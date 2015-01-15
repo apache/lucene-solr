@@ -41,9 +41,7 @@ After starting a Solr example, direct your Web browser to:
 To add documents to the index, use the post.jar (or post.sh script) in
 the example/exampledocs subdirectory (while Solr is running), for example:
 
-     cd exampledocs
-     java -jar post.jar *.xml
-Or:  sh post.sh *.xml
+     bin/post -c techproducts example/exampledocs/*.xml
 
 For more information about this example please read...
 

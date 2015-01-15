@@ -76,11 +76,11 @@ many other formats.  `SimplePostTool` features the ability to crawl a directory 
 sending the raw content of each file into Solr for extraction and indexing.   A Solr install includes a `docs/`
 subdirectory, so that makes a convenient set of (mostly) HTML files built-in to start with.
 
-    bin/post gettingstarted docs/
+    bin/post -c gettingstarted docs/
 
 Here's what it'll look like:
 
-    /solr5:$ bin/post gettingstarted docs/
+    /solr5:$ bin/post -c gettingstarted docs/
     SimplePostTool version 1.5
     Posting files to base url http://localhost:8983/solr/update..
     Entering auto mode. File endings considered are xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -123,7 +123,7 @@ Solr's install includes a handful of Solr XML formatted files with example data 
 
 Using `bin/post`, index the example Solr XML files in `example/exampledocs/`:
 
-    bin/post -c gettingstarted example/exampledocs/*.xml (TODO: depends on SOLR-6900)
+    bin/post -c gettingstarted example/exampledocs/*.xml
 
 Here's what you'll see:
 
@@ -165,11 +165,11 @@ Solr supports indexing JSON, either arbitrary structured JSON or "Solr JSON" (wh
 Solr includes a small sample Solr JSON file to illustrate this capability.  Again using `bin/post`, index the
 sample JSON file:
 
-    bin/post -c gettingstarted example/exampledocs/books.json (TODO: depends on SOLR-6900)
+    bin/post -c gettingstarted example/exampledocs/books.json
 
 You'll see:
 
-    /solr5:$ bin/post -c gettingstarted example/exampledocs/books.json (TODO: depends on SOLR-6900)
+    /solr5:$ bin/post -c gettingstarted example/exampledocs/books.json
     SimplePostTool version 1.5
     Posting files to base url http://localhost:8983/solr/update..
     Entering auto mode. File endings considered are xml,json,csv,...
@@ -190,11 +190,11 @@ index that into Solr rather than a more sophisticated single step operation.
 
 Using SimplePostTool and the included example CSV data file, index it:
 
-    bin/post -c gettingstarted example/exampledocs/books.csv (TODO: depends on SOLR-6900)
+    bin/post -c gettingstarted example/exampledocs/books.csv
 
 In your terminal you'll see:
 
-    /solr5:$ bin/post -c gettingstarted example/exampledocs/books.csv (TODO: depends on SOLR-6900)
+    /solr5:$ bin/post -c gettingstarted example/exampledocs/books.csv
     SimplePostTool version 1.5
     Posting files to base url http://localhost:8983/solr/update..
     Entering auto mode. File endings considered are xml,json,csv,...
@@ -562,7 +562,6 @@ on your computer's power and resources available.)
 
 Here's a Unix script for convenient copying and pasting in order to run the key commands for this quick start guide:
 
-    # TODO: depends on SOLR-6900
     date ;
     bin/solr start -e cloud -noprompt ;
       open http://localhost:8983/solr ;
