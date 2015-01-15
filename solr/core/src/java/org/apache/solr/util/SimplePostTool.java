@@ -76,7 +76,7 @@ import java.util.zip.InflaterInputStream;
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
-  private static final String VERSION_OF_THIS_TOOL = "1.5";
+  private static final String VERSION_OF_THIS_TOOL = "5.0.0";  // TODO: hardcoded for now, but eventually to sync with actual Solr version
 
   private static final String DEFAULT_COMMIT = "yes";
   private static final String DEFAULT_OPTIMIZE = "no";

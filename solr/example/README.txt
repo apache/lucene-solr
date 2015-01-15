@@ -40,7 +40,7 @@ After starting a Solr example, direct your Web browser to:
 
 To add documents to the index, use bin/post, for example:
 
-     bin/post techproducts example/exampledocs/*.xml
+     bin/post -c techproducts example/exampledocs/*.xml
 
 (where "techproducts" is the Solr core name)
 
