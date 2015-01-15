@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial.prefix.tree;
+package org.apache.lucene.spatial.prefix;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,8 +26,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeFilter;
-import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.SparseFixedBitSet;
 
