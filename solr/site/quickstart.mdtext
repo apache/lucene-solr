@@ -1,11 +1,5 @@
 # Solr Quick Start
 
-<!-- Should these breadcrumbs be here?  If not, how to make them on the site but not here? -->
-<ul class="breadcrumbs">
-  <li><a href="/solr">Home</a></li>
-  <li><a href="/solr/resources.html">Resources</a></li>
-</ul>
-
 ## Overview
 
 This document covers getting Solr up and running, ingesting a variety of data sources into multiple collections,
