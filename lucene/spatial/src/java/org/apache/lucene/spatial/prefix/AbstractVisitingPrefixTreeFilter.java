@@ -17,6 +17,9 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum;
@@ -26,9 +29,6 @@ import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Traverses a {@link SpatialPrefixTree} indexed field, using the template and
@@ -326,17 +326,21 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     protected abstract DocIdSet finish() throws IOException;
 
     /**
-     * Visit an indexed cell returned from
-     * {@link #findSubCellsToVisit(org.apache.lucene.spatial.prefix.tree.Cell)}.
+     * Visit an indexed non-leaf cell returned from
+     * {@link #findSubCellsToVisit(org.apache.lucene.spatial.prefix.tree.Cell)}
+     * that is also found in the index.
+     * It will also be called by the default implementation of
+     * {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)} for
+     * cells at the bottom detail level.
      *
-     * @param cell An intersecting cell.
+     * @param cell An intersecting cell; not a leaf.
      * @return true to descend to more levels. It is an error to return true
      * if cell.level == detailLevel
      */
     protected abstract boolean visit(Cell cell) throws IOException;
 
     /**
-     * Called after visit() returns true and an indexed leaf cell is found. An
+     * Called when an indexed leaf cell is found. An
      * indexed leaf cell means associated documents generally won't be found at
      * further detail levels.
      */
@@ -345,8 +349,19 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     /**
      * The cell is either indexed as a leaf or is the last level of detail. It
      * might not even intersect the query shape, so be sure to check for that.
+     * The default implementation will check that and if passes then call
+     * {@link #visitLeaf(org.apache.lucene.spatial.prefix.tree.Cell)} or
+     * {@link #visit(org.apache.lucene.spatial.prefix.tree.Cell)}.
      */
-    protected abstract void visitScanned(Cell cell) throws IOException;
+    protected void visitScanned(Cell cell) throws IOException {
+      if (queryShape.relate(cell.getShape()).intersects()) {
+        if (cell.isLeaf()) {
+          visitLeaf(cell);
+        } else {
+          visit(cell);
+        }
+      }
+    }
 
     protected void preSiblings(VNode vNode) throws IOException {
     }
