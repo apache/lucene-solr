@@ -127,7 +127,7 @@ public class TestCachingCollector extends LuceneTestCase {
   public void testNoWrappedCollector() throws Exception {
     for (boolean cacheScores : new boolean[] { false, true }) {
       // create w/ null wrapped collector, and test that the methods work
-      CachingCollector cc = CachingCollector.create(true, cacheScores, 50 * ONE_BYTE);
+      CachingCollector cc = CachingCollector.create(cacheScores, 50 * ONE_BYTE);
       LeafCollector acc = cc.getLeafCollector(null);
       acc.setScorer(new MockScorer());
       acc.collect(0);

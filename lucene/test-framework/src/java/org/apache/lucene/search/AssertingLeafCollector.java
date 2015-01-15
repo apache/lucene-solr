@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 /** Wraps another Collector and checks that
- *  acceptsDocsOutOfOrder is respected. */
-
+ *  order is respected. */
 final class AssertingLeafCollector extends FilterLeafCollector {
 
   private final Random random;

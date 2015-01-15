@@ -56,14 +56,9 @@ import java.io.IOException;
  *         bits.set(docBase + doc);
  *       }
  *
- *       // accept docs out of order (for a BitSet it doesn't matter)
- *       public boolean acceptsDocsOutOfOrder() {
- *         return true;
- *       }
- *          
  *     };
  *   }
- *      
+ *
  * });
  * </pre>
  *

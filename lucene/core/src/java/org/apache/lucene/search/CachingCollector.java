@@ -290,11 +290,8 @@ public abstract class CachingCollector extends FilterCollector {
    * Creates a {@link CachingCollector} which does not wrap another collector.
    * The cached documents and scores can later be {@link #replay(Collector)
    * replayed}.
-   *
-   * @param acceptDocsOutOfOrder
-   *          whether documents are allowed to be collected out-of-order
    */
-  public static CachingCollector create(final boolean acceptDocsOutOfOrder, boolean cacheScores, double maxRAMMB) {
+  public static CachingCollector create(boolean cacheScores, double maxRAMMB) {
     Collector other = new SimpleCollector() {
 
       @Override
