@@ -192,8 +192,35 @@ public class SolrCLI {
     CommandLine cli = 
         processCommandLineArgs(joinCommonAndToolOptions(tool.getOptions()), toolArgs);
 
+    // for SSL support, try to accommodate relative paths set for SSL store props
+    String solrInstallDir = System.getProperty("solr.install.dir");
+    if (solrInstallDir != null) {
+      checkSslStoreSysProp(solrInstallDir, "keyStore");
+      checkSslStoreSysProp(solrInstallDir, "trustStore");
+    }
+
     // run the tool
     System.exit(tool.runTool(cli));
+  }
+
+  protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
+    String sysProp = "javax.net.ssl."+key;
+    String keyStore = System.getProperty(sysProp);
+    if (keyStore == null)
+      return;
+
+    File keyStoreFile = new File(keyStore);
+    if (keyStoreFile.isFile())
+      return; // configured setting is OK
+
+    keyStoreFile = new File(solrInstallDir, "server/"+keyStore);
+    if (keyStoreFile.isFile()) {
+      System.setProperty(sysProp, keyStoreFile.getAbsolutePath());
+    } else {
+      System.err.println("WARNING: "+sysProp+" file "+keyStore+
+          " not found! https requests to Solr will likely fail; please update your "+
+          sysProp+" setting to use an absolute path.");
+    }
   }
   
   /**
@@ -882,7 +909,7 @@ public class SolrCLI {
       if (collection == null)
         throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
       
-      log.info("Running healthcheck for "+collection);
+      log.debug("Running healthcheck for "+collection);
       
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
