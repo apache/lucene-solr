@@ -60,7 +60,7 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
     randomCalWindowMs = Math.max(2000L, tmpCal.getTimeInMillis());
   }
 
-  @Repeat(iterations = 10000)
+  @Repeat(iterations = 100)
   @Test
   public void test() throws IOException {
     //generate test data
