@@ -497,7 +497,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, true) : TopFieldCollector.create(sort, limit, false, false, false, true);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
         groups.put(group, collector);
       }
 
@@ -549,11 +549,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             c.collect(docId);
           }
         }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
       };
     }
 
@@ -579,7 +574,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, true) : TopFieldCollector.create(sort, limit, false, false, false, true);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
         groups.put(cursor.value, collector);
       }
 
@@ -613,11 +608,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             LeafCollector c = leafCollectors.lget();
             c.collect(docId);
           }
-        }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
         }
       };
     }

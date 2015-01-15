@@ -785,11 +785,6 @@ public class TestRankQueryPlugin extends QParserPlugin {
         public void collect(int doc) throws IOException {
           list.add(new ScoreDoc(doc+base, scorer.score()));
         }
-        
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
       };
     }
 

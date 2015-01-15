@@ -547,7 +547,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + query);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false);
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:

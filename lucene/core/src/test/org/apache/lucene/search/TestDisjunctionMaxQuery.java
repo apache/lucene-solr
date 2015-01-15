@@ -498,7 +498,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
     query.add(sq1);
     query.add(sq2);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
     searcher.search(query, collector);
     hits = collector.topDocs().scoreDocs.length;
     for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){

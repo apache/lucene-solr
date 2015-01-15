@@ -123,8 +123,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   @Test
   public void testTermQuery() throws Exception {
     TermQuery q = new TermQuery(new Term("f", "d"));
-    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10,
-        true));
+    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10));
     s.search(q, null, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
@@ -164,7 +163,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     
     for (final Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
-          10, true), occur);
+          10), occur);
       s.search(query, null, c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
@@ -196,8 +195,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     PhraseQuery q = new PhraseQuery();
     q.add(new Term("f", "b"));
     q.add(new Term("f", "c"));
-    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10,
-        true));
+    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10));
     s.search(q, null, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());

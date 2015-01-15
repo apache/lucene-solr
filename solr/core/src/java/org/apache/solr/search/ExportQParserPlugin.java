@@ -148,11 +148,6 @@ public class ExportQParserPlugin extends QParserPlugin {
           ++totalHits;
           set.set(docId);
         }
-        
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
       };
     }
 

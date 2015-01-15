@@ -569,11 +569,6 @@ public class MemoryIndex {
           this.scorer = scorer;
         }
 
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-
       });
       float score = scores[0];
       return score;

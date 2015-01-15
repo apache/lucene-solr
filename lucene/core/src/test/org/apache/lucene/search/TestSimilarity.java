@@ -111,10 +111,6 @@ public class TestSimilarity extends LuceneTestCase {
          protected void doSetNextReader(LeafReaderContext context) throws IOException {
            base = context.docBase;
          }
-         @Override
-        public boolean acceptsDocsOutOfOrder() {
-           return true;
-         }
        });
 
     PhraseQuery pq = new PhraseQuery();
@@ -133,10 +129,6 @@ public class TestSimilarity extends LuceneTestCase {
            //System.out.println("Doc=" + doc + " score=" + score);
            assertEquals(1.0f, scorer.score(), 0);
          }
-         @Override
-         public boolean acceptsDocsOutOfOrder() {
-           return true;
-         }
        });
 
     pq.setSlop(2);
@@ -151,10 +143,6 @@ public class TestSimilarity extends LuceneTestCase {
       public final void collect(int doc) throws IOException {
         //System.out.println("Doc=" + doc + " score=" + score);
         assertEquals(2.0f, scorer.score(), 0);
-      }
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
       }
     });
 

@@ -38,6 +38,9 @@ import java.util.*;
  *  IndexWriter#updateDocuments}).  Ie, the join is computed
  *  at index time.
  *
+ *  <p>This collector MUST be used with {@link ToParentBlockJoinIndexSearcher},
+ *  in order to work correctly.
+ *
  *  <p>The parent Sort must only use
  *  fields from the parent documents; sorting by field in
  *  the child documents is not supported.</p>
@@ -296,11 +299,6 @@ public class ToParentBlockJoinCollector implements Collector {
           }
         }
       }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return false;
-      }
     };
   }
 
@@ -408,10 +406,10 @@ public class ToParentBlockJoinCollector implements Collector {
         if (!trackScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: trackScores=false");
         }
-        collector = TopScoreDocCollector.create(numDocsInGroup, true);
+        collector = TopScoreDocCollector.create(numDocsInGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, numDocsInGroup, fillSortFields, trackScores, trackMaxScore, true);
+        collector = TopFieldCollector.create(withinGroupSort, numDocsInGroup, fillSortFields, trackScores, trackMaxScore);
       }
 
       LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);

@@ -78,7 +78,7 @@ public class TestTermScorer extends LuceneTestCase {
     Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext)indexSearcher.getTopReaderContext();
-    BulkScorer ts = weight.bulkScorer(context, true, context.reader().getLiveDocs());
+    BulkScorer ts = weight.bulkScorer(context, context.reader().getLiveDocs());
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<>();
@@ -106,11 +106,6 @@ public class TestTermScorer extends LuceneTestCase {
       @Override
       protected void doSetNextReader(LeafReaderContext context) throws IOException {
         base = context.docBase;
-      }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
       }
     });
     assertTrue("docs Size: " + docs.size() + " is not: " + 2, docs.size() == 2);

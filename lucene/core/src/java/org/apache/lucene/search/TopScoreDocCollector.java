@@ -36,13 +36,7 @@ import org.apache.lucene.index.LeafReaderContext;
  */
 public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
-  private abstract static class ScorerLeafCollector implements LeafCollector {
-
-    final boolean scoreDocsInOrder;
-
-    ScorerLeafCollector(boolean scoreDocsInOrder) {
-      this.scoreDocsInOrder = scoreDocsInOrder;
-    }
+  abstract static class ScorerLeafCollector implements LeafCollector {
 
     Scorer scorer;
 
@@ -51,90 +45,52 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       this.scorer = scorer;
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return scoreDocsInOrder == false;
-    }
-
   }
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    private final boolean scoreDocsInOrder;
-
-    SimpleTopScoreDocCollector(int numHits, boolean scoreDocsInOrder) {
+    SimpleTopScoreDocCollector(int numHits) {
       super(numHits);
-      this.scoreDocsInOrder = scoreDocsInOrder;
     }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
-      if (scoreDocsInOrder) {
-        return new ScorerLeafCollector(scoreDocsInOrder) {
+      return new ScorerLeafCollector() {
 
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
+        @Override
+        public void collect(int doc) throws IOException {
+          float score = scorer.score();
 
-            // This collector cannot handle these scores:
-            assert score != Float.NEGATIVE_INFINITY;
-            assert !Float.isNaN(score);
+          // This collector cannot handle these scores:
+          assert score != Float.NEGATIVE_INFINITY;
+          assert !Float.isNaN(score);
 
-            totalHits++;
-            if (score <= pqTop.score) {
-              // Since docs are returned in-order (i.e., increasing doc Id), a document
-              // with equal score to pqTop.score cannot compete since HitQueue favors
-              // documents with lower doc Ids. Therefore reject those docs too.
-              return;
-            }
-            pqTop.doc = doc + docBase;
-            pqTop.score = score;
-            pqTop = pq.updateTop();
+          totalHits++;
+          if (score <= pqTop.score) {
+            // Since docs are returned in-order (i.e., increasing doc Id), a document
+            // with equal score to pqTop.score cannot compete since HitQueue favors
+            // documents with lower doc Ids. Therefore reject those docs too.
+            return;
           }
+          pqTop.doc = doc + docBase;
+          pqTop.score = score;
+          pqTop = pq.updateTop();
+        }
 
-        };
-      } else {
-        return new ScorerLeafCollector(scoreDocsInOrder) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
-
-            // This collector cannot handle NaN
-            assert !Float.isNaN(score);
-
-            totalHits++;
-            if (score < pqTop.score) {
-              // Doesn't compete w/ bottom entry in queue
-              return;
-            }
-            doc += docBase;
-            if (score == pqTop.score && doc > pqTop.doc) {
-              // Break tie in score by doc ID:
-              return;
-            }
-            pqTop.doc = doc;
-            pqTop.score = score;
-            pqTop = pq.updateTop();
-          }
-
-        };
-      }
+      };
     }
 
   }
 
   private static class PagingTopScoreDocCollector extends TopScoreDocCollector {
 
-    private final boolean scoreDocsInOrder;
     private final ScoreDoc after;
     private int collectedHits;
 
-    PagingTopScoreDocCollector(int numHits, boolean scoreDocsInOrder, ScoreDoc after) {
+    PagingTopScoreDocCollector(int numHits, ScoreDoc after) {
       super(numHits);
-      this.scoreDocsInOrder = scoreDocsInOrder;
       this.after = after;
       this.collectedHits = 0;
     }
@@ -153,65 +109,34 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
       final int afterDoc = after.doc - context.docBase;
-      if (scoreDocsInOrder) {
-        return new ScorerLeafCollector(scoreDocsInOrder) {
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
+      return new ScorerLeafCollector() {
+        @Override
+        public void collect(int doc) throws IOException {
+          float score = scorer.score();
 
-            // This collector cannot handle these scores:
-            assert score != Float.NEGATIVE_INFINITY;
-            assert !Float.isNaN(score);
+          // This collector cannot handle these scores:
+          assert score != Float.NEGATIVE_INFINITY;
+          assert !Float.isNaN(score);
 
-            totalHits++;
+          totalHits++;
 
-            if (score > after.score || (score == after.score && doc <= afterDoc)) {
-              // hit was collected on a previous page
-              return;
-            }
-
-            if (score <= pqTop.score) {
-              // Since docs are returned in-order (i.e., increasing doc Id), a document
-              // with equal score to pqTop.score cannot compete since HitQueue favors
-              // documents with lower doc Ids. Therefore reject those docs too.
-              return;
-            }
-            collectedHits++;
-            pqTop.doc = doc + docBase;
-            pqTop.score = score;
-            pqTop = pq.updateTop();
+          if (score > after.score || (score == after.score && doc <= afterDoc)) {
+            // hit was collected on a previous page
+            return;
           }
-        };
-      } else {
-        return new ScorerLeafCollector(scoreDocsInOrder) {
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
 
-            // This collector cannot handle NaN
-            assert !Float.isNaN(score);
-
-            totalHits++;
-            if (score > after.score || (score == after.score && doc <= afterDoc)) {
-              // hit was collected on a previous page
-              return;
-            }
-            if (score < pqTop.score) {
-              // Doesn't compete w/ bottom entry in queue
-              return;
-            }
-            doc += docBase;
-            if (score == pqTop.score && doc > pqTop.doc) {
-              // Break tie in score by doc ID:
-              return;
-            }
-            collectedHits++;
-            pqTop.doc = doc;
-            pqTop.score = score;
-            pqTop = pq.updateTop();
+          if (score <= pqTop.score) {
+            // Since docs are returned in-order (i.e., increasing doc Id), a document
+            // with equal score to pqTop.score cannot compete since HitQueue favors
+            // documents with lower doc Ids. Therefore reject those docs too.
+            return;
           }
-        };
-      }
+          collectedHits++;
+          pqTop.doc = doc + docBase;
+          pqTop.score = score;
+          pqTop = pq.updateTop();
+        }
+      };
     }
   }
 
@@ -225,8 +150,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, boolean docsScoredInOrder) {
-    return create(numHits, null, docsScoredInOrder);
+  public static TopScoreDocCollector create(int numHits) {
+    return create(numHits, null);
   }
 
   /**
@@ -239,23 +164,23 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, ScoreDoc after, boolean docsScoredInOrder) {
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
 
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits, docsScoredInOrder);
+      return new SimpleTopScoreDocCollector(numHits);
     } else {
-      return new PagingTopScoreDocCollector(numHits, docsScoredInOrder, after);
+      return new PagingTopScoreDocCollector(numHits, after);
     }
   }
 
   ScoreDoc pqTop;
 
   // prevents instantiation
-  private TopScoreDocCollector(int numHits) {
+  TopScoreDocCollector(int numHits) {
     super(new HitQueue(numHits, true));
     // HitQueue implements getSentinelObject to return a ScoreDoc, so we know
     // that at this point top() is already initialized.

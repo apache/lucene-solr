@@ -443,8 +443,8 @@ on the built-in available scoring models and extending or changing Similarity.
                 given the Query.
             </li>
             <li>
-                {@link org.apache.lucene.search.Weight#bulkScorer(org.apache.lucene.index.LeafReaderContext, boolean, org.apache.lucene.util.Bits)
-                  scorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs)} &mdash;
+                {@link org.apache.lucene.search.Weight#bulkScorer(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)
+                  scorer(LeafReaderContext context, Bits acceptDocs)} &mdash;
                 Construct a new {@link org.apache.lucene.search.BulkScorer BulkScorer} for this Weight. See <a href="#bulkScorerClass">The BulkScorer Class</a>
                 below for help defining a BulkScorer. This is an optional method, and most queries do not implement it.
             </li>

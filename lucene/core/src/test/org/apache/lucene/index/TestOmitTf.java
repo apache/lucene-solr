@@ -437,10 +437,6 @@ public class TestOmitTf extends LuceneTestCase {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return true;
-    }
   }
   
   /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are -1 */

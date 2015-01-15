@@ -712,34 +712,27 @@ public class TestBooleanCoord extends LuceneTestCase {
     assertEquals(0, scorer.nextDoc());
     assertEquals(expected, scorer.score(), 0.0001f);
     
-    // test out-of-order (if supported)
-    if (weight.scoresDocsOutOfOrder()) {
-      final AtomicBoolean seen = new AtomicBoolean(false);
-      BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), false, null);
-      assertNotNull(bulkScorer);
-      bulkScorer.score(new LeafCollector() {
-        Scorer scorer;
-        
-        @Override
-        public void setScorer(Scorer scorer) throws IOException {
-          this.scorer = scorer;
-        }
-        
-        @Override
-        public void collect(int doc) throws IOException {
-          assertFalse(seen.get());
-          assertEquals(0, doc);
-          assertEquals(expected, scorer.score(), 0.0001f);
-          seen.set(true);
-        }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-      }, 1);
-      assertTrue(seen.get());
-    }
+    // test bulk scorer
+    final AtomicBoolean seen = new AtomicBoolean(false);
+    BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), null);
+    assertNotNull(bulkScorer);
+    bulkScorer.score(new LeafCollector() {
+      Scorer scorer;
+      
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+      }
+      
+      @Override
+      public void collect(int doc) throws IOException {
+        assertFalse(seen.get());
+        assertEquals(0, doc);
+        assertEquals(expected, scorer.score(), 0.0001f);
+        seen.set(true);
+      }
+    }, 1);
+    assertTrue(seen.get());
     
     // test the explanation
     Explanation expl = weight.explain(reader.leaves().get(0), 0);

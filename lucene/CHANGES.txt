@@ -364,6 +364,10 @@ API Changes
 * LUCENE-6158, LUCENE-6165: IndexWriter.addIndexes(IndexReader...) changed to
   addIndexes(CodecReader...) (Robert Muir)
 
+* LUCENE-6179: Out-of-order scoring is not allowed anymore, so
+  Weight.scoresDocsOutOfOrder and LeafCollector.acceptsDocsOutOfOrder have been
+  removed and boolean queries now always score in order.
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

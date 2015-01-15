@@ -345,10 +345,10 @@ public class BlockGroupingCollector extends SimpleCollector {
         if (!needsScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: needsScores=false");
         }
-        collector = TopScoreDocCollector.create(maxDocsPerGroup, true);
+        collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores, true);
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores);
       }
 
       LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);
@@ -510,11 +510,6 @@ public class BlockGroupingCollector extends SimpleCollector {
       topGroupDoc = doc;
       //System.out.println("        doc competes w/ top groups");
     }
-  }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
   }
 
   @Override

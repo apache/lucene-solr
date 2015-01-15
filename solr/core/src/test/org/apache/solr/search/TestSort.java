@@ -270,7 +270,7 @@ public class TestSort extends SolrTestCaseJ4 {
         boolean trackScores = r.nextBoolean();
         boolean trackMaxScores = r.nextBoolean();
         boolean scoreInOrder = r.nextBoolean();
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, true, trackScores, trackMaxScores, scoreInOrder);
+        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, true, trackScores, trackMaxScores);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

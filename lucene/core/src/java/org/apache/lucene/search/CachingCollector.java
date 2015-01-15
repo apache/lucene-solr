@@ -82,7 +82,6 @@ public abstract class CachingCollector extends FilterCollector {
 
   private static class NoScoreCachingCollector extends CachingCollector {
 
-    List<Boolean> acceptDocsOutOfOrders;
     List<LeafReaderContext> contexts;
     List<int[]> docs;
     int maxDocsToCache;
@@ -92,7 +91,6 @@ public abstract class CachingCollector extends FilterCollector {
       super(in);
       this.maxDocsToCache = maxDocsToCache;
       contexts = new ArrayList<>();
-      acceptDocsOutOfOrders = new ArrayList<>();
       docs = new ArrayList<>();
     }
 
@@ -105,7 +103,6 @@ public abstract class CachingCollector extends FilterCollector {
       final LeafCollector in = this.in.getLeafCollector(context);
       if (contexts != null) {
         contexts.add(context);
-        acceptDocsOutOfOrders.add(in.acceptsDocsOutOfOrder());
       }
       if (maxDocsToCache >= 0) {
         return lastCollector = wrap(in, maxDocsToCache);
@@ -152,14 +149,7 @@ public abstract class CachingCollector extends FilterCollector {
       assert docs.size() == contexts.size();
       for (int i = 0; i < contexts.size(); ++i) {
         final LeafReaderContext context = contexts.get(i);
-        final boolean docsInOrder = !acceptDocsOutOfOrders.get(i);
         final LeafCollector collector = other.getLeafCollector(context);
-        if (!collector.acceptsDocsOutOfOrder() && !docsInOrder) {
-          throw new IllegalArgumentException(
-                "cannot replay: given collector does not support "
-                    + "out-of-order collection, while the wrapped collector does. "
-                    + "Therefore cached documents may be out-of-order.");
-        }
         collect(collector, i);
       }
     }
@@ -306,10 +296,6 @@ public abstract class CachingCollector extends FilterCollector {
    */
   public static CachingCollector create(final boolean acceptDocsOutOfOrder, boolean cacheScores, double maxRAMMB) {
     Collector other = new SimpleCollector() {
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return acceptDocsOutOfOrder;
-      }
 
       @Override
       public void collect(int doc) {}

@@ -69,10 +69,10 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
       final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
         // Sort by score
-        collector = TopScoreDocCollector.create(maxDocsPerGroup, true);
+        collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores, true);
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores);
       }
       groupMap.put(group.groupValue,
           new SearchGroupDocs<>(group.groupValue,
@@ -112,11 +112,6 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
       group.leafCollector = group.collector.getLeafCollector(readerContext);
     }
-  }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
   }
 
   public TopGroups<GROUP_VALUE_TYPE> getTopGroups(int withinGroupOffset) {

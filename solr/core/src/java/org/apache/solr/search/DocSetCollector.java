@@ -87,9 +87,4 @@ public class DocSetCollector extends SimpleCollector {
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.base = context.docBase;
   }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
-  }
 }

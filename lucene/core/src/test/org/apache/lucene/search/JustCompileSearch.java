@@ -52,11 +52,6 @@ final class JustCompileSearch {
     public void setScorer(Scorer scorer) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
 
   }
   

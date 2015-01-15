@@ -879,9 +879,9 @@ public class Grouping {
     TopDocsCollector newCollector(Sort sort, boolean needScores) throws IOException {
       int groupDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       if (sort == null || sort == Sort.RELEVANCE) {
-        return TopScoreDocCollector.create(groupDocsToCollect, true);
+        return TopScoreDocCollector.create(groupDocsToCollect);
       } else {
-        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores, true);
+        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores);
       }
     }
 

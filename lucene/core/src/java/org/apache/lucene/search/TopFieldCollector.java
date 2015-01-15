@@ -27,7 +27,7 @@ import org.apache.lucene.util.PriorityQueue;
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
  * <p/>
- * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean, boolean)} method
+ * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean)} method
  * for instantiating a TopFieldCollector.
  *
  * @lucene.experimental
@@ -54,11 +54,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       comparator.setScorer(scorer);
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
     }
   }
 
@@ -123,11 +118,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       for (LeafFieldComparator comparator : comparators) {
         comparator.setScorer(scorer);
       }
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
     }
   }
 
@@ -210,102 +200,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 setBottom(bottom.slot);
               }
             }
-          }
-
-        };
-      }
-    }
-
-  }
-
-  /*
-   * Implements a TopFieldCollector over one SortField criteria, without
-   * tracking document scores and maxScore, and assumes out of orderness in doc
-   * Ids collection.
-   */
-  private static class OutOfOrderNonScoringCollector extends TopFieldCollector {
-
-    final FieldValueHitQueue<Entry> queue;
-
-    public OutOfOrderNonScoringCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
-      this.queue = queue;
-    }
-
-    @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      docBase = context.docBase;
-
-      final LeafFieldComparator[] comparators = queue.getComparators(context);
-      final int[] reverseMul = queue.getReverseMul();
-
-      if (comparators.length == 1) {
-        return new OneComparatorLeafCollector(comparators[0], reverseMul[0]) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = reverseMul * comparator.compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              comparator.copy(bottom.slot, doc);
-              updateBottom(doc);
-              comparator.setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              comparator.copy(slot, doc);
-              add(slot, doc, Float.NaN);
-              if (queueFull) {
-                comparator.setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-
-        };
-      } else {
-        return new MultiComparatorLeafCollector(comparators, reverseMul) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              copy(bottom.slot, doc);
-              updateBottom(doc);
-              setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              copy(slot, doc);
-              add(slot, doc, Float.NaN);
-              if (queueFull) {
-                setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
           }
 
         };
@@ -414,113 +308,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   /*
-   * Implements a TopFieldCollector over one SortField criteria, while tracking
-   * document scores but no maxScore, and assumes out of orderness in doc Ids
-   * collection.
-   */
-  private static class OutOfOrderScoringNoMaxScoreCollector extends TopFieldCollector {
-
-    final FieldValueHitQueue<Entry> queue;
-
-    public OutOfOrderScoringNoMaxScoreCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
-      this.queue = queue;
-    }
-
-    @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      docBase = context.docBase;
-
-      final LeafFieldComparator[] comparators = queue.getComparators(context);
-      final int[] reverseMul = queue.getReverseMul();
-
-      if (comparators.length == 1) {
-        return new OneComparatorLeafCollector(comparators[0], reverseMul[0]) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = reverseMul * comparator.compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // Compute the score only if the hit is competitive.
-              final float score = scorer.score();
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              comparator.copy(bottom.slot, doc);
-              updateBottom(doc, score);
-              comparator.setBottom(bottom.slot);
-            } else {
-              // Compute the score only if the hit is competitive.
-              final float score = scorer.score();
-
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              comparator.copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                comparator.setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-
-        };
-      } else {
-        return new MultiComparatorLeafCollector(comparators, reverseMul) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // Compute the score only if the hit is competitive.
-              final float score = scorer.score();
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              copy(bottom.slot, doc);
-              updateBottom(doc, score);
-              setBottom(bottom.slot);
-            } else {
-              // Compute the score only if the hit is competitive.
-              final float score = scorer.score();
-
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-        };
-      }
-    }
-
-  }
-
-  /*
    * Implements a TopFieldCollector over one SortField criteria, with tracking
    * document scores and maxScore.
    */
@@ -617,109 +404,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   /*
-   * Implements a TopFieldCollector over one SortField criteria, with tracking
-   * document scores and maxScore, and assumes out of orderness in doc Ids
-   * collection.
-   */
-  private static class OutOfOrderScoringMaxScoreCollector extends TopFieldCollector {
-
-    final FieldValueHitQueue<Entry> queue;
-
-    public OutOfOrderScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
-      this.queue = queue;
-      maxScore = Float.MIN_NORMAL; // otherwise we would keep NaN
-    }
-
-    @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      docBase = context.docBase;
-
-      final LeafFieldComparator[] comparators = queue.getComparators(context);
-      final int[] reverseMul = queue.getReverseMul();
-
-      if (comparators.length == 1) {
-        return new OneComparatorLeafCollector(comparators[0], reverseMul[0]) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            final float score = scorer.score();
-            if (score > maxScore) {
-              maxScore = score;
-            }
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = reverseMul * comparator.compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              comparator.copy(bottom.slot, doc);
-              updateBottom(doc, score);
-              comparator.setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              comparator.copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                comparator.setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-        };
-      } else {
-        return new MultiComparatorLeafCollector(comparators, reverseMul) {
-
-          @Override
-          public void collect(int doc) throws IOException {
-            final float score = scorer.score();
-            if (score > maxScore) {
-              maxScore = score;
-            }
-            ++totalHits;
-            if (queueFull) {
-              // Fastmatch: return if this hit is not competitive
-              final int cmp = compareBottom(doc);
-              if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-                return;
-              }
-
-              // This hit is competitive - replace bottom element in queue & adjustTop
-              copy(bottom.slot, doc);
-              updateBottom(doc, score);
-              setBottom(bottom.slot);
-            } else {
-              // Startup transient: queue hasn't gathered numHits yet
-              final int slot = totalHits - 1;
-              // Copy hit into queue
-              copy(slot, doc);
-              add(slot, doc, score);
-              if (queueFull) {
-                setBottom(bottom.slot);
-              }
-            }
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-        };
-      }
-    }
-
-  }
-
-  /*
    * Implements a TopFieldCollector when after != null.
    */
   private final static class PagingFieldCollector extends TopFieldCollector {
@@ -774,8 +458,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
             final int cmp = compareBottom(doc);
-            if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
-              // Definitely not competitive.
+            if (cmp <= 0) {
+              // not competitive since documents are visited in doc id order
               return;
             }
           }
@@ -816,11 +500,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               setBottom(bottom.slot);
             }
           }
-        }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
         }
       };
     }
@@ -882,18 +561,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          true affects performance as it incurs the score computation on
    *          each result. Also, setting this true automatically sets
    *          <code>trackDocScores</code> to true as well.
-   * @param docsScoredInOrder
-   *          specifies whether documents are scored in doc Id order or not by
-   *          the given {@link Scorer} in {@link LeafCollector#setScorer(Scorer)}.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
-      boolean docsScoredInOrder)
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore)
       throws IOException {
-    return create(sort, numHits, null, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder);
+    return create(sort, numHits, null, fillFields, trackDocScores, trackMaxScore);
   }
 
   /**
@@ -927,16 +602,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          true affects performance as it incurs the score computation on
    *          each result. Also, setting this true automatically sets
    *          <code>trackDocScores</code> to true as well.
-   * @param docsScoredInOrder
-   *          specifies whether documents are scored in doc Id order or not by
-   *          the given {@link Scorer} in {@link LeafCollector#setScorer(Scorer)}.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
-      boolean docsScoredInOrder)
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore)
       throws IOException {
 
     if (sort.fields.length == 0) {
@@ -950,22 +621,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      if (docsScoredInOrder) {
-        if (trackMaxScore) {
-          return new ScoringMaxScoreCollector(queue, numHits, fillFields);
-        } else if (trackDocScores) {
-          return new ScoringNoMaxScoreCollector(queue, numHits, fillFields);
-        } else {
-          return new NonScoringCollector(queue, numHits, fillFields);
-        }
+      if (trackMaxScore) {
+        return new ScoringMaxScoreCollector(queue, numHits, fillFields);
+      } else if (trackDocScores) {
+        return new ScoringNoMaxScoreCollector(queue, numHits, fillFields);
       } else {
-        if (trackMaxScore) {
-          return new OutOfOrderScoringMaxScoreCollector(queue, numHits, fillFields);
-        } else if (trackDocScores) {
-          return new OutOfOrderScoringNoMaxScoreCollector(queue, numHits, fillFields);
-        } else {
-          return new OutOfOrderNonScoringCollector(queue, numHits, fillFields);
-        }
+        return new NonScoringCollector(queue, numHits, fillFields);
       }
     } else {
       if (after.fields == null) {
