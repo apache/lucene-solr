@@ -36,6 +36,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHUNK_STATS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
@@ -88,6 +89,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int numDocs;
   private final boolean merging;
   private final BlockState state;
+  private final long numChunks; // number of compressed blocks written
+  private final long numDirtyChunks; // number of incomplete compressed blocks written
   private boolean closed;
 
   // used by clone
@@ -102,6 +105,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
+    this.numChunks = reader.numChunks;
+    this.numDirtyChunks = reader.numDirtyChunks;
     this.merging = merging;
     this.state = new BlockState();
     this.closed = false;
@@ -145,9 +150,6 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     try {
       // Open the data file and read metadata
       fieldsStream = d.openInput(fieldsStreamFN, context);
-      if (maxPointer + CodecUtil.footerLength() != fieldsStream.length()) {
-        throw new CorruptIndexException("Invalid fieldsStream maxPointer (file truncated?): maxPointer=" + maxPointer + ", length=" + fieldsStream.length(), fieldsStream);
-      }
       final String codecNameDat = formatName + CODEC_SFX_DAT;
       final int fieldsVersion = CodecUtil.checkIndexHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       if (version != fieldsVersion) {
@@ -160,6 +162,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       decompressor = compressionMode.newDecompressor();
       this.merging = false;
       this.state = new BlockState();
+      
+      if (version >= VERSION_CHUNK_STATS) {
+        fieldsStream.seek(maxPointer);
+        numChunks = fieldsStream.readVLong();
+        numDirtyChunks = fieldsStream.readVLong();
+        if (numDirtyChunks > numChunks) {
+          throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
+        }
+      } else {
+        numChunks = numDirtyChunks = -1;
+      }
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -496,8 +509,6 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int totalLength = offsets[chunkDocs];
       final int numStoredFields = this.numStoredFields[index];
 
-      fieldsStream.seek(startPointer);
-
       final DataInput documentInput;
       if (length == 0) {
         // empty
@@ -506,6 +517,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         // already decompressed
         documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset + offset, length);
       } else if (sliced) {
+        fieldsStream.seek(startPointer);
         decompressor.decompress(fieldsStream, chunkSize, offset, Math.min(length, chunkSize - offset), bytes);
         documentInput = new DataInput() {
 
@@ -545,6 +557,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
         };
       } else {
+        fieldsStream.seek(startPointer);
         decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
         assert bytes.length == length;
         documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
@@ -610,9 +623,29 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   CompressionMode getCompressionMode() {
     return compressionMode;
   }
+  
+  CompressingStoredFieldsIndexReader getIndexReader() {
+    return indexReader;
+  }
+  
+  long getMaxPointer() {
+    return maxPointer;
+  }
+  
+  IndexInput getFieldsStream() {
+    return fieldsStream;
+  }
 
   int getChunkSize() {
     return chunkSize;
+  }
+  
+  long getNumChunks() {
+    return numChunks;
+  }
+  
+  long getNumDirtyChunks() {
+    return numDirtyChunks;
   }
 
   @Override
