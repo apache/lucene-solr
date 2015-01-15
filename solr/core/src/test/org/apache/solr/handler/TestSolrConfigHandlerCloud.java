@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -70,7 +71,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     setupHarnesses();
-    testReqHandlerAPIs();
+//    testReqHandlerAPIs();
     testReqParams();
   }
 
@@ -129,13 +130,15 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "/dump",
         10);
 
-    TestSolrConfigHandler.testForResponseElement(null,
+    result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/dump?wt=json&useParams=x",
         cloudClient,
         asList("params", "a"),
         "A val",
         5);
+    compareValues(result, "", asList( "params", RequestParams.USEPARAM));
+
     TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/dump?wt=json&useParams=x&a=fomrequest",
