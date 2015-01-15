@@ -30,7 +30,13 @@ API Changes
   implementation returning the empty list.  (Robert Muir)
 
 ======================= Lucene 5.1.0 =======================
-(No Changes)
+
+Optimizations
+
+* LUCENE-6183: Avoid recompressing stored fields when merging
+  segments without deletions. Lucene50Codec's BEST_COMPRESSION
+  mode uses a higher deflate level for more compact storage.
+  (Robert Muir)
 
 ======================= Lucene 5.0.0 =======================
 

@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.SerializedDocument;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitUtil;
@@ -68,13 +70,15 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final String CODEC_SFX_IDX = "Index";
   static final String CODEC_SFX_DAT = "Data";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHUNK_STATS = 1;
+  static final int VERSION_CURRENT = VERSION_CHUNK_STATS;
 
   private final String segment;
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
   private final Compressor compressor;
+  private final CompressionMode compressionMode;
   private final int chunkSize;
   private final int maxDocsPerChunk;
 
@@ -83,12 +87,16 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int[] endOffsets; // end offsets in bufferedDocs
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
+  
+  private long numChunks; // number of compressed blocks written
+  private long numDirtyChunks; // number of incomplete compressed blocks written
 
   /** Sole constructor. */
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
       String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) throws IOException {
     assert directory != null;
     this.segment = si.name;
+    this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
     this.maxDocsPerChunk = maxDocsPerChunk;
@@ -234,6 +242,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     docBase += numBufferedDocs;
     numBufferedDocs = 0;
     bufferedDocs.length = 0;
+    numChunks++;
   }
   
   byte scratchBytes[] = new byte[16];
@@ -459,6 +468,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (numBufferedDocs > 0) {
       flush();
+      numDirtyChunks++; // incomplete: we had to force this flush
     } else {
       assert bufferedDocs.length == 0;
     }
@@ -466,8 +476,23 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs, fieldsStream.getFilePointer());
+    fieldsStream.writeVLong(numChunks);
+    fieldsStream.writeVLong(numDirtyChunks);
     CodecUtil.writeFooter(fieldsStream);
     assert bufferedDocs.length == 0;
+  }
+  
+  // bulk merge is scary: its caused corruption bugs in the past.
+  // we try to be extra safe with this impl, but add an escape hatch to
+  // have a workaround for undiscovered bugs.
+  static final String BULK_MERGE_ENABLED_SYSPROP = CompressingStoredFieldsWriter.class.getName() + ".enableBulkMerge";
+  static final boolean BULK_MERGE_ENABLED;
+  static {
+    boolean v = true;
+    try {
+      v = Boolean.parseBoolean(System.getProperty(BULK_MERGE_ENABLED_SYSPROP, "true"));
+    } catch (SecurityException ignored) {}
+    BULK_MERGE_ENABLED = v;
   }
 
   @Override
@@ -491,8 +516,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       final int maxDoc = mergeState.maxDocs[readerIndex];
       final Bits liveDocs = mergeState.liveDocs[readerIndex];
 
-      // if its some other format, or an older version of this format:
-      if (matchingFieldsReader == null || matchingFieldsReader.getVersion() != VERSION_CURRENT) {
+      // if its some other format, or an older version of this format, or safety switch:
+      if (matchingFieldsReader == null || matchingFieldsReader.getVersion() != VERSION_CURRENT || BULK_MERGE_ENABLED == false) {
         // naive merge...
         StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[readerIndex];
         if (storedFieldsReader != null) {
@@ -507,10 +532,78 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           finishDocument();
           ++docCount;
         }
+      } else if (matchingFieldsReader.getCompressionMode() == compressionMode && 
+                 matchingFieldsReader.getChunkSize() == chunkSize && 
+                 liveDocs == null &&
+                 !tooDirty(matchingFieldsReader)) { 
+        // optimized merge, raw byte copy
+        // its not worth fine-graining this if there are deletions.
+        
+        // if the format is older, its always handled by the naive merge case above
+        assert matchingFieldsReader.getVersion() == VERSION_CURRENT;        
+        matchingFieldsReader.checkIntegrity();
+        
+        // flush any pending chunks
+        if (numBufferedDocs > 0) {
+          flush();
+          numDirtyChunks++; // incomplete: we had to force this flush
+        }
+        
+        // iterate over each chunk. we use the stored fields index to find chunk boundaries,
+        // read the docstart + doccount from the chunk header (we write a new header, since doc numbers will change),
+        // and just copy the bytes directly.
+        IndexInput rawDocs = matchingFieldsReader.getFieldsStream();
+        CompressingStoredFieldsIndexReader index = matchingFieldsReader.getIndexReader();
+        rawDocs.seek(index.getStartPointer(0));
+        int docID = 0;
+        while (docID < maxDoc) {
+          // read header
+          int base = rawDocs.readVInt();
+          if (base != docID) {
+            throw new CorruptIndexException("invalid state: base=" + base + ", docID=" + docID, rawDocs);
+          }
+          int code = rawDocs.readVInt();
+          
+          // write a new index entry and new header for this chunk.
+          int bufferedDocs = code >>> 1;
+          indexWriter.writeIndex(bufferedDocs, fieldsStream.getFilePointer());
+          fieldsStream.writeVInt(docBase); // rebase
+          fieldsStream.writeVInt(code);
+          docID += bufferedDocs;
+          docBase += bufferedDocs;
+          docCount += bufferedDocs;
+          
+          if (docID > maxDoc) {
+            throw new CorruptIndexException("invalid state: base=" + base + ", count=" + bufferedDocs + ", maxDoc=" + maxDoc, rawDocs);
+          }
+          
+          // copy bytes until the next chunk boundary (or end of chunk data).
+          // using the stored fields index for this isn't the most efficient, but fast enough
+          // and is a source of redundancy for detecting bad things.
+          final long end;
+          if (docID == maxDoc) {
+            end = matchingFieldsReader.getMaxPointer();
+          } else {
+            end = index.getStartPointer(docID);
+          }
+          fieldsStream.copyBytes(rawDocs, end - rawDocs.getFilePointer());
+        }
+               
+        if (rawDocs.getFilePointer() != matchingFieldsReader.getMaxPointer()) {
+          throw new CorruptIndexException("invalid state: pos=" + rawDocs.getFilePointer() + ", max=" + matchingFieldsReader.getMaxPointer(), rawDocs);
+        }
+        
+        // since we bulk merged all chunks, we inherit any dirty ones from this segment.
+        numChunks += matchingFieldsReader.getNumChunks();
+        numDirtyChunks += matchingFieldsReader.getNumDirtyChunks();
       } else {
         // optimized merge, we copy serialized (but decompressed) bytes directly
         // even on simple docs (1 stored field), it seems to help by about 20%
+        
+        // if the format is older, its always handled by the naive merge case above
+        assert matchingFieldsReader.getVersion() == VERSION_CURRENT;
         matchingFieldsReader.checkIntegrity();
+
         for (int docID = 0; docID < maxDoc; docID++) {
           if (liveDocs != null && liveDocs.get(docID) == false) {
             continue;
@@ -526,5 +619,18 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
+  }
+  
+  /** 
+   * Returns true if we should recompress this reader, even though we could bulk merge compressed data 
+   * <p>
+   * The last chunk written for a segment is typically incomplete, so without recompressing,
+   * in some worst-case situations (e.g. frequent reopen with tiny flushes), over time the 
+   * compression ratio can degrade. This is a safety switch.
+   */
+  boolean tooDirty(CompressingStoredFieldsReader candidate) {
+    // more than 1% dirty, or more than hard limit of 1024 dirty chunks
+    return candidate.getNumDirtyChunks() > 1024 || 
+           candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
   }
 }

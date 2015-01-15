@@ -27,9 +27,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
@@ -266,5 +271,51 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       assertEquals(l1, l2);
       out.reset(buffer);
     }
+  }
+  
+  /**
+   * writes some tiny segments with incomplete compressed blocks,
+   * and ensures merge recompresses them.
+   */
+  public void testChunkCleanup() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
+    
+    // we have to enforce certain things like maxDocsPerChunk to cause dirty chunks to be created
+    // by this test.
+    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4*1024, 100, false, 8));
+    IndexWriter iw = new IndexWriter(dir, iwConf);
+    DirectoryReader ir = DirectoryReader.open(iw, true);
+    for (int i = 0; i < 5; i++) {
+      Document doc = new Document();
+      doc.add(new StoredField("text", "not very long at all"));
+      iw.addDocument(doc);
+      // force flush
+      DirectoryReader ir2 = DirectoryReader.openIfChanged(ir);
+      assertNotNull(ir2);
+      ir.close();
+      ir = ir2;
+      // examine dirty counts:
+      for (LeafReaderContext leaf : ir2.leaves()) {
+        CodecReader sr = (CodecReader) leaf.reader();
+        CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
+        assertEquals(1, reader.getNumChunks());
+        assertEquals(1, reader.getNumDirtyChunks());
+      }
+    }
+    iw.getConfig().setMergePolicy(newLogMergePolicy());
+    iw.forceMerge(1);
+    DirectoryReader ir2 = DirectoryReader.openIfChanged(ir);
+    assertNotNull(ir2);
+    ir.close();
+    ir = ir2;
+    CodecReader sr = getOnlySegmentReader(ir);
+    CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
+    // we could get lucky, and have zero, but typically one.
+    assertTrue(reader.getNumDirtyChunks() <= 1);
+    ir.close();
+    iw.close();
+    dir.close();
   }
 }

@@ -70,8 +70,10 @@ public abstract class CompressionMode {
 
     @Override
     public Compressor newCompressor() {
+      // notes:
       // 3 is the highest level that doesn't have lazy match evaluation
-      return new DeflateCompressor(3);
+      // 6 is the default, higher than that is just a waste of cpu
+      return new DeflateCompressor(6);
     }
 
     @Override
