@@ -1314,6 +1314,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
+    IndexSearcher searcher = new ToParentBlockJoinIndexSearcher(r);
     Query childQuery = new TermQuery(new Term("childText", "text"));
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
@@ -1323,7 +1324,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
                                                                   10, true, true);
-    newSearcher(r).search(parentQuery, c);
+    searcher.search(parentQuery, c);
     TopGroups<Integer> groups = c.getTopGroups(childJoinQuery, null, 0, 10, 0, false);
 
     // Two parents:
@@ -1381,6 +1382,8 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
+    IndexSearcher searcher = new ToParentBlockJoinIndexSearcher(r);
+    
     // never matches:
     Query childQuery = new TermQuery(new Term("childText", "bogus"));
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
@@ -1391,7 +1394,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
                                                                   10, true, true);
-    newSearcher(r).search(parentQuery, c);
+    searcher.search(parentQuery, c);
     TopGroups<Integer> groups = c.getTopGroups(childJoinQuery, null, 0, 10, 0, false);
 
     // Two parents:

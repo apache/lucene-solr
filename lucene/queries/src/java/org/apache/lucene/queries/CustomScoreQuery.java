@@ -270,11 +270,6 @@ public class CustomScoreQuery extends Query {
       res.addDetail(new Explanation(queryWeight, "queryWeight"));
       return res;
     }
-
-    @Override
-    public boolean scoresDocsOutOfOrder() {
-      return false;
-    }
     
   }
 

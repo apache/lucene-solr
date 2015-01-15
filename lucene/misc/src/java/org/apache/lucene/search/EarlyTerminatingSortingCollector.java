@@ -128,11 +128,6 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
           }
         }
 
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
-
       };
     } else {
       return super.getLeafCollector(context);

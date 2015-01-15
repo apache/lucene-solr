@@ -479,7 +479,7 @@ public class IndexSearcher {
       limit = 1;
     }
     nDocs = Math.min(nDocs, limit);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, after, !weight.scoresDocsOutOfOrder());
+    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, after);
     search(leaves, weight, collector);
     return collector.topDocs();
   }
@@ -528,8 +528,7 @@ public class IndexSearcher {
                                                                       after,
                                                                       fillFields,
                                                                       doDocScores,
-                                                                      doMaxScore,
-                                                                      false);
+                                                                      doMaxScore);
 
       final Lock lock = new ReentrantLock();
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<>(executor);
@@ -569,7 +568,7 @@ public class IndexSearcher {
 
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs, after,
                                                            fillFields, doDocScores,
-                                                           doMaxScore, !weight.scoresDocsOutOfOrder());
+                                                           doMaxScore);
     search(leaves, weight, collector);
     return (TopFieldDocs) collector.topDocs();
   }
@@ -608,7 +607,7 @@ public class IndexSearcher {
         // continue with the following leaf
         continue;
       }
-      BulkScorer scorer = weight.bulkScorer(ctx, !leafCollector.acceptsDocsOutOfOrder(), ctx.reader().getLiveDocs());
+      BulkScorer scorer = weight.bulkScorer(ctx, ctx.reader().getLiveDocs());
       if (scorer != null) {
         try {
           scorer.score(leafCollector);

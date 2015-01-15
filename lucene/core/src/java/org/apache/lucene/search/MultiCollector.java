@@ -124,16 +124,6 @@ public class MultiCollector implements Collector {
       }
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      for (LeafCollector c : collectors) {
-        if (!c.acceptsDocsOutOfOrder()) {
-          return false;
-        }
-      }
-      return true;
-    }
-
   }
 
 }

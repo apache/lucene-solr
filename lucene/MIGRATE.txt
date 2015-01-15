@@ -87,3 +87,9 @@ their ValueSources in a "DefFunction" along with a ConstValueSource of "0.0".
 PayloadAttributeImpl.clone() did a shallow clone which was incorrect, and was
 fixed to do a deep clone. If you require shallow cloning of the underlying bytes,
 you should override PayloadAttributeImpl.clone() to do a shallow clone instead.
+
+## Removed out-of-order scoring (LUCENE-6179)
+
+Bulk scorers must now always collect documents in order. If you have custom
+collectors, the acceptsDocsOutOfOrder method has been removed and collectors
+can safely assume that they will be collected in order.

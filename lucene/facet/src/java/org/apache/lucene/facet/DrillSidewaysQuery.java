@@ -111,20 +111,13 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public boolean scoresDocsOutOfOrder() {
-        // TODO: would be nice if AssertingIndexSearcher
-        // confirmed this for us
-        return false;
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?

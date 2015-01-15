@@ -139,10 +139,6 @@ public class CheckHits {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
     }
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return true;
-    }
   }
 
   /**
@@ -510,10 +506,6 @@ public class CheckHits {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
-    }
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return true;
     }
   }
 

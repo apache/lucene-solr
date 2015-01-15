@@ -1596,7 +1596,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len, true);
+      return TopScoreDocCollector.create(len);
     } else {
       // we have a sort
       final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
@@ -1608,7 +1608,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
       return TopFieldCollector.create(weightedSort, len, searchAfter,
-                                      fillFields, needScores, needScores, true); 
+                                      fillFields, needScores, needScores); 
     }
   }
 
@@ -1643,10 +1643,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           public void collect(int doc) {
             numHits[0]++;
           }
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
         };
       } else {
         collector = new SimpleCollector() {
@@ -1660,10 +1656,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
             numHits[0]++;
             float score = scorer.score();
             if (score > topscore[0]) topscore[0]=score;            
-          }
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
           }
         };
       }
@@ -1748,11 +1740,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           public void collect(int doc) throws IOException {
             float score = scorer.score();
             if (score > topscore[0]) topscore[0] = score;
-          }
-          
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
           }
         };
         

@@ -18,31 +18,18 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Random;
-import java.util.WeakHashMap;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.util.VirtualMethod;
 
 /** Wraps a Scorer with additional checks */
-public class AssertingBulkScorer extends BulkScorer {
-
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class);
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class, int.class);
+final class AssertingBulkScorer extends BulkScorer {
 
   public static BulkScorer wrap(Random random, BulkScorer other) {
     if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
     return new AssertingBulkScorer(random, other);
-  }
-
-  public static boolean shouldWrap(BulkScorer inScorer) {
-    return SCORE_COLLECTOR.isOverriddenAsOf(inScorer.getClass()) || SCORE_COLLECTOR_RANGE.isOverriddenAsOf(inScorer.getClass());
   }
 
   final Random random;
@@ -59,6 +46,7 @@ public class AssertingBulkScorer extends BulkScorer {
 
   @Override
   public void score(LeafCollector collector) throws IOException {
+    collector = new AssertingLeafCollector(random, collector, DocsEnum.NO_MORE_DOCS);
     if (random.nextBoolean()) {
       try {
         final boolean remaining = in.score(collector, DocsEnum.NO_MORE_DOCS);
@@ -73,6 +61,7 @@ public class AssertingBulkScorer extends BulkScorer {
 
   @Override
   public boolean score(LeafCollector collector, int max) throws IOException {
+    collector = new AssertingLeafCollector(random, collector, max);
     return in.score(collector, max);
   }
 

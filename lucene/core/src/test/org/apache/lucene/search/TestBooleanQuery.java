@@ -314,7 +314,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
     query.add(sq1, BooleanClause.Occur.SHOULD);
     query.add(sq2, BooleanClause.Occur.SHOULD);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
     searcher.search(query, collector);
     hits = collector.topDocs().scoreDocs.length;
     for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){
@@ -324,32 +324,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals("Bug in boolean query composed of span queries", failed, false);
     assertEquals("Bug in boolean query composed of span queries", hits, 1);
     directory.close();
-  }
-
-  // LUCENE-5487
-  public void testInOrderWithMinShouldMatch() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "some text here", Field.Store.NO));
-    w.addDocument(doc);
-    IndexReader r = w.getReader();
-    w.close();
-    IndexSearcher s = new IndexSearcher(r) {
-        @Override
-        protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
-          assertEquals(-1, collector.getClass().getSimpleName().indexOf("OutOfOrder"));
-          super.search(leaves, weight, collector);
-        }
-      };
-    BooleanQuery bq = new BooleanQuery();
-    bq.add(new TermQuery(new Term("field", "some")), BooleanClause.Occur.SHOULD);
-    bq.add(new TermQuery(new Term("field", "text")), BooleanClause.Occur.SHOULD);
-    bq.add(new TermQuery(new Term("field", "here")), BooleanClause.Occur.SHOULD);
-    bq.setMinimumNumberShouldMatch(2);
-    s.search(bq, 10);
-    r.close();
-    dir.close();
   }
 
   public void testOneClauseRewriteOptimization() throws Exception {
