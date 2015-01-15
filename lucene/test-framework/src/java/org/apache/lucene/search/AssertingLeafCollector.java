@@ -22,7 +22,7 @@ import java.util.Random;
 
 /** Wraps another Collector and checks that
  *  order is respected. */
-final class AssertingLeafCollector extends FilterLeafCollector {
+class AssertingLeafCollector extends FilterLeafCollector {
 
   private final Random random;
   private final int max;
