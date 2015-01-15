@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
@@ -115,6 +116,10 @@ public class SolrPluginUtils {
       purposes = Collections.unmodifiableMap(map);
   }
 
+  private static final MapSolrParams maskUseParams = new MapSolrParams(ImmutableMap.<String, String>builder()
+      .put(RequestParams.USEPARAM, "")
+      .build());
+
   /**
    * Set default-ish params on a SolrQueryRequest.
    *
@@ -131,8 +136,18 @@ public class SolrPluginUtils {
 
     List<String> paramNames =null;
     String useParams = req.getParams().get(RequestParams.USEPARAM);
+    if(useParams!=null && !useParams.isEmpty()){
+      // now that we have expanded the request macro useParams with the actual values
+      // it makes no sense to keep it visible now on.
+      // distrib request sends all params to the nodes down the line and
+      // if it sends the useParams to other nodes , they will expand them as well.
+      // which is not desirable. At the same time, because we send the useParams
+      // value as an empty string to other nodes we get the desired benefit of
+      // overriding the useParams specified in the requestHandler directly
+      req.setParams(SolrParams.wrapDefaults(maskUseParams,req.getParams()));
+    }
     if(useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
-    if(useParams !=null) paramNames = StrUtils.splitSmart(useParams, ',');
+    if(useParams !=null && !useParams.isEmpty()) paramNames = StrUtils.splitSmart(useParams, ',');
     if(paramNames != null){
         for (String name : paramNames) {
           SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
