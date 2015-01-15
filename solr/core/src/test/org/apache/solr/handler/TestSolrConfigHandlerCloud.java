@@ -71,7 +71,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     setupHarnesses();
-//    testReqHandlerAPIs();
+    testReqHandlerAPIs();
     testReqParams();
   }
 
