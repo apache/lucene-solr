@@ -43,6 +43,7 @@
     <field name="DO_NOT_INDEX" type="ignored" />
 
     <field name="_version_" type="tlong" indexed="true" stored="true" multiValued="false"/>
+    <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
        
     <dynamicField name="*_i"       type="tint"    indexed="true"  stored="true"/>
     <dynamicField name="*_s"       type="string"  indexed="true"  stored="true"/>

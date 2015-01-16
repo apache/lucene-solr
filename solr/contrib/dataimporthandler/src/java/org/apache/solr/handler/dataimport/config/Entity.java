@@ -41,6 +41,7 @@ public class Entity {
   private final String processorName;
   private final Entity parentEntity;
   private final boolean docRoot;
+  private final boolean child;
   private final List<Entity> children;
   private final List<EntityField> fields;
   private final Map<String,Set<EntityField>> colNameVsField;
@@ -76,6 +77,9 @@ public class Entity {
     } else {
       docRoot = false;
     }
+    
+    String childValue = ConfigParseUtil.getStringAttribute(element, ConfigNameConstants.CHILD, null);
+    child = "true".equals(childValue);
     
     Map<String,String> modAttributes = ConfigParseUtil
         .getAllAttributes(element);
@@ -218,5 +222,9 @@ public class Entity {
   
   public List<Map<String,String>> getAllFieldsList() {
     return allFieldAttributes;
+  }
+
+  public boolean isChild() {
+    return child;
   }
 }

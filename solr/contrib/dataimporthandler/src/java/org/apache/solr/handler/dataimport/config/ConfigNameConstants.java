@@ -40,6 +40,8 @@ public class ConfigNameConstants {
   public static final String IMPORTER_NS_SHORT = "dih";
 
   public static final String ROOT_ENTITY = "rootEntity";
+  
+  public static final String CHILD = "child";
 
   public static final String FUNCTION = "function";
 
