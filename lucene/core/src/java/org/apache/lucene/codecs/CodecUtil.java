@@ -413,7 +413,7 @@ public final class CodecUtil {
     
     final int magic = in.readInt();
     if (magic != FOOTER_MAGIC) {
-      throw new CorruptIndexException("codec footer mismatch: actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC, in);
+      throw new CorruptIndexException("codec footer mismatch (file truncated?): actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC, in);
     }
     
     final int algorithmID = in.readInt();
