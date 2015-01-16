@@ -38,6 +38,7 @@ import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
 import org.apache.lucene.search.join.BitDocIdSetFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
+import org.apache.solr.core.JarRepository;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -95,7 +96,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     final String grandChildType = "grand_child";
 
     List<String> parentIds = createDataIterator("select * from PARENT", parentType, parentType, parentsNum);
-    Collections.shuffle(parentIds);
+    Collections.shuffle(parentIds, random());
     String parentId1 = parentIds.get(0);
     String parentId2 = parentIds.get(1);
     
