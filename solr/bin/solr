@@ -129,7 +129,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -228,6 +228,23 @@ function print_usage() {
     echo "       or"
     echo ""
     echo "    bin/solr create_collection -help"
+    echo ""
+  elif [ "$CMD" == "delete" ]; then
+    echo ""
+    echo "Usage: solr delete [-c name] [-deleteConfig true|false] [-p port]"
+    echo ""
+    echo "  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
+    echo "  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
+    echo "  delete the configuration directory from ZooKeeper so long as it is not being used by another collection."
+    echo "  You can override this behavior by passing -deleteConfig false when running this command."
+    echo ""
+    echo "  -c <name>               Name of the core / collection to delete"
+    echo ""
+    echo "  -deleteConfig <boolean> Delete the configuration directory from ZooKeeper; default is true"
+    echo ""
+    echo "  -p <port>               Port of a local Solr instance where you want to delete the core/collection"
+    echo "                            If not specified, the script will search the local system for a running"
+    echo "                            Solr instance and will use the port of the first server it finds."
     echo ""
   elif [ "$CMD" == "create_core" ]; then
     echo ""
@@ -645,6 +662,87 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 fi
 
+# delete a core or collection
+if [[ "$SCRIPT_CMD" == "delete" ]]; then
+
+  if [ $# -gt 0 ]; then
+    while true; do
+      case $1 in
+          -c|-core|-collection)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
+                exit 1
+              fi
+              DELETE_NAME=$2
+              shift 2
+          ;;
+          -p|-port)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
+                exit 1
+              fi
+              DELETE_PORT="$2"
+              shift 2
+          ;;
+          -deleteConfig)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "true|false is required when using the $1 option!"
+                exit 1
+              fi
+              DELETE_CONFIG="$2"
+              shift 2
+          ;;
+          -help|-usage)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi
+          ;;
+      esac
+    done
+  fi
+
+  if [ -z "$DELETE_NAME" ]; then
+    echo "Name (-c) argument is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  # If not defined, use the collection name for the name of the configuration in ZooKeeper
+  if [ -z "$DELETE_CONFIG" ]; then
+    DELETE_CONFIG=true
+  fi
+
+  if [ -z "$DELETE_PORT" ]; then
+    for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
+      do
+        port=`jetty_port "$ID"`
+        if [ "$port" != "" ]; then
+          DELETE_PORT=$port
+          break
+        fi
+    done
+  fi
+
+  if [ -z "$DELETE_PORT" ]; then
+    echo "Failed to determine the port of a local Solr instance, cannot delete $DELETE_NAME!"
+    exit 1
+  fi
+
+  run_tool delete -name $DELETE_NAME -deleteConfig $DELETE_CONFIG \
+    -solrUrl $SOLR_URL_SCHEME://localhost:$DELETE_PORT/solr
+  exit $?
+fi
 
 # verify the command given is supported
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then

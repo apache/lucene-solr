@@ -716,6 +716,9 @@ Other Changes
 * SOLR-6982: bin/solr and SolrCLI should support SSL-related Java System Properties
   (Timothy Potter)
 
+* SOLR-6981: Add a delete action to the bin/solr script to allow deleting of cores /
+  collections (with delete collection config directory from ZK) (Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

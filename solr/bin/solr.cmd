@@ -96,6 +96,11 @@ IF "%1"=="create_collection" (
   SHIFT
   goto parse_create_args
 )
+IF "%1"=="delete" (
+  set SCRIPT_CMD=delete
+  SHIFT
+  goto parse_delete_args
+)
 goto parse_args
 
 :usage
@@ -111,12 +116,13 @@ IF "%SCRIPT_CMD%"=="healthcheck" goto healthcheck_usage
 IF "%SCRIPT_CMD%"=="create" goto create_usage
 IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
 IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
+IF "%SCRIPT_CMD%"=="delete" goto delete_usage
 goto done
 
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -212,6 +218,25 @@ echo.
 echo        or
 echo.
 echo     bin\solr create_collection -help
+echo.
+goto done
+
+:delete_usage
+echo.
+echo Usage: solr delete [-c name] [-deleteConfig boolean] [-p port]
+echo.
+echo  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
+echo  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also
+echo  delete the configuration directory from ZooKeeper so long as it is not being used by another collection.
+echo  You can override this behavior by passing -deleteConfig false when running this command.
+echo.
+echo   -c name     Name of core to create
+echo.
+echo   -deleteConfig boolean Delete the configuration directory from ZooKeeper; default is true
+echo.
+echo   -p port     Port of a local Solr instance where you want to create the new core
+echo                 If not specified, the script will search the local system for a running
+echo                 Solr instance and will use the port of the first server it finds.
 echo.
 goto done
 
@@ -1141,6 +1166,72 @@ if "%SCRIPT_CMD%"=="create_core" (
 )
 
 goto done
+
+:parse_delete_args
+IF [%1]==[] goto run_delete
+IF "%1"=="-c" goto set_delete_name
+IF "%1"=="-core" goto set_delete_name
+IF "%1"=="-collection" goto set_delete_name
+IF "%1"=="-p" goto set_delete_port
+IF "%1"=="-port" goto set_delete_port
+IF "%1"=="-deleteConfig" goto set_delete_config
+IF "%1"=="-help" goto usage
+IF "%1"=="-usage" goto usage
+IF "%1"=="/?" goto usage
+goto run_delete
+
+:set_delete_name
+set DELETE_NAME=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:set_delete_port
+set DELETE_PORT=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:set_delete_config
+set DELETE_CONFIG=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:run_delete
+IF "!DELETE_NAME!"=="" (
+  set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
+  goto invalid_cmd_line
+)
+
+REM Find a port that Solr is running on
+if "!DELETE_PORT!"=="" (
+  for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+    set SOME_SOLR_PORT=
+    For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+    if NOT "!SOME_SOLR_PORT!"=="" (
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find /i "!SOME_SOLR_PORT!"') do (
+        set DELETE_PORT=!SOME_SOLR_PORT!
+      )
+    )
+  )
+)
+if "!DELETE_PORT!"=="" (
+  set "SCRIPT_ERROR=Could not find a running Solr instance on this host! Please use the -p option to specify the port."
+  goto err
+)
+
+if "!DELETE_CONFIG!"=="" (
+  set DELETE_CONFIG=true
+)
+
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+-classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+org.apache.solr.util.SolrCLI delete -name !DELETE_NAME! -deleteConfig !DELETE_CONFIG! ^
+-solrUrl !SOLR_URL_SCHEME!://localhost:!DELETE_PORT!/solr
+
+goto done
+
 
 :invalid_cmd_line
 @echo.
