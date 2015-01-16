@@ -193,17 +193,11 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       // leaders _also_ have the preferredLeader property set.
 
 
-      try {
-        NamedList<Object> res = doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.REBALANCELEADERS.toString(),
-            "collection", COLLECTION_NAME);
-        fail("Should have thrown 'Unknown action' error");
-      } catch (SolrServerException e) {
-        assertTrue("Should have gotten an error message that REBALANCELEADERS is not supported",
-            e.getCause().getMessage().contains("Unknown action: REBALANCELEADERS"));
-      }
+      NamedList<Object> res = doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.REBALANCELEADERS.toString(),
+          "collection", COLLECTION_NAME);
 
-//      verifyLeaderAssignment(client, COLLECTION_NAME);
+      verifyLeaderAssignment(client, COLLECTION_NAME);
 
     } finally {
       client.shutdown();
