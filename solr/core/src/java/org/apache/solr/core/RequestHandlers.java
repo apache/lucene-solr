@@ -494,7 +494,7 @@ public final class RequestHandlers {
     public void close() throws Exception {
       super.close();
       if (_closed) return;
-      classLoader.releaseJar();
+      if(classLoader != null) classLoader.releaseJar();
       _closed = true;
     }
   }
