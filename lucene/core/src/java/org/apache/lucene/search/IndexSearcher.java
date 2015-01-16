@@ -729,7 +729,7 @@ public class IndexSearcher {
     public TopFieldDocs call() throws IOException {
       assert slice.leaves.length == 1;
       return searcher.search(Arrays.asList(slice.leaves),
-          weight, after, nDocs, sort, true, doDocScores || sort.needsScores(), doMaxScore);
+          weight, after, nDocs, sort, true, doDocScores, doMaxScore);
     }
   }
 
