@@ -30,6 +30,7 @@ import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -132,7 +133,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     payload = "{\n" +
-        "'update-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandlerV2' , 'lib':'test','version':'2'}\n" +
+        "'update-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandlerV2' , 'lib':'test','version':2}\n" +
         "}";
 
     client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -142,7 +143,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "/config/overlay?wt=json",
         null,
         Arrays.asList("overlay", "requestHandler", "/test1", "version"),
-        "2",10);
+        2l,10);
 
     success= false;
     for(int i=0;i<100;i++) {
