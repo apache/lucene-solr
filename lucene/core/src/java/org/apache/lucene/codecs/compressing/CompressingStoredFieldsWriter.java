@@ -534,6 +534,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         }
       } else if (matchingFieldsReader.getCompressionMode() == compressionMode && 
                  matchingFieldsReader.getChunkSize() == chunkSize && 
+                 matchingFieldsReader.getPackedIntsVersion() == PackedInts.VERSION_CURRENT &&
                  liveDocs == null &&
                  !tooDirty(matchingFieldsReader)) { 
         // optimized merge, raw byte copy

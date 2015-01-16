@@ -648,6 +648,10 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return numDirtyChunks;
   }
 
+  int getPackedIntsVersion() {
+    return packedIntsVersion;
+  }
+
   @Override
   public long ramBytesUsed() {
     return indexReader.ramBytesUsed();
