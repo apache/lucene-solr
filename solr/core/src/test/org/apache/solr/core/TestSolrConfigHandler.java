@@ -233,7 +233,7 @@ public class TestSolrConfigHandler extends RestTestBase {
                                             String testServerBaseUrl,
                                             String uri,
                                             CloudSolrClient cloudSolrServer,List<String> jsonPath,
-                                            String expected,
+                                            Object expected,
                                             long maxTimeoutSeconds ) throws Exception {
 
     boolean success = false;

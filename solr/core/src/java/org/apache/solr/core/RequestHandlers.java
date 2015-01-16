@@ -433,14 +433,14 @@ public final class RequestHandlers {
         return;
       }
 
-      version = _pluginInfo.attributes.get("version");
-      if (version == null) {
+      if (_pluginInfo.attributes.get("version") == null ){
         errMsg = "ERROR 'lib' attribute must be accompanied with version also";
         unrecoverable = true;
         _handler = this;
         log.error(errMsg);
         return;
       }
+      version = String.valueOf(_pluginInfo.attributes.get("version"));
       classLoader = new MemClassLoader(this);
     }
 
