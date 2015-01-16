@@ -60,7 +60,10 @@ public class UpdateShardHandler {
       params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
           cfg.getDistributedConnectionTimeout());
     }
-    params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    // in the update case, we want to do retries, and to use
+    // the default Solr retry handler that createClient will 
+    // give us
+    params.set(HttpClientUtil.PROP_USE_RETRY, true);
     log.info("Creating UpdateShardHandler HTTP client with params: {}", params);
     client = HttpClientUtil.createClient(params, clientConnectionManager);
   }

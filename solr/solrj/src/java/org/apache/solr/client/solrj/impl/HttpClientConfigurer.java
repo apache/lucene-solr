@@ -51,15 +51,14 @@ public class HttpClientConfigurer {
           config.getInt(HttpClientUtil.PROP_SO_TIMEOUT));
     }
     
-    if (config.get(HttpClientUtil.PROP_USE_RETRY) != null) {
-      HttpClientUtil.setUseRetry(httpClient,
-          config.getBool(HttpClientUtil.PROP_USE_RETRY));
-    }
-    
     if (config.get(HttpClientUtil.PROP_FOLLOW_REDIRECTS) != null) {
       HttpClientUtil.setFollowRedirects(httpClient,
           config.getBool(HttpClientUtil.PROP_FOLLOW_REDIRECTS));
     }
+    
+    // always call setUseRetry, whether it is in config or not
+    HttpClientUtil.setUseRetry(httpClient,
+        config.getBool(HttpClientUtil.PROP_USE_RETRY, true));
     
     final String basicAuthUser = config
         .get(HttpClientUtil.PROP_BASIC_AUTH_USER);

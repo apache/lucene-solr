@@ -233,7 +233,14 @@ public class HttpClientUtil {
     if (!useRetry) {
       httpClient.setHttpRequestRetryHandler(NO_RETRY);
     } else {
-      httpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler());
+      // if the request is not fully sent, we retry
+      // streaming updates are not a problem, because they are not retryable
+      httpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(){
+        @Override
+        protected boolean handleAsIdempotent(final HttpRequest request) {
+          return false; // we can't tell if a Solr request is idempotent
+        }
+      });
     }
   }
 
