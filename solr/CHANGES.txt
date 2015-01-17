@@ -18,7 +18,16 @@ servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  5.1.0 ==================
-(No Changes)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
+  and enable subclassing. (Steve Davids, yonik)
+
 
 ==================  5.0.0 ==================
 
