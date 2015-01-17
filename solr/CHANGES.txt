@@ -308,7 +308,8 @@ New Features
 
 * SOLR-6937: In schemaless mode ,replace spaces and special characters with underscore (Noble Paul)
 
-* SOLR-5147: Support child documents in DIH (Shawn Heisey, Thomas Champagne, Mikhail Khludnev via Noble Paul
+* SOLR-5147: Support child documents in DIH
+  (Vadim Kirilchuk, Shawn Heisey, Thomas Champagne, Mikhail Khludnev via Noble Paul)
   
 Bug Fixes
 ----------------------

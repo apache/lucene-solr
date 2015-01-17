@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -57,14 +56,38 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   private int id = 0; //unique id
   private SolrQueryRequest req;
   
+  /**
+   * Holds the data related to randomly created index.
+   * It is used for making assertions.
+   */
   private static class ContextHolder {
+    /** Overall documents number **/
     int counter = 0;
+    
+    /**
+     * Each Hierarchy object represents nested documents with a parent at the root of hierarchy
+     */
     List<Hierarchy> hierarchies = new ArrayList<Hierarchy>();
   }
   
+  /**
+   * Represents a hierarchical document structure
+   */
   private static class Hierarchy {
+    
+    /**
+     * Type of element, i.e. parent, child, grandchild, etc..
+     */
     String elementType;
+    
+    /**
+     * Fields of a current element
+     */
     Map<String, Object> elementData = new HashMap<String,Object>();
+    
+    /**
+     * Nested elements/documents hierarchies. 
+     */
     List<Hierarchy> elements = new ArrayList<Hierarchy>();
   }
   
@@ -168,8 +191,11 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   public void testRandomDepthHierarchy() throws Exception {
     final String parentType = "parent";
     
-    int parentsNum = atLeast(5);
-    int depth = atLeast(3);
+    // Be aware that hierarchies grows exponentially, thus 
+    // numbers bigger than 6 may lead to significant memory usage
+    // and cause OOME
+    int parentsNum = 2 + random().nextInt(3);
+    int depth = 2 + random().nextInt(3);
     
     ContextHolder holder = new ContextHolder();
     
@@ -251,11 +277,59 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     return ids;
   }
   
-  /** Internally configures MockDataSource **/
+  /**
+   * Creates randomized configuration of a specified depth. Simple configuration example:
+   * 
+   * <pre>
+   * 
+   * &lt;dataConfig>
+   *   <dataSource type="MockDataSource" />
+   *   &lt;document>
+   *     &lt;entity name="parent" query="SELECT * FROM parent">
+   *       &lt;field column="id" />
+   *       &lt;field column="desc" />
+   *       &lt;field column="type_s" />
+   *       &lt;entity child="true" name="parentChild0" query="select * from parentChild0 where parentChild0_parent_id='${parent.id}'">
+   *         &lt;field column="id" />
+   *         &lt;field column="desc" />
+   *         &lt;field column="type_s" />
+   *         &lt;entity child="true" name="parentChild0Child0" query="select * from parentChild0Child0 where parentChild0Child0_parent_id='${parentChild0.id}'">
+   *           &lt;field column="id" />
+   *           &lt;field column="desc" />
+   *           &lt;field column="type_s" />
+   *         &lt;/entity>
+   *         &lt;entity child="true" name="parentChild0Child1" query="select * from parentChild0Child1 where parentChild0Child1_parent_id='${parentChild0.id}'">
+   *           &lt;field column="id" />
+   *           &lt;field column="desc" />
+   *           &lt;field column="type_s" />
+   *         &lt;/entity>
+   *       &lt;/entity>
+   *       &lt;entity child="true" name="parentChild1" query="select * from parentChild1 where parentChild1_parent_id='${parent.id}'">
+   *         &lt;field column="id" />
+   *         &lt;field column="desc" />
+   *         &lt;field column="type_s" />
+   *         &lt;entity child="true" name="parentChild1Child0" query="select * from parentChild1Child0 where parentChild1Child0_parent_id='${parentChild1.id}'">
+   *           &lt;field column="id" />
+   *           &lt;field column="desc" />
+   *           &lt;field column="type_s" />
+   *         &lt;/entity>
+   *         &lt;entity child="true" name="parentChild1Child1" query="select * from parentChild1Child1 where parentChild1Child1_parent_id='${parentChild1.id}'">
+   *           &lt;field column="id" />
+   *           &lt;field column="desc" />
+   *           &lt;field column="type_s" />
+   *         &lt;/entity>
+   *       &lt;/entity>
+   *     &lt;/entity>
+   *   &lt;/document>
+   * &lt;/dataConfig>
+   * 
+   * </pre>
+   * 
+   * Internally configures MockDataSource.
+   **/
   private String createRandomizedConfig(int depth, String parentType, int parentsNum, ContextHolder holder) {
     List<Hierarchy> parentData = createMockedIterator(parentType, "SELECT * FROM " + parentType, parentsNum, holder);
     
-    // each map represents parent and each parent is root of separate hierarchy
     holder.hierarchies = parentData;
     
     String children = createChildren(parentType, 0, depth, parentData, holder);
@@ -294,7 +368,10 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
       Map<String, Object> data = parentHierarchy.elementData;
       String id = (String) data.get(FIELD_ID);
       String select = String.format(Locale.ROOT, "select * from %s where %s='%s'", type, type + "_parent_id", id);
-      List<Hierarchy> childHierarchies = createMockedIterator(type, select, atLeast(5), holder);
+      
+      // Number of actual children documents
+      int childrenNum = 1 + random().nextInt(3);
+      List<Hierarchy> childHierarchies = createMockedIterator(type, select, childrenNum, holder);
       parentHierarchy.elements.addAll(childHierarchies);
       result.addAll(childHierarchies);
     }
@@ -308,7 +385,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
       return "";
     }
     
-    int childrenNumber = atLeast(2);
+    // number of different children <b>types</b> of parent, i.e. parentChild0, parentChild1
+    // @see #createMockedIterator for the actual number of each children type 
+    int childrenNumber = 2 + random().nextInt(3);
     StringBuilder builder = new StringBuilder();
     for (int childIndex = 0; childIndex < childrenNumber; ++childIndex) {
       String childName = parentName + "Child" + childIndex;
