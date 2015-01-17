@@ -62,6 +62,7 @@ public class ZkStateReader implements Closeable {
   public static final String STATE_PROP = "state";
   public static final String CORE_NAME_PROP = "core";
   public static final String COLLECTION_PROP = "collection";
+  public static final String ELECTION_NODE_PROP = "election_node";
   public static final String SHARD_ID_PROP = "shard";
   public static final String REPLICA_PROP = "replica";
   public static final String SHARD_RANGE_PROP = "shard_range";
@@ -78,6 +79,7 @@ public class ZkStateReader implements Closeable {
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
+  public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
 
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
@@ -102,9 +104,10 @@ public class ZkStateReader implements Closeable {
 
   private static final long SOLRCLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("solrcloud.update.delay", "5000"));
 
-  public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+  public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
+  public static final String ELECTION_NODE = "election";
 
   private final Set<String> watchedCollections = new HashSet<String>();
 
@@ -668,6 +671,16 @@ public class ZkStateReader implements Closeable {
         + SHARD_LEADERS_ZKNODE + (shardId != null ? ("/" + shardId)
         : "");
   }
+
+  /**
+   * Get path where shard leader elections ephemeral nodes are.
+   */
+  public static String getShardLeadersElectPath(String collection, String shardId) {
+    return COLLECTIONS_ZKNODE + "/" + collection + "/"
+        + LEADER_ELECT_ZKNODE  + (shardId != null ? ("/" + shardId + "/" + ELECTION_NODE)
+        : "");
+  }
+
 
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
       String shardId, String thisCoreNodeName) {
