@@ -55,7 +55,16 @@ Other Changes
   Erik Hatcher)
 
 ==================  5.1.0 ==================
-(No Changes)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
+  and enable subclassing. (Steve Davids, yonik)
+
 
 ==================  5.0.0 ==================
 

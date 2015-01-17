@@ -134,7 +134,7 @@ public class SignatureUpdateProcessorFactory
       if (enabled) {
         SolrInputDocument doc = cmd.getSolrInputDocument();
         List<String> currDocSigFields = null;
-        boolean isPartialUpdate = DistributedUpdateProcessor.isAtomicUpdate(cmd);
+        boolean isPartialUpdate = AtomicUpdateDocumentMerger.isAtomicUpdate(cmd);
         if (sigFields == null || sigFields.size() == 0) {
           if (isPartialUpdate)  {
             throw new SolrException
