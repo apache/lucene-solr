@@ -492,29 +492,15 @@ public class DocBuilder {
             getDebugLogger().log(DIHLogLevels.ENTITY_OUT, epw.getEntity().getName(), arow);
           }
           importStatistics.rowsCount.incrementAndGet();
-          
-          DocWrapper childDoc = null;
           if (doc != null) {
-            if (epw.getEntity().isChild()) {
-              childDoc = new DocWrapper();
-              handleSpecialCommands(arow, childDoc);
-              addFields(epw.getEntity(), childDoc, arow, vr);
-              doc.addChildDocument(childDoc);
-            } else {
-              handleSpecialCommands(arow, doc);
-              addFields(epw.getEntity(), doc, arow, vr);
-            }
+            handleSpecialCommands(arow, doc);
+            addFields(epw.getEntity(), doc, arow, vr);
           }
           if (epw.getEntity().getChildren() != null) {
             vr.addNamespace(epw.getEntity().getName(), arow);
             for (EntityProcessorWrapper child : epw.getChildren()) {
-              if (childDoc != null) {
-              buildDocument(vr, childDoc,
+              buildDocument(vr, doc,
                   child.getEntity().isDocRoot() ? pk : null, child, false, ctx, entitiesToDestroy);
-              } else {
-                buildDocument(vr, doc,
-                    child.getEntity().isDocRoot() ? pk : null, child, false, ctx, entitiesToDestroy);
-              }
             }
             vr.removeNamespace(epw.getEntity().getName());
           }

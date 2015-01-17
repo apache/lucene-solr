@@ -260,9 +260,6 @@ New Features
 * SOLR-6581: Efficient DocValues support and numeric collapse field implementations 
   for Collapse and Expand (Joel Bernstein)
 
-* SOLR-5147: Support child documents in DIH
-  (Vadim Kirilchuk, Shawn Heisey, Thomas Champagne, Mikhail Khludnev via Noble Paul)
-  
 
 Bug Fixes
 ----------------------
