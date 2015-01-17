@@ -25,8 +25,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,11 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.OutputStreamWriter;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   private static Logger log = LoggerFactory.getLogger(SolrSchemalessExampleTest.class);
@@ -88,46 +82,6 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     client.commit();
     assertNumFound("*:*", 2);
   }
-
-  @Test
-  public void testFieldMutating() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.deleteByQuery("*:*");
-    client.commit();
-    assertNumFound("*:*", 0); // make sure it got in
-    // two docs, one with uniqueKey, another without it
-    String json = "{\"name one\": \"name\"} " +
-        "{\"name  two\" : \"name\"}" +
-        "{\"first-second\" : \"name\"}" +
-        "{\"x+y\" : \"name\"}" +
-        "{\"p%q\" : \"name\"}" +
-        "{\"p.q\" : \"name\"}" +
-        "{\"a&b\" : \"name\"}"
-        ;
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
-    post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
-    HttpResponse response = httpClient.execute(post);
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    client.commit();
-    List<String> expected = Arrays.asList(
-        "name_one",
-        "name__two",
-        "first-second",
-        "a_b",
-        "p_q",
-        "p.q",
-        "x_y");
-    HashSet set = new HashSet();
-    QueryResponse rsp = assertNumFound("*:*", expected.size());
-    for (SolrDocument doc : rsp.getResults()) set.addAll(doc.getFieldNames());
-    for (String s : expected) {
-      assertTrue(s+" not created "+ rsp ,set.contains(s) );
-    }
-
-  }
-
 
 
   @Override
