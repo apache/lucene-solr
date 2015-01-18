@@ -162,12 +162,12 @@
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="site/"/>
+      <fileset dir="site" includes="**/*.mdtext"/>
       <globmapper from="*.mdtext" to="*.html"/>
     </pegdown>
 
     <copy todir="${javadoc.dir}">
-      <fileset dir="site/assets/" />
+      <fileset dir="site/assets" />
     </copy>
   </target>
 
