@@ -76,15 +76,13 @@ New Features
 * SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
   and enable subclassing. (Steve Davids, yonik)
 
-* SOLR-6991: Update Apache TIKA to version 1.7. (Uwe Schindler)
-
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.6
+Apache Tika 1.7
 Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -541,10 +539,10 @@ Other Changes
 * SOLR-5322: core discovery can fail w/NPE and no explanation if a non-readable directory exists
   (Said Chavkin, Erick Erickson)
 
-* SOLR-6488: Update to Apache Tika 1.6. This adds support for parsing Outlook PST and Matlab
-  MAT files. Parsing for NetCDF files was removed because of license issues; if you need support
-  for this format, download the parser JAR yourself and add it to contrib/extraction/lib folder:
-  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+* SOLR-6488, SOLR-6991: Update to Apache Tika 1.7. This adds support for parsing Outlook PST and
+  Matlab MAT files. Parsing for NetCDF files was removed because of license issues; if you need
+  support for this format, download the parser JAR yourself and add it to contrib/extraction/lib
+  folder: http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
   (Uwe Schindler)
 
 * SOLR-6115: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
