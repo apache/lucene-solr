@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.6
+Apache Tika 1.7
 Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -56,6 +56,17 @@ Other Changes
 
 ==================  5.1.0 ==================
 
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.6.v20141205
+
 Detailed Change List
 ----------------------
 
@@ -65,6 +76,7 @@ New Features
 * SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
   and enable subclassing. (Steve Davids, yonik)
 
+* SOLR-6991: Update Apache TIKA to version 1.7. (Uwe Schindler)
 
 ==================  5.0.0 ==================
 

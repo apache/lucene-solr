@@ -27,6 +27,7 @@
     <dependency org="org.apache.tika" name="tika-core" rev="${/org.apache.tika/tika-core}" conf="compile"/>
     <dependency org="org.apache.tika" name="tika-parsers" rev="${/org.apache.tika/tika-parsers}" conf="compile"/>
     <dependency org="org.apache.tika" name="tika-xmp" rev="${/org.apache.tika/tika-xmp}" conf="compile"/>
+    <dependency org="org.apache.tika" name="tika-java7" rev="${/org.apache.tika/tika-java7}" conf="compile"/>
     <!-- Tika dependencies - see http://tika.apache.org/1.3/gettingstarted.html#Using_Tika_as_a_Maven_dependency -->
     <!-- When upgrading Tika, upgrade dependencies versions and add any new ones
          (except slf4j-api, commons-codec, commons-logging, commons-httpclient, geronimo-stax-api_1.0_spec, jcip-annotations, xml-apis, asm)
