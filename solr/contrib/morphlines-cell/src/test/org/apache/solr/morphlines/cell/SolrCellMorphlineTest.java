@@ -35,7 +35,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-6489")
 public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
 
   private Map<String,Integer> expectedRecords = new HashMap<>();
@@ -140,6 +139,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-6489")
   public void testSolrCellJPGCompressed() throws Exception {
     morphline = createMorphline("test-morphlines" + File.separator + "solrCellJPGCompressed");    
     String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
@@ -163,6 +163,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   }  
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-6489")
   public void testSolrCellDocumentTypes() throws Exception {
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", false);
     
