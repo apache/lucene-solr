@@ -1,3 +1,9 @@
+#*
+  - Make search box bigger
+  - Add in pivot and other facets?
+  - Work on template default selection logic
+*#
+
 ## Show Error Message, if any
 <div class="error">
   #parse("error.vm")

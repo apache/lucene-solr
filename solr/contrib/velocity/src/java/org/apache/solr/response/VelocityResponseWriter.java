@@ -45,6 +45,7 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.tools.ConversionUtils;
 import org.apache.velocity.tools.generic.ComparisonDateTool;
+import org.apache.velocity.tools.generic.ContextTool;
 import org.apache.velocity.tools.generic.DisplayTool;
 import org.apache.velocity.tools.generic.EscapeTool;
 import org.apache.velocity.tools.generic.ListTool;
@@ -185,6 +186,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     context.put("request", request);
 
     // Register useful Velocity "tools"
+    context.put("log", log);   // TODO: add test
     context.put("esc", new EscapeTool());
     context.put("date", new ComparisonDateTool());
     context.put("list", new ListTool());
@@ -232,7 +234,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
     // Set some engine properties that improve the experience
     //   - these could be considered in the future for parameterization, but can also be overridden by using
-    //     the init.properties.file setting.  (TODO: add a test for this)
+    //     the init.properties.file setting.  (TODO: add a test for this properties set here overridden)
 
     // load the built-in _macros.vm first, then load VM_global_library.vm for legacy (pre-5.0) support,
     // and finally allow macros.vm to have the final say and override anything defined in the preceding files.

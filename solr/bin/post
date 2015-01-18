@@ -16,9 +16,7 @@
 
 # TODO wishlist:
 # - handle stdin as well, such that `cat foo.csv | bin/post my_collection` works
-# - bin/post collection "file with spaces.csv" does not work, breaks arguments at whitespace apparently.
 # - support arbitrary posting like - java -Ddata=args org.apache.solr.util.SimplePostTool "<delete><id>SP2514N</id></delete>"
-# - convert OPTIONS (key=val pass-through to SPT) to standard 'nix switches
 
 # ====== Common code copied/adapted from bin/solr (TODO: centralize/share this kind of thing)
 
