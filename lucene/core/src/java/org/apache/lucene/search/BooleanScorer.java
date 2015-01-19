@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * BulkSorer that is used for pure disjunctions: no MUST clauses and
@@ -40,16 +41,23 @@ final class BooleanScorer extends BulkScorer {
     int freq;
   }
 
+  static class BulkScorerAndDoc {
+    final BulkScorer scorer;
+    int next;
+
+    BulkScorerAndDoc(BulkScorer scorer) {
+      this.scorer = scorer;
+      this.next = 0;
+    }
+  }
+
   final Bucket[] buckets = new Bucket[SIZE];
   // This is basically an inlined FixedBitSet... seems to help with bound checks
   final long[] matching = new long[SET_SIZE];
 
   final float[] coordFactors;
-  final BulkScorer[] optionalScorers;
+  final PriorityQueue<BulkScorerAndDoc> optionalScorers;
   final FakeScorer fakeScorer = new FakeScorer();
-
-  boolean hasMatches;
-  int max = 0;
 
   final class OrCollector implements LeafCollector {
     Scorer scorer;
@@ -61,7 +69,6 @@ final class BooleanScorer extends BulkScorer {
 
     @Override
     public void collect(int doc) throws IOException {
-      hasMatches = true;
       final int i = doc & MASK;
       final int idx = i >>> 6;
       matching[idx] |= 1L << i;
@@ -77,7 +84,15 @@ final class BooleanScorer extends BulkScorer {
     for (int i = 0; i < buckets.length; i++) {
       buckets[i] = new Bucket();
     }
-    this.optionalScorers = optionalScorers.toArray(new BulkScorer[0]);
+    this.optionalScorers = new PriorityQueue<BulkScorerAndDoc>(optionalScorers.size()) {
+      @Override
+      protected boolean lessThan(BulkScorerAndDoc a, BulkScorerAndDoc b) {
+        return a.next < b.next;
+      }
+    };
+    for (BulkScorer scorer : optionalScorers) {
+      this.optionalScorers.add(new BulkScorerAndDoc(scorer));
+    }
 
     coordFactors = new float[optionalScorers.size() + 1];
     for (int i = 0; i < coordFactors.length; i++) {
@@ -86,6 +101,7 @@ final class BooleanScorer extends BulkScorer {
   }
 
   private void scoreDocument(LeafCollector collector, int base, int i) throws IOException {
+    final FakeScorer fakeScorer = this.fakeScorer;
     final Bucket bucket = buckets[i];
     fakeScorer.freq = bucket.freq;
     fakeScorer.score = (float) bucket.score * coordFactors[bucket.freq];
@@ -109,38 +125,32 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private boolean collectMatches() throws IOException {
-    boolean more = false;
-    for (BulkScorer scorer : optionalScorers) {
-      more |= scorer.score(orCollector, max);
-    }
-    return more;
-  }
+  private BulkScorerAndDoc scoreWindow(LeafCollector collector, int base, int min, int max,
+      PriorityQueue<BulkScorerAndDoc> optionalScorers, BulkScorerAndDoc top) throws IOException {
+    assert top.next < max;
+    do {
+      top.next = top.scorer.score(orCollector, min, max);
+      top = optionalScorers.updateTop();
+    } while (top.next < max);
 
-  private boolean scoreWindow(LeafCollector collector, int base, int max) throws IOException {
-    this.max = Math.min(base + SIZE, max);
-    hasMatches = false;
-    boolean more = collectMatches();
-
-    if (hasMatches) {
-      scoreMatches(collector, base);
-      Arrays.fill(matching, 0L);
-    }
-
-    return more;
+    scoreMatches(collector, base);
+    Arrays.fill(matching, 0L);
+    return top;
   }
 
   @Override
-  public boolean score(LeafCollector collector, int max) throws IOException {
+  public int score(LeafCollector collector, int min, int max) throws IOException {
     fakeScorer.doc = -1;
     collector.setScorer(fakeScorer);
+    final PriorityQueue<BulkScorerAndDoc> optionalScorers = this.optionalScorers;
 
-    for (int docBase = this.max & ~MASK; docBase < max; docBase += SIZE) {
-      if (scoreWindow(collector, docBase, max) == false) {
-        return false;
-      }
+    BulkScorerAndDoc top = optionalScorers.top();
+    for (int windowMin = Math.max(min, top.next); windowMin < max; windowMin = top.next) {
+      final int windowBase = windowMin & ~MASK; // find the window that windowMin belongs to
+      final int windowMax = Math.min(max, windowBase + SIZE);
+      top = scoreWindow(collector, windowBase, windowMin, windowMax, optionalScorers, top);
+      assert top.next >= windowMax;
     }
-
-    return true;
+    return top.next;
   }
 }

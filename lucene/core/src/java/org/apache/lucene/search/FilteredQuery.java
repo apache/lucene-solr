@@ -220,12 +220,12 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public boolean score(LeafCollector collector, int maxDoc) throws IOException {
+    public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:
       collector.setScorer(scorer);
-      if (scorer.docID() == -1) {
-        scorer.nextDoc();
+      if (scorer.docID() < min) {
+        scorer.advance(min);
       }
       while (true) {
         final int scorerDoc = scorer.docID();
@@ -239,7 +239,7 @@ public class FilteredQuery extends Query {
         }
       }
 
-      return scorer.docID() != Scorer.NO_MORE_DOCS;
+      return scorer.docID();
     }
   }
   

@@ -136,7 +136,7 @@ public abstract class Weight {
     }
 
     @Override
-    public boolean score(LeafCollector collector, int max) throws IOException {
+    public int score(LeafCollector collector, int min, int max) throws IOException {
       // TODO: this may be sort of weird, when we are
       // embedded in a BooleanScorer, because we are
       // called for every chunk of 2048 documents.  But,
@@ -144,13 +144,13 @@ public abstract class Weight {
       // Collector doing something "interesting" in
       // setScorer will be forced to use BS2 anyways:
       collector.setScorer(scorer);
-      if (max == DocIdSetIterator.NO_MORE_DOCS) {
+      if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, scorer);
-        return false;
+        return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
-        if (doc < 0) {
-          doc = scorer.nextDoc();
+        if (doc < min) {
+          doc = scorer.advance(min);
         }
         return scoreRange(collector, scorer, doc, max);
       }
@@ -160,12 +160,12 @@ public abstract class Weight {
      *  separate this from {@link #scoreAll} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static boolean scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
+    static int scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
       while (currentDoc < end) {
         collector.collect(currentDoc);
         currentDoc = scorer.nextDoc();
       }
-      return currentDoc != DocIdSetIterator.NO_MORE_DOCS;
+      return currentDoc;
     }
     
     /** Specialized method to bulk-score all hits; we
@@ -173,8 +173,7 @@ public abstract class Weight {
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
-      int doc;
-      while ((doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
         collector.collect(doc);
       }
     }
