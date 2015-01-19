@@ -111,6 +111,7 @@ public class QueryUtils {
       if (s!=null) {
         checkFirstSkipTo(q1,s);
         checkSkipTo(q1,s);
+        checkBulkScorerSkipTo(random, q1, s);
         if (wrap) {
           check(random, q1, wrapUnderlyingReader(random, s, -1), false);
           check(random, q1, wrapUnderlyingReader(random, s,  0), false);
@@ -416,6 +417,58 @@ public class QueryUtils {
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+      }
+    }
+  }
+
+  /** Check that the scorer and bulk scorer advance consistently. */
+  public static void checkBulkScorerSkipTo(Random r, Query query, IndexSearcher searcher) throws IOException {
+    Weight weight = searcher.createNormalizedWeight(query);
+    for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+      final Scorer scorer = weight.scorer(context, context.reader().getLiveDocs());
+      final BulkScorer bulkScorer = weight.bulkScorer(context, context.reader().getLiveDocs());
+      if (scorer == null && bulkScorer == null) {
+        continue;
+      }
+      int upTo = 0;
+      while (true) {
+        final int min = upTo + r.nextInt(5);
+        final int max = min + 1 + r.nextInt(r.nextBoolean() ? 10 : 5000);
+        if (scorer.docID() < min) {
+          scorer.advance(min);
+        }
+        final int next = bulkScorer.score(new LeafCollector() {
+          Scorer scorer2;
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+            this.scorer2 = scorer;
+          }
+          @Override
+          public void collect(int doc) throws IOException {
+            assert doc >= min;
+            assert doc < max;
+            Assert.assertEquals(scorer.docID(), doc);
+            Assert.assertEquals(scorer.score(), scorer2.score(), 0.01f);
+            scorer.nextDoc();
+          }
+        }, min, max);
+        assert max <= next;
+        assert next <= scorer.docID();
+        upTo = max;
+
+        if (scorer.docID() == DocIdSetIterator.NO_MORE_DOCS) {
+          bulkScorer.score(new LeafCollector() {
+            @Override
+            public void setScorer(Scorer scorer) throws IOException {}
+            
+            @Override
+            public void collect(int doc) throws IOException {
+              // no more matches
+              assert false;
+            }
+          }, upTo, DocIdSetIterator.NO_MORE_DOCS);
+          break;
+        }
       }
     }
   }

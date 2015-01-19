@@ -207,8 +207,8 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public boolean score(LeafCollector collector, int max) throws IOException {
-      return bulkScorer.score(wrapCollector(collector), max);
+    public int score(LeafCollector collector, int min, int max) throws IOException {
+      return bulkScorer.score(wrapCollector(collector), min, max);
     }
 
     private LeafCollector wrapCollector(LeafCollector collector) {

@@ -59,9 +59,8 @@ class AssertingWeight extends Weight {
 
   @Override
   public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    // if the caller asks for in-order scoring or if the weight does not support
-    // out-of order scoring then collection will have to happen in-order.
     final Scorer inScorer = in.scorer(context, acceptDocs);
+    assert inScorer == null || inScorer.docID() == -1;
     return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
   }
 
@@ -72,6 +71,6 @@ class AssertingWeight extends Weight {
       return null;
     }
 
-    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
+    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer, context.reader().maxDoc());
   }
 }

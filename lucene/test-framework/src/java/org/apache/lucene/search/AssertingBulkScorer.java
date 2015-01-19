@@ -22,22 +22,27 @@ import java.util.Random;
 
 import org.apache.lucene.index.DocsEnum;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 /** Wraps a Scorer with additional checks */
 final class AssertingBulkScorer extends BulkScorer {
 
-  public static BulkScorer wrap(Random random, BulkScorer other) {
+  public static BulkScorer wrap(Random random, BulkScorer other, int maxDoc) {
     if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
-    return new AssertingBulkScorer(random, other);
+    return new AssertingBulkScorer(random, other, maxDoc);
   }
 
   final Random random;
   final BulkScorer in;
+  final int maxDoc;
+  int max = 0;
 
-  private AssertingBulkScorer(Random random, BulkScorer in) {
+  private AssertingBulkScorer(Random random, BulkScorer in, int maxDoc) {
     this.random = random;
     this.in = in;
+    this.maxDoc = maxDoc;
   }
 
   public BulkScorer getIn() {
@@ -46,11 +51,12 @@ final class AssertingBulkScorer extends BulkScorer {
 
   @Override
   public void score(LeafCollector collector) throws IOException {
-    collector = new AssertingLeafCollector(random, collector, DocsEnum.NO_MORE_DOCS);
+    assert max == 0;
+    collector = new AssertingLeafCollector(random, collector, 0, DocsEnum.NO_MORE_DOCS);
     if (random.nextBoolean()) {
       try {
-        final boolean remaining = in.score(collector, DocsEnum.NO_MORE_DOCS);
-        assert !remaining;
+        final int next = score(collector, 0, DocsEnum.NO_MORE_DOCS);
+        assert next == DocIdSetIterator.NO_MORE_DOCS;
       } catch (UnsupportedOperationException e) {
         in.score(collector);
       }
@@ -60,9 +66,19 @@ final class AssertingBulkScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(LeafCollector collector, int max) throws IOException {
-    collector = new AssertingLeafCollector(random, collector, max);
-    return in.score(collector, max);
+  public int score(LeafCollector collector, int min, final int max) throws IOException {
+    assert min >= this.max: "Scoring backward: min=" + min + " while previous max was max=" + this.max;
+    assert min < max : "max must be greater than min, got min=" + min + ", and max=" + max;
+    this.max = max;
+    collector = new AssertingLeafCollector(random, collector, min, max);
+    final int next = in.score(collector, min, max);
+    assert next >= max;
+    if (max >= maxDoc || next >= maxDoc) {
+      assert next == DocIdSetIterator.NO_MORE_DOCS;
+      return DocIdSetIterator.NO_MORE_DOCS;
+    } else {
+      return RandomInts.randomIntBetween(random, max, next);
+    }
   }
 
   @Override

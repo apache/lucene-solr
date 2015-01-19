@@ -38,6 +38,9 @@ Optimizations
   mode uses a higher deflate level for more compact storage.
   (Robert Muir)
 
+* LUCENE-6184: Make BooleanScorer only score windows that contain
+  matches. (Adrien Grand)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features

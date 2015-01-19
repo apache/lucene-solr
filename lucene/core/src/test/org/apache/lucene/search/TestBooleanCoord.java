@@ -731,7 +731,7 @@ public class TestBooleanCoord extends LuceneTestCase {
         assertEquals(expected, scorer.score(), 0.0001f);
         seen.set(true);
       }
-    }, 1);
+    }, 0, 1);
     assertTrue(seen.get());
     
     // test the explanation
