@@ -19,7 +19,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 /**
  * Exception indicating there is no more data.
- * Thrown by Docs Makers if doc.maker.forever is false and docs sources of that maker where exhausted.
+ * Thrown by Docs Makers if content.source.forever is false and docs sources of that maker where exhausted.
  * This is useful for iterating all document of a source, in case we don't know in advance how many docs there are.
  */
 public class NoMoreDataException extends Exception {
