@@ -181,6 +181,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             , "//*/arr[@name='stream_name']/str[.='tiny.txt.gz']"
             );
 
+    // compressed file
+    loadLocal("extraction/open-document.odt", 
+              "uprefix", "ignored_",
+              "fmap.content", "extractedContent",
+              "literal.id", "open-document");
+    assertU(commit());
+    assertQ(req("extractedContent:\"Práctica sobre GnuPG\"")
+            , "//*[@numFound='1']"
+            , "//*/arr[@name='stream_name']/str[.='open-document.odt']"
+            );
   }
 
 
