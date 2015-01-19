@@ -147,8 +147,8 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   protected TokenStream createTokenStream(Shape shape, int detailLevel) {
-    if (pointsOnly && shape instanceof Point) {
-      throw new IllegalArgumentException("pointsOnly is true yet a point is given for indexing");
+    if (pointsOnly && !(shape instanceof Point)) {
+      throw new IllegalArgumentException("pointsOnly is true yet a " + shape.getClass() + " is given for indexing");
     }
     Iterator<Cell> cells = grid.getTreeCellIterator(shape, detailLevel);
     return new CellTokenStream().setCells(cells);
