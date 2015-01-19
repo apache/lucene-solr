@@ -73,7 +73,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context));
+      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
       client.setDefaultMaxConnectionsPerHost(100);
@@ -260,7 +260,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     public void fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), "/solr") + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), "/solr") + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
       try {
@@ -309,10 +309,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     public void runCommand() {
       String masterUrl = null;
       if(backupName != null) {
-        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/replication?command=" + cmd +
+        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + cmd +
             "&name=" +  backupName;
       } else {
-        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/replication?command=" + cmd +
+        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + cmd +
             (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
       }
 
@@ -343,7 +343,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
       try {

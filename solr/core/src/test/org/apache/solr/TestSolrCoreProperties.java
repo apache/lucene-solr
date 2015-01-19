@@ -16,20 +16,21 @@
  */
 package org.apache.solr;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Properties;
 
 /**
  * <p> Test for Loading core properties from a properties file </p>
@@ -38,6 +39,8 @@ import java.nio.charset.StandardCharsets;
  * @since solr 1.4
  */
 public class TestSolrCoreProperties extends SolrJettyTestBase {
+
+  // TODO these properties files don't work with configsets
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -68,7 +71,19 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     p.store(fos, null);
     IOUtils.close(fos);
 
-    createJetty(homeDir.getAbsolutePath(), null, null);
+    Files.createFile(collDir.toPath().resolve("core.properties"));
+
+    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
+
+    // this sets the property for jetty starting SolrDispatchFilter
+    if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
+      jetty.setDataDir(createTempDir().toFile().getCanonicalPath());
+    }
+
+    jetty.start();
+    port = jetty.getLocalPort();
+
+    //createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
   public void testSimple() throws Exception {

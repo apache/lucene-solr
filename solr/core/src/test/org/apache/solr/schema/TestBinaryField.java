@@ -17,10 +17,7 @@
 
 package org.apache.solr.schema;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
-
+import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -33,6 +30,14 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Properties;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
@@ -59,6 +64,12 @@ public class TestBinaryField extends SolrJettyTestBase {
                        new File(confDir, "solrconfig.xml"));
     FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
                        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+
+    try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), Charsets.UTF_8)) {
+      Properties coreProps = new Properties();
+      coreProps.put("name", "collection1");
+      coreProps.store(w, "");
+    }
 
     createJetty(homeDir.getAbsolutePath(), null, null);
   }

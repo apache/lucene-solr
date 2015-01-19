@@ -31,7 +31,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -73,8 +72,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
-    SolrXMLCoresLocator.NonPersistingLocator locator
-        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -97,15 +94,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             CoreAdminParams.DATA_DIR, "${DATA_TEST}"),
             resp);
     assertNull("Exception on create", resp.getException());
-
-    // First assert that these values are persisted.
-    h.validateXPath
-        (locator.xml
-            ,"/solr/cores/core[@name='" + getCoreName() + "' and @instanceDir='${INSTDIR_TEST}']"
-            ,"/solr/cores/core[@name='" + getCoreName() + "' and @dataDir='${DATA_TEST}']"
-            ,"/solr/cores/core[@name='" + getCoreName() + "' and @schema='${SCHEMA_TEST}']"
-            ,"/solr/cores/core[@name='" + getCoreName() + "' and @config='${CONFIG_TEST}']"
-        );
 
     // Now assert that certain values are properly dereferenced in the process of creating the core, see
     // SOLR-4982.

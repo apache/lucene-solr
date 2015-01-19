@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.File;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -31,6 +28,10 @@ import org.apache.solr.common.params.UpdateParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.util.List;
 
 /**
  * Test for ContentStreamDataSource
@@ -67,7 +68,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
+    HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"));
     try {
       solrClient.request(req);
       ModifiableSolrParams qparams = new ModifiableSolrParams();
@@ -90,7 +91,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         "clean", "false", UpdateParams.COMMIT, "false", 
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
-    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
+    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"));
     solrServer.request(req);
     Thread.sleep(100);
     ModifiableSolrParams queryAll = params("q", "*");
@@ -168,6 +169,8 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       FileUtils.copyFile(getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
       FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
+
+      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 
   }

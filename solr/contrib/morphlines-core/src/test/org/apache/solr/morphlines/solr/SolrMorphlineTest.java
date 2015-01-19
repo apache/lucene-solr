@@ -16,16 +16,14 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import java.io.File;
-import java.util.Arrays;
-
-import org.apache.lucene.util.Constants;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
+
+import java.io.File;
+import java.util.Arrays;
 
 public class SolrMorphlineTest extends AbstractSolrMorphlineTestBase {
 

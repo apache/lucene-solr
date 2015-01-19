@@ -38,13 +38,4 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     cc.shutdown();
   }
 
-  public void testOldXML() throws Exception {
-    CoreContainer cc = CoreContainer.createAndLoad(TEST_HOME(), new File(TEST_HOME(), "solr-shardhandler-old.xml"));
-    ShardHandlerFactory factory = cc.getShardHandlerFactory();
-    assertTrue(factory instanceof MockShardHandlerFactory);
-    NamedList args = ((MockShardHandlerFactory)factory).args;
-    assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
-    factory.close();
-    cc.shutdown();
-  }
 }

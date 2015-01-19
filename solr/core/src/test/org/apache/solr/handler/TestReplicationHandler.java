@@ -68,6 +68,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -153,7 +154,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port));
+      HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
       client.setDefaultMaxConnectionsPerHost(100);
@@ -261,18 +262,27 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   private NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
-    
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action","reload");
     params.set("core", core);
     params.set("qt","/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    NamedList<Object> res = s.request(req);
+    HttpSolrClient adminClient = adminClient(s);
+    try {
+      NamedList<Object> res = adminClient.request(req);
+      assertNotNull("null response from server", res);
+      return res;
+    }
+    finally {
+      adminClient.shutdown();
+    }
+  }
 
-    assertNotNull("null response from server", res);
-
-    return res;
+  private HttpSolrClient adminClient(SolrClient client) {
+    String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
+    return new HttpSolrClient(adminUrl);
   }
 
   @Test
@@ -449,7 +459,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   //jetty servers.
   private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
-    String masterUrl = buildUrl(pJettyPort) + "/replication?command=" + pCommand;
+    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + pCommand;
     URL u = new URL(masterUrl);
     InputStream stream = u.openStream();
     stream.close();
@@ -608,8 +618,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // snappull
-    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/replication?command=fetchindex&masterUrl=";
-    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/replication";
+    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=fetchindex&masterUrl=";
+    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication";
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
     stream.close();
@@ -962,8 +972,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     URL url;
     InputStream stream;
     masterUrl = buildUrl(to.getLocalPort())
+        + "/" + DEFAULT_TEST_CORENAME
         + "/replication?wait=true&command=fetchindex&masterUrl="
-        + buildUrl(from.getLocalPort()) + "/replication";
+        + buildUrl(from.getLocalPort())
+        + "/" + DEFAULT_TEST_CORENAME + "/replication";
     url = new URL(masterUrl);
     stream = url.openStream();
     stream.close();
@@ -1391,34 +1403,40 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    SolrParams p = params("action","status", "core", "collection1");
-    while (timeSlept < timeout) {
-      QueryRequest req = new QueryRequest(p);
-      req.setPath("/admin/cores");
-      try {
-        NamedList data = client.request(req);
-        for (String k : new String[] {"status","collection1"}) {
-          Object o = data.get(k);
-          assertNotNull("core status rsp missing key: " + k, o);
-          data = (NamedList) o;
+    HttpSolrClient adminClient = adminClient(client);
+    try {
+      SolrParams p = params("action", "status", "core", "collection1");
+      while (timeSlept < timeout) {
+        QueryRequest req = new QueryRequest(p);
+        req.setPath("/admin/cores");
+        try {
+          NamedList data = adminClient.request(req);
+          for (String k : new String[]{"status", "collection1"}) {
+            Object o = data.get(k);
+            assertNotNull("core status rsp missing key: " + k, o);
+            data = (NamedList) o;
+          }
+          Date startTime = (Date) data.get("startTime");
+          assertNotNull("core has null startTime", startTime);
+          if (null == min || startTime.after(min)) {
+            return startTime;
+          }
+        } catch (SolrException e) {
+          // workarround for SOLR-4668
+          if (500 != e.code()) {
+            throw e;
+          } // else server possibly from the core reload in progress...
         }
-        Date startTime = (Date) data.get("startTime");
-        assertNotNull("core has null startTime", startTime);
-        if (null == min || startTime.after(min)) {
-          return startTime;
-        }
-      } catch (SolrException e) {
-        // workarround for SOLR-4668
-        if (500 != e.code()) {
-          throw e;
-        } // else server possibly from the core reload in progress...
-      }
 
-      timeSlept += sleepInterval;
-      Thread.sleep(sleepInterval);
+        timeSlept += sleepInterval;
+        Thread.sleep(sleepInterval);
+      }
+      fail("timed out waiting for collection1 startAt time to exceed: " + min);
+      return min; // compilation neccessity
     }
-    fail("timed out waiting for collection1 startAt time to exceed: " + min);
-    return min; // compilation neccessity
+    finally {
+      adminClient.shutdown();
+    }
   }
   
   private static String buildUrl(int port) {
@@ -1475,6 +1493,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     public void setUp() throws Exception {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
+
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+
+      writeCoreProperties(homeDir.toPath().resolve("collection1"), props, "TestReplicationHandler");
 
       dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");

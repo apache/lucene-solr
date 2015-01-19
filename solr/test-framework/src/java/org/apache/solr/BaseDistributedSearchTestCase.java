@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
@@ -285,25 +287,33 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected JettySolrRunner createControlJetty() throws Exception {
+    writeCoreProperties(testDir.toPath().resolve("control/cores"), DEFAULT_TEST_CORENAME);
+    System.setProperty("coreRootDirectory", testDir.toPath().resolve("control").toString());
     JettySolrRunner jetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
     return jetty;
   }
-  
-  protected void createServers(int numShards) throws Exception {
-    controlJetty = createControlJetty();
 
+  protected void createServers(int numShards) throws Exception {
+
+    System.setProperty("configSetBaseDir", getSolrHome());
+
+    controlJetty = createControlJetty();
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
+      String shardname = "shard" + i;
+      Path coresPath = testDir.toPath().resolve(shardname).resolve("cores");
+      writeCoreProperties(coresPath, DEFAULT_TEST_CORENAME);
+      System.setProperty("coreRootDirectory", testDir.toPath().resolve(shardname).toString());
       JettySolrRunner j = createJetty(new File(getSolrHome()),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
-      String shardStr = buildUrl(j.getLocalPort());
+      String shardStr = buildUrl(j.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -389,7 +399,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port));
+      HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(90000);
       client.setDefaultMaxConnectionsPerHost(100);
@@ -931,6 +941,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (solrxml != null) {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
+
+    Properties coreProperties = new Properties();
+    coreProperties.setProperty("name", "collection1");
+    coreProperties.setProperty("shard", "${shard:}");
+    coreProperties.setProperty("collection", "${collection:collection1}");
+    coreProperties.setProperty("config", "${solrconfig:solrconfig.xml}");
+    coreProperties.setProperty("schema", "${schema:schema.xml}");
+    coreProperties.setProperty("coreNodeName", "${coreNodeName:}");
+
+    writeCoreProperties(jettyHome.toPath().resolve("cores/collection1"), coreProperties, "collection1");
+
+     //   <core name="collection1" instanceDir="collection1" shard="${shard:}"
+     // collection="${collection:collection1}" config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"
+    //coreNodeName="${coreNodeName:}"/>
   }
 
 }

@@ -183,6 +183,10 @@ Upgrading from Solr 4.x
 * Due to changes in the underlying commons-codec package, users of the BeiderMorseFilterFactory 
   will need to rebuild their indexes after upgrading.  See LUCENE-6058 for more details.
 
+* The 'old-style' solr.xml format is no longer supported, and cores must be
+  defined using core.properties files.  See
+  https://cwiki.apache.org/confluence/display/solr/Format+of+solr.xml
+
 Detailed Change List
 ----------------------
 
@@ -737,6 +741,8 @@ Other Changes
 
 * SOLR-6981: Add a delete action to the bin/solr script to allow deleting of cores /
   collections (with delete collection config directory from ZK) (Timothy Potter)
+
+* SOLR-6840: Remove support for old-style solr.xml (Erick Erickson, Alan Woodward)
 
 ==================  4.10.3 ==================
 

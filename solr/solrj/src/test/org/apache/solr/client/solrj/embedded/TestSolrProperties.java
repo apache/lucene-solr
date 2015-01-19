@@ -19,16 +19,14 @@ package org.apache.solr.client.solrj.embedded;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrXMLCoresLocator;
-import org.apache.solr.util.TestHarness;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -66,9 +64,6 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
   public void testProperties() throws Exception {
-
-    SolrXMLCoresLocator.NonPersistingLocator locator
-        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
     UpdateRequest up = new UpdateRequest();
     up.setAction(ACTION.COMMIT, true, true);
@@ -138,33 +133,6 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     mcr = CoreAdminRequest.getStatus(name, coreadmin);
     long after = mcr.getStartTime(name).getTime();
     assertTrue("should have more recent time: " + after + "," + before, after > before);
-
-    TestHarness.validateXPath(locator.xml,
-        "/solr/cores[@defaultCoreName='core0']",
-        "/solr/cores[@host='127.0.0.1']",
-        "/solr/cores[@hostPort='${hostPort:8983}']",
-        "/solr/cores[@zkClientTimeout='8000']",
-        "/solr/cores[@hostContext='${hostContext:solr}']",
-        "/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']"
-        );
-    
-    CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
-
-    TestHarness.validateXPath(locator.xml,
-        "/solr/cores/core[@name='renamed_core']",
-        "/solr/cores/core[@instanceDir='${theInstanceDir:./}']",
-        "/solr/cores/core[@collection='${collection:acollection}']"
-        );
-    
-    coreadmin = getRenamedSolrAdmin();
-    File dataDir = new File(tempDir,"data3");
-    File tlogDir = new File(tempDir,"tlog3");
-
-    CoreAdminRequest.createCore("newCore", SOLR_HOME.getAbsolutePath(),
-        coreadmin, null, null, dataDir.getAbsolutePath(),
-        tlogDir.getAbsolutePath());
-
-    TestHarness.validateXPath(locator.xml, "/solr/cores/core[@name='collection1' and @instanceDir='.']");
 
   }
 

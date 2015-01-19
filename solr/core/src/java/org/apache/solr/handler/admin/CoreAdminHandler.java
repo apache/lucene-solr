@@ -17,25 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -67,7 +50,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -86,8 +68,24 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 /**
  *
@@ -586,12 +584,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       
       // only write out the descriptor if the core is successfully created
       coreContainer.getCoresLocator().create(coreContainer, dcore);
-      
-      if (coreContainer.getCoresLocator() instanceof SolrXMLCoresLocator) {
-        // hack - in this case we persist once more because a core create race might
-        // have dropped entries.
-        coreContainer.getCoresLocator().create(coreContainer);
-      }
+
       rsp.add("core", core.getName());
     }
     catch (Exception ex) {
@@ -694,7 +687,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
     try {
       if (cname == null) {
-        rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getAllCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name, isIndexInfoNeeded));
         }
@@ -1111,7 +1103,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
       if (desc != null) {
         info.add("name", desc.getName());
-        info.add("isDefaultCore", desc.getName().equals(cores.getDefaultCoreName()));
         info.add("instanceDir", desc.getInstanceDir());
         // None of the following are guaranteed to be present in a not-yet-loaded core.
         String tmp = desc.getDataDir();
@@ -1126,7 +1117,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       try (SolrCore core = cores.getCore(cname)) {
         if (core != null) {
           info.add("name", core.getName());
-          info.add("isDefaultCore", core.getName().equals(cores.getDefaultCoreName()));
           info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
           info.add("dataDir", normalizePath(core.getDataDir()));
           info.add("config", core.getConfigResource());

@@ -1,7 +1,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
-import java.io.File;
 import org.junit.Test;
 
 /*
@@ -22,17 +21,16 @@ import org.junit.Test;
  */
 public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
-  public static final String SOLRXML =
-      "<solr><cores><core name=\"collection1\" instanceDir=\"collection1\" config=\"solrconfig-implicitproperties.xml\"/></cores></solr>";
-
   @Test
   public void testImplicitPropertiesAreSubstitutedInSolrConfig() {
 
-    CoreContainer cc = createCoreContainer(TEST_HOME(), SOLRXML);
+    CoreContainer cc
+        = createCoreContainer("collection1", "data", "solrconfig-implicitproperties.xml", "schema.xml");
+    
     try {
       assertQ(req("q", "*:*")
               , "//str[@name='dummy1'][.='collection1']"
-              , "//str[@name='dummy2'][.='data"+File.separator+"']"
+              , "//str[@name='dummy2'][.='data']"
               , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
               , "//str[@name='dummy4'][.='schema.xml']"
               , "//str[@name='dummy5'][.='false']"

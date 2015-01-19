@@ -19,6 +19,8 @@
 <solr>
 
   <str name="shareSchema">${shareSchema:false}</str>
+  <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
+  <str name="coreRootDirectory">${coreRootDirectory:.}</str>
 
   <solrcloud>
     <str name="host">127.0.0.1</str>

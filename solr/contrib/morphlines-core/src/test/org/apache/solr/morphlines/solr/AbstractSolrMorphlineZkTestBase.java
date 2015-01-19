@@ -17,11 +17,9 @@
 
 package org.apache.solr.morphlines.solr;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Locale;
-
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ListMultimap;
+import com.typesafe.config.Config;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -42,9 +40,10 @@ import org.kitesdk.morphline.base.FaultTolerance;
 import org.kitesdk.morphline.base.Notifications;
 import org.kitesdk.morphline.stdlib.PipeBuilder;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ListMultimap;
-import com.typesafe.config.Config;
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Locale;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
   private static File solrHomeDirectory;
@@ -155,7 +154,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   public JettySolrRunner createJetty(File solrHome, String dataDir,
       String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
-    
+
+    writeCoreProperties(solrHome.toPath(), DEFAULT_TEST_CORENAME);
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
         context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
 

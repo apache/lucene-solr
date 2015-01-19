@@ -17,9 +17,10 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.lang.StringUtils;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -31,9 +32,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.util.TestHarness;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.Test;
 
 import java.io.File;
@@ -48,18 +47,7 @@ import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
-  }
-
   private File solrHomeDirectory;
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
 
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
@@ -69,17 +57,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
-
-    File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, LOTS_SOLR_XML, Charsets.UTF_8.toString());
-    ConfigSolrXmlOld config = (ConfigSolrXmlOld) ConfigSolr.fromFile(loader, solrXml);
-
-    CoresLocator locator = new SolrXMLCoresLocator.NonPersistingLocator(LOTS_SOLR_XML, config);
-
-
-    final CoreContainer cores = new CoreContainer(loader, config, locator);
-    cores.load();
-    return cores;
+    return createCoreContainer(new LazyCoreTestConfig(loader));
   }
   
   @Test
@@ -172,14 +150,16 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // Now just insure that the normal searching on "collection1" finds _0_ on the same query that found _2_ above.
       // Use of makeReq above and req below is tricky, very tricky.
+      SolrCore collection1 = cc.getCore("collection1");
       assertQ("test raw query",
-          req("q", "{!raw f=v_t}hello", "wt", "xml")
+          makeReq(collection1, "q", "{!raw f=v_t}hello", "wt", "xml")
           , "//result[@numFound='0']"
       );
 
       checkInCores(cc, "collectionLazy4");
 
       core4.close();
+      collection1.close();
     } finally {
       cc.shutdown();
     }
@@ -411,72 +391,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-
-  //Make sure persisting not-loaded lazy cores is done. See SOLR-4347
-
-  @Test
-  public void testPersistence() throws Exception {
-    final CoreContainer cc = init();
-    try {
-      copyMinConf(new File(solrHomeDirectory, "core1"));
-      copyMinConf(new File(solrHomeDirectory, "core2"));
-      copyMinConf(new File(solrHomeDirectory, "core3"));
-      copyMinConf(new File(solrHomeDirectory, "core4"));
-
-      final CoreDescriptor cd1 = buildCoreDescriptor(cc, "core1", "./core1")
-          .isTransient(true).loadOnStartup(true).build();
-      final CoreDescriptor cd2 = buildCoreDescriptor(cc, "core2", "./core2")
-          .isTransient(true).loadOnStartup(false).build();
-      final CoreDescriptor cd3 = buildCoreDescriptor(cc, "core3", "./core3")
-          .isTransient(false).loadOnStartup(true).build();
-      final CoreDescriptor cd4 = buildCoreDescriptor(cc, "core4", "./core4")
-          .isTransient(false).loadOnStartup(false).build();
-
-
-      SolrCore core1 = cc.create(cd1);
-      SolrCore core2 = cc.create(cd2);
-      SolrCore core3 = cc.create(cd3);
-      SolrCore core4 = cc.create(cd4);
-
-      SolrXMLCoresLocator.NonPersistingLocator locator =
-          (SolrXMLCoresLocator.NonPersistingLocator) cc.getCoresLocator();
-
-      TestHarness.validateXPath(locator.xml,
-          "/solr/cores/core[@name='collection1']",
-          "/solr/cores/core[@name='collectionLazy2']",
-          "/solr/cores/core[@name='collectionLazy3']",
-          "/solr/cores/core[@name='collectionLazy4']",
-          "/solr/cores/core[@name='collectionLazy5']",
-          "/solr/cores/core[@name='collectionLazy6']",
-          "/solr/cores/core[@name='collectionLazy7']",
-          "/solr/cores/core[@name='collectionLazy8']",
-          "/solr/cores/core[@name='collectionLazy9']",
-          "/solr/cores/core[@name='core1']",
-          "/solr/cores/core[@name='core2']",
-          "/solr/cores/core[@name='core3']",
-          "/solr/cores/core[@name='core4']",
-          "13=count(/solr/cores/core)");
-
-      removeOne(cc, "collectionLazy2");
-      removeOne(cc, "collectionLazy3");
-      removeOne(cc, "collectionLazy4");
-      removeOne(cc, "collectionLazy5");
-      removeOne(cc, "collectionLazy6");
-      removeOne(cc, "collectionLazy7");
-      removeOne(cc, "core1");
-      removeOne(cc, "core2");
-      removeOne(cc, "core3");
-      removeOne(cc, "core4");
-
-      // now test that unloading a core means the core is not persisted
-      TestHarness.validateXPath(locator.xml, "3=count(/solr/cores/core)");
-
-    } finally {
-      cc.shutdown();
-    }
-  }
-
-
   // Test that transient cores
   // 1> produce errors as appropriate when the config or schema files are foo'd
   // 2> "self heal". That is, if the problem is corrected can the core be reloaded and used?
@@ -627,12 +541,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
     ConfigSolrXml config = (ConfigSolrXml) ConfigSolr.fromFile(loader, solrXml);
 
-    CoresLocator locator = new CorePropertiesLocator(solrHomeDirectory.getAbsolutePath());
-
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    final CoreContainer cores = new CoreContainer(loader, config, locator);
-    cores.load();
-    return cores;
+    return createCoreContainer(config);
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the directory.
@@ -669,9 +579,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  private void removeOne(CoreContainer cc, String coreName) {
-    cc.unload(coreName);
-  }
   public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> names = cc.getCoreNames();
     for (String name : nameCheck) {
@@ -712,26 +619,51 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     return StringUtils.join(args, File.separator);
   }
 
-  private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
-      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" transientCacheSize=\"4\">  " +
-      "<core name=\"collection1\" instanceDir=\"collection1\"  /> " +
+  public static class LazyCoreTestConfig extends ConfigSolr {
 
-      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" transient=\"true\" loadOnStartup=\"true\"   /> " +
+    public LazyCoreTestConfig(SolrResourceLoader loader) {
+      super(loader, null);
+    }
 
-      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" transient=\"on\" loadOnStartup=\"false\"    /> " +
+    static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String instanceDir, String isTransient, String loadOnStartup) {
+      return new CoreDescriptor(cc, coreName, instanceDir,
+          CoreDescriptor.CORE_TRANSIENT, isTransient,
+          CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
+    }
 
-      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" transient=\"false\" loadOnStartup=\"false\" /> " +
+    @Override
+    public CoresLocator getCoresLocator() {
+      return new ReadOnlyCoresLocator() {
+        @Override
+        public List<CoreDescriptor> discover(CoreContainer cc) {
+          return ImmutableList.of(
+              new CoreDescriptor(cc, "collection1", "collection1"),
+              makeCoreDescriptor(cc, "collectionLazy2", "collection2", "true", "true"),
+              makeCoreDescriptor(cc, "collectionLazy3", "collection3", "on", "false"),
+              makeCoreDescriptor(cc, "collectionLazy4", "collection4", "false", "false"),
+              makeCoreDescriptor(cc, "collectionLazy5", "collection5", "false", "true"),
+              makeCoreDescriptor(cc, "collectionLazy6", "collection6", "true", "false"),
+              makeCoreDescriptor(cc, "collectionLazy7", "collection7", "true", "false"),
+              makeCoreDescriptor(cc, "collectionLazy8", "collection8", "true", "false"),
+              makeCoreDescriptor(cc, "collectionLazy9", "collection9", "true", "false")
+          );
+        }
+      };
+    }
 
-      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" transient=\"false\" loadOnStartup=\"true\" /> " +
+    @Override
+    public PluginInfo getShardHandlerFactoryPluginInfo() {
+      return null;
+    }
 
-      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" transient=\"true\" loadOnStartup=\"false\" /> " +
+    @Override
+    protected String getProperty(CfgProp key) {
+      switch (key) {
+        case SOLR_TRANSIENTCACHESIZE:
+          return "4";
+      }
+      return null;
+    }
+  }
 
-      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" transient=\"true\" loadOnStartup=\"false\" /> " +
-
-      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" transient=\"true\" loadOnStartup=\"false\" /> " +
-
-      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" transient=\"true\" loadOnStartup=\"false\" /> " +
-
-      "</cores> " +
-      "</solr>";
 }

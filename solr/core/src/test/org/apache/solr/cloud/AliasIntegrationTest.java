@@ -41,6 +41,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -48,6 +50,8 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
+
+  private static final Logger logger = LoggerFactory.getLogger(AliasIntegrationTest.class);
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -80,11 +84,13 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
   
   @Override
   public void doTest() throws Exception {
-    
+
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
+
     waitForThingsToLevelOut(30);
+
+    logger.info("### STARTING ACTUAL TEST");
 
     del("*:*");
     
@@ -258,6 +264,8 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
       sawException = true;
     }
     assertTrue(sawException);
+
+    logger.info("### FINISHED ACTUAL TEST");
   }
 
   private void createAlias(String alias, String collections)
