@@ -50,12 +50,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @Slow
 public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
   
-  @BeforeClass
-  public static void beforeClass2() {
-    assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
-    assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
-  }
-  
   @Override
   public void doTest() throws Exception {
     
