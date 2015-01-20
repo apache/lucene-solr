@@ -177,8 +177,9 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     HttpPost httpPost = null;
     HttpEntity entity;
     String response = null;
+    Replica leader = cloudClient.getZkStateReader().getClusterState().getCollection(".system").getActiveSlices().iterator().next().getLeader();
     try {
-      httpPost = new HttpPost(baseUrl+"/.system/blob/test");
+      httpPost = new HttpPost(leader.getStr(ZkStateReader.BASE_URL_PROP) +"/.system/blob/test");
       httpPost.setHeader("Content-Type","application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
