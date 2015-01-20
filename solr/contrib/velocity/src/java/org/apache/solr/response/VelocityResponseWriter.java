@@ -29,7 +29,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-import org.apache.hadoop.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -282,7 +282,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     loaders.add("builtin");
     engine.setProperty("builtin.resource.loader.instance", new ClasspathResourceLoader());
 
-    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(",", loaders));
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(loaders,','));
 
     // bring in any custom properties too
     engine.init(velocityInitProps);
