@@ -60,24 +60,14 @@
       </Arg>
     </Call>
 
-    <!-- if the connector below is uncommented, then jetty will also accept SSL
-         connections on port 8984, using a self signed certificate and can 
-         optionally require the client to authenticate with a certificate. 
-         (which can be the same as the server certificate_
+    <!-- If the connector below is uncommented, then jetty will also accept SSL
+         connections using a self signed certificate, and can optionally require
+         the client to authenticate with a certificate, which can be the same as
+         the server certificate.
          
-         # Run solr example with SSL on port 8984
-         java -jar start.jar
-         # 
-         # Run post.jar so that it trusts the server cert...
-         java -Djavax.net.ssl.trustStore=../etc/solrtest.keystore -Durl=https://localhost:8984/solr/update -jar post.jar *.xml
-
-         # Run solr example with SSL requiring client certs on port 8984
-         java -Djetty.ssl.clientAuth=true -jar start.jar
-         #
-         # Run post.jar so that it trusts the server cert, 
-         # and authenticates with a client cert
-         java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../etc/solrtest.keystore -Djavax.net.ssl.trustStore=../etc/solrtest.keystore -Durl=https://localhost:8984/solr/update -jar post.jar *.xml
-
+         For information about generating the SSL certificate, etc., see:
+          
+             https://cwiki.apache.org/confluence/display/solr/Enabling+SSL
     -->
     <!--
     <Call name="addConnector">
@@ -85,7 +75,7 @@
         <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
           <Arg>
             <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
-              <Set name="keyStore"><SystemProperty name="jetty.home" default="."/>/etc/solrtest.keystore</Set>
+              <Set name="keyStore"><SystemProperty name="jetty.home" default="."/>/etc/solr-ssl.keystore.jks</Set>
               <Set name="keyStorePassword">secret</Set>
               <Set name="needClientAuth"><SystemProperty name="jetty.ssl.clientAuth" default="false"/></Set>
             </New>
