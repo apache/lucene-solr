@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -29,6 +30,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 // See SOLR-6640
+@SolrTestCaseJ4.SuppressSSL
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   public RecoveryAfterSoftCommitTest() {
