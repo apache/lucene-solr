@@ -23,6 +23,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -146,8 +147,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     ports.add(port);
     CoreContainer container = new CoreContainer();
     container.load();
-    assertTrue("Container " + port + " has no cores!", container.getCores()
-        .size() > 0);
+    container.create(new CoreDescriptor(container, "collection1", "collection1", "collection", "collection1"));
     containerMap.put(port, container);
     System.clearProperty("solr.solr.home");
     System.clearProperty("hostPort");

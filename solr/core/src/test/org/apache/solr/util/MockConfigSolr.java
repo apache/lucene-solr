@@ -19,11 +19,16 @@ package org.apache.solr.util;
 
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.PluginInfo;
 
 /**
  *
  */
 public class MockConfigSolr extends ConfigSolr {
+
+  public MockConfigSolr() {
+    super(null, null);
+  }
 
   @Override
   public CoresLocator getCoresLocator() {
@@ -31,13 +36,13 @@ public class MockConfigSolr extends ConfigSolr {
   }
 
   @Override
-  protected String getShardHandlerFactoryConfigPath() {
+  public PluginInfo getShardHandlerFactoryPluginInfo() {
     return null;
   }
 
   @Override
-  public boolean isPersistent() {
-    return false;
+  protected String getProperty(CfgProp key) {
+    return null;
   }
 
 }

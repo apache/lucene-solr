@@ -17,10 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -30,6 +26,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base test class for ZooKeeper tests.
@@ -74,7 +74,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     
     buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), SOLRHOME,
         "solrconfig.xml", "schema.xml");
-    
+
     initCore("solrconfig.xml", "schema.xml");
   }
 

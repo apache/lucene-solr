@@ -21,6 +21,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.restlet.ext.servlet.ServerServlet;
 
+import java.nio.file.Path;
+import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -42,11 +44,25 @@ abstract public class SolrRestletTestBase extends RestTestBase {
    */
   @BeforeClass
   public static void init() throws Exception {
+
+    Path tempDir = createTempDir();
+    Path coresDir = tempDir.resolve("cores");
+
+    System.setProperty("coreRootDirectory", coresDir.toString());
+    System.setProperty("configSetBaseDir", TEST_HOME());
+
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     final ServletHolder solrSchemaRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
     solrSchemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
     extraServlets.put(solrSchemaRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
+    Properties props = new Properties();
+    props.setProperty("name", DEFAULT_TEST_CORENAME);
+    props.setProperty("config", "solrconfig.xml");
+    props.setProperty("schema", "schema-rest.xml");
+    props.setProperty("configSet", "collection1");
+
+    writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
     createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }
 }

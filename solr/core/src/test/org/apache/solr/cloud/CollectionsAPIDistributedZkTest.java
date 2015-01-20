@@ -54,7 +54,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -64,10 +63,12 @@ import org.junit.BeforeClass;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,7 +111,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   // we randomly use a second config set rather than just one
   private boolean secondConfigSet = random().nextBoolean();
-  private boolean oldStyleSolrXml = false;
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -123,13 +123,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     super.setUp();
     
     useJettyDataDir = false;
-    
-    oldStyleSolrXml = random().nextBoolean();
-    if (oldStyleSolrXml) {
-      System.err.println("Using old style solr.xml");
-    } else {
-      System.err.println("Using new style solr.xml");
-    }
+
     if (secondConfigSet ) {
       String zkHost = zkServer.getZkHost();
       String zkAddress = zkServer.getZkAddress();
@@ -158,12 +152,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
     
     System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
+
   }
   
   protected String getSolrXml() {
-    // test old style and new style solr.xml
-    return oldStyleSolrXml ? "solr-no-core-old-style.xml" : "solr-no-core.xml";
+    return "solr-no-core.xml";
   }
 
   
@@ -953,28 +946,22 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
   }
 
-  private void checkInstanceDirs(JettySolrRunner jetty) {
+  private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {
     CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter()
         .getFilter()).getCores();
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
-      if (!oldStyleSolrXml) {
-        // look for core props file
-        assertTrue("Could not find expected core.properties file",
-            new File((String) core.getStatistics().get("instanceDir"),
-                "core.properties").exists());
-      }
 
-      try {
-        assertEquals(
-           new File(SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
-                + core.getName())).getCanonicalPath(),
-            new File(SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
-                "instanceDir"))).getCanonicalPath());
-      } catch (IOException e) {
-        log.error("Failed to get canonical path", e);
-        fail("Failed to get canonical path");
-      }
+      // look for core props file
+      assertTrue("Could not find expected core.properties file",
+          new File((String) core.getStatistics().get("instanceDir"),
+              "core.properties").exists());
+
+      Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve("cores").resolve(core.getName());
+      Path reported = Paths.get((String) core.getStatistics().get("instanceDir"));
+
+      assertTrue("Expected: " + expected + "\nFrom core stats: " + reported, Files.isSameFile(expected, reported));
+
     }
   }
 

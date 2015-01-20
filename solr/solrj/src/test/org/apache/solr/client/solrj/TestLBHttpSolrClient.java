@@ -17,15 +17,8 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
@@ -46,7 +39,13 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Test for LBHttpSolrClient
@@ -268,7 +267,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public String getUrl() {
-      return buildUrl(port, "/solr");
+      return buildUrl(port, "/solr/collection1");
     }
 
     public String getSchemaFile() {
@@ -303,6 +302,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");
       FileUtils.copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
+      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 
     public void tearDown() throws Exception {

@@ -42,7 +42,7 @@
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
 	<lst name="slave">
-		<str name="masterUrl">http://127.0.0.1:TEST_PORT/solr</str>
+		<str name="masterUrl">http://127.0.0.1:TEST_PORT/solr/collection1</str>
 		<str name="pollInterval">00:00:01</str>
         <str name="compression">COMPRESSION</str>
      </lst>

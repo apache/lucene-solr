@@ -17,14 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -43,6 +35,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
 
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
@@ -78,19 +78,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     log.info("####SETUP_START " + getTestName());
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-    
-    boolean useNewSolrXml = random().nextBoolean();
+
     File tmpDir = createTempDir().toFile();
-    if (useNewSolrXml) {
-      solrHome = exampleHome;
-    } else {
-      File tmpSolrHome = new File(tmpDir, "tmp-solr-home");
-      FileUtils.copyDirectory(new File(exampleHome), tmpSolrHome);
-      FileUtils.copyFile(getFile("old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
-      solrHome = tmpSolrHome.getAbsolutePath();
-    }
-    
-    
+    solrHome = exampleHome;
+
     zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     log.info("ZooKeeper dataDir:" + zkDir);
