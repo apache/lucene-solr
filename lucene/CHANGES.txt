@@ -33,10 +33,10 @@ API Changes
 
 Optimizations
 
-* LUCENE-6183: Avoid recompressing stored fields when merging
-  segments without deletions. Lucene50Codec's BEST_COMPRESSION
-  mode uses a higher deflate level for more compact storage.
-  (Robert Muir)
+* LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
+  and term vectors when merging segments without deletions. 
+  Lucene50Codec's BEST_COMPRESSION mode uses a higher deflate 
+  level for more compact storage.  (Robert Muir)
 
 * LUCENE-6184: Make BooleanScorer only score windows that contain
   matches. (Adrien Grand)

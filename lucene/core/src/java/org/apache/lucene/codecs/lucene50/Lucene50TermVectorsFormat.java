@@ -58,7 +58,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * {@link BlockPackedWriter blocks of packed ints} for positions.</p>
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
- * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup>, Footer</li>
+ * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup>, ChunkCount, DirtyChunkCount, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkSize is the number of bytes of terms to accumulate before flushing, as a {@link DataOutput#writeVInt VInt}</li>
@@ -106,6 +106,8 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>FieldTermsAndPayLoads --&gt; Terms (Payloads)</li>
  * <li>Terms: term bytes</li>
  * <li>Payloads: payload bytes (if the field has payloads)</li>
+ * <li>ChunkCount --&gt; the number of chunks in this file</li>
+ * <li>DirtyChunkCount --&gt; the number of prematurely flushed chunks in this file</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </li>
