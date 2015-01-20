@@ -56,10 +56,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -78,6 +80,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -405,13 +409,41 @@ public class SnapPuller {
         }
         
         if (!isFullCopyNeeded) {
-          // rollback - and do it before we download any files
-          // so we don't remove files we thought we didn't need
-          // to download later
-          solrCore.getUpdateHandler().getSolrCoreState()
-          .closeIndexWriter(core, true);
+          // a searcher might be using some flushed but committed segments
+          // because of soft commits (which open a searcher on IW's data)
+          // so we need to close the existing searcher on the last commit
+          // and wait until we are able to clean up all unused lucene files
+          if (solrCore.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+            solrCore.closeSearcher();
+          }
+
+          // rollback and reopen index writer and wait until all unused files
+          // are successfully deleted
+          solrCore.getUpdateHandler().newIndexWriter(true);
+          RefCounted<IndexWriter> writer = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+          try {
+            IndexWriter indexWriter = writer.get();
+            int c = 0;
+            indexWriter.deleteUnusedFiles();
+            while (hasUnusedFiles(indexDir, commit)) {
+              indexWriter.deleteUnusedFiles();
+              LOG.info("Sleeping for 1000ms to wait for unused lucene index files to be delete-able");
+              Thread.sleep(1000);
+              c++;
+              if (c >= 30)  {
+                LOG.warn("SnapPuller unable to cleanup unused lucene index files so we must do a full copy instead");
+                isFullCopyNeeded = true;
+                break;
+              }
+            }
+            if (c > 0)  {
+              LOG.info("SnapPuller slept for " + (c * 1000) + "ms for unused lucene index files to be delete-able");
+            }
+          } finally {
+            writer.decref();
+          }
+          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(core, true);
         }
-        
         boolean reloadCore = false;
         
         try {
@@ -540,6 +572,24 @@ public class SnapPuller {
         }
       }
     }
+  }
+
+  private boolean hasUnusedFiles(Directory indexDir, IndexCommit commit) throws IOException {
+    Set<String> currentFiles = new HashSet<>();
+    String segmentsFileName = commit.getSegmentsFileName();
+    SegmentInfos infos = SegmentInfos.readCommit(indexDir, segmentsFileName);
+    for (SegmentCommitInfo info : infos.asList()) {
+      Set<String> files = info.info.files(); // All files that belong to this segment
+      currentFiles.addAll(files);
+    }
+    String[] allFiles = indexDir.listAll();
+    for (String file : allFiles) {
+      if (!file.equals(segmentsFileName) && !currentFiles.contains(file)) {
+        LOG.info("Found unused file: " + file);
+        return true;
+      }
+    }
+    return false;
   }
 
   private volatile Exception fsyncException;
