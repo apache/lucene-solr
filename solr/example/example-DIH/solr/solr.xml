@@ -1,10 +1,2 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<solr sharedLib="lib" persistent="true">
-	<cores adminPath="/admin/cores" hostPort="${jetty.port:8983}" hostContext="${hostContext:solr}">
-		<core default="true" instanceDir="db" name="db"/>
-		<core default="false" instanceDir="rss" name="rss"/>
-		<core default="false" instanceDir="mail" name="mail"/>
-		<core default="false" instanceDir="tika" name="tika"/>
-    <core default="false" instanceDir="solr" name="solr"/>
-	</cores>
-</solr>
+<solr></solr>

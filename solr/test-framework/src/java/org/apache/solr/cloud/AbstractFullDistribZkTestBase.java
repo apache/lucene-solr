@@ -281,9 +281,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     try {
       
-      File controlJettyDir = createTempDir().toFile();
+      File controlJettyDir = createTempDir("control").toFile();
       setupJettySolrHome(controlJettyDir);
-      
+
+      System.setProperty("coreRootDirectory", controlJettyDir.toPath().resolve("cores").toString());
       controlJetty = createJetty(controlJettyDir, useJettyDataDir ? getDataDir(testDir
           + "/control/data") : null); // don't pass shard name... let it default to
                                // "shard1"
@@ -393,11 +394,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir().toFile();
+      File jettyDir = createTempDir("shard-" + i).toFile();
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
       log.info("create jetty " + i);
+      System.setProperty("coreRootDirectory", jettyDir.toPath().resolve("cores").toString());
       JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
           + cnt) : null, null, "solrconfig.xml", null);
       jettys.add(j);

@@ -178,7 +178,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected CoreContainer createCoreContainer() {
     SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
     ConfigSolr config = loadConfigSolr(loader);
-    CoreContainer cores = new CoreContainer(loader, config);
+    CoreContainer cores = new CoreContainer(config);
     cores.load();
     return cores;
   }
@@ -250,22 +250,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           path = path.substring( 0, idx );
         }
 
-        // Check for the core admin page
-        if( path.equals( cores.getAdminPath() ) ) {
-          handler = cores.getMultiCoreHandler();
-          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
+
+        boolean usingAliases = false;
+        List<String> collectionsList = null;
+
+        // Check for container handlers
+        handler = cores.getRequestHandler(path);
+        if (handler != null) {
+          solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
-        boolean usingAliases = false;
-        List<String> collectionsList = null;
-        // Check for the core admin collections url
-        handler = cores.getRequestHandler(path);
-        if( handler!= null ) {
-          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
-          handleAdminRequest(req, response, handler, solrReq);
-          return;
-        } else {
+        else {
           //otherwise, we should find a core from the path
           idx = path.indexOf( "/", 1 );
           if( idx > 1 ) {

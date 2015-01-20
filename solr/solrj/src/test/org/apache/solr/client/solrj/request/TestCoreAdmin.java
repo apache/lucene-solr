@@ -110,6 +110,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
     req.setDataDir(dataDir.getAbsolutePath());
     req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
+    req.setConfigSet("shared");
 
     // These should be the inverse of defaults.
     req.setIsLoadOnStartup(false);

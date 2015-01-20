@@ -16,25 +16,14 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
+import com.typesafe.config.Config;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -56,10 +45,20 @@ import org.kitesdk.morphline.stdlib.PipeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
-import com.typesafe.config.Config;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   private static Locale savedLocale;
@@ -123,7 +122,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
       ((HttpSolrClient) solrClient).setParser(new XMLResponseParser());
     } else {
       if (TEST_WITH_EMBEDDED_SOLR_SERVER) {
-        solrClient = new EmbeddedTestSolrServer(h.getCoreContainer(), "");
+        solrClient = new EmbeddedTestSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
       } else {
         throw new RuntimeException("Not yet implemented");
         //solrServer = new TestSolrServer(getSolrClient());

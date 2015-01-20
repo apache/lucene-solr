@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" ?>
+
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +17,18 @@
  limitations under the License.
 -->
 
-<!--
- old-style solr.xml specifying a custom shardHandlerFactory
--->
-<solr>
-  <cores>
-    <shardHandlerFactory name="shardHandlerFactory"
-                         class="org.apache.solr.core.MockShardHandlerFactory">
-      <str name="myMagicRequiredParameter">myMagicRequiredValue</str>
-    </shardHandlerFactory>
-  </cores>
-</solr>
+<config>
+
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <indexConfig>
+    <mergePolicy class="org.apache.solr.update.DummyMergePolicy"/>
+    <mergeFactor>8</mergeFactor>
+  </indexConfig>
+
+  <updateHandler class="solr.DirectUpdateHandler2"/>
+  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+
+</config>

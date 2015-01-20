@@ -17,13 +17,17 @@
 
 package org.apache.solr.util;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.ConfigSolr;
-import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -42,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -57,7 +62,7 @@ import java.util.Map;
  *
  */
 public class TestHarness extends BaseTestHarness {
-  String coreName;
+  public String coreName;
   protected volatile CoreContainer container;
   public UpdateRequestHandler updater;
  
@@ -78,11 +83,10 @@ public class TestHarness extends BaseTestHarness {
   }
   
   /**
-   * Creates a SolrConfig object for the 
-   * {@link ConfigSolrXmlOld#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
+   * Creates a SolrConfig object for the default test core using {@link #createConfig(String,String,String)}
    */
   public static SolrConfig createConfig(String solrHome, String confFile) {
-    return createConfig(solrHome, ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, confFile);
+    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
   /**
@@ -116,7 +120,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
-      this(ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, dataDirectory, solrConfig, indexSchema);
+      this(SolrTestCaseJ4.DEFAULT_TEST_CORENAME, dataDirectory, solrConfig, indexSchema);
   }
 
   /**
@@ -126,21 +130,9 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    try {
-      if (coreName == null)
-        coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
-      this.coreName = coreName;
-
-      SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-      ConfigSolr config = getTestHarnessConfig(loader, coreName, dataDir, solrConfig, indexSchema);
-      container = new CoreContainer(loader, config);
-      container.load();
-
-      updater = new UpdateRequestHandler();
-      updater.init( null );
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    this(new TestConfigSolr(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()),
+                                                    coreName, dataDir, solrConfig, indexSchema));
+    this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
 
   public TestHarness(String coreName, String dataDir, SolrConfig solrConfig, IndexSchema indexSchema) {
@@ -162,38 +154,81 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(SolrResourceLoader loader, String solrXml) {
-    this(loader, ConfigSolr.fromString(loader, solrXml));
+    this(ConfigSolr.fromString(loader, solrXml));
   }
 
   /**
-   * Create a TestHarness using a specific resource loader and config
-   * @param loader the SolrResourceLoader to use
+   * Create a TestHarness using a specific config
    * @param config the ConfigSolr to use
    */
-  public TestHarness(SolrResourceLoader loader, ConfigSolr config) {
-    container = new CoreContainer(loader, config);
+  public TestHarness(ConfigSolr config) {
+    container = new CoreContainer(config);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
-  private static ConfigSolr getTestHarnessConfig(SolrResourceLoader loader, String coreName, String dataDir,
-                                                 String solrConfig, String schema) {
-    String solrxml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-        + "<solr persistent=\"false\">\n"
-        + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
-        + ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME
-        + "\""
-        + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\""
-        + " distribUpdateSoTimeout=\"30000\""
-        + " zkClientTimeout=\"${zkClientTimeout:30000}\" distribUpdateConnTimeout=\"30000\""
-        + ">\n"
-        + "    <core name=\"" + coreName + "\" config=\"" + solrConfig
-        + "\" schema=\"" + schema + "\" dataDir=\"" + dataDir
-        + "\" transient=\"false\" loadOnStartup=\"true\""
-        + " shard=\"${shard:shard1}\" collection=\"${collection:collection1}\" instanceDir=\"" + coreName + "/\" />\n"
-        + "  </cores>\n" + "</solr>";
-    return ConfigSolr.fromString(loader, solrxml);
+  public static class TestConfigSolr extends ConfigSolr {
+
+    final CoresLocator locator;
+
+    public TestConfigSolr(String coreName, String dataDir, String solrConfig, String schema) {
+      this(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()), coreName, dataDir, solrConfig, schema);
+    }
+
+    public TestConfigSolr(SolrResourceLoader loader, String coreName, String dataDir, String solrConfig, String schema) {
+      super(loader);
+      locator = new TestCoresLocator(coreName, dataDir, solrConfig, schema);
+    }
+
+    @Override
+    public CoresLocator getCoresLocator() {
+      return locator;
+    }
+
+    @Override
+    public PluginInfo getShardHandlerFactoryPluginInfo() {
+      return null;
+    }
+
+    @Override
+    protected String getProperty(CfgProp key) {
+      switch (key) {
+        case SOLR_HOST: return System.getProperty("host");
+        case SOLR_HOSTPORT: return System.getProperty("hostPort", "");
+        case SOLR_HOSTCONTEXT: return System.getProperty("hostContext", "");
+        case SOLR_DISTRIBUPDATESOTIMEOUT: return "30000";
+        case SOLR_ZKCLIENTTIMEOUT: return System.getProperty("zkClientTimeout", "30000");
+        case SOLR_DISTRIBUPDATECONNTIMEOUT: return "30000";
+        case SOLR_SHARESCHEMA: return System.getProperty("shareSchema", "false");
+      }
+      return null;
+    }
+  }
+
+  public static class TestCoresLocator extends ReadOnlyCoresLocator {
+
+    final String coreName;
+    final String dataDir;
+    final String solrConfig;
+    final String schema;
+
+    public TestCoresLocator(String coreName, String dataDir, String solrConfig, String schema) {
+      this.coreName = coreName == null ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
+      this.dataDir = dataDir;
+      this.schema = schema;
+      this.solrConfig = solrConfig;
+    }
+
+    @Override
+    public List<CoreDescriptor> discover(CoreContainer cc) {
+      return ImmutableList.of(new CoreDescriptor(cc, coreName, coreName,
+          CoreDescriptor.CORE_DATADIR, dataDir,
+          CoreDescriptor.CORE_CONFIG, solrConfig,
+          CoreDescriptor.CORE_SCHEMA, schema,
+          CoreDescriptor.CORE_COLLECTION, System.getProperty("collection", "collection1"),
+          CoreDescriptor.CORE_SHARD, System.getProperty("shard", "shard1")));
+    }
   }
   
   public CoreContainer getCoreContainer() {
@@ -289,7 +324,8 @@ public class TestHarness extends BaseTestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws Exception {
-    try (SolrCore core = getCoreInc()) {
+    try {
+      SolrCore core = req.getCore();
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       core.execute(core.getRequestHandler(handler),req,rsp);

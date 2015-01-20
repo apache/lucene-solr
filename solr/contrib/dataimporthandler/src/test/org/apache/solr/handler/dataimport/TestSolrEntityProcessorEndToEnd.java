@@ -17,14 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,6 +29,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * End-to-end test of SolrEntityProcessor. "Real" test using embedded Solr
@@ -94,7 +95,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private String getSourceUrl() {
-    return buildUrl(jetty.getLocalPort(), "/solr");
+    return buildUrl(jetty.getLocalPort(), "/solr/collection1");
   }
   
   //TODO: fix this test to close its directories
@@ -332,6 +333,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       FileUtils.copyFile(getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
       FileUtils.copyFile(getFile(SOURCE_CONF_DIR + "dataconfig-contentstream.xml"), f);
+
+      Files.createFile(confDir.toPath().resolve("../core.properties"));
     }
 
     public void tearDown() throws Exception {

@@ -129,10 +129,8 @@ public class EmbeddedSolrServer extends SolrClient
         }
       }
       // Perhaps the path is to manage the cores
-      if( handler == null &&
-          coreContainer != null &&
-          path.equals( coreContainer.getAdminPath() ) ) {
-        handler = coreContainer.getMultiCoreHandler();
+      if (handler == null) {
+        handler = coreContainer.getRequestHandler(path);
       }
     }
     if( handler == null ) {
