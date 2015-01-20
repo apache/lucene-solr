@@ -477,6 +477,9 @@ Bug Fixes
 * SOLR-6931: We should do a limited retry when using HttpClient. 
  (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
 
+* SOLR-7004: Add a missing constructor for CollectionAdminRequest.BalanceShardUnique that
+  sets the collection action. (Anshum Gupta)
+
 Optimizations
 ----------------------
 

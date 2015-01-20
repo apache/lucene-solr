@@ -815,6 +815,10 @@ public class CollectionAdminRequest extends SolrRequest {
     private Boolean onlyActiveNodes;
     private Boolean shardUnique;
     
+    public BalanceShardUnique() {
+      this.action = CollectionAction.BALANCESHARDUNIQUE;
+    }
+    
     public String getPropertyName() {
       return propertyName;
     }
