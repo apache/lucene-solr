@@ -1339,8 +1339,7 @@
 
        To use this suggester, set the "solr.suggester.enabled=true" system property
     -->
-  <searchComponent name="suggest" class="solr.SuggestComponent" 
-                   enable="${solr.suggester.enabled:false}"     >
+  <searchComponent name="suggest" class="solr.SuggestComponent">
     <lst name="suggester">
       <str name="name">mySuggester</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>      
@@ -1348,6 +1347,7 @@
       <str name="field">cat</str>
       <str name="weightField">price</str>
       <str name="suggestAnalyzerFieldType">string</str>
+      <str name="buildOnStartup">false</str>
     </lst>
   </searchComponent>
 

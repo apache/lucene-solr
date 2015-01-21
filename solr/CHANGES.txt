@@ -333,6 +333,8 @@ New Features
 
 * SOLR-5147: Support child documents in DIH
   (Vadim Kirilchuk, Shawn Heisey, Thomas Champagne, Mikhail Khludnev via Noble Paul)
+
+* SOLR-6845: Add a “buildOnStartup” option for suggesters. (Tomás Fernández Löbbe)
   
 Bug Fixes
 ----------------------
