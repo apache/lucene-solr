@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
@@ -133,7 +132,7 @@ public class SolrSuggester implements Accountable {
       } else {
         // attempt reload of the stored lookup
         try {
-          lookup.load(new FileInputStream(new File(storeDir, factory.storeFileName())));
+          lookup.load(new FileInputStream(getStoreFile()));
         } catch (IOException e) {
           LOG.warn("Loading stored lookup data failed, possibly not cached yet");
         }
@@ -161,7 +160,7 @@ public class SolrSuggester implements Accountable {
     dictionary = dictionaryFactory.create(core, searcher);
     lookup.build(dictionary);
     if (storeDir != null) {
-      File target = new File(storeDir, factory.storeFileName());
+      File target = getStoreFile();
       if(!lookup.store(new FileOutputStream(target))) {
         LOG.error("Store Lookup build failed");
       } else {
@@ -174,19 +173,33 @@ public class SolrSuggester implements Accountable {
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     LOG.info("reload()");
     if (dictionary == null && storeDir != null) {
-      // this may be a firstSearcher event, try loading it
-      FileInputStream is = new FileInputStream(new File(storeDir, factory.storeFileName()));
-      try {
-        if (lookup.load(is)) {
-          return;  // loaded ok
+      File lookupFile = getStoreFile();
+      if (lookupFile.exists()) {
+        // this may be a firstSearcher event, try loading it
+        FileInputStream is = new FileInputStream(lookupFile);
+        try {
+          if (lookup.load(is)) {
+            return;  // loaded ok
+          }
+        } finally {
+          IOUtils.closeWhileHandlingException(is);
         }
-      } finally {
-        IOUtils.closeWhileHandlingException(is);
+      } else {
+        LOG.info("lookup file doesn't exist");
       }
-      LOG.debug("load failed, need to build Lookup again");
     }
-    // loading was unsuccessful - build it again
-    build(core, searcher);
+  }
+
+  /**
+   * 
+   * @return the file where this suggester is stored.
+   *         null if no storeDir was configured
+   */
+  public File getStoreFile() {
+    if (storeDir == null) {
+      return null;
+    }
+    return new File(storeDir, factory.storeFileName());
   }
 
   /** Returns suggestions based on the {@link SuggesterOptions} passed */
