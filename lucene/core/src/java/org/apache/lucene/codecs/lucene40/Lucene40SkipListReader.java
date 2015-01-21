@@ -135,8 +135,8 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
       delta = skipStream.readVInt();
     }
 
-    freqPointer[level] += skipStream.readVInt();
-    proxPointer[level] += skipStream.readVInt();
+    freqPointer[level] += skipStream.readVLong();
+    proxPointer[level] += skipStream.readVLong();
     
     return delta;
   }
