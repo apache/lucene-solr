@@ -170,10 +170,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public void run() {
       try {
         setupOnConnect();
-      } catch (InterruptedException e) {
-        log.error("setup failed", e);
-        es.close();
-        return;
       } catch (Throwable e) {
         log.error("setup failed", e);
         es.close();
@@ -251,9 +247,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
             ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
-      } catch (NoNodeException e) {
-        Thread.sleep(500);
-      } catch (SessionExpiredException e) {
+      } catch (NoNodeException | SessionExpiredException e) {
         Thread.sleep(500);
       }
     }

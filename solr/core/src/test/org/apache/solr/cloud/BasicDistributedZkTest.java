@@ -559,9 +559,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             createCmd.setDataDir(getDataDir(core3dataDir));
 
             client.request(createCmd);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
           }
         }

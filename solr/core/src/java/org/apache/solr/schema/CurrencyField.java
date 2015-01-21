@@ -836,13 +836,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
           
           addRate(tmpRates, fromCurrency, toCurrency, exchangeRate);
         }
-      } catch (SAXException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
-      } catch (ParserConfigurationException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
-      } catch (XPathExpressionException e) {
+      } catch (SAXException | XPathExpressionException | ParserConfigurationException | IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
       }
     } catch (IOException e) {

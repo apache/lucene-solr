@@ -726,9 +726,7 @@ public class SnapPuller {
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
-        } catch (InterruptedException e) {
-          SolrException.log(LOG, e);
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
           SolrException.log(LOG, e);
         }
       }

@@ -150,13 +150,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       Query res = TopLevelQuery(null);  // pass null so we can tell later if an explicit field was provided or not
       return res!=null ? res : newBooleanQuery(false);
     }
-    catch (ParseException tme) {
+    catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
-    }
-    catch (TokenMgrError tme) {
-      throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
-    }
-    catch (BooleanQuery.TooManyClauses tmc) {
+    } catch (BooleanQuery.TooManyClauses tmc) {
       throw new SyntaxError("Cannot parse '" +query+ "': too many boolean clauses", tmc);
     }
   }

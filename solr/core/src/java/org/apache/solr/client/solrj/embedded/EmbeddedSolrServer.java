@@ -197,14 +197,9 @@ public class EmbeddedSolrServer extends SolrClient
       // Now write it out
       NamedList<Object> normalized = BinaryResponseWriter.getParsedResponse(req, rsp);
       return normalized;
-    }
-    catch( IOException iox ) {
+    } catch( IOException | SolrException iox ) {
       throw iox;
-    }
-    catch( SolrException sx ) {
-      throw sx;
-    }
-    catch( Exception ex ) {
+    } catch( Exception ex ) {
       throw new SolrServerException( ex );
     }
     finally {

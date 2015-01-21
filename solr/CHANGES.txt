@@ -76,6 +76,10 @@ New Features
 * SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
   and enable subclassing. (Steve Davids, yonik)
 
+Other Changes
+----------------------
+* SOLR-7014: Collapse identical catch branches in try-catch statements. (shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

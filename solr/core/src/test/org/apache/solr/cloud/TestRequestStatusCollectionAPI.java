@@ -55,9 +55,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("async", "1000");
     try {
       sendRequest(params);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -74,9 +72,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -90,9 +86,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       r = sendRequest(params);
       status = (NamedList) r.get("status");
       message = (String) status.get("msg");
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -105,9 +99,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("async", "1001");
     try {
       sendRequest(params);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -117,9 +109,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       params.set(OverseerCollectionProcessor.REQUESTID, "1001");
     try {
       message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -135,9 +125,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       params.set("async", "1002");
     try {
       sendRequest(params);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -149,9 +137,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
@@ -168,9 +154,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       params.set("async", "1002");
     try {
       r = sendRequest(params);
-    } catch (SolrServerException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 

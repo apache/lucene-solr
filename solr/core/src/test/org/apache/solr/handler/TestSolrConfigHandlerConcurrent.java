@@ -21,7 +21,6 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 import static org.noggit.ObjectBuilder.getVal;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
@@ -99,8 +98,6 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
             ArrayList errs = new ArrayList();
             collectErrors.add(errs);
             invokeBulkCall((String)e.getKey() , errs, (Map) e.getValue());
-          } catch (IOException e) {
-            e.printStackTrace();
           } catch (Exception e) {
             e.printStackTrace();
           }
