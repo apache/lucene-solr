@@ -396,7 +396,7 @@ Bug Fixes
 
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
 
-* LUCENE-5961: Fix the exists() method for FunctionValues returned by many ValueSoures to
+* LUCENE-5961: Fix the exists() method for FunctionValues returned by many ValueSources to
   behave properly when wrapping other ValueSources which do not exist for the specified document
   (hossman)
 
@@ -659,7 +659,7 @@ API Changes
 * LUCENE-5883: You can now change the MergePolicy instance on a live IndexWriter,
   without first closing and reopening the writer. This allows to e.g. run a special
   merge with UpgradeIndexMergePolicy without reopening the writer. Also, MergePolicy
-  no longer implements Closeable; if you need to release your custom MegePolicy's
+  no longer implements Closeable; if you need to release your custom MergePolicy's
   resources, you need to implement close() and call it explicitly. (Shai Erera)
 
 * LUCENE-5859: Deprecate Analyzer constructors taking Version.  Use Analyzer.setVersion()
@@ -794,7 +794,7 @@ Bug fixes
   Mike McCandless)
 
 * LUCENE-5827: Make all Directory implementations correctly fail with
-  IllegalArgumentException if slices are out of bounds.  (Uwe SChindler)
+  IllegalArgumentException if slices are out of bounds.  (Uwe Schindler)
 
 * LUCENE-5897, LUCENE-5400: JFlex-based tokenizers StandardTokenizer and
   UAX29URLEmailTokenizer tokenize extremely slowly over long sequences of
@@ -866,7 +866,7 @@ Changes in Backwards Compatibility Policy
 API Changes
 
 * LUCENE-5756: IndexWriter now implements Accountable and IW#ramSizeInBytes()
-  has been deprecated infavor of IW#ramBytesUsed() (Simon Willnauer)
+  has been deprecated in favor of IW#ramBytesUsed() (Simon Willnauer)
 
 * LUCENE-5725: MoreLikeThis#like now accepts multiple values per field.
   The pre-existing method has been deprecated in favor of a variable arguments
@@ -1339,7 +1339,7 @@ Bug fixes
   to obtain the lock. (Uwe Schindler, Robert Muir)
 
 * LUCENE-5626: Fix bug in SimpleFSLockFactory's obtain() that sometimes throwed
-  IOException (ERROR_ACESS_DENIED) on Windows if the lock file was created
+  IOException (ERROR_ACCESS_DENIED) on Windows if the lock file was created
   concurrently. This error is now handled the same way like in NativeFSLockFactory
   by returning false.  (Uwe Schindler, Robert Muir, Dawid Weiss)
 
@@ -1455,8 +1455,8 @@ Bug Fixes
 
 * LUCENE-5553: IndexReader#ReaderClosedListener is not always invoked when 
   IndexReader#close() is called or if refCount is 0. If an exception is 
-  thrown during interal close or on any of the close listerns some or all
-  listerners might be missed. This can cause memory leaks if the core listeners
+  thrown during internal close or on any of the close listeners some or all
+  listeners might be missed. This can cause memory leaks if the core listeners
   are used to clear caches. (Simon Willnauer)
 
 Build
@@ -1472,7 +1472,7 @@ New Features
   (Jack Conradson via Robert Muir)
   
 * LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
-  configurable (Areek Zilluer via Erick Erickson)
+  configurable (Areek Zillur via Erick Erickson)
 
 * LUCENE-5329: suggest: DocumentDictionary and
   DocumentExpressionDictionary are now lenient for dirty documents
@@ -1641,8 +1641,8 @@ Bug fixes
   to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
   Mike McCandless)
 
-* LUCENE-5436: RefrenceManager#accquire can result in infinite loop if
-  managed resource is abused outside of the RefrenceManager. Decrementing
+* LUCENE-5436: ReferenceManager#accquire can result in infinite loop if
+  managed resource is abused outside of the ReferenceManager. Decrementing
   the reference without a corresponding incRef() call can cause an infinite
   loop. ReferenceManager now throws IllegalStateException if currently managed
   resources ref count is 0. (Simon Willnauer)
@@ -1650,7 +1650,7 @@ Bug fixes
 * LUCENE-5443: Lucene45DocValuesProducer.ramBytesUsed() may throw
   ConcurrentModificationException. (Shai Erera, Simon Willnauer)
 
-* LUCENE-5444: MemoryIndex did't respect the analyzers offset gap and
+* LUCENE-5444: MemoryIndex didn't respect the analyzers offset gap and
   offsets were corrupted if multiple fields with the same name were
   added to the memory index. (Britta Weber, Simon Willnauer)
 
@@ -1674,7 +1674,7 @@ API Changes
   to IndexWriter.addDocument(). (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
 
-* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
+* LUCENE-5405: Make ShingleAnalyzerWrapper.getWrappedAnalyzer() public final (gsingers)
 
 * LUCENE-5395: The SpatialArgsParser now only reads WKT, no more "lat, lon"
   etc. but it's easy to override the parseShape method if you wish. (David
@@ -1718,7 +1718,7 @@ Documentation
   to the analysis package overview.  
   (Benson Margulies via Robert Muir - pull request #12)
 
-* LUCENE-5389: Add more guidance in the analyis documentation 
+* LUCENE-5389: Add more guidance in the analysis documentation 
   package overview.
   (Benson Margulies via Robert Muir - pull request #14)
 
@@ -1917,7 +1917,7 @@ Optimizations
 Documentation
 
 * LUCENE-5211: Better javadocs and error checking of 'format' option in 
-  StopFilterFactory, as well as comments in all snowball formated files
+  StopFilterFactory, as well as comments in all snowball formatted files
   about specifying format option.  (hossman)
 
 Changes in backwards compatibility policy
@@ -2075,7 +2075,7 @@ Bug Fixes
   some result documents were missing category associations. (Shai Erera)
 
 * LUCENE-5152: Fix MemoryPostingsFormat to not modify borrowed BytesRef from FSTEnum
-  seek/lookup which can cause sideeffects if done on a cached FST root arc.
+  seek/lookup which can cause side effects if done on a cached FST root arc.
   (Simon Willnauer)
 
 * LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1,
@@ -2148,7 +2148,7 @@ API Changes
 
 * LUCENE-5144: StandardFacetsAccumulator renamed to OldFacetsAccumulator, and all
   associated classes were moved under o.a.l.facet.old. The intention to remove it
-  one day, when the features it covers (complements, partitiona, sampling) will be
+  one day, when the features it covers (complements, partitions, sampling) will be
   migrated to the new FacetsAggregator and FacetsAccumulator API. Also,
   FacetRequest.createAggregator was replaced by OldFacetsAccumulator.createAggregator.
   (Shai Erera)
@@ -2225,7 +2225,7 @@ Optimizations
   synchronization and concurrent interaction with IndexWriter. DWPT is now
   only setup once and has no reset logic. All segment publishing and state
   transition from DWPT into IndexWriter is now done via an Event-Queue
-  processed from within the IndexWriter in order to prevent suituations
+  processed from within the IndexWriter in order to prevent situations
   where DWPT or DW calling int IW causing deadlocks. (Simon Willnauer)
 
 * LUCENE-5182: Terminate phrase searches early if max phrase window is 
@@ -2346,7 +2346,7 @@ Changes in backwards compatibility policy
   jvms and it's faster not to cache.  (Robert Muir)
 
 * LUCENE-5038: MergePolicy now has a default implementation for useCompoundFile based
-  on segment size and noCFSRatio. The default implemantion was pulled up from
+  on segment size and noCFSRatio. The default implementation was pulled up from
   TieredMergePolicy. (Simon Willnauer)
 
 * LUCENE-5063: FieldCache.get(Bytes|Shorts), SortField.Type.(BYTE|SHORT) and
@@ -2546,7 +2546,7 @@ API Changes
   
 * LUCENE-5097: Analyzer now has an additional tokenStream(String fieldName,
   String text) method, so wrapping by StringReader for common use is no
-  longer needed. This method uses an internal reuseable reader, which was
+  longer needed. This method uses an internal reusable reader, which was
   previously only used by the Field class.  (Uwe Schindler, Robert Muir)
   
 * LUCENE-4542: HunspellStemFilter's maximum recursion level is now configurable.
@@ -2555,7 +2555,7 @@ API Changes
 Build
 
 * LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
-  Test framework may fail internally due to overly aggresive J9 optimizations. 
+  Test framework may fail internally due to overly aggressive J9 optimizations. 
   (Dawid Weiss, Shai Erera)
 
 * LUCENE-5043: The eclipse target now uses the containing directory for the
@@ -2602,7 +2602,7 @@ Bug Fixes
   large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
 
 * LUCENE-4953: Fixed ParallelCompositeReader to inform ReaderClosedListeners of
-  its synthetic subreaders. FieldCaches keyed on the atomic childs will be purged
+  its synthetic subreaders. FieldCaches keyed on the atomic children will be purged
   earlier and FC insanity prevented.  In addition, ParallelCompositeReader's
   toString() was changed to better reflect the reader structure.
   (Mike McCandless, Uwe Schindler)
@@ -2967,7 +2967,7 @@ Bug Fixes
   OpenMode.CREATE_OR_APPEND is used. This might also affect application that set
   the open mode manually using DirectoryReader#indexExists. (Simon Willnauer)
 
-* LUCENE-4878: Override getRegexpQuery in MultiFieldQueryParser to prefent
+* LUCENE-4878: Override getRegexpQuery in MultiFieldQueryParser to prevent
   NullPointerException when regular expression syntax is used with
   MultiFieldQueryParser. (Simon Willnauer, Adam Rauch)
 
@@ -3036,7 +3036,7 @@ Changes in backwards compatibility policy
   sorted by value, while ties are broken by category ordinal. (Shai Erera)
 
 * LUCENE-4772: Facet associations moved to new FacetsAggregator API. You
-  should override FacetsAccumualtor and return the relevant aggregator,
+  should override FacetsAccumulator and return the relevant aggregator,
   for aggregating the association values. (Shai Erera)
   
 * LUCENE-4748: A FacetRequest on a non-existent field now returns an
@@ -3727,7 +3727,7 @@ API Changes
 * LUCENE-4391, LUCENE-4440: All methods of Lucene40Codec but
   getPostingsFormatForField are now final. To reuse functionality 
   of Lucene40, you should extend FilterCodec and delegate to Lucene40
-  instead of extending Lucene40Codec.  (Adrien Grand, Shai Erea,
+  instead of extending Lucene40Codec.  (Adrien Grand, Shai Erera,
   Robert Muir, Uwe Schindler)
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().

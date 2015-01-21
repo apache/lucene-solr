@@ -135,8 +135,8 @@ Upgrading from Solr 4.x
   in the "def()" function. Example: changing "fl=sum(fieldA,fieldB)" to 
   "fl=sum(def(fieldA,0.0),def(fieldB,0.0))".  See LUCENE-5961 for more details.
 
-* AdminHandlers is deprecated , /admin/* are implicitly defined, /get ,/replacation and
-   handlers are also implicitly registered (refer to SOLR-6792)
+* AdminHandlers is deprecated, /admin/* are implicitly defined, /get, /replication and
+  handlers are also implicitly registered (refer to SOLR-6792)
 
 * SolrCore.reload(ConfigSet coreConfig, SolrCore prev) was deprecated in 4.10.3 and
   removed in 5.0. use SolrCore.reload(ConfigSet coreConfig). See SOLR-5864.
@@ -203,7 +203,7 @@ Upgrading from Solr 4.x
       FacetParams.FACET_SORT_COUNT or FacetParams.FACET_SORT_INDEX
     - setSortField(String, ORDER) should use setSort(SortClause)
     - addSortField(String, ORDER) should use addSort(SortClause)
-    - removeSortField(String, ORDER) shoudl use removeSort(SortClause)
+    - removeSortField(String, ORDER) should use removeSort(SortClause)
     - getSortFields() should use getSorts()
     - set/getQueryType() should use set/getRequestHandler()
 
@@ -312,7 +312,7 @@ New Features
 
 * SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
 
-* SOLR-6607: Managing requesthandlers throuh API (Noble Paul)
+* SOLR-6607: Managing requesthandlers through API (Noble Paul)
 
 * SOLR-4799: faster join using join="zipper" aka merge join for nested DIH EntityProcessors
   (Mikhail Khludnev via Noble Paul)
@@ -430,7 +430,7 @@ Bug Fixes
   in local map before writing to ZK. (shalin)
 
 * SOLR-6679: Disabled suggester component from techproduct solrconfig.xml since
-  it caused long startup times on lage indexes even when it wasn't used.
+  it caused long startup times on large indexes even when it wasn't used.
   (yonik, hossman)
 
 * SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
@@ -570,10 +570,10 @@ Other Changes
   constructors, improve javadocs for CloudSolrClient constructors.
   (Steve Davids via Shawn Heisey)
 
-* LUCENE-5901: Replaced all occurences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
+* LUCENE-5901: Replaced all occurrences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
   (Ryan Ernst)
 
-* SOLR-6445: Upgrade Noggit to verion 0.6 to support more flexible JSON input (Noble Paul , Yonik Seeley)
+* SOLR-6445: Upgrade Noggit to version 0.6 to support more flexible JSON input (Noble Paul, Yonik Seeley)
 
 * SOLR-6073: Remove helper methods from CollectionsRequest (SolrJ) for CollectionsAPI
   calls and move to a builder design for the same. (Varun Thacker, Anshum Gupta)
@@ -734,7 +734,7 @@ Other Changes
   Erick Erickson)
 
 * SOLR-6906: Fix typo bug in DistributedDebugComponentTest.testCompareWithNonDistributedRequest
-  (Ramkumar Aiyenga via Erick Erickson)
+  (Ramkumar Aiyengar via Erick Erickson)
 
 * SOLR-6905: Test pseudo-field retrieval in distributed search.
   (Ramkumar Aiyengar via shalin)
@@ -810,7 +810,7 @@ Bug Fixes
 
 * SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
   of all "keys" found in the request parameters, resulting in some key=value param pairs 
-  being duplicated.  This was noticably affecting some areas of the code where iteration 
+  being duplicated.  This was noticeably affecting some areas of the code where iteration 
   was done over the set of all params: 
     * literal.* in ExtractingRequestHandler
     * facet.* in FacetComponent
@@ -1316,7 +1316,7 @@ New Features
   (Joel Bernstein)
 
 * SOLR-5285: Added a new [child ...] DocTransformer for optionally including 
-  Block-Join decendent documents inline in the results of a search.  This works 
+  Block-Join descendant documents inline in the results of a search.  This works 
   independent of whether the search itself is a block-join related query and is 
   supported by he xml, json, and javabin response formats.
   (Varun Thacker via hossman)
@@ -1519,7 +1519,7 @@ Upgrading from Solr 4.7
 ----------------------
 
 * In previous versions of Solr, Terms that exceeded Lucene's MAX_TERM_LENGTH were
-  silently ignored when indexing documents.  Begining with Solr 4.8, a document
+  silently ignored when indexing documents.  Beginning with Solr 4.8, a document
   an error will be generated when attempting to index a document with a term
   that is too large.  If you wish to continue to have large terms ignored,
   use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
@@ -2079,7 +2079,7 @@ Bug Fixes
 
 * SOLR-5667: Performance problem when not using hdfs block cache. (Mark Miller)
 
-* SOLR-5526: Fixed NPE that could arrise when explicitly configuring some built 
+* SOLR-5526: Fixed NPE that could arise when explicitly configuring some built 
   in QParserPlugins (Nikolay Khitrin, Vitaliy Zhovtyuk, hossman)
 
 * SOLR-5598: LanguageIdentifierUpdateProcessor ignores all but the first value
@@ -2630,11 +2630,11 @@ Upgrading from Solr 4.4.0
   SOLR-5108 for more details.
 
 * In the past, schema.xml parsing would silently ignore "default" or "required" 
-  options specified on <dynamicField/> declarations.  Begining with 4.5, attempting
+  options specified on <dynamicField/> declarations.  Beginning with 4.5, attempting
   to do configured these on a dynamic field will cause an init error.  If you 
   encounter one of these errors when upgrading an existing schema.xml, you can 
   safely remove these attributes, regardless of their value, from your config and 
-  Solr will continue to bahave exactly as it did in previous versions.  See 
+  Solr will continue to behave exactly as it did in previous versions.  See 
   SOLR-5227 for more details.
 
 * The UniqFieldsUpdateProcessorFactory has been improved to support all of the
@@ -2868,7 +2868,7 @@ Upgrading from Solr 4.3.0
 * TieredMergePolicy and the various subtypes of LogMergePolicy no longer have 
   an explicit "setUseCompoundFile" method.  Instead the behavior of new 
   segments is determined by the IndexWriter configuration, and the MergePolicy 
-  is only consulted to determine if merge segements should use the compound 
+  is only consulted to determine if merge segments should use the compound 
   file format (based on the value of "setNoCFSRatio").  If you have explicitly 
   configured one of these classes using <mergePolicy> and include an init arg 
   like this...
@@ -3010,7 +3010,7 @@ Bug Fixes
 * SOLR-4891: JsonLoader should preserve field value types from the JSON content stream.
   (Steve Rowe)
  
-* SOLR-4805: SolreCore#reload should not call preRegister and publish a DOWN state to
+* SOLR-4805: SolrCore#reload should not call preRegister and publish a DOWN state to
   ZooKeeper. (Mark Miller, Jared Rodriguez)
 
 * SOLR-4899: When reconnecting after ZooKeeper expiration, we need to be willing to wait 
@@ -3170,7 +3170,7 @@ Other Changes
 * SOLR-4931: SolrDeletionPolicy onInit and onCommit methods changed to override
   exact signatures (with generics) from IndexDeletionPolicy (shalin)
 
-* SOLR-4942: test improvements to randomize use of compound files (hosman)
+* SOLR-4942: test improvements to randomize use of compound files (hossman)
 
 * SOLR-4966: CSS, JS and other files in webapp without license (uschindler,
   steffkes)
@@ -3298,7 +3298,7 @@ Upgrading from Solr 4.2.0
   you would like. If you are using another webapp container, these jars will 
   need to go in the corresponding location for that container. 
   In conjunction, the dist-excl-slf4j and dist-war-excl-slf4 build targets 
-  have been removed since they are redundent.  See the Slf4j documentation, 
+  have been removed since they are redundant.  See the Slf4j documentation, 
   SOLR-3706, and SOLR-4651 for more details.
 
 * The hardcoded SolrCloud defaults for 'hostContext="solr"' and 
@@ -3515,7 +3515,7 @@ Bug Fixes
   fullpath not path. (Mark Miller)
 
 * SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
-  CachValue should give up its path as it will be used by a new Directory
+  CacheValue should give up its path as it will be used by a new Directory
   instance. (Mark Miller)
 
 * SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
@@ -3729,7 +3729,7 @@ Bug Fixes
   when more unused nodes are available. 
   (Eric Falcao, Brett Hoerner, Mark Miller)
 
-* SOLR-4345 : Solr Admin UI dosent work in IE 10 (steffkes)
+* SOLR-4345 : Solr Admin UI doesn't work in IE 10 (steffkes)
 
 * SOLR-4349 : Admin UI - Query Interface does not work in IE
   (steffkes)
@@ -3892,7 +3892,7 @@ Other Changes
   (Shawn Heisey via hossman)
 
 * SOLR-2996: A bare * without a field specification is treated as *:*
-  by the lucene and edismax query paesers.
+  by the lucene and edismax query parsers.
   (hossman, Jan Høydahl, Alan Woodward, yonik)
 
 * SOLR-4416: Upgrade to Tika 1.3. (Markus Jelsma via Mark Miller)
