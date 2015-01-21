@@ -18,7 +18,7 @@
 ############
  
 # This script shows how the solrtest.keystore file used for solr tests 
-# and these example configs was generated.
+# was generated.
 #
 # Running this script should only be necessary if the keystore file
 # needs to be replaced, which shouldn't be required until sometime around
