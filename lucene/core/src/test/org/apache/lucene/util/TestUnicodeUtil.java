@@ -197,9 +197,7 @@ public class TestUnicodeUtil extends LuceneTestCase {
         assertFalse(rc == -1);
         assertEquals(cpString.substring(rs, rs + rc), str);
         continue;
-      } catch (IndexOutOfBoundsException e1) {
-        // Ignored.
-      } catch (IllegalArgumentException e2) {
+      } catch (IndexOutOfBoundsException | IllegalArgumentException e1) {
         // Ignored.
       }
       assertTrue(rc == -1);

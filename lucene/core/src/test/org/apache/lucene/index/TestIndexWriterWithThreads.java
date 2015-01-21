@@ -634,9 +634,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                       writerRef.get().prepareCommit();
                     }
                     writerRef.get().commit();
-                  } catch (AlreadyClosedException ace) {
-                    // ok
-                  } catch (NullPointerException npe) {
+                  } catch (AlreadyClosedException | NullPointerException ace) {
                     // ok
                   } finally {
                     commitLock.unlock();
@@ -648,11 +646,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                   }
                   try {
                     writerRef.get().addDocument(docs.nextDoc());
-                  } catch (AlreadyClosedException ace) {
-                    // ok
-                  } catch (NullPointerException npe) {
-                    // ok
-                  } catch (AssertionError ae) {
+                  } catch (AlreadyClosedException | NullPointerException | AssertionError ace) {
                     // ok
                   }
                   break;

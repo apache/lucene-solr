@@ -170,9 +170,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
         this.curBufIndex = bi;
         this.curBuf = b;
       }
-    } catch (ArrayIndexOutOfBoundsException aioobe) {
-      throw new EOFException("seek past EOF: " + this);
-    } catch (IllegalArgumentException iae) {
+    } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
       throw new EOFException("seek past EOF: " + this);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
@@ -198,9 +196,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
       b.position((int) (pos & chunkSizeMask));
       this.curBufIndex = bi;
       this.curBuf = b;
-    } catch (ArrayIndexOutOfBoundsException aioobe) {
-      throw new EOFException("seek past EOF: " + this);
-    } catch (IllegalArgumentException iae) {
+    } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException aioobe) {
       throw new EOFException("seek past EOF: " + this);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);

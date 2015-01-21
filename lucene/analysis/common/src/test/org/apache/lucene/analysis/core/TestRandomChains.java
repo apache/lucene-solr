@@ -712,10 +712,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         } else {
           Rethrow.rethrow(cause);
         }
-      } catch (IllegalAccessException iae) {
+      } catch (IllegalAccessException | InstantiationException iae) {
         Rethrow.rethrow(iae);
-      } catch (InstantiationException ie) {
-        Rethrow.rethrow(ie);
       }
       return null; // no success
     }

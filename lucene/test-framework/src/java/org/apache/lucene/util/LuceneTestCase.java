@@ -689,10 +689,8 @@ public abstract class LuceneTestCase extends Assert {
     m.setAccessible(true);
     try {
       m.invoke(IndexWriter.class, limit);
-    } catch (IllegalAccessException iae) {
+    } catch (IllegalAccessException | InvocationTargetException iae) {
       throw new RuntimeException(iae);
-    } catch (InvocationTargetException ite) {
-      throw new RuntimeException(ite);
     }
   }
 

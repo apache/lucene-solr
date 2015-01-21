@@ -135,9 +135,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
     AbstractAnalysisFactory factory = null;
     try {
       factory = ctor.newInstance(args);
-    } catch (InstantiationException e) {
-      throw new RuntimeException(e);
-    } catch (IllegalAccessException e) {
+    } catch (InstantiationException | IllegalAccessException e) {
       throw new RuntimeException(e);
     } catch (InvocationTargetException e) {
       if (e.getCause() instanceof IllegalArgumentException) {
