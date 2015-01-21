@@ -202,10 +202,8 @@ public class EnwikiContentSource extends ContentSource {
             }
           }
         }
-      } catch (SAXException sae) {
+      } catch (SAXException | IOException sae) {
         throw new RuntimeException(sae);
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
       } finally {
         synchronized(this) {
           threadDone = true;

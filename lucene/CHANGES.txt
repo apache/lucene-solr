@@ -41,6 +41,11 @@ Optimizations
 * LUCENE-6184: Make BooleanScorer only score windows that contain
   matches. (Adrien Grand)
 
+Other
+
+* LUCENE-6193: Collapse identical catch branches in try-catch statements.
+  (shalin)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features

@@ -419,9 +419,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
               checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
               try {
                 indexStatus = checker.checkIndex(null);
-              } catch (IOException ioe) {
-                // ok: we fallback below
-              } catch (RuntimeException re) {
+              } catch (IOException | RuntimeException ioe) {
                 // ok: we fallback below
               }
             }

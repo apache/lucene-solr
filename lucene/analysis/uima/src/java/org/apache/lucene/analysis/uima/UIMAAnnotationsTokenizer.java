@@ -58,9 +58,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
   protected void initializeIterator() throws IOException {
     try {
       analyzeInput();
-    } catch (AnalysisEngineProcessException e) {
-      throw new IOException(e);
-    } catch (ResourceInitializationException e) {
+    } catch (AnalysisEngineProcessException | ResourceInitializationException e) {
       throw new IOException(e);
     }
     finalOffset = correctOffset(cas.getDocumentText().length());
