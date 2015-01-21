@@ -519,6 +519,8 @@ Bug Fixes
 * SOLR-6993: install_solr_service.sh won't install on RHEL / CentOS
   (David Anderson via Timothy Potter)
 
+* SOLR-6928: solr.cmd stop works only in english (john.work, Jan Høydahl, Timothy Potter)
+
 Optimizations
 ----------------------
 
