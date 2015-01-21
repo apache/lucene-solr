@@ -478,14 +478,15 @@
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template" />
+                            **/*pom.xml.template server/etc/test/" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/" />
+                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/"
+                  excludes="server/etc/test/**" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar

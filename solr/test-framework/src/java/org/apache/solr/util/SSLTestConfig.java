@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.security.CertificateUtils;
 
 public class SSLTestConfig extends SSLConfig {
   public static File TEST_KEYSTORE = ExternalPaths.SERVER_HOME == null ? null
-      : new File(ExternalPaths.SERVER_HOME, "../etc/solrtest.keystore");
+      : new File(ExternalPaths.SERVER_HOME, "../etc/test/solrtest.keystore");
   
   private static String TEST_KEYSTORE_PATH = TEST_KEYSTORE != null
       && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
