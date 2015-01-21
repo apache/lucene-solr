@@ -1352,7 +1352,7 @@
   </searchComponent>
 
   <requestHandler name="/suggest" class="solr.SearchHandler" 
-                  startup="lazy" enable="${solr.suggester.enabled:false}" >
+                  startup="lazy" >
     <lst name="defaults">
       <str name="suggest">true</str>
       <str name="suggest.count">10</str>
