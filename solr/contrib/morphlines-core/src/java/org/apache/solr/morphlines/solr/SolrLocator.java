@@ -140,11 +140,7 @@ public class SolrLocator {
           downloadedSolrHomeDir = Files.createTempDir();
           downloadedSolrHomeDir = zki.downloadConfigDir(zkClient, configName, downloadedSolrHomeDir);
           mySolrHomeDir = downloadedSolrHomeDir.getAbsolutePath();
-        } catch (KeeperException e) {
-          throw new MorphlineCompilationException("Cannot download schema.xml from ZooKeeper", config, e);
-        } catch (InterruptedException e) {
-          throw new MorphlineCompilationException("Cannot download schema.xml from ZooKeeper", config, e);
-        } catch (IOException e) {
+        } catch (KeeperException | InterruptedException | IOException e) {
           throw new MorphlineCompilationException("Cannot download schema.xml from ZooKeeper", config, e);
         } finally {
           zkClient.close();
@@ -161,11 +157,7 @@ public class SolrLocator {
         IndexSchema schema = new IndexSchema(solrConfig, "schema.xml", is);
         validateSchema(schema);
         return schema;
-      } catch (ParserConfigurationException e) {
-        throw new MorphlineRuntimeException(e);
-      } catch (IOException e) {
-        throw new MorphlineRuntimeException(e);
-      } catch (SAXException e) {
+      } catch (ParserConfigurationException | IOException | SAXException e) {
         throw new MorphlineRuntimeException(e);
       }
     } finally {
