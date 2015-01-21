@@ -195,13 +195,13 @@ final class Lucene41SkipReader extends MultiLevelSkipListReader {
     // if (DEBUG) {
     //   System.out.println("  delta=" + delta);
     // }
-    docPointer[level] += skipStream.readVInt();
+    docPointer[level] += skipStream.readVLong();
     // if (DEBUG) {
     //   System.out.println("  docFP=" + docPointer[level]);
     // }
 
     if (posPointer != null) {
-      posPointer[level] += skipStream.readVInt();
+      posPointer[level] += skipStream.readVLong();
       // if (DEBUG) {
       //   System.out.println("  posFP=" + posPointer[level]);
       // }
@@ -215,7 +215,7 @@ final class Lucene41SkipReader extends MultiLevelSkipListReader {
       }
 
       if (payPointer != null) {
-        payPointer[level] += skipStream.readVInt();
+        payPointer[level] += skipStream.readVLong();
       }
     }
     return delta;

@@ -14,6 +14,10 @@ Bug fixes
   causing substantial performance cost for use cases that frequently
   delete old documents (Mike McCandless)
 
+* LUCENE-6192: Fix int overflow corruption case in skip data for
+  high frequency terms in extremely large indices (Robert Muir, Mike
+  McCandless)
+
 ======================= Lucene 4.10.3 ======================
 
 Bug fixes
