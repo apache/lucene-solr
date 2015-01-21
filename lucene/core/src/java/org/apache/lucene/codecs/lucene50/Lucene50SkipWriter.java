@@ -147,12 +147,12 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     skipBuffer.writeVInt(delta);
     lastSkipDoc[level] = curDoc;
 
-    skipBuffer.writeVInt((int) (curDocPointer - lastSkipDocPointer[level]));
+    skipBuffer.writeVLong(curDocPointer - lastSkipDocPointer[level]);
     lastSkipDocPointer[level] = curDocPointer;
 
     if (fieldHasPositions) {
 
-      skipBuffer.writeVInt((int) (curPosPointer - lastSkipPosPointer[level]));
+      skipBuffer.writeVLong(curPosPointer - lastSkipPosPointer[level]);
       lastSkipPosPointer[level] = curPosPointer;
       skipBuffer.writeVInt(curPosBufferUpto);
 
@@ -161,7 +161,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
       }
 
       if (fieldHasOffsets || fieldHasPayloads) {
-        skipBuffer.writeVInt((int) (curPayPointer - lastSkipPayPointer[level]));
+        skipBuffer.writeVLong(curPayPointer - lastSkipPayPointer[level]);
         lastSkipPayPointer[level] = curPayPointer;
       }
     }
