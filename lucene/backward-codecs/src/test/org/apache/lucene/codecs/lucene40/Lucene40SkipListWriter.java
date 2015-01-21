@@ -138,8 +138,8 @@ final class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
       skipBuffer.writeVInt(delta);
     }
 
-    skipBuffer.writeVInt((int) (curFreqPointer - lastSkipFreqPointer[level]));
-    skipBuffer.writeVInt((int) (curProxPointer - lastSkipProxPointer[level]));
+    skipBuffer.writeVLong(curFreqPointer - lastSkipFreqPointer[level]);
+    skipBuffer.writeVLong(curProxPointer - lastSkipProxPointer[level]);
 
     lastSkipDoc[level] = curDoc;
     
