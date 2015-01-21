@@ -85,35 +85,27 @@ public final class LoadSolrBuilder implements CommandBuilder {
         if (event == Notifications.LifecycleEvent.BEGIN_TRANSACTION) {
           try {
             loader.beginTransaction();
-          } catch (SolrServerException e) {
-            throw new MorphlineRuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new MorphlineRuntimeException(e);
           }
         } else if (event == Notifications.LifecycleEvent.COMMIT_TRANSACTION) {
           try {
             loader.commitTransaction();
-          } catch (SolrServerException e) {
-            throw new MorphlineRuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new MorphlineRuntimeException(e);
           }
         }
         else if (event == Notifications.LifecycleEvent.ROLLBACK_TRANSACTION) {
           try {
             loader.rollbackTransaction();
-          } catch (SolrServerException e) {
-            throw new MorphlineRuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new MorphlineRuntimeException(e);
           }
         }
         else if (event == Notifications.LifecycleEvent.SHUTDOWN) {
           try {
             loader.shutdown();
-          } catch (SolrServerException e) {
-            throw new MorphlineRuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new MorphlineRuntimeException(e);
           }
         }
@@ -127,9 +119,7 @@ public final class LoadSolrBuilder implements CommandBuilder {
       SolrInputDocument doc = convert(record);
       try {
         loader.load(doc);
-      } catch (IOException e) {
-        throw new MorphlineRuntimeException(e);
-      } catch (SolrServerException e) {
+      } catch (IOException | SolrServerException e) {
         throw new MorphlineRuntimeException(e);
       } finally {
         timerContext.stop();
