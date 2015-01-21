@@ -450,11 +450,8 @@ public class Grouping {
     }
     try {
       searcher.search(query, luceneFilter, collector);
-    } catch (TimeLimitingCollector.TimeExceededException x) {
+    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       logger.warn( "Query: " + query + "; " + x.getMessage() );
-      qr.setPartialResults(true);
-    } catch (ExitableDirectoryReader.ExitingReaderException e) {
-      logger.warn( "Query: " + query + "; " + e.getMessage() );
       qr.setPartialResults(true);
     }
   }

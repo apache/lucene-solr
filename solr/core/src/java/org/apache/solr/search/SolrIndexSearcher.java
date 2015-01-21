@@ -233,11 +233,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         ((DelegatingCollector)collector).finish();
       }
     }
-    catch( TimeLimitingCollector.TimeExceededException x ) {
+    catch( TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x ) {
       log.warn( "Query: " + query + "; " + x.getMessage() );
-      qr.setPartialResults(true);
-    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
-      log.warn("Query: " + query + "; " + e.getMessage());
       qr.setPartialResults(true);
     }
   }

@@ -919,10 +919,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
             CollectionAdminRequest.Delete delete = new CollectionAdminRequest.Delete();
             delete.setCollectionName(collectionName);
             client.request(delete);
-          } catch (SolrServerException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
           } finally {

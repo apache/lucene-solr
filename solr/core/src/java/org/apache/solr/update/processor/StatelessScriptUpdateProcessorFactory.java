@@ -429,13 +429,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
             }
           }
 
-        } catch (ScriptException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-                                  "Unable to invoke function " + name + 
-                                  " in script: " + 
-                                  engine.getScriptFile().getFileName() + 
-                                  ": " + e.getMessage(), e);
-        } catch (NoSuchMethodException e) {
+        } catch (ScriptException | NoSuchMethodException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                   "Unable to invoke function " + name + 
                                   " in script: " + 

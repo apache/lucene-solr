@@ -416,9 +416,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
           unloadCmd.setCoreName("multiunload" + freezeJ);
           try {
             adminClient.request(unloadCmd);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
           }
         }

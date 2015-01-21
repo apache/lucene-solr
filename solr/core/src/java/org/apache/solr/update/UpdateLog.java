@@ -1302,10 +1302,6 @@ public class UpdateLog implements PluginInfoInitialized {
                 // versionInfo.unblockUpdates();
               }
             }
-          } catch (InterruptedException e) {
-            SolrException.log(log,e);
-          } catch (IOException e) {
-            SolrException.log(log,e);
           } catch (Exception e) {
             SolrException.log(log,e);
           }

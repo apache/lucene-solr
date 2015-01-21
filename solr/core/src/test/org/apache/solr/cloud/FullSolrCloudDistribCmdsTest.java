@@ -375,13 +375,11 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
           try {
             uReq.process(cloudClient);
             uReq.process(controlClient);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
           }
 
-          
+
         }
       }
     };

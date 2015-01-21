@@ -92,10 +92,8 @@ public class QueryRequest extends SolrRequest
       long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
       res.setElapsedTime(endTime - startTime);
       return res;
-    } catch (SolrServerException e){
+    } catch (SolrServerException | SolrException e){
       throw e;
-    } catch (SolrException s){
-      throw s;
     } catch (Exception e) {
       throw new SolrServerException("Error executing query", e);
     }

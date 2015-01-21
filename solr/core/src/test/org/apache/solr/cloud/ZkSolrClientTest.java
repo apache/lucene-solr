@@ -176,9 +176,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
         try {
           zkClient.makePath("collections/collection4", true);
           break;
-        } catch (KeeperException.SessionExpiredException e) {
-
-        } catch (KeeperException.ConnectionLossException e) {
+        } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
 
         }
         Thread.sleep(1000 * i);
@@ -289,9 +287,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
           try {
             zkClient.getChildren("/collections", this, true);
             latch.countDown();
-          } catch (KeeperException e) {
-            throw new RuntimeException(e);
-          } catch (InterruptedException e) {
+          } catch (KeeperException | InterruptedException e) {
             throw new RuntimeException(e);
           }
         }

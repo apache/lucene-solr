@@ -91,12 +91,9 @@ public class SolrZkServer {
       if (zkProps.getClientPortAddress() == null) {
         zkProps.setClientPort(Integer.parseInt(solrPort)+1000);
       }
-    } catch (QuorumPeerConfig.ConfigException e) {
+    } catch (QuorumPeerConfig.ConfigException | IOException e) {
       if (zkRun != null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (IOException e) {
-      if (zkRun != null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -186,9 +183,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
       return cfg;
 
-    } catch (IOException e) {
-      throw new ConfigException("Error processing " + path, e);
-    } catch (IllegalArgumentException e) {
+    } catch (IOException | IllegalArgumentException e) {
       throw new ConfigException("Error processing " + path, e);
     }
   }

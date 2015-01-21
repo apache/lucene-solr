@@ -458,15 +458,7 @@ public class CloudSolrClient extends SolrClient {
             Thread.currentThread().interrupt();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
-          } catch (KeeperException e) {
-            if (zk != null) zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (IOException e) {
-            if (zk != null) zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (TimeoutException e) {
+          } catch (KeeperException | TimeoutException | IOException e) {
             if (zk != null) zk.close();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);

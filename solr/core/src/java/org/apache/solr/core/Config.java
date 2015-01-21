@@ -151,13 +151,7 @@ public class Config {
       if (substituteProps) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
-    } catch (ParserConfigurationException e)  {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (SAXException e)  {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (TransformerException e) {
+    } catch (ParserConfigurationException | SAXException | TransformerException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

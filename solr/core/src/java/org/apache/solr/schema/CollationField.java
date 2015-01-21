@@ -180,11 +180,8 @@ public class CollationField extends FieldType {
      input = loader.openResource(fileName);
      String rules = IOUtils.toString(input, "UTF-8");
      return new RuleBasedCollator(rules);
-    } catch (IOException e) {
-      // io error
-      throw new RuntimeException(e);
-    } catch (ParseException e) {
-      // invalid rules
+    } catch (IOException | ParseException e) {
+      // io error or invalid rules
       throw new RuntimeException(e);
     } finally {
       IOUtils.closeQuietly(input);

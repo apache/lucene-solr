@@ -66,9 +66,7 @@ public class HdfsUpdateLog extends UpdateLog {
     if (future != null) {
       try {
         future.get();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -264,8 +262,6 @@ public class HdfsUpdateLog extends UpdateLog {
           return path.getName().startsWith(prefix);
         }
       });
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

@@ -22,7 +22,6 @@ import static java.text.MessageFormat.format;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getCopyFields;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -98,8 +97,6 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
             ArrayList errs = new ArrayList();
             collectErrors.add(errs);
             invokeBulkCall(finalI,errs);
-          } catch (IOException e) {
-            e.printStackTrace();
           } catch (Exception e) {
             e.printStackTrace();
           }

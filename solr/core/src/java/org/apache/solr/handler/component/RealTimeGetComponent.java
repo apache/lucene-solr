@@ -596,9 +596,7 @@ public class RealTimeGetComponent extends SearchComponent
           // TODO: do any kind of validation here?
           updates.add(o);
 
-        } catch (SolrException e) {
-          log.warn("Exception reading log for updates", e);
-        } catch (ClassCastException e) {
+        } catch (SolrException | ClassCastException e) {
           log.warn("Exception reading log for updates", e);
         }
       }
