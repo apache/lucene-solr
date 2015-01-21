@@ -84,9 +84,9 @@ fi
 SOLR_INSTALL_FILE=${SOLR_ARCHIVE##*/}
 is_tar=true
 if [ ${SOLR_INSTALL_FILE: -4} == ".tgz" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE:0:-4}
+  SOLR_DIR=${SOLR_INSTALL_FILE%.tgz}
 elif [ ${SOLR_INSTALL_FILE: -4} == ".zip" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE:0:-4}
+  SOLR_DIR=${SOLR_INSTALL_FILE%.zip}
   is_tar=false
 else
   print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz or .zip file!"
