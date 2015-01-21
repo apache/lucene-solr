@@ -183,6 +183,36 @@ Upgrading from Solr 4.x
 * Due to changes in the underlying commons-codec package, users of the BeiderMorseFilterFactory 
   will need to rebuild their indexes after upgrading.  See LUCENE-6058 for more details.
 
+* CachedSqlEntityProcessor has been removed, use SqlEntityProcessor with the
+  cacheImpl parameter.
+
+* HttpDataSource has been removed, use URLDataSource instead.
+
+* LegacyHTMLStripCharFilter has been removed
+
+* CoreAdminRequest.persist() call has been removed.  All changes made via
+  CoreAdmin are persistent.
+
+* SpellCheckResponse.getSuggestions() and getSuggestionFrequencies() have been
+  removed, use getAlternatives() and getAlternativeFrequencies() instead.
+
+* SolrQuery deprecated methods have been removed:
+    - setMissing() is now setFacetMissing()
+    - getFacetSort() is now getFacetSortString()
+    - setFacetSort(boolean) should instead use setFacetSort(String) with
+      FacetParams.FACET_SORT_COUNT or FacetParams.FACET_SORT_INDEX
+    - setSortField(String, ORDER) should use setSort(SortClause)
+    - addSortField(String, ORDER) should use addSort(SortClause)
+    - removeSortField(String, ORDER) shoudl use removeSort(SortClause)
+    - getSortFields() should use getSorts()
+    - set/getQueryType() should use set/getRequestHandler()
+
+* ClientUtil deprecated date methods have been removed, use DateUtil instead
+
+* FacetParams.FacetDateOther has been removed, use FacetRangeOther
+
+* ShardParams.SHARD_KEYS has been removed, use ShardParams._ROUTE_
+
 * The 'old-style' solr.xml format is no longer supported, and cores must be
   defined using core.properties files.  See
   https://cwiki.apache.org/confluence/display/solr/Format+of+solr.xml
@@ -748,6 +778,9 @@ Other Changes
   collections (with delete collection config directory from ZK) (Timothy Potter)
 
 * SOLR-6840: Remove support for old-style solr.xml (Erick Erickson, Alan Woodward)
+
+* SOLR-6976: Remove classes and methods deprecated in 4.x (Alan Woodward, Noble
+  Paul, Chris Hostetter)
 
 ==================  4.10.3 ==================
 

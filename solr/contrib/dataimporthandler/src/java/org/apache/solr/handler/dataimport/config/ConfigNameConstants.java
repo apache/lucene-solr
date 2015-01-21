@@ -16,11 +16,11 @@
  */
 package org.apache.solr.handler.dataimport.config;
 
+import org.apache.solr.handler.dataimport.SolrWriter;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.apache.solr.handler.dataimport.SolrWriter;
 
 public class ConfigNameConstants {
   public static final String SCRIPT = "script";
@@ -31,10 +31,6 @@ public class ConfigNameConstants {
   
   public static final String PROPERTY_WRITER = "propertyWriter";
 
-  /**
-   * @deprecated use IMPORTER_NS_SHORT instead
-   */
-  @Deprecated
   public static final String IMPORTER_NS = "dataimporter";
 
   public static final String IMPORTER_NS_SHORT = "dih";

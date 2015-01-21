@@ -17,21 +17,6 @@
 
 package org.apache.solr.client.solrj.util;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.nio.ByteBuffer;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -42,6 +27,18 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.XML;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 
 /**
@@ -185,44 +182,6 @@ public class ClientUtils
   }
 
   //---------------------------------------------------------------------------------------
-
-  /**
-   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#DEFAULT_DATE_FORMATS}
-   */
-  @Deprecated
-  public static final Collection<String> fmts = DateUtil.DEFAULT_DATE_FORMATS;
-
-  /**
-   * Returns a formatter that can be use by the current thread if needed to
-   * convert Date objects to the Internal representation.
-   *
-   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#parseDate(String)}
-   */
-  @Deprecated
-  public static Date parseDate( String d ) throws ParseException
-  {
-    return DateUtil.parseDate(d);
-  }
-
-  /**
-   * Returns a formatter that can be use by the current thread if needed to
-   * convert Date objects to the Internal representation.
-   *
-   * @deprecated use {@link org.apache.solr.common.util.DateUtil#getThreadLocalDateFormat()}
-   */
-  @Deprecated
-  public static DateFormat getThreadLocalDateFormat() {
-
-    return DateUtil.getThreadLocalDateFormat();
-  }
-
-  /**
-   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#UTC}.
-   */
-  @Deprecated
-  public static TimeZone UTC = DateUtil.UTC;
-
-
 
   /**
    * See: {@link org.apache.lucene.queryparser.classic queryparser syntax} 

@@ -17,13 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -31,6 +24,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.DateUtil;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 
 /**
@@ -443,14 +443,6 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * @deprecated use {@link #setFacetMissing(Boolean)}
-   */
-  @Deprecated
-  public SolrQuery setMissing(String fld) {
-    return setFacetMissing(Boolean.valueOf(fld));
-  }
-
   /** get facet sort
    * 
    * @return facet sort or default of {@link FacetParams#FACET_SORT_COUNT}
@@ -459,18 +451,6 @@ public class SolrQuery extends ModifiableSolrParams
     return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
   }
 
-  /** get facet sort
-   * 
-   * @return facet sort or default of true. <br />
-   * true corresponds to
-   * {@link FacetParams#FACET_SORT_COUNT} and <br />false to {@link FacetParams#FACET_SORT_INDEX}
-   * 
-   * @deprecated Use {@link #getFacetSortString()} instead.
-   */
-  @Deprecated
-  public boolean getFacetSort() {
-    return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT).equals(FacetParams.FACET_SORT_COUNT);
-  }
 
   /** set facet sort
    * 
@@ -479,19 +459,6 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery setFacetSort(String sort) {
     this.set(FacetParams.FACET_SORT, sort);
-    return this;
-  }
-
-  /** set facet sort
-   * 
-   * @param sort sort facets
-   * @return this
-   * @deprecated Use {@link #setFacetSort(String)} instead, true corresponds to
-   * {@link FacetParams#FACET_SORT_COUNT} and false to {@link FacetParams#FACET_SORT_INDEX}.
-   */
-  @Deprecated
-  public SolrQuery setFacetSort(boolean sort) { 
-    this.set(FacetParams.FACET_SORT, sort == true ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     return this;
   }
 
@@ -569,57 +536,6 @@ public class SolrQuery extends ModifiableSolrParams
 
   public String getHighlightSimplePost() {
     return this.get(HighlightParams.SIMPLE_POST, "");
-  }
-
-  /**
-   * Replaces the sort string with a single sort field.
-   * @deprecated Use {@link #setSort(SortClause)} instead, which is part
-   * of an api handling a wider range of sort specifications.
-   */
-  @Deprecated
-  public SolrQuery setSortField(String field, ORDER order) {
-    this.remove(CommonParams.SORT);
-    addValueToParam(CommonParams.SORT, toSortString(field, order));
-    return this;
-  }
-  
-  /**
-   * Adds a sort field to the end of the sort string.
-   * @deprecated Use {@link #addSort(SortClause)} instead, which is part
-   * of an api handling a wider range of sort specifications.
-   */
-  @Deprecated
-  public SolrQuery addSortField(String field, ORDER order) {
-    return addValueToParam(CommonParams.SORT, toSortString(field, order));
-  }
-
-  /**
-   * Removes a sort field to the end of the sort string.
-   * @deprecated Use {@link #removeSort(SortClause)} instead, which is part
-   * of an api handling a wider range of sort specifications.
-   */
-  @Deprecated
-  public SolrQuery removeSortField(String field, ORDER order) {
-    String[] sorts = getSortFields();
-    if (sorts != null) {
-      String removeSort = toSortString(field, order);
-      String s = join(sorts, ",", removeSort);
-      if (s.length()==0) s=null;
-      this.set(CommonParams.SORT, s);
-    }
-    return this;
-  }
-  
-  /**
-   * Gets an array of sort specifications.
-   * @deprecated Use {@link #getSorts()} instead, which is part
-   * of an api handling a wider range of sort specifications.
-   */
-  @Deprecated
-  public String[] getSortFields() {
-    String s = getSortField();
-    if (s==null) return null;
-    return s.trim().split(", *");
   }
 
   /**
@@ -976,22 +892,6 @@ public class SolrQuery extends ModifiableSolrParams
 
   public String getRequestHandler() {
     return this.get(CommonParams.QT);
-  }
-
-  /**
-   * @deprecated See {@link #setRequestHandler(String)}.
-   */
-  @Deprecated
-  public SolrQuery setQueryType(String qt) {
-    return setRequestHandler(qt);
-  }
-
-  /**
-   * @deprecated See {@link #getRequestHandler()}.
-   */
-  @Deprecated
-  public String getQueryType() {
-    return getRequestHandler();
   }
 
   /**

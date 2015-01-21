@@ -210,18 +210,6 @@ public class SpellCheckResponse {
       return alternativeFrequencies;
     }
 
-    @Deprecated
-    /** @see #getAlternatives */
-    public List<String> getSuggestions() {
-      return alternatives;
-    }
-
-    @Deprecated
-    /** @see #getAlternativeFrequencies */
-    public List<Integer> getSuggestionFrequencies() {
-      return alternativeFrequencies;
-    }
-
   }
 
   public class Collation {

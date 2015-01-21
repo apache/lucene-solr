@@ -310,25 +310,6 @@ public interface FacetParams {
   }
   
   /**
-   * @deprecated Use {@link FacetRangeOther}
-   */
-  @Deprecated
-  public enum FacetDateOther {
-    BEFORE, AFTER, BETWEEN, ALL, NONE;
-    @Override
-    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
-    public static FacetDateOther get(String label) {
-      try {
-        return valueOf(label.toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-           label+" is not a valid type of 'other' range facet information",e);
-      }
-    }
-  }
-  
-  /**
    * An enumeration of the legal values for {@link #FACET_DATE_INCLUDE} and {@link #FACET_RANGE_INCLUDE}
    * <p>
    * <ul>

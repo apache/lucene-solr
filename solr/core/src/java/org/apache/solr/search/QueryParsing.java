@@ -33,7 +33,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -45,8 +44,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -220,17 +219,6 @@ public class QueryParsing {
       // localParams.put(VAL_EXPLICIT, "true");
     }
     return new MapSolrParams(localParams);
-  }
-
-  /** 
-   * Returns the Sort object represented by the string, or null if default sort 
-   * by score descending should be used.
-   * @see #parseSortSpec
-   * @deprecated use {@link #parseSortSpec} 
-   */
-  @Deprecated
-  public static Sort parseSort(String sortSpec, SolrQueryRequest req) {
-    return parseSortSpec(sortSpec, req).getSort();
   }
 
   /**

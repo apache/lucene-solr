@@ -107,9 +107,6 @@ import java.util.Set;
  * @lucene.experimental 
  */
 public class PostingsSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
-
-  @Override
-  public void initalize(SolrConfig config) {}
   
   @Override
   public void init(PluginInfo info) {}

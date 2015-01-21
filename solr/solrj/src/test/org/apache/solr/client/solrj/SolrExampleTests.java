@@ -256,7 +256,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
-    query.addSortField( "price", SolrQuery.ORDER.asc );
+    query.addSort(new SolrQuery.SortClause("price", SolrQuery.ORDER.asc));
     QueryResponse rsp = client.query( query );
     
     assertEquals(2, rsp.getResults().getNumFound());
@@ -495,7 +495,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
     query.set( CommonParams.FL, "id,price,[docid],[explain style=nl],score,aaa:[value v=aaa],ten:[value v=10 t=int]" );
-    query.addSortField( "price", SolrQuery.ORDER.asc );
+    query.addSort(new SolrQuery.SortClause("price", SolrQuery.ORDER.asc));
     QueryResponse rsp = client.query( query );
     
     SolrDocumentList out = rsp.getResults();
