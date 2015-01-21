@@ -51,7 +51,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.JsonUpdateRequestHandler;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -1062,20 +1062,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     @Override
     public String toString() { return xml; }
   }
-
-  /**
-   * @see IOUtils#rm(Path...)
-   */
-  @Deprecated()
-  public static boolean recurseDelete(File f) {
-    try {
-      IOUtils.rm(f.toPath());
-      return true;
-    } catch (IOException e) {
-      System.err.println(e.toString());
-      return false;
-    }
-  }
   
   public void clearIndex() {
     assertU(delQ("*:*"));
@@ -1095,7 +1081,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update/json");
     if (handler == null) {
-      handler = new JsonUpdateRequestHandler();
+      handler = new UpdateRequestHandler();
       handler.init(null);
     }
     return connection.request(handler, args, json);

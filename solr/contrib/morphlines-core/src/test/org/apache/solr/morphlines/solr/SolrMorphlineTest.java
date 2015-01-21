@@ -16,7 +16,6 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;

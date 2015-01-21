@@ -16,15 +16,13 @@
  */
 package org.apache.solr.hadoop;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.lang.reflect.Array;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -49,13 +47,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @ThreadLeakAction({Action.WARN})
 @ThreadLeakLingering(linger = 0)

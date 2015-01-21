@@ -923,9 +923,6 @@ public class CloudSolrClient extends SolrClient {
       }
 
       String shardKeys =  reqParams.get(ShardParams._ROUTE_);
-      if(shardKeys == null) {
-        shardKeys = reqParams.get(ShardParams.SHARD_KEYS); // deprecated
-      }
 
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard

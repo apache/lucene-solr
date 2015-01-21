@@ -35,7 +35,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.junit.BeforeClass;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
@@ -53,7 +52,7 @@ import java.util.List;
 @ThreadLeakScope(Scope.NONE)
 @Slow
 public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
-  
+
   @Override
   public void doTest() throws Exception {
     Joiner joiner = Joiner.on(File.separator);

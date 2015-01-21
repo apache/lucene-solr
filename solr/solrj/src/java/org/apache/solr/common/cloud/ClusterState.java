@@ -17,6 +17,12 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,12 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -44,18 +44,6 @@ public class ClusterState implements JSONWriter.Writable {
   
   private final Map<String, CollectionRef> collectionStates;
   private Set<String> liveNodes;
-
-
-  /**
-   * Use this constr when ClusterState is meant for publication.
-   * 
-   * hashCode and equals will only depend on liveNodes and not clusterStateVersion.
-   */
-  @Deprecated
-  public ClusterState(Set<String> liveNodes,
-      Map<String, DocCollection> collectionStates) {
-    this(null, liveNodes, collectionStates);
-  }
 
   /**
    * Use this constr when ClusterState is meant for consumption.

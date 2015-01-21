@@ -17,8 +17,6 @@ package org.apache.solr.update.processor;
  * limitations under the License.
  */
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,6 +93,8 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
@@ -1396,7 +1396,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       SolrParams params = req.getParams();
       String route = params.get(ShardParams._ROUTE_);
-      if(route == null) route = params.get(ShardParams.SHARD_KEYS);// deprecated . kept for backcompat
       Collection<Slice> slices = coll.getRouter().getSearchSlices(route, params, coll);
 
       List<Node> leaders =  new ArrayList<>(slices.size());

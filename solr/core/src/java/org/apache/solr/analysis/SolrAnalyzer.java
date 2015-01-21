@@ -17,10 +17,9 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
 
 import java.io.Reader;
-import java.io.IOException;
 
 /**
  *
@@ -37,14 +36,8 @@ public abstract class SolrAnalyzer extends Analyzer {
     return posIncGap;
   }
 
-  /** wrap the reader in a CharStream, if appropriate */
-  @Deprecated
-  public Reader charStream(Reader reader) {
-    return reader;
-  }
-
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
-    return charStream(reader);
+    return reader;
   }
 }

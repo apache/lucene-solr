@@ -16,18 +16,6 @@
  */
 package org.apache.solr.highlight;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -59,7 +47,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -70,6 +57,18 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 
@@ -160,38 +159,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if(boundaryScanner == null) boundaryScanner = new SimpleBoundaryScanner();
     boundaryScanners.put("", boundaryScanner);
     boundaryScanners.put(null, boundaryScanner);
-    
-    initialized = true;
-  }
-  //just for back-compat with the deprecated method
-  private boolean initialized = false;
-  @Override
-  @Deprecated
-  public void initalize( SolrConfig config) {
-    if (initialized) return;
-    SolrFragmenter frag = new GapFragmenter();
-    fragmenters.put("", frag);
-    fragmenters.put(null, frag);
 
-    SolrFormatter fmt = new HtmlFormatter();
-    formatters.put("", fmt);
-    formatters.put(null, fmt);    
-
-    SolrEncoder enc = new DefaultEncoder();
-    encoders.put("", enc);
-    encoders.put(null, enc);    
-
-    SolrFragListBuilder fragListBuilder = new SimpleFragListBuilder();
-    fragListBuilders.put( "", fragListBuilder );
-    fragListBuilders.put( null, fragListBuilder );
-    
-    SolrFragmentsBuilder fragsBuilder = new ScoreOrderFragmentsBuilder();
-    fragmentsBuilders.put( "", fragsBuilder );
-    fragmentsBuilders.put( null, fragsBuilder );
-    
-    SolrBoundaryScanner boundaryScanner = new SimpleBoundaryScanner();
-    boundaryScanners.put("", boundaryScanner);
-    boundaryScanners.put(null, boundaryScanner);
   }
 
   /**
