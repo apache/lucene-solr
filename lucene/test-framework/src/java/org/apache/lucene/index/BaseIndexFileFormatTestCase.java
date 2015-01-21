@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.InfoStream;
@@ -172,6 +173,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */
   public void testMergeStability() throws Exception {
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // Else, the virus checker may prevent deletion of files and cause
+      // us to see too many bytes used by extension in the end:
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
     // do not use newMergePolicy that might return a MockMergePolicy that ignores the no-CFS ratio
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
