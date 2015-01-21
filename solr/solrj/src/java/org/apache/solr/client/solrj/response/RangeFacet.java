@@ -84,11 +84,6 @@ public abstract class RangeFacet<B, G> {
 
   public static class Numeric extends RangeFacet<Number, Number> {
 
-    @Deprecated
-    public Numeric(String name, Number start, Number end, Number gap, Number before, Number after) {
-      this(name, start, end, gap, before, after, null);
-    }
-
     public Numeric(String name, Number start, Number end, Number gap, Number before, Number after, Number between) {
       super(name, start, end, gap, before, after, between);
     }
@@ -96,11 +91,6 @@ public abstract class RangeFacet<B, G> {
   }
 
   public static class Date extends RangeFacet<java.util.Date, String> {
-
-    @Deprecated
-    public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after) {
-      this(name, start, end, gap, before, after, null);
-    }
 
     public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after, Number between) {
       super(name, start, end, gap, before, after, between);

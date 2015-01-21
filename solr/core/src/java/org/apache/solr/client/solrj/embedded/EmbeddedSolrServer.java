@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import com.google.common.base.Strings;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -30,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -62,25 +62,10 @@ public class EmbeddedSolrServer extends SolrClient
   
   /**
    * Use the other constructor using a CoreContainer and a name.
-   * @deprecated use {@link #EmbeddedSolrServer(CoreContainer, String)} instead.
    */
-  @Deprecated
   public EmbeddedSolrServer(SolrCore core)
   {
-    if ( core == null ) {
-      throw new NullPointerException("SolrCore instance required");
-    }
-    CoreDescriptor dcore = core.getCoreDescriptor();
-    if (dcore == null)
-      throw new NullPointerException("CoreDescriptor required");
-    
-    CoreContainer cores = dcore.getCoreContainer();
-    if (cores == null)
-      throw new NullPointerException("CoreContainer required");
-    
-    coreName = dcore.getName();
-    coreContainer = cores;
-    _parser = new SolrRequestParsers( null );
+    this(core.getCoreDescriptor().getCoreContainer(), core.getName());
   }
     
   /**
@@ -93,8 +78,10 @@ public class EmbeddedSolrServer extends SolrClient
     if ( coreContainer == null ) {
       throw new NullPointerException("CoreContainer instance required");
     }
+    if (Strings.isNullOrEmpty(coreName))
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
-    this.coreName = coreName == null? "" : coreName;
+    this.coreName = coreName;
     _parser = new SolrRequestParsers( null );
   }
   
@@ -208,7 +195,7 @@ public class EmbeddedSolrServer extends SolrClient
       }
       
       // Now write it out
-      NamedList<Object> normalized = getParsedResponse(req, rsp);
+      NamedList<Object> normalized = BinaryResponseWriter.getParsedResponse(req, rsp);
       return normalized;
     }
     catch( IOException iox ) {
@@ -225,18 +212,6 @@ public class EmbeddedSolrServer extends SolrClient
       core.close();
       SolrRequestInfo.clearRequestInfo();
     }
-  }
-  
-  /**
-   * Returns a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
-   * become SolrDocuments, DocList becomes SolrDocumentList etc.
-   * 
-   * @deprecated use {@link BinaryResponseWriter#getParsedResponse(SolrQueryRequest, SolrQueryResponse)}
-   */
-  @Deprecated
-  public NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
-  {
-    return BinaryResponseWriter.getParsedResponse(req, rsp);
   }
   
   /**

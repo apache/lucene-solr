@@ -96,10 +96,6 @@ public final class SchemaField extends FieldProperties {
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
   public boolean omitNorms() { return (properties & OMIT_NORMS)!=0; }
 
-  /** @deprecated Use {@link #omitTermFreqAndPositions} */
-  @Deprecated
-  public boolean omitTf() { return omitTermFreqAndPositions(); }
-
   public boolean omitTermFreqAndPositions() { return (properties & OMIT_TF_POSITIONS)!=0; }
   public boolean omitPositions() { return (properties & OMIT_POSITIONS)!=0; }
   public boolean storeOffsetsWithPositions() { return (properties & STORE_OFFSETS)!=0; }

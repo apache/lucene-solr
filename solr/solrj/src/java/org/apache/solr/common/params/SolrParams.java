@@ -17,16 +17,16 @@
 
 package org.apache.solr.common.params;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 
 /**  SolrParams hold request parameters.
  *
@@ -282,7 +282,6 @@ public abstract class SolrParams implements Serializable {
     }
   }
 
-  @SuppressWarnings({"deprecation"})
   public static SolrParams wrapDefaults(SolrParams params, SolrParams defaults) {
     if (params == null)
       return defaults;
@@ -291,13 +290,12 @@ public abstract class SolrParams implements Serializable {
     return new DefaultSolrParams(params,defaults);
   }
 
-  @SuppressWarnings({"deprecation"})
   public static SolrParams wrapAppended(SolrParams params, SolrParams defaults) {
     if (params == null)
       return defaults;
     if (defaults == null)
       return params;
-    return new AppendedSolrParams(params,defaults);
+    return AppendedSolrParams.wrapAppended(params,defaults);
   }
 
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */

@@ -41,7 +41,7 @@ import java.util.Iterator;
 @ThreadLeakScope(Scope.NONE)
 @Slow
 public class SolrMorphlineZkTest extends AbstractSolrMorphlineZkTestBase {
-  
+
   @Override
   public void doTest() throws Exception {
     

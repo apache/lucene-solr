@@ -20,10 +20,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SortSpec;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,7 +78,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     SortSpec spec;
     SolrQueryRequest req = req();
 
-    sort = QueryParsing.parseSort("score desc", req);
+    sort = QueryParsing.parseSortSpec("score desc", req).getSort();
     assertNull("sort", sort);//only 1 thing in the list, no Sort specified
 
     spec = QueryParsing.parseSortSpec("score desc", req);
@@ -89,7 +88,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(0, spec.getSchemaFields().size());
 
     // SOLR-4458 - using different case variations of asc and desc
-    sort = QueryParsing.parseSort("score aSc", req);
+    sort = QueryParsing.parseSortSpec("score aSc", req).getSort();
     SortField[] flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.SCORE);
     assertTrue(flds[0].getReverse());
@@ -102,7 +101,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(1, spec.getSchemaFields().size());
     assertNull(spec.getSchemaFields().get(0));
 
-    sort = QueryParsing.parseSort("weight dEsC", req);
+    sort = QueryParsing.parseSortSpec("weight dEsC", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
@@ -118,7 +117,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertNotNull(spec.getSchemaFields().get(0));
     assertEquals("weight", spec.getSchemaFields().get(0).getName());
 
-    sort = QueryParsing.parseSort("weight desc,bday ASC", req);
+    sort = QueryParsing.parseSortSpec("weight desc,bday ASC", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
@@ -127,7 +126,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getReverse(), false);
     //order aliases
-    sort = QueryParsing.parseSort("weight top,bday asc", req);
+    sort = QueryParsing.parseSortSpec("weight top,bday asc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
@@ -135,7 +134,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[1].getType(), SortField.Type.LONG);
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getReverse(), false);
-    sort = QueryParsing.parseSort("weight top,bday bottom", req);
+    sort = QueryParsing.parseSortSpec("weight top,bday bottom", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
@@ -145,20 +144,20 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[1].getReverse(), false);
 
     //test weird spacing
-    sort = QueryParsing.parseSort("weight         DESC,            bday         asc", req);
+    sort = QueryParsing.parseSortSpec("weight         DESC,            bday         asc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getType(), SortField.Type.LONG);
     //handles trailing commas
-    sort = QueryParsing.parseSort("weight desc,", req);
+    sort = QueryParsing.parseSortSpec("weight desc,", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
 
     //test functions
-    sort = QueryParsing.parseSort("pow(weight, 2) desc", req);
+    sort = QueryParsing.parseSortSpec("pow(weight, 2) desc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //Not thrilled about the fragility of string matching here, but...
@@ -166,12 +165,12 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[0].getField(), "pow(float(weight),const(2))");
     
     //test functions (more deep)
-    sort = QueryParsing.parseSort("sum(product(r_f1,sum(d_f1,t_f1,1.0)),a_f1) asc", req);
+    sort = QueryParsing.parseSortSpec("sum(product(r_f1,sum(d_f1,t_f1,1.0)),a_f1) asc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     assertEquals(flds[0].getField(), "sum(product(float(r_f1),sum(float(d_f1),float(t_f1),const(1.0))),float(a_f1))");
 
-    sort = QueryParsing.parseSort("pow(weight,                 2.0)         desc", req);
+    sort = QueryParsing.parseSortSpec("pow(weight,                 2.0)         desc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //Not thrilled about the fragility of string matching here, but...
@@ -202,19 +201,19 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals("bday", schemaFlds.get(2).getName());
     
     //handles trailing commas
-    sort = QueryParsing.parseSort("weight desc,", req);
+    sort = QueryParsing.parseSortSpec("weight desc,", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
 
     //Test literals in functions
-    sort = QueryParsing.parseSort("strdist(foo_s1, \"junk\", jw) desc", req);
+    sort = QueryParsing.parseSortSpec("strdist(foo_s1, \"junk\", jw) desc", req).getSort();
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "strdist(str(foo_s1),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
 
-    sort = QueryParsing.parseSort("", req);
+    sort = QueryParsing.parseSortSpec("", req).getSort();
     assertNull(sort);
 
     spec = QueryParsing.parseSortSpec("", req);
@@ -231,40 +230,40 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
 
     //test some bad vals
     try {
-      sort = QueryParsing.parseSort("weight, desc", req);
+      sort = QueryParsing.parseSortSpec("weight, desc", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
       //expected
     }
     try {
-      sort = QueryParsing.parseSort("w", req);
+      sort = QueryParsing.parseSortSpec("w", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
       //expected
     }
     try {
-      sort = QueryParsing.parseSort("weight desc, bday", req);
+      sort = QueryParsing.parseSortSpec("weight desc, bday", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
     }
 
     try {
       //bad number of commas
-      sort = QueryParsing.parseSort("pow(weight,,2) desc, bday asc", req);
+      sort = QueryParsing.parseSortSpec("pow(weight,,2) desc, bday asc", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
     }
 
     try {
       //bad function
-      sort = QueryParsing.parseSort("pow() desc, bday asc", req);
+      sort = QueryParsing.parseSortSpec("pow() desc, bday asc", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
     }
 
     try {
       //bad number of parens
-      sort = QueryParsing.parseSort("pow((weight,2) desc, bday asc", req);
+      sort = QueryParsing.parseSortSpec("pow((weight,2) desc, bday asc", req).getSort();
       assertTrue(false);
     } catch (SolrException e) {
     }

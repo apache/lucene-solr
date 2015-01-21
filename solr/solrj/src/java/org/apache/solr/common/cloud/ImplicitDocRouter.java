@@ -31,9 +31,9 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 /** This document router is for custom sharding
  */
 public class ImplicitDocRouter extends DocRouter {
+
   public static final String NAME = "implicit";
-//  @Deprecated
-//  public static final String DEFAULT_SHARD_PARAM = "_shard_";
+
   private static Logger log = LoggerFactory
       .getLogger(ImplicitDocRouter.class);
 
@@ -49,7 +49,6 @@ public class ImplicitDocRouter extends DocRouter {
       }
       if(shard == null) {
         Object o = sdoc.getFieldValue(_ROUTE_);
-        if (o == null) o = sdoc.getFieldValue("_shard_");//deprecated . for backcompat remove later
         if (o != null) {
           shard = o.toString();
         }
@@ -58,7 +57,6 @@ public class ImplicitDocRouter extends DocRouter {
 
     if (shard == null) {
       shard = params.get(_ROUTE_);
-      if(shard == null) shard =params.get("_shard_"); //deperecated for back compat
     }
 
     if (shard != null) {

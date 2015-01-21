@@ -587,14 +587,6 @@ public class CoreAdminRequest extends SolrRequest
     return req.process( client );
   }
 
-  @Deprecated
-  public static CoreAdminResponse persist(String fileName, SolrClient client) throws SolrServerException, IOException
-  {
-    CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();
-    req.setFileName(fileName);
-    return req.process(client);
-  }
-
   public static CoreAdminResponse mergeIndexes(String name,
       String[] indexDirs, String[] srcCores, SolrClient client) throws SolrServerException,
       IOException {

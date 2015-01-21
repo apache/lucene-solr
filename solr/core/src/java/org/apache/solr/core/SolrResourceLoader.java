@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -26,7 +27,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchComponent;
@@ -546,10 +546,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     if (!live) {
       //TODO: Does SolrCoreAware make sense here since in a multi-core context
       // which core are we talking about ?
-      if (org.apache.solr.util.plugin.ResourceLoaderAware.class.isInstance(obj)) {
-        log.warn("Class [{}] uses org.apache.solr.util.plugin.ResourceLoaderAware " +
-            "which is deprecated. Change to org.apache.lucene.analysis.util.ResourceLoaderAware.", cname);
-      }
       if( obj instanceof ResourceLoaderAware ) {
         assertAwareCompatibility( ResourceLoaderAware.class, obj );
         waitingForResources.add( (ResourceLoaderAware)obj );
@@ -588,10 +584,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       if( obj instanceof SolrCoreAware ) {
         assertAwareCompatibility( SolrCoreAware.class, obj );
         waitingForCore.add( (SolrCoreAware)obj );
-      }
-      if (org.apache.solr.util.plugin.ResourceLoaderAware.class.isInstance(obj)) {
-        log.warn("Class [{}] uses org.apache.solr.util.plugin.ResourceLoaderAware " +
-            "which is deprecated. Change to org.apache.lucene.analysis.util.ResourceLoaderAware.", cName);
       }
       if( obj instanceof ResourceLoaderAware ) {
         assertAwareCompatibility( ResourceLoaderAware.class, obj );

@@ -92,7 +92,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       PluginInfo pluginInfo = core.getSolrConfig().getPluginInfo(SolrHighlighter.class.getName()); //TODO deprecated configuration remove later
       if (pluginInfo != null) {
         highlighter = core.createInitInstance(pluginInfo, SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
-        highlighter.initalize(core.getSolrConfig());
       } else {
         DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
         defHighlighter.init(PluginInfo.EMPTY_INFO);

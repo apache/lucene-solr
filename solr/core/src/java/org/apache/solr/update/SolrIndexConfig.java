@@ -46,14 +46,8 @@ public class SolrIndexConfig implements MapSerializable {
   final String defaultMergePolicyClassName;
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
   public final Version luceneVersion;
-  
-  /**
-   * The explicit value of &lt;useCompoundFile&gt; specified on this index config
-   * @deprecated use {@link #getUseCompoundFile}
-   */
-  @Deprecated
-  public final boolean useCompoundFile;
-  private boolean effectiveUseCompountFileSetting;
+
+  private boolean effectiveUseCompoundFileSetting;
 
   public final int maxBufferedDocs;
   public final int maxMergeDocs;
@@ -83,7 +77,7 @@ public class SolrIndexConfig implements MapSerializable {
   @SuppressWarnings("deprecation")
   private SolrIndexConfig(SolrConfig solrConfig) {
     luceneVersion = solrConfig.luceneMatchVersion;
-    useCompoundFile = effectiveUseCompountFileSetting = false;
+    effectiveUseCompoundFileSetting = false;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
     maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
@@ -133,8 +127,7 @@ public class SolrIndexConfig implements MapSerializable {
         true);
 
     defaultMergePolicyClassName = def.defaultMergePolicyClassName;
-    useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
-    effectiveUseCompountFileSetting = useCompoundFile;
+    effectiveUseCompoundFileSetting = solrConfig.getBool(prefix+"/useCompoundFile", def.getUseCompoundFile());
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
     maxIndexingThreads=solrConfig.getInt(prefix+"/maxIndexingThreads",def.maxIndexingThreads);
@@ -305,7 +298,7 @@ public class SolrIndexConfig implements MapSerializable {
   }
 
   public boolean getUseCompoundFile() {
-    return effectiveUseCompountFileSetting;
+    return effectiveUseCompoundFileSetting;
   }
 
   /**
@@ -329,7 +322,7 @@ public class SolrIndexConfig implements MapSerializable {
       if (useCFSArg instanceof Boolean) {
         boolean cfs = ((Boolean)useCFSArg).booleanValue();
         log.warn("Please update your config to specify <useCompoundFile>"+cfs+"</useCompoundFile> directly in your <indexConfig> settings.");
-        effectiveUseCompountFileSetting = cfs;
+        effectiveUseCompoundFileSetting = cfs;
       } else {
         log.error("MergePolicy's 'useCompoundFile' init arg is not a boolean, can not apply back compat logic to apply to the IndexWriterConfig: " + useCFSArg.toString());
       }
