@@ -60,6 +60,33 @@
       </Arg>
     </Call>
 
+    <!-- If the connector below is uncommented, then jetty will also accept SSL
+         connections using a self signed certificate, and can optionally require
+         the client to authenticate with a certificate, which can be the same as
+         the server certificate.
+         
+         For information about generating the SSL certificate, etc., see:
+          
+             https://cwiki.apache.org/confluence/display/solr/Enabling+SSL
+    -->
+    <!--
+    <Call name="addConnector">
+      <Arg>
+        <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+          <Arg>
+            <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
+              <Set name="keyStore"><SystemProperty name="jetty.home" default="."/>/etc/solr-ssl.keystore.jks</Set>
+              <Set name="keyStorePassword">secret</Set>
+              <Set name="needClientAuth"><SystemProperty name="jetty.ssl.clientAuth" default="false"/></Set>
+            </New>
+          </Arg>
+          <Set name="port"><SystemProperty name="jetty.ssl.port" default="8984"/></Set>
+          <Set name="maxIdleTime">30000</Set>
+        </New>
+      </Arg>
+    </Call>
+    -->
+
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            --> 
     <!-- =========================================================== -->
