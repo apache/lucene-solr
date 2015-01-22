@@ -521,6 +521,9 @@ Bug Fixes
 
 * SOLR-6928: solr.cmd stop works only in english (john.work, Jan Høydahl, Timothy Potter)
 
+* SOLR-7011: Delete collection returns before collection is actually removed.
+  (Christine Poerschke via shalin)
+
 Optimizations
 ----------------------
 
