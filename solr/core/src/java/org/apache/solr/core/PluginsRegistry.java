@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.RealTimeGetHandler;
@@ -42,6 +43,7 @@ import org.apache.solr.request.SolrRequestHandler;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CommonParams.STREAM_CONTENTTYPE;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 
@@ -52,9 +54,9 @@ public class PluginsRegistry {
 
     //update handle implicits
     implicits.add(getReqHandlerInfo("/update", UpdateRequestHandler.class, null));
-    implicits.add(getReqHandlerInfo(UpdateRequestHandler.JSON_PATH, UpdateRequestHandler.class, singletonMap("update.contentType", "application/json")));
-    implicits.add(getReqHandlerInfo(UpdateRequestHandler.CSV_PATH, UpdateRequestHandler.class, singletonMap("update.contentType", "application/csv")));
-    implicits.add(getReqHandlerInfo(UpdateRequestHandler.DOC_PATH, UpdateRequestHandler.class, makeMap("update.contentType", "application/json", "json.command", "false")));
+    implicits.add(getReqHandlerInfo(UpdateRequestHandler.JSON_PATH, UpdateRequestHandler.class, singletonMap(STREAM_CONTENTTYPE, "application/json")));
+    implicits.add(getReqHandlerInfo(UpdateRequestHandler.CSV_PATH, UpdateRequestHandler.class, singletonMap(STREAM_CONTENTTYPE, "application/csv")));
+    implicits.add(getReqHandlerInfo(UpdateRequestHandler.DOC_PATH, UpdateRequestHandler.class, makeMap(STREAM_CONTENTTYPE, "application/json", "json.command", "false")));
 
     //solrconfighandler
     implicits.add(getReqHandlerInfo("/config", SolrConfigHandler.class, null));
