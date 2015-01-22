@@ -132,6 +132,12 @@ if [ -n "$SOLR_SSL_OPTS" ]; then
   SOLR_URL_SCHEME=https
 fi
 
+# Which Jetty config file to use - leave blank to use the default: etc/jetty.xml
+SOLR_JETTY_CONFIG=
+if [ -n "$SOLR_SSL_OPTS" ]; then
+  SOLR_JETTY_CONFIG=$SOLR_TIP/server/etc/jetty-https-ssl.xml
+fi
+
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
@@ -432,7 +438,7 @@ function stop_solr() {
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    $JAVA $SOLR_SSL_OPTS -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
+    $JAVA $SOLR_SSL_OPTS -jar $DIR/start.jar $SOLR_JETTY_CONFIG STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
     (sleep 5) &
     spinner $!
     rm -f $SOLR_PID_DIR/solr-$SOLR_PORT.pid
@@ -1331,10 +1337,10 @@ $SOLR_OPTS"
 
   if [ "$run_in_foreground" == "true" ]; then
     echo -e "\nStarting Solr$IN_CLOUD_MODE on port $SOLR_PORT from $SOLR_SERVER_DIR\n"
-    $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -jar start.jar
+    $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -jar start.jar $SOLR_JETTY_CONFIG
   else
     # run Solr in the background
-    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" -jar start.jar 1>$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_PID_DIR/solr-$SOLR_PORT.pid
+    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" -jar start.jar $SOLR_JETTY_CONFIG 1>$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_PID_DIR/solr-$SOLR_PORT.pid
   
     # no lsof on cygwin though
     if [ "$hasLsof" != "" ]; then
