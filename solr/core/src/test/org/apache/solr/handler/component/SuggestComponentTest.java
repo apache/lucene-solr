@@ -42,6 +42,11 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
+    assertQ(req("qt", "standard", 
+        "q", "*:*"), 
+        "//*[@numFound='0']"
+        );
+    
     // id, cat, price, weight
     assertU(adoc("id", "0", "cat", "This is a title", "price", "5", "weight", "10"));
     assertU(adoc("id", "1", "cat", "This is another title", "price", "10", "weight", "10"));
@@ -55,13 +60,13 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "9", "cat", "blah in blah", "price", "50", "weight", "40"));
     assertU(adoc("id", "10", "cat", "another blah in blah", "price", "55", "weight", "40"));
     assertU((commit()));
+    waitForWarming();
   }
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
     assertU(delQ("*:*"));
-    optimize();
     assertU((commit()));
     // rebuild suggesters with empty index
     assertQ(req("qt", rh, 
@@ -223,7 +228,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
         );
     
-    // add one more doc, this should not be seen after a core reload (not until the suggester is manually rebuilt)
+    // add one more doc, should be visible after core reload
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
     
@@ -450,7 +455,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
   
   private void reloadCore(boolean createNewCore) throws Exception {
-    if (createNewCore) {
+//    if (createNewCore) {
       CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
@@ -459,26 +464,32 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       SolrCore createdCore = cores.create(cd);
       assertEquals(dataDir1, createdCore.getDataDir());
       assertEquals(createdCore, h.getCore());
-    } else {
-      h.reload();
-      // On regular reloading, wait until the new searcher is registered
-      RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
-      RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);;
-      while (registeredSearcher.get() != newestSearcher.get()) {
-        registeredSearcher.decref();
-        newestSearcher.decref();
-        Thread.sleep(50);
-        registeredSearcher = h.getCore().getRegisteredSearcher();
-        newestSearcher = h.getCore().getNewestSearcher(false);
-      }
-      registeredSearcher.decref();
-      newestSearcher.decref();
-    }
+//    } else {
+//      h.reload();
+//      // On regular reloading, wait until the new searcher is registered
+//      waitForWarming();
+//    }
     
     assertQ(req("qt", "standard", 
         "q", "*:*"), 
         "//*[@numFound='11']"
         );
+  }
+
+  private void waitForWarming() throws InterruptedException {
+    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);;
+    while (registeredSearcher == null || registeredSearcher.get() != newestSearcher.get()) {
+      if (registeredSearcher != null) {
+        registeredSearcher.decref();
+      }
+      newestSearcher.decref();
+      Thread.sleep(50);
+      registeredSearcher = h.getCore().getRegisteredSearcher();
+      newestSearcher = h.getCore().getNewestSearcher(false);
+    }
+    registeredSearcher.decref();
+    newestSearcher.decref();
   }
   
 }
