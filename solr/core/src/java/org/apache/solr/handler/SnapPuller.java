@@ -584,7 +584,7 @@ public class SnapPuller {
     }
     String[] allFiles = indexDir.listAll();
     for (String file : allFiles) {
-      if (!file.equals(segmentsFileName) && !currentFiles.contains(file)) {
+      if (!file.equals(segmentsFileName) && !currentFiles.contains(file) && !file.endsWith(".lock")) {
         LOG.info("Found unused file: " + file);
         return true;
       }
