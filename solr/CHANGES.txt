@@ -803,6 +803,10 @@ Other Changes
 * SOLR-6521: CloudSolrClient should synchronize cache cluster state loading
     ( Noble Paul, Jessica Cheng Mallet)
 
+* SOLR-7018: bin/solr stop should stop if there is only one node running or generate
+  an error message prompting the user to be explicit about which of multiple nodes
+  to stop using the -p or -all options (Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

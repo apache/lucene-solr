@@ -1060,8 +1060,10 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
   else
     # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
     none_stopped=true
-    if [ -e "$SOLR_PID_DIR/solr-8983.pid" ]; then
-      PID=`cat $SOLR_PID_DIR/solr-8983.pid`
+    numSolrs=`find $SOLR_PID_DIR -name "solr-*.pid" -type f | wc -l | tr -d ' '`
+    if [ $numSolrs -eq 1 ]; then
+      # only do this if there is only 1 node running, otherwise they must provide the -p or -all
+      PID=`find $SOLR_PID_DIR -name "solr-*.pid" -type f -exec cat {} \;`
       CHECK_PID=`ps auxww | awk '{print $2}' | grep $PID | sort -r | tr -d ' '`
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
@@ -1069,11 +1071,15 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
           none_stopped=false
         fi
-        rm -f $SOLR_PID_DIR/solr-8983.pid
       fi
     fi
+
     if $none_stopped; then
-      echo -e "\nMust either specify a port using -p or -all to stop all Solr nodes on this host.\nUse the status command to see if any Solr nodes are running."
+      if [ $numSolrs -gt 0 ]; then
+        echo -e "\nFound $numSolrs Solr nodes running! Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
+      else
+        echo -e "\nNo Solr nodes found to stop.\n"
+      fi
       exit 1
     fi
   fi
