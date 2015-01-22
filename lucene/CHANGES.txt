@@ -41,6 +41,11 @@ Optimizations
 * LUCENE-6184: Make BooleanScorer only score windows that contain
   matches. (Adrien Grand)
 
+* LUCENE-6161: Speed up resolving of deleted terms to docIDs by doing
+  a combined merge sort between deleted terms and segment terms
+  instead of a separate merge sort for each segment.  In delete-heavy
+  use cases this can be a sizable speedup. (Mike McCandless)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.

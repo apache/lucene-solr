@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMFile;
@@ -32,9 +31,10 @@ import org.apache.lucene.util.BytesRefBuilder;
  * Prefix codes term instances (prefixes are shared)
  * @lucene.experimental
  */
-class PrefixCodedTerms implements Iterable<Term>, Accountable {
+class PrefixCodedTerms implements Accountable {
   final RAMFile buffer;
-  
+  private long delGen;
+
   private PrefixCodedTerms(RAMFile buffer) {
     this.buffer = buffer;
   }
@@ -44,56 +44,9 @@ class PrefixCodedTerms implements Iterable<Term>, Accountable {
     return buffer.ramBytesUsed();
   }
 
-  /** @return iterator over the bytes */
-  @Override
-  public Iterator<Term> iterator() {
-    return new PrefixCodedTermsIterator();
-  }
-  
-  class PrefixCodedTermsIterator implements Iterator<Term> {
-    final IndexInput input;
-    String field = "";
-    BytesRefBuilder bytes = new BytesRefBuilder();
-    Term term = new Term(field, bytes.get());
-
-    PrefixCodedTermsIterator() {
-      try {
-        input = new RAMInputStream("PrefixCodedTermsIterator", buffer);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    @Override
-    public boolean hasNext() {
-      return input.getFilePointer() < input.length();
-    }
-    
-    @Override
-    public Term next() {
-      assert hasNext();
-      try {
-        int code = input.readVInt();
-        if ((code & 1) != 0) {
-          // new field
-          field = input.readString();
-        }
-        int prefix = code >>> 1;
-        int suffix = input.readVInt();
-        bytes.grow(prefix + suffix);
-        input.readBytes(bytes.bytes(), prefix, suffix);
-        bytes.setLength(prefix + suffix);
-        term.set(field, bytes.get());
-        return term;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
+  /** Records del gen for this packet. */
+  public void setDelGen(long delGen) {
+    this.delGen = delGen;
   }
   
   /** Builds a PrefixCodedTerms: call add repeatedly, then finish. */
@@ -149,5 +102,72 @@ class PrefixCodedTerms implements Iterable<Term>, Accountable {
       }
       return pos1;
     }
+  }
+
+  public static class TermIterator implements FieldTermIterator {
+    final IndexInput input;
+    final BytesRefBuilder builder = new BytesRefBuilder();
+    final BytesRef bytes = builder.get();
+    final long end;
+    final long delGen;
+    String field = "";
+
+    public TermIterator(long delGen, RAMFile buffer) {
+      try {
+        input = new RAMInputStream("MergedPrefixCodedTermsIterator", buffer);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      end = input.length();
+      this.delGen = delGen;
+    }
+
+    @Override
+    public boolean next() {
+      if (input.getFilePointer() < end) {
+        try {
+          int code = input.readVInt();
+          boolean newField = (code & 1) != 0;
+          if (newField) {
+            field = input.readString();
+          }
+          int prefix = code >>> 1;
+          int suffix = input.readVInt();
+          readTermBytes(prefix, suffix);
+          return newField;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        field = null;
+        return true;
+      }
+    }
+
+    // TODO: maybe we should freeze to FST or automaton instead?
+    private void readTermBytes(int prefix, int suffix) throws IOException {
+      builder.grow(prefix + suffix);
+      input.readBytes(builder.bytes(), prefix, suffix);
+      builder.setLength(prefix + suffix);
+    }
+
+    @Override
+    public BytesRef term() {
+      return bytes;
+    }
+
+    @Override
+    public String field() {
+      return field;
+    }
+
+    @Override
+    public long delGen() {
+      return delGen;
+    }
+  }
+
+  public TermIterator iterator() {
+    return new TermIterator(delGen, buffer);
   }
 }

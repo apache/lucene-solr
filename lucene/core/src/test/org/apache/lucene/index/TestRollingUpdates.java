@@ -102,7 +102,13 @@ public class TestRollingUpdates extends LuceneTestCase {
       updateCount++;
 
       if (doUpdate) {
-        w.updateDocument(idTerm, doc);
+        if (random().nextBoolean()) {
+          w.updateDocument(idTerm, doc);
+        } else {
+          // It's OK to not be atomic for this test (no separate thread reopening readers):
+          w.deleteDocuments(new TermQuery(idTerm));
+          w.addDocument(doc);
+        }
       } else {
         w.addDocument(doc);
       }

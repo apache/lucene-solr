@@ -54,6 +54,13 @@ public abstract class Terms {
    * <p><b>NOTE</b>: the returned TermsEnum cannot
    * seek</p>. */
   public TermsEnum intersect(CompiledAutomaton compiled, final BytesRef startTerm) throws IOException {
+    
+    // TODO: could we factor out a common interface b/w
+    // CompiledAutomaton and FST?  Then we could pass FST there too,
+    // and likely speed up resolving terms to deleted docs ... but
+    // AutomatonTermsEnum makes this tricky because of its on-the-fly cycle
+    // detection
+    
     // TODO: eventually we could support seekCeil/Exact on
     // the returned enum, instead of only being able to seek
     // at the start

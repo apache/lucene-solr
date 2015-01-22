@@ -198,6 +198,7 @@ public class CompiledAutomaton {
     if (this.finite) {
       commonSuffixRef = null;
     } else {
+      // NOTE: this is a very costly operation!  We should test if it's really warranted in practice...
       commonSuffixRef = Operations.getCommonSuffixBytesRef(utf8, maxDeterminizedStates);
     }
     runAutomaton = new ByteRunAutomaton(utf8, true, maxDeterminizedStates);
