@@ -49,6 +49,20 @@ SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
 hasLsof=$(which lsof)
+hasJar=$(which jar 2>/dev/null)
+hasUnzip=$(which unzip 2>/dev/null)
+
+if [ ${hasJar} ]; then
+  unzipCommand="$hasJar xf"
+else
+  if [ ${hasUnzip} ]; then
+    unzipCommand="$hasUnzip"
+  else
+    echo -e "This script requires extracting a WAR file with either the jar or unzip utility, please install these utilities or contact your administrator for assistance."
+    exit 1
+  fi
+fi
+  
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
@@ -356,7 +370,7 @@ function run_tool() {
   
   # Extract the solr.war if it hasn't been done already (so we can access the SolrCLI class)
   if [[ -e $DEFAULT_SERVER_DIR/webapps/solr.war && ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]]; then
-    (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && jar xf $DEFAULT_SERVER_DIR/webapps/solr.war)    
+    (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && "$unzipCommand" $DEFAULT_SERVER_DIR/webapps/solr.war)    
   fi
   
   "$JAVA" $SOLR_SSL_OPTS -Dsolr.install.dir=$SOLR_TIP -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
