@@ -527,6 +527,9 @@ Bug Fixes
 * SOLR-6640: Close searchers before rollback and recovery to avoid index corruption.
   (Robert Muir, Varun Thacker, shalin)
 
+* SOLR-6847: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
+  (shalin)
+
 Optimizations
 ----------------------
 
