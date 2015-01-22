@@ -92,7 +92,7 @@ function print_usage() {
   echo "* XML files: $THIS_SCRIPT -c records article*.xml"
   echo "* CSV file: $THIS_SCRIPT -c signals LATEST-signals.csv"
   echo "* Directory of files: $THIS_SCRIPT -c myfiles ~/Documents"
-  echo "* Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com -recursive 2 -delay 1"
+  echo "* Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com -recursive 1 -delay 1"
   echo "* Standard input (stdin): echo '{"commit": {}}' | $THIS_SCRIPT -c my_collection -type application/json -out yes -d"
   echo "* Data as string: $THIS_SCRIPT -c signals -type text/csv -out yes -d $'id,value\n1,0.47'"
   echo ""
@@ -155,6 +155,7 @@ while [ $# -gt 0 ]; do
       fi
     else
       echo -e "\nUnrecognized argument: $1\n"
+      echo -e "If this was intended to be a data file, it does not exist relative to $PWD\n"
       exit 1
     fi
   fi
@@ -164,12 +165,14 @@ done
 # Check for errors
 if [[ $COLLECTION == "" ]]; then
   echo -e "\nCollection must be specified.  Use -c <collection name> or set DEFAULT_SOLR_COLLECTION in your environment.\n"
+  echo -e "See '$THIS_SCRIPT -h' for usage instructions.\n"
   exit 1
 fi
 
 # Unsupported: bin/post -c foo
 if [[ ${#FILES[@]} == 0 && ${#URLS[@]} == 0 && $MODE != "stdin" && $MODE != "args" ]]; then
-  echo -e "\nNo files, directories, URLs, -d strings, or stdin were specified.  See '$THIS_SCRIPT -h' for usage instructions.\n"
+  echo -e "\nNo files, directories, URLs, -d strings, or stdin were specified.\n"
+  echo -e "See '$THIS_SCRIPT -h' for usage instructions.\n"
   exit 1
 fi
 
