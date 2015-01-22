@@ -165,6 +165,9 @@ public class ClusterState implements JSONWriter.Writable {
     return coll;
   }
 
+  public CollectionRef getCollectionRef(String coll) {
+    return  collectionStates.get(coll);
+  }
 
   public DocCollection getCollectionOrNull(String coll) {
     CollectionRef ref = collectionStates.get(coll);
@@ -396,6 +399,8 @@ public class ClusterState implements JSONWriter.Writable {
     public DocCollection get(){
       return coll;
     }
+
+    public boolean isLazilyLoaded() { return false; }
 
   }
 

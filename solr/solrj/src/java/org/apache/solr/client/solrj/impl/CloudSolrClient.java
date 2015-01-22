@@ -126,9 +126,10 @@ public class CloudSolrClient extends SolrClient {
 
   }
   private volatile long timeToLive = 60* 1000L;
+  private volatile List<Object> locks = objectList(3);
 
 
-  protected Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
+  protected final Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
@@ -143,7 +144,7 @@ public class CloudSolrClient extends SolrClient {
   };
 
   class ExpiringCachedDocCollection {
-    DocCollection cached;
+    final DocCollection cached;
     long cachedAt;
 
     ExpiringCachedDocCollection(DocCollection cached) {
@@ -1068,16 +1069,48 @@ public class CloudSolrClient extends SolrClient {
     return updatesToLeaders;
   }
 
-  protected DocCollection getDocCollection(ClusterState clusterState, String collection) throws SolrException {
-    ExpiringCachedDocCollection cachedState = collectionStateCache != null ? collectionStateCache.get(collection) : null;
-    if (cachedState != null && cachedState.cached != null) {
-      return cachedState.cached;
-    }
+  /**If caches are expired they are refreshed after acquiring a lock.
+   * use this to set the number of locks
+   */
+  public void setParallelCacheRefreshes(int n){ locks = objectList(n); }
 
-    DocCollection col = clusterState.getCollectionOrNull(collection);
+  private static ArrayList<Object> objectList(int n) {
+    ArrayList<Object> l =  new ArrayList<>(n);
+    for(int i=0;i<n;i++) l.add(new Object());
+    return l;
+  }
+
+
+  protected DocCollection getDocCollection(ClusterState clusterState, String collection) throws SolrException {
+    if(collection == null) return null;
+    DocCollection col = getFromCache(collection);
+    if(col != null) return col;
+
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+    if(ref == null){
+      //no such collection exists
+      return null;
+    }
+    if(!ref.isLazilyLoaded()) {
+      //it is readily available just return it
+      return ref.get();
+    }
+    List locks = this.locks;
+    final Object lock = locks.get(collection.hashCode() % locks.size());
+    synchronized (lock){
+      //we have waited for sometime just check once again
+      col = getFromCache(collection);
+      if(col !=null) return col;
+      col = ref.get();
+    }
     if(col == null ) return  null;
     if(col.getStateFormat() >1) collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
     return col;
+  }
+
+  private DocCollection getFromCache(String c){
+    ExpiringCachedDocCollection cachedState = collectionStateCache.get(c);
+    return cachedState != null ? cachedState.cached : null;
   }
 
 
