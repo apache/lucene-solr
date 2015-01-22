@@ -524,6 +524,9 @@ Bug Fixes
 * SOLR-7011: Delete collection returns before collection is actually removed.
   (Christine Poerschke via shalin)
 
+* SOLR-6640: Close searchers before rollback and recovery to avoid index corruption.
+  (Robert Muir, Varun Thacker, shalin)
+
 Optimizations
 ----------------------
 
