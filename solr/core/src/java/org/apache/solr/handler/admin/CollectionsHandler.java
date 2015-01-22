@@ -853,6 +853,9 @@ public class CollectionsHandler extends RequestHandlerBase {
          DocCollection.STATE_FORMAT,
          AUTO_ADD_REPLICAS,
         "router.");
+    if(props.get(DocCollection.STATE_FORMAT) == null){
+      props.put(DocCollection.STATE_FORMAT,"2");
+    }
 
     if(SYSTEM_COLL.equals(name)){
       //We must always create asystem collection with only a single shard

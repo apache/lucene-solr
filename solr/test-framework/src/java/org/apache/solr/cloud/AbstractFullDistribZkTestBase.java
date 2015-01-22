@@ -353,16 +353,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createJettys(numJettys, false);
   }
 
-  protected int defaultStateFormat = 1 + random().nextInt(2);
+  protected String defaultStateFormat = String.valueOf( 1 + random().nextInt(2));
 
-  protected int getStateFormat()  {
+  protected String getStateFormat()  {
     String stateFormat = System.getProperty("tests.solr.stateFormat", null);
     if (stateFormat != null)  {
-      if ("2".equals(stateFormat)) {
-        return defaultStateFormat = 2;
-      } else if ("1".equals(stateFormat))  {
-        return defaultStateFormat = 1;
-      }
+      defaultStateFormat = stateFormat;
     }
     return defaultStateFormat; // random
   }
@@ -378,7 +374,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<SolrClient> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
 
-    if (getStateFormat() == 2) {
+    if ("2".equals(getStateFormat())) {
       log.info("Creating collection1 with stateFormat=2");
       SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
@@ -1623,9 +1619,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
-    if (getStateFormat() == 2) {
-      log.info("Creating collection with stateFormat=2: " + collectionName);
-      params.set(DocCollection.STATE_FORMAT, "2");
+    if ("1".equals(getStateFormat()) ) {
+      log.info("Creating collection with stateFormat=1: " + collectionName);
+      params.set(DocCollection.STATE_FORMAT, "1");
     }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
