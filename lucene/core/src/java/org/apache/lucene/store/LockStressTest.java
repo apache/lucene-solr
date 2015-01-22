@@ -139,7 +139,7 @@ public class LockStressTest {
     // try to create a new instance
     try {
       return Class.forName(lockFactoryClassName).asSubclass(FSLockFactory.class).newInstance();
-    } catch (IllegalAccessException | InstantiationException | ClassCastException | ClassNotFoundException e) {
+    } catch (ReflectiveOperationException | ClassCastException e) {
       // fall-through
     }
 
