@@ -76,6 +76,8 @@ New Features
 * SOLR-6909: Extract atomic update handling logic into AtomicUpdateDocumentMerger class
   and enable subclassing. (Steve Davids, yonik)
 
+* SOLR-6845: Add a “buildOnStartup” option for suggesters. (Tomás Fernández Löbbe)
+
 Other Changes
 ----------------------
 * SOLR-7014: Collapse identical catch branches in try-catch statements. (shalin)
@@ -367,8 +369,6 @@ New Features
 
 * SOLR-5147: Support child documents in DIH
   (Vadim Kirilchuk, Shawn Heisey, Thomas Champagne, Mikhail Khludnev via Noble Paul)
-
-* SOLR-6845: Add a “buildOnStartup” option for suggesters. (Tomás Fernández Löbbe)
   
 Bug Fixes
 ----------------------
