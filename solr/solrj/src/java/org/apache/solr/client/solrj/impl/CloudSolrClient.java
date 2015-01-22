@@ -1089,7 +1089,7 @@ public class CloudSolrClient extends SolrClient {
       return ref.get();
     }
     List locks = this.locks;
-    final Object lock = locks.get(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size());
+    final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
     synchronized (lock){
       //we have waited for sometime just check once again
       col = getFromCache(collection);
