@@ -129,8 +129,10 @@ public class SolrSuggester implements Accountable {
       }
       if (!storeDir.exists()) {
         storeDir.mkdirs();
-      } else {
-        // attempt reload of the stored lookup
+      } else if (getStoreFile().exists()) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("attempt reload of the stored lookup from file " + getStoreFile());
+        }
         try {
           lookup.load(new FileInputStream(getStoreFile()));
         } catch (IOException e) {
@@ -155,7 +157,7 @@ public class SolrSuggester implements Accountable {
 
   /** Build the underlying Lucene Suggester */
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    LOG.info("build()");
+    LOG.info("build(" + name + ")");
 
     dictionary = dictionaryFactory.create(core, searcher);
     lookup.build(dictionary);
@@ -171,7 +173,7 @@ public class SolrSuggester implements Accountable {
 
   /** Reloads the underlying Lucene Suggester */
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    LOG.info("reload()");
+    LOG.info("reload(" + name + ")");
     if (dictionary == null && storeDir != null) {
       File lookupFile = getStoreFile();
       if (lookupFile.exists()) {
