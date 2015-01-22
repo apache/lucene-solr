@@ -28,35 +28,27 @@
     <!-- Set connectors                                              -->
     <!-- =========================================================== -->
 
-  <!--
+    <!-- Jetty will accept SSL connections using a self signed certificate,
+         and can optionally require the client to authenticate with a certificate,
+         which can be the same as the server certificate.
+         
+         For information about generating the SSL certificate, etc., see:
+          
+             https://cwiki.apache.org/confluence/display/solr/Enabling+SSL
+    -->
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
-            <Set name="maxIdleTime">50000</Set>
-            <Set name="Acceptors">2</Set>
-            <Set name="statsOn">false</Set>
-            <Set name="confidentialPort">8443</Set>
-	    <Set name="lowResourcesConnections">5000</Set>
-	    <Set name="lowResourcesMaxIdleTime">5000</Set>
-          </New>
-      </Arg>
-    </Call>
-  -->
-
-    <!-- This connector is currently being used for Solr because it
-          showed better performance than nio.SelectChannelConnector
-          for typical Solr requests.  -->
-    <Call name="addConnector">
-      <Arg>
-          <New class="org.eclipse.jetty.server.bio.SocketConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
-            <Set name="maxIdleTime">50000</Set>
-            <Set name="lowResourceMaxIdleTime">1500</Set>
-            <Set name="statsOn">false</Set>
-          </New>
+        <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+          <Arg>
+            <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
+              <Set name="keyStore"><SystemProperty name="jetty.home" default="."/>/etc/solr-ssl.keystore.jks</Set>
+              <Set name="keyStorePassword">secret</Set>
+              <Set name="needClientAuth"><SystemProperty name="jetty.ssl.clientAuth" default="false"/></Set>
+            </New>
+          </Arg>
+          <Set name="port"><SystemProperty name="jetty.ssl.port" default="8984"/></Set>
+          <Set name="maxIdleTime">30000</Set>
+        </New>
       </Arg>
     </Call>
 
