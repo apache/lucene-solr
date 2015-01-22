@@ -471,6 +471,9 @@ public class ZkStateReader implements Closeable {
             public DocCollection get() {
               return getCollectionLive(ZkStateReader.this, collName);
             }
+
+            @Override
+            public boolean isLazilyLoaded() { return true; }
           });
         }
       }

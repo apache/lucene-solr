@@ -794,6 +794,9 @@ Other Changes
 * SOLR-6976: Remove classes and methods deprecated in 4.x (Alan Woodward, Noble
   Paul, Chris Hostetter)
 
+* SOLR-6521: CloudSolrClient should synchronize cache cluster state loading
+    ( Noble Paul, Jessica Cheng Mallet)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
