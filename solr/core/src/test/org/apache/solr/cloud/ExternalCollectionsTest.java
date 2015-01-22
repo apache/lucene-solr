@@ -24,6 +24,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.BlobHandler;
+import org.apache.solr.handler.TestBlobHandler;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
@@ -69,6 +71,7 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     testZkNodeLocation();
+    testConfNameAndCollectionNameSame();
   }
 
 
@@ -76,6 +79,13 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   @Override
   protected int getStateFormat() {
     return 2;
+  }
+
+  private void testConfNameAndCollectionNameSame() throws Exception{
+    // .system collection precreates the configset
+
+    createCollection(".system", client, 2, 1);
+    waitForRecoveriesToFinish(".system", false);
   }
 
   private void testZkNodeLocation() throws Exception{
