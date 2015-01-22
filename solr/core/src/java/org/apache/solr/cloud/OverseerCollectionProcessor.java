@@ -1170,7 +1170,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   private void deleteCollection(ZkNodeProps message, NamedList results)
       throws KeeperException, InterruptedException {
-    String collection = message.getStr("name");
+    final String collection = message.getStr("name");
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
@@ -1190,7 +1190,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       boolean removed = false;
       while (System.nanoTime() < timeout) {
         Thread.sleep(100);
-        removed = !zkStateReader.getClusterState().hasCollection(message.getStr(collection));
+        removed = !zkStateReader.getClusterState().hasCollection(collection);
         if (removed) {
           Thread.sleep(500); // just a bit of time so it's more likely other
                              // readers see on return
@@ -1199,7 +1199,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
       if (!removed) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + message.getStr("name"));
+            "Could not fully remove collection: " + collection);
       }
       
     } finally {
