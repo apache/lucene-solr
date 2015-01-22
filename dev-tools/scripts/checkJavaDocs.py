@@ -80,8 +80,6 @@ def checkClassDetails(fullPath):
   Checks for invalid HTML in the full javadocs under each field/method.
   """
 
-  isAttributeSource = fullPath.endswith('AttributeSource.html')
-
   # TODO: only works with java7 generated javadocs now!
   with open(fullPath, encoding='UTF-8') as f:
     desc = None
@@ -90,15 +88,9 @@ def checkClassDetails(fullPath):
     errors = []
     for line in f.readlines():
 
-      if isAttributeSource:
-        # Work around Javadocs bug that fails to escape the <T> type parameter in {@link #getAttribute} and {@link #addAttribute}
-        line = line.replace('<code>getAttribute(java.lang.Class<T>)</code>', '<code>getAttribute(java.lang.Class)</code>')
-        line = line.replace('<code>addAttribute(java.lang.Class<T>)</code>', '<code>addAttribute(java.lang.Class)</code>')
-      
       m = reH3.search(line)
       if m is not None:
         if desc is not None:
-          # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
           desc = ''.join(desc)
           if True or cat == 'Constructor Detail':
             idx = desc.find('</div>')
@@ -108,6 +100,7 @@ def checkClassDetails(fullPath):
               continue
             desc = desc[:idx+6]
           else:
+            # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
             desc = '<ul>%s</ul>' % ''.join(desc)
           #print('  VERIFY %s: %s: %s' % (cat, item, desc))
           try:
@@ -123,7 +116,13 @@ def checkClassDetails(fullPath):
       if m is not None:
         if desc is not None:
           # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
-          desc = '<ul>%s</ul>' % ''.join(desc)
+          if cat == 'Element Detail':
+            desc = ''.join(desc)
+            idx = desc.find('</dl>')
+            if idx != -1:
+              desc = desc[:idx+5]
+          else:
+            desc = '<ul>%s</ul>' % ''.join(desc)
           #print('  VERIFY %s: %s: %s' % (cat, item, desc))
           try:
             verifyHTML(desc)
