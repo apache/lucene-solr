@@ -17,14 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util.TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
@@ -32,7 +32,9 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
   public void testEmpty() {
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
     PrefixCodedTerms pb = b.finish();
-    assertFalse(pb.iterator().hasNext());
+    TermIterator iter = pb.iterator();
+    assertTrue(iter.next());
+    assertNull(iter.field);
   }
   
   public void testOne() {
@@ -40,9 +42,12 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
     b.add(term);
     PrefixCodedTerms pb = b.finish();
-    Iterator<Term> iterator = pb.iterator();
-    assertTrue(iterator.hasNext());
-    assertEquals(term, iterator.next());
+    TermIterator iter = pb.iterator();
+    assertTrue(iter.next());
+    assertEquals("foo", iter.field);
+    assertEquals("bogus", iter.bytes.utf8ToString());
+    assertTrue(iter.next());
+    assertNull(iter.field);
   }
   
   public void testRandom() {
@@ -59,11 +64,23 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     }
     PrefixCodedTerms pb = b.finish();
     
+    TermIterator iter = pb.iterator();
     Iterator<Term> expected = terms.iterator();
-    for (Term t : pb) {
+    String field = "";
+    //System.out.println("TEST: now iter");
+    while (true) {
+      boolean newField = iter.next();
+      //System.out.println("  newField=" + newField);
+      if (newField) {
+        field = iter.field;
+        if (field == null) {
+          break;
+        }
+      }
       assertTrue(expected.hasNext());
-      assertEquals(expected.next(), t);
+      assertEquals(expected.next(), new Term(field, iter.bytes));
     }
+
     assertFalse(expected.hasNext());
   }
 
@@ -78,12 +95,15 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     PrefixCodedTerms.Builder b2 = new PrefixCodedTerms.Builder();
     b2.add(t2);
     PrefixCodedTerms pb2 = b2.finish();
-    
-    Iterator<Term> merged = new MergedIterator<>(pb1.iterator(), pb2.iterator());
-    assertTrue(merged.hasNext());
-    assertEquals(t1, merged.next());
-    assertTrue(merged.hasNext());
-    assertEquals(t2, merged.next());
+
+    MergedPrefixCodedTermsIterator merged = new MergedPrefixCodedTermsIterator(Arrays.asList(new PrefixCodedTerms[] {pb1, pb2}));
+    assertTrue(merged.next());
+    assertEquals("foo", merged.field());
+    assertEquals("a", merged.term().utf8ToString());
+    assertFalse(merged.next());
+    assertEquals("b", merged.term().utf8ToString());
+    assertTrue(merged.next());
+    assertNull(merged.field());
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -95,29 +115,49 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
       Set<Term> terms = new TreeSet<>();
       int nterms = TestUtil.nextInt(random(), 0, 10000);
       for (int j = 0; j < nterms; j++) {
-        Term term = new Term(TestUtil.randomUnicodeString(random(), 2), TestUtil.randomUnicodeString(random(), 4));
+        String field = TestUtil.randomUnicodeString(random(), 2);
+        //String field = TestUtil.randomSimpleString(random(), 2);
+        Term term = new Term(field, TestUtil.randomUnicodeString(random(), 4));
         terms.add(term);
       }
       superSet.addAll(terms);
     
       PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
+      //System.out.println("TEST: sub " + i + " has " + terms.size() + " terms");
       for (Term ref: terms) {
+        //System.out.println("  add " + ref.field() + " " + ref.bytes());
         b.add(ref);
       }
       pb[i] = b.finish();
     }
     
-    List<Iterator<Term>> subs = new ArrayList<>();
-    for (int i = 0; i < pb.length; i++) {
-      subs.add(pb[i].iterator());
-    }
-    
     Iterator<Term> expected = superSet.iterator();
-    Iterator<Term> actual = new MergedIterator<>(subs.toArray(new Iterator[0]));
-    while (actual.hasNext()) {
+
+    MergedPrefixCodedTermsIterator actual = new MergedPrefixCodedTermsIterator(Arrays.asList(pb));
+    String field = "";
+
+    BytesRef lastTerm = null;
+
+    while (true) {
+      if (actual.next()) {
+        field = actual.field();
+        if (field == null) {
+          break;
+        }
+        lastTerm = null;
+        //System.out.println("\nTEST: new field: " + field);
+      }
+      if (lastTerm != null && lastTerm.equals(actual.term())) {
+        continue;
+      }
+      //System.out.println("TEST: iter: field=" + field + " term=" + actual.term());
+      lastTerm = BytesRef.deepCopyOf(actual.term());
       assertTrue(expected.hasNext());
-      assertEquals(expected.next(), actual.next());
+
+      Term expectedTerm = expected.next();
+      assertEquals(expectedTerm, new Term(field, actual.term()));
     }
+
     assertFalse(expected.hasNext());
   }
 }

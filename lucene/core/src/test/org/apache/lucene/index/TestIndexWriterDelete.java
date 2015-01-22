@@ -789,7 +789,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       doc.add(newTextField("city", text[i], Field.Store.YES));
       modifier.addDocument(doc);
     }
-    // flush (and commit if ac)
+    // flush
 
     if (VERBOSE) {
       System.out.println("TEST: now full merge");
@@ -818,7 +818,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.deleteDocuments(term);
 
-    // add a doc (needed for the !ac case; see below)
+    // add a doc
     // doc remains buffered
 
     if (VERBOSE) {

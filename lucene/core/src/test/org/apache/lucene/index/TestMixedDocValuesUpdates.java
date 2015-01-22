@@ -50,7 +50,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     lmp.setMergeFactor(3); // merge often
     conf.setMergePolicy(lmp);
     IndexWriter writer = new IndexWriter(dir, conf);
-    
+
     final boolean isNRT = random.nextBoolean();
     DirectoryReader reader;
     if (isNRT) {
@@ -71,7 +71,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     int docID = 0;
     for (int i = 0; i < numRounds; i++) {
       int numDocs = atLeast(5);
-//      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
+      // System.out.println("TEST: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
         Document doc = new Document();
         doc.add(new StringField("id", "doc-" + docID, Store.NO));
@@ -95,8 +95,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       } else {
         writer.updateBinaryDocValue(new Term("key", "all"), updateField, TestBinaryDocValuesUpdates.toBytes(++fieldValues[fieldIdx]));
       }
-//      System.out.println("[" + Thread.currentThread().getName() + "]: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
-      
+      //System.out.println("TEST: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
+
       if (random.nextDouble() < 0.2) {
         int deleteDoc = random.nextInt(docID); // might also delete an already deleted document, ok!
         writer.deleteDocuments(new Term("id", "doc-" + deleteDoc));
@@ -137,9 +137,9 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + getValue(bdv, doc, scratch));
               assertTrue(docsWithField.get(doc));
               if (field < numNDVFields) {
-                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
+                assertEquals("invalid numeric value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.get(doc));
               } else {
-                assertEquals("invalid value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc));
+                assertEquals("invalid binary value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv, doc));
               }
             }
           }

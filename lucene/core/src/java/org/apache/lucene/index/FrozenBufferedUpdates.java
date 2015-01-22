@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -57,7 +58,7 @@ class FrozenBufferedUpdates {
   
   final int bytesUsed;
   final int numTermDeletes;
-  private long gen = -1; // assigned by BufferedDeletesStream once pushed
+  private long gen = -1; // assigned by BufferedUpdatesStream once pushed
   final boolean isSegmentPrivate;  // set to true iff this frozen packet represents 
                                    // a segment private deletes. in that case is should
                                    // only have Queries 
@@ -122,6 +123,7 @@ class FrozenBufferedUpdates {
   public void setDelGen(long gen) {
     assert this.gen == -1;
     this.gen = gen;
+    terms.setDelGen(gen);
   }
   
   public long delGen() {
@@ -129,13 +131,8 @@ class FrozenBufferedUpdates {
     return gen;
   }
 
-  public Iterable<Term> termsIterable() {
-    return new Iterable<Term>() {
-      @Override
-      public Iterator<Term> iterator() {
-        return terms.iterator();
-      }
-    };
+  public TermIterator termIterator() {
+    return terms.iterator();
   }
 
   public Iterable<QueryAndLimit> queriesIterable() {

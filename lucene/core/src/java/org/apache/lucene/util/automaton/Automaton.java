@@ -19,14 +19,21 @@ package org.apache.lucene.util.automaton;
 
 //import java.io.IOException;
 //import java.io.PrintWriter;
+
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Sorter;
+
+
 
 
 // TODO
@@ -47,7 +54,8 @@ import org.apache.lucene.util.Sorter;
  *
  * @lucene.experimental */
 
-public class Automaton {
+public class Automaton implements Accountable {
+
   /** Where we next write to the int[] states; this increments by 2 for
    *  each added state because we pack a pointer to the transitions
    *  array and a count of how many transitions leave the state.  */
@@ -839,5 +847,20 @@ public class Automaton {
         setAccept(newState, other.isAccept(s));
       }
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    // TODO: BitSet RAM usage (isAccept.size()/8) isn't fully accurate...
+    return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.sizeOf(states) + RamUsageEstimator.sizeOf(transitions) +
+      RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + (isAccept.size() / 8) + RamUsageEstimator.NUM_BYTES_OBJECT_REF +
+      2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF +
+      3 * RamUsageEstimator.NUM_BYTES_INT +
+      RamUsageEstimator.NUM_BYTES_BOOLEAN;
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 }

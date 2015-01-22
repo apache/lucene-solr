@@ -28,11 +28,10 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MergedIterator;
 
 class CoalescedUpdates {
   final Map<Query,Integer> queries = new HashMap<>();
-  final List<Iterable<Term>> iterables = new ArrayList<>();
+  final List<PrefixCodedTerms> terms = new ArrayList<>();
   final List<NumericDocValuesUpdate> numericDVUpdates = new ArrayList<>();
   final List<BinaryDocValuesUpdate> binaryDVUpdates = new ArrayList<>();
   int totalTermCount;
@@ -40,7 +39,7 @@ class CoalescedUpdates {
   @Override
   public String toString() {
     // note: we could add/collect more debugging information
-    return "CoalescedUpdates(termSets=" + iterables.size()
+    return "CoalescedUpdates(termSets=" + terms.size()
       + ",totalTermCount=" + totalTermCount
       + ",queries=" + queries.size() + ",numericDVUpdates=" + numericDVUpdates.size()
       + ",binaryDVUpdates=" + binaryDVUpdates.size() + ")";
@@ -48,7 +47,7 @@ class CoalescedUpdates {
 
   void update(FrozenBufferedUpdates in) {
     totalTermCount += in.termCount;
-    iterables.add(in.termsIterable());
+    terms.add(in.terms);
 
     for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {
       final Query query = in.queries[queryIdx];
@@ -68,18 +67,12 @@ class CoalescedUpdates {
     }
   }
 
- public Iterable<Term> termsIterable() {
-   return new Iterable<Term>() {
-     @SuppressWarnings({"unchecked","rawtypes"})
-     @Override
-     public Iterator<Term> iterator() {
-       Iterator<Term> subs[] = new Iterator[iterables.size()];
-       for (int i = 0; i < iterables.size(); i++) {
-         subs[i] = iterables.get(i).iterator();
-       }
-       return new MergedIterator<>(subs);
-     }
-   };
+  public FieldTermIterator termIterator() {
+    if (terms.size() == 1) {
+      return terms.get(0).iterator();
+    } else {
+      return new MergedPrefixCodedTermsIterator(terms);
+    }
   }
 
   public Iterable<QueryAndLimit> queriesIterable() {
