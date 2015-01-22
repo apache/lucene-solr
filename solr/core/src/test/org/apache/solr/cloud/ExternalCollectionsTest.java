@@ -77,8 +77,8 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
 
 
   @Override
-  protected int getStateFormat() {
-    return 2;
+  protected String getStateFormat() {
+    return "2";
   }
 
   private void testConfNameAndCollectionNameSame() throws Exception{
