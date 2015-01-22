@@ -602,10 +602,3 @@ For more information on Solr, check out the following resources:
     match the version of the reference guide with your version of Solr)
   * See also additional [Resources](http://lucene.apache.org/solr/resources.html)
 
-
-
-<a name="admin-collection"/>
-## Cores/collections in Solr Admin UI
-
-TBD: describe how the Cloud section is showing collection->shard->core details, whereas the drop-down in the left column
-is entirely core-specific.
