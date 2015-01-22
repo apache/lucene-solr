@@ -58,13 +58,24 @@
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
-    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
+    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005" else="">
       <isset property="example.debug"/>
     </condition>
-    <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <exec executable="${common-solr.dir}/bin/solr" failonerror="true">
-      <arg line="-e techproducts -p ${example.jetty.port} -m ${example.heap.size} -d ${server.dir} -a '${example.jvm.line}'"/>
+    <condition property="example.cmd" value="${common-solr.dir}/bin/solr.cmd" else="${common-solr.dir}/bin/solr">
+      <os family="windows"/>
+    </condition>
+    <exec executable="${example.cmd}" failonerror="true">
+      <arg value="-e"/>
+      <arg value="techproducts"/>
+      <arg value="-p"/>
+      <arg value="${example.jetty.port}"/>
+      <arg value="-m"/>
+      <arg value="${example.heap.size}"/>
+      <arg value="-d"/>
+      <arg file="${server.dir}"/>
+      <arg value="-a"/>
+      <arg value="${example.jvm.line}"/>
     </exec>
   </target>
  
