@@ -759,7 +759,7 @@ Other Changes
 
 * SOLR-7020: 'bin/solr start' should automatically use an SSL-enabled alternate jetty
   configuration file when in SSL mode, eliminating the need for manual jetty.xml edits.
- 
+  (Steve Rowe) 
 
 ==================  4.10.3 ==================
 
