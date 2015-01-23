@@ -536,6 +536,9 @@ Bug Fixes
 
 * SOLR-6847: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
   (shalin)
+  
+* SOLR-6856: Restore ExtractingRequestHandler's ability to capture all HTML tags when
+  parsing (X)HTML. (hossman, ehatcher, Steve Rowe)
 
 Optimizations
 ----------------------

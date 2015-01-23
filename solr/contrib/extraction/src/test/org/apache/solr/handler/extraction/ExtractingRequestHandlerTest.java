@@ -111,6 +111,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     //assertQ(req("+id:simple2 +t_content_type:[* TO *]"), "//*[@numFound='1']");
     assertQ(req("+id:simple2 +t_href:[* TO *]"), "//*[@numFound='1']");
     assertQ(req("+id:simple2 +t_abcxyz:[* TO *]"), "//*[@numFound='1']");
+    assertQ(req("+id:simple2 +t_content:serif"), "//*[@numFound='0']"); // make sure <style> content is excluded
+    assertQ(req("+id:simple2 +t_content:blur"), "//*[@numFound='0']"); // make sure <script> content is excluded
 
     // load again in the exact same way, but boost one field
     loadLocal("extraction/simple.html",
@@ -126,16 +128,6 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("t_href:http"), "//*[@numFound='2']");
     assertQ(req("t_href:http"), "//doc[1]/str[.='simple3']");
     assertQ(req("+id:simple3 +t_content_type:[* TO *]"), "//*[@numFound='1']");//test lowercase and then uprefix
-
-    // test capture
-     loadLocal("extraction/simple.html",
-      "literal.id","simple4",
-      "uprefix", "t_",
-      "capture","p",     // capture only what is in the title element
-      "commit", "true"
-    );
-    assertQ(req("+id:simple4 +t_content:Solr"), "//*[@numFound='1']");
-    assertQ(req("+id:simple4 +t_p:\"here is some text\""), "//*[@numFound='1']");
 
     loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
@@ -197,6 +189,33 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             );
   }
 
+  @Test
+  public void testCapture() throws Exception {
+    loadLocal("extraction/simple.html",
+        "literal.id","capture1",
+        "uprefix","t_",
+        "capture","div",
+        "fmap.div", "foo_t",
+        "commit", "true"
+    );
+    assertQ(req("+id:capture1 +t_content:Solr"), "//*[@numFound='1']");
+    assertQ(req("+id:capture1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
+
+    loadLocal("extraction/simple.html",
+        "literal.id", "capture2",
+        "captureAttr", "true",
+        "defaultField", "text",
+        "fmap.div", "div_t",
+        "fmap.a", "anchor_t",
+        "capture", "div",
+        "capture", "a",
+        "commit", "true"
+    );
+    assertQ(req("+id:capture2 +text:Solr"), "//*[@numFound='1']");
+    assertQ(req("+id:capture2 +div_t:\"here is some text in a div\""), "//*[@numFound='1']");
+    assertQ(req("+id:capture2 +anchor_t:http\\://www.apache.org"), "//*[@numFound='1']");
+    assertQ(req("+id:capture2 +anchor_t:link"), "//*[@numFound='1']");
+  }
 
   @Test
   public void testDefaultField() throws Exception {
@@ -476,14 +495,25 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     SolrQueryResponse rsp = loadLocal("extraction/example.html",
-            ExtractingParams.XPATH_EXPRESSION, "/xhtml:html/xhtml:body/xhtml:a/descendant:node()",
+            ExtractingParams.XPATH_EXPRESSION, "/xhtml:html/xhtml:body/xhtml:a/descendant::node()",
             ExtractingParams.EXTRACT_ONLY, "true"
     );
     assertTrue("rsp is null and it shouldn't be", rsp != null);
     NamedList list = rsp.getValues();
     String val = (String) list.get("example.html");
-    val = val.trim();
-    assertTrue(val + " is not equal to " + "linkNews", val.equals("linkNews") == true);//there are two <a> tags, and they get collapesd
+    assertEquals("News", val.trim()); //there is only one matching <a> tag
+
+    loadLocal("extraction/example.html",
+        "literal.id", "example1",
+        "captureAttr", "true",
+        "defaultField", "text",
+        "capture", "div",
+        "fmap.div", "foo_t",
+        "boost.foo_t", "3",
+        "xpath", "/xhtml:html/xhtml:body/xhtml:div//node()",
+        "commit", "true"
+    );
+    assertQ(req("+id:example1 +foo_t:\"here is some text in a div\""), "//*[@numFound='1']");
   }
 
   /** test arabic PDF extraction is functional */
