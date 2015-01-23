@@ -880,10 +880,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     class CollectionThread extends Thread {
       
-      private String name;
-
       public CollectionThread(String name) {
-        this.name = name;
+        super(name);
       }
       
       public void run() {
@@ -892,7 +890,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 1) + 1;
         
         for (int i = 0; i < cnt; i++) {
-          String collectionName = "awholynewstresscollection_" + name + "_" + i;
+          String collectionName = "awholynewstresscollection_" + getName() + "_" + i;
           int numShards = TestUtil.nextInt(random(), 0, getShardCount() * 2) + 1;
           int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
           int maxShardsPerNode = (((numShards * 2 * replicationFactor) / getCommonCloudSolrClient()
