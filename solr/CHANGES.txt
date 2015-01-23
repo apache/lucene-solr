@@ -82,6 +82,9 @@ New Features
 
 * SOLR-6845: Add a “buildOnStartup” option for suggesters. (Tomás Fernández Löbbe)
 
+* SOLR-6449: Add first class support for Real Time Get in Solrj.
+  (Anurag Sharma, Steve Davids via shalin)
+
 Other Changes
 ----------------------
 * SOLR-7014: Collapse identical catch branches in try-catch statements. (shalin)
