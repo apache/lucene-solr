@@ -39,8 +39,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,33 +65,14 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    if (VERBOSE || printLayoutOnTearDown) {
-      super.printLayout();
-    }
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
-  }
-
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(15);
 
     if (usually()) {

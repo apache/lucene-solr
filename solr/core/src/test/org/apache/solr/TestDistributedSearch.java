@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.Test;
 
 /**
  * TODO? perhaps use:
@@ -61,8 +62,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
 

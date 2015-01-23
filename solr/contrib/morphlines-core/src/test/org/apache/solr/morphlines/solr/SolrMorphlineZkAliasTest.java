@@ -33,6 +33,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
@@ -48,8 +49,9 @@ import java.util.Iterator;
 @Slow
 public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
 
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     
     waitForRecoveriesToFinish(false);
     

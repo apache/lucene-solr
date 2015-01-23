@@ -19,6 +19,7 @@ package org.apache.solr;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.junit.Test;
 
 /**
  * Tests sortMissingFirst and sortMissingLast in distributed sort
@@ -37,8 +38,8 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
   String string1_ml = "five_s1_ml"; // StringField, sortMissingLast=true, multiValued=false
   String string1_mf = "six_s1_mf";  // StringField, sortMissingFirst=true, multiValued=false
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     index();
     testSortMissingLast();
     testSortMissingFirst();

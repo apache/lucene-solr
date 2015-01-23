@@ -27,10 +27,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.kitesdk.morphline.api.Collector;
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.MorphlineContext;
@@ -61,9 +58,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   }
   
   public AbstractSolrMorphlineZkTestBase() {
-    fixShardCount = true;
     sliceCount = 3;
-    shardCount = 3;
+    fixShardCount(3);
   }
   
   @BeforeClass
@@ -76,9 +72,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   }
   
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("host", "127.0.0.1");
     System.setProperty("numShards", Integer.toString(sliceCount));
     uploadConfFiles();
@@ -86,17 +81,10 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   }
   
   @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("host");
     System.clearProperty("numShards");
-  }
-  
-  @Test
-  @Override
-  public void testDistribSearch() throws Exception {
-    super.testDistribSearch();
   }
   
   @Override

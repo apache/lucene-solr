@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Test for SuggestComponent's distributed querying
@@ -55,16 +56,6 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
   }
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
-  @Override
   public void validateControlData(QueryResponse control) throws Exception
   {    
     NamedList<Object> nl = control.getResponse();
@@ -74,10 +65,10 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     if(sc.size() == 0 && command == null) {
       Assert.fail("Control data did not return any suggestions or execute any command");
     }
-  } 
-  
-  @Override
-  public void doTest() throws Exception {
+  }
+
+  @Test
+  public void test() throws Exception {
     del("*:*");
     index(id, "1", "cat", "This is another title", "price", "10", "weight", "10");
     index(id, "2", "cat", "Yet another", "price", "15", "weight", "10");

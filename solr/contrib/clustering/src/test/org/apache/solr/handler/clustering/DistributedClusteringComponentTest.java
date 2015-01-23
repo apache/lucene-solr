@@ -20,6 +20,7 @@ package org.apache.solr.handler.clustering;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.Test;
 
 @SuppressSSL
 public class DistributedClusteringComponentTest extends
@@ -30,8 +31,8 @@ public class DistributedClusteringComponentTest extends
     return getFile("clustering/solr/collection1").getParent();
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     del("*:*");
     int numberOfDocs = 0;
     for (String[] doc : AbstractClusteringTestCase.DOCUMENTS) {
@@ -47,7 +48,7 @@ public class DistributedClusteringComponentTest extends
         CommonParams.Q, "*:*",
         CommonParams.SORT, id + " desc",
         ClusteringParams.USE_SEARCH_RESULTS, "true");
-    // destroy is not needed because tearDown method of base class does it.
+    // destroy is not needed because distribTearDown method of base class does it.
     //destroyServers();
   }
 

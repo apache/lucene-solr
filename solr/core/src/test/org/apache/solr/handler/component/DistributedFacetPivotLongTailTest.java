@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
 
 /**
  * test demonstrating how overrequesting helps finds top-terms in the "long tail" 
@@ -39,11 +40,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  */
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
   
-  public DistributedFacetPivotLongTailTest(){
-    this.fixShardCount = true;
-    this.shardCount = 3;
-  }
-
   private int docNumber = 0;
   
   public int getDocNum() {
@@ -51,8 +47,9 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     return docNumber;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
 
     final SolrClient shard0 = clients.get(0);
     final SolrClient shard1 = clients.get(1);

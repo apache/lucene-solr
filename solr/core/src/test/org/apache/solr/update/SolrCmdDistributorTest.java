@@ -48,6 +48,7 @@ import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -90,8 +91,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
     });
     
-    fixShardCount = true;
-    shardCount = 4;
     stress = 0;
   }
 
@@ -136,9 +135,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     shards = sb.toString();
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     del("*:*");
     
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
@@ -320,7 +320,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     cmdDistrib.finish();
 
-    assertEquals(shardCount, commits.get());
+    assertEquals(getShardCount(), commits.get());
     
     for (SolrClient c : clients) {
       NamedList<Object> resp = c.request(new LukeRequest());
@@ -517,14 +517,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
   
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     updateShardHandler.close();
-    super.tearDown();
+    super.distribTearDown();
   }
 
   private void testDistribOpenSearcher() {

@@ -38,8 +38,8 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
-import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -70,17 +70,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
-  
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     for (RestTestHarness r : restTestHarnesses) {
       r.close();
     }
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
 
     final int threadCount = 5;
     setupHarnesses();

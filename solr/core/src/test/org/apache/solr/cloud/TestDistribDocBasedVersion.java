@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,8 +54,6 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   public TestDistribDocBasedVersion() {
     schemaString = "schema15.xml";      // we need a string id
     super.sliceCount = 2;
-    super.shardCount = 4;
-    super.fixShardCount = true;  // we only want to test with exactly 2 slices.
 
 
     /***
@@ -87,8 +86,9 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
      ***/
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();
@@ -346,10 +346,4 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     req.setParams(params(reqParams));
     req.process(cloudClient);
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
 }

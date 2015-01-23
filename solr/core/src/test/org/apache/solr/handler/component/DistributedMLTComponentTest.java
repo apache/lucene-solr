@@ -20,8 +20,8 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.MoreLikeThisParams;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test for distributed MoreLikeThisComponent's 
@@ -38,29 +38,18 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
   public DistributedMLTComponentTest()
   {
-    fixShardCount=true;
-    shardCount=3;
     stress=0;
   }
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-
-  }
-
   @Override
-  public void setUp() throws Exception {
+  public void distribSetUp() throws Exception {
     requestHandlerName = "mltrh";
-    super.setUp();
+    super.distribSetUp();
   }
   
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");

@@ -33,8 +33,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -52,31 +51,15 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
 
   @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-
-    if (VERBOSE || printLayoutOnTearDown) {
-      super.printLayout();
-    }
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
 
     System.clearProperty("zkHost");
     System.clearProperty("numShards");
@@ -86,8 +69,8 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     DirectUpdateHandler2.commitOnClose = true;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(15);
 
     if (usually()) {

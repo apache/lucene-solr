@@ -30,8 +30,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -41,46 +40,28 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
   public DeleteShardTest() {
     super();
-    fixShardCount = true;
-    shardCount = 2;
     sliceCount = 2;
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", "2");
     System.setProperty("solr.xml.persist", "true");
   }
 
   @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-
-    if (VERBOSE || printLayoutOnTearDown) {
-      super.printLayout();
-    }
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
-
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
     System.clearProperty("solr.xml.persist");
   }
 
   // TODO: Custom hash slice deletion test
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
 
     Slice slice1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);

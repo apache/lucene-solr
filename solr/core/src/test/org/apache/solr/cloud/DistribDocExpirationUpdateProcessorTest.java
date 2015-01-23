@@ -26,6 +26,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory; // jdoc
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactoryTest;
 
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +53,8 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
     return configString;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     assertTrue("only one shard?!?!?!", 1 < shardToJetty.keySet().size());
     log.info("number of shards: {}", shardToJetty.keySet().size());
 

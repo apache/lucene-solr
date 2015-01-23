@@ -48,6 +48,7 @@ import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import org.junit.Test;
 
 @Slow
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
@@ -80,16 +81,16 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   public StressHdfsTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : random().nextInt(2) + 1;
+    fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
     testRestartIntoSafeMode = random().nextBoolean();
   }
   
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     
     int cnt = random().nextInt(2) + 1;
@@ -138,11 +139,11 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     int nShards;
     int maxReplicasPerNode;
     if (overshard) {
-      nShards = shardCount * 2;
+      nShards = getShardCount() * 2;
       maxReplicasPerNode = 8;
       rep = 1;
     } else {
-      nShards = shardCount / 2;
+      nShards = getShardCount() / 2;
       maxReplicasPerNode = 1;
       rep = 2;
       if (nShards == 0) nShards = 1;

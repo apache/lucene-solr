@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -36,14 +36,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     schemaString = "schema15.xml";      // we need a string id
   }
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
-  }
-
-  public void doTest() {
+  @Test
+  public void test() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());

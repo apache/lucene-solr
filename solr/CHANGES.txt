@@ -54,6 +54,10 @@ Other Changes
 * SOLR-6895: Deprecated SolrServer classes have been removed (Alan Woodward,
   Erik Hatcher)
 
+* SOLR-6902Use JUnit rules instead of inheritance with distributed Solr 
+  tests to allow for multiple tests without the same class.
+  (Ramkumar Aiyengar, Erick Erickson, Mike McCandless)
+  
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

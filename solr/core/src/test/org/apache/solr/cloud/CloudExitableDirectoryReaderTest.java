@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +44,8 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
     return configString;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     waitForRecoveriesToFinish(false);

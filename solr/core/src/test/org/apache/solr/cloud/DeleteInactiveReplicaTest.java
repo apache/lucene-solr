@@ -29,8 +29,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.net.URL;
 import java.util.Map;
@@ -41,22 +40,8 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 //@Ignore("Not currently valid see SOLR-5580")
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
 
-  @Override
-  public void doTest() throws Exception {
-    deleteInactiveReplicaTest();
-  }
-
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
-  private void deleteInactiveReplicaTest() throws Exception {
+  @Test
+  public void deleteInactiveReplicaTest() throws Exception {
     CloudSolrClient client = createCloudClient(null);
 
     String collectionName = "delDeadColl";
