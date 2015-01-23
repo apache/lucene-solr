@@ -26,7 +26,7 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
-import org.junit.After;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,21 +57,17 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     }
   }
 
-  @After
-  public void testDown() throws Exception {
-    super.tearDown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     for (RestTestHarness r : restTestHarnesses) {
       r.close();
     }
   }
 
-  @Override
-  public void doTest() throws Exception {
-   setupHarnesses();
-   dynamicLoading();
-  }
-
-  private void dynamicLoading() throws Exception {
+  @Test
+  public void testDynamicLoading() throws Exception {
+    setupHarnesses();
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandler' , 'lib':'test','version':'1'}\n" +
         "}";

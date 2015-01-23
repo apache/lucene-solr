@@ -29,7 +29,7 @@ import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Before;
+import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,11 +49,10 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
-  @Before
   @Override
-  public void setUp() throws Exception {
+  public void distribSetUp() throws Exception {
 
-    super.setUp();
+    super.distribSetUp();
 
     useJettyDataDir = false;
 
@@ -70,10 +69,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
 
   public TestCloudSchemaless() {
     schemaString = "schema-add-schema-fields-update-processor.xml";
-    fixShardCount = true;
-
     sliceCount = 4;
-    shardCount = 8;
   }
 
   @BeforeClass
@@ -122,8 +118,9 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     return expectedAddFields;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 8)
+  public void test() throws Exception {
     setupHarnesses();
 
     // First, add a bunch of documents in a single update with the same new field.

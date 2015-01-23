@@ -34,7 +34,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
+import org.junit.Test;
 
 
 public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
@@ -43,15 +43,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   public TestRebalanceLeaders() {
     schemaString = "schema15.xml";      // we need a string id
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    fixShardCount = true;
     sliceCount = 4;
-    shardCount = 4;
-    super.setUp();
   }
 
   int reps = 10;
@@ -61,8 +53,9 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   Map<String, Replica> expected = new HashMap<>();
 
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     CloudSolrClient client = createCloudClient(null);
     reps = random().nextInt(9) + 1; // make sure and do at least one.
     try {

@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -37,13 +38,9 @@ import java.util.List;
  */
 public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearchTestCase {
 
-  public DistributedFacetPivotSmallAdvancedTest() {
-    this.fixShardCount = true;
-    this.shardCount = 2;
-  }
-
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
 
     del("*:*");
     final SolrClient shard0 = clients.get(0);

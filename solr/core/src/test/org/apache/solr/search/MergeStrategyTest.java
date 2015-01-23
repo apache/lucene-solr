@@ -21,13 +21,12 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.Arrays;
 
@@ -39,8 +38,6 @@ import java.util.Arrays;
 public class MergeStrategyTest extends BaseDistributedSearchTestCase {
 
   public MergeStrategyTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
   }
 
@@ -49,8 +46,9 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
     initCore("solrconfig-plugcollector.xml", "schema15.xml");
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     del("*:*");
 
     index_specific(0,"id","1", "sort_i", "5");

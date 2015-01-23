@@ -21,12 +21,10 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Iterator;
 
@@ -38,8 +36,6 @@ import java.util.Iterator;
 public class DistributedExpandComponentTest extends BaseDistributedSearchTestCase {
 
   public DistributedExpandComponentTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
   }
 
@@ -48,8 +44,9 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     initCore("solrconfig-collapseqparser.xml", "schema11.xml");
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     final String group = (random().nextBoolean() ? "group_s" : "group_s_dv");
     
     del("*:*");

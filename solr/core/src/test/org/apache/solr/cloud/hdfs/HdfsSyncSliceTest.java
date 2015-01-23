@@ -23,7 +23,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.SyncSliceTest;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
@@ -46,14 +45,7 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
 
-  
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);

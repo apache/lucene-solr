@@ -49,6 +49,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
@@ -80,10 +81,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     dfsCluster = null;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     useJettyDataDir = false;
     System.setProperty("solr.xml.persist", "true");
   }
@@ -94,18 +94,16 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   
   public SharedFSAutoReplicaFailoverTest() {
-    fixShardCount = true;
-    
     sliceCount = 2;
-    shardCount = 4;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     checkCreatedVsState = false;
     
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     try {
       testBasics();
     } finally {
@@ -238,8 +236,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   }
   
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("solr.xml.persist");
   }
 }

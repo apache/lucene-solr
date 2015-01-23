@@ -71,9 +71,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.hadoop.hack.MiniMRClientCluster;
 import org.apache.solr.hadoop.hack.MiniMRClientClusterFactory;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -120,10 +118,9 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     this.inputAvroFile1 = "sample-statuses-20120521-100919.avro";
     this.inputAvroFile2 = "sample-statuses-20120906-141433.avro";
     this.inputAvroFile3 = "sample-statuses-20120906-141433-medium.avro";
-    
-    fixShardCount = true;
+
     sliceCount = TEST_NIGHTLY ? 7 : 3;
-    shardCount = TEST_NIGHTLY ? 7 : 3;
+    fixShardCount(TEST_NIGHTLY ? 7 : 3);
   }
   
   @BeforeClass
@@ -197,9 +194,8 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   }
   
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("host", "127.0.0.1");
     System.setProperty("numShards", Integer.toString(sliceCount));
     URI uri = dfsCluster.getFileSystem().getUri();
@@ -208,9 +204,8 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   }
   
   @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("host");
     System.clearProperty("numShards");
     System.clearProperty("solr.hdfs.home");
@@ -240,12 +235,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private JobConf getJobConf() throws IOException {
     JobConf jobConf = new JobConf(mrCluster.getConfig());
     return jobConf;
-  }
-  
-  @Test
-  @Override
-  public void testDistribSearch() throws Exception {
-    super.testDistribSearch();
   }
   
   @Test
@@ -350,9 +339,9 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     };
     return concat(head, args); 
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     
     waitForRecoveriesToFinish(false);
     
@@ -691,7 +680,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   }
 
   private void getShardUrlArgs(List<String> args) {
-    for (int i = 0; i < shardCount; i++) {
+    for (int i = 0; i < getShardCount(); i++) {
       args.add("--shard-url");
       args.add(cloudJettys.get(i).url);
     }

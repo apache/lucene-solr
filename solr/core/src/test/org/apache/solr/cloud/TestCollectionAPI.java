@@ -33,7 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 
@@ -54,16 +54,14 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    fixShardCount = true;
+  public void distribSetUp() throws Exception {
     sliceCount = 2;
-    shardCount = 2;
-    super.setUp();
+    super.distribSetUp();
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
     CloudSolrClient client = createCloudClient(null);
     try {
       createCollection(null, COLLECTION_NAME, 2, 2, 2, client, null, "conf1");

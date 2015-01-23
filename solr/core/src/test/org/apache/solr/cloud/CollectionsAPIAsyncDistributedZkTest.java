@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -40,10 +40,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   private static final int MAX_TIMEOUT_SECONDS = 60;
   private static final boolean DEBUG = false;
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
 
     useJettyDataDir = false;
 
@@ -52,23 +51,12 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   }
 
   public CollectionsAPIAsyncDistributedZkTest() {
-    fixShardCount = true;
-
     sliceCount = 1;
-    shardCount = 1;
   }
 
-  @Override
-  public void doTest() throws Exception {
-
-    testSolrJAPICalls();
-
-    if (DEBUG) {
-      super.printLayout();
-    }
-  }
-
-  private void testSolrJAPICalls() throws Exception {
+  @Test
+  @ShardsFixed(num = 1)
+  public void testSolrJAPICalls() throws Exception {
     SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
     try {
       Create createCollectionRequest = new Create();
@@ -115,6 +103,10 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     } finally {
       client.shutdown();
     }
+
+    if (DEBUG) {
+      printLayout();
+    }
   }
 
   private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
@@ -141,10 +133,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

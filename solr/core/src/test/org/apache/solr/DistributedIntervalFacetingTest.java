@@ -10,6 +10,7 @@ import org.apache.solr.client.solrj.response.IntervalFacet.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,8 +38,8 @@ public class DistributedIntervalFacetingTest extends
     configString = "solrconfig-basic.xml";
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     del("*:*");
     commit();
     testRandom();

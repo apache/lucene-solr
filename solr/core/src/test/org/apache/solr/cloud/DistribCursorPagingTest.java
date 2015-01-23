@@ -37,6 +37,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.search.CursorMark; //jdoc
 
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +70,8 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     return configString;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();

@@ -22,18 +22,15 @@ import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Test;
 
 import java.util.List;
 
 public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTestCase {
 
-  public DistributedFacetPivotWhiteBoxTest() {
-    this.fixShardCount = true;
-    this.shardCount = 4;
-  }
-
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
 
     del("*:*");
 

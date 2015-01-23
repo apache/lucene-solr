@@ -27,30 +27,22 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   private CloudSolrClient client;
 
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-
-  }
-
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
     client = createCloudClient(null);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     client.shutdown();
   }
 
@@ -59,17 +51,13 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   }
 
   public ExternalCollectionsTest() {
-    fixShardCount = true;
-
-    sliceCount = 2;
-    shardCount = 4;
-
     checkCreatedVsState = false;
   }
 
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     testZkNodeLocation();
     testConfNameAndCollectionNameSame();
   }

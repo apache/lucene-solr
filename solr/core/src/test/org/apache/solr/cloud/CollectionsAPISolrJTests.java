@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,9 +50,9 @@ import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossColl
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     testCreateAndDeleteCollection();
     testCreateAndDeleteShard();
     testReloadCollection();
@@ -65,19 +66,6 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     testList();
     testAddAndDeleteReplicaProp();
     testBalanceShardUnique();
-  }
-
-  public void tearDown() throws Exception {
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
   }
 
   protected void testCreateAndDeleteCollection() throws Exception {

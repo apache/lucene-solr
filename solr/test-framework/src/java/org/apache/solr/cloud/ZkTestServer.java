@@ -424,7 +424,7 @@ public class ZkTestServer {
 
   public void run() throws InterruptedException {
     log.info("STARTING ZK TEST SERVER");
-    // we don't call super.setUp
+    // we don't call super.distribSetUp
     zooThread = new Thread() {
       
       @Override

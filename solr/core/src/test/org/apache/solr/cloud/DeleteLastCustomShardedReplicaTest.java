@@ -27,9 +27,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -51,18 +50,17 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
 
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
     client = createCloudClient(null);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     client.shutdown();
   }
 
@@ -71,16 +69,13 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
   }
 
   public DeleteLastCustomShardedReplicaTest() {
-    fixShardCount = true;
-
     sliceCount = 2;
-    shardCount = 2;
-
     checkCreatedVsState = false;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
     int replicationFactor = 1;
     int maxShardsPerNode = 5;
 

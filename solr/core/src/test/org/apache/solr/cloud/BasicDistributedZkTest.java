@@ -50,8 +50,8 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -106,20 +106,16 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   public static void beforeThisClass2() throws Exception {
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
 
   
   public BasicDistributedZkTest() {
-    fixShardCount = true;
-    
     sliceCount = 2;
-    shardCount = 4;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     
@@ -133,7 +129,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount; i++) {
+      for (int i = 0; i < getShardCount(); i++) {
         if (i > 0)
           sb.append(',');
         sb.append("shard" + (i + 3));
@@ -141,9 +137,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       params.set("shards", sb.toString());
     }
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     // setLoggingLevel(null);
 
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -1160,8 +1157,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     if (commondCloudSolrClient != null) {
       commondCloudSolrClient.shutdown();
     }
@@ -1175,9 +1172,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     otherCollectionClients = null;
     List<Runnable> tasks = executor.shutdownNow();
     assertTrue(tasks.isEmpty());
-    
+
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

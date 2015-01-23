@@ -47,7 +47,7 @@ import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
+import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -71,16 +71,16 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     }
   }
   
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     for (RestTestHarness h : restTestHarnesses) {
       h.close();
     }
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     setupHarnesses();
     try {
       reloadTest();

@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -49,8 +50,6 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   public ShardRoutingTest() {
     schemaString = "schema15.xml";      // we need a string id
     super.sliceCount = 4;
-    super.shardCount = 8;
-    super.fixShardCount = true;  // we only want to test with exactly 4 slices.
 
     // from negative to positive, the upper bits of the hash ranges should be
     // shard1: top bits:10  80000000:bfffffff
@@ -92,8 +91,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
      ***/
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 8)
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();

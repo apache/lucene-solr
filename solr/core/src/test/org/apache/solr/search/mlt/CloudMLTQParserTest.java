@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,6 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
   static Logger log = LoggerFactory.getLogger(CloudMLTQParserTest.class);
   
   public CloudMLTQParserTest() {
-    fixShardCount = true;
-    shardCount = 2;
     sliceCount = 2;
     
     configString = "solrconfig.xml";
@@ -47,8 +46,10 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
   protected String getCloudSolrConfig() {
     return configString;
   }
-  
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
     
     waitForRecoveriesToFinish(false);
 

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.junit.Test;
 
 /**
  * Test for TermsComponent distributed querying
@@ -27,8 +28,8 @@ import org.apache.solr.BaseDistributedSearchTestCase;
  */
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     del("*:*");
     index(id, 18, "b_t", "snake spider shark snail slug seal");
     index(id, 19, "b_t", "snake spider shark snail slug");

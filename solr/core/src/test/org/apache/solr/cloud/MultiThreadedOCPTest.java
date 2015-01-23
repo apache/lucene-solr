@@ -30,7 +30,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +49,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int NUM_COLLECTIONS = 4;
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
 
     useJettyDataDir = false;
 
@@ -61,13 +60,12 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   public MultiThreadedOCPTest() {
-    fixShardCount = true;
     sliceCount = 2;
-    shardCount = 4;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
 
     testParallelCollectionAPICalls();
     testTaskExclusivity();
@@ -311,10 +309,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

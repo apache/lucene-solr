@@ -26,6 +26,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,9 +48,9 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   protected String getCloudSolrConfig() {
     return "solrconfig-managed-schema.xml";
   }
-      
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
     QueryRequest request = new QueryRequest(params);

@@ -21,8 +21,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,29 +35,25 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   private static final long MAX_WAIT_TIME = TimeUnit.NANOSECONDS.convert(300, TimeUnit.SECONDS);
 
   public RollingRestartTest() {
-    fixShardCount = true;
     sliceCount = 2;
-    shardCount = TEST_NIGHTLY ? 16 : 2;
+    fixShardCount(TEST_NIGHTLY ? 16 : 2);
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     useFactory("solr.StandardDirectoryFactory");
   }
 
   @Override
-  @After
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     System.clearProperty("numShards");
-    super.tearDown();
-    resetExceptionIgnores();
+    super.distribTearDown();
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForRecoveriesToFinish(false);
 
     restartWithRolesTest();
@@ -75,11 +70,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     cloudClient.getZkStateReader().getZkClient().printLayoutToStdOut();
 
     int numDesignateOverseers = TEST_NIGHTLY ? 16 : 2;
-    numDesignateOverseers = Math.max(shardCount, numDesignateOverseers);
+    numDesignateOverseers = Math.max(getShardCount(), numDesignateOverseers);
     List<String> designates = new ArrayList<>();
     List<CloudJettyRunner> designateJettys = new ArrayList<>();
     for (int i = 0; i < numDesignateOverseers; i++) {
-      int n = random().nextInt(shardCount);
+      int n = random().nextInt(getShardCount());
       String nodeName = cloudJettys.get(n).nodeName;
       log.info("Chose {} as overseer designate", nodeName);
       invokeCollectionApi(CollectionParams.ACTION, CollectionParams.CollectionAction.ADDROLE.toLower(), "role", "overseer", "node", nodeName);

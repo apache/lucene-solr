@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,14 +48,12 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
   public TriLevelCompositeIdRoutingTest() {
     schemaString = "schema15.xml";      // we need a string id
-    super.sliceCount = TEST_NIGHTLY ? 12 : 2;             // a lot of slices for more ranges and buckets
-    super.shardCount = TEST_NIGHTLY ? 24 : 3;
-    super.fixShardCount = true;
-
+    sliceCount = TEST_NIGHTLY ? 12 : 2;             // a lot of slices for more ranges and buckets
+    fixShardCount(TEST_NIGHTLY ? 24 : 3);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();
@@ -73,7 +72,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
       }
     }
   }
-
 
   private void doTriLevelHashingTest() throws Exception {
     log.info("### STARTING doTriLevelHashingTest");
@@ -153,10 +151,4 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
   private String getKey(String id) {
     return id.substring(0, id.lastIndexOf('!'));
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
 }

@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.Test;
 
 /**
  * Tests leader-initiated recovery scenarios after a leader node fails
@@ -42,8 +43,8 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
   }
 
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(30000);
 
     // kill a leader and make sure recovery occurs as expected

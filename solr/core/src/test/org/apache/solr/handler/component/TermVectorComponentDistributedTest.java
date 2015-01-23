@@ -22,6 +22,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.TermVectorParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
   @BeforeClass
@@ -30,8 +31,8 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
                 Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);

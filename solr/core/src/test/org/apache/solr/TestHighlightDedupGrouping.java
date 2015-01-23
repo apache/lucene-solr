@@ -18,10 +18,10 @@
 package org.apache.solr;
 
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -35,14 +35,9 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   private static final String group_ti1 = "group_ti1";
   private static final String shard_i1 = "shard_i1";
 
-  public TestHighlightDedupGrouping() {
-    super();
-    fixShardCount = true;
-    shardCount = 2;
-  }
-
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
     basicTest();
     randomizedTest();
   }
@@ -57,7 +52,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
     int docid = 1;
     int group = 5;
-    for (int shard = 0 ; shard < shardCount ; ++shard) {
+    for (int shard = 0 ; shard < getShardCount(); ++shard) {
       addDoc(docid, group, shard); // add the same doc to both shards
       clients.get(shard).commit();
     }
@@ -67,7 +62,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
          "shards",      shards,
          "group",       "true",
          "group.field", id_s1,
-         "group.limit", Integer.toString(shardCount),
+         "group.limit", Integer.toString(getShardCount()),
          "hl",          "true",
          "hl.fl",       id_s1
         ));
@@ -93,15 +88,15 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
       ++docsInGroup[group];
       boolean makeDuplicate = 0 == TestUtil.nextInt(random(), 0, numDocs / percentDuplicates);
       if (makeDuplicate) {
-        for (int shard = 0 ; shard < shardCount ; ++shard) {
+        for (int shard = 0 ; shard < getShardCount(); ++shard) {
           addDoc(docid, group, shard);
         }
       } else {
-        int shard = TestUtil.nextInt(random(), 0, shardCount - 1);
+        int shard = TestUtil.nextInt(random(), 0, getShardCount() - 1);
         addDoc(docid, group, shard);
       }
     }
-    for (int shard = 0 ; shard < shardCount ; ++shard) {
+    for (int shard = 0 ; shard < getShardCount(); ++shard) {
       clients.get(shard).commit();
     }
 

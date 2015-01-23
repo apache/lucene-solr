@@ -60,8 +60,8 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests the Custom Sharding API.
@@ -84,10 +84,9 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   public static void beforeThisClass2() throws Exception {
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
@@ -98,10 +97,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
   public CustomCollectionTest() {
-    fixShardCount = true;
-
     sliceCount = 2;
-    shardCount = 4;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     checkCreatedVsState = false;
@@ -116,7 +112,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount; i++) {
+      for (int i = 0; i < getShardCount(); i++) {
         if (i > 0)
           sb.append(',');
         sb.append("shard" + (i + 3));
@@ -125,8 +121,9 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     testCustomCollectionsAPI();
     testRouteFieldForHashRouter();
     testCreateShardRepFactor();
@@ -492,10 +489,9 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
 
     // insurance

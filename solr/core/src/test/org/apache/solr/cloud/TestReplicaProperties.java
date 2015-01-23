@@ -36,7 +36,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
+import org.junit.Test;
 
 @Slow
 public class TestReplicaProperties extends ReplicaPropertiesBase {
@@ -45,19 +45,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   public TestReplicaProperties() {
     schemaString = "schema15.xml";      // we need a string id
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    fixShardCount = true;
     sliceCount = 2;
-    shardCount = 4;
-    super.setUp();
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     CloudSolrClient client = createCloudClient(null);
     try {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.

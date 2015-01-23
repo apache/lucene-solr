@@ -40,6 +40,7 @@ import org.apache.solr.store.blockcache.Cache;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,15 +78,15 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   public HdfsWriteToMultipleCollectionsTest() {
     super();
     sliceCount = 1;
-    shardCount = 3;
+    fixShardCount(3);
   }
   
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     int docCount = random().nextInt(1313) + 1;
     int cnt = random().nextInt(4) + 1;
     for (int i = 0; i < cnt; i++) {

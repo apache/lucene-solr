@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,6 +36,7 @@ import org.apache.commons.lang.StringUtils;
 
 import org.junit.BeforeClass;
 
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,8 +94,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
 
     sanityCheckAssertDoubles();
 

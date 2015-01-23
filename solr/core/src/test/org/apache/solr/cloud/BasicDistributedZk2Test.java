@@ -38,6 +38,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.ReplicationHandler;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -58,21 +59,12 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
   public BasicDistributedZk2Test() {
     super();
-    fixShardCount = true;
-    
     sliceCount = 2;
-    shardCount = 4;
   }
   
-  /*
-   * (non-Javadoc)
-   * 
-   * @see org.apache.solr.BaseDistributedSearchTestCase#doTest()
-   * 
-   * Create 3 shards, each with one replica
-   */
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();

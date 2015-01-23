@@ -36,8 +36,8 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +54,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
 
   public TestCloudManagedSchemaConcurrent() {
     super();
-    fixShardCount = true;
-
     sliceCount = 4;
-    shardCount = 8;
   }
 
   @BeforeClass
@@ -65,10 +62,10 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "true");
   }
-  
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     for (RestTestHarness h : restTestHarnesses) {
       h.close();
     }
@@ -245,10 +242,11 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
 
     return expectedAddFieldTypes;
   }
-  
 
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 8)
+  public void test() throws Exception {
     verifyWaitForSchemaUpdateToPropagate();
     setupHarnesses();
     concurrentOperationsTest();

@@ -32,6 +32,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -57,16 +58,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     useFactory(null); // need an FS factory
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
   private void q(Object... q) throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -95,9 +86,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
       Assert.fail("Control data did not return any suggestions.");
     }
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");

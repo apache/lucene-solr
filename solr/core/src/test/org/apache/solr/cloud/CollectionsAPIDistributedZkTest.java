@@ -57,8 +57,8 @@ import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -117,10 +117,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     
     useJettyDataDir = false;
 
@@ -161,10 +160,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   
   public CollectionsAPIDistributedZkTest() {
-    fixShardCount = true;
-    
     sliceCount = 2;
-    shardCount = 4;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     checkCreatedVsState = false;
@@ -179,7 +175,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount; i++) {
+      for (int i = 0; i < getShardCount(); i++) {
         if (i > 0)
           sb.append(',');
         sb.append("shard" + (i + 3));
@@ -187,9 +183,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       params.set("shards", sb.toString());
     }
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     testNodesUsedByCreate();
     testCollectionsAPI();
     testCollectionsAPIAddRemoveStress();
@@ -600,7 +597,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 1) + 1;
     
     for (int i = 0; i < cnt; i++) {
-      int numShards = TestUtil.nextInt(random(), 0, shardCount) + 1;
+      int numShards = TestUtil.nextInt(random(), 0, getShardCount()) + 1;
       int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
       int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrClient()
           .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
@@ -894,7 +891,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         
         for (int i = 0; i < cnt; i++) {
           String collectionName = "awholynewstresscollection_" + getName() + "_" + i;
-          int numShards = TestUtil.nextInt(random(), 0, shardCount * 2) + 1;
+          int numShards = TestUtil.nextInt(random(), 0, getShardCount() * 2) + 1;
           int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
           int maxShardsPerNode = (((numShards * 2 * replicationFactor) / getCommonCloudSolrClient()
               .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
@@ -1200,10 +1197,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
   
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
 
     // insurance

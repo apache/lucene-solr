@@ -32,16 +32,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import junit.framework.AssertionFailedError;
+import org.junit.Test;
 
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
-  
-  public DistributedFacetPivotSmallTest() {
-    this.fixShardCount = true;
-    this.shardCount = 4;
-  }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     
     del("*:*");
 

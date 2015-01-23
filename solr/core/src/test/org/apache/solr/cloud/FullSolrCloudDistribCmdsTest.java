@@ -39,6 +39,7 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,13 +59,12 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   
   public FullSolrCloudDistribCmdsTest() {
     super();
-    fixShardCount = true;
-    shardCount = 6;
     sliceCount = 3;
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 6)
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     
@@ -497,11 +497,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private QueryResponse query(SolrClient client) throws SolrServerException {
     SolrQuery query = new SolrQuery("*:*");
     return client.query(query);
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
   }
   
   protected SolrInputDocument addRandFields(SolrInputDocument sdoc) {

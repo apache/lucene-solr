@@ -39,12 +39,19 @@ import org.apache.solr.schema.TrieDateField;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +69,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Helper base class for distributed search test cases
+ *
+ * By default, all tests in sub-classes will be executed with
+ * 1, 2, ... DEFAULT_MAX_SHARD_COUNT number of shards set up repeatedly.
+ *
+ * In general, it's preferable to annotate the tests in sub-classes with a
+ * {@literal @}ShardsFixed(num = N) or a {@literal @}ShardsRepeat(min = M, max = N)
+ * to indicate whether the test should be called once, with a fixed number of shards,
+ * or called repeatedly for number of shards = M to N.
+ *
+ * In some cases though, if the number of shards has to be fixed, but the number
+ * itself is dynamic, or if it has to be set as a default for all sub-classes
+ * of a sub-class, there's a fixShardCount(N) available, which is identical to
+ * {@literal @}ShardsFixed(num = N) for all tests without annotations in that class
+ * hierarchy. Ideally this function should be retired in favour of better annotations..
  *
  * @since solr 1.5
  */
@@ -174,16 +195,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                                      "[ff01::213]:33332" + context};
   }
 
-  protected int shardCount = 4;      // the actual number of solr cores that will be created in the cluster
+  private final static int DEFAULT_MAX_SHARD_COUNT = 3;
 
-  /**
-   * Sub classes can set this flag in their constructor to true if they
-   * want to fix the number of shards to 'shardCount'
-   *
-   * The default is false which means that test will be executed with
-   * 1, 2, 3, ....shardCount number of shards repeatedly
-   */
-  protected boolean fixShardCount = false;
+  private int shardCount = -1;      // the actual number of solr cores that will be created in the cluster
+  public int getShardCount() {
+    return shardCount;
+  }
+
+  private boolean isShardCountFixed = false;
+
+  public void fixShardCount(int count) {
+    isShardCountFixed = true;
+    shardCount = count;
+  }
 
   protected JettySolrRunner controlJetty;
   protected List<SolrClient> clients = new ArrayList<>();
@@ -245,13 +269,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public static RandVal rdate = new RandDate();
 
-  /**
-   * Perform the actual tests here
-   *
-   * @throws Exception on error
-   */
-  public abstract void doTest() throws Exception;
-
   public static String[] fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
   public static RandVal[] randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
 
@@ -270,20 +287,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public String getSolrHome() {
     return SolrTestCaseJ4.TEST_HOME();
   }
-  
-  @Override
-  public void setUp() throws Exception {
+
+  private boolean distribSetUpCalled = false;
+  public void distribSetUp() throws Exception {
+    distribSetUpCalled = true;
     SolrTestCaseJ4.resetExceptionIgnores();  // ignore anything with ignore_exception in it
-    super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     testDir = createTempDir().toFile();
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  private boolean distribTearDownCalled = false;
+  public void distribTearDown() throws Exception {
+    distribTearDownCalled = true;
     destroyServers();
-    super.tearDown();
   }
 
   protected JettySolrRunner createControlJetty() throws Exception {
@@ -870,22 +887,106 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     compareSolrResponses(a, b);
   }
 
-  @Test
-  public void testDistribSearch() throws Exception {
-    if (fixShardCount) {
-      createServers(shardCount);
-      RandVal.uniqueValues = new HashSet(); //reset random values
-      doTest();
-      destroyServers();
-    } else {
-      for (int nServers = 1; nServers < shardCount; nServers++) {
-        createServers(nServers);
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public @interface ShardsRepeat {
+    public abstract int min() default 1;
+    public abstract int max() default DEFAULT_MAX_SHARD_COUNT;
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public @interface ShardsFixed {
+    public abstract int num();
+  }
+
+  public class ShardsRepeatRule implements TestRule {
+
+    private abstract class ShardsStatement extends Statement {
+      abstract protected void callStatement() throws Throwable;
+
+      @Override
+      public void evaluate() throws Throwable {
+        distribSetUp();
+        if (! distribSetUpCalled) {
+          Assert.fail("One of the overrides of distribSetUp does not propagate the call.");
+        }
+        try {
+          callStatement();
+        } finally {
+          distribTearDown();
+          if (! distribTearDownCalled) {
+            Assert.fail("One of the overrides of distribTearDown does not propagate the call.");
+          }
+        }
+      }
+    }
+
+    private class ShardsFixedStatement extends ShardsStatement {
+
+      private final int numShards;
+      private final Statement statement;
+
+      private ShardsFixedStatement(int numShards, Statement statement) {
+        this.numShards = numShards;
+        this.statement = statement;
+      }
+
+      @Override
+      public void callStatement() throws Throwable {
+        fixShardCount(numShards);
+        createServers(numShards);
         RandVal.uniqueValues = new HashSet(); //reset random values
-        doTest();
+        statement.evaluate();
         destroyServers();
       }
     }
+
+    private class ShardsRepeatStatement extends ShardsStatement {
+
+      private final int min;
+      private final int max;
+      private final Statement statement;
+
+      private ShardsRepeatStatement(int min, int max, Statement statement) {
+        this.min = min;
+        this.max = max;
+        this.statement = statement;
+      }
+
+      @Override
+      public void callStatement() throws Throwable {
+        for (shardCount = min; shardCount <= max; shardCount++) {
+          createServers(shardCount);
+          RandVal.uniqueValues = new HashSet(); //reset random values
+          statement.evaluate();
+          destroyServers();
+        }
+      }
+    }
+
+    @Override
+    public Statement apply(Statement statement, Description description) {
+      ShardsFixed fixed = description.getAnnotation(ShardsFixed.class);
+      ShardsRepeat repeat = description.getAnnotation(ShardsRepeat.class);
+      if (fixed != null && repeat != null) {
+        throw new RuntimeException("ShardsFixed and ShardsRepeat annotations can't coexist");
+      }
+      else if (fixed != null) {
+        return new ShardsFixedStatement(fixed.num(), statement);
+      }
+      else if (repeat != null) {
+        return new ShardsRepeatStatement(repeat.min(), repeat.max(), statement);
+      }
+      else {
+        return (isShardCountFixed ? new ShardsFixedStatement(shardCount, statement) :
+          new ShardsRepeatStatement(1, DEFAULT_MAX_SHARD_COUNT, statement));
+      }
+    }
   }
+
+  @Rule
+  public ShardsRepeatRule repeatRule = new ShardsRepeatRule();
 
   public static Object[] getRandFields(String[] fields, RandVal[] randVals) {
     Object[] o = new Object[fields.length * 2];

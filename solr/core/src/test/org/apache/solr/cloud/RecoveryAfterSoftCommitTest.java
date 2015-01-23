@@ -28,15 +28,15 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   public RecoveryAfterSoftCommitTest() {
-    fixShardCount = true;
     sliceCount = 1;
-    shardCount = 2;
+    fixShardCount(2);
   }
 
   @BeforeClass
@@ -60,8 +60,8 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     // flush twice
     for (int i=0; i<4; i++) {
       SolrInputDocument document = new SolrInputDocument();

@@ -30,13 +30,13 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   protected abstract String getStatsCacheClassName();
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("solr.statsCache", getStatsCacheClassName());
   }
 
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("solr.statsCache");
   }
   
