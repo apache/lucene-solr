@@ -305,6 +305,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
     boolean missing = false;
+    int upto = 0;
     for(BytesRef v : values) {
       final int length;
       if (v == null) {
@@ -314,8 +315,9 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
         length = v.length;
       }
       if (length > MemoryDocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
-        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + MemoryDocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + MemoryDocValuesFormat.MAX_BINARY_FIELD_LENGTH + " but got length=" + length + " v=" + v + "; upto=" + upto + " values=" + values);
       }
+      upto++;
       minLength = Math.min(minLength, length);
       maxLength = Math.max(maxLength, length);
       if (v != null) {
