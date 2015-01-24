@@ -105,6 +105,11 @@ Jetty 9.2.6.v20141205
 Upgrading from Solr 4.x
 ----------------------
 
+* Apache Solr has no support for Lucene/Solr 3.x and earlier indexes anymore.
+  Be sure to run Lucene's IndexUpgrader on the previous 4.10 version if you might
+  still have old segments in your index. Alternatively fully optimize your index
+  with Solr 4.10 to make sure it consists only of one up-to-date index segment.
+
 * The "file" attribute of infoStream in solrconfig.xml is removed. Control this 
   via your logging configuration (org.apache.solr.update.LoggingInfoStream) instead.
 
