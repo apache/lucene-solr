@@ -46,7 +46,7 @@ To see all available options for starting Solr, please do:
 After starting Solr, create either a core or collection depending on whether
 Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
 
-  bin/solr create -n <name>
+  bin/solr create -c <name>
 
 This will create a collection that uses a data-driven schema which tries to guess
 the correct field type when you add documents to the index. To see all available
