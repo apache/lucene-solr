@@ -89,6 +89,7 @@ import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.index.MismatchedDirectoryReader;
 import org.apache.lucene.index.MismatchedLeafReader;
 import org.apache.lucene.index.MockRandomMergePolicy;
@@ -1557,78 +1558,85 @@ public abstract class LuceneTestCase extends Assert {
       throw null; // dummy to prevent compiler failure
     }
   }
+
+  public static IndexReader wrapReader(IndexReader r) throws IOException {
+    Random random = random();
+      
+    // TODO: remove this, and fix those tests to wrap before putting slow around:
+    final boolean wasOriginallyAtomic = r instanceof LeafReader;
+    for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
+      switch(random.nextInt(6)) {
+      case 0:
+        r = SlowCompositeReaderWrapper.wrap(r);
+        break;
+      case 1:
+        // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
+        r = (r instanceof LeafReader) ?
+          new ParallelLeafReader((LeafReader) r) :
+        new ParallelCompositeReader((CompositeReader) r);
+        break;
+      case 2:
+        // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
+        // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
+        // along our reader:
+        r = new FCInvisibleMultiReader(r);
+        break;
+      case 3:
+        final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+        final List<String> allFields = new ArrayList<>();
+        for (FieldInfo fi : ar.getFieldInfos()) {
+          allFields.add(fi.name);
+        }
+        Collections.shuffle(allFields, random);
+        final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
+        final Set<String> fields = new HashSet<>(allFields.subList(0, end));
+        // will create no FC insanity as ParallelLeafReader has own cache key:
+        r = new ParallelLeafReader(
+                                   new FieldFilterLeafReader(ar, fields, false),
+                                   new FieldFilterLeafReader(ar, fields, true)
+                                   );
+        break;
+      case 4:
+        // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
+        // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
+        // along our reader:
+        if (r instanceof LeafReader) {
+          r = new AssertingLeafReader((LeafReader)r);
+        } else if (r instanceof DirectoryReader) {
+          r = new AssertingDirectoryReader((DirectoryReader)r);
+        }
+        break;
+      case 5:
+        if (r instanceof LeafReader) {
+          r = new MismatchedLeafReader((LeafReader)r, random);
+        } else if (r instanceof DirectoryReader) {
+          r = new MismatchedDirectoryReader((DirectoryReader)r, random);
+        }
+        break;
+      default:
+        fail("should not get here");
+      }
+    }
+    if (wasOriginallyAtomic) {
+      r = SlowCompositeReaderWrapper.wrap(r);
+    } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
+      // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
+      r = new FCInvisibleMultiReader(r);
+    }
+    if (VERBOSE) {
+      System.out.println("wrapReader wrapped: " +r);
+    }
+
+    return r;
+  }
   
   /**
    * Sometimes wrap the IndexReader as slow, parallel or filter reader (or
    * combinations of that)
    */
   public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
-    Random random = random();
     if (rarely()) {
-      // TODO: remove this, and fix those tests to wrap before putting slow around:
-      final boolean wasOriginallyAtomic = r instanceof LeafReader;
-      for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-        switch(random.nextInt(6)) {
-          case 0:
-            r = SlowCompositeReaderWrapper.wrap(r);
-            break;
-          case 1:
-            // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
-            r = (r instanceof LeafReader) ?
-              new ParallelLeafReader((LeafReader) r) :
-              new ParallelCompositeReader((CompositeReader) r);
-            break;
-          case 2:
-            // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
-            // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
-            // along our reader:
-            r = new FCInvisibleMultiReader(r);
-            break;
-          case 3:
-            final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
-            final List<String> allFields = new ArrayList<>();
-            for (FieldInfo fi : ar.getFieldInfos()) {
-              allFields.add(fi.name);
-            }
-            Collections.shuffle(allFields, random);
-            final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
-            final Set<String> fields = new HashSet<>(allFields.subList(0, end));
-            // will create no FC insanity as ParallelLeafReader has own cache key:
-            r = new ParallelLeafReader(
-              new FieldFilterLeafReader(ar, fields, false),
-              new FieldFilterLeafReader(ar, fields, true)
-            );
-            break;
-          case 4:
-            // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
-            // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
-            // along our reader:
-            if (r instanceof LeafReader) {
-              r = new AssertingLeafReader((LeafReader)r);
-            } else if (r instanceof DirectoryReader) {
-              r = new AssertingDirectoryReader((DirectoryReader)r);
-            }
-            break;
-          case 5:
-            if (r instanceof LeafReader) {
-              r = new MismatchedLeafReader((LeafReader)r, random);
-            } else if (r instanceof DirectoryReader) {
-              r = new MismatchedDirectoryReader((DirectoryReader)r, random);
-            }
-            break;
-          default:
-            fail("should not get here");
-        }
-      }
-      if (wasOriginallyAtomic) {
-        r = SlowCompositeReaderWrapper.wrap(r);
-      } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
-        // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
-        r = new FCInvisibleMultiReader(r);
-      }
-      if (VERBOSE) {
-        System.out.println("maybeWrapReader wrapped: " +r);
-      }
+      r = wrapReader(r);
     }
     return r;
   }
