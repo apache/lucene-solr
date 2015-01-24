@@ -1,5 +1,22 @@
 # Apache Lucene Migration Guide
 
+## Lucene 3.x index format no longer supported
+
+Lucene 5 no longer supports the Lucene 3.x index format. Opening
+indexes will result in `IndexFormatTooOldException`. It is recommended
+to either reindex all your data, or upgrade the old indexes with
+the `IndexUpgrader` tool of latest Lucene 4 version (4.10.x).
+Those indexes can then be read (see next section) with Lucene 5.
+
+## Support for previous Lucene 4.x index formats moved to new module
+
+Lucene 5 will by default only read indexes created with Lucene 5.
+To read and upgrade Lucene 4.x indexes, you must add the
+`lucene-backward-codecs.jar` to the classpath. It is recommended
+to upgrade the old indexes with the `IndexUpgrader` tool,
+so you can remove the backward-codecs module from classpath.
+This will also improve performance.
+
 ## All file handling APIs changed to Java 7 NIO.2 (LUCENE-5945)
 
 All APIs around Directory and other file-based resources were changed to make
