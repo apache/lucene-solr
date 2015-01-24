@@ -214,9 +214,18 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     return maxMergeCount;
   }
 
-  synchronized void removeMergeThread(MergeThread thread) {
-    boolean result = mergeThreads.remove(thread);
-    assert result;
+  /** Removes the calling thread from the active merge threads. */
+  synchronized void removeMergeThread() {
+    Thread currentThread = Thread.currentThread();
+    // Paranoia: don't trust Thread.equals:
+    for(int i=0;i<mergeThreads.size();i++) {
+      if (mergeThreads.get(i) == currentThread) {
+        mergeThreads.remove(i);
+        return;
+      }
+    }
+      
+    assert false: "merge thread " + currentThread + " was not found";
   }
 
   /**
@@ -392,15 +401,16 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /**
-   * Returns the number of merge threads that are alive. Note that this number
-   * is &le; {@link #mergeThreads} size.
+   * Returns the number of merge threads that are alive, ignoring the calling thread
+   * if it is a merge thread.  Note that this number is &le; {@link #mergeThreads} size.
    *
    * @lucene.internal
    */
   public synchronized int mergeThreadCount() {
+    Thread currentThread = Thread.currentThread();
     int count = 0;
     for (MergeThread mergeThread : mergeThreads) {
-      if (mergeThread.isAlive() && mergeThread.merge.rateLimiter.getAbort() == false) {
+      if (currentThread != mergeThread && mergeThread.isAlive() && mergeThread.merge.rateLimiter.getAbort() == false) {
         count++;
       }
     }
@@ -436,7 +446,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     // pending merges, until it's empty:
     while (true) {
 
-      maybeStall(writer);
+      if (maybeStall(writer) == false) {
+        break;
+      }
 
       OneMerge merge = writer.getNextMerge();
       if (merge == null) {
@@ -481,11 +493,16 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    *  many segments for merging to keep up, to wait until merges catch
    *  up. Applications that can take other less drastic measures, such
    *  as limiting how many threads are allowed to index, can do nothing
-   *  here and throttle elsewhere. */
+   *  here and throttle elsewhere.
+   *
+   *  If this method wants to stall but the calling thread is a merge
+   *  thread, it should return false to tell caller not to kick off
+   *  any new merges. */
 
-  protected synchronized void maybeStall(IndexWriter writer) {
+  protected synchronized boolean maybeStall(IndexWriter writer) {
     long startStallTime = 0;
     while (writer.hasPendingMerges() && mergeThreadCount() >= maxMergeCount) {
+
       // This means merging has fallen too far behind: we
       // have already created maxMergeCount threads, and
       // now there's at least one more merge pending.
@@ -495,22 +512,35 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // updateMergeThreads).  We stall this producer
       // thread to prevent creation of new segments,
       // until merging has caught up:
+
+      if (mergeThreads.contains(Thread.currentThread())) {
+        // Never stall a merge thread since this blocks the thread from
+        // finishing and calling updateMergeThreads, and blocking it
+        // accomplishes nothing anyway (it's not really a segment producer):
+        return false;
+      }
+
       if (verbose() && startStallTime == 0) {
         message("    too many merges; stalling...");
       }
       startStallTime = System.currentTimeMillis();
-      try {
-        // Only wait 0.25 seconds, so if all merges are aborted (by IW.rollback) we notice:
-        wait(250);
-      } catch (InterruptedException ie) {
-        throw new ThreadInterruptedException(ie);
-      }
+      doStall();
     }
 
-    if (verbose()) {
-      if (startStallTime != 0) {
-        message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
-      }
+    if (verbose() && startStallTime != 0) {
+      message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
+    }
+
+    return true;
+  }
+
+  /** Called from {@link #maybeStall} to pause the calling thread for a bit. */
+  protected synchronized void doStall() {
+    try {
+      // Defensively wait for only .25 seconds in case we are missing a .notify/All somewhere:
+      wait(250);
+    } catch (InterruptedException ie) {
+      throw new ThreadInterruptedException(ie);
     }
   }
 
@@ -560,8 +590,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           message("  merge thread: done");
         }
 
-        removeMergeThread(this);
-
         // Let CMS run new merges if necessary:
         try {
           merge(writer, MergeTrigger.MERGE_FINISHED, true);
@@ -583,6 +611,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       } finally {
         synchronized(ConcurrentMergeScheduler.this) {
+          removeMergeThread();
+
           updateMergeThreads();
 
           // In case we had stalled indexing, we can now wake up

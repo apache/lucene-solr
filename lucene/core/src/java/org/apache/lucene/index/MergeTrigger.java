@@ -27,11 +27,13 @@ public enum MergeTrigger {
    * Merge was triggered by a segment flush.
    */
   SEGMENT_FLUSH,
+
   /**
    * Merge was triggered by a full flush. Full flushes
    * can be caused by a commit, NRT reader reopen or a close call on the index writer.
    */
   FULL_FLUSH,
+
   /**
    * Merge has been triggered explicitly by the user.
    */
