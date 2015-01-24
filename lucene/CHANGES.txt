@@ -525,7 +525,10 @@ Other
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
   perform as well as other options.  (Robert Muir)
 
-* LUCENE-5858: Moved compatibility codecs to 'lucene-backward-codecs.jar'. 
+* LUCENE-4086: Removed support for Lucene 3.x indexes. See migration guide for
+  more information.  (Robert Muir)
+
+* LUCENE-5858: Moved Lucene 4 compatibility codecs to 'lucene-backward-codecs.jar'. 
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
