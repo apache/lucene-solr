@@ -538,7 +538,7 @@ Bug Fixes
   (shalin)
   
 * SOLR-6856: Restore ExtractingRequestHandler's ability to capture all HTML tags when
-  parsing (X)HTML. (hossman, ehatcher, Steve Rowe)
+  parsing (X)HTML. (hossman, Uwe Schindler, ehatcher, Steve Rowe)
 
 * SOLR-7024: Improved error messages when java is not found by the bin/solr
   shell script, particularly when JAVA_HOME has an invalid location.

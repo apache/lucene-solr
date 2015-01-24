@@ -280,7 +280,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       }
     } else {
       for (int i = 0; i < attributes.getLength(); i++) {
-        bldrStack.getLast().append(attributes.getValue(i)).append(' ');
+        bldrStack.getLast().append(' ').append(attributes.getValue(i));
       }
     }
     bldrStack.getLast().append(' ');
