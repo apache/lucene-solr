@@ -42,11 +42,6 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
-    assertQ(req("qt", "standard", 
-        "q", "*:*"), 
-        "//*[@numFound='0']"
-        );
-    
     // id, cat, price, weight
     assertU(adoc("id", "0", "cat", "This is a title", "price", "5", "weight", "10"));
     assertU(adoc("id", "1", "cat", "This is another title", "price", "10", "weight", "10"));
@@ -68,6 +63,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     super.tearDown();
     assertU(delQ("*:*"));
     assertU((commit()));
+    waitForWarming();
     // rebuild suggesters with empty index
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_BUILD_ALL, "true"),
@@ -81,7 +77,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict", 
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
@@ -93,7 +89,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict", 
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "Rad",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Rad fox']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='35']",
@@ -108,7 +104,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_expr_dict", 
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
@@ -138,7 +134,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_expr_dict",
         SuggesterParams.SUGGEST_BUILD, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
@@ -157,7 +153,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_BUILD_ALL, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//str[@name='command'][.='buildAll']"
         );
     
@@ -172,7 +168,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_RELOAD_ALL, "true",
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//str[@name='command'][.='reloadAll']"
         );
     
@@ -189,7 +185,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, fakeSuggesterName,
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         SolrException.ErrorCode.BAD_REQUEST
         );
     
@@ -197,7 +193,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "' parameter not specified and no default suggester configured",
         req("qt", rh, 
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         SolrException.ErrorCode.BAD_REQUEST
         );
   }
@@ -224,7 +220,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
         );
     
@@ -232,12 +228,22 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
     
+    waitForWarming();
+    
+    // buildOnCommit=false, this doc should not be in the suggester yet
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, suggester,
+        SuggesterParams.SUGGEST_Q, "example",
+        SuggesterParams.SUGGEST_COUNT, "5"),
+        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
+        );
+    
     reloadCore(random().nextBoolean());
     
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "3"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='3']"
         );
     
@@ -262,7 +268,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='0']"
         );
     
@@ -276,7 +282,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
         );
     
@@ -286,7 +292,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
         );
     
@@ -294,12 +300,21 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
     
+    waitForWarming();
+    // buildOnCommit=false, this doc should not be in the suggester yet
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, suggester,
+        SuggesterParams.SUGGEST_Q, "example",
+        SuggesterParams.SUGGEST_COUNT, "5"),
+        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
+        );
+    
     reloadCore(random().nextBoolean());
     
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "3"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
         );
     
@@ -313,7 +328,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "3"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='3']"
         );
     
@@ -346,7 +361,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
         );
     
@@ -356,7 +371,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
         );
     
@@ -366,7 +381,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
         );
   }
@@ -395,12 +410,14 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     // assert that buildOnStartup=false
     assertEquals("false", 
         h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnStartup']", false));
+    assertEquals("true", 
+        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnCommit']", false));
     
     // verify that this suggester is built (there was a commit in setUp)
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
         );
     
@@ -415,7 +432,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='0']"
         );
     
@@ -430,7 +447,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
         );
     
@@ -442,6 +459,8 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='storeDir']", false));
     assertEquals("true", 
         h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnStartup']", false));
+    assertEquals("false", 
+        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnCommit']", false));
     
     // reload the core
     reloadCore(createNewCores);
@@ -449,13 +468,40 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggestStartup, 
         SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+        SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
+        );
+    
+    // add one more doc, this should not be seen without rebuilding manually or reloading the core (buildOnCommit=false)
+    assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
+    assertU((commit()));
+    
+    waitForWarming();
+
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, suggestStartup, 
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "5"),
+        "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
+        );
+    
+    // build the suggester manually
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, suggestStartup, 
+        SuggesterParams.SUGGEST_BUILD, "true"),
+        "//str[@name='command'][.='build']"
+        );
+    
+    assertQ(req("qt", rh, 
+        SuggesterParams.SUGGEST_DICT, suggestStartup, 
+        SuggesterParams.SUGGEST_Q, "exampel",
+        SuggesterParams.SUGGEST_COUNT, "5"),
+        "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='3']"
         );
   }
   
   private void reloadCore(boolean createNewCore) throws Exception {
-//    if (createNewCore) {
+    if (createNewCore) {
       CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
@@ -464,11 +510,11 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       SolrCore createdCore = cores.create(cd);
       assertEquals(dataDir1, createdCore.getDataDir());
       assertEquals(createdCore, h.getCore());
-//    } else {
-//      h.reload();
-//      // On regular reloading, wait until the new searcher is registered
-//      waitForWarming();
-//    }
+    } else {
+      h.reload();
+      // On regular reloading, wait until the new searcher is registered
+      waitForWarming();
+    }
     
     assertQ(req("qt", "standard", 
         "q", "*:*"), 
