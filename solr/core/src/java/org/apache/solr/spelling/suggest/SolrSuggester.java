@@ -122,7 +122,7 @@ public class SolrSuggester implements Accountable {
     });
 
     // if store directory is provided make it or load up the lookup with its content
-    if (store != null) {
+    if (store != null && !store.isEmpty()) {
       storeDir = new File(store);
       if (!storeDir.isAbsolute()) {
         storeDir = new File(core.getDataDir() + File.separator + storeDir);
@@ -157,7 +157,7 @@ public class SolrSuggester implements Accountable {
 
   /** Build the underlying Lucene Suggester */
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    LOG.info("build(" + name + ")");
+    LOG.info("SolrSuggester.build(" + name + ")");
 
     dictionary = dictionaryFactory.create(core, searcher);
     lookup.build(dictionary);
@@ -173,7 +173,7 @@ public class SolrSuggester implements Accountable {
 
   /** Reloads the underlying Lucene Suggester */
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    LOG.info("reload(" + name + ")");
+    LOG.info("SolrSuggester.reload(" + name + ")");
     if (dictionary == null && storeDir != null) {
       File lookupFile = getStoreFile();
       if (lookupFile.exists()) {
