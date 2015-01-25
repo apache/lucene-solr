@@ -1,7 +1,7 @@
-Lucene Contrib Analyzers README file
+Lucene Analyzers README file
 
 This project provides pre-compiled version of the Snowball stemmers
-based on revision 500 of the Tartarus Snowball repository,
+based on revision 502 of the Tartarus Snowball repository,
 together with classes integrating them with the Lucene search engine.
 
 A few changes has been made to the static Snowball code and compiled stemmers:
