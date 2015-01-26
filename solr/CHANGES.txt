@@ -91,7 +91,7 @@ Other Changes
 
 ==================  5.0.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 Versions of Major Components
 ---------------------
