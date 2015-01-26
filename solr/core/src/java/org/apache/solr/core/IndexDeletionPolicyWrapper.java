@@ -21,6 +21,8 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.update.SolrIndexWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,6 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
+  private static final Logger LOG = LoggerFactory.getLogger(IndexDeletionPolicyWrapper.class.getName());
+
   private final IndexDeletionPolicy deletionPolicy;
   private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<>();
   private final Map<Long, Long> reserves = new ConcurrentHashMap<>();
@@ -82,7 +86,11 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
 
       // this is the common success case: the older time didn't exist, or
       // came before the new time.
-      if (previousTime == null || previousTime <= timeToSet) break;
+      if (previousTime == null || previousTime <= timeToSet) {
+        LOG.debug("Commit point reservation for generation {} set to {} (requested reserve time of {})",
+            indexGen, timeToSet, reserveTime);
+        break;
+      }
 
       // At this point, we overwrote a longer reservation, so we want to restore the older one.
       // the problem is that an even longer reservation may come in concurrently
