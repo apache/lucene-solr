@@ -54,7 +54,7 @@ Other Changes
 * SOLR-6895: Deprecated SolrServer classes have been removed (Alan Woodward,
   Erik Hatcher)
 
-* SOLR-6902Use JUnit rules instead of inheritance with distributed Solr 
+* SOLR-6902: Use JUnit rules instead of inheritance with distributed Solr 
   tests to allow for multiple tests without the same class.
   (Ramkumar Aiyengar, Erick Erickson, Mike McCandless)
   
@@ -87,7 +87,11 @@ New Features
 
 Other Changes
 ----------------------
+
 * SOLR-7014: Collapse identical catch branches in try-catch statements. (shalin)
+
+* SOLR-6500: Refactor FileFetcher in SnapPuller, add debug logging. 
+  (Ramkumar Aiyengar via Mark Miller)
 
 ==================  5.0.0 ==================
 
