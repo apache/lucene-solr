@@ -829,6 +829,8 @@ Other Changes
 * SOLR-7018: bin/solr stop should stop if there is only one node running or generate
   an error message prompting the user to be explicit about which of multiple nodes
   to stop using the -p or -all options (Timothy Potter)
+  
+* SOLR-5918: ant clean does not remove ZooKeeper data (Varun Thacker, Steve Rowe)
 
 ==================  4.10.3 ==================
 

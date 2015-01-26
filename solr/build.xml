@@ -319,7 +319,7 @@
       </fileset>
       <fileset dir="server">
         <include name="**/data/**/*" />
-        <include name="solr/zoo_data" />
+        <include name="solr/zoo_data/" />
         <include name="start.jar" />
         <include name="logs/*" />
         <include name="webapps/**/*" />
