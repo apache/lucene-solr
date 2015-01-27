@@ -53,10 +53,10 @@
     </delete>
     <echo>See ${common-solr.dir}/README.txt for how to run the Solr server.</echo>
   </target>
-  
+
   <target name="run-example" depends="server"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
-    <property name="example.solr.home" location="example/solr"/>
+    <property name="example.solr.home" location="${server.dir}/solr"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
     <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
@@ -68,6 +68,7 @@
       <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
+      <sysproperty key="jetty.home" value="${server.dir}"/>
     </java>
   </target>
  
