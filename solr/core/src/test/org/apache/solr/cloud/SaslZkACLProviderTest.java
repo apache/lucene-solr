@@ -6,9 +6,12 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import javax.security.auth.login.Configuration;
 
+import org.apache.lucene.util.Constants;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
@@ -48,11 +51,20 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       .getLogger(SaslZkACLProviderTest.class);
 
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
+  // These Locales don't generate dates that are compatibile with Hadoop MiniKdc.
+  protected final static List<String> brokenLocales =
+    Arrays.asList(
+      "th_TH_TH_#u-nu-thai",
+      "ja_JP_JP_#u-ca-japanese",
+      "hi_IN");
+  protected Locale savedLocale = null;
 
   protected ZkTestServer zkServer;
 
   @BeforeClass
   public static void beforeClass() {
+    assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
+                Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
@@ -64,6 +76,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    if (brokenLocales.contains(Locale.getDefault().toString())) {
+      savedLocale = Locale.getDefault();
+      Locale.setDefault(Locale.US);
+    }
     log.info("####SETUP_START " + getTestName());
     createTempDir();
 
@@ -107,7 +123,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     zkServer.shutdown();
-    
+
+    if (savedLocale != null) {
+      Locale.setDefault(savedLocale);
+    }
     super.tearDown();
   }
 
