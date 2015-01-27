@@ -17,7 +17,6 @@ package org.apache.solr.cloud.overseer;
  * limitations under the License.
  */
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -151,7 +150,7 @@ public class ZkStateWriter {
             // let's clean up the collections path for this collection
             reader.getZkClient().clean("/collections/" + name);
           } else if (c.getStateFormat() > 1) {
-            byte[] data = ZkStateReader.toJSON(new ClusterState(-1, Collections.<String>emptySet(), singletonMap(c.getName(), c)));
+            byte[] data = ZkStateReader.toJSON(singletonMap(c.getName(),c));
             if (reader.getZkClient().exists(path, true)) {
               assert c.getZNodeVersion() >= 0;
               log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
