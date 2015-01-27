@@ -1028,6 +1028,7 @@ if [ "$EXAMPLE" != "" ]; then
             mkdir -p $SOLR_HOME
             if [ ! -f "$SOLR_HOME/solr.xml" ]; then
               cp $DEFAULT_SERVER_DIR/solr/solr.xml $SOLR_HOME/solr.xml
+              cp $DEFAULT_SERVER_DIR/solr/zoo.cfg $SOLR_HOME/zoo.cfg
             fi
             EXAMPLE_CONFIGSET=sample_techproducts_configs
             shift
@@ -1041,6 +1042,7 @@ if [ "$EXAMPLE" != "" ]; then
             mkdir -p $SOLR_HOME
             if [ ! -f "$SOLR_HOME/solr.xml" ]; then
               cp $DEFAULT_SERVER_DIR/solr/solr.xml $SOLR_HOME/solr.xml
+              cp $DEFAULT_SERVER_DIR/solr/zoo.cfg $SOLR_HOME/zoo.cfg
             fi
             EXAMPLE_CONFIGSET=data_driven_schema_configs
             shift

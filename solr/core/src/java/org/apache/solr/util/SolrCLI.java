@@ -478,7 +478,16 @@ public class SolrCLI {
     public Map<String,Object> handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
       HttpEntity entity = response.getEntity();
       if (entity != null) {
-        Object resp = ObjectBuilder.getVal(new JSONParser(EntityUtils.toString(entity)));
+
+        String respBody = EntityUtils.toString(entity);
+        Object resp = null;
+        try {
+          resp = ObjectBuilder.getVal(new JSONParser(respBody));
+        } catch (JSONParser.ParseException pe) {
+          throw new ClientProtocolException("Expected JSON response from server but received: "+respBody+
+              "\nTypically, this indicates a problem with the Solr server; check the Solr server logs for more information.");
+        }
+
         if (resp != null && resp instanceof Map) {
           return (Map<String,Object>)resp;
         } else {
@@ -1495,13 +1504,17 @@ public class SolrCLI {
       int result = -1;
       Tool tool = null;
       try {
-        Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
+        Map<String, Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           tool = new CreateCollectionTool();
         } else {
           tool = new CreateCoreTool();
         }
         result = tool.runTool(cli);
+      } catch (Exception exc) {
+        System.err.println("ERROR: create failed due to: "+exc.getMessage());
+        System.err.println();
+        result = 1;
       } finally {
         closeHttpClient(httpClient);
       }
