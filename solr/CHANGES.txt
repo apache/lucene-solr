@@ -556,6 +556,9 @@ Bug Fixes
 * SOLR-7038: Validate the presence of configset before trying to create a collection.
   (Anshum Gupta, Mark Miller)
 
+* SOLR-7037: bin/solr start -e techproducts -c fails to start Solr in cloud mode
+  (Timothy Potter)
+
 Optimizations
 ----------------------
 

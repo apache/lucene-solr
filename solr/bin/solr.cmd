@@ -569,6 +569,9 @@ IF "%EXAMPLE%"=="" (
   IF NOT EXIST "!SOLR_HOME!\solr.xml" (
     copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
   )
+  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
+    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
+  )
 ) ELSE IF "%EXAMPLE%"=="cloud" (
   set SOLR_MODE=solrcloud
   goto cloud_example_start
@@ -579,6 +582,9 @@ IF "%EXAMPLE%"=="" (
   set "SOLR_HOME=%SOLR_TIP%\example\schemaless\solr"
   IF NOT EXIST "!SOLR_HOME!\solr.xml" (
     copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
+  )
+  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
+    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
   )
 ) ELSE (
   @echo.
