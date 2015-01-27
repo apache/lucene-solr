@@ -559,6 +559,9 @@ Bug Fixes
 * SOLR-7037: bin/solr start -e techproducts -c fails to start Solr in cloud mode
   (Timothy Potter)
 
+* SOLR-7016: Fix bin\solr.cmd to work in a directory with spaces in the name.
+  (Timothy Potter, Uwe Schindler)
+
 Optimizations
 ----------------------
 

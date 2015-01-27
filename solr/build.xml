@@ -56,27 +56,20 @@
   
   <target name="run-example" depends="server"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
+    <property name="example.solr.home" location="${server.dir}/solr"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
-    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005" else="">
+    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
       <isset property="example.debug"/>
     </condition>
+    <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <condition property="example.cmd" value="${common-solr.dir}/bin/solr.cmd" else="${common-solr.dir}/bin/solr">
-      <os family="windows"/>
-    </condition>
-    <exec executable="${example.cmd}" failonerror="true">
-      <arg value="-e"/>
-      <arg value="techproducts"/>
-      <arg value="-p"/>
-      <arg value="${example.jetty.port}"/>
-      <arg value="-m"/>
-      <arg value="${example.heap.size}"/>
-      <arg value="-d"/>
-      <arg file="${server.dir}"/>
-      <arg value="-a"/>
-      <arg value="${example.jvm.line}"/>
-    </exec>
+    <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
+      <jvmarg line="${example.jvm.line}"/>
+      <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
+      <sysproperty key="jetty.port" value="${example.jetty.port}"/>
+      <sysproperty key="jetty.home" value="${server.dir}"/>
+    </java>
   </target>
  
   <!-- setup proxy for download tasks -->
