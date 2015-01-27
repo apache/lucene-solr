@@ -316,16 +316,6 @@ public class ClusterState implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    if (collectionStates.size() == 1) {
-      CollectionRef ref = collectionStates.values().iterator().next();
-      DocCollection docCollection = ref.get();
-      if (docCollection.getStateFormat() > 1) {
-        jsonWriter.write(Collections.singletonMap(docCollection.getName(), docCollection));
-        // serializing a single DocCollection that is persisted outside of clusterstate.json
-        return;
-      }
-    }
-
     LinkedHashMap<String , DocCollection> map = new LinkedHashMap<>();
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       // using this class check to avoid fetching from ZK in case of lazily loaded collection

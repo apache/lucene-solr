@@ -18,6 +18,7 @@ package org.apache.solr.cloud.overseer;
  */
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,6 +29,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 
@@ -114,6 +116,49 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       IOUtils.close(zkClient);
       server.shutdown();
     }
+  }
+
+  public void testSingleExternalCollection() throws Exception{
+    String zkDir = createTempDir("testSingleExternalCollection").toFile().getAbsolutePath();
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient zkClient = null;
+
+    try {
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+
+      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+
+      // create new collection with stateFormat = 2
+      ZkWriteCommand c1 = new ZkWriteCommand("c1",
+          new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
+
+      ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), c1, null);
+      writer.writePendingUpdates();
+
+      Map map = (Map) ZkStateReader.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
+      assertNull(map.get("c1"));
+      map = (Map) ZkStateReader.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+      assertNotNull(map.get("c1"));
+
+    } finally {
+      IOUtils.close(zkClient);
+      server.shutdown();
+
+    }
+
+
   }
 
 }
