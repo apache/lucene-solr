@@ -553,6 +553,9 @@ Bug Fixes
   shell script, particularly when JAVA_HOME has an invalid location.
   (Shawn Heisey)
 
+* SOLR-7038: Validate the presence of configset before trying to create a collection.
+  (Anshum Gupta, Mark Miller)
+
 Optimizations
 ----------------------
 
