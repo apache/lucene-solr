@@ -213,14 +213,8 @@ public class EmbeddedSolrServer extends SolrClient
    * Shutdown all cores within the EmbeddedSolrServer instance
    */
   @Override
-  @Deprecated
-  public void shutdown() {
-    coreContainer.shutdown();
-  }
-
-  @Override
   public void close() throws IOException {
-    shutdown();
+    coreContainer.shutdown();
   }
   
   /**

@@ -470,12 +470,6 @@ public class LBHttpSolrClient extends SolrClient {
 
   @Override
   public void close() {
-    shutdown();
-  }
-
-  @Override
-  @Deprecated
-  public void shutdown() {
     if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdownNow();
     }

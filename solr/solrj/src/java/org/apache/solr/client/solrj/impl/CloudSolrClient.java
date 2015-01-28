@@ -1033,12 +1033,6 @@ public class CloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    shutdown();
-  }
-
-  @Override
-  @Deprecated
-  public void shutdown() {
     if (zkStateReader != null) {
       synchronized(this) {
         if (zkStateReader!= null)
@@ -1048,7 +1042,7 @@ public class CloudSolrClient extends SolrClient {
     }
     
     if (shutdownLBHttpSolrServer) {
-      lbClient.shutdown();
+      lbClient.close();
     }
     
     if (clientIsInternal && myClient!=null) {

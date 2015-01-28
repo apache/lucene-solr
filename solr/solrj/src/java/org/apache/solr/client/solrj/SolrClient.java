@@ -400,17 +400,4 @@ public abstract class SolrClient implements Serializable, Closeable {
     return binder;
   }
 
-  /**
-   * Release allocated resources.
-   *
-   * @since solr 4.0
-   * @deprecated Use close() instead.
-   */
-  @Deprecated
-  public abstract void shutdown();
-
-  //@SuppressWarnings("deprecation")
-  public void close() throws IOException {
-    shutdown();
-  }
 }

@@ -36,6 +36,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
@@ -425,13 +426,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
   @Override
   public void close() {
-    shutdown();
-  }
-
-  @Override
-  @Deprecated
-  public void shutdown() {
-    client.shutdown();
+    IOUtils.closeQuietly(client);
     if (shutdownExecutor) {
       scheduler.shutdown();
       try {
@@ -460,7 +455,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   public void shutdownNow() {
-    client.shutdown();
+    IOUtils.closeQuietly(client);
     if (shutdownExecutor) {
       scheduler.shutdownNow(); // Cancel currently executing tasks
       try {

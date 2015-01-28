@@ -43,6 +43,8 @@ Upgrading from Solr 5.x
 * The deprecated <nrtMode> configuration in solrconfig.xml has been removed.
   Please remove it from solrconfig.xml.
 
+* SolrClient.shutdown() has been removed, use SolrClient.close() instead.
+
 Detailed Change List
 ----------------------
 
@@ -57,6 +59,8 @@ Other Changes
 * SOLR-6902: Use JUnit rules instead of inheritance with distributed Solr 
   tests to allow for multiple tests without the same class.
   (Ramkumar Aiyengar, Erick Erickson, Mike McCandless)
+
+* SOLR-6954: Deprecated SolrClient.shutdown() method removed (Alan Woodward)
   
 ==================  5.1.0 ==================
 
