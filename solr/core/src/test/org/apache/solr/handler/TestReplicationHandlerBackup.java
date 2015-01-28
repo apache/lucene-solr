@@ -108,7 +108,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterClient.shutdown();
+    masterClient.close();
     masterClient  = null;
     masterJetty.stop();
     master.tearDown();

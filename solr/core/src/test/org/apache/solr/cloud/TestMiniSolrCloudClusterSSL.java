@@ -17,18 +17,17 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.List;
 
 /**
  * Tests SSL (if test framework selects it) with MiniSolrCloudCluster.
@@ -77,13 +76,10 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   private void sendRequestToEachServer() throws Exception {
     List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
     for (JettySolrRunner jetty : jettys) {
-      HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString());
-      try {
+      try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString())) {
         CoreAdminRequest req = new CoreAdminRequest();
         req.setAction( CoreAdminAction.STATUS );
         client.request(req);
-      } finally {
-        client.shutdown();
       }
     }
   }

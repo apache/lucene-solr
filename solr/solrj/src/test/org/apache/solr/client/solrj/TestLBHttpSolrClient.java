@@ -105,16 +105,13 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       doc.addField("name", solrInstance.name);
       docs.add(doc);
     }
-    HttpSolrClient client = new HttpSolrClient(solrInstance.getUrl(), httpClient);
     SolrResponseBase resp;
-    try {
+    try (HttpSolrClient client = new HttpSolrClient(solrInstance.getUrl(), httpClient)) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
-    } finally {
-      client.shutdown();
+      assertEquals(0, resp.getStatus());
     }
-    assertEquals(0, resp.getStatus());
   }
 
   @Override

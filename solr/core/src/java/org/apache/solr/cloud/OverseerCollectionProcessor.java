@@ -1800,19 +1800,14 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
-    HttpSolrClient client = null;
-    try {
-      client = new HttpSolrClient(url);
+
+    try (HttpSolrClient client = new HttpSolrClient(url)) {
       client.setConnectionTimeout(30000);
       client.setSoTimeout(120000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
       return ureq.process(client);
-    } finally {
-      if (client != null) {
-        client.shutdown();
-      }
     }
   }
   

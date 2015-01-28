@@ -57,8 +57,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   @Test
   @ShardsFixed(num = 1)
   public void testSolrJAPICalls() throws Exception {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       Create createCollectionRequest = new Create();
       createCollectionRequest.setCollectionName("testasynccollectioncreation");
       createCollectionRequest.setNumShards(1);
@@ -100,8 +99,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
       state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, client);
   
       assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
-    } finally {
-      client.shutdown();
     }
 
     if (DEBUG) {

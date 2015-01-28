@@ -368,9 +368,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void destroyServers() throws Exception {
     if (controlJetty != null) controlJetty.stop();
-    if (controlClient != null)  ((HttpSolrClient) controlClient).shutdown();
+    if (controlClient != null)  controlClient.close();
     for (JettySolrRunner jetty : jettys) jetty.stop();
-    for (SolrClient client : clients) ((HttpSolrClient) client).shutdown();
+    for (SolrClient client : clients) client.close();
     clients.clear();
     jettys.clear();
   }

@@ -59,8 +59,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   @Test
   public void doBlobHandlerTest() throws Exception {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse response1;
       CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
       createCollectionRequest.setCollectionName(".system");
@@ -99,8 +99,6 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
       compareInputAndOutput(baseUrl+"/.system/blob/test?wt=filestream", bytarr2);
       compareInputAndOutput(baseUrl+"/.system/blob/test/1?wt=filestream", bytarr);
-    } finally {
-      client.shutdown();
     }
   }
 

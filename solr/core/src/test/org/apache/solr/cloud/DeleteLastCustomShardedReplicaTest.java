@@ -61,7 +61,7 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    client.shutdown();
+    client.close();
   }
 
   protected String getSolrXml() {

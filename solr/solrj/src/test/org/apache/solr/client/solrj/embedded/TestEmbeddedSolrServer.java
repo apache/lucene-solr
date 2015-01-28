@@ -17,12 +17,8 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import junit.framework.Assert;
-
 import org.apache.solr.core.SolrCore;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -30,7 +26,10 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
@@ -55,9 +54,9 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
     Assert.assertEquals(cores, ((EmbeddedSolrServer)getSolrCore1()).getCoreContainer());
   }
   
-  public void testShutdown() {
+  public void testClose() throws IOException {
     
-    EmbeddedSolrServer solrServer = (EmbeddedSolrServer)getSolrCore0();
+    EmbeddedSolrServer solrServer = (EmbeddedSolrServer) getSolrCore0();
     
     Assert.assertEquals(3, cores.getCores().size());
     List<SolrCore> solrCores = new ArrayList<>();
@@ -66,7 +65,7 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
       solrCores.add(solrCore);
     }
     
-    solrServer.shutdown();
+    solrServer.close();
     
     Assert.assertEquals(0, cores.getCores().size());
     

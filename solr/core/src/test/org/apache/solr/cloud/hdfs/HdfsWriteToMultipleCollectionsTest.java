@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -117,10 +118,8 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       client.commit();
       collectionsCount += client.query(new SolrQuery("*:*")).getResults().getNumFound();
     }
-    
-    for (CloudSolrClient client : cloudClients) {
-      client.shutdown();
-    }
+
+    IOUtils.close(cloudClients);
 
     assertEquals(addCnt, collectionsCount);
     

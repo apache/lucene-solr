@@ -132,7 +132,7 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
     
     Notifications.notifyRollbackTransaction(morphline);
     Notifications.notifyShutdown(morphline);
-    cloudClient.shutdown();
+    cloudClient.close();
   }
   
   private void assertTweetEquals(GenericData.Record expected, Record actual, int i) {

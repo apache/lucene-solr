@@ -119,26 +119,23 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    baseClient.setConnectionTimeout(15000);
-    baseClient.setSoTimeout(60000 * 5);
-    baseClient.request(request);
-    baseClient.shutdown();
+    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
+      baseClient.setConnectionTimeout(15000);
+      baseClient.setSoTimeout(60000 * 5);
+      baseClient.request(request);
+    }
   }
 
   private void createCollection(String targetCollection) throws Exception {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
-    CloudSolrClient client = null;
-    try {
-      client = createCloudClient(null);
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       Map<String, Object> props = ZkNodeProps.makeMap(
           REPLICATION_FACTOR, 1,
           MAX_SHARDS_PER_NODE, 5,
           NUM_SLICES, 1);
 
       createCollection(collectionInfos, targetCollection, props, client);
-    } finally {
-      if (client != null) client.shutdown();
     }
 
     List<Integer> list = collectionInfos.get(targetCollection);
@@ -176,42 +173,42 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     indexer.start();
 
     String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), targetCollection);
-    HttpSolrClient collectionClient = new HttpSolrClient(url);
 
-    SolrQuery solrQuery = new SolrQuery("*:*");
-    assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
+    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 
-    invokeMigrateApi(AbstractDistribZkTestBase.DEFAULT_COLLECTION, splitKey + "/" + BIT_SEP + "!", targetCollection);
-    long finishTime = System.currentTimeMillis();
+      SolrQuery solrQuery = new SolrQuery("*:*");
+      assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
 
-    indexer.join();
-    splitKeyCount[0] += indexer.getSplitKeyCount();
+      invokeMigrateApi(AbstractDistribZkTestBase.DEFAULT_COLLECTION, splitKey + "/" + BIT_SEP + "!", targetCollection);
+      long finishTime = System.currentTimeMillis();
 
-    try {
-      cloudClient.deleteById("a/" + BIT_SEP + "!104");
-      splitKeyCount[0]--;
-    } catch (Exception e) {
-      log.warn("Error deleting document a/" + BIT_SEP + "!104", e);
+      indexer.join();
+      splitKeyCount[0] += indexer.getSplitKeyCount();
+
+      try {
+        cloudClient.deleteById("a/" + BIT_SEP + "!104");
+        splitKeyCount[0]--;
+      } catch (Exception e) {
+        log.warn("Error deleting document a/" + BIT_SEP + "!104", e);
+      }
+      cloudClient.commit();
+      collectionClient.commit();
+
+      solrQuery = new SolrQuery("*:*").setRows(1000);
+      QueryResponse response = collectionClient.query(solrQuery);
+      log.info("Response from target collection: " + response);
+      assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
+
+      getCommonCloudSolrClient().getZkStateReader().updateClusterState(true);
+      ClusterState state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+      Slice slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
+      assertNotNull("Routing rule map is null", slice.getRoutingRules());
+      assertFalse("Routing rule map is empty", slice.getRoutingRules().isEmpty());
+      assertNotNull("No routing rule exists for route key: " + splitKey, slice.getRoutingRules().get(splitKey + "!"));
+
+      boolean ruleRemoved = waitForRuleToExpire(splitKey, finishTime);
+      assertTrue("Routing rule was not expired", ruleRemoved);
     }
-    cloudClient.commit();
-    collectionClient.commit();
-
-    solrQuery = new SolrQuery("*:*").setRows(1000);
-    QueryResponse response = collectionClient.query(solrQuery);
-    log.info("Response from target collection: " + response);
-    assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
-    collectionClient.shutdown();
-    collectionClient = null;
-
-    getCommonCloudSolrClient().getZkStateReader().updateClusterState(true);
-    ClusterState state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-    Slice slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
-    assertNotNull("Routing rule map is null", slice.getRoutingRules());
-    assertFalse("Routing rule map is empty", slice.getRoutingRules().isEmpty());
-    assertNotNull("No routing rule exists for route key: " + splitKey, slice.getRoutingRules().get(splitKey + "!"));
-
-    boolean ruleRemoved = waitForRuleToExpire(splitKey, finishTime);
-    assertTrue("Routing rule was not expired", ruleRemoved);
   }
 
   static class Indexer extends Thread {

@@ -1032,6 +1032,12 @@ public class CloudSolrClient extends SolrClient {
   }
 
   @Override
+  public void close() throws IOException {
+    shutdown();
+  }
+
+  @Override
+  @Deprecated
   public void shutdown() {
     if (zkStateReader != null) {
       synchronized(this) {

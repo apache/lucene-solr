@@ -52,13 +52,11 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   Map<String, Replica> expected = new HashMap<>();
 
-
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
     reps = random().nextInt(9) + 1; // make sure and do at least one.
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
       // shards, replicationfactor, maxreplicaspernode
       int shards = random().nextInt(7);
@@ -66,9 +64,6 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
       int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
       createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
-    } finally {
-      //remove collections
-      client.shutdown();
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);

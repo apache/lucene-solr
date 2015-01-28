@@ -50,7 +50,6 @@ import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -1634,9 +1633,7 @@ public final class ZkController {
         log.info("Replica "+myCoreNodeName+
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
             
-        HttpSolrClient client = null;
-        client = new HttpSolrClient(leaderBaseUrl);
-        try {
+        try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
           client.setConnectionTimeout(15000);
           client.setSoTimeout(120000);
           WaitForState prepCmd = new WaitForState();
@@ -1687,8 +1684,8 @@ public final class ZkController {
               }
             }
           }
-        } finally {
-          client.shutdown();
+        } catch (IOException e) {
+          SolrException.log(log, "Error closing HttpSolrClient", e);
         }
       }
     }

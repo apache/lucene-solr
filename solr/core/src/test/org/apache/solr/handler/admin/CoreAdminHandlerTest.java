@@ -201,41 +201,31 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
-    HttpSolrClient client = null;
-    try {
-      runner.start();
-      client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr/corex");
+    runner.start();
+
+    try (HttpSolrClient client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr/corex")) {
       client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "123");
       client.add(doc);
       client.commit();
-      client.shutdown();
+    }
 
-      client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr");
+    try (HttpSolrClient client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr")) {
       client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
       req.setDeleteInstanceDir(true);
       req.setCoreName("corex");
       req.process(client);
-      client.shutdown();
-
-      runner.stop();
-
-      assertFalse("Instance directory exists after core unload with deleteInstanceDir=true : " + corex,
-          corex.exists());
-    } catch (Exception e) {
-      log.error("Exception testing core unload with deleteInstanceDir=true", e);
-    } finally {
-      if (client != null) {
-        client.shutdown();
-      }
-      if (!runner.isStopped())  {
-        runner.stop();
-      }
     }
+
+    runner.stop();
+
+    assertFalse("Instance directory exists after core unload with deleteInstanceDir=true : " + corex,
+        corex.exists());
+
   }
 
   @Test

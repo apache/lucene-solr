@@ -1532,16 +1532,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       super.printLayout();
     }
     if (commondCloudSolrClient != null) {
-      commondCloudSolrClient.shutdown();
+      commondCloudSolrClient.close();
     }
     if (controlClient != null) {
-      ((HttpSolrClient) controlClient).shutdown();
+      controlClient.close();
     }
     if (cloudClient != null) {
-      cloudClient.shutdown();
+      cloudClient.close();
     }
     if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
+      controlClientCloud.close();
     }
     super.distribTearDown();
 
@@ -1624,11 +1624,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
       final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(clientIndex));
-      SolrClient adminClient = createNewSolrClient("", baseUrl);
-      try {
+      try (SolrClient adminClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(adminClient.request(request));
-      } finally {
-        if (adminClient != null) adminClient.shutdown();
       }
     } else {
       res.setResponse(client.request(request));
@@ -1855,16 +1852,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    NamedList r;
-    try {
+    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
       baseClient.setConnectionTimeout(15000);
       baseClient.setSoTimeout(60000 * 5);
-      r = baseClient.request(request);
-    } finally {
-      baseClient.shutdown();
+      return baseClient.request(request);
     }
-    return r;
   }
 
   protected void createCollection(String collName,

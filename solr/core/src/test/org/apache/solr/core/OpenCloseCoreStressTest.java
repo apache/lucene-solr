@@ -18,8 +18,8 @@
 package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -93,12 +93,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   @After
   public void tearDownServer() throws Exception {
     if (jetty != null) jetty.stop();
-    for(SolrClient client: indexingClients) {
-      client.shutdown();
-    }
-    for(SolrClient client: queryingClients) {
-      client.shutdown();
-    }
+    IOUtils.close(indexingClients);
+    IOUtils.close(queryingClients);
     indexingClients.clear();
     queryingClients.clear();
   }

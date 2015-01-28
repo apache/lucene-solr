@@ -128,13 +128,12 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    // we only set the connect timeout, not so timeout
-    baseClient.setConnectionTimeout(30000);
-    baseClient.request(request);
-    baseClient.shutdown();
-    baseClient = null;
-    
+    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
+      // we only set the connect timeout, not so timeout
+      baseClient.setConnectionTimeout(30000);
+      baseClient.request(request);
+    }
+
     waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);

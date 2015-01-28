@@ -113,9 +113,8 @@ public class LeaderInitiatedRecoveryThread extends Thread {
       } else {
         log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
-      
-      HttpSolrClient client = new HttpSolrClient(recoveryUrl);
-      try {
+
+      try (HttpSolrClient client = new HttpSolrClient(recoveryUrl)) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         try {
@@ -139,8 +138,6 @@ public class LeaderInitiatedRecoveryThread extends Thread {
             continueTrying = false;
           }                                                
         }
-      } finally {
-        client.shutdown();
       }
       
       // wait a few seconds

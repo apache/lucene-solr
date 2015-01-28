@@ -17,14 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -39,6 +31,14 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
 
 public class MiniSolrCloudCluster {
   
@@ -196,7 +196,7 @@ public class MiniSolrCloudCluster {
    */
   public void shutdown() throws Exception {
     try {
-      solrClient.shutdown();
+      solrClient.close();
       for (int i = jettys.size() - 1; i >= 0; --i) {
         stopJettySolrRunner(i);
       }
