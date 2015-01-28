@@ -53,14 +53,6 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
     }
   }
   
-  @Override
-  public String[] files(SegmentInfo si) {
-    return new String[] {
-      IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION),
-      IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_ENTRIES_EXTENSION)
-    };
-  }
-  
   /** Extension of compound file */
   static final String COMPOUND_FILE_EXTENSION = "cfs";
   /** Extension of compound file entries */

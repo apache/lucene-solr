@@ -47,11 +47,4 @@ public abstract class CompoundFormat {
    * Packs the provided files into a compound format.
    */
   public abstract void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException;
-
-  /**
-   * Returns the compound file names used by this segment.
-   */
-  // TODO: get this out of here, and use trackingdirwrapper. but this is really scary in IW right now...
-  // NOTE: generally si.useCompoundFile is not even yet 'set' when this is called.
-  public abstract String[] files(SegmentInfo si);
 }

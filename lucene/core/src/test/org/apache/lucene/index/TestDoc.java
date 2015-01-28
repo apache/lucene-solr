@@ -232,7 +232,8 @@ public class TestDoc extends LuceneTestCase {
     si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       
     if (useCompoundFile) {
-      Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, si, newIOContext(random()));
+      Collection<String> filesToDelete = si.files();
+      IndexWriter.createCompoundFile(InfoStream.getDefault(), new TrackingDirectoryWrapper(dir), si, newIOContext(random()));
       si.setUseCompoundFile(true);
       for (final String fileToDelete : filesToDelete) {
         si1.info.dir.deleteFile(fileToDelete);
