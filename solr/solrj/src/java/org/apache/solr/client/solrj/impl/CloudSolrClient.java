@@ -747,7 +747,7 @@ public class CloudSolrClient extends SolrClient {
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     if (collection != null && !request.getPath().startsWith("/admin")) { // don't do _stateVer_ checking for admin requests
-      Set<String> requestedCollectionNames = getCollectionList(getZkStateReader().getClusterState(), collection);
+      Set<String> requestedCollectionNames = getCollectionNames(getZkStateReader().getClusterState(), collection);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -910,8 +910,8 @@ public class CloudSolrClient extends SolrClient {
             "No collection param specified on request and no default collection has been set.");
       }
       
-      Set<String> collectionsList = getCollectionList(clusterState, collection);
-      if (collectionsList.size() == 0) {
+      Set<String> collectionNames = getCollectionNames(clusterState, collection);
+      if (collectionNames.size() == 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Could not find collection: " + collection);
       }
@@ -926,7 +926,7 @@ public class CloudSolrClient extends SolrClient {
       // specified,
       // add it to the Map of slices.
       Map<String,Slice> slices = new HashMap<>();
-      for (String collectionName : collectionsList) {
+      for (String collectionName : collectionNames) {
         DocCollection col = getDocCollection(clusterState, collectionName);
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
@@ -988,6 +988,9 @@ public class CloudSolrClient extends SolrClient {
         theUrlList.addAll(urlList);
       }
       if(theUrlList.isEmpty()) {
+        for (String s : collectionNames) {
+          if(s!=null) collectionStateCache.remove(s);
+        }
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Not enough nodes to handle the request");
       }
 
@@ -1007,11 +1010,11 @@ public class CloudSolrClient extends SolrClient {
     return rsp.getResponse();
   }
 
-  private Set<String> getCollectionList(ClusterState clusterState,
-      String collection) {
+  private Set<String> getCollectionNames(ClusterState clusterState,
+                                         String collection) {
     // Extract each comma separated collection name and store in a List.
     List<String> rawCollectionsList = StrUtils.splitSmart(collection, ",", true);
-    Set<String> collectionsList = new HashSet<>();
+    Set<String> collectionNames = new HashSet<>();
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (!clusterState.getCollections().contains(collectionName)) {
@@ -1019,16 +1022,16 @@ public class CloudSolrClient extends SolrClient {
         String alias = aliases.getCollectionAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
-          collectionsList.addAll(aliasList);
+          collectionNames.addAll(aliasList);
           continue;
         }
 
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
         }
 
-      collectionsList.add(collectionName);
+      collectionNames.add(collectionName);
     }
-    return collectionsList;
+    return collectionNames;
   }
 
   @Override
