@@ -470,6 +470,10 @@ Bug Fixes
   
 * LUCENE-6173: NumericTermAttribute and spatial/CellTokenStream do not clone
   their BytesRef(Builder)s. Also equals/hashCode was missing.  (Uwe Schindler)
+
+* LUCENE-6205: Fixed intermittent concurrency issue that could cause
+  FileNotFoundException when writing doc values updates at the same
+  time that a merge kicks off.  (Mike McCandless)
   
 Documentation
 
