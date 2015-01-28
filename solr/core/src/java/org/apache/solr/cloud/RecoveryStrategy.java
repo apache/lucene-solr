@@ -200,17 +200,14 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    HttpSolrClient server = new HttpSolrClient(leaderUrl);
-    try {
-      server.setConnectionTimeout(30000);
+    try (HttpSolrClient client = new HttpSolrClient(leaderUrl)) {
+      client.setConnectionTimeout(30000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
-          server);
-    } finally {
-      server.shutdown();
+          client);
     }
   }
 
@@ -594,9 +591,9 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   
   private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
-    HttpSolrClient server = new HttpSolrClient(leaderBaseUrl);
-    try {
-      server.setConnectionTimeout(30000);
+
+    try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
+      client.setConnectionTimeout(30000);
       WaitForState prepCmd = new WaitForState();
       prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(zkController.getNodeName());
@@ -607,14 +604,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       if (!Slice.CONSTRUCTION.equals(slice.getState()) && !Slice.RECOVERY.equals(slice.getState())) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
-      HttpUriRequestResponse mrr = server.httpUriRequest(prepCmd);
+      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
       
       log.info("Sending prep recovery command to {}; {}", leaderBaseUrl, prepCmd.toString());
       
       mrr.future.get();
-    } finally {
-      server.shutdown();
     }
   }
 

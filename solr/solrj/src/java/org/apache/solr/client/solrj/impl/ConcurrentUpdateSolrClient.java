@@ -424,6 +424,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   @Override
+  public void close() {
+    shutdown();
+  }
+
+  @Override
+  @Deprecated
   public void shutdown() {
     client.shutdown();
     if (shutdownExecutor) {

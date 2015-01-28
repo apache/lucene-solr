@@ -280,15 +280,12 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       }
       sidl.add(sd);
     }
-    
-    HttpSolrClient solrServer = new HttpSolrClient(getSourceUrl());
-    try {
+
+    try (HttpSolrClient solrServer = new HttpSolrClient(getSourceUrl())) {
       solrServer.setConnectionTimeout(15000);
       solrServer.setSoTimeout(30000);
       solrServer.add(sidl);
       solrServer.commit(true, true);
-    } finally {
-      solrServer.shutdown();
     }
   }
   

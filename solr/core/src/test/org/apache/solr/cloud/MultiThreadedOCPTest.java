@@ -74,8 +74,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
         Create createCollectionRequest = new Create();
         createCollectionRequest.setCollectionName("ocptest" + i);
@@ -108,14 +107,11 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
         assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
       }
-    } finally {
-      client.shutdown();
     }
   }
 
   private void testTaskExclusivity() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       Create createCollectionRequest = new Create();
       createCollectionRequest.setCollectionName("ocptest_shardsplit");
       createCollectionRequest.setNumShards(4);
@@ -166,14 +162,11 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
         assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
       }
-    } finally {
-      client.shutdown();
     }
   }
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       Create createCollectionRequest = new Create();
       createCollectionRequest.setCollectionName("ocptest_shardsplit2");
       createCollectionRequest.setNumShards(4);
@@ -208,8 +201,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
         assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
       }
-    } finally {
-      client.shutdown();
     }
   }
 
@@ -230,8 +221,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
     };
     indexThread.start();
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    try {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
       SplitShard splitShardRequest = new SplitShard();
       splitShardRequest.setCollectionName("collection1");
@@ -266,8 +256,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         indexThread.join();
       } catch (InterruptedException e) {
         log.warn("Indexing thread interrupted.");
-      } finally {
-        client.shutdown();
       }
     }
   }

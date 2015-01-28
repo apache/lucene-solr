@@ -17,14 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -32,8 +26,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -45,10 +39,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Slow
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
@@ -164,8 +163,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION);
-      try {
+      try (HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
@@ -183,8 +181,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
         String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
-      } finally {
-        c.shutdown();
       }
     }
     

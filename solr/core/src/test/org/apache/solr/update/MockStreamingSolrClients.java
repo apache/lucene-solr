@@ -85,9 +85,11 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
       return solrClient.request(request);
     }
 
+    @Override
+    public void shutdown() { }
 
     @Override
-    public void shutdown() {}
+    public void close() {}
     
   }
 }

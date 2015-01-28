@@ -17,16 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -40,6 +30,17 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
 /**
  * <p>
@@ -75,7 +76,9 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   @Override
   public void destroy() {
     try {
-      solrClient.shutdown();
+      solrClient.close();
+    } catch (IOException e) {
+
     } finally {
       HttpClientUtil.close(((HttpSolrClient) solrClient).getHttpClient());
     }

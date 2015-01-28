@@ -148,11 +148,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
   }
   
-  private void testNodeWithoutCollectionForwarding() throws Exception,
-      SolrServerException, IOException {
-    try {
-      final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
-      HttpSolrClient client = new HttpSolrClient(baseUrl);
+  private void testNodeWithoutCollectionForwarding() throws Exception {
+    final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
+    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
       client.setConnectionTimeout(30000);
       Create createCmd = new Create();
       createCmd.setRoles("none");
@@ -161,7 +159,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       createCmd.setNumShards(1);
       createCmd.setDataDir(getDataDir(createTempDir(ONE_NODE_COLLECTION).toFile().getAbsolutePath()));
       client.request(createCmd);
-      client.shutdown();
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
@@ -174,8 +171,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     int docs = 2;
     for (SolrClient client : clients) {
-      final String baseUrl = getBaseUrl((HttpSolrClient) client);
-      addAndQueryDocs(baseUrl, docs);
+      final String clientUrl = getBaseUrl((HttpSolrClient) client);
+      addAndQueryDocs(clientUrl, docs);
       docs += 2;
     }
   }
@@ -183,36 +180,39 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   // 2 docs added every call
   private void addAndQueryDocs(final String baseUrl, int docs)
       throws Exception {
-    HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection" + "core");
-    
-    // it might take a moment for the proxy node to see us in their cloud state
-    waitForNon403or404or503(qclient);
-    
-    // add a doc
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", docs);
-    qclient.add(doc);
-    qclient.commit();
-    
+
     SolrQuery query = new SolrQuery("*:*");
-    QueryResponse results = qclient.query(query);
-    assertEquals(docs - 1, results.getResults().getNumFound());
-    qclient.shutdown();
+
+    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+
+      // it might take a moment for the proxy node to see us in their cloud state
+      waitForNon403or404or503(qclient);
+
+      // add a doc
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", docs);
+      qclient.add(doc);
+      qclient.commit();
+
+
+      QueryResponse results = qclient.query(query);
+      assertEquals(docs - 1, results.getResults().getNumFound());
+    }
     
-    qclient = new HttpSolrClient(baseUrl + "/onenodecollection");
-    results = qclient.query(query);
-    assertEquals(docs - 1, results.getResults().getNumFound());
-    
-    doc = new SolrInputDocument();
-    doc.addField("id", docs + 1);
-    qclient.add(doc);
-    qclient.commit();
-    
-    query = new SolrQuery("*:*");
-    query.set("rows", 0);
-    results = qclient.query(query);
-    assertEquals(docs, results.getResults().getNumFound());
-    qclient.shutdown();
+    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection")) {
+      QueryResponse results = qclient.query(query);
+      assertEquals(docs - 1, results.getResults().getNumFound());
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", docs + 1);
+      qclient.add(doc);
+      qclient.commit();
+
+      query = new SolrQuery("*:*");
+      query.set("rows", 0);
+      results = qclient.query(query);
+      assertEquals(docs, results.getResults().getNumFound());
+    }
   }
   
   private long testUpdateAndDelete() throws Exception {

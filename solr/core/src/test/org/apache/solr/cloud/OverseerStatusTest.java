@@ -38,6 +38,7 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
+
     waitForThingsToLevelOut(15);
 
     // find existing command counts because collection may be created by base test class too

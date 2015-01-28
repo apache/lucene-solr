@@ -76,30 +76,30 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient
       (jetty.getBaseUrl().toString() + "/collection1", 2, 2) {
         @Override
         public void handleError(Throwable ex) {
           failures.add(ex);
         }
-      };
-      
-    int docId = 42;
-    for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
-      for (boolean waitSearch : Arrays.asList(true, false)) {
-        for (boolean waitFlush : Arrays.asList(true, false)) {
-          UpdateRequest updateRequest = new UpdateRequest();
-          SolrInputDocument document = new SolrInputDocument();
-          document.addField("id", docId++ );
-          updateRequest.add(document);
-          updateRequest.setAction(action, waitSearch, waitFlush);
-          concurrentClient.request(updateRequest);
+      }) {
+
+      int docId = 42;
+      for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+        for (boolean waitSearch : Arrays.asList(true, false)) {
+          for (boolean waitFlush : Arrays.asList(true, false)) {
+            UpdateRequest updateRequest = new UpdateRequest();
+            SolrInputDocument document = new SolrInputDocument();
+            document.addField("id", docId++);
+            updateRequest.add(document);
+            updateRequest.setAction(action, waitSearch, waitFlush);
+            concurrentClient.request(updateRequest);
+          }
         }
       }
+      concurrentClient.commit();
+      concurrentClient.blockUntilFinished();
     }
-    concurrentClient.commit();
-    concurrentClient.blockUntilFinished();
-    concurrentClient.shutdown();
 
     if (0 != failures.size()) {
       assertEquals(failures.size() + " Unexpected Exception, starting with...", 

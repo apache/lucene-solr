@@ -4,6 +4,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -35,7 +36,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   Collection<String> hosts;
 
   @Test
-  public void testWithChroot() {
+  public void testWithChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
     boolean withChroot = random().nextBoolean();
@@ -43,7 +44,6 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
     final String chroot = "/mychroot";
 
     StringBuilder sb = new StringBuilder();
-    CloudSolrClient client;
 
     if(setOrList) {
       /*
@@ -62,15 +62,16 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
       if(i<numOfZKServers -1) sb.append(",");
     }
 
-    if(withChroot) {
+    String clientChroot = null;
+    if (withChroot) {
       sb.append(chroot);
-      client = new CloudSolrClient(hosts, "/mychroot");
-    } else {
-      client = new CloudSolrClient(hosts, null);
+      clientChroot = "/mychroot";
     }
 
-    assertEquals(sb.toString(), client.getZkHost());
-    client.shutdown();
+    try (CloudSolrClient client = new CloudSolrClient(hosts, clientChroot)) {
+      assertEquals(sb.toString(), client.getZkHost());
+    }
+
   }
   
   @Test(expected = IllegalArgumentException.class)

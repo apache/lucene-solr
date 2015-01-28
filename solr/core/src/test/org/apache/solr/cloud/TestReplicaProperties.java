@@ -18,11 +18,6 @@ package org.apache.solr.cloud;
  */
 
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,6 +33,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 @Slow
 public class TestReplicaProperties extends ReplicaPropertiesBase {
 
@@ -51,8 +51,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
       // shards, replicationfactor, maxreplicaspernode
       int shards = random().nextInt(7);
@@ -60,9 +60,6 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
       createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
-    } finally {
-      //remove collections
-      client.shutdown();
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
@@ -74,8 +71,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   }
 
   private void listCollection() throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
       SolrRequest request = new QueryRequest(params);
@@ -86,16 +83,13 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       assertTrue("control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
-    } finally {
-      //remove collections
-      client.shutdown();
     }
   }
 
 
   private void clusterAssignPropertyTest() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
       try {
         doPropertyAction(client,
@@ -192,8 +186,6 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
       verifyLeaderAssignment(client, COLLECTION_NAME);
 
-    } finally {
-      client.shutdown();
     }
   }
 

@@ -16,11 +16,6 @@
  */
 package org.apache.solr.hadoop;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -28,6 +23,11 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
+
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class UtilsForTests {
@@ -40,17 +40,13 @@ public class UtilsForTests {
     for (FileStatus dir : fs.listStatus(outDir)) { // for each shard
       if (dir.getPath().getName().startsWith("part") && dir.isDirectory()) {
         actualShards++;
-        EmbeddedSolrServer solr = SolrRecordWriter.createEmbeddedSolrServer(
-            new Path(solrHomeDir.getAbsolutePath()), fs, dir.getPath());
-        
-        try {
+        try (EmbeddedSolrServer solr
+                 = SolrRecordWriter.createEmbeddedSolrServer(new Path(solrHomeDir.getAbsolutePath()), fs, dir.getPath())) {
           SolrQuery query = new SolrQuery();
           query.setQuery("*:*");
           QueryResponse resp = solr.query(query);
           long numDocs = resp.getResults().getNumFound();
           actualDocs += numDocs;
-        } finally {
-          solr.shutdown();
         }
       }
     }

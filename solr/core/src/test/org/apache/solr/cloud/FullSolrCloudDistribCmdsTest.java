@@ -430,12 +430,11 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
   
   private long testConcurrentIndexing(long docId) throws Exception {
-    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
-        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2);
     QueryResponse results = query(cloudClient);
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
-    try {
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
+        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2)) {
       concurrentClient.setConnectionTimeout(120000);
       for (int i = 0; i < cnt; i++) {
         index_specific(concurrentClient, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
@@ -446,8 +445,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
       checkShardConsistency();
       assertDocCounts(VERBOSE);
-    } finally {
-      concurrentClient.shutdown();
     }
     results = query(cloudClient);
     assertEquals(beforeCount + cnt, results.getResults().getNumFound());

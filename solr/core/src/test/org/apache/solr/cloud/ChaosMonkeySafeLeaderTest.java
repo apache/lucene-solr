@@ -17,10 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,6 +27,10 @@ import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slow
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
@@ -168,14 +168,10 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
       zkServer.run();
     }
-    
-    CloudSolrClient client = createCloudClient("collection1");
-    try {
-        createCollection(null, "testcollection",
-            1, 1, 1, client, null, "conf1");
 
-    } finally {
-      client.shutdown();
+    try (CloudSolrClient client = createCloudClient("collection1")) {
+        createCollection(null, "testcollection", 1, 1, 1, client, null, "conf1");
+
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);

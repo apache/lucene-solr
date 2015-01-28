@@ -27,7 +27,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
@@ -93,7 +92,7 @@ public class SolrMorphlineZkTest extends AbstractSolrMorphlineZkTestBase {
     
     Notifications.notifyRollbackTransaction(morphline);
     Notifications.notifyShutdown(morphline);
-    cloudClient.shutdown();
+    cloudClient.close();
   }
 
 }

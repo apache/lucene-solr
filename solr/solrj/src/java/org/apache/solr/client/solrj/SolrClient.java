@@ -35,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ import java.util.List;
  *
  * @since 5.0, replaced {@code SolrServer}
  */
-public abstract class SolrClient implements Serializable {
+public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
   private DocumentObjectBinder binder;
@@ -403,6 +404,13 @@ public abstract class SolrClient implements Serializable {
    * Release allocated resources.
    *
    * @since solr 4.0
+   * @deprecated Use close() instead.
    */
+  @Deprecated
   public abstract void shutdown();
+
+  //@SuppressWarnings("deprecation")
+  public void close() throws IOException {
+    shutdown();
+  }
 }

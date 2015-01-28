@@ -17,12 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,6 +29,12 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 
@@ -173,20 +173,16 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    HttpSolrClient solrServer = null;
-    try {
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-      String url = zkProps.getBaseUrl() + "/" + collection;
-      solrServer = new HttpSolrClient(url);
-            
+
+    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
+    String url = zkProps.getBaseUrl() + "/" + collection;
+
+    try (HttpSolrClient solrServer = new HttpSolrClient(url)) {
       NamedList resp = solrServer.request(up);
       NamedList hdr = (NamedList) resp.get("responseHeader");
       Integer batchRf = (Integer)hdr.get(UpdateRequest.REPFACT);
       assertTrue("Expected rf="+expectedRf+" for batch but got "+
         batchRf+"; clusterState: "+printClusterStateInfo(), batchRf == expectedRf);      
-    } finally {
-      if (solrServer != null)
-        solrServer.shutdown();
     }
   }
     

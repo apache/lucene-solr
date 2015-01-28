@@ -85,6 +85,10 @@ New Features
 * SOLR-6449: Add first class support for Real Time Get in Solrj.
   (Anurag Sharma, Steve Davids via shalin)
 
+* SOLR-6954: SolrClient now implements Closeable, and shutdown() has been
+  deprecated in favour of close(). (Mark Miller, Tomás Fernández Löbbe, Alan
+  Woodward)
+
 Other Changes
 ----------------------
 

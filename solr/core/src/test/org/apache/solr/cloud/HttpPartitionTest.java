@@ -362,23 +362,17 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("Sending doc 2 to old leader "+leader.getName());
     try {
       leaderSolr.add(doc);
-      leaderSolr.shutdown();
+      leaderSolr.close();
 
       // if the add worked, then the doc must exist on the new leader
-      HttpSolrClient newLeaderSolr = getHttpSolrClient(currentLeader, testCollectionName);
-      try {
+      try (HttpSolrClient newLeaderSolr = getHttpSolrClient(currentLeader, testCollectionName)) {
         assertDocExists(newLeaderSolr, testCollectionName, "2");
-      } finally {
-        newLeaderSolr.shutdown();
       }
 
     } catch (SolrException exc) {
       // this is ok provided the doc doesn't exist on the current leader
-      leaderSolr = getHttpSolrClient(currentLeader, testCollectionName);
-      try {
-        leaderSolr.add(doc); // this should work
-      } finally {
-        leaderSolr.shutdown();
+      try (HttpSolrClient client = getHttpSolrClient(currentLeader, testCollectionName)) {
+        client.add(doc); // this should work
       }
     }
 
@@ -425,12 +419,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void assertDocsExistInAllReplicas(List<Replica> notLeaders,
       String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
-    Replica leader = 
+    Replica leader =
         cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas =
         new ArrayList<HttpSolrClient>(notLeaders.size());
-    
+
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));
     }
@@ -444,10 +438,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       }
     } finally {
       if (leaderSolr != null) {
-        leaderSolr.shutdown();
+        leaderSolr.close();
       }
       for (HttpSolrClient replicaSolr : replicas) {
-        replicaSolr.shutdown();
+        replicaSolr.close();
       }
     }
   }

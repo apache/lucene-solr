@@ -257,9 +257,8 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
 
     Replica replica1 = testCollection.getReplica("core_node1");
 
-    HttpSolrClient solrServer = new HttpSolrClient(replica1.getStr("base_url"));
-    try {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), solrServer);
+    try (HttpSolrClient client = new HttpSolrClient(replica1.getStr("base_url"))) {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), client);
       NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
       String dataDirStr = (String) coreStatus.get("dataDir");
       String instanceDirStr = (String) coreStatus.get("instanceDir");
@@ -267,9 +266,6 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
           new File(instanceDirStr).getAbsolutePath(), instanceDir.getAbsolutePath());
       assertEquals("Data dir does not match param given in property.dataDir syntax",
           new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
-
-    } finally {
-      solrServer.shutdown();
     }
 
     CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();

@@ -83,11 +83,8 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // let's find the leader of shard2 and ask him to commit
     Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
-    HttpSolrClient server = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")));
-    try {
+    try (HttpSolrClient server = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")))) {
       server.commit();
-    } finally {
-      server.shutdown();
     }
 
     Thread.sleep(sleepMsBeforeHealPartition);
@@ -129,9 +126,9 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     leaderProxy.close();
 
     Replica replica = notLeaders.get(0);
-    HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")));
-    client.commit();
-    client.shutdown();
+    try (HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")))) {
+      client.commit();
+    }
 
     Thread.sleep(sleepMsBeforeHealPartition);
 

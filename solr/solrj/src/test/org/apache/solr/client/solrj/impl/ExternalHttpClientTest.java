@@ -25,7 +25,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,24 +52,20 @@ public class ExternalHttpClientTest extends SolrJettyTestBase {
    */
   @Test
   public void testTimeoutWithExternalClient() throws Exception {
+
     HttpClientBuilder builder = HttpClientBuilder.create();
     RequestConfig config = RequestConfig.custom().setSocketTimeout(2000).build();
     builder.setDefaultRequestConfig(config);
-    HttpSolrClient solrClient = null;
-    try (CloseableHttpClient httpClient = builder.build()) {
-      solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() +
-          "/slow/foo", httpClient);
+
+    try (CloseableHttpClient httpClient = builder.build();
+         HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() + "/slow/foo", httpClient)) {
 
       SolrQuery q = new SolrQuery("*:*");
       try {
-        QueryResponse response = solrClient.query(q, SolrRequest.METHOD.GET);
+        solrClient.query(q, SolrRequest.METHOD.GET);
         fail("No exception thrown.");
       } catch (SolrServerException e) {
         assertTrue(e.getMessage().contains("Timeout"));
-      }
-    } finally {
-      if (solrClient != null) {
-        solrClient.shutdown();
       }
     }
   }

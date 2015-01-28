@@ -19,12 +19,13 @@ package org.apache.solr.schema;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
@@ -47,7 +48,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -58,7 +58,6 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -79,9 +78,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
@@ -331,9 +327,8 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     @Override
     public Integer call() throws Exception {
-      HttpSolrClient solr = new HttpSolrClient(coreUrl);
       int remoteVersion = -1;
-      try {
+      try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
@@ -358,10 +353,7 @@ public final class ManagedIndexSchema extends IndexSchema {
             }
           }
         }
-      } finally {
-        solr.shutdown();
       }
-
       return remoteVersion;
     }
 

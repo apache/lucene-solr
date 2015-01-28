@@ -69,17 +69,13 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
     
     //create second core
-    HttpSolrClient nodeClient = new HttpSolrClient(url);
-    try {
+    try (HttpSolrClient nodeClient = new HttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
       nodeClient.request(req);
     }
-    finally {
-      nodeClient.shutdown();
-    }
-    
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("subject", "batman");
@@ -103,8 +99,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   
   @AfterClass
   public static void destroyThings() throws Exception {
-    collection1.shutdown();
-    collection2.shutdown();
+    collection1.close();
+    collection2.close();
     collection1 = null;
     collection2 = null;
     jetty.stop();

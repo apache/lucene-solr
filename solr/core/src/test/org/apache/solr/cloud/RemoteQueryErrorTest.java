@@ -67,7 +67,7 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
       } catch(Exception ex) {
         fail("Expected a SolrException to occur, instead received: " + ex.getClass());
       } finally {
-        solrClient.shutdown();
+        solrClient.close();
       }
     }
   }

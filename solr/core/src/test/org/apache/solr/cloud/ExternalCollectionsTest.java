@@ -24,8 +24,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.handler.BlobHandler;
-import org.apache.solr.handler.TestBlobHandler;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
@@ -43,7 +41,7 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    client.shutdown();
+    client.close();
   }
 
   protected String getSolrXml() {

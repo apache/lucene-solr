@@ -16,22 +16,24 @@
  */
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.CursorMark;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
@@ -42,9 +44,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**

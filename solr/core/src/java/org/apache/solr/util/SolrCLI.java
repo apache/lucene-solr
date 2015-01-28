@@ -113,10 +113,8 @@ public class SolrCLI {
       
       log.debug("Connecting to Solr cluster: " + zkHost);
       int exitStatus = 0;
-      CloudSolrClient cloudSolrClient = null;
-      try {
-        cloudSolrClient = new CloudSolrClient(zkHost);
-        
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+
         String collection = cli.getOptionValue("collection");
         if (collection != null)
           cloudSolrClient.setDefaultCollection(collection);
@@ -131,12 +129,6 @@ public class SolrCLI {
           exitStatus = 1;
         } else {
           throw exc;
-        }
-      } finally {
-        if (cloudSolrClient != null) {
-          try {
-            cloudSolrClient.shutdown();
-          } catch (Exception ignore) {}
         }
       }
       
@@ -973,12 +965,13 @@ public class SolrCLI {
             replicaStatus = ZkStateReader.DOWN;
           } else {
             // query this replica directly to get doc count and assess health
-            HttpSolrClient solr = new HttpSolrClient(coreUrl);
-            String solrUrl = solr.getBaseURL();
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set("distrib", "false");
-            try {
+            try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
+
+              String solrUrl = solr.getBaseURL();
+
               qr = solr.query(q);
               numDocs = qr.getResults().getNumFound();
 
@@ -993,15 +986,13 @@ public class SolrCLI {
               // if we get here, we can trust the state
               replicaStatus = replicaCoreProps.getState();
             } catch (Exception exc) {
-              log.error("ERROR: " + exc + " when trying to reach: " + solrUrl);
+              log.error("ERROR: " + exc + " when trying to reach: " + coreUrl);
 
               if (checkCommunicationError(exc)) {
                 replicaStatus = "down";
               } else {
                 replicaStatus = "error: "+exc;
               }
-            } finally {
-              solr.shutdown();
             }
           }
 
@@ -1161,9 +1152,8 @@ public class SolrCLI {
       }
 
       int toolExitStatus = 0;
-      CloudSolrClient cloudSolrServer = null;
-      try {
-        cloudSolrServer = new CloudSolrClient(zkHost);
+
+      try (CloudSolrClient cloudSolrServer = new CloudSolrClient(zkHost)) {
         System.out.println("Connecting to ZooKeeper at " + zkHost);
         cloudSolrServer.connect();
         toolExitStatus = runCloudTool(cloudSolrServer, cli);
@@ -1175,12 +1165,6 @@ public class SolrCLI {
           toolExitStatus = 1;
         } else {
           throw exc;
-        }
-      } finally {
-        if (cloudSolrServer != null) {
-          try {
-            cloudSolrServer.shutdown();
-          } catch (Exception ignore) {}
         }
       }
 
@@ -1600,12 +1584,10 @@ public class SolrCLI {
       String zkHost = getZkHost(cli);
 
       int toolExitStatus = 0;
-      CloudSolrClient cloudSolrServer = null;
-      try {
-        cloudSolrServer = new CloudSolrClient(zkHost);
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
         System.out.println("Connecting to ZooKeeper at " + zkHost);
-        cloudSolrServer.connect();
-        toolExitStatus = deleteCollection(cloudSolrServer, cli);
+        cloudSolrClient.connect();
+        toolExitStatus = deleteCollection(cloudSolrClient, cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
@@ -1614,12 +1596,6 @@ public class SolrCLI {
           toolExitStatus = 1;
         } else {
           throw exc;
-        }
-      } finally {
-        if (cloudSolrServer != null) {
-          try {
-            cloudSolrServer.shutdown();
-          } catch (Exception ignore) {}
         }
       }
 

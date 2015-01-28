@@ -250,13 +250,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         zkServer.run();
       }
       
-      CloudSolrClient client = createCloudClient("collection1");
-      try {
+
+      try (CloudSolrClient client = createCloudClient("collection1")) {
           createCollection(null, "testcollection",
               1, 1, 1, client, null, "conf1");
 
-      } finally {
-        client.shutdown();
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);

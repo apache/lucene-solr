@@ -16,6 +16,15 @@
  */
 package org.apache.solr.hadoop;
 
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.TaskID;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,15 +34,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskID;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Enables adding batches of documents to an EmbeddedSolrServer.
@@ -209,7 +209,7 @@ class BatchWriter {
     context.setStatus("Committing Solr Phase 2");
     solr.commit(true, false);
     context.setStatus("Shutting down Solr");
-    solr.shutdown();
+    solr.close();
   }
 
   /**

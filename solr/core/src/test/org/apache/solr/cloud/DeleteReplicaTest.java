@@ -66,7 +66,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    client.shutdown();
+    client.close();
   }
 
   protected String getSolrXml() {
@@ -82,8 +82,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   @ShardsFixed(num = 4)
   public void deleteLiveReplicaTest() throws Exception {
     String collectionName = "delLiveColl";
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       createCollection(collectionName, client);
       
       waitForRecoveriesToFinish(collectionName, false);
@@ -111,14 +110,11 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
       if (replica1 == null) fail("no active replicas found");
 
-      HttpSolrClient replica1Client = new HttpSolrClient(replica1.getStr("base_url"));
       String dataDir = null;
-      try {
+      try (HttpSolrClient replica1Client = new HttpSolrClient(replica1.getStr("base_url"))) {
         CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Client);
         NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
         dataDir = (String) coreStatus.get("dataDir");
-      } finally {
-        replica1Client.shutdown();
       }
       try {
         // Should not be able to delete a replica that is up if onlyIfDown=true.
@@ -135,8 +131,6 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
       removeAndWaitForReplicaGone(collectionName, client, replica1, shard1.getName());
       assertFalse("dataDir for " + replica1.getName() + " should have been deleted by deleteReplica API", new File(dataDir).exists());
-    } finally {
-      client.shutdown();
     }
   }
 

@@ -73,15 +73,16 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
    */
   @Test
   public void testQueryParse() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) createNewSolrClient();
-    SolrQuery query = new SolrQuery("id:1234");
-    QueryRequest req = new QueryRequest(query);
-    client.setParser(new NoOpResponseParser());
-    NamedList<Object> resp = client.request(req);
-    String responseString = (String) resp.get("response");
 
-    assertResponse(responseString);
-    client.shutdown();
+    try (HttpSolrClient client = (HttpSolrClient) createNewSolrClient()) {
+      SolrQuery query = new SolrQuery("id:1234");
+      QueryRequest req = new QueryRequest(query);
+      client.setParser(new NoOpResponseParser());
+      NamedList<Object> resp = client.request(req);
+      String responseString = (String) resp.get("response");
+      assertResponse(responseString);
+    }
+
   }
 
   private void assertResponse(String responseString) throws IOException {

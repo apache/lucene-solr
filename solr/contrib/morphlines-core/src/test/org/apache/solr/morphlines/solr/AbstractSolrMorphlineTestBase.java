@@ -139,7 +139,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     collector = null;
-    solrClient.shutdown();
+    solrClient.close();
     solrClient = null;
     super.tearDown();
   }

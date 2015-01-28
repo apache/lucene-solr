@@ -752,6 +752,12 @@ public class HttpSolrClient extends SolrClient {
    * Close the {@link ClientConnectionManager} from the internal client.
    */
   @Override
+  public void close() throws IOException {
+    shutdown();
+  }
+
+  @Override
+  @Deprecated
   public void shutdown() {
     if (httpClient != null && internalClient) {
       HttpClientUtil.close(httpClient);

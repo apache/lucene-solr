@@ -68,8 +68,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"));
-    try {
+    try (HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"))) {
       solrClient.request(req);
       ModifiableSolrParams qparams = new ModifiableSolrParams();
       qparams.add("q", "*:*");
@@ -78,9 +77,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       assertEquals(2, results.getNumFound());
       SolrDocument doc = results.get(0);
       assertEquals("1", doc.getFieldValue("id"));
-      assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
-    } finally {
-      solrClient.shutdown();
+      assertEquals("Hello C1", ((List) doc.getFieldValue("desc")).get(0));
     }
   }
 
@@ -91,22 +88,22 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         "clean", "false", UpdateParams.COMMIT, "false", 
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
-    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"));
-    solrServer.request(req);
-    Thread.sleep(100);
-    ModifiableSolrParams queryAll = params("q", "*");
-    QueryResponse qres = solrServer.query(queryAll);
-    SolrDocumentList results = qres.getResults();
-    assertEquals(0, results.getNumFound());
-    Thread.sleep(1000);
-    for (int i = 0; i < 10; i++) {
-      qres = solrServer.query(queryAll);
-      results = qres.getResults();
-      if (2 == results.getNumFound()) {
-        solrServer.shutdown();
-        return;
+    try (HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"))) {
+      solrServer.request(req);
+      Thread.sleep(100);
+      ModifiableSolrParams queryAll = params("q", "*");
+      QueryResponse qres = solrServer.query(queryAll);
+      SolrDocumentList results = qres.getResults();
+      assertEquals(0, results.getNumFound());
+      Thread.sleep(1000);
+      for (int i = 0; i < 10; i++) {
+        qres = solrServer.query(queryAll);
+        results = qres.getResults();
+        if (2 == results.getNumFound()) {
+          return;
+        }
+        Thread.sleep(500);
       }
-      Thread.sleep(500);
     }
     fail("Commit should have occured but it did not");
   }

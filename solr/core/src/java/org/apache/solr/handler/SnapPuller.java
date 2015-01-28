@@ -16,25 +16,43 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationHandler.ALIAS;
-import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
-import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
-import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
-import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
-import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
-import static org.apache.solr.handler.ReplicationHandler.COMMAND;
-import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
-import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
-import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
-import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
-import static org.apache.solr.handler.ReplicationHandler.FILE;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.GENERATION;
-import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
-import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
-import static org.apache.solr.handler.ReplicationHandler.NAME;
-import static org.apache.solr.handler.ReplicationHandler.OFFSET;
-import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -76,43 +94,25 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
-import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.handler.ReplicationHandler.ALIAS;
+import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
+import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
+import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.FILE;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.ReplicationHandler.GENERATION;
+import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
+import static org.apache.solr.handler.ReplicationHandler.NAME;
+import static org.apache.solr.handler.ReplicationHandler.OFFSET;
+import static org.apache.solr.handler.ReplicationHandler.SIZE;
 
 /**
  * <p/> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -246,19 +246,16 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX modify to use shardhandler
-    NamedList rsp;
-    try {
+
+    // TODO modify to use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       
-      rsp = client.request(req);
+      return client.request(req);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
-    } finally {
-      client.shutdown();
     }
-    return rsp;
   }
 
   /**
@@ -271,8 +268,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient);  //XXX modify to use shardhandler
-    try {
+
+    // TODO modify to use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       NamedList response = client.request(req);
@@ -291,8 +289,6 @@ public class SnapPuller {
 
     } catch (SolrServerException e) {
       throw new IOException(e);
-    } finally {
-      client.shutdown();
     }
   }
 
@@ -1398,8 +1394,8 @@ public class SnapPuller {
       NamedList response;
       InputStream is = null;
 
-      HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null);  //XXX use shardhandler
-      try {
+      // TODO use shardhandler
+      try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null)) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         QueryRequest req = new QueryRequest(params);
@@ -1413,8 +1409,6 @@ public class SnapPuller {
         //close stream on error
         IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
-      } finally {
-        client.shutdown();
       }
     }
   }
@@ -1508,17 +1502,14 @@ public class SnapPuller {
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
     params.set(CommonParams.QT, "/replication");
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX use shardhandler
-    NamedList rsp;
-    try {
+
+    // TODO use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       QueryRequest request = new QueryRequest(params);
-      rsp = client.request(request);
-    } finally {
-      client.shutdown();
+      return client.request(request);
     }
-    return rsp;
   }
 
   static Integer readInterval(String interval) {

@@ -106,7 +106,7 @@ public class StreamingSolrClients {
   
   public synchronized void shutdown() {
     for (ConcurrentUpdateSolrClient client : solrClients.values()) {
-      client.shutdown();
+      client.close();
     }
   }
   
