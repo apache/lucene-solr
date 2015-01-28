@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -1199,7 +1200,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.close();
   }
 
-  // Simulate a corrupt index by removing one of the cfs
+  // Simulate a corrupt index by removing one of the
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
@@ -1237,8 +1238,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     for (SegmentCommitInfo si : sis) {
       assertTrue(si.info.getUseCompoundFile());
-      String cfsFiles[] = si.info.getCodec().compoundFormat().files(si.info);
-      dir.deleteFile(cfsFiles[0]);
+      List<String> victims = new ArrayList<String>(si.info.files());
+      Collections.shuffle(victims, random());
+      dir.deleteFile(victims.get(0));
       corrupted = true;
       break;
     }

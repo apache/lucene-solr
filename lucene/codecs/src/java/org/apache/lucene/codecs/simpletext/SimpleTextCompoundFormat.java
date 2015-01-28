@@ -209,11 +209,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       SimpleTextUtil.writeNewline(out);
     }
   }
-
-  @Override
-  public String[] files(SegmentInfo si) {
-    return new String[] { IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION) };
-  }
   
   // helper method to strip strip away 'prefix' from 'scratch' and return as String
   private String stripPrefix(BytesRefBuilder scratch, BytesRef prefix) throws IOException {

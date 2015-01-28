@@ -485,7 +485,10 @@ class DocumentsWriterPerThread {
     try {
       
       if (indexWriterConfig.getUseCompoundFile()) {
-        filesToDelete.addAll(IndexWriter.createCompoundFile(infoStream, directory, newSegment.info, context));
+        Set<String> originalFiles = newSegment.info.files();
+        // TODO: like addIndexes, we are relying on createCompoundFile to successfully cleanup...
+        IndexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context);
+        filesToDelete.addAll(originalFiles);
         newSegment.info.setUseCompoundFile(true);
       }
 

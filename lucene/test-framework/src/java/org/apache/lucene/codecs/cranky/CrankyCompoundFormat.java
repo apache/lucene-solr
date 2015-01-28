@@ -47,9 +47,4 @@ class CrankyCompoundFormat extends CompoundFormat {
     }
     delegate.write(dir, si, files, context);
   }
-  
-  @Override
-  public String[] files(SegmentInfo si) {
-    return delegate.files(si);
-  }
 }

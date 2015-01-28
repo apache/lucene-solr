@@ -46,6 +46,10 @@ Optimizations
   instead of a separate merge sort for each segment.  In delete-heavy
   use cases this can be a sizable speedup. (Mike McCandless)
 
+API Changes
+
+* LUCENE-6204: Remove CompoundFileFormat.files(). (Robert Muir)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.

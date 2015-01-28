@@ -2580,8 +2580,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
+        TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
+        // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
+        // createCompoundFile tries to cleanup, but it might not always be able to...
         try {
-          createCompoundFile(infoStream, mergeDirectory, info, context);
+          createCompoundFile(infoStream, trackingCFSDir, info, context);
         } finally {
           // delete new non cfs files directly: they were never
           // registered with IFD
@@ -4030,11 +4033,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (useCompoundFile) {
         success = false;
 
-        String cfsFiles[] = merge.info.info.getCodec().compoundFormat().files(merge.info.info);
         Collection<String> filesToRemove = merge.info.files();
-
+        TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
         try {
-          filesToRemove = createCompoundFile(infoStream, mergeDirectory, merge.info.info, context);
+          createCompoundFile(infoStream, trackingCFSDir, merge.info.info, context);
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -4055,6 +4057,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
 
             synchronized(this) {
+              Set<String> cfsFiles = new HashSet<>(trackingCFSDir.getCreatedFiles());
               for (String cfsFile : cfsFiles) {
                 deleter.deleteFile(cfsFile);
               }
@@ -4078,6 +4081,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "abort merge after building CFS");
             }
+            Set<String> cfsFiles = new HashSet<>(trackingCFSDir.getCreatedFiles());
             for (String cfsFile : cfsFiles) {
               deleter.deleteFile(cfsFile);
             }
@@ -4528,11 +4532,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, final SegmentInfo info, IOContext context)
+  static final void createCompoundFile(InfoStream infoStream, TrackingDirectoryWrapper directory, final SegmentInfo info, IOContext context)
           throws IOException {
 
-    // TODO: use trackingdirectorywrapper instead of files() to know which files to delete when things fail:
-    String cfsFiles[] = info.getCodec().compoundFormat().files(info);
+    // maybe this check is not needed, but why take the risk?
+    if (!directory.getCreatedFiles().isEmpty()) {
+      throw new IllegalStateException("pass a clean trackingdir for CFS creation");
+    }
     
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file");
@@ -4546,18 +4552,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.deleteFilesIgnoringExceptions(directory, cfsFiles);
+        Set<String> cfsFiles = new HashSet<>(directory.getCreatedFiles());
+        for (String file : cfsFiles) {
+          IOUtils.deleteFilesIgnoringExceptions(directory, file);
+        }
       }
     }
 
     // Replace all previous files with the CFS/CFE files:
-    Set<String> siFiles = new HashSet<>();
-    for (String cfsFile : cfsFiles) {
-      siFiles.add(cfsFile);
-    }
+    Set<String> siFiles = new HashSet<>(directory.getCreatedFiles());
     info.setFiles(siFiles);
-
-    return files;
   }
   
   /**
