@@ -480,6 +480,10 @@ Bug Fixes
   FileNotFoundException when writing doc values updates at the same
   time that a merge kicks off.  (Mike McCandless)
   
+* LUCENE-6192: Fix int overflow corruption case in skip data for
+  high frequency terms in extremely large indices (Robert Muir, Mike
+  McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
