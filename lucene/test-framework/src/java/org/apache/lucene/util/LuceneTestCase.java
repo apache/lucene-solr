@@ -2550,13 +2550,13 @@ public abstract class LuceneTestCase extends Assert {
   /** 
    * Compares two strings with a collator, also looking to see if the the strings
    * are impacted by jdk bugs. may not avoid all jdk bugs in tests.
-   * see LUCENE-2606
+   * see https://bugs.openjdk.java.net/browse/JDK-8071862
    */
   public static int collate(Collator collator, String s1, String s2) {
     int v1 = collator.compare(s1, s2);
     int v2 = collator.getCollationKey(s1).compareTo(collator.getCollationKey(s2));
     // if collation keys don't really respect collation order, things are screwed.
-    assumeTrue("hit JDK collator bug", v1 == v2);
+    assumeTrue("hit JDK collator bug", Integer.signum(v1) == Integer.signum(v2));
     return v1;
   }
 }
