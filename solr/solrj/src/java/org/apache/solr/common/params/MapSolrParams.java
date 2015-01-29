@@ -19,6 +19,7 @@ package org.apache.solr.common.params;
 
 import org.apache.solr.common.util.StrUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.io.IOException;
@@ -35,13 +36,22 @@ public class MapSolrParams extends SolrParams {
 
   @Override
   public String get(String name) {
-    return map.get(name);
+    Object  o = map.get(name);
+    if(o == null) return null;
+    if (o instanceof String) return  (String) o;
+    if (o instanceof String[]) {
+      String[] strings = (String[]) o;
+      if(strings.length == 0) return null;
+      return strings[0];
+    }
+    return String.valueOf(o);
   }
 
   @Override
   public String[] getParams(String name) {
-    String val = map.get(name);
-    return val==null ? null : new String[]{val};
+    Object val = map.get(name);
+    if (val instanceof String[]) return (String[]) val;
+    return val==null ? null : new String[]{String.valueOf(val)};
   }
 
   @Override
@@ -59,13 +69,16 @@ public class MapSolrParams extends SolrParams {
 
       for (Map.Entry<String,String> entry : map.entrySet()) {
         String key = entry.getKey();
-        String val = entry.getValue();
-
+        Object val = entry.getValue();
+        if (val instanceof String[]) {
+          String[] strings = (String[]) val;
+          val =  StrUtils.join(Arrays.asList(strings),',');
+        }
         if (!first) sb.append('&');
         first=false;
         sb.append(key);
         sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val==null ? "" : val);
+        StrUtils.partialURLEncodeVal(sb, val==null ? "" : String.valueOf(val));
       }
     }
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen

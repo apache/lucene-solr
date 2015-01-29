@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -175,7 +176,9 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     payload = " {\n" +
         "  'set' : {'y':{\n" +
         "                'c':'CY val',\n" +
-        "                'b': 'BY val'}\n" +
+        "                'b': 'BY val', " +
+        "                'i': 20, " +
+        "                'd': ['val 1', 'val 2']}\n" +
         "             }\n" +
         "  }";
 
@@ -190,6 +193,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         asList("response", "params", "y", "c"),
         "CY val",
         10);
+    compareValues(result, 20l, asList("response", "params", "y", "i"));
+
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -200,6 +205,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         5);
     compareValues(result, "BY val", asList("params", "b"));
     compareValues(result, null, asList("params", "a"));
+    compareValues(result, Arrays.asList("val 1", "val 2")  , asList("params", "d"));
+    compareValues(result, "20"  , asList("params", "i"));
     payload = " {\n" +
         "  'update' : {'y': {\n" +
         "                'c':'CY val modified',\n" +
@@ -257,7 +264,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static void compareValues(Map result, String expected, List<String> jsonPath) {
+  public static void compareValues(Map result, Object expected, List<String> jsonPath) {
     assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
         Objects.equals(expected, ConfigOverlay.getObjectByPath(result, false, jsonPath)));
   }
