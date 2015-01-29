@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6924")
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestSolrConfigHandlerCloud.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
