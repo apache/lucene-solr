@@ -177,7 +177,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes.get()));
        if (docid < 0) continue;
-       StoredDocument luceneDocument = searcher.doc(docid);
+       StoredDocument luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        if( transformer != null ) {
          transformer.transform(doc, docid);
