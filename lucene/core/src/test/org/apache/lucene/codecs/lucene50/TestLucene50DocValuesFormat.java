@@ -37,6 +37,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -184,10 +185,13 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
       LeafReader r = context.reader();
       Terms terms = r.terms("indexed");
       if (terms != null) {
-        assertEquals(terms.size(), r.getSortedSetDocValues("dv").getValueCount());
+        SortedSetDocValues ssdv = r.getSortedSetDocValues("dv");
+        assertEquals(terms.size(), ssdv.getValueCount());
         TermsEnum expected = terms.iterator(null);
         TermsEnum actual = r.getSortedSetDocValues("dv").termsEnum();
         assertEquals(terms.size(), expected, actual);
+
+        doTestSortedSetEnumAdvanceIndependently(ssdv);
       }
     }
     ir.close();
