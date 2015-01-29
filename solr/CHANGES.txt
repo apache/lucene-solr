@@ -93,6 +93,12 @@ New Features
   deprecated in favour of close(). (Mark Miller, Tomás Fernández Löbbe, Alan
   Woodward)
 
+Bug Fixes
+----------------------
+
+* SOLR-7046: NullPointerException when group.function uses query() function.
+  (Jim Musil via Erick Erickson)
+
 Other Changes
 ----------------------
 

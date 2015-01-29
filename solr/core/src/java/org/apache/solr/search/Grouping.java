@@ -927,7 +927,7 @@ public class Grouping {
      */
     @Override
     protected void prepare() throws IOException {
-      Map context = ValueSource.newContext(searcher);
+      context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
