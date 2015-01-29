@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -143,6 +144,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -2543,5 +2545,18 @@ public abstract class LuceneTestCase extends Assert {
     boolean enabled = false;
     assert enabled = true; // Intentional side-effect!!!
     assertsAreEnabled = enabled;
+  }
+  
+  /** 
+   * Compares two strings with a collator, also looking to see if the the strings
+   * are impacted by jdk bugs. may not avoid all jdk bugs in tests.
+   * see LUCENE-2606
+   */
+  public static int collate(Collator collator, String s1, String s2) {
+    int v1 = collator.compare(s1, s2);
+    int v2 = collator.getCollationKey(s1).compareTo(collator.getCollationKey(s2));
+    // if collation keys don't really respect collation order, things are screwed.
+    assumeTrue("hit JDK collator bug", v1 == v2);
+    return v1;
   }
 }
