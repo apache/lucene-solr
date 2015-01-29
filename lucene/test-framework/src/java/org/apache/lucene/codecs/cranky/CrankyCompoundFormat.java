@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CompoundFormat;
@@ -41,10 +40,10 @@ class CrankyCompoundFormat extends CompoundFormat {
   }
   
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from CompoundFormat.write()");
     }
-    delegate.write(dir, si, files, context);
+    delegate.write(dir, si, context);
   }
 }

@@ -44,10 +44,10 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String fileName = IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION);
     try (Directory cfs = new Lucene40CompoundReader(dir, fileName, context, true)) {
-      for (String file : files) {
+      for (String file : si.files()) {
         cfs.copyFrom(dir, file, file, context);
       }
     }

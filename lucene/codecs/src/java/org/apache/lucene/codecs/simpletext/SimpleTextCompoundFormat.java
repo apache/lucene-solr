@@ -156,11 +156,11 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     
-    int numFiles = files.size();
-    String names[] = files.toArray(new String[numFiles]);
+    int numFiles = si.files().size();
+    String names[] = si.files().toArray(new String[numFiles]);
     Arrays.sort(names);
     long startOffsets[] = new long[numFiles];
     long endOffsets[] = new long[numFiles];
