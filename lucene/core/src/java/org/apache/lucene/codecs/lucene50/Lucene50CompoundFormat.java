@@ -72,7 +72,7 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     String entriesFile = IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION);
     
@@ -82,8 +82,8 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
       
       // write number of files
-      entries.writeVInt(files.size());
-      for (String file : files) {
+      entries.writeVInt(si.files().size());
+      for (String file : si.files()) {
         
         // write bytes for file
         long startOffset = data.getFilePointer();

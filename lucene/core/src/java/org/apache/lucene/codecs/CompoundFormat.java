@@ -18,7 +18,6 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -44,7 +43,7 @@ public abstract class CompoundFormat {
   public abstract Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
   
   /**
-   * Packs the provided files into a compound format.
+   * Packs the provided segment's files into a compound format.
    */
-  public abstract void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException;
+  public abstract void write(Directory dir, SegmentInfo si, IOContext context) throws IOException;
 }

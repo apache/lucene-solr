@@ -48,7 +48,8 @@ Optimizations
 
 API Changes
 
-* LUCENE-6204: Remove CompoundFileFormat.files(). (Robert Muir)
+* LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
+  and remove files parameter to write(). (Robert Muir)
 
 Other
 

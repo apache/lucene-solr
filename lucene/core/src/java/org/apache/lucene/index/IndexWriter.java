@@ -4543,12 +4543,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file");
     }
-    // Now merge all added files
-    Collection<String> files = info.files();
-    
+    // Now merge all added files    
     boolean success = false;
     try {
-      info.getCodec().compoundFormat().write(directory, info, files, context);
+      info.getCodec().compoundFormat().write(directory, info, context);
       success = true;
     } finally {
       if (!success) {
