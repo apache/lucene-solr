@@ -576,6 +576,9 @@ Bug Fixes
 * SOLR-7016: Fix bin\solr.cmd to work in a directory with spaces in the name.
   (Timothy Potter, Uwe Schindler)
 
+* SOLR-6969: When opening an HDFSTransactionLog for append we must first attempt to recover
+  it's lease to prevent data loss. (Mark Miller, Praneeth Varma, Colin McCabe)
+
 Optimizations
 ----------------------
 

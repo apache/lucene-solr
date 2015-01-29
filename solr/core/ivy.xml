@@ -62,6 +62,8 @@
     <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="${/org.apache.hadoop/hadoop-annotations}" conf="compile.hadoop"/>
     <dependency org="org.apache.hadoop" name="hadoop-auth" rev="${/org.apache.hadoop/hadoop-auth}" conf="compile.hadoop"/>
     <dependency org="commons-configuration" name="commons-configuration" rev="${/commons-configuration/commons-configuration}" conf="compile.hadoop"/>
+    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile.hadoop"/>
+    
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
     <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${/com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru}" conf="compile.hadoop"/>
 

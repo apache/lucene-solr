@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.CollectionsAPIDistributedZkTest;
+import org.apache.solr.update.HdfsUpdateLog;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -46,6 +47,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   
   @AfterClass
   public static void teardownClass() throws Exception {
+    assertEquals(0, HdfsUpdateLog.INIT_FAILED_LOGS_COUNT.get());
     HdfsTestUtil.teardownClass(dfsCluster);
     System.clearProperty("solr.hdfs.home");
     System.clearProperty("solr.hdfs.blockcache.enabled");
