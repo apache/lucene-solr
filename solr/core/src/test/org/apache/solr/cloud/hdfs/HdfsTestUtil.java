@@ -10,10 +10,14 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.IOUtils;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,6 +41,8 @@ public class HdfsTestUtil {
   private static Locale savedLocale;
   
   private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
+
+  private static FSDataOutputStream badTlogOutStream;
 
   public static MiniDFSCluster setupClass(String dir) throws Exception {
     return setupClass(dir, true);
@@ -69,10 +75,11 @@ public class HdfsTestUtil {
     
     final MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     dfsCluster.waitActive();
-
+    
     System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
     
-    if (safeModeTesting) {
+    int rndMode = LuceneTestCase.random().nextInt(10);
+    if (safeModeTesting && rndMode > 4) {
       NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
       
       int rnd = LuceneTestCase.random().nextInt(10000);
@@ -86,6 +93,13 @@ public class HdfsTestUtil {
       }, rnd);
       
       timers.put(dfsCluster, timer);
+    } else {
+      // force a lease recovery by creating a tlog file and not closing it
+      URI uri = dfsCluster.getURI();
+      Path hdfsDirPath = new Path(uri.toString() + "/solr/collection1/core_node1/data/tlog/tlog.0000000000000000000");
+      // tran log already being created testing
+      FileSystem fs = FileSystem.newInstance(hdfsDirPath.toUri(), conf);
+      badTlogOutStream = fs.create(hdfsDirPath);
     }
     
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
@@ -103,6 +117,10 @@ public class HdfsTestUtil {
     if (dfsCluster != null) {
       timers.remove(dfsCluster);
       dfsCluster.shutdown();
+    }
+    
+    if (badTlogOutStream != null) {
+      IOUtils.closeQuietly(badTlogOutStream);
     }
     
     // TODO: we HACK around HADOOP-9643

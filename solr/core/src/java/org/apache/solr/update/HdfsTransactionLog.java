@@ -34,6 +34,7 @@ import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.util.FSHDFSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +80,9 @@ public class HdfsTransactionLog extends TransactionLog {
       }
       this.tlogFile = tlogFile;
       
-      // TODO: look into forcefully taking over any lease
       if (fs.exists(tlogFile) && openExisting) {
+        FSHDFSUtils.recoverFileLease(fs, tlogFile, fs.getConf());
+        
         tlogOutStream = fs.append(tlogFile);
       } else {
         fs.delete(tlogFile, false);
