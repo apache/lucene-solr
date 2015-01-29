@@ -546,12 +546,19 @@ Other
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
 
+======================= Lucene 4.10.4 ======================
+
+* LUCENE-6207: Fixed consumption of several terms enums on the same
+  sorted (set) doc values instance at the same time.
+  (Tom Shally, Robert Muir, Adrien Grand)
+
 ======================= Lucene 4.10.3 ======================
 
 Bug fixes
 
 * LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
   (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
+
 
 ======================= Lucene 4.10.2 ======================
 
