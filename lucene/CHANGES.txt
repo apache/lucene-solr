@@ -18,6 +18,10 @@ Bug fixes
   high frequency terms in extremely large indices (Robert Muir, Mike
   McCandless)
 
+* LUCENE-6207: Fixed consumption of several terms enums on the same
+  sorted (set) doc values instance at the same time.
+  (Tom Shally, Robert Muir, Adrien Grand)
+
 ======================= Lucene 4.10.3 ======================
 
 Bug fixes
