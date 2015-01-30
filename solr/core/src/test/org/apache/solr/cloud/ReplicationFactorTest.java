@@ -17,11 +17,19 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -29,12 +37,6 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 
 //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 
@@ -128,7 +130,20 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     String shardId = "shard1";
     int minRf = 2;
     
-    createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+    
+    if (resp.getResponse().get("failure") != null) {
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+      
+      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+      
+      if (resp.getResponse().get("failure") != null) {
+        fail("Could not create " + testCollectionName);
+      }
+    }
+    
     cloudClient.setDefaultCollection(testCollectionName);
     
     List<Replica> replicas = 
@@ -149,8 +164,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(batch);
 
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
-    sendNonDirectUpdateRequestReplica(leader, up, 2, testCollectionName);    
-    sendNonDirectUpdateRequestReplica(replicas.get(0), up, 2, testCollectionName);    
+    sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 2, testCollectionName);    
+    sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 2, testCollectionName);    
     
     // so now kill the replica of shard2 and verify the achieved rf is only 1
     List<Replica> shard2Replicas = 
@@ -162,13 +177,22 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(2000);
     
     // shard1 will have rf=2 but shard2 will only have rf=1
-    sendNonDirectUpdateRequestReplica(leader, up, 1, testCollectionName);    
-    sendNonDirectUpdateRequestReplica(replicas.get(0), up, 1, testCollectionName);
+    sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 1, testCollectionName);    
+    sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 1, testCollectionName);
     
     // heal the partition
     getProxyForReplica(shard2Replicas.get(0)).reopen();
     
     Thread.sleep(2000);
+  }
+  
+
+  protected void sendNonDirectUpdateRequestReplicaWithRetry(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
+    try {
+      sendNonDirectUpdateRequestReplica(replica, up, expectedRf, collection);
+    } catch (Exception e) {
+      sendNonDirectUpdateRequestReplica(replica, up, expectedRf, collection);
+    }
   }
   
   @SuppressWarnings("rawtypes")
