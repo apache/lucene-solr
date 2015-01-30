@@ -17,14 +17,17 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.http.NoHttpResponseException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -41,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,7 +127,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testLeaderInitiatedRecoveryCRUD() throws Exception {
     String testCollectionName = "c8n_crud_1x2";
     String shardId = "shard1";
-    createCollection(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader =
@@ -172,7 +176,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf2() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x2";
-    createCollection(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
@@ -253,11 +257,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf3() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x3";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollectionRetry(testCollectionName, 1, 3, 1);
+    
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
-    
+
     List<Replica> notLeaders = 
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
@@ -306,11 +311,27 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  private void createCollectionRetry(String testCollectionName, int numShards, int replicationFactor, int maxShardsPerNode)
+      throws SolrServerException, IOException {
+    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+    if (resp.getResponse().get("failure") != null) {
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+      
+      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+      
+      if (resp.getResponse().get("failure") != null) {
+        fail("Could not create " + testCollectionName);
+      }
+    }
+  }
+
   // test inspired by SOLR-6511
   protected void testLeaderZkSessionLoss() throws Exception {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
-    createCollection(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     sendDoc(1);
@@ -329,7 +350,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         testCollectionName+"; clusterState: "+printClusterStateInfo(testCollectionName), leader);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
 
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(2));
     doc.addField("a_t", "hello" + 2);
@@ -360,7 +381,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // TODO: This test logic seems to be timing dependent and fails on Jenkins
     // need to come up with a better approach
     log.info("Sending doc 2 to old leader "+leader.getName());
-    try {
+    try ( HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName)) {
+    
       leaderSolr.add(doc);
       leaderSolr.close();
 
@@ -374,7 +396,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       try (HttpSolrClient client = getHttpSolrClient(currentLeader, testCollectionName)) {
         client.add(doc); // this should work
       }
-    }
+    } 
 
     List<Replica> participatingReplicas = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
     Set<String> replicasToCheck = new HashSet<>();
@@ -452,17 +474,37 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return new HttpSolrClient(url);
   }
   
-  protected void sendDoc(int docId) throws Exception {
+  protected void doSendDoc(int docid) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(2));
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField(id, String.valueOf(docId));
-    doc.addField("a_t", "hello" + docId);
+    doc.addField(id, String.valueOf(docid));
+    doc.addField("a_t", "hello" + docid);
     up.add(doc);
     int minAchievedRf =
         cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up));
   }
   
+  protected void sendDoc(int docId) throws Exception {
+    try {
+      doSendDoc(docId);
+    } catch (SolrServerException e) {
+      if (e.getRootCause() instanceof NoHttpResponseException) {
+        // we don't know if the doc was accepted or not, we send again
+        Thread.sleep(100);
+        try {
+          doSendDoc(docId);
+        } catch (SolrServerException e2) {
+          if (e2.getRootCause() instanceof NoHttpResponseException) {
+            // we don't know if the doc was accepted or not, we send again
+            Thread.sleep(3000);
+            doSendDoc(docId);
+          }
+        }
+      }
+    }
+  }
+   
   /**
    * Query the real-time get handler for a specific doc by ID to verify it
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
