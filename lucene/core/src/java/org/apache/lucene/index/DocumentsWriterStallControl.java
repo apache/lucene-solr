@@ -20,6 +20,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -43,6 +44,11 @@ final class DocumentsWriterStallControl {
   private int numWaiting; // only with assert
   private boolean wasStalled; // only with assert
   private final Map<Thread, Boolean> waiting = new IdentityHashMap<>(); // only with assert
+  private final InfoStream infoStream;
+
+  DocumentsWriterStallControl(LiveIndexWriterConfig iwc) {
+    infoStream = iwc.getInfoStream();
+  }
   
   /**
    * Update the stalled flag status. This method will set the stalled flag to
@@ -85,8 +91,13 @@ final class DocumentsWriterStallControl {
     return stalled;
   }
   
-  
+  long stallStartNS;
+
   private void incWaiters() {
+    stallStartNS = System.nanoTime();
+    if (infoStream.isEnabled("DW") && numWaiting == 0) {
+      infoStream.message("DW", "now stalling flushes");
+    }
     numWaiting++;
     assert waiting.put(Thread.currentThread(), Boolean.TRUE) == null;
     assert numWaiting > 0;
@@ -96,6 +107,10 @@ final class DocumentsWriterStallControl {
     numWaiting--;
     assert waiting.remove(Thread.currentThread()) != null;
     assert numWaiting >= 0;
+    if (infoStream.isEnabled("DW") && numWaiting == 0) {
+      long stallEndNS = System.nanoTime();
+      infoStream.message("DW", "done stalling flushes for " + ((stallEndNS - stallStartNS)/1000000.0) + " ms");
+    }
   }
   
   synchronized boolean hasBlocked() { // for tests
