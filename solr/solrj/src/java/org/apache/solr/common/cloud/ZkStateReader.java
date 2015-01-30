@@ -534,7 +534,6 @@ public class ZkStateReader implements Closeable {
       synchronized (ZkStateReader.this) {
         for (String watchedCollection : watchedCollections) {
           DocCollection live = getCollectionLive(this, watchedCollection);
-          assert live != null;
           if (live != null) {
             updateWatchedCollection(live);
           }
