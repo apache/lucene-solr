@@ -279,8 +279,8 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
       String docTerm = term.utf8ToString();
 
-      if (matchedTokens.contains(docTerm) || docTerm.startsWith(prefixToken)) {
-
+      if (matchedTokens.contains(docTerm) || (prefixToken != null && docTerm.startsWith(prefixToken))) {
+ 
         DocsAndPositionsEnum docPosEnum = it.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
         docPosEnum.nextDoc();
 
