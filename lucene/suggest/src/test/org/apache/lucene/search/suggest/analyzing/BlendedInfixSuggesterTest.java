@@ -165,6 +165,33 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
   }
 
+  /**
+   * Handle trailing spaces that result in no prefix token LUCENE-6093
+   */
+  public void testNullPrefixToken() throws IOException {
+
+    BytesRef payload = new BytesRef("lake");
+
+    Input keys[] = new Input[]{
+        new Input("top of the lake", 8, payload)
+    };
+
+    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
+
+    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                                                BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
+                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
+    suggester.build(new InputArrayIterator(keys));
+
+    getInResults(suggester, "of ", payload, 1);
+    getInResults(suggester, "the ", payload, 1);
+    getInResults(suggester, "lake ", payload, 1);
+
+    suggester.close();
+  }
+
   public void /*testT*/rying() throws IOException {
 
     BytesRef lake = new BytesRef("lake");
