@@ -116,7 +116,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("default useCompoundFile", false, sic.getUseCompoundFile());
 
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-    IndexWriterConfig iwc = sic.toIndexWriterConfig(indexSchema);
+    IndexWriterConfig iwc = sic.toIndexWriterConfig(h.getCore());
 
     assertNotNull("null mp", iwc.getMergePolicy());
     assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);

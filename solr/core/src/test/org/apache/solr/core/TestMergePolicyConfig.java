@@ -45,7 +45,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
   public void testDefaultMergePolicyConfig() throws Exception {
     initCore("solrconfig-mergepolicy-defaults.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(false, iwc.getUseCompoundFile());
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
@@ -61,7 +61,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     initCore("solrconfig-mergepolicy-legacy.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
 
@@ -81,7 +81,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     initCore("solrconfig-tieredmergepolicy.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
 
@@ -122,7 +122,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     System.setProperty("solr.test.log.merge.policy", mpClass.getName());
 
     initCore("solrconfig-logmergepolicy.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
 
     // verify some props set to -1 get lucene internal defaults
     assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);

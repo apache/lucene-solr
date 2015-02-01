@@ -55,14 +55,12 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
 
-    Analyzer analyzer = new MockAnalyzer(random());
-
     Document doc;
     for (int i = 0; i < 10; i++) {
       doc = new Document();
       doc.add(new Field("id", Integer.toString(i), ft));
       doc.add(new Field("text", random().nextInt(10) + " " + random().nextInt(10) + " " + random().nextInt(10), ft));
-      indexWriter.addDocument(doc, analyzer);
+      indexWriter.addDocument(doc);
     }
 
     indexWriter.commit();

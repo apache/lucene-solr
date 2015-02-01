@@ -392,6 +392,11 @@ API Changes
   Weight.scoresDocsOutOfOrder and LeafCollector.acceptsDocsOutOfOrder have been
   removed and boolean queries now always score in order.
 
+* LUCENE-6212: IndexWriter no longer accepts per-document Analyzer to
+  add/updateDocument.  These methods were trappy as they made it
+  easy to accidentally index tokens that were not easily
+  searchable. (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

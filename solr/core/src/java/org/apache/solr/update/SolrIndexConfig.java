@@ -17,6 +17,14 @@
 
 package org.apache.solr.update;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.util.InfoStream;
@@ -24,15 +32,13 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.MapSerializable;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.apache.solr.core.Config.assertWarnOrFail;
 
@@ -180,12 +186,23 @@ public class SolrIndexConfig implements MapSerializable {
     return l.isEmpty() ? def : l.get(0);
   }
 
-  public IndexWriterConfig toIndexWriterConfig(IndexSchema schema) {
-    // so that we can update the analyzer on core reload, we pass null
-    // for the default analyzer, and explicitly pass an analyzer on 
-    // appropriate calls to IndexWriter
-    
-    IndexWriterConfig iwc = new IndexWriterConfig(null);
+  private static class DelayedSchemaAnalyzer extends DelegatingAnalyzerWrapper {
+    private final SolrCore core;
+
+    public DelayedSchemaAnalyzer(SolrCore core) {
+      super(PER_FIELD_REUSE_STRATEGY);
+      this.core = core;
+    }
+
+    @Override
+    protected Analyzer getWrappedAnalyzer(String fieldName) {
+      return core.getLatestSchema().getIndexAnalyzer();
+    }
+  }
+
+  public IndexWriterConfig toIndexWriterConfig(SolrCore core) {
+    IndexSchema schema = core.getLatestSchema();
+    IndexWriterConfig iwc = new IndexWriterConfig(new DelayedSchemaAnalyzer(core));
     if (maxBufferedDocs != -1)
       iwc.setMaxBufferedDocs(maxBufferedDocs);
 

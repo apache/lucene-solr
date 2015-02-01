@@ -1127,22 +1127,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    */
   public void addDocument(IndexDocument doc) throws IOException {
-    addDocument(doc, analyzer);
-  }
-
-  /**
-   * Adds a document to this index, using the provided analyzer instead of the
-   * value of {@link #getAnalyzer()}.
-   *
-   * <p>See {@link #addDocument(IndexDocument)} for details on
-   * index and IndexWriter state after an Exception, and
-   * flushing/merging temporary free space requirements.</p>
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public void addDocument(IndexDocument doc, Analyzer analyzer) throws IOException {
-    updateDocument(null, doc, analyzer);
+    updateDocument(null, doc);
   }
 
   /**
@@ -1183,22 +1168,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @lucene.experimental
    */
   public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
-    addDocuments(docs, analyzer);
-  }
-
-  /**
-   * Atomically adds a block of documents, analyzed using the
-   * provided analyzer, with sequentially assigned document
-   * IDs, such that an external reader will see all or none
-   * of the documents. 
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   *
-   * @lucene.experimental
-   */
-  public void addDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
-    updateDocuments(null, docs, analyzer);
+    updateDocuments(null, docs);
   }
 
   /**
@@ -1215,24 +1185,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @lucene.experimental
    */
   public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
-    updateDocuments(delTerm, docs, analyzer);
-  }
-
-  /**
-   * Atomically deletes documents matching the provided
-   * delTerm and adds a block of documents, analyzed  using
-   * the provided analyzer, with sequentially
-   * assigned document IDs, such that an external reader
-   * will see all or none of the documents. 
-   *
-   * See {@link #addDocuments(Iterable)}.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   *
-   * @lucene.experimental
-   */
-  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
@@ -1383,26 +1335,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    */
   public void updateDocument(Term term, IndexDocument doc) throws IOException {
-    ensureOpen();
-    updateDocument(term, doc, analyzer);
-  }
-
-  /**
-   * Updates a document by first deleting the document(s)
-   * containing <code>term</code> and then adding the new
-   * document.  The delete and then add are atomic as seen
-   * by a reader on the same index (flush may happen only after
-   * the add).
-   *
-   * @param term the term to identify the document(s) to be
-   * deleted
-   * @param doc the document to be added
-   * @param analyzer the analyzer to use when analyzing the document
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public void updateDocument(Term term, IndexDocument doc, Analyzer analyzer)
-      throws IOException {
     ensureOpen();
     try {
       boolean success = false;

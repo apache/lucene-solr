@@ -48,28 +48,10 @@ public class TrackingIndexWriter {
   }
 
   /** Calls {@link
-   *  IndexWriter#updateDocument(Term,IndexDocument,Analyzer)}
-   *  and returns the generation that reflects this change. */
-  public long updateDocument(Term t, IndexDocument d, Analyzer a) throws IOException {
-    writer.updateDocument(t, d, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link
    *  IndexWriter#updateDocument(Term,IndexDocument)} and
    *  returns the generation that reflects this change. */
   public long updateDocument(Term t, IndexDocument d) throws IOException {
     writer.updateDocument(t, d);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link
-   *  IndexWriter#updateDocuments(Term,Iterable,Analyzer)}
-   *  and returns the generation that reflects this change. */
-  public long updateDocuments(Term t, Iterable<? extends IndexDocument> docs, Analyzer a) throws IOException {
-    writer.updateDocuments(t, docs, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
@@ -119,24 +101,6 @@ public class TrackingIndexWriter {
    *  generation that reflects this change. */
   public long deleteAll() throws IOException {
     writer.deleteAll();
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link
-   *  IndexWriter#addDocument(IndexDocument,Analyzer)} and
-   *  returns the generation that reflects this change. */
-  public long addDocument(IndexDocument d, Analyzer a) throws IOException {
-    writer.addDocument(d, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link
-   *  IndexWriter#addDocuments(Iterable,Analyzer)} and
-   *  returns the generation that reflects this change.  */
-  public long addDocuments(Iterable<? extends IndexDocument> docs, Analyzer a) throws IOException {
-    writer.addDocuments(docs, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }

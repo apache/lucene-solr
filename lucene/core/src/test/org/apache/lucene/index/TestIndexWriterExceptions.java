@@ -392,27 +392,35 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1208
   public void testExceptionJustBeforeFlush() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, 
-                                                      newIndexWriterConfig(new MockAnalyzer(random()))
-                                                        .setMaxBufferedDocs(2), 
-                                                      new TestPoint1());
-    Document doc = new Document();
-    doc.add(newTextField("field", "a field", Field.Store.YES));
-    w.addDocument(doc);
+
+    final AtomicBoolean doCrash = new AtomicBoolean();
 
     Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
       public TokenStreamComponents createComponents(String fieldName) {
         MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
+        TokenStream stream = tokenizer;
+        if (doCrash.get()) {
+          stream = new CrashingFilter(fieldName, stream);
+        }
+        return new TokenStreamComponents(tokenizer, stream);
       }
     };
 
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, 
+                                                      newIndexWriterConfig(analyzer)
+                                                        .setMaxBufferedDocs(2), 
+                                                      new TestPoint1());
+    Document doc = new Document();
+    doc.add(newTextField("field", "a field", Field.Store.YES));
+    w.addDocument(doc);
+
     Document crashDoc = new Document();
     crashDoc.add(newTextField("crash", "do it on token 4", Field.Store.YES));
+    doCrash.set(true);
     try {
-      w.addDocument(crashDoc, analyzer);
+      w.addDocument(crashDoc);
       fail("did not hit expected exception");
     } catch (IOException ioe) {
       // expected
