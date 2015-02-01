@@ -493,6 +493,11 @@ Bug Fixes
   BlendedInfixSuggester for lookups that do not end in a prefix
   token.  (jane chang via Mike McCandless)
 
+* LUCENE-6214: Fixed IndexWriter deadlock when one thread is
+  committing while another opens a near-real-time reader and an
+  unrecoverable (tragic) exception is hit.  (Simon Willnauer, Mike
+  McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

@@ -629,7 +629,8 @@ final class DocumentsWriter implements Closeable, Accountable {
     return anythingFlushed;
   }
   
-  final void finishFullFlush(boolean success) {
+  final void finishFullFlush(IndexWriter indexWriter, boolean success) {
+    assert indexWriter.holdsFullFlushLock();
     try {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", Thread.currentThread().getName() + " finishFullFlush success=" + success);
