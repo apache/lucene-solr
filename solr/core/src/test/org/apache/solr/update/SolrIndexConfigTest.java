@@ -17,6 +17,10 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
@@ -26,12 +30,9 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.TestMergePolicyConfig;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
 
 /**
  * Testcase for {@link SolrIndexConfig}
@@ -40,13 +41,19 @@ import java.io.IOException;
  */
 public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
   @Test
   public void testFailingSolrIndexConfigCreation() {
     try {
       SolrConfig solrConfig = new SolrConfig("bad-mp-solrconfig.xml");
       SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
       IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-      solrIndexConfig.toIndexWriterConfig(indexSchema);
+      h.getCore().setLatestSchema(indexSchema);
+      solrIndexConfig.toIndexWriterConfig(h.getCore());
       fail("a mergePolicy should have an empty constructor in order to be instantiated in Solr thus this should fail ");
     } catch (Exception e) {
       // it failed as expected
@@ -61,8 +68,9 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
         null);
     assertNotNull(solrIndexConfig);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-
-    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+    
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
 
     assertNotNull("null mp", iwc.getMergePolicy());
     assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
@@ -87,7 +95,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals(SimpleMergedSegmentWarmer.class.getName(),
         solrIndexConfig.mergedSegmentWarmerInfo.className);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
   }
 

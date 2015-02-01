@@ -390,9 +390,9 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     @Override
     public void updateDocument(Term term,
-        Iterable<? extends IndexableField> doc, Analyzer analyzer)
+        Iterable<? extends IndexableField> doc)
         throws IOException {
-      super.updateDocument(term, doc, analyzer);
+      super.updateDocument(term, doc);
       try {
         if (waitAfterUpdate) {
           signal.countDown();
