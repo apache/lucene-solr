@@ -257,16 +257,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   {
     validateSettings(minItemsInBlock, maxItemsInBlock);
 
-    if (minItemsInBlock <= 1) {
-      throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
-    }
-    if (minItemsInBlock > maxItemsInBlock) {
-      throw new IllegalArgumentException("maxItemsInBlock must be >= minItemsInBlock; got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
-    }
-    if (maxItemsInBlock < 2*(minItemsInBlock-1)) {
-      throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
-    }
-
     this.maxDoc = state.segmentInfo.getDocCount();
     this.fieldInfos = state.fieldInfos;
     this.minItemsInBlock = minItemsInBlock;
