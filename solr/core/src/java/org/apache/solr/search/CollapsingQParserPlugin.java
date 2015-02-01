@@ -27,7 +27,6 @@ import java.util.ArrayList;
 
 import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntLongOpenHashMap;
-import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.cursors.IntLongCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -40,6 +39,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -110,8 +110,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   public static final String NULL_COLLAPSE = "collapse";
   public static final String NULL_IGNORE = "ignore";
   public static final String NULL_EXPAND = "expand";
-  public static final String HINT_TOP_FC = "TOP_FC";
-  public static final String HINT_MULTI_DOCVALUES = "MULTI_DOCVALUES";
+  public static final String HINT_TOP_FC = "top_fc";
+  public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
 
 
   public void init(NamedList namedList) {
@@ -825,12 +825,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(funcQuery != null) {
         this.collapseStrategy =  new OrdValueSourceStrategy(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, funcQuery, searcher, collapseValues);
       } else {
-        if(fieldType instanceof TrieIntField || fieldType instanceof TrieFloatField) {
+        if(fieldType instanceof TrieIntField) {
           this.collapseStrategy = new OrdIntStrategy(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, collapseValues);
-        } else if(fieldType instanceof TrieLongField || fieldType instanceof TrieDoubleField) {
+        } else if(fieldType instanceof TrieFloatField) {
+          this.collapseStrategy = new OrdFloatStrategy(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, collapseValues);
+        } else if(fieldType instanceof TrieLongField) {
           this.collapseStrategy =  new OrdLongStrategy(maxDoc, field, nullPolicy, new int[valueCount], max, this.needsScores, boostDocs, collapseValues);
         } else {
-          throw new IOException("min/max must be either TrieInt, TrieLong, TrieFloat or TrieDouble.");
+          throw new IOException("min/max must be either TrieInt, TrieLong, TrieFloat.");
         }
       }
     }
@@ -987,8 +989,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(funcQuery != null) {
         this.collapseStrategy =  new IntValueSourceStrategy(maxDoc, field, size, collapseField, nullValue, nullPolicy, max, this.needsScores, boostDocsMap, funcQuery, searcher);
       } else {
-        if(fieldType instanceof TrieIntField || fieldType instanceof TrieFloatField) {
+        if(fieldType instanceof TrieIntField) {
           this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, this.needsScores, boostDocsMap);
+        } else if(fieldType instanceof TrieFloatField) {
+          this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, this.needsScores, boostDocsMap);
         } else {
           throw new IOException("min/max must be TrieInt or TrieFloat when collapsing on numeric fields .");
         }
@@ -1032,8 +1036,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       DocIdSetIterator it = new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
       int globalDoc = -1;
       int nullScoreIndex = 0;
-      IntLongOpenHashMap cmap = collapseStrategy.getCollapseMap();
-      LongArrayList docScores = collapseStrategy.getDocScores();
+      IntIntOpenHashMap cmap = collapseStrategy.getCollapseMap();
+      int[] docs = collapseStrategy.getDocs();
+      float[] scores = collapseStrategy.getScores();
       FloatArrayList nullScores = collapseStrategy.getNullScores();
       MergeBoost mergeBoost = collapseStrategy.getMergeBoost();
       float nullScore = collapseStrategy.getNullScore();
@@ -1054,12 +1059,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if(this.needsScores){
           int collapseValue = (int)collapseValues.get(contextDoc);
           if(collapseValue != nullValue) {
-            long pointerValue = cmap.get(collapseValue);
-            //Unpack the pointer
-            int pointer = (int)(pointerValue>>32);
-            long docScore = docScores.get(pointer);
-            //Unpack the score
-            dummy.score = Float.intBitsToFloat(((int)docScore));
+            int pointer = cmap.get(collapseValue);
+            dummy.score = scores[pointer];
           } else if (mergeBoost != null && mergeBoost.boost(globalDoc)) {
             //Its an elevated doc so no score is needed
             dummy.score = 0F;
@@ -1079,8 +1080,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
-
-
 
   private class CollectorFactory {
 
@@ -1442,6 +1441,89 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /*
+  * Strategy for collapsing on ordinal and using the min/max value of a float
+  * field to select the group head
+  */
+
+  private class OrdFloatStrategy extends OrdFieldValueStrategy {
+
+    private NumericDocValues minMaxValues;
+    private FloatCompare comp;
+    private float nullVal;
+    private float[] ordVals;
+
+    public OrdFloatStrategy(int maxDoc,
+                          String field,
+                          int nullPolicy,
+                          int[] ords,
+                          boolean max,
+                          boolean needsScores,
+                          IntIntOpenHashMap boostDocs,
+                          SortedDocValues values) throws IOException {
+      super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
+      this.ords = ords;
+      this.ordVals = new float[ords.length];
+      Arrays.fill(ords, -1);
+
+      if(max) {
+        comp = new MaxFloatComp();
+        Arrays.fill(ordVals, -Float.MAX_VALUE);
+        this.nullVal = -Float.MAX_VALUE;
+      } else {
+        comp = new MinFloatComp();
+        Arrays.fill(ordVals, Float.MAX_VALUE);
+        this.nullVal = Float.MAX_VALUE;
+      }
+
+      if(needsScores) {
+        this.scores = new float[ords.length];
+        if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+          nullScores = new FloatArrayList();
+        }
+      }
+    }
+
+    public void setNextReader(LeafReaderContext context) throws IOException {
+      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+
+      if(this.boosted && mergeBoost.boost(globalDoc)) {
+        this.boostDocs.add(globalDoc);
+        this.boostOrds.add(ord);
+        return;
+      }
+
+      int currentMinMax = (int) minMaxValues.get(contextDoc);
+      float currentVal = Float.intBitsToFloat(currentMinMax);
+
+      if(ord > -1) {
+        if(comp.test(currentVal, ordVals[ord])) {
+          ords[ord] = globalDoc;
+          ordVals[ord] = currentVal;
+          if(needsScores) {
+            scores[ord] = scorer.score();
+          }
+        }
+      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+        if(comp.test(currentVal, nullVal)) {
+          nullVal = currentVal;
+          nullDoc = globalDoc;
+          if(needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if(needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /*
   * Strategy for collapsing on ordinal and using the min/max value of a long
   * field to select the group head
   */
@@ -1626,7 +1708,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private abstract class IntFieldValueStrategy {
     protected int nullPolicy;
-    protected IntLongOpenHashMap cmap;
+    protected IntIntOpenHashMap cmap;
     protected Scorer scorer;
     protected FloatArrayList nullScores;
     protected float nullScore;
@@ -1637,8 +1719,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected boolean max;
     protected String field;
     protected String collapseField;
-    protected LongArrayList docScores;
-    protected IntArrayList docs;
+    protected int[] docs;
     protected int nullValue;
     protected IntArrayList boostDocs;
     protected IntArrayList boostKeys;
@@ -1664,7 +1745,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.max = max;
       this.needsScores = needsScores;
       this.collapsedSet = new FixedBitSet(maxDoc);
-      this.cmap = new IntLongOpenHashMap(size);
+      this.cmap = new IntIntOpenHashMap(size);
       if(boostDocsMap != null) {
         this.boosts = true;
         this.boostDocs = new IntArrayList();
@@ -1703,21 +1784,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         mergeBoost.reset();
       }
 
-      Iterator<IntLongCursor> it1 = cmap.iterator();
-
-     if(needsScores) {
-       while(it1.hasNext()) {
-         IntLongCursor cursor = it1.next();
-         int pointer = (int)(cursor.value>>32);
-         collapsedSet.set((int)(docScores.get(pointer)>>32));
-       }
-     } else {
+      Iterator<IntIntCursor> it1 = cmap.iterator();
       while(it1.hasNext()) {
-        IntLongCursor cursor = it1.next();
-        int pointer = (int)(cursor.value>>32);
-        collapsedSet.set(docs.get(pointer));
+        IntIntCursor cursor = it1.next();
+        int pointer = cursor.value;
+        collapsedSet.set(docs[pointer]);
       }
-     }
 
       return collapsedSet;
     }
@@ -1730,7 +1802,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return nullScores;
     }
 
-    public IntLongOpenHashMap getCollapseMap() {
+    public IntIntOpenHashMap getCollapseMap() {
       return cmap;
     }
 
@@ -1738,13 +1810,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return this.nullScore;
     }
 
-    public LongArrayList getDocScores() {
-      return this.docScores;
-    }
-
     public float[] getScores() {
       return scores;
     }
+
+    public int[] getDocs() { return docs;}
 
     public MergeBoost getMergeBoost()  {
       return this.mergeBoost;
@@ -1759,6 +1829,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private class IntIntStrategy extends IntFieldValueStrategy {
 
     private NumericDocValues minMaxVals;
+    private int[] testValues;
     private IntCompare comp;
     private int nullCompVal;
 
@@ -1776,20 +1847,22 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       super(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, needsScores, boostDocs);
 
+      this.testValues = new int[size];
+      this.docs = new int[size];
+
       if(max) {
         comp = new MaxIntComp();
+        this.nullCompVal = Integer.MIN_VALUE;
       } else {
         comp = new MinIntComp();
         this.nullCompVal = Integer.MAX_VALUE;
       }
 
       if(needsScores) {
-        this.docScores = new LongArrayList();
+        this.scores = new float[size];
         if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
           nullScores = new FloatArrayList();
         }
-      } else {
-        this.docs = new IntArrayList();
       }
     }
 
@@ -1810,32 +1883,130 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(collapseKey != nullValue) {
         if(cmap.containsKey(collapseKey)) {
-          long pointerValue = cmap.lget();
-          int testValue = (int)pointerValue;
-          if(comp.test(currentVal, testValue)) {
-            pointerValue = (pointerValue-testValue)+currentVal;
-            cmap.lset(pointerValue);
-            int pointer = (int)(pointerValue>>32);
+          int pointer = cmap.lget();
+          if(comp.test(currentVal, testValues[pointer])) {
+            testValues[pointer]= currentVal;
+            docs[pointer] = globalDoc;
             if(needsScores) {
-              float score = scorer.score();
-              long docScore = (((long)globalDoc)<<32)+Float.floatToIntBits(score);
-              docScores.set(pointer, docScore);
-            } else {
-              docs.set(pointer, globalDoc);
+              scores[pointer] = scorer.score();
             }
           }
         } else {
           ++index;
-          //The index provides a pointer into docs or docScore lists.
-          //Combined the pointer with the current value into a long
-          long pointerValue = (((long)index)<<32)+currentVal;
-          cmap.put(collapseKey, pointerValue);
+          cmap.put(collapseKey, index);
+          if(index == testValues.length) {
+            testValues = ArrayUtil.grow(testValues);
+            docs = ArrayUtil.grow(docs);
+            if(needsScores) {
+              scores = ArrayUtil.grow(scores);
+            }
+          }
+
+          testValues[index] = currentVal;
+          docs[index] = (globalDoc);
+
           if(needsScores) {
-            float score = scorer.score();
-            long docScore = (((long)globalDoc)<<32)+Float.floatToIntBits(score);
-            docScores.add(docScore);
-          } else {
-            docs.add(globalDoc);
+            scores[index] = scorer.score();
+          }
+        }
+      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+        if(comp.test(currentVal, nullCompVal)) {
+          nullCompVal = currentVal;
+          nullDoc = globalDoc;
+          if(needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if(needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  private class IntFloatStrategy extends IntFieldValueStrategy {
+
+    private NumericDocValues minMaxVals;
+    private float[] testValues;
+    private FloatCompare comp;
+    private float nullCompVal;
+
+    private int index=-1;
+
+    public IntFloatStrategy(int maxDoc,
+                          int size,
+                          String collapseField,
+                          String field,
+                          int nullValue,
+                          int nullPolicy,
+                          boolean max,
+                          boolean needsScores,
+                          IntIntOpenHashMap boostDocs) throws IOException {
+
+      super(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, needsScores, boostDocs);
+
+      this.testValues = new float[size];
+      this.docs = new int[size];
+
+      if(max) {
+        comp = new MaxFloatComp();
+        this.nullCompVal = -Float.MAX_VALUE;
+      } else {
+        comp = new MinFloatComp();
+        this.nullCompVal = Float.MAX_VALUE;
+      }
+
+      if(needsScores) {
+        this.scores = new float[size];
+        if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+          nullScores = new FloatArrayList();
+        }
+      }
+    }
+
+    public void setNextReader(LeafReaderContext context) throws IOException {
+      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+
+      // Check to see if we have documents boosted by the QueryElevationComponent
+      if(boosts && mergeBoost.boost(globalDoc)) {
+        boostDocs.add(globalDoc);
+        boostKeys.add(collapseKey);
+        return;
+      }
+
+      int minMaxVal = (int) minMaxVals.get(contextDoc);
+      float currentVal = Float.intBitsToFloat(minMaxVal);
+
+      if(collapseKey != nullValue) {
+        if(cmap.containsKey(collapseKey)) {
+          int pointer = cmap.lget();
+          if(comp.test(currentVal, testValues[pointer])) {
+            testValues[pointer] = currentVal;
+            docs[pointer] = globalDoc;
+            if(needsScores) {
+              scores[pointer] = scorer.score();
+            }
+          }
+        } else {
+          ++index;
+          cmap.put(collapseKey, index);
+          if(index == testValues.length) {
+            testValues = ArrayUtil.grow(testValues);
+            docs = ArrayUtil.grow(docs);
+            if(needsScores) {
+              scores = ArrayUtil.grow(scores);
+            }
+          }
+
+          testValues[index] = currentVal;
+          docs[index] = globalDoc;
+          if(needsScores) {
+            scores[index] = scorer.score();
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
@@ -1856,6 +2027,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
 
+
   /*
   *  Strategy for collapsing on a 32 bit numeric field and selecting the group head based
   *  on the min/max value of a Value Source Function.
@@ -1863,8 +2035,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private class IntValueSourceStrategy extends IntFieldValueStrategy {
 
-    private IntCompare comp;
-    private int nullCompVal;
+    private FloatCompare comp;
+    private float[] testValues;
+    private float nullCompVal;
 
     private ValueSource valueSource;
     private FunctionValues functionValues;
@@ -1888,15 +2061,18 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       super(maxDoc, size, collapseField, null, nullValue, nullPolicy, max, needsScores, boostDocs);
 
+      this.testValues = new float[size];
+      this.docs = new int[size];
+
       this.valueSource = funcQuery.getValueSource();
       this.rcontext = ValueSource.newContext(searcher);
 
       if(max) {
-        this.nullCompVal = Integer.MIN_VALUE;
-        comp = new MaxIntComp();
+        this.nullCompVal = -Float.MAX_VALUE;
+        comp = new MaxFloatComp();
       } else {
-        this.nullCompVal = Integer.MAX_VALUE;
-        comp = new MinIntComp();
+        this.nullCompVal = Float.MAX_VALUE;
+        comp = new MinFloatComp();
       }
 
       if(funcStr.indexOf("cscore()") != -1) {
@@ -1905,12 +2081,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if(needsScores) {
-        this.docScores = new LongArrayList();
+        this.scores = new float[size];
         if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
           nullScores = new FloatArrayList();
         }
-      } else {
-        this.docs = new IntArrayList();
       }
     }
 
@@ -1932,36 +2106,32 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.collapseScore.score = score;
       }
 
-      float functionValue = functionValues.floatVal(contextDoc);
-      int currentVal = Float.floatToRawIntBits(functionValue);
+      float currentVal = functionValues.floatVal(contextDoc);
 
       if(collapseKey != nullValue) {
         if(cmap.containsKey(collapseKey)) {
-          long pointerValue = cmap.lget();
-          int testValue = (int)pointerValue;
-          if(comp.test(currentVal, testValue)) {
-            pointerValue = (pointerValue-testValue)+currentVal;
-            cmap.lset(pointerValue);
-            int pointer = (int)(pointerValue>>32);
+          int pointer = cmap.lget();
+          if(comp.test(currentVal, testValues[pointer])) {
+            testValues[pointer] = currentVal;
+            docs[pointer] = globalDoc;
             if(needsScores){
-              //Combine the doc and score into a long
-              long docScore = (((long)globalDoc)<<32)+Float.floatToIntBits(score);
-              docScores.set(pointer, docScore);
-            } else {
-              docs.set(pointer, globalDoc);
+              scores[pointer] = score;
             }
           }
         } else {
           ++index;
-          //Use the index as a pointer into the docScore and docs list.
-          long pointerValue = (((long)index)<<32)+currentVal;
-          cmap.put(collapseKey, pointerValue);
+          cmap.put(collapseKey, index);
+          if(index == testValues.length) {
+            testValues = ArrayUtil.grow(testValues);
+            docs = ArrayUtil.grow(docs);
+            if(needsScores) {
+              scores = ArrayUtil.grow(scores);
+            }
+          }
+          docs[index] = globalDoc;
+          testValues[index] = currentVal;
           if(needsScores) {
-            //Combine the doc and score into a long
-            long docScore = (((long)globalDoc)<<32)+Float.floatToIntBits(score);
-            docScores.add(docScore);
-          } else {
-            docs.add(globalDoc);
+            scores[index] = score;
           }
         }
       } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {

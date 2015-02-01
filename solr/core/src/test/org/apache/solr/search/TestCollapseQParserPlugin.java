@@ -78,7 +78,45 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testFieldValueCollapseWithNegativeMinMax() throws Exception {
+    String[] doc = {"id","1", "group_i", "-1000", "test_ti", "5", "test_tl", "-10", "test_tf", "2000.32"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id","2", "group_i", "-1000", "test_ti", "50", "test_tl", "-100", "test_tf", "2000.33"};
+    assertU(adoc(doc1));
 
+    String[] doc2 = {"id","3", "group_i", "-1000", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {"id","4", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"};
+    assertU(adoc(doc3));
+
+    String[] doc4 = {"id","5", "group_i", "-1000", "test_ti", "4", "test_tl", "10", "test_tf", "2000.31"};
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {"id","6", "group_i", "-1000", "test_ti", "10", "test_tl", "100", "test_tf", "-2000.12"};
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    String[] doc6 = {"id","7", "group_i", "-1000", "test_ti", "8", "test_tl", "-50", "test_tf", "-100.2"};
+    assertU(adoc(doc6));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_i min=test_tf}");
+    assertQ(req(params), "*[count(//doc)=1]",
+        "//result/doc[1]/float[@name='id'][.='6.0']");
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_i max=test_tf}");
+    assertQ(req(params), "*[count(//doc)=1]",
+        "//result/doc[1]/float[@name='id'][.='2.0']");
+
+  }
+
+  @Test
   public void testMergeBoost() throws Exception {
 
     Set<Integer> boosted = new HashSet();
