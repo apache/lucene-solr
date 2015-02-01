@@ -47,7 +47,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  will be sorted while segments resulting from a flush will be in the order
  *  in which documents have been added.
  *  <p><b>NOTE</b>: Never use this policy if you rely on
- *  {@link IndexWriter#addDocuments(Iterable, Analyzer) IndexWriter.addDocuments}
+ *  {@link IndexWriter#addDocuments(Iterable) IndexWriter.addDocuments}
  *  to have sequentially-assigned doc IDs, this policy will scatter doc IDs.
  *  <p><b>NOTE</b>: This policy should only be used with idempotent {@code Sort}s 
  *  so that the order of segments is predictable. For example, using 

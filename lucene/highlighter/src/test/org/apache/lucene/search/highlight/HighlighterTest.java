@@ -2039,22 +2039,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Document doc = new Document();
     doc.add(new IntField(NUMERIC_FIELD_NAME, 1, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntField(NUMERIC_FIELD_NAME, 3, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntField(NUMERIC_FIELD_NAME, 5, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntField(NUMERIC_FIELD_NAME, 7, Field.Store.NO));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
 
     Document childDoc = doc(FIELD_NAME, "child document");
     Document parentDoc = doc(FIELD_NAME, "parent document");

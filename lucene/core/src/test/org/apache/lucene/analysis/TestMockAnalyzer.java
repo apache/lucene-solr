@@ -305,7 +305,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       }
     };
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory(), a);
     final Document doc = new Document();
     final FieldType ft = new FieldType();
     ft.setIndexOptions(IndexOptions.DOCS);
@@ -315,7 +315,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     ft.setStoreTermVectorOffsets(true);
     doc.add(new Field("f", "a", ft));
     doc.add(new Field("f", "a", ft));
-    writer.addDocument(doc, a);
+    writer.addDocument(doc);
     final LeafReader reader = getOnlySegmentReader(writer.getReader());
     final Fields fields = reader.getTermVectors(0);
     final Terms terms = fields.terms("f");

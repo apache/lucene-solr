@@ -235,11 +235,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             }
 
             if (cmd.isBlock()) {
-              writer.updateDocuments(updateTerm, cmd, schema.getIndexAnalyzer());
+              writer.updateDocuments(updateTerm, cmd);
             } else {
               Document luceneDocument = cmd.getLuceneDocument();
               // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-              writer.updateDocument(updateTerm, luceneDocument, schema.getIndexAnalyzer());
+              writer.updateDocument(updateTerm, luceneDocument);
             }
             // SolrCore.verbose("updateDocument",updateTerm,"DONE");
             
@@ -264,9 +264,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         } else {
           // allow duplicates
           if (cmd.isBlock()) {
-            writer.addDocuments(cmd, schema.getIndexAnalyzer());
+            writer.addDocuments(cmd);
           } else {
-            writer.addDocument(cmd.getLuceneDocument(), schema.getIndexAnalyzer());
+            writer.addDocument(cmd.getLuceneDocument());
           }
 
           if (ulog != null) ulog.add(cmd);
@@ -442,8 +442,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
         IndexWriter writer = iw.get();
-        writer.updateDocument(idTerm, luceneDocument, cmd.getReq().getSchema()
-            .getIndexAnalyzer());
+        writer.updateDocument(idTerm, luceneDocument);
         
         for (Query q : dbqList) {
           writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));

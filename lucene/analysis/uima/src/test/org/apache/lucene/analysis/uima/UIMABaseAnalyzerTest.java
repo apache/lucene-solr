@@ -74,7 +74,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     doc.add(new TextField("title", dummyTitle, Field.Store.YES));
     String dummyContent = "there is some content written here";
     doc.add(new TextField("contents", dummyContent, Field.Store.YES));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
     writer.commit();
 
     // try the search over the first doc
@@ -95,7 +95,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     doc.add(new TextField("title", dogmasTitle, Field.Store.YES));
     String dogmasContents = "white men can't jump";
     doc.add(new TextField("contents", dogmasContents, Field.Store.YES));
-    writer.addDocument(doc, analyzer);
+    writer.addDocument(doc);
     writer.commit();
 
     directoryReader.close();
