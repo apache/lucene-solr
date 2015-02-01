@@ -1241,7 +1241,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   *
+   * @deprecated This will be removed in 5.0.0.
    */
+  @Deprecated
   public void addDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer) throws IOException {
     updateDocument(null, doc, analyzer);
   }
@@ -1297,7 +1300,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    *
    * @lucene.experimental
+   *
+   * @deprecated This will be removed in 5.0.0.
    */
+  @Deprecated
   public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     updateDocuments(null, docs, analyzer);
   }
@@ -1332,7 +1338,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    *
    * @lucene.experimental
+   *
+   * @deprecated This will be removed in 5.0.0.
    */
+  @Deprecated
   public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     ensureOpen();
     try {
@@ -1501,7 +1510,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @param analyzer the analyzer to use when analyzing the document
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   *
+   * @deprecated This will be removed in 5.0.0.
    */
+  @Deprecated
   public void updateDocument(Term term, Iterable<? extends IndexableField> doc, Analyzer analyzer)
       throws IOException {
     ensureOpen();

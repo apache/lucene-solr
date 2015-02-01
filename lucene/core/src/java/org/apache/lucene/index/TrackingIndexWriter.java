@@ -50,7 +50,11 @@ public class TrackingIndexWriter {
 
   /** Calls {@link
    *  IndexWriter#updateDocument(Term,Iterable,Analyzer)}
-   *  and returns the generation that reflects this change. */
+   *  and returns the generation that reflects this change.
+   *
+   * @deprecated This will be removed in 5.0.0.
+   */
+  @Deprecated
   public long updateDocument(Term t, Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.updateDocument(t, d, a);
     // Return gen as of when indexing finished:
@@ -68,7 +72,11 @@ public class TrackingIndexWriter {
 
   /** Calls {@link
    *  IndexWriter#updateDocuments(Term,Iterable,Analyzer)}
-   *  and returns the generation that reflects this change. */
+   *  and returns the generation that reflects this change.
+   *
+   * @deprecated This will be removed in 5.0.0.
+   */
+  @Deprecated
   public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
     writer.updateDocuments(t, docs, a);
     // Return gen as of when indexing finished:
@@ -126,7 +134,11 @@ public class TrackingIndexWriter {
 
   /** Calls {@link
    *  IndexWriter#addDocument(Iterable,Analyzer)} and
-   *  returns the generation that reflects this change. */
+   *  returns the generation that reflects this change.
+   *
+   * @deprecated This will be removed in 5.0.0.
+   */
+  @Deprecated
   public long addDocument(Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.addDocument(d, a);
     // Return gen as of when indexing finished:
@@ -135,7 +147,11 @@ public class TrackingIndexWriter {
 
   /** Calls {@link
    *  IndexWriter#addDocuments(Iterable,Analyzer)} and
-   *  returns the generation that reflects this change.  */
+   *  returns the generation that reflects this change.
+   *
+   * @deprecated This will be removed in 5.0.0.
+   */
+  @Deprecated
   public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
     writer.addDocuments(docs, a);
     // Return gen as of when indexing finished:
