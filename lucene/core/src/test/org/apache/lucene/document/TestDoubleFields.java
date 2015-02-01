@@ -393,7 +393,7 @@ public class TestDoubleFields extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, s.search(fieldTypes.newDoubleTermQuery("num", 180d), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactDoubleQuery("num", 180d), 1).totalHits);
     r.close();
     w.close();
     dir.close();

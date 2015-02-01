@@ -254,7 +254,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
         dir.tweakBufferSizes();
-        hits = searcher.search(fieldTypes.newIntTermQuery("id", 33), null, 1000).scoreDocs;
+        hits = searcher.search(fieldTypes.newExactIntQuery("id", 33), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(1, hits.length);
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;

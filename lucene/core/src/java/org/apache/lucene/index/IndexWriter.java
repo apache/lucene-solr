@@ -828,7 +828,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
 
-      fieldTypes = new FieldTypes(this, create, config.getAnalyzer(), config.getSimilarity());
+      fieldTypes = new FieldTypes(this, create, segmentInfos.infosVersion < SegmentInfos.VERSION_60, config.getAnalyzer(), config.getSimilarity());
       rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
       // start with previous field numbers, but new FieldInfos
@@ -859,7 +859,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         messageState();
       }
 
-      // nocommit what to do here... can/should we use FilterCodec?
+      // TODO: this is awkward.  It would be better if Codec was fully controlled by FieldTypes, somehow.  Maybe IR/IW should consult
+      // FieldTypes for the format for each field instead of requiring a PerFieldXXXFormat for all XXXs?
       if ((config.getCodec() instanceof Lucene50Codec) == false) {
         codec = config.getCodec();
       } else {
@@ -1309,6 +1310,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /**
    * Deletes the document(s) matching any of the provided queries.
    * All given deletes are applied and flushed atomically at the same time.
+   *
+   * <p>Any deleted values from unique fields e.g. from {@link Document@addUniqueAtom}
+   * will not be seen as deleted until these buffered delete queries are applied.
    *
    * @param queries array of queries to identify the documents
    * to be deleted
@@ -2348,7 +2352,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           SegmentInfos sis = SegmentInfos.readLatestCommit(dir); // read infos from dir
           totalDocCount += sis.totalDocCount();
 
-          fieldTypes.addAll(FieldTypes.getFieldTypes(sis.getUserData(), fieldTypes.getIndexAnalyzer(), fieldTypes.getSimilarity()));
+          fieldTypes.addAll(FieldTypes.getFieldTypes(sis, fieldTypes.getIndexAnalyzer(), fieldTypes.getSimilarity()));
 
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
@@ -4637,9 +4641,5 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     return v;
-  }
-
-  boolean rightJustifyTerms(String fieldName) {
-    return fieldTypes.rightJustifyTerms(fieldName);
   }
 }

@@ -54,7 +54,7 @@ public abstract class DocIdSet implements Accountable {
   };
 
   /** A full {@code DocIdSet} instance (matches all docs). */
-  // nocommit does this already exist somewhere?
+  // TODO: does this already exist somewhere?
   public static DocIdSet full(final int maxDoc) {
     return new DocIdSet() {
       @Override

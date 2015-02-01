@@ -140,7 +140,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   
   synchronized boolean deleteQueries(final Query... queries) throws IOException {
     // TODO why is this synchronized?
-    // nocommit do we disallow this when there are unique fields?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(queries);
     flushControl.doOnDelete();

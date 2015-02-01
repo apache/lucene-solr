@@ -122,9 +122,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** The file format version for the segments_N codec header, since 5.0+ */
   public static final int VERSION_50 = 4;
 
+  /** The file format version for the segments_N codec header, since 6.0+ */
+  public static final int VERSION_60 = 5;
+
   /** Used to name new segments. */
   // TODO: should this be a long ...?
   public int counter;
+
+  public int infosVersion;
   
   /** Counts how often the index has been changed.  */
   public long version;
@@ -274,12 +279,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       if (magic != CodecUtil.CODEC_MAGIC) {
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
-      CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_50, VERSION_50);
+      int infosVersion = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_50, VERSION_60);
       byte id[] = new byte[StringHelper.ID_LENGTH];
       input.readBytes(id, 0, id.length);
       CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
       
       SegmentInfos infos = new SegmentInfos();
+      infos.infosVersion = infosVersion;
       infos.id = id;
       infos.generation = generation;
       infos.lastGeneration = generation;

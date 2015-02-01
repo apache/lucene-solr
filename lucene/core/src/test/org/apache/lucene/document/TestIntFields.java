@@ -364,7 +364,7 @@ public class TestIntFields extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, s.search(fieldTypes.newIntTermQuery("num", 180), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactIntQuery("num", 180), 1).totalHits);
     r.close();
     w.close();
     dir.close();

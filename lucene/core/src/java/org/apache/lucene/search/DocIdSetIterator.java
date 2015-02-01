@@ -59,7 +59,7 @@ public abstract class DocIdSetIterator {
     };
   }
 
-  // nocommit does this already exist somewhere?  it's silly...
+  // TODO: does this already exist somewhere?  it's silly...
   /** A full {@code DocIdSetIterator} instance */
   public static final DocIdSetIterator full(final int maxDoc) {
     return new DocIdSetIterator() {

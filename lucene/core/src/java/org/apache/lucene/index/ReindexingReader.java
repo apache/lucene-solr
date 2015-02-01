@@ -200,7 +200,7 @@ public abstract class ReindexingReader implements Closeable {
           }
         });
 
-      // nocommit move this logic "up":
+      // TODO: move this logic up?
       fieldTypes = new FieldTypes(in.getFieldTypes());
       for(LeafReaderContext ctx : leaves()) {
         LeafReader leafReader = ctx.reader();
@@ -418,7 +418,7 @@ public abstract class ReindexingReader implements Closeable {
           SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
           final LeafReader parLeafReader;
           if (infos.size() == 1) {
-            parLeafReader = new SegmentReader(FieldTypes.getFieldTypes(infos.getUserData(), null, null), infos.info(0), IOContext.DEFAULT);
+            parLeafReader = new SegmentReader(FieldTypes.getFieldTypes(infos, null, null), infos.info(0), IOContext.DEFAULT);
           } else {
             // This just means we didn't forceMerge above:
             parLeafReader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -171,5 +172,4 @@ public class TestIndexReaderClose extends LuceneTestCase {
       throw new IllegalStateException("GRRRRRRRRRRRR!");
     }
   }
-
 }

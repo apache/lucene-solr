@@ -163,7 +163,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       if (0 == t) {
         modifier.deleteDocuments(fieldTypes.newIntTerm("value", value));
       } else {
-        modifier.deleteDocuments(fieldTypes.newIntTermQuery("value", value));
+        modifier.deleteDocuments(fieldTypes.newExactIntQuery("value", value));
       }
       addDoc(modifier, ++id, value);
       if (0 == t) {
@@ -171,7 +171,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         assertEquals(2, modifier.getNumBufferedDeleteTerms());
         assertEquals(1, modifier.getBufferedDeleteTermsSize());
       } else {
-        modifier.deleteDocuments(fieldTypes.newIntTermQuery("value", value));
+        modifier.deleteDocuments(fieldTypes.newExactIntQuery("value", value));
       }
 
       addDoc(modifier, ++id, value);
@@ -344,7 +344,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             }
           } catch (IllegalArgumentException e) {
             // Expected: we are deleting FieldTypes while indexing
-            assertTrue(e.getMessage().contains("is not recognized"));
+            assertTrue(e.getMessage().contains("unknown field"));
           } catch (Exception e) {
             throw new RuntimeException(e);
           } finally {

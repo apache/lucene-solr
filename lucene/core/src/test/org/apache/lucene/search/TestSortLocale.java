@@ -38,7 +38,7 @@ public class TestSortLocale extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setSortLocale("collated", Locale.ENGLISH);
+    fieldTypes.setSortLocale("collated", Locale.ENGLISH, Collator.IDENTICAL);
 
     Document doc = w.newDocument();
     doc.addAtom("field", "ABC");
@@ -64,13 +64,12 @@ public class TestSortLocale extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = iw.getFieldTypes();
-    fieldTypes.setSortLocale("collated", Locale.getDefault()); // uses -Dtests.locale
 
     Collator collator = Collator.getInstance(Locale.getDefault());
     if (random().nextBoolean()) {
-      // nocommit FieldTypes must expose this?
-      // collator.setStrength(Collator.PRIMARY);
+      collator.setStrength(Collator.PRIMARY);
     }
+    fieldTypes.setSortLocale("collated", Locale.getDefault(), collator.getStrength()); // uses -Dtests.locale
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {

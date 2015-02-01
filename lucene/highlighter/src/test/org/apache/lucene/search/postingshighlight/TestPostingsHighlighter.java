@@ -1057,7 +1057,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
       highlighter.highlight("nofield", query, searcher, topDocs);
       fail("did not hit exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "field \"nofield\" is not recognized; known fields: [$fieldnames, body, not, title, yes]");
+      assertEquals(e.getMessage(), "unknown field \"nofield\"; valid fields: [$fieldnames, body, not, title, yes]");
     }
 
     // we didn't enable highlighting for this atom field

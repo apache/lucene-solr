@@ -756,10 +756,11 @@ public class MemoryIndex {
       return fields.get(fieldName);
     }
 
+    final FieldTypes fieldTypes = new FieldTypes(null);
+
     @Override
     public FieldTypes getFieldTypes() {
-      // nocommit todo
-      return null;
+      return fieldTypes;
     }
 
     @Override

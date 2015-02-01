@@ -104,7 +104,6 @@ public class MergeState {
     liveDocs = new Bits[numReaders];
     for(int i=0;i<numReaders;i++) {
       final LeafReader reader = readers.get(i);
-      // nocommit segment merger should do this?
       FieldTypes readerFieldTypes = reader.getFieldTypes();
       if (readerFieldTypes != null && fieldTypes != readerFieldTypes) {
         fieldTypes.addAll(readerFieldTypes);

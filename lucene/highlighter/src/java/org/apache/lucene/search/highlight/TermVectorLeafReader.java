@@ -84,10 +84,11 @@ public class TermVectorLeafReader extends LeafReader {
     fieldInfos = new FieldInfos(new FieldInfo[]{fieldInfo});
   }
 
+  final FieldTypes fieldTypes = new FieldTypes(null);
+
   @Override
   public FieldTypes getFieldTypes() {
-    // nocommit todo
-    return null;
+    return fieldTypes;
   }
 
   @Override

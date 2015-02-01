@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -211,7 +212,7 @@ public final class NumericUtils {
   public static BytesRef bigIntToBytes(BigInteger value, int maxBytes) {
     byte[] bytes = value.toByteArray();
     if (bytes.length > maxBytes) {
-      throw new IllegalArgumentException("BigInt " + value + " exceeds allowed byte width " + maxBytes);
+      throw new IllegalArgumentException("BigInteger " + value + " exceeds allowed byte width " + maxBytes);
     }
     byte[] bytes2 = new byte[maxBytes];
     System.arraycopy(bytes, 0, bytes2, maxBytes-bytes.length, bytes.length);

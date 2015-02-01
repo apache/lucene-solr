@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -89,7 +90,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 // TODO
-//   - nocommit: back compat to old numeric fields
+//   - run all monster tests
 //   - write/read of field types should be up to codec?
 //   - how should Codec integrate
 //   - analyzers are not serializable
@@ -102,6 +103,10 @@ import org.apache.lucene.util.Version;
 //       - exc if invalid field name asked for
 //       - numeric range queries "just work"
 //       - default search field
+
+// nocommit: back compat
+//   - be able to search over old numeric fields
+//   - uninverting reader should parse them to DVs
 
 // docsWithField and fieldExistsFilter are redundant if field is dv'd and indexed
 
@@ -117,10 +122,6 @@ import org.apache.lucene.util.Version;
 
 // nocommit how will future back-compat work?  segment must store field types as of when it was written?
 
-// nocommit run all monster tests
-
-// nocommit move to oal.index?
-
 // NO
 //   - filter caching?  parent blockdocs filter?
 //   - required
@@ -134,6 +135,10 @@ import org.apache.lucene.util.Version;
 //   - can/should we validate field names here?
 
 // LATER
+//   - if field has dvs, and field exists filter is enabled, we can skip indexing that field into FIELD_NAMES_FIELD and just use FieldValueFilter?
+//   - can we allow collated, indexed fields (for term ranges)?
+//   - can we use CustomAnalyzer?  it can be serialized...?
+//   - let codec encode/decode field types?  should we write directly into segments_N?  or into a new separately gen'd file?
 //   - time intervals
 //   - BigDecimal
 //   - fold in compressing stored fields format params...how
@@ -154,17 +159,13 @@ import org.apache.lucene.util.Version;
 //   - can we have test infra that randomly reopens writer?
 //   - newTermFilter?
 //   - PH should take this and validate highlighting was enabled?  (it already checks for OFFSETS in postings)
+//   - accent removal and lowercasing for wildcards should just work
+//   - controlling compression of stored fields
+//   - fix all change methods to call validate / rollback
+//   - collator decompositionMode?
+//   - should we have a "resolution" for Date field?
 
 // nocommit -- can we sort on a field that ran through analysis (and made a single token), e.g. case / accent folding
-
-// nocommit sort order, sort options (e.g. for collation)
-//   case sensitive, punc sensitive, accent sensitive
-
-// nocommit accent removal and lowercasing for wildcards should just work
-
-// nocommit fix all change methods to call validate / rollback
-
-// nocommit controlling compression of stored fields, norms
 
 /** Records how each field is indexed, stored, etc.
  *
@@ -198,13 +199,12 @@ public class FieldTypes {
     LONG,
     DOUBLE,
     BIG_INT,
+    BIG_DECIMAL,
     BINARY,
     BOOLEAN,
     DATE,
     INET_ADDRESS,
   }
-
-  // nocommit should we have a "resolution" for Date field?
 
   private final boolean readOnly;
 
@@ -289,6 +289,9 @@ public class FieldTypes {
     // Bit width for a big int field:
     volatile Integer bigIntByteWidth;
 
+    // Scale for big decimal field:
+    volatile Integer bigDecimalScale;
+
     private volatile Boolean storeTermVectors;
     private volatile Boolean storeTermVectorPositions;
     private volatile Boolean storeTermVectorOffsets;
@@ -316,6 +319,7 @@ public class FieldTypes {
     volatile Boolean reversedTerms;
 
     Locale sortLocale;
+    int sortCollatorStrength;
     Collator sortCollator;
     SortKey sortKey;
 
@@ -358,6 +362,7 @@ public class FieldTypes {
       this.multiValued = other.multiValued;
       this.indexNorms = other.indexNorms;
       this.bigIntByteWidth = other.bigIntByteWidth;
+      this.bigDecimalScale = other.bigDecimalScale;
       this.storeTermVectors = other.storeTermVectors;
       this.storeTermVectorPositions = other.storeTermVectorPositions;
       this.storeTermVectorOffsets = other.storeTermVectorOffsets;
@@ -374,6 +379,7 @@ public class FieldTypes {
       this.wrappedQueryAnalyzer = other.wrappedQueryAnalyzer;
       this.reversedTerms = other.reversedTerms;
       this.sortLocale = other.sortLocale;
+      this.sortCollatorStrength = other.sortCollatorStrength;
       this.sortCollator = other.sortCollator;
       this.sortKey = other.sortKey;
     }
@@ -382,7 +388,6 @@ public class FieldTypes {
     public synchronized void merge(FieldType other) {
       assert name.equals(other.name);
 
-      // nocommit more need test coverage here
       if (other.valueType != ValueType.NONE) {
         if (valueType == ValueType.NONE) {
           valueType = other.valueType;
@@ -518,6 +523,14 @@ public class FieldTypes {
         }
       }
 
+      if (other.bigDecimalScale != null) {
+        if (bigDecimalScale == null) {
+          bigDecimalScale = other.bigDecimalScale;
+        } else if (bigDecimalScale.equals(other.bigDecimalScale) == false) {
+          illegalState(name, "cannot change bigDecimalScale from " + bigDecimalScale + " to " + other.bigDecimalScale);
+        }
+      }
+
       if (other.storeTermVectors != null) {
         storeTermVectors = other.storeTermVectors;
 
@@ -598,10 +611,12 @@ public class FieldTypes {
         if (sortLocale == null) {
           sortLocale = other.sortLocale;
           sortCollator = other.sortCollator;
+          sortCollatorStrength = other.sortCollatorStrength;
         } else if (sortLocale.equals(other.sortLocale) == false) {
           if (valueType == null) {
             sortLocale = other.sortLocale;
             sortCollator = other.sortCollator;
+            sortCollatorStrength = other.sortCollatorStrength;
           } else {
             illegalState(name, "sortLocale can only be set before indexing");
           }
@@ -625,6 +640,7 @@ public class FieldTypes {
       case LONG:
       case DOUBLE:
       case BIG_INT:
+      case BIG_DECIMAL:
       case DATE:
         if (highlighted == Boolean.TRUE) {
           illegalState(name, "type " + valueType + " cannot highlight");
@@ -635,7 +651,7 @@ public class FieldTypes {
         if (queryAnalyzer != null) {
           illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
         }
-        if (valueType == ValueType.BIG_INT) {
+        if (valueType == ValueType.BIG_INT || valueType == ValueType.BIG_DECIMAL) {
           if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET)) {
             illegalState(name, "type " + valueType + " must use SORTED or SORTED_SET docValuesType; got: " + docValuesType);
           }
@@ -895,6 +911,7 @@ public class FieldTypes {
       case LONG:
       case DOUBLE:
       case BIG_INT:
+      case BIG_DECIMAL:
       case DATE:
         if (highlighted == null) {
           highlighted = Boolean.FALSE;
@@ -903,7 +920,7 @@ public class FieldTypes {
           storeTermVectors = Boolean.FALSE;
         }
         if (sortable == null) {
-          if (valueType == ValueType.BIG_INT) {
+          if (valueType == ValueType.BIG_INT || valueType == ValueType.BIG_DECIMAL) {
             if (docValuesTypeSet == false || docValuesType == DocValuesType.SORTED || docValuesType == DocValuesType.SORTED_SET) {
               sortable = Boolean.TRUE;
             } else {
@@ -929,7 +946,7 @@ public class FieldTypes {
         }
         if (docValuesTypeSet == false) {
           if (sortable == Boolean.TRUE) {
-            if (valueType == ValueType.BIG_INT) {
+            if (valueType == ValueType.BIG_INT || valueType == ValueType.BIG_DECIMAL) {
               if (multiValued == Boolean.TRUE) {
                 docValuesType = DocValuesType.SORTED_SET;
               } else {
@@ -1495,17 +1512,20 @@ public class FieldTypes {
       case BIG_INT:
         out.writeByte((byte) 9);
         break;
-      case BINARY:
+      case BIG_DECIMAL:
         out.writeByte((byte) 10);
         break;
-      case BOOLEAN:
+      case BINARY:
         out.writeByte((byte) 11);
         break;
-      case DATE:
+      case BOOLEAN:
         out.writeByte((byte) 12);
         break;
-      case INET_ADDRESS:
+      case DATE:
         out.writeByte((byte) 13);
+        break;
+      case INET_ADDRESS:
+        out.writeByte((byte) 14);
         break;
       default:
         throw new AssertionError("missing value type in switch");
@@ -1559,6 +1579,7 @@ public class FieldTypes {
       writeNullableBoolean(out, indexNorms);
       writeNullableBoolean(out, reversedTerms);
       writeNullableInteger(out, bigIntByteWidth);
+      writeNullableInteger(out, bigDecimalScale);
       writeNullableBoolean(out, fastRanges);
       writeNullableBoolean(out, storeTermVectors);
       writeNullableBoolean(out, storeTermVectorPositions);
@@ -1570,10 +1591,10 @@ public class FieldTypes {
 
       if (sortLocale != null) {
         out.writeByte((byte) 1);
-        // nocommit this is not sufficient right?  need to use the builder?
         writeNullableString(out, sortLocale.getLanguage());
         writeNullableString(out, sortLocale.getCountry());
         writeNullableString(out, sortLocale.getVariant());
+        writeNullableInteger(out, sortCollatorStrength);
       } else {
         out.writeByte((byte) 0);
       }
@@ -1645,15 +1666,18 @@ public class FieldTypes {
         valueType = ValueType.BIG_INT;
         break;
       case 10:
-        valueType = ValueType.BINARY;
+        valueType = ValueType.BIG_DECIMAL;
         break;
       case 11:
-        valueType = ValueType.BOOLEAN;
+        valueType = ValueType.BINARY;
         break;
       case 12:
-        valueType = ValueType.DATE;
+        valueType = ValueType.BOOLEAN;
         break;
       case 13:
+        valueType = ValueType.DATE;
+        break;
+      case 14:
         valueType = ValueType.INET_ADDRESS;
         break;
       default:
@@ -1714,6 +1738,7 @@ public class FieldTypes {
       indexNorms = readNullableBoolean(in);
       reversedTerms = readNullableBoolean(in);
       bigIntByteWidth = readNullableInteger(in);
+      bigDecimalScale = readNullableInteger(in);
       fastRanges = readNullableBoolean(in);
       storeTermVectors = readNullableBoolean(in);
       storeTermVectorPositions = readNullableBoolean(in);
@@ -1727,9 +1752,10 @@ public class FieldTypes {
         String language = readNullableString(in);
         String country = readNullableString(in);
         String variant = readNullableString(in);
-        // nocommit this is not sufficient right?  need to use the builder?
+        sortCollatorStrength = readNullableInteger(in);
         sortLocale = new Locale(language, country, variant);
         sortCollator = Collator.getInstance(sortLocale);
+        sortCollator.setStrength(sortCollatorStrength);
       } else if (b != 0) {
         throw new CorruptIndexException("invalid byte for sortLocale: " + b, in);        
       }
@@ -1798,18 +1824,18 @@ public class FieldTypes {
   /** Only invoked by IndexWriter directly.
    *
    * @lucene.internal */
-  // nocommit lock this down so only IW can create?
-  public FieldTypes(IndexWriter writer, boolean isNewIndex, Analyzer defaultIndexAnalyzer, Similarity defaultSimilarity) throws IOException {
+  public FieldTypes(IndexWriter writer, boolean isNewIndex, boolean is5xIndex, Analyzer defaultIndexAnalyzer, Similarity defaultSimilarity) throws IOException {
     this.readOnly = false;
-    indexCreatedVersion = loadFields(writer.getCommitData(), isNewIndex);
+    indexCreatedVersion = loadFields(writer.getCommitData(), isNewIndex, is5xIndex);
     this.defaultIndexAnalyzer = defaultIndexAnalyzer;
     this.defaultQueryAnalyzer = null;
     this.defaultSimilarity = defaultSimilarity;
   }
 
-  private FieldTypes(Map<String,String> commitData, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
+  /** Only used by index readers. */
+  private FieldTypes(SegmentInfos infos, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
     this.readOnly = true;
-    indexCreatedVersion = loadFields(commitData, false);
+    indexCreatedVersion = loadFields(infos.getUserData(), false, infos.infosVersion < SegmentInfos.VERSION_60);
     this.defaultIndexAnalyzer = null;
     this.defaultQueryAnalyzer = defaultQueryAnalyzer;
     this.defaultSimilarity = defaultSimilarity;
@@ -1841,6 +1867,8 @@ public class FieldTypes {
         FieldType fieldType = other.fields.get(field);
         if (fieldType != null) {
           fields.put(field, new FieldType(fieldType));
+        } else {
+          throw new IllegalArgumentException("unknown field \"" + field + "\"");
         }
       }
       FieldType fieldType = other.fields.get(FIELD_NAMES_FIELD);
@@ -1856,16 +1884,21 @@ public class FieldTypes {
     }
   }
 
-  private synchronized Version loadFields(Map<String,String> commitUserData, boolean isNewIndex) throws IOException {
+  private synchronized Version loadFields(Map<String,String> commitUserData, boolean isNewIndex, boolean is5xIndex) throws IOException {
     String currentFieldTypes = commitUserData.get(FIELD_TYPES_KEY);
     if (currentFieldTypes != null) {
+      if (isNewIndex) {
+        throw new AssertionError("new index should not have field types");
+      }
       return readFromString(currentFieldTypes);
     } else if (isNewIndex == false) {
-      // Index already exists, but no FieldTypes
-      // nocommit must handle back compat here
-      // throw new CorruptIndexException("FieldTypes is missing from this index", "CommitUserData");
-      enableExistsFilters = false;
-      return Version.LATEST;
+      if (is5xIndex == false) {
+        // Index already exists, but no FieldTypes
+        throw new CorruptIndexException("FieldTypes is missing from this index", "CommitUserData");
+      } else {
+        enableExistsFilters = false;
+        return Version.LUCENE_5_0_0;
+      }
     } else {
       addFieldNamesField();
       return Version.LATEST;
@@ -1916,8 +1949,6 @@ public class FieldTypes {
     return bytesOut;
   }
 
-  // nocommit: let codec control this format?  should we write directly into segments_N?  or into a new separately gen'd file?
-
   /** Encodes byte[] to 7-bit clean chars (ascii). */
   private static String bytesToString(byte[] bytesIn) {
     byte[] bytesOut = new byte[(6+bytesIn.length*8)/7];
@@ -1943,8 +1974,9 @@ public class FieldTypes {
     return new String(bytesOut, StandardCharsets.UTF_8);
   }
 
+  /** Set the {@link PostingsFormat} for this field.  This method has no effect if you pass your own {@link Codec} when
+   *  creating {@link IndexWriter}. */
   public synchronized void setPostingsFormat(String fieldName, String postingsFormat) {
-    // nocommit can we prevent this, if our codec isn't used by IW?
     try {
       // Will throw exception if this postingsFormat is unrecognized:
       PostingsFormat.forName(postingsFormat);
@@ -1980,7 +2012,7 @@ public class FieldTypes {
     if (fieldType == null) {
       List<String> fieldNames = new ArrayList<>(fields.keySet());
       Collections.sort(fieldNames);
-      throw new IllegalArgumentException("field \"" + fieldName + "\" is not recognized; known fields: " + fieldNames);
+      throw new IllegalArgumentException("unknown field \"" + fieldName + "\"; valid fields: " + fieldNames);
     }
     return fieldType;
   }
@@ -1989,8 +2021,9 @@ public class FieldTypes {
     return getFieldType(fieldName).postingsFormat;
   }
 
+  /*  Set the {@link DocValuesFormat} for this field.  This method has no effect if you pass your own {@link Codec} when
+   *  creating {@link IndexWriter}. */
   public synchronized void setDocValuesFormat(String fieldName, String docValuesFormat) {
-    // nocommit can we prevent this, if our codec isn't used by IW?
     try {
       // Will throw exception if this docValuesFormat is unrecognized:
       DocValuesFormat.forName(docValuesFormat);
@@ -2028,10 +2061,9 @@ public class FieldTypes {
       }
     };
 
-  // nocommit but how can we randomized Codec in tests?
+  // TODO: can we just absorb Codec into FieldTypes somehow?  Seems silly to have PerFieldXXXFormat when FieldTypes is already handling the
+  // per-field-ness, except, if we still allow per-field-XXX to change at any time, we'd still need to write per-segment atts:
   private final Codec codec = new Lucene50Codec() {
-      // TODO: too bad we can't just set every format here?  what if we fix this schema to record which format per field, and then
-      // remove PerFieldXXXFormat...?
       @Override
       public PostingsFormat getPostingsFormatForField(String fieldName) {
         FieldType field = fields.get(fieldName);
@@ -2104,7 +2136,7 @@ public class FieldTypes {
       throw new UnsupportedOperationException();
     }
 
-    // nocommit: what about wrapReader?
+    // TODO: what about wrapReader?
   }
 
   private final Analyzer indexAnalyzer = new FieldTypeAnalyzer() {
@@ -2444,17 +2476,18 @@ public class FieldTypes {
 
   /** Sets the minimum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25; higher values make fewer, larger blocks, which require less
-   *  heap in the IndexReader but slows down term lookups. */
+   *  heap in the {@link IndexReader} but slows down term lookups.  This method has no effect if you pass your own {@link Codec} when
+   *  creating {@link IndexWriter}.
+   **/
   public synchronized void setTermsDictBlockSize(String fieldName, int minItemsInBlock) {
-    // nocommit can we prevent this, if our codec isn't used by IW?
     setTermsDictBlockSize(fieldName, minItemsInBlock, 2*(minItemsInBlock-1));
   }
 
   /** Sets the minimum and maximum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25 and 48; higher values make fewer, larger blocks, which require less
-   *  heap in the IndexReader but slows down term lookups. */
+   *  heap in the {@link IndexReader} but slows down term lookups.   This method has no effect if you pass your own {@link Codec} when
+   *  creating {@link IndexWriter}.*/
   public synchronized void setTermsDictBlockSize(String fieldName, int minItemsInBlock, int maxItemsInBlock) {
-    // nocommit can we prevent this, if our codec isn't used by IW?
     ensureWritable();
 
     try {
@@ -2491,16 +2524,17 @@ public class FieldTypes {
       assert current.validate();
     }
   }
+
   /** Sets the minimum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25; higher values make fewer, larger blocks, which require less
-   *  heap in the IndexReader but slows down term lookups. */
+   *  heap in the {@link IndexReader} but slows down term lookups. */
   public synchronized void setTermsDictAutoPrefixSize(String fieldName, int minItemsInAutoPrefix) {
     setTermsDictAutoPrefixSize(fieldName, minItemsInAutoPrefix, 2*(minItemsInAutoPrefix-1));
   }
 
   /** Sets the minimum and maximum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25 and 48; higher values make fewer, larger blocks, which require less
-   *  heap in the IndexReader but slows down term lookups. */
+   *  heap in the {@link IndexReader} but slows down term lookups. */
   public synchronized void setTermsDictAutoPrefixSize(String fieldName, int minItemsInAutoPrefix, int maxItemsInAutoPrefix) {
     ensureWritable();
 
@@ -2645,8 +2679,9 @@ public class FieldTypes {
       illegalState(fieldName, "this field is not multi-valued");
     }
     if (current.valueType != ValueType.BIG_INT &&
+        current.valueType != ValueType.BIG_DECIMAL &&
         current.valueType != ValueType.ATOM) {
-      illegalState(fieldName, "value type must be BIG_INT or ATOM; got value type=" + current.valueType);
+      illegalState(fieldName, "value type must be BIG_INT, BIG_DECIMAL or ATOM; got value type=" + current.valueType);
     }
     if (current.sortable != Boolean.TRUE) {
       illegalState(fieldName, "field is not enabled for sorting");
@@ -2663,8 +2698,9 @@ public class FieldTypes {
       illegalState(fieldName, "this field is not multi-valued");
     }
     if (current.valueType != ValueType.BIG_INT &&
+        current.valueType != ValueType.BIG_DECIMAL &&
         current.valueType != ValueType.ATOM) {
-      illegalState(fieldName, "value type must be BIG_INT or ATOM; got value type=" + current.valueType);
+      illegalState(fieldName, "value type must be BIG_INT, BIG_DECIMAL or ATOM; got value type=" + current.valueType);
     }
     if (current.sortable != Boolean.TRUE) {
       illegalState(fieldName, "field is not enabled for sorting");
@@ -2897,6 +2933,67 @@ public class FieldTypes {
     FieldType current = getFieldType(fieldName);
     if (current.valueType != ValueType.BIG_INT) {
       illegalState(fieldName, "field is not BIG_INT; got value type=" + current.valueType);
+    }
+    if (current.bigIntByteWidth == null) {
+      illegalState(fieldName, "no byte width was set for this BIG_INT field");
+    }
+    return current.bigIntByteWidth;
+  }
+
+
+  /** Sets the byte width and scale for this big decimal field. */
+  public void setBigDecimalByteWidthAndScale(String fieldName, int maxBytes, int scale) {
+
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
+      //current.storedOnly = Boolean.FALSE;
+      current.valueType = ValueType.BIG_DECIMAL;
+      current.bigIntByteWidth = maxBytes;
+      current.bigDecimalScale = scale;
+      fields.put(fieldName, current);
+      //current.setDefaults();
+      changed();
+    } else if (current.valueType == ValueType.NONE) {
+      //current.storedOnly = Boolean.FALSE;
+      current.valueType = ValueType.BIG_DECIMAL;
+      current.bigIntByteWidth = maxBytes;
+      current.bigDecimalScale = scale;
+      //current.setDefaults();
+      changed();
+    } else if (current.valueType != ValueType.BIG_DECIMAL) {
+      illegalState(fieldName, "can only setBigDecimalByteWidthAndScale on BIG_DECIMAL fields; got value type=" + current.valueType);
+    } else if (current.bigDecimalScale == null) {
+      current.bigIntByteWidth = maxBytes;
+      current.bigDecimalScale = scale;
+      changed();
+    } else if (current.bigDecimalScale.intValue() != scale) {
+      illegalState(fieldName, "cannot change bigDecimalScale from " + current.bigDecimalScale + " to " + scale);
+    } else if (current.bigIntByteWidth.intValue() != maxBytes) {
+      illegalState(fieldName, "cannot change bigIntByteWidth from " + current.bigIntByteWidth + " to " + maxBytes);
+    }
+  }
+
+  public int getBigDecimalScale(String fieldName) {
+    // field must exist
+    FieldType current = getFieldType(fieldName);
+    if (current.valueType != ValueType.BIG_DECIMAL) {
+      illegalState(fieldName, "field is not value type BIG_DECIMAL; got value type=" + current.valueType);
+    }
+    if (current.bigDecimalScale == null) {
+      illegalState(fieldName, "no scale was set for this BIG_DECIMAL field");
+    }
+    return current.bigDecimalScale;
+  }
+
+  public int getBigDecimalByteWidth(String fieldName) {
+    // field must exist
+    FieldType current = getFieldType(fieldName);
+    if (current.valueType != ValueType.BIG_DECIMAL) {
+      illegalState(fieldName, "field is not value type BIG_DECIMAL; got value type=" + current.valueType);
+    }
+    if (current.bigIntByteWidth == null) {
+      illegalState(fieldName, "no byte width was set for this BIG_DECIMAL field");
     }
     return current.bigIntByteWidth;
   }
@@ -3176,7 +3273,10 @@ public class FieldTypes {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       if (valueType == ValueType.BIG_INT) {
-        illegalState(fieldName, "you must first set the byte width for big_int fields");
+        illegalState(fieldName, "you must first set the byte width for BIG_INT fields");
+      }
+      if (valueType == ValueType.BIG_DECIMAL) {
+        illegalState(fieldName, "you must first set the scale and byte width for BIG_DECIMAL fields");
       }
       current = newFieldType(fieldName);
       current.storedOnly = Boolean.FALSE;
@@ -3187,7 +3287,10 @@ public class FieldTypes {
       changed();
     } else if (current.valueType == ValueType.NONE) {
       if (valueType == ValueType.BIG_INT) {
-        illegalState(fieldName, "you must first set the byte width for big_int fields");
+        illegalState(fieldName, "you must first set the byte width for BIG_INT fields");
+      }
+      if (valueType == ValueType.BIG_DECIMAL) {
+        illegalState(fieldName, "you must first set the scale and byte width for BIG_DECIMAL fields");
       }
 
       if (current.isUnique != null && current.isUnique.booleanValue() != isUnique) {
@@ -3214,9 +3317,16 @@ public class FieldTypes {
       changed();
     } else if (current.valueType != valueType) {
       illegalState(fieldName, "cannot change from value type " + current.valueType + " to " + valueType);
+    } else if (current.storedOnly == null) {    
+      current.storedOnly = false;
+      if (current.valueType == ValueType.BIG_DECIMAL) {
+        current.setDefaults();
+      }
     } else if (current.storedOnly == Boolean.TRUE) {
       illegalState(fieldName, "this field is only stored; use addStoredXXX instead");
-    } else if (current.isUnique == null) {
+    }
+
+    if (current.isUnique == null) {
       current.isUnique = isUnique;
       changed();
     } else if (current.isUnique != isUnique) {
@@ -3320,9 +3430,12 @@ public class FieldTypes {
     indexedDocs = true;
     FieldType current = fields.get(fieldName);
     if (current == null) {
+      if (valueType == ValueType.BIG_DECIMAL) {
+        illegalState(fieldName, "cannot addStored: you must first record the byte width and scale for this BIG_DECIMAL field");
+      }
       current = newFieldType(fieldName);
-      current.storedOnly = Boolean.TRUE;
       current.valueType = valueType;
+      current.storedOnly = Boolean.TRUE;
       current.isUnique = Boolean.FALSE;
       current.indexOptionsSet = true;
       current.indexOptions = IndexOptions.NONE;
@@ -3336,6 +3449,10 @@ public class FieldTypes {
       illegalState(fieldName, "cannot addStored: field was already added non-stored");
     } else if (current.storedOnly == null) {
 
+      if (valueType == ValueType.BIG_DECIMAL && current.bigDecimalScale == null) {
+        illegalState(fieldName, "cannot addStored: you must first record the byte width and scale for this BIG_DECIMAL field");
+      }
+
       if (current.indexOptionsSet && current.indexOptions != IndexOptions.NONE) {
         illegalState(fieldName, "cannot addStored: field is already indexed with indexOptions=" + current.indexOptions);
       }
@@ -3347,8 +3464,8 @@ public class FieldTypes {
       }
       */
 
-      // All methods that set valueType also set storedOnly to false:
-      assert current.valueType == ValueType.NONE;
+      // All methods that set valueType also set storedOnly to false, except for BIG_DECIMAL:
+      assert current.valueType == ValueType.NONE || (current.valueType == ValueType.BIG_DECIMAL && valueType == ValueType.BIG_DECIMAL);
 
       FieldType sav = new FieldType(current);
       boolean success = false;
@@ -3356,6 +3473,7 @@ public class FieldTypes {
         current.storedOnly = Boolean.TRUE;
         current.valueType = valueType;
         current.indexOptions = IndexOptions.NONE;
+        current.indexOptionsSet = true;
         if (current.docValuesTypeSet == false) {
           current.docValuesType = DocValuesType.NONE;
           current.docValuesTypeSet = true;
@@ -3433,12 +3551,14 @@ public class FieldTypes {
     }
   }
 
-  public void setSortLocale(String fieldName, Locale locale) {
+  public void setSortLocale(String fieldName, Locale locale, int strength) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = newFieldType(fieldName);
       current.sortLocale = locale;
+      current.sortCollatorStrength = strength;;
       current.sortCollator = Collator.getInstance(locale);
+      current.sortCollator.setStrength(current.sortCollatorStrength);
       fields.put(fieldName, current);
       changed();
     } else if (current.sortLocale == null || current.valueType == null) {
@@ -3453,7 +3573,9 @@ public class FieldTypes {
         }
       }
       // TODO: can we make it easy to swap in icu?
+      current.sortCollatorStrength = strength;
       current.sortCollator = Collator.getInstance(locale);
+      current.sortCollator.setStrength(current.sortCollatorStrength);
       changed();
     } else if (locale.equals(current.sortLocale) == false) {
       illegalState(fieldName, "sortLocale can only be set before indexing");
@@ -3481,6 +3603,11 @@ public class FieldTypes {
   public Locale getSortLocale(String fieldName) {
     // Field must exist:
     return getFieldType(fieldName).sortLocale;
+  }
+
+  public int getSortCollatorStrength(String fieldName) {
+    // Field must exist:
+    return getFieldType(fieldName).sortCollatorStrength;
   }
 
   /** Each value in this field will be unique (never occur in more than one document).  IndexWriter validates this.  */
@@ -3512,24 +3639,42 @@ public class FieldTypes {
       illegalState(fieldName, "cannot create term: this field was not indexed");
     }
 
-    BytesRef bytes;
-
-    switch (fieldType.valueType) {
-    case BIG_INT:
-      bytes = NumericUtils.bigIntToBytes(token, fieldType.bigIntByteWidth);
-      break;
-    default:
+    if (fieldType.valueType != ValueType.BIG_INT) {
       illegalState(fieldName, "cannot create big int term when value type=" + fieldType.valueType);
-      // Dead code but javac disagrees:
-      bytes = null;
     }
 
-    return new Term(fieldName, bytes);
+    return new Term(fieldName, NumericUtils.bigIntToBytes(token, fieldType.bigIntByteWidth));
   }
 
-  /** Returns a query matching all documents that have this int term. */
+  /** Returns a {@link Query} matching this single {@code BigInteger} value, exactly. */
   public Query newBigIntTermQuery(String fieldName, BigInteger token) {
     return new TermQuery(newBigIntTerm(fieldName, token));
+  }
+
+  public Term newBigDecimalTerm(String fieldName, BigDecimal token) {
+
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create term: this field was not indexed");
+    }
+
+    if (fieldType.valueType != ValueType.BIG_DECIMAL) {
+      illegalState(fieldName, "cannot create big decimal term when value type=" + fieldType.valueType);
+    }
+
+    if (token.scale() != fieldType.bigDecimalScale.intValue()) {
+      illegalState(fieldName, "big decimal scale for this field is " + fieldType.bigDecimalScale + ", but token has scale " + token.scale());
+    }
+
+    return new Term(fieldName, NumericUtils.bigIntToBytes(token.unscaledValue(), fieldType.bigIntByteWidth));
+  }
+
+  /** Returns a {@link Query} matching this single {@code BigDecimal} value, exactly. */
+  public Query newBigDecimalTermQuery(String fieldName, BigDecimal token) {
+    return new TermQuery(newBigDecimalTerm(fieldName, token));
   }
 
   public Term newIntTerm(String fieldName, int token) {
@@ -3557,8 +3702,8 @@ public class FieldTypes {
     return new Term(fieldName, bytes);
   }
 
-  /** Returns a query matching all documents that have this int term. */
-  public Query newIntTermQuery(String fieldName, int token) {
+  /** Returns a {@link Query} matching this single {@code int} value, exactly. */
+  public Query newExactIntQuery(String fieldName, int token) {
     return new TermQuery(newIntTerm(fieldName, token));
   }
 
@@ -3587,8 +3732,8 @@ public class FieldTypes {
     return new Term(fieldName, bytes);
   }
 
-  /** Returns a query matching all documents that have this int term. */
-  public Query newFloatTermQuery(String fieldName, float token) {
+  /** Returns a {@link Query} matching this single {@code float} value, exactly. */
+  public Query newExactFloatQuery(String fieldName, float token) {
     return new TermQuery(newFloatTerm(fieldName, token));
   }
 
@@ -3617,8 +3762,8 @@ public class FieldTypes {
     return new Term(fieldName, bytes);
   }
 
-  /** Returns a query matching all documents that have this long term. */
-  public Query newLongTermQuery(String fieldName, long token) {
+  /** Returns a {@link Query} matching this single {@code long} value, exactly. */
+  public Query newExactLongQuery(String fieldName, long token) {
     return new TermQuery(newLongTerm(fieldName, token));
   }
 
@@ -3647,17 +3792,18 @@ public class FieldTypes {
     return new Term(fieldName, bytes);
   }
 
-  /** Returns a query matching all documents that have this int term. */
-  public Query newDoubleTermQuery(String fieldName, double token) {
+  /** Returns a {@link Query} matching this single {@code double} value, exactly. */
+  public Query newExactDoubleQuery(String fieldName, double token) {
     return new TermQuery(newDoubleTerm(fieldName, token));
   }
 
-  public Query newBinaryTermQuery(String fieldName, byte[] token) {
-    return newBinaryTermQuery(fieldName, new BytesRef(token));
+  /** Returns a {@link Query} matching this single {@code byte[]} value, exactly. */
+  public Query newExactBinaryQuery(String fieldName, byte[] token) {
+    return newExactBinaryQuery(fieldName, new BytesRef(token));
   }
 
-  /** Returns a query matching all documents that have this binary token. */
-  public Query newBinaryTermQuery(String fieldName, BytesRef token) {
+  /** Returns a {@link Query} matching this single {@link BytesRef} value, exactly. */
+  public Query newExactBinaryQuery(String fieldName, BytesRef token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -3675,7 +3821,8 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, token));
   }
 
-  public Query newStringTermQuery(String fieldName, String token) {
+  /** Returns a {@link Query} matching this single {@code String} value, exactly. */
+  public Query newExactStringQuery(String fieldName, String token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -3693,7 +3840,8 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, token));
   }
 
-  public Query newBooleanTermQuery(String fieldName, boolean token) {
+  /** Returns a {@link Query} matching this single boolean value, exactly. */
+  public Query newExactBooleanQuery(String fieldName, boolean token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -3716,7 +3864,8 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, new BytesRef(value)));
   }
 
-  public Query newInetAddressTermQuery(String fieldName, InetAddress token) {
+  /** Returns a {@link Query} matching this single {@code InetAddress}, exactly. */
+  public Query newExactInetAddressQuery(String fieldName, InetAddress token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -3892,7 +4041,6 @@ public class FieldTypes {
 
     BytesRef min;
     BytesRef max;
-    // nocommit should we also index collation keys / allow ranges?
     if (fieldType.sortLocale != null) {
       synchronized (fieldType.sortCollator) {
         min = minTerm == null ? null : new BytesRef(fieldType.sortCollator.getCollationKey(minTerm).toByteArray());
@@ -4016,6 +4164,39 @@ public class FieldTypes {
 
     BytesRef minTerm = min == null ? null : NumericUtils.bigIntToBytes(min, fieldType.bigIntByteWidth.intValue());
     BytesRef maxTerm = max == null ? null : NumericUtils.bigIntToBytes(max, fieldType.bigIntByteWidth.intValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newBigDecimalRangeFilter(String fieldName, BigDecimal min, boolean minInclusive, BigDecimal max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.BIG_DECIMAL) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type BIG_DECIMAL; got: " + fieldType.valueType);
+    }
+
+  // TODO: we could allow different scale, and just rescale ourselves?
+    if (min != null && min.scale() != fieldType.bigDecimalScale.intValue()) {
+      illegalState(fieldName, "big decimal scale for this field is " + fieldType.bigDecimalScale + ", but min has scale " + min.scale());
+    }
+
+    if (max != null && max.scale() != fieldType.bigDecimalScale.intValue()) {
+      illegalState(fieldName, "big decimal scale for this field is " + fieldType.bigDecimalScale + ", but max has scale " + max.scale());
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.bigIntToBytes(min.unscaledValue(), fieldType.bigIntByteWidth.intValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.bigIntToBytes(max.unscaledValue(), fieldType.bigIntByteWidth.intValue());
 
     return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
                                getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
@@ -4413,6 +4594,41 @@ public class FieldTypes {
           };
       }
 
+    case BIG_DECIMAL:
+      {
+        SortField sortField;
+        FieldComparatorSource compSource;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          compSource = new FieldComparatorSource() {
+              @Override
+              public FieldComparator<BigDecimal> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+                return new BigDecimalComparator(numHits, fieldName, fieldType.bigIntByteWidth, fieldType.sortMissingLast != Boolean.FALSE, fieldType.bigDecimalScale) {
+                  @Override
+                  protected SortedDocValues getDocValues(LeafReaderContext context) throws IOException {
+                    SortedSetDocValues dvs = context.reader().getSortedSetDocValues(fieldName);
+                    assert dvs != null;
+                    return SortedSetSelector.wrap(dvs, fieldType.sortedSetSelector);
+                  }
+                };
+              }
+            };
+        } else {
+          compSource = new FieldComparatorSource() {
+              @Override
+              public FieldComparator<BigDecimal> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+                return new BigDecimalComparator(numHits, fieldName, fieldType.bigIntByteWidth, fieldType.sortMissingLast != Boolean.FALSE, fieldType.bigDecimalScale);
+              }
+            };
+        }
+
+        return new SortField(fieldName, compSource, reverse) {
+            @Override
+            public String toString() {
+              return "<bigdecimal" + ": \"" + fieldName + "\" missingLast=" + fieldType.sortMissingLast + ">";
+            }
+          };
+      }
+
     case SHORT_TEXT:
     case ATOM:
     case BINARY:
@@ -4474,7 +4690,6 @@ public class FieldTypes {
     if (enableExistsFilters == false) {
       throw new IllegalStateException("field exists filter was disabled");
     }
-    // nocommit just use FieldValueFilter if field is DV'd? and then don't index such fields into FIELD_NAMES_FIELD?
 
     return new FieldExistsFilter(fieldName);
   }
@@ -4503,7 +4718,9 @@ public class FieldTypes {
     }
   }
 
-  // nocommit make this private, ie only IW can invoke it
+  /** This should only be invoked by {@link IndexWriter}.
+   *
+   * @lucene.internal */
   public void close() {
     closed = true;
   }
@@ -4512,7 +4729,7 @@ public class FieldTypes {
     throw new IllegalStateException("field \"" + fieldName + "\": " + message);
   }
 
-  // nocommit should this be under codec control...
+  /** @lucene.internal */
   public synchronized String writeToString() throws IOException {
     RAMFile file = new RAMFile();
     RAMOutputStream out = new RAMOutputStream(file, true);
@@ -4577,20 +4794,16 @@ public class FieldTypes {
   }
 
   public static FieldTypes getFieldTypes(Directory dir, Analyzer defaultQueryAnalyzer) throws IOException {
+    return getFieldTypes(dir, defaultQueryAnalyzer, false);
+  }
+
+  public static FieldTypes getFieldTypes(Directory dir, Analyzer defaultQueryAnalyzer, boolean is5xIndex) throws IOException {
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
-    return getFieldTypes(infos.getUserData(), defaultQueryAnalyzer, IndexSearcher.getDefaultSimilarity());
+    return getFieldTypes(infos, defaultQueryAnalyzer, IndexSearcher.getDefaultSimilarity());
   }
 
-  public static FieldTypes getFieldTypes(IndexCommit commit, Analyzer defaultQueryAnalyzer) throws IOException {
-    return getFieldTypes(commit, defaultQueryAnalyzer, IndexSearcher.getDefaultSimilarity());
-  }
-
-  public static FieldTypes getFieldTypes(IndexCommit commit, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
-    return getFieldTypes(commit.getUserData(), defaultQueryAnalyzer, defaultSimilarity);
-  }
-
-  public static FieldTypes getFieldTypes(Map<String,String> commitUserData, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
-    return new FieldTypes(commitUserData, defaultQueryAnalyzer, defaultSimilarity);
+  public static FieldTypes getFieldTypes(SegmentInfos infos, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
+    return new FieldTypes(infos, defaultQueryAnalyzer, defaultSimilarity);
   }
 
   public Iterable<String> getFieldNames() {
@@ -4621,7 +4834,6 @@ public class FieldTypes {
     }
   }
 
-  // nocommit on exception (mismatched schema), this should ensure no changes were actually made:
   public synchronized void addAll(FieldTypes in) {
     Map<String,FieldType> sav = new HashMap<>();
     for(Map.Entry<String,FieldType> ent : fields.entrySet()) {
@@ -4748,12 +4960,6 @@ public class FieldTypes {
     } else {
       throw new CorruptIndexException("invalid byte for nullable string: " + b, in);
     }
-  }
-
-  /** Returns true if terms should be left-zero-padded (sorted as if they were right-justified). */
-  public boolean rightJustifyTerms(String fieldName) {
-    FieldType fieldType = fields.get(fieldName);
-    return fieldType != null && fieldType.valueType == ValueType.BIG_INT;
   }
 
   public ValueType getValueType(String fieldName) {

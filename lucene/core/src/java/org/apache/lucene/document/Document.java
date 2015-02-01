@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -157,7 +158,33 @@ public class Document implements Iterable<IndexableField> {
       case DOUBLE:
         return getReusedBinaryTokenStream(NumericUtils.doubleToBytes(((Number) value).doubleValue()), reuse);
       case BIG_INT:
-        return getReusedBinaryTokenStream(NumericUtils.bigIntToBytes(((BigInteger) value), fieldType.bigIntByteWidth.intValue()), reuse);
+        {
+          BytesRef bytes;
+          try {
+            bytes = NumericUtils.bigIntToBytes((BigInteger) value, fieldType.bigIntByteWidth.intValue());
+          } catch (IllegalArgumentException iae) {
+            FieldTypes.illegalState(fieldName, iae.getMessage());
+            // Dead code but compile disagrees:
+            bytes = null;
+          }
+          return getReusedBinaryTokenStream(bytes, reuse);
+        }
+      case BIG_DECIMAL:
+        {
+          BigDecimal dec = (BigDecimal) value;
+          if (dec.scale() != fieldType.bigDecimalScale.intValue()) {
+            FieldTypes.illegalState(fieldName, "BIG_DECIMAL was configured with scale=" + fieldType.bigDecimalScale + ", but indexed value has scale=" + dec.scale());
+          }
+          BytesRef bytes;
+          try {
+            bytes = NumericUtils.bigIntToBytes(dec.unscaledValue(), fieldType.bigIntByteWidth.intValue());
+          } catch (IllegalArgumentException iae) {
+            FieldTypes.illegalState(fieldName, iae.getMessage());
+            // Dead code but compile disagrees:
+            bytes = null;
+          }
+          return getReusedBinaryTokenStream(bytes, reuse);
+        }
       case DATE:
         return getReusedBinaryTokenStream(NumericUtils.longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
@@ -373,6 +400,12 @@ public class Document implements Iterable<IndexableField> {
         return new BytesRef(((InetAddress) value).getAddress());
       } else if (fieldType.valueType == FieldTypes.ValueType.BIG_INT) { 
         return new BytesRef(((BigInteger) value).toByteArray());
+      } else if (fieldType.valueType == FieldTypes.ValueType.BIG_DECIMAL) { 
+        BigDecimal dec = (BigDecimal) value;
+        if (dec.scale() != fieldType.bigDecimalScale) {
+          FieldTypes.illegalState(fieldName, "BIG_DECIMAL was configured with scale=" + fieldType.bigDecimalScale + ", but stored value has scale=" + dec.scale());
+        }
+        return new BytesRef(dec.unscaledValue().toByteArray());
       } else if (value instanceof BytesRef) {
         return (BytesRef) value;
       } else {
@@ -390,6 +423,9 @@ public class Document implements Iterable<IndexableField> {
         } else if (fieldType.valueType == FieldTypes.ValueType.BIG_INT) {
           // TODO: can we do this only once, if it's DV'd & indexed?
           return NumericUtils.bigIntToBytes((BigInteger) value, fieldType.bigIntByteWidth);
+        } else if (fieldType.valueType == FieldTypes.ValueType.BIG_DECIMAL) { 
+          // TODO: can we do this only once, if it's DV'd & indexed?
+          return NumericUtils.bigIntToBytes(((BigDecimal) value).unscaledValue(), fieldType.bigIntByteWidth);
         } else if (value instanceof String) {
           String s = (String) value;
           BytesRef br;
@@ -530,6 +566,8 @@ public class Document implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
+  // nocommit explain/verify how there can be only one unique field per doc
+
   /** E.g. a primary key field. */
   public void addUniqueAtom(String fieldName, String value) {
     if (changeSchema) {
@@ -652,6 +690,15 @@ public class Document implements Iterable<IndexableField> {
     }
     fields.add(new FieldValue(fieldName, value));
   }
+
+  /** Only store this value. */
+  public void addStoredBigDecimal(String fieldName, BigDecimal value) {
+    if (changeSchema) {
+      fieldTypes.recordStoredValueType(fieldName, FieldTypes.ValueType.BIG_DECIMAL);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
   /** Default: store this value. */
   public void addBinary(String fieldName, byte[] value) {
     addBinary(fieldName, new BytesRef(value));
@@ -762,10 +809,18 @@ public class Document implements Iterable<IndexableField> {
 
   // TODO: addUniqueBigInteger?
 
-  /** Default: support for range filtering/querying and sorting (using numeric doc values). */
+  /** Default: support for range filtering/querying and sorting (using sorted doc values). */
   public void addBigInteger(String fieldName, BigInteger value) {
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BIG_INT);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** Default: support for range filtering/querying and sorting (using sorted doc values). */
+  public void addBigDecimal(String fieldName, BigDecimal value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BIG_DECIMAL);
     }
     fields.add(new FieldValue(fieldName, value));
   }
@@ -784,6 +839,8 @@ public class Document implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
+  // nocommit should we map v4 addresses like this: http://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
+
   /** Add an {@code InetAddress} field.  This is indexed as a binary atom under the hood, for sorting,
    *  range filtering and stored. */
   public void addInetAddress(String fieldName, InetAddress value) {
@@ -799,18 +856,16 @@ public class Document implements Iterable<IndexableField> {
   }
 
   static {
-    assert FieldTypes.ValueType.values().length == 14: "missing case for switch statement below";
+    assert FieldTypes.ValueType.values().length == 15: "missing case for switch statement below";
   }
 
-  /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
+  /** Note: the FieldTypes must already know about all the fields in the incoming doc. */
   public void addAll(Document other) {
-    // nocommit can we remove this?
-    // nocommit should we insist other.fieldTypes == this.fieldTypes?  or, that they are "congruent"?
     for (IndexableField indexableField : other.fields) {
       String fieldName = indexableField.name();
       if (indexableField instanceof FieldValue) {
         FieldValue field = (FieldValue) indexableField;
-        FieldType fieldType = fieldTypes.getFieldType(fieldName);
+        FieldType fieldType = other.fieldTypes.getFieldType(fieldName);
         switch (fieldType.valueType) {
         case TEXT:
           addLargeText(fieldName, field.stringValue());
@@ -820,13 +875,25 @@ public class Document implements Iterable<IndexableField> {
           break;
         case ATOM:
           if (field.value instanceof BytesRef) {
-            addAtom(fieldName, (BytesRef) field.value);
+            if (fieldType.isUnique == Boolean.TRUE) {
+              addUniqueAtom(fieldName, (BytesRef) field.value);
+            } else {
+              addAtom(fieldName, (BytesRef) field.value);
+            }
           } else {
-            addAtom(fieldName, (String) field.value);
+            if (fieldType.isUnique == Boolean.TRUE) {
+              addUniqueAtom(fieldName, (String) field.value);
+            } else {
+              addAtom(fieldName, (String) field.value);
+            }
           }
           break;
         case INT:
-          addInt(fieldName, field.numericValue().intValue());
+          if (fieldType.isUnique == Boolean.TRUE) {
+            addUniqueInt(fieldName, field.numericValue().intValue());
+          } else {
+            addInt(fieldName, field.numericValue().intValue());
+          }
           break;
         case HALF_FLOAT:
           addHalfFloat(fieldName, field.numericValue().floatValue());
@@ -835,13 +902,20 @@ public class Document implements Iterable<IndexableField> {
           addFloat(fieldName, field.numericValue().floatValue());
           break;
         case LONG:
-          addLong(fieldName, field.numericValue().longValue());
+          if (fieldType.isUnique == Boolean.TRUE) {
+            addUniqueLong(fieldName, field.numericValue().longValue());
+          } else {
+            addLong(fieldName, field.numericValue().longValue());
+          }
           break;
         case DOUBLE:
           addDouble(fieldName, field.numericValue().doubleValue());
           break;
         case BIG_INT:
           addBigInteger(fieldName, (BigInteger) field.value);
+          break;
+        case BIG_DECIMAL:
+          addBigDecimal(fieldName, (BigDecimal) field.value);
           break;
         case BINARY:
           addStoredBinary(fieldName, field.binaryValue());
@@ -898,6 +972,15 @@ public class Document implements Iterable<IndexableField> {
       return null;
     } else {
       return (BigInteger) fieldValue.value;
+    }
+  }
+
+  public BigDecimal getBigDecimal(String fieldName) {
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (BigDecimal) fieldValue.value;
     }
   }
 

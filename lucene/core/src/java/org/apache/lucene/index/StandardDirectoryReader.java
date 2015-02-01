@@ -59,7 +59,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
         SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
-        FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
+        FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis, null, null);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
           boolean success = false;
@@ -92,7 +92,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     // Carry over current schema:
     segmentInfos.getUserData().put(FieldTypes.FIELD_TYPES_KEY, writer.fieldTypes.writeToString());
 
-    FieldTypes fieldTypes = FieldTypes.getFieldTypes(segmentInfos.getUserData(), null, null);
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(segmentInfos, null, null);
 
     int infosUpto = 0;
     boolean success = false;
@@ -158,7 +158,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     
     SegmentReader[] newReaders = new SegmentReader[infos.size()];
 
-    FieldTypes fieldTypes = FieldTypes.getFieldTypes(infos.getUserData(), null, null);
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(infos, null, null);
 
     for (int i = infos.size() - 1; i>=0; i--) {
       SegmentCommitInfo commitInfo = infos.info(i);

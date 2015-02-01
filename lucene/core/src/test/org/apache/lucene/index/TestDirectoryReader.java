@@ -53,7 +53,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
     assertTrue(reader != null);
     assertTrue(reader instanceof StandardDirectoryReader);
-    FieldTypes fieldTypes = FieldTypes.getFieldTypes(reader.getIndexCommit(), new MockAnalyzer(random()));
+    FieldTypes fieldTypes = reader.getFieldTypes();
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
     Document newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);

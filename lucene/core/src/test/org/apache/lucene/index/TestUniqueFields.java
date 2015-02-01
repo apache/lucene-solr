@@ -42,57 +42,40 @@ import org.apache.lucene.util.TestUtil;
 public class TestUniqueFields extends LuceneTestCase {
 
   public void testBasic1() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
-
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (NotUniqueException nue) {
-      // expected
-      assertEquals("field \"field\" must be unique, but value=[6f 6e 65] appears more than once", nue.getMessage());
-    }
+    shouldFail(() -> w.addDocument(doc),
+               "field \"field\" must be unique, but value=[6f 6e 65] appears more than once");
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, hitCount(s, fieldTypes.newBinaryTermQuery("field", new BytesRef("one"))));
+    assertEquals(1, hitCount(s, fieldTypes.newExactBinaryQuery("field", new BytesRef("one"))));
     assertEquals(1, r.numDocs());
     r.close();
     w.close();
-    dir.close();
   }
 
   public void testBasic1Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueInt("field", 17);
     w.addDocument(doc);
-
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (NotUniqueException nue) {
-      // expected
-      assertEquals("field \"field\" must be unique, but value=[80 0 0 11] appears more than once", nue.getMessage());
-    }
+    shouldFail(() -> w.addDocument(doc),
+               "field \"field\" must be unique, but value=[80 0 0 11] appears more than once");
     DirectoryReader r = DirectoryReader.open(w, true);
     assertEquals(1, r.numDocs());
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, hitCount(s, fieldTypes.newIntTermQuery("field", 17)));
+    assertEquals(1, hitCount(s, fieldTypes.newExactIntQuery("field", 17)));
     r.close();
     w.close();
-    dir.close();
   }
 
   public void testBasic2() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document doc = w.newDocument();
+    IndexWriter w = newIndexWriter();
+    final Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
@@ -105,17 +88,12 @@ public class TestUniqueFields extends LuceneTestCase {
       mgr.release(r);
     }
 
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (NotUniqueException nue) {
-      // expected
-      assertEquals("field \"field\" must be unique, but value=[6f 6e 65] appears more than once", nue.getMessage());
-    }
+    shouldFail(() -> w.addDocument(doc),
+               "field \"field\" must be unique, but value=[6f 6e 65] appears more than once");
 
-    doc = w.newDocument();
-    doc.addUniqueAtom("field", new BytesRef("two"));
-    w.addDocument(doc);
+    Document doc2 = w.newDocument();
+    doc2.addUniqueAtom("field", new BytesRef("two"));
+    w.addDocument(doc2);
 
     mgr.maybeRefresh();
 
@@ -127,13 +105,11 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testBasic2Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document doc = w.newDocument();
+    IndexWriter w = newIndexWriter();
+    final Document doc = w.newDocument();
     doc.addUniqueInt("field", 17);
     w.addDocument(doc);
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
@@ -146,17 +122,12 @@ public class TestUniqueFields extends LuceneTestCase {
       mgr.release(r);
     }
 
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (NotUniqueException nue) {
-      // expected
-      assertEquals("field \"field\" must be unique, but value=[80 0 0 11] appears more than once", nue.getMessage());
-    }
+    shouldFail(() -> w.addDocument(doc),
+               "field \"field\" must be unique, but value=[80 0 0 11] appears more than once");
 
-    doc = w.newDocument();
-    doc.addUniqueInt("field", 22);
-    w.addDocument(doc);
+    Document doc2 = w.newDocument();
+    doc2.addUniqueInt("field", 22);
+    w.addDocument(doc2);
 
     mgr.maybeRefresh();
 
@@ -168,12 +139,10 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange1() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addAtom("field", new BytesRef("one"));
     w.addDocument(doc);
@@ -181,12 +150,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addUniqueAtom("field", new BytesRef("two")),
                "field \"field\": cannot change isUnique from false to true");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange1Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addInt("field", 17);
     w.addDocument(doc);
@@ -194,12 +161,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addUniqueInt("field", 22),
                "field \"field\": cannot change isUnique from false to true");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange2() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
@@ -207,12 +172,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addAtom("field", new BytesRef("two")),
                "field \"field\": cannot change isUnique from true to false");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange2Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueInt("field", 17);
     w.addDocument(doc);
@@ -220,12 +183,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addInt("field", 22),
                "field \"field\": cannot change isUnique from true to false");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange3() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addAtom("field", "one");
     w.addDocument(doc);
@@ -233,12 +194,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addUniqueAtom("field", "two"),
                "field \"field\": cannot change isUnique from false to true");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange3Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addInt("field", 17);
     w.addDocument(doc);
@@ -246,12 +205,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addUniqueInt("field", 22),
                "field \"field\": cannot change isUnique from false to true");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange4() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueAtom("field", "one");
     w.addDocument(doc);
@@ -259,12 +216,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addAtom("field", "two"),
                "field \"field\": cannot change isUnique from true to false");
     w.close();
-    dir.close();
   }
 
   public void testExcInvalidChange4Int() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     Document doc = w.newDocument();
     doc.addUniqueInt("field", 17);
     w.addDocument(doc);
@@ -272,12 +227,10 @@ public class TestUniqueFields extends LuceneTestCase {
     shouldFail(() -> doc2.addInt("field", 22),
                "field \"field\": cannot change isUnique from true to false");
     w.close();
-    dir.close();
   }
 
   public void testDeletes() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
 
@@ -306,12 +259,10 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testDeletesInt() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     FieldTypes fieldTypes = w.getFieldTypes();
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
@@ -341,12 +292,10 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testUpdates() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
 
@@ -375,12 +324,10 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testUpdatesInt() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     FieldTypes fieldTypes = w.getFieldTypes();
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
@@ -410,11 +357,9 @@ public class TestUniqueFields extends LuceneTestCase {
     }
 
     w.close();
-    dir.close();
   }
 
   public void testRandom() throws Exception {
-    Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = w.getFieldTypes();
 
@@ -484,11 +429,9 @@ public class TestUniqueFields extends LuceneTestCase {
     assertEquals(terms.size(), MultiFields.getTerms(r, "field").size());
     r.close();
     w.close();
-    dir.close();
   }
 
   public void testRandomInt() throws Exception {
-    Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final FieldTypes fieldTypes = w.getFieldTypes();
 
@@ -559,12 +502,11 @@ public class TestUniqueFields extends LuceneTestCase {
     assertEquals(terms.size(), MultiFields.getTerms(r, "field").size());
     r.close();
     w.close();
-    dir.close();
   }
 
   /** Make sure CheckIndex detects violation of unique constraint, and -exorcise properly repairs it. */
   public void testExcCheckIndex() throws Exception {
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = newIndexWriter();
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
     Document doc2 = w.newDocument();
     doc2.addUniqueAtom("field", "one");
@@ -602,8 +544,7 @@ public class TestUniqueFields extends LuceneTestCase {
   }
 
   public void testMultiValuedUnique() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = newIndexWriter();
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
     Document doc = w.newDocument();
@@ -614,10 +555,9 @@ public class TestUniqueFields extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "foo"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "bar"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "foo"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "bar"), 1).totalHits);
     r.close();
     w.close();
-    dir.close();
   }
 }

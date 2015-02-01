@@ -382,7 +382,7 @@ public class TestFloatFields extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, s.search(fieldTypes.newFloatTermQuery("num", 180f), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactFloatQuery("num", 180f), 1).totalHits);
     r.close();
     w.close();
     dir.close();

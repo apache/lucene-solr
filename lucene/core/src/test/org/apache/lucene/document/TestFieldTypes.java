@@ -17,7 +17,11 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -64,5 +68,55 @@ public class TestFieldTypes extends LuceneTestCase {
       // expected
     }
     dir2.close();
+  }
+
+  public void testInconsistentMultiReaderFieldTypes() throws Exception {
+    IndexWriter w = newIndexWriter();
+    Document doc = w.newDocument();
+    doc.addInt("field", 5);
+    w.addDocument(doc);
+    w.close();
+    IndexReader sub1 = DirectoryReader.open(dir);
+
+    w = newIndexWriter(newIndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    doc = w.newDocument();
+    doc.addShortText("field", "hello");
+    w.addDocument(doc);
+    w.close();
+    IndexReader sub2 = DirectoryReader.open(dir);
+
+    try {
+      new MultiReader(sub1, sub2);
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      assertEquals("field \"field\": cannot change value type from INT to SHORT_TEXT", ise.getMessage());
+    }
+
+    sub1.close();
+    sub2.close();
+  }
+
+  public void testInconsistentAddIndexesFieldTypes() throws Exception {
+    IndexWriter w = newIndexWriter();
+    Document doc = w.newDocument();
+    doc.addInt("field", 5);
+    w.addDocument(doc);
+    w.close();
+    IndexReader sub = DirectoryReader.open(dir);
+
+    w = newIndexWriter(newIndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    doc = w.newDocument();
+    doc.addShortText("field", "hello");
+    w.addDocument(doc);
+
+    try {
+      w.addIndexes(sub);
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      assertEquals("field \"field\": cannot change value type from SHORT_TEXT to INT", ise.getMessage());
+    }
+
+    w.close();
+    sub.close();
   }
 }

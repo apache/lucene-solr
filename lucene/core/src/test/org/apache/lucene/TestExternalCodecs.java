@@ -102,9 +102,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "memory")), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newIntTermQuery("id", 76), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newIntTermQuery("id", 77), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newIntTermQuery("id", 44), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactIntQuery("id", 76), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactIntQuery("id", 77), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactIntQuery("id", 44), 1).totalHits);
 
     if (VERBOSE) {
       System.out.println("\nTEST: now close NRT reader");

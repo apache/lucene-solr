@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,27 +47,32 @@ import org.apache.lucene.util.TestUtil;
 
 // We need DV random-access ords support for multi-valued sorting:
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
-public class TestBigIntegerFields extends LuceneTestCase {
+public class TestBigDecimalFields extends LuceneTestCase {
+
+  private BigDecimal make(String token, int scale) {
+    return new BigDecimal(new BigInteger(token), scale);
+  }
+
   public void testRange1() throws Exception {
     Directory dir = newDirectory();
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 30);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 30, 2);
     //System.out.println("id type: " + fieldTypes.getFieldType("id"));
 
     Document doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("3000000000000000000"));
+    doc.addBigDecimal("num", make("3000000000000000000", 2));
     doc.addAtom("id", "one");
     w.addDocument(doc);
 
     doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("2000000000000000000"));
+    doc.addBigDecimal("num", make("2000000000000000000", 2));
     doc.addAtom("id", "two");
     w.addDocument(doc);
 
     doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("7000000000000000000"));
+    doc.addBigDecimal("num", make("7000000000000000000", 2));
     doc.addAtom("id", "three");
     w.addDocument(doc);
 
@@ -75,22 +81,22 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     // Make sure range query hits the right number of hits
     assertEquals(2, s.search(new MatchAllDocsQuery(),
-                             fieldTypes.newBigIntRangeFilter("num",
-                                                             new BigInteger("0"), true,
-                                                             new BigInteger("3000000000000000000"), true), 1).totalHits);
+                             fieldTypes.newBigDecimalRangeFilter("num",
+                                                                 make("0", 2), true,
+                                                                 make("3000000000000000000", 2), true), 1).totalHits);
     assertEquals(3, s.search(new MatchAllDocsQuery(),
-                             fieldTypes.newBigIntRangeFilter("num",
-                                                             new BigInteger("0"), true,
-                                                             new BigInteger("10000000000000000000"), true), 1).totalHits);
+                             fieldTypes.newBigDecimalRangeFilter("num",
+                                                                 make("0", 2), true,
+                                                                 make("10000000000000000000", 2), true), 1).totalHits);
     TopDocs hits = s.search(new MatchAllDocsQuery(),
-                            fieldTypes.newBigIntRangeFilter("num",
-                                                            new BigInteger("1000000000000000000"), true,
-                                                            new BigInteger("2500000000000000000"), true), 1);
+                            fieldTypes.newBigDecimalRangeFilter("num",
+                                                                make("1000000000000000000", 2), true,
+                                                                make("2500000000000000000", 2), true), 1);
     assertEquals(1, hits.totalHits);
-    assertEquals(new BigInteger("2000000000000000000"), s.doc(hits.scoreDocs[0].doc).getBigInteger("num"));
+    assertEquals(make("2000000000000000000", 2), s.doc(hits.scoreDocs[0].doc).getBigDecimal("num"));
 
     doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("17"));
+    doc.addBigDecimal("num", make("17", 2));
     doc.addAtom("id", "four");
     w.addDocument(doc);
     w.forceMerge(1);
@@ -99,9 +105,9 @@ public class TestBigIntegerFields extends LuceneTestCase {
     s = newSearcher(r);
 
     assertEquals(4, s.search(new MatchAllDocsQuery(),
-                             fieldTypes.newBigIntRangeFilter("num",
-                                                             new BigInteger("0"), true,
-                                                             new BigInteger("10000000000000000000"), true), 1).totalHits);
+                             fieldTypes.newBigDecimalRangeFilter("num",
+                                                                 make("0", 2), true,
+                                                                 make("10000000000000000000", 2), true), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -112,16 +118,16 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 3);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 3, 1);
     //System.out.println("id type: " + fieldTypes.getFieldType("id"));
 
     Document doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("-100"));
+    doc.addBigDecimal("num", make("-100", 1));
     doc.addAtom("id", "one");
     w.addDocument(doc);
 
     doc = w.newDocument();
-    doc.addBigInteger("num", new BigInteger("200"));
+    doc.addBigDecimal("num", make("200", 1));
     doc.addAtom("id", "two");
     w.addDocument(doc);
 
@@ -130,21 +136,21 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     // Make sure range query hits the right number of hits
     assertEquals(1, s.search(new MatchAllDocsQuery(),
-                             fieldTypes.newBigIntRangeFilter("num",
-                                                             new BigInteger("-200"), true,
-                                                             new BigInteger("17"), true), 1).totalHits);
+                             fieldTypes.newBigDecimalRangeFilter("num",
+                                                                 make("-200", 1), true,
+                                                                 make("17", 1), true), 1).totalHits);
     r.close();
     w.close();
     dir.close();
   }
 
-  private BigInteger randomBigInt() {
+  private BigDecimal randomBigDecimal(int scale) {
     BigInteger big = new BigInteger(TestUtil.nextInt(random(), 4, 100), random()); 
     if (random().nextBoolean()) {
       // nocommit why only positive?
       big = big.negate();
     }
-    return big;
+    return new BigDecimal(big, scale);
   }
 
   public void testRandomRangeAndSort() throws Exception {
@@ -152,13 +158,13 @@ public class TestBigIntegerFields extends LuceneTestCase {
     int numDocs = atLeast(100);
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", TestUtil.nextInt(random(), 20, 100));
-    List<BigInteger> values = new ArrayList<>();
-    Map<BigInteger,Integer> valueCounts = new HashMap<>();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", TestUtil.nextInt(random(), 20, 100), 4);
+    List<BigDecimal> values = new ArrayList<>();
+    Map<BigDecimal,Integer> valueCounts = new HashMap<>();
     for(int i=0;i<numDocs;i++) {
       Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
-      BigInteger big = randomBigInt();
+      BigDecimal big = randomBigDecimal(4);
       values.add(big);
       Integer cur = valueCounts.get(big);
       if (cur == null) {
@@ -166,7 +172,7 @@ public class TestBigIntegerFields extends LuceneTestCase {
       }
       cur++;
       valueCounts.put(big, cur);
-      doc.addBigInteger("num", big);
+      doc.addBigDecimal("num", big);
       w.addDocument(doc);
       if (VERBOSE) {
         System.out.println("TEST: id=" + i + " big=" + big);
@@ -179,10 +185,10 @@ public class TestBigIntegerFields extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     int iters = atLeast(1000);
     for(int iter=0;iter<iters;iter++) {
-      BigInteger x = randomBigInt();
-      BigInteger y = randomBigInt();
+      BigDecimal x = randomBigDecimal(4);
+      BigDecimal y = randomBigDecimal(4);
 
-      BigInteger min, max;
+      BigDecimal min, max;
       if (x.compareTo(y) < 0) {
         min = x;
         max = y;
@@ -192,7 +198,7 @@ public class TestBigIntegerFields extends LuceneTestCase {
       }
       Set<Integer> expected = new HashSet<>();
       for(int i=0;i<values.size();i++) {
-        BigInteger value = values.get(i);
+        BigDecimal value = values.get(i);
         if (value.compareTo(min) >= 0 && value.compareTo(max) <= 0) {
           expected.add(i);
         }
@@ -205,7 +211,7 @@ public class TestBigIntegerFields extends LuceneTestCase {
       }
       
       Set<Integer> actual = new HashSet<>();
-      Filter filter = fieldTypes.newBigIntRangeFilter("num", min, true, max, true);
+      Filter filter = fieldTypes.newBigDecimalRangeFilter("num", min, true, max, true);
 
       boolean reversed = random().nextBoolean();
       Sort sort = fieldTypes.newSort("num", reversed);
@@ -213,12 +219,12 @@ public class TestBigIntegerFields extends LuceneTestCase {
         System.out.println("TEST: filter=" + filter + " reversed=" + reversed + " sort=" + sort);
       }
       TopDocs hits = s.search(new MatchAllDocsQuery(), filter, numDocs, sort);
-      BigInteger last = null;
+      BigDecimal last = null;
       boolean wrongValues = false;
       for(ScoreDoc hit : hits.scoreDocs) {
         Document doc = s.doc(hit.doc);
         actual.add(doc.getInt("id"));
-        BigInteger v = doc.getBigInteger("num");
+        BigDecimal v = doc.getBigDecimal("num");
         wrongValues |= v.equals(((FieldDoc) hit).fields[0]) == false;
         if (last != null) {
           int cmp = last.compareTo(v);
@@ -230,8 +236,8 @@ public class TestBigIntegerFields extends LuceneTestCase {
       assertFalse(wrongValues);
     }
 
-    for (BigInteger value : values) {
-      assertEquals(valueCounts.get(value).intValue(), s.search(fieldTypes.newBigIntTermQuery("num", value), 1).totalHits);
+    for (BigDecimal value : values) {
+      assertEquals(valueCounts.get(value).intValue(), s.search(fieldTypes.newBigDecimalTermQuery("num", value), 1).totalHits);
     }
 
     r.close();
@@ -243,11 +249,11 @@ public class TestBigIntegerFields extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 20);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 10);
     fieldTypes.setSortMissingFirst("num");
     Document doc = w.newDocument();
     doc.addUniqueInt("id", 0);
-    doc.addBigInteger("num", BigInteger.valueOf(45));
+    doc.addBigDecimal("num", make("45", 10));
     w.addDocument(doc);
 
     doc = w.newDocument();
@@ -256,7 +262,7 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     doc = w.newDocument();
     doc.addUniqueInt("id", 2);
-    doc.addBigInteger("num", BigInteger.valueOf(-2));
+    doc.addBigDecimal("num", make("-2", 10));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -276,11 +282,11 @@ public class TestBigIntegerFields extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 20);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, -4);
     fieldTypes.setSortMissingLast("num");
     Document doc = w.newDocument();
     doc.addUniqueInt("id", 0);
-    doc.addBigInteger("num", BigInteger.valueOf(45));
+    doc.addBigDecimal("num", make("45", -4));
     w.addDocument(doc);
 
     doc = w.newDocument();
@@ -289,7 +295,7 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     doc = w.newDocument();
     doc.addUniqueInt("id", 2);
-    doc.addBigInteger("num", BigInteger.valueOf(-2));
+    doc.addBigDecimal("num", make("-2", -4));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -310,12 +316,12 @@ public class TestBigIntegerFields extends LuceneTestCase {
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("num");
-    fieldTypes.setBigIntByteWidth("num", 20);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 0);
 
     Document doc = w.newDocument();
     doc.addUniqueInt("id", 0);
-    doc.addBigInteger("num", BigInteger.valueOf(45));
-    doc.addBigInteger("num", BigInteger.valueOf(-22));
+    doc.addBigDecimal("num", make("45", 0));
+    doc.addBigDecimal("num", make("-22", 0));
     w.addDocument(doc);
 
     doc = w.newDocument();
@@ -324,8 +330,8 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     doc = w.newDocument();
     doc.addUniqueInt("id", 2);
-    doc.addBigInteger("num", BigInteger.valueOf(-2));
-    doc.addBigInteger("num", BigInteger.valueOf(14));
+    doc.addBigDecimal("num", make("-2", 0));
+    doc.addBigDecimal("num", make("14", 0));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -355,12 +361,12 @@ public class TestBigIntegerFields extends LuceneTestCase {
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("num");
-    fieldTypes.setBigIntByteWidth("num", 20);
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 4);
 
     Document doc = w.newDocument();
     doc.addUniqueInt("id", 0);
-    doc.addBigInteger("num", BigInteger.valueOf(45));
-    doc.addBigInteger("num", BigInteger.valueOf(-22));
+    doc.addBigDecimal("num", make("45", 4));
+    doc.addBigDecimal("num", make("-22", 4));
     w.addDocument(doc);
 
     doc = w.newDocument();
@@ -369,16 +375,16 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
     doc = w.newDocument();
     doc.addUniqueInt("id", 2);
-    doc.addBigInteger("num", BigInteger.valueOf(-2));
-    doc.addBigInteger("num", BigInteger.valueOf(14));
+    doc.addBigDecimal("num", make("-2", 4));
+    doc.addBigDecimal("num", make("14", 4));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
     fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(2, s.search(new MatchAllDocsQuery(), fieldTypes.newBigIntRangeFilter("num", BigInteger.valueOf(-100), true, BigInteger.valueOf(100), true), 1).totalHits);
-    assertEquals(1, s.search(new MatchAllDocsQuery(), fieldTypes.newBigIntRangeFilter("num", BigInteger.valueOf(40), true, BigInteger.valueOf(45), true), 1).totalHits);
+    assertEquals(2, s.search(new MatchAllDocsQuery(), fieldTypes.newBigDecimalRangeFilter("num", make("-100", 4), true, make("100", 4), true), 1).totalHits);
+    assertEquals(1, s.search(new MatchAllDocsQuery(), fieldTypes.newBigDecimalRangeFilter("num", make("40", 4), true, make("45", 4), true), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -386,37 +392,49 @@ public class TestBigIntegerFields extends LuceneTestCase {
 
   public void testJustStored() throws Exception {
     IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 4);
     Document doc = w.newDocument();
-    doc.addStoredBigInteger("num", BigInteger.valueOf(100));
+    doc.addStoredBigDecimal("num", make("100", 4));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     doc = s.doc(0);
-    assertEquals(BigInteger.valueOf(100), doc.getBigInteger("num"));
+    assertEquals(make("100", 4), doc.getBigDecimal("num"));
     r.close();
+    w.close();
+  }
+
+  public void testExcStoredNoScale() throws Exception {
+    IndexWriter w = newIndexWriter(dir);
+    Document doc = w.newDocument();
+    shouldFail(() -> doc.addStoredBigDecimal("num", make("100", 4)),
+               "field \"num\": cannot addStored: you must first record the byte width and scale for this BIG_DECIMAL field");
     w.close();
   }
 
   public void testExcIndexedThenStored() throws Exception {
     IndexWriter w = newIndexWriter(dir);
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 20);
     Document doc = w.newDocument();
-    doc.addBigInteger("num", BigInteger.valueOf(100));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 4);
+    doc.addBigDecimal("num", make("100", 4));
     w.addDocument(doc);
     final Document doc2 = w.newDocument();
-    shouldFail(() -> doc2.addStoredBigInteger("num", BigInteger.valueOf(200)),
+    shouldFail(() -> doc2.addStoredBigDecimal("num", make("200", 4)),
                "field \"num\": cannot addStored: field was already added non-stored");
     w.close();
   }
 
   public void testExcStoredThenIndexed() throws Exception {
     IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 7);
     Document doc = w.newDocument();
-    doc.addStoredBigInteger("num", BigInteger.valueOf(100));
+    doc.addStoredBigDecimal("num", make("100", 7));
     w.addDocument(doc);
     final Document doc2 = w.newDocument();
-    shouldFail(() -> doc2.addBigInteger("num", BigInteger.valueOf(200)),
+    shouldFail(() -> doc2.addBigDecimal("num", make("200", 7)),
                "field \"num\": this field is only stored; use addStoredXXX instead");
     w.close();
   }
@@ -425,10 +443,32 @@ public class TestBigIntegerFields extends LuceneTestCase {
     IndexWriter w = newIndexWriter(dir);
     Document doc = w.newDocument();
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setBigIntByteWidth("num", 10);
-    doc.addBigInteger("num", new BigInteger("1000000000000000000000000"));
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 10, 4);
+    doc.addBigDecimal("num", make("1000000000000000000000000", 4));
     shouldFail(() -> w.addDocument(doc),
                "field \"num\": BigInteger 1000000000000000000000000 exceeds allowed byte width 10");
+    w.close();
+  }
+
+  public void testWrongScale() throws Exception {
+    IndexWriter w = newIndexWriter(dir);
+    Document doc = w.newDocument();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 10, 4);
+    doc.addBigDecimal("num", make("1000000000", 2));
+    shouldFail(() -> w.addDocument(doc),
+               "field \"num\": BIG_DECIMAL was configured with scale=4, but indexed value has scale=2");
+    w.close();
+  }
+
+  public void testWrongScaleJustStored() throws Exception {
+    IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigDecimalByteWidthAndScale("num", 20, 4);
+    Document doc = w.newDocument();
+    doc.addStoredBigDecimal("num", make("100", 5));
+    shouldFail(() -> w.addDocument(doc),
+               "field \"num\": BIG_DECIMAL was configured with scale=4, but stored value has scale=5");
     w.close();
   }
 }

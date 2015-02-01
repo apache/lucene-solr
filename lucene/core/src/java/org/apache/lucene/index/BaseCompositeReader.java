@@ -77,6 +77,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       final IndexReader r = subReaders[i];
+      // Throws exc if the sub-reader field types are inconsistent:
       fieldTypes.addAll(r.getFieldTypes());
       maxDoc += r.maxDoc();      // compute maxDocs
       if (maxDoc < 0 /* overflow */ || maxDoc > IndexWriter.getActualMaxDocs()) {
@@ -92,7 +93,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
 
   @Override
   public FieldTypes getFieldTypes() {
-    // nocommit must validate they are the same?
     return fieldTypes;
   }
 

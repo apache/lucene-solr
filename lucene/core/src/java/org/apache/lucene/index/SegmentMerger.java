@@ -60,7 +60,6 @@ final class SegmentMerger {
       }
     }
 
-    // nocommit should we refuse to merge if fieldTypes differs from "ours" and from all our incoming readers?
     mergeState = new MergeState(fieldTypes, readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
     this.codec = segmentInfo.getCodec();

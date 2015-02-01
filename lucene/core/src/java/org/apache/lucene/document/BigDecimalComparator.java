@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -30,17 +31,19 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 // TODO: this doesn't use the ord; we could index BinaryDV instead for the single valued case?
-class BigIntComparator extends FieldComparator<BigInteger> {
+class BigDecimalComparator extends FieldComparator<BigDecimal> {
   private final String field;
   private final BytesRef[] values;
   private final int byteWidth;
   private final BytesRef missingValue;
+  private final int scale;
   private BytesRef bottom;
   private BytesRef topValue;
   private Bits docsWithField;
   private SortedDocValues currentReaderValues;
 
-  public BigIntComparator(int numHits, String field, int byteWidth, boolean missingLast) {
+  public BigDecimalComparator(int numHits, String field, int byteWidth, boolean missingLast, int scale) {
+    this.scale = scale;
     this.field = field;
     this.byteWidth = byteWidth;
     values = new BytesRef[numHits];
@@ -67,7 +70,7 @@ class BigIntComparator extends FieldComparator<BigInteger> {
     } else {
       v = currentReaderValues.get(doc);
     }
-    assert v.length == byteWidth: v.length;
+    assert v.length == byteWidth: v.length + " vs " +  byteWidth;
     return v;
   }
 
@@ -88,13 +91,13 @@ class BigIntComparator extends FieldComparator<BigInteger> {
   }
 
   @Override
-  public void setTopValue(BigInteger value) {
-    topValue = NumericUtils.bigIntToBytes(value, byteWidth);
+  public void setTopValue(BigDecimal value) {
+    topValue = NumericUtils.bigIntToBytes(value.unscaledValue(), byteWidth);
   }
 
   @Override
-  public BigInteger value(int slot) {
-    return NumericUtils.bytesToBigInt(values[slot]);
+  public BigDecimal value(int slot) {
+    return new BigDecimal(NumericUtils.bytesToBigInt(values[slot]), scale);
   }
 
   @Override
@@ -104,7 +107,7 @@ class BigIntComparator extends FieldComparator<BigInteger> {
   }
 
   @Override
-  public FieldComparator<BigInteger> setNextReader(LeafReaderContext context) throws IOException {
+  public FieldComparator<BigDecimal> setNextReader(LeafReaderContext context) throws IOException {
     currentReaderValues = getDocValues(context);
     assert currentReaderValues != null;
     docsWithField = DocValues.getDocsWithField(context.reader(), field);

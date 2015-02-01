@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestInetAddressFields extends LuceneTestCase {
 
+  // nocommit are we sorting in a "sane" order
   public void testInetAddressSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());

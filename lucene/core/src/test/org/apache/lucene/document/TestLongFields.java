@@ -364,7 +364,7 @@ public class TestLongFields extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    assertEquals(1, s.search(fieldTypes.newLongTermQuery("num", 180l), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactLongQuery("num", 180l), 1).totalHits);
     r.close();
     w.close();
     dir.close();

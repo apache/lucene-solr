@@ -108,7 +108,6 @@ public class ParallelLeafReader extends LeafReader {
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
-      // nocommit we should only add the fields that this reader "wins" on?
       FieldTypes readerFieldTypes = reader.getFieldTypes();
       assert readerFieldTypes != null;
       for (FieldInfo fieldInfo : readerFieldInfos) {

@@ -313,9 +313,9 @@ public class TestAtomFields extends LuceneTestCase {
     fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "a")));
-    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "ab")));
-    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "goodbyeyou")));
+    assertEquals(0, hitCount(s, fieldTypes.newExactStringQuery("field", "a")));
+    assertEquals(1, hitCount(s, fieldTypes.newExactStringQuery("field", "ab")));
+    assertEquals(0, hitCount(s, fieldTypes.newExactStringQuery("field", "goodbyeyou")));
     r.close();
     w.close();
     dir.close();
@@ -337,9 +337,9 @@ public class TestAtomFields extends LuceneTestCase {
     fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[1])));
-    assertEquals(1, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[2])));
-    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[10])));
+    assertEquals(0, hitCount(s, fieldTypes.newExactBinaryQuery("field", new byte[1])));
+    assertEquals(1, hitCount(s, fieldTypes.newExactBinaryQuery("field", new byte[2])));
+    assertEquals(0, hitCount(s, fieldTypes.newExactBinaryQuery("field", new byte[10])));
     r.close();
     w.close();
     dir.close();
@@ -358,7 +358,7 @@ public class TestAtomFields extends LuceneTestCase {
     fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "rabooF")));
+    assertEquals(1, hitCount(s, fieldTypes.newExactStringQuery("field", "rabooF")));
     r.close();
     w.close();
     dir.close();
@@ -377,7 +377,7 @@ public class TestAtomFields extends LuceneTestCase {
     fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, hitCount(s, fieldTypes.newBinaryTermQuery("field", new BytesRef("rabooF"))));
+    assertEquals(1, hitCount(s, fieldTypes.newExactBinaryQuery("field", new BytesRef("rabooF"))));
     r.close();
     w.close();
     dir.close();

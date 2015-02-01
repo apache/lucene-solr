@@ -93,7 +93,7 @@ public class TestStressDeletes extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     for(Map.Entry<Integer,Boolean> ent : exists.entrySet()) {
       int id = ent.getKey();
-      TopDocs hits = s.search(fieldTypes.newIntTermQuery("id", id), 1);
+      TopDocs hits = s.search(fieldTypes.newExactIntQuery("id", id), 1);
       if (ent.getValue()) {
         assertEquals(1, hits.totalHits);
       } else {

@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
@@ -47,8 +48,12 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     FieldTypes fieldTypes = w.getFieldTypes();
-    // nocommit must also disable "number" and "sorted", but trunk is buggy here (indexes doc values)
     fieldTypes.disableSorting("bytes");
+    fieldTypes.setDocValuesType("bytes", DocValuesType.NONE);
+    fieldTypes.disableSorting("number");
+    fieldTypes.setDocValuesType("number", DocValuesType.NONE);
+    fieldTypes.disableSorting("sorted");
+    fieldTypes.setDocValuesType("sorted", DocValuesType.NONE);
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();
     final List<BytesRef> sorted = new ArrayList<>();
@@ -58,10 +63,10 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
       long number = random().nextLong();
       d.addLong("number", number);
       BytesRef bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
-      d.addBinary("bytes", bytes);
+      d.addAtom("bytes", bytes);
       binary.add(bytes);
       bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
-      d.addBinary("sorted", bytes);
+      d.addAtom("sorted", bytes);
       sorted.add(bytes);
       w.addDocument(d);
       numbers.add(number);
@@ -89,20 +94,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
               int iters = atLeast(1000);
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
-                switch(threadRandom.nextInt(4)) {
-                case 0:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_INT_PARSER, false).get(docID));
-                  break;
-                case 1:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_LONG_PARSER, false).get(docID));
-                  break;
-                case 2:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_FLOAT_PARSER, false).get(docID));
-                  break;
-                case 3:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_DOUBLE_PARSER, false).get(docID));
-                  break;
-                }
+                assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_LONG_PARSER, false).get(docID));
                 BytesRef term = bdv.get(docID);
                 assertEquals(binary.get(docID), term);
                 term = sdv.get(docID);

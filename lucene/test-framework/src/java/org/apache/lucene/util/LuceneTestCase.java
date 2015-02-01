@@ -892,6 +892,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** create a new index writer config with random defaults, using MockAnalyzer */
+  public IndexWriter newIndexWriter(IndexWriterConfig iwc) throws IOException {
+    return new IndexWriter(dir, iwc);
+  }
+
+  /** create a new index writer config with random defaults, using MockAnalyzer */
   public IndexWriter newIndexWriter() throws IOException {
     return new IndexWriter(dir, newIndexWriterConfig());
   }
@@ -1406,7 +1411,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
-  // nocommit how to randomize FieldTypes here?
+  // TODO: can we randomize how fields are indexed here?
 
   /** 
    * Return a random Locale from the available locales on the system.

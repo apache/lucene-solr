@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.Date;
@@ -89,6 +90,8 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
       doc.addInetAddress(fieldInfo.name, InetAddress.getByAddress(value));
     } else if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BIG_INT) {
       doc.addBigInteger(fieldInfo.name, new BigInteger(value));
+    } else if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BIG_DECIMAL) {
+      doc.addBigDecimal(fieldInfo.name, new BigDecimal(new BigInteger(value), fieldTypes.getBigDecimalScale(fieldInfo.name)));
     } else {
       doc.addBinary(fieldInfo.name, new BytesRef(value));
     }

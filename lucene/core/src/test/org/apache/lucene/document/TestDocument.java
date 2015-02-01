@@ -19,7 +19,9 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -100,7 +102,7 @@ public class TestDocument extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newBinaryTermQuery("binary", new byte[5]), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactBinaryQuery("binary", new byte[5]), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -391,10 +393,10 @@ public class TestDocument extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newStringTermQuery("id", "0"), 1);
+    TopDocs hits = s.search(fieldTypes.newExactStringQuery("id", "0"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("0", r.document(hits.scoreDocs[0].doc).get("id"));
-    hits = s.search(fieldTypes.newStringTermQuery("id", "1"), 1);
+    hits = s.search(fieldTypes.newExactStringQuery("id", "1"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("1", r.document(hits.scoreDocs[0].doc).get("id"));
     r.close();
@@ -414,7 +416,7 @@ public class TestDocument extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
-    TopDocs hits = s.search(fieldTypes.newBinaryTermQuery("id", new byte[1]), 1);
+    TopDocs hits = s.search(fieldTypes.newExactBinaryQuery("id", new byte[1]), 1);
     assertEquals(1, hits.scoreDocs.length);
     r.close();
     w.close();
@@ -441,10 +443,10 @@ public class TestDocument extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newStringTermQuery("id", "0"), 1, fieldTypes.newSort("id"));
+    TopDocs hits = s.search(fieldTypes.newExactStringQuery("id", "0"), 1, fieldTypes.newSort("id"));
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("0", r.document(hits.scoreDocs[0].doc).get("id"));
-    hits = s.search(fieldTypes.newStringTermQuery("id", "1"), 1);
+    hits = s.search(fieldTypes.newExactStringQuery("id", "1"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("1", r.document(hits.scoreDocs[0].doc).get("id"));
     r.close();
@@ -614,7 +616,7 @@ public class TestDocument extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
-    shouldFail(() -> fieldTypes.newStringTermQuery("foo", "bar"),
+    shouldFail(() -> fieldTypes.newExactStringQuery("foo", "bar"),
                "field \"foo\": cannot create term query: this field was not indexed");
     r.close();
     w.close();
@@ -678,11 +680,11 @@ public class TestDocument extends LuceneTestCase {
     //DirectoryReader r = DirectoryReader.open(dir);
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newBooleanTermQuery("onsale", true), 1);
+    TopDocs hits = s.search(fieldTypes.newExactBooleanQuery("onsale", true), 1);
     assertEquals(1, hits.totalHits);
     doc = s.doc(hits.scoreDocs[0].doc);
     assertEquals(true, doc.getBoolean("onsale"));
-    assertEquals(0, s.search(fieldTypes.newBooleanTermQuery("onsale", false), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactBooleanQuery("onsale", false), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -719,9 +721,9 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(7, fieldTypes.getMaxTokenLength("field").intValue());
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"),1 ).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "hello"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactStringQuery("field", "a"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactStringQuery("field", "toobigterm"),1 ).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -746,10 +748,10 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, fieldTypes.getMaxTokenCount("field").intValue());
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "goodbye"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "hello"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "a"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "toobigterm"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactStringQuery("field", "goodbye"), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -770,10 +772,10 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, fieldTypes.getMaxTokenCount("field").intValue());
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "goodbye"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "hello"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "a"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("field", "toobigterm"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newExactStringQuery("field", "goodbye"), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -938,14 +940,13 @@ public class TestDocument extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("foo", "doo"), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("bar", "doo DAH"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("foo", "doo"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("bar", "doo DAH"), 1).totalHits);
     r.close();
     w.close();
   }
 
   public void testPreAnalyzed() throws Exception {
-    Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     Document doc = w.newDocument();
     doc.addLargeText("body", new CannedTokenStream(new Token[] {new Token("foo", 0, 3),
@@ -954,9 +955,56 @@ public class TestDocument extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = r.getFieldTypes();
-    assertEquals(1, s.search(fieldTypes.newStringTermQuery("body", "BAR"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newExactStringQuery("body", "BAR"), 1).totalHits);
     r.close();
     w.close();
-    dir.close();
+  }
+
+  public void testBasicRoundTrip() throws Exception {
+    IndexWriter w = newIndexWriter();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setBigIntByteWidth("bigInt", 17);
+    fieldTypes.setBigDecimalByteWidthAndScale("bigDec", 17, 4);
+
+    Document doc = w.newDocument();
+    doc.addUniqueInt("id", 0);
+    doc.addAtom("binaryAtom", new BytesRef(new byte[7]));
+    doc.addAtom("stringAtom", "foo");
+    doc.addInt("int", 17);
+    doc.addLong("long", 17017L);
+    doc.addShortText("title", "this is a title");
+    doc.addDouble("double", 7.0);
+    doc.addHalfFloat("halfFloat", 7.0f);
+    doc.addFloat("float", 7.0f);
+    doc.addInetAddress("inet", InetAddress.getByName("10.17.4.11"));
+    BigInteger bigInt = BigInteger.valueOf(1708);
+    doc.addBigInteger("bigInt", bigInt);
+    BigDecimal bigDec = new BigDecimal(BigInteger.valueOf(1708), 4);
+    doc.addBigDecimal("bigDec", bigDec);
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    Document doc2 = w.newDocument();
+    // nocommit can we relax IW's check so that this reader's FieldTypes is accepted?
+    doc2.addAll(doc);
+    w.updateDocument(fieldTypes.newIntTerm("id", 0),
+                     doc2);
+
+    r.close();
+    r = DirectoryReader.open(w, true);
+    assertEquals(1, r.numDocs());
+    IndexSearcher s = newSearcher(r);
+
+    TopDocs hits = s.search(fieldTypes.newExactIntQuery("id", 0), 1);
+    assertEquals(1, hits.totalHits);
+    Document doc3 = r.document(hits.scoreDocs[0].doc);
+    assertEquals(bigDec, doc3.getBigDecimal("bigDec"));
+    assertEquals(bigInt, doc3.getBigInteger("bigInt"));
+    assertEquals(17, doc3.getInt("int").intValue());
+    assertEquals(17017L, doc3.getLong("long").longValue());
+    assertEquals(new BytesRef(new byte[7]), doc3.getBinary("binaryAtom"));
+    assertEquals("foo", doc3.getString("stringAtom"));
+    r.close();
+    w.close();
   }
 }

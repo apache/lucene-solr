@@ -480,7 +480,7 @@ public class CheckIndex implements Closeable {
       return result;
     }
 
-    FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis, null, null);
 
     // find the oldest and newest segment versions
     Version oldest = null;

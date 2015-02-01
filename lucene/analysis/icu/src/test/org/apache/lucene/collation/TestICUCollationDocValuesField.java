@@ -18,6 +18,7 @@ package org.apache.lucene.collation;
  */
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -78,6 +79,8 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
   public void testRanges() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableSorting("collated");
     Collator collator = Collator.getInstance(); // uses -Dtests.locale
     if (random().nextBoolean()) {
       collator.setStrength(Collator.PRIMARY);

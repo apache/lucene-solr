@@ -421,7 +421,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.close();
     
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(fieldTypes.newIntTermQuery("field", 0),
+    Query query = new FilteredQuery(fieldTypes.newExactIntQuery("field", 0),
         new Filter() {
           @Override
           public DocIdSet getDocIdSet(LeafReaderContext context,
@@ -506,7 +506,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.close();
     final boolean queryFirst = random().nextBoolean();
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(fieldTypes.newIntTermQuery("field", 0), new Filter() {
+    Query query = new FilteredQuery(fieldTypes.newExactIntQuery("field", 0), new Filter() {
       @Override
       public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs)
           throws IOException {
