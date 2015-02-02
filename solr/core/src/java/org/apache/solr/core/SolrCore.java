@@ -1998,6 +1998,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     preDecorateResponse(req, rsp);
 
+    if (log.isDebugEnabled() && rsp.getToLog().size() > 0) {
+      // log request at debug in case something goes wrong and we aren't able to log later
+      log.debug(rsp.getToLogAsString(logid));
+    }
+
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
     // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
     //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
