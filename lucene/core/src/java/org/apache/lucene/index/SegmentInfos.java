@@ -37,6 +37,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -322,7 +323,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         } else {
           segmentID = null;
         }
-        Codec codec = Codec.forName(input.readString());
+        Codec codec = readCodec(input);
         SegmentInfo info = codec.segmentInfoFormat().read(directory, segName, segmentID, IOContext.READ);
         info.setCodec(codec);
         long delGen = input.readLong();
@@ -391,6 +392,31 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
 
       return infos;
+    }
+  }
+
+  private static final String[] unsupportedCodecs = {
+      "Lucene3x"
+  };
+
+  private static Codec readCodec(DataInput input) throws IOException {
+    final String name = input.readString();
+    try {
+      return Codec.forName(name);
+    } catch (IllegalArgumentException e) {
+      // give better error messages if we can, first check if this is a legacy codec
+      for (String codec : unsupportedCodecs) {
+        if (codec.equals(name)) {
+          IOException newExc = new IndexFormatTooOldException(input, "Codec '" + name + "' is too old");
+          newExc.initCause(e);
+          throw newExc;
+        }
+      }
+      // or maybe it's an old default codec that moved
+      if (name.startsWith("Lucene")) {
+        throw new IllegalArgumentException("Could not load codec '" + name + "'.  Did you forget to add lucene-backward-codecs.jar?", e);
+      }
+      throw e;
     }
   }
 
