@@ -82,13 +82,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
   private void _testExpand(String group, String floatAppend, String hint) throws Exception {
 
-    String[] doc = {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_ti", "5",
-
-
-
-
-
-        "test_tl", "10", "test_tf", "2000", "type_s", "parent"};
+    String[] doc = {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_ti", "5", "test_tl", "10", "test_tf", "2000", "type_s", "parent"};
     assertU(adoc(doc));
     assertU(commit());
     String[] doc1 = {"id","2", "term_s","YYYY", group, "1"+floatAppend, "test_ti", "50", "test_tl", "100", "test_tf", "200", "type_s", "child"};
