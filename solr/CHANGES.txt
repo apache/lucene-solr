@@ -581,6 +581,9 @@ Bug Fixes
 
 * SOLR-7067: bin/solr won't run under bash 4.2+. (Steve Rowe)
 
+* SOLR-7068: Collapse on numeric field breaks when min/max values are negative. 
+  (Joel Bernstein)
+
 Optimizations
 ----------------------
 
