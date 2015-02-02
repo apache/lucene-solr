@@ -172,12 +172,12 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
-    if (pointsOnly || op == SpatialOperation.Intersects) {
+    if (op == SpatialOperation.Intersects) {
       return new IntersectsPrefixTreeFilter(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly);
     } else if (op == SpatialOperation.IsWithin) {
       return new WithinPrefixTreeFilter(
-          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly,
           -1);//-1 flag is slower but ensures correct results
     } else if (op == SpatialOperation.Contains) {
       return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel,

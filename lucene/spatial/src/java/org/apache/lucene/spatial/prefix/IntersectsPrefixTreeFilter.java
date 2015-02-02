@@ -37,18 +37,10 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
-  private final boolean hasIndexedLeaves;
-
   public IntersectsPrefixTreeFilter(Shape queryShape, String fieldName,
                                     SpatialPrefixTree grid, int detailLevel,
                                     int prefixGridScanLevel, boolean hasIndexedLeaves) {
-    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
-    this.hasIndexedLeaves = hasIndexedLeaves;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return super.equals(o) && hasIndexedLeaves == ((IntersectsPrefixTreeFilter)o).hasIndexedLeaves;
+    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel, hasIndexedLeaves);
   }
 
   @Override
@@ -62,7 +54,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
     * Point query shape optimization when the only indexed data is a point (no leaves).  Result is a term query.
 
      */
-    return new VisitorTemplate(context, acceptDocs, hasIndexedLeaves) {
+    return new VisitorTemplate(context, acceptDocs) {
       private FixedBitSet results;
 
       @Override

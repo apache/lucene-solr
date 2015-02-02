@@ -31,6 +31,11 @@ API Changes
 
 ======================= Lucene 5.1.0 =======================
 
+Bug Fixes
+
+* Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to
+  Intersects. (David Smiley)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields

@@ -53,27 +53,27 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   //  least it would just make things more complicated.
 
   protected final int prefixGridScanLevel;//at least one less than grid.getMaxLevels()
+  protected final boolean hasIndexedLeaves;
 
   public AbstractVisitingPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                          int detailLevel, int prefixGridScanLevel) {
+                                          int detailLevel, int prefixGridScanLevel, boolean hasIndexedLeaves) {
     super(queryShape, fieldName, grid, detailLevel);
     this.prefixGridScanLevel = Math.max(0, Math.min(prefixGridScanLevel, grid.getMaxLevels() - 1));
+    this.hasIndexedLeaves = hasIndexedLeaves;
     assert detailLevel <= grid.getMaxLevels();
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!super.equals(o)) return false;//checks getClass == o.getClass & instanceof
+    return super.equals(o);//checks getClass == o.getClass & instanceof
 
+    //Ignore hasIndexedLeaves as it's fixed for a specific field, which super.equals compares
     //Ignore prefixGridScanLevel as it is merely a tuning parameter.
-
-    return true;
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    return result;
+    return super.hashCode();
   }
 
   /**
@@ -124,18 +124,14 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     //  TODO MAJOR REFACTOR SIMPLIFICATION BASED ON TreeCellIterator  TODO
     //
 
-    protected final boolean hasIndexedLeaves;//if false then we can skip looking for them
-
     private VNode curVNode;//current pointer, derived from query shape
     private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
     private Cell scanCell;
 
     private BytesRef thisTerm;//the result of termsEnum.term()
 
-    public VisitorTemplate(LeafReaderContext context, Bits acceptDocs,
-                           boolean hasIndexedLeaves) throws IOException {
+    public VisitorTemplate(LeafReaderContext context, Bits acceptDocs) throws IOException {
       super(context, acceptDocs);
-      this.hasIndexedLeaves = hasIndexedLeaves;
     }
 
     public DocIdSet getDocIdSet() throws IOException {

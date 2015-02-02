@@ -18,6 +18,18 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
@@ -36,18 +48,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
-
 public abstract class StrategyTestCase extends SpatialTestCase {
 
   public static final String DATA_SIMPLE_BBOX = "simple-bbox.txt";
@@ -62,7 +62,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   public static final String QTEST_Cities_Intersects_BBox = "cities-Intersects-BBox.txt";
   public static final String QTEST_Simple_Queries_BBox = "simple-Queries-BBox.txt";
 
-  private Logger log = Logger.getLogger(getClass().getName());
+  protected Logger log = Logger.getLogger(getClass().getName());
 
   protected final SpatialArgsParser argsParser = new SpatialArgsParser();
 

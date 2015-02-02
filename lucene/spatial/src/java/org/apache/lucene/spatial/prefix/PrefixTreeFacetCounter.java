@@ -114,15 +114,14 @@ public class PrefixTreeFacetCounter {
 
     //AbstractVisitingPrefixTreeFilter is a Lucene Filter.  We don't need a filter; we use it for its great prefix-tree
     // traversal code.  TODO consider refactoring if/when it makes sense (more use cases than this)
-    new AbstractVisitingPrefixTreeFilter(queryShape, strategy.getFieldName(), tree, facetLevel, scanLevel) {
+    new AbstractVisitingPrefixTreeFilter(queryShape, strategy.getFieldName(), tree, facetLevel, scanLevel,
+        !strategy.isPointsOnly()) {
 
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         assert facetLevel == super.detailLevel;//same thing, FYI. (constant)
 
-        final boolean hasIndexedLeaves = !strategy.isPointsOnly();
-
-        return new VisitorTemplate(context, acceptDocs, hasIndexedLeaves) {
+        return new VisitorTemplate(context, acceptDocs) {
 
           @Override
           protected void start() throws IOException {

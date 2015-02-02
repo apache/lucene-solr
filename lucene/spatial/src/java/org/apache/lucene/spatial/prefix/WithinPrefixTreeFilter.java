@@ -60,18 +60,35 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
   private final Shape bufferedQueryShape;//if null then the whole world
 
   /**
-   * See {@link AbstractVisitingPrefixTreeFilter#AbstractVisitingPrefixTreeFilter(com.spatial4j.core.shape.Shape, String, org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree, int, int)}.
+   * See {@link AbstractVisitingPrefixTreeFilter#AbstractVisitingPrefixTreeFilter(com.spatial4j.core.shape.Shape, String, org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree, int, int, boolean)}.
    * {@code queryBuffer} is the (minimum) distance beyond the query shape edge
    * where non-matching documents are looked for so they can be excluded. If
    * -1 is used then the whole world is examined (a good default for correctness).
    */
   public WithinPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                int detailLevel, int prefixGridScanLevel, double queryBuffer) {
-    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
-    if (queryBuffer == -1)
-      this.bufferedQueryShape = null;
-    else
-      this.bufferedQueryShape = bufferShape(queryShape, queryBuffer);
+                                int detailLevel, int prefixGridScanLevel, boolean hasIndexedLeaves,
+                                double queryBuffer) {
+    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel, hasIndexedLeaves);
+    this.bufferedQueryShape = queryBuffer == -1 ? null : bufferShape(queryShape, queryBuffer);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!super.equals(o)) return false;//checks getClass == o.getClass & instanceof
+
+    WithinPrefixTreeFilter that = (WithinPrefixTreeFilter) o;
+
+    if (bufferedQueryShape != null ? !bufferedQueryShape.equals(that.bufferedQueryShape) : that.bufferedQueryShape != null)
+      return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + (bufferedQueryShape != null ? bufferedQueryShape.hashCode() : 0);
+    return result;
   }
 
   /** Returns a new shape that is larger than shape by at distErr.
@@ -121,7 +138,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return new VisitorTemplate(context, acceptDocs, true) {
+    return new VisitorTemplate(context, acceptDocs) {
       private FixedBitSet inside;
       private FixedBitSet outside;
       private SpatialRelation visitRelation;
