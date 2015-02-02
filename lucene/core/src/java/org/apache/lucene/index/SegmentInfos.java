@@ -395,9 +395,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
-  private static final String[] unsupportedCodecs = {
+  private static final List<String> unsupportedCodecs = Arrays.asList(
       "Lucene3x"
-  };
+  );
 
   private static Codec readCodec(DataInput input) throws IOException {
     final String name = input.readString();
@@ -405,12 +405,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       return Codec.forName(name);
     } catch (IllegalArgumentException e) {
       // give better error messages if we can, first check if this is a legacy codec
-      for (String codec : unsupportedCodecs) {
-        if (codec.equals(name)) {
-          IOException newExc = new IndexFormatTooOldException(input, "Codec '" + name + "' is too old");
-          newExc.initCause(e);
-          throw newExc;
-        }
+      if (unsupportedCodecs.contains(name)) {
+        IOException newExc = new IndexFormatTooOldException(input, "Codec '" + name + "' is too old");
+        newExc.initCause(e);
+        throw newExc;
       }
       // or maybe it's an old default codec that moved
       if (name.startsWith("Lucene")) {
