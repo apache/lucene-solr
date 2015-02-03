@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -44,7 +45,13 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -80,13 +87,45 @@ public class JoinQParserPlugin extends QParserPlugin {
         if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
 
-          final SolrCore fromCore = container.getCore(fromIndex);
-          RefCounted<SolrIndexSearcher> fromHolder = null;
+          // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
+          if (container.isZooKeeperAware()) {
+            ZkController zkController = container.getZkController();
+            if (!zkController.getClusterState().hasCollection(fromIndex)) {
+              // collection not found ... but it might be an alias?
+              String resolved = null;
+              Aliases aliases = zkController.getZkStateReader().getAliases();
+              if (aliases != null) {
+                Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
+                resolved = (collectionAliases != null) ? collectionAliases.get(fromIndex) : null;
+                if (resolved != null) {
+                  // ok, was an alias, but if the alias points to multiple collections, then we don't support that yet
+                  if (resolved.split(",").length > 1)
+                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                        "SolrCloud join: Collection alias '" + fromIndex +
+                            "' maps to multiple collections ("+resolved+
+                            "), which is not currently supported for joins.");
+                }
+              }
 
-          if (fromCore == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
+              if (resolved == null)
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "SolrCloud join: Collection '" + fromIndex + "' not found!");
+
+              // ok, resolved to an alias
+              fromIndex = resolved;
+            }
+
+            // the fromIndex is a local replica for a single-sharded collection with replicas
+            // across all nodes that have replicas for the collection we're joining with
+            fromIndex = findLocalReplicaForFromIndex(zkController, fromIndex);
           }
 
+          final SolrCore fromCore = container.getCore(fromIndex);
+          if (fromCore == null)
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Cross-core join: no such core " + fromIndex);
+
+          RefCounted<SolrIndexSearcher> fromHolder = null;
           LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
           try {
             QParser parser = QParser.getParser(v, "lucene", otherReq);
@@ -108,6 +147,39 @@ public class JoinQParserPlugin extends QParserPlugin {
         return jq;
       }
     };
+  }
+
+  protected String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
+    String fromReplica = null;
+
+    String nodeName = zkController.getNodeName();
+    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+      if (fromReplica != null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "SolrCloud join: multiple shards not yet supported " + fromIndex);
+
+      for (Replica replica : slice.getReplicas()) {
+        if (replica.getNodeName().equals(nodeName)) {
+          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+
+          // found local replica, but is it Active?
+          ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
+          if (!ZkStateReader.ACTIVE.equals(replicaCoreProps.getState()))
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
+                    ") on "+nodeName+", but it is "+replicaCoreProps.getState());
+
+          break;
+        }
+      }
+    }
+
+    if (fromReplica == null)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: No active replicas for "+fromIndex+
+              " found in node " + nodeName);
+
+    return fromReplica;
   }
 }
 

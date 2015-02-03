@@ -93,6 +93,10 @@ New Features
   deprecated in favour of close(). (Mark Miller, Tomás Fernández Löbbe, Alan
   Woodward)
 
+* SOLR-4905: Allow fromIndex parameter to JoinQParserPlugin to refer to a single-sharded
+  collection that has a replica on all nodes where there is a replica in the to index
+  (Jack Lo, Timothy Potter)
+
 Bug Fixes
 ----------------------
 
