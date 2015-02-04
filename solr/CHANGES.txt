@@ -588,6 +588,16 @@ Bug Fixes
 * SOLR-7068: Collapse on numeric field breaks when min/max values are negative. 
   (Joel Bernstein)
 
+* SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
+  of all "keys" found in the request parameters, resulting in some key=value param pairs 
+  being duplicated.  This was noticeably affecting some areas of the code where iteration 
+  was done over the set of all params: 
+    * literal.* in ExtractingRequestHandler
+    * facet.* in FacetComponent
+    * spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
+    * olap.* in AnalyticsComponent
+  (Alexandre Rafalovitch & hossman)
+
 Optimizations
 ----------------------
 
@@ -889,16 +899,6 @@ Bug Fixes
 
 * SOLR-6510: The collapse QParser would throw a NPE when used on a DocValues field on
   an empty segment/index. (Christine Poerschke, David Smiley)
-
-* SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
-  of all "keys" found in the request parameters, resulting in some key=value param pairs 
-  being duplicated.  This was noticeably affecting some areas of the code where iteration 
-  was done over the set of all params: 
-    * literal.* in ExtractingRequestHandler
-    * facet.* in FacetComponent
-    * spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
-    * olap.* in AnalyticsComponent
-  (Alexandre Rafalovitch & hossman)
 
 * SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
   causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
