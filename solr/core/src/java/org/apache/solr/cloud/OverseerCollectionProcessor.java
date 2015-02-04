@@ -645,9 +645,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case OVERSEERSTATUS:
             getOverseerStatus(message, results);
             break;
-          case LIST:
-            listCollections(zkStateReader.getClusterState(), results);
-            break;
           case CLUSTERSTATUS:
             getClusterStatus(zkStateReader.getClusterState(), message, results);
             break;
@@ -1007,16 +1004,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
       return collection;
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private void listCollections(ClusterState clusterState, NamedList results) {
-    Set<String> collections = clusterState.getCollections();
-    List<String> collectionList = new ArrayList<String>();
-    for (String collection : collections) {
-      collectionList.add(collection);
-    }
-    results.add("collections", collectionList);
   }
 
   @SuppressWarnings("unchecked")

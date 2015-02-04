@@ -103,6 +103,11 @@ Bug Fixes
 * SOLR-7046: NullPointerException when group.function uses query() function.
   (Jim Musil via Erick Erickson)
 
+Optimizations
+----------------------
+ * SOLR-7049: Move work done by the LIST Collections API call to the Collections
+   Handler (Varun Thacker via Anshum Gupta).
+
 Other Changes
 ----------------------
 
