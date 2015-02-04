@@ -304,15 +304,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
-    @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-
-      if (minNrShouldMatch > 1) {
-        // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
-        // but the same is even true of pure conjunctions...
-        return super.bulkScorer(context, acceptDocs);
-      }
-
+    /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
+     *  cannot be used. */
+    // pkg-private for forcing use of BooleanScorer in tests
+    BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
@@ -326,10 +321,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // TODO: there are some cases where BooleanScorer
           // would handle conjunctions faster than
           // BooleanScorer2...
-          return super.bulkScorer(context, acceptDocs);
+          return null;
         } else if (c.isProhibited()) {
           // TODO: there are some cases where BooleanScorer could do this faster
-          return super.bulkScorer(context, acceptDocs);
+          return null;
         } else {
           optional.add(subScorer);
         }
@@ -339,7 +334,39 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         return null;
       }
 
-      return new BooleanScorer(this, disableCoord, maxCoord, optional);
+      if (minNrShouldMatch > optional.size()) {
+        return null;
+      }
+
+      return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, minNrShouldMatch));
+    }
+
+    @Override
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs);
+      if (bulkScorer != null) { // BooleanScorer is applicable
+        // TODO: what is the right heuristic here?
+        final long costThreshold;
+        if (minNrShouldMatch <= 1) {
+          // when all clauses are optional, use BooleanScorer aggressively
+          // TODO: is there actually a threshold under which we should rather
+          // use the regular scorer?
+          costThreshold = -1;
+        } else {
+          // when a minimum number of clauses should match, BooleanScorer is
+          // going to score all windows that have at least minNrShouldMatch
+          // matches in the window. But there is no way to know if there is
+          // an intersection (all clauses might match a different doc ID and
+          // there will be no matches in the end) so we should only use
+          // BooleanScorer if matches are very dense
+          costThreshold = context.reader().maxDoc() / 3;
+        }
+
+        if (bulkScorer.cost() > costThreshold) {
+          return bulkScorer;
+        }
+      }
+      return super.bulkScorer(context, acceptDocs);
     }
 
     @Override

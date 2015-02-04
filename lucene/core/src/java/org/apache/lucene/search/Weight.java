@@ -136,6 +136,11 @@ public abstract class Weight {
     }
 
     @Override
+    public long cost() {
+      return scorer.cost();
+    }
+
+    @Override
     public int score(LeafCollector collector, int min, int max) throws IOException {
       // TODO: this may be sort of weird, when we are
       // embedded in a BooleanScorer, because we are

@@ -220,6 +220,11 @@ public class FilteredQuery extends Query {
     }
 
     @Override
+    public long cost() {
+      return scorer.cost();
+    }
+
+    @Override
     public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:

@@ -74,4 +74,9 @@ public abstract class BulkScorer {
    * @return an under-estimation of the next matching doc after max
    */
   public abstract int score(LeafCollector collector, int min, int max) throws IOException;
+
+  /**
+   * Same as {@link Scorer#cost()} for bulk scorers.
+   */
+  public abstract long cost();
 }

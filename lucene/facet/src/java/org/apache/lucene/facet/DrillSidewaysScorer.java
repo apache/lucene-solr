@@ -64,6 +64,11 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   @Override
+  public long cost() {
+    return baseScorer.cost();
+  }
+
+  @Override
   public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
     if (min != 0) {
       throw new IllegalArgumentException("min must be 0, got " + min);

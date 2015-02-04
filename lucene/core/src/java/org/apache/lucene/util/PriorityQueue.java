@@ -205,6 +205,14 @@ public abstract class PriorityQueue<T> {
     return heap[1];
   }
 
+  /**
+   * Replace the top of the pq with {@code newTop} and run {@link #updateTop()}.
+   */
+  public final T updateTop(T newTop) {
+    heap[1] = newTop;
+    return updateTop();
+  }
+
   /** Returns the number of elements currently stored in the PriorityQueue. */
   public final int size() {
     return size;

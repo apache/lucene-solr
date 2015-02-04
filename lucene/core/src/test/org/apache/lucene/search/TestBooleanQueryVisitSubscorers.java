@@ -192,16 +192,19 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     query.add(new TermQuery(new Term(F2, "web")), Occur.SHOULD);
     query.add(new TermQuery(new Term(F2, "crawler")), Occur.SHOULD);
     query.setMinimumNumberShouldMatch(2);
+    query.add(new MatchAllDocsQuery(), Occur.MUST);
     ScorerSummarizingCollector collector = new ScorerSummarizingCollector();
     searcher.search(query, collector);
     assertEquals(1, collector.getNumHits());
     assertFalse(collector.getSummaries().isEmpty());
     for (String summary : collector.getSummaries()) {
       assertEquals(
-          "MinShouldMatchSumScorer\n" +
-          "    SHOULD TermScorer body:nutch\n" +
-          "    SHOULD TermScorer body:web\n" +
-          "    SHOULD TermScorer body:crawler", summary);
+          "CoordinatingConjunctionScorer\n" +
+          "    MUST MinShouldMatchSumScorer\n" +
+          "            SHOULD TermScorer body:nutch\n" +
+          "            SHOULD TermScorer body:web\n" +
+          "            SHOULD TermScorer body:crawler\n" +
+          "    MUST MatchAllScorer", summary);
     }
   }
 

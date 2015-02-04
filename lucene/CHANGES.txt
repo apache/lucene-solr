@@ -56,6 +56,10 @@ Optimizations
   instead of a separate merge sort for each segment.  In delete-heavy
   use cases this can be a sizable speedup. (Mike McCandless)
 
+* LUCENE-6201: BooleanScorer can now deal with values of minShouldMatch that
+  are greater than one and is used when queries produce dense result sets.
+  (Adrien Grand)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
