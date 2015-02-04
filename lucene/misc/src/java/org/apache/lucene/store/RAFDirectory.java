@@ -38,6 +38,7 @@ import java.nio.file.Path;
 public class RAFDirectory extends FSDirectory {
     
   /** Create a new RAFDirectory for the named location.
+   *  The directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use
@@ -49,6 +50,7 @@ public class RAFDirectory extends FSDirectory {
   }
   
   /** Create a new SimpleFSDirectory for the named location and {@link FSLockFactory#getDefault()}.
+   *  The directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
    * @throws IOException if there is a low-level I/O error

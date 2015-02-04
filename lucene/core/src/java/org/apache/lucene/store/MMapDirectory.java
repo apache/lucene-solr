@@ -88,6 +88,7 @@ public class MMapDirectory extends FSDirectory {
   final int chunkSizePower;
 
   /** Create a new MMapDirectory for the named location.
+   *  The directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use
@@ -98,6 +99,7 @@ public class MMapDirectory extends FSDirectory {
   }
 
   /** Create a new MMapDirectory for the named location and {@link FSLockFactory#getDefault()}.
+   *  The directory is created at the named location if it does not yet exist.
   *
   * @param path the path of the directory
   * @throws IOException if there is a low-level I/O error
@@ -107,6 +109,7 @@ public class MMapDirectory extends FSDirectory {
   }
   
   /** Create a new MMapDirectory for the named location and {@link FSLockFactory#getDefault()}.
+   *  The directory is created at the named location if it does not yet exist.
   *
   * @param path the path of the directory
   * @param maxChunkSize maximum chunk size (default is 1 GiBytes for
@@ -120,6 +123,7 @@ public class MMapDirectory extends FSDirectory {
   /**
    * Create a new MMapDirectory for the named location, specifying the 
    * maximum chunk size used for memory mapping.
+   *  The directory is created at the named location if it does not yet exist.
    * 
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
