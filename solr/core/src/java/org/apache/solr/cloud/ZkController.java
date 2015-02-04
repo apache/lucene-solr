@@ -110,8 +110,6 @@ public final class ZkController {
 
   private static Logger log = LoggerFactory.getLogger(ZkController.class);
 
-  static final String NEWL = System.getProperty("line.separator");
-
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   private final DistributedQueue overseerJobQueue;
