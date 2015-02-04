@@ -234,6 +234,10 @@ public class TestBooleanOr extends LuceneTestCase {
         }
         return RandomInts.randomIntBetween(random(), max, matches[i]);
       }
+      @Override
+      public long cost() {
+        return matches.length;
+      }
     };
   }
 
@@ -246,7 +250,7 @@ public class TestBooleanOr extends LuceneTestCase {
         scorer(5000, 100000, 9999998, 9999999)
     );
     Collections.shuffle(optionalScorers, random());
-    BooleanScorer scorer = new BooleanScorer(null, true, 0, optionalScorers);
+    BooleanScorer scorer = new BooleanScorer(null, true, 0, optionalScorers, 1);
     final List<Integer> matches = new ArrayList<>();
     scorer.score(new LeafCollector() {
 

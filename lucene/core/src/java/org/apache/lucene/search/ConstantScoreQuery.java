@@ -220,6 +220,11 @@ public class ConstantScoreQuery extends Query {
         }
       };
     }
+
+    @Override
+    public long cost() {
+      return bulkScorer.cost();
+    }
   }
 
   protected class ConstantScorer extends Scorer {
