@@ -114,6 +114,7 @@ public abstract class FSDirectory extends BaseDirectory {
   protected final Path directory; // The underlying filesystem directory
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
+   * The directory is created at the named location if it does not yet exist.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
@@ -128,6 +129,7 @@ public abstract class FSDirectory extends BaseDirectory {
   /** Creates an FSDirectory instance, trying to pick the
    *  best implementation given the current environment.
    *  The directory returned uses the {@link NativeFSLockFactory}.
+   *  The directory is created at the named location if it does not yet exist.
    *
    *  <p>Currently this returns {@link MMapDirectory} for most Solaris
    *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other
