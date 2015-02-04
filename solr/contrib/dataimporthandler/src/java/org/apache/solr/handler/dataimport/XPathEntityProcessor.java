@@ -301,7 +301,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           data = caw.getReader();
         } catch (TransformerException e) {
           if (ABORT.equals(onError)) {
-            wrapAndThrow(SEVERE, e, "Exception in applying XSL Transformeation");
+            wrapAndThrow(SEVERE, e, "Exception in applying XSL Transformation");
           } else if (SKIP.equals(onError)) {
             wrapAndThrow(DataImportHandlerException.SKIP, e);
           } else {
