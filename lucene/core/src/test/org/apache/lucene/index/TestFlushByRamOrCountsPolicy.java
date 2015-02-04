@@ -252,7 +252,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
           numThreads[i]== 1 ? 1 : 2);
       iwc.setIndexerThreadPool(threadPool);
-      // with such a small ram buffer we should be stalled quiet quickly
+      // with such a small ram buffer we should be stalled quite quickly
       iwc.setRAMBufferSizeMB(0.25);
       IndexWriter writer = new IndexWriter(dir, iwc);
       IndexThread[] threads = new IndexThread[numThreads[i]];
