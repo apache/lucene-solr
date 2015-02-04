@@ -126,6 +126,59 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
   }
 
+
+  public void testDefaultsAndAppends() throws Exception {
+    // all defaults
+    assertQ( req("indent","true", "q","*:*", "rows","0", "facet","true", "qt","/search-facet-def")
+             // only one default facet.field
+             ,"//lst[@name='facet_fields']/lst[@name='foo_s']"
+             ,"count(//lst[@name='facet_fields']/lst[@name='foo_s'])=1"
+             ,"count(//lst[@name='facet_fields']/lst)=1"
+             // only one default facet.query
+             ,"//lst[@name='facet_queries']/int[@name='foo_s:bar']"
+             ,"count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1"
+             ,"count(//lst[@name='facet_queries']/int)=1"
+             );
+
+    // override default & pre-pend to appends
+    assertQ( req("indent","true", "q","*:*", "rows","0", "facet","true", "qt","/search-facet-def",
+                 "facet.field", "bar_s",
+                 "facet.query", "bar_s:yak"
+                 )
+             // override single default facet.field
+             ,"//lst[@name='facet_fields']/lst[@name='bar_s']"
+             ,"count(//lst[@name='facet_fields']/lst[@name='bar_s'])=1"
+             ,"count(//lst[@name='facet_fields']/lst)=1"
+             // add an additional facet.query
+             ,"//lst[@name='facet_queries']/int[@name='foo_s:bar']"
+             ,"//lst[@name='facet_queries']/int[@name='bar_s:yak']"
+             ,"count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1"
+             ,"count(//lst[@name='facet_queries']/int[@name='bar_s:yak'])=1"
+             ,"count(//lst[@name='facet_queries']/int)=2"
+             );
+  }
+
+  public void testInvariants() throws Exception {
+    // no matter if we try to use facet.field or facet.query, results shouldn't change
+    for (String ff : new String[] { "facet.field", "bogus" }) {
+      for (String fq : new String[] { "facet.query", "bogus" }) {
+        assertQ( req("indent","true", "q", "*:*", "rows","0", "facet","true", 
+                     "qt","/search-facet-invariants",
+                     ff, "bar_s",
+                     fq, "bar_s:yak")
+                 // only one invariant facet.field
+                 ,"//lst[@name='facet_fields']/lst[@name='foo_s']"
+                 ,"count(//lst[@name='facet_fields']/lst[@name='foo_s'])=1"
+                 ,"count(//lst[@name='facet_fields']/lst)=1"
+                 // only one invariant facet.query
+                 ,"//lst[@name='facet_queries']/int[@name='foo_s:bar']"
+                 ,"count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1"
+                 ,"count(//lst[@name='facet_queries']/int)=1"
+                 );
+      }
+    }
+  }
+
   @Test
   public void testCachingBigTerms() throws Exception {
     assertQ( req("indent","true", "q", "id:[42 TO 47]",
