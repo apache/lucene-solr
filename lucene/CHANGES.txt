@@ -65,6 +65,9 @@ API Changes
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
   and remove files parameter to write(). (Robert Muir)
 
+* LUCENE-6217: Add IndexWriter.isOpen and getTragicException.  (Simon
+  Willnauer, Mike McCandless)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
