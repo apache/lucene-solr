@@ -579,17 +579,75 @@ Other
 
 ======================= Lucene 4.10.4 ======================
 
+Bug fixes
+
+* LUCENE-6019, LUCENE-6117: Remove -Dtests.assert to make IndexWriter
+  infoStream sane.  (Robert Muir, Mike McCandless)
+
+* LUCENE-6161: Resolving deletes was failing to reuse DocsEnum likely
+  causing substantial performance cost for use cases that frequently
+  delete old documents (Mike McCandless)
+
+* LUCENE-6192: Fix int overflow corruption case in skip data for
+  high frequency terms in extremely large indices (Robert Muir, Mike
+  McCandless)
+
 * LUCENE-6207: Fixed consumption of several terms enums on the same
   sorted (set) doc values instance at the same time.
   (Tom Shally, Robert Muir, Adrien Grand)
+
+API Changes
+
+* LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.
+  These methods were trappy as they made it easy to accidentally index
+  tokens that were not easily searchable and will be removed in 5.0.0.
+  (Mike McCandless)
 
 ======================= Lucene 4.10.3 ======================
 
 Bug fixes
 
+* LUCENE-6046: Add maxDeterminizedStates safety to determinize (which has
+  an exponential worst case) so that if it would create too many states, it
+  now throws an exception instead of exhausting CPU/RAM.  (Nik
+  Everett via Mike McCandless)
+
+* LUCENE-6054: Allow repeating the empty automaton (Nik Everett via
+  Mike McCandless)
+
+* LUCENE-6049: Don't throw cryptic exception writing a segment when
+  the only docs in it had fields that hit non-aborting exceptions
+  during indexing but also had doc values.  (Mike McCandless)
+
+* LUCENE-6060: Deprecate IndexWriter.unlock (Simon Willnauer, Mike
+  McCandless)
+
 * LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
   (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
 
+* LUCENE-6004: Don't highlight the LookupResult.key returned from
+  AnalyzingInfixSuggester (Christian Reuschling, jane chang via Mike McCandless)
+
+* LUCENE-6075: Don't overflow int in SimpleRateLimiter (Boaz Leskes
+  via Mike McCandless)
+  
+* LUCENE-5980: Don't let document length overflow. (Robert Muir)
+
+* LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
+  such as when nested inside a boolean query. (Denis Lantsman via Robert Muir)
+
+* LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
+  Thacker via Mike McCandless)
+
+* LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
+  bytes. (Shai Erera)
+
+* LUCENE-6094: Allow IW.rollback to stop ConcurrentMergeScheduler even
+  when it's stalling because there are too many merges. (Mike McCandless)
+  
+Documentation
+
+* LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
 
 ======================= Lucene 4.10.2 ======================
 
