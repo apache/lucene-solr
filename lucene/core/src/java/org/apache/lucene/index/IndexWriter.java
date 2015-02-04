@@ -4395,6 +4395,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     IOUtils.reThrow(tragedy);
   }
 
+  /** If this {@code IndexWriter} was closed as a side-effect of a tragic exception,
+   *  e.g. disk full while flushing a new segment, this returns the root cause exception.
+   *  Otherwise (no tragic exception has occurred) it returns null. */
+  public Throwable getTragicException() {
+    return tragedy;
+  }
+
+  /** Returns {@code true} if this {@code IndexWriter} is still open. */
+  public boolean isOpen() {
+    return closing == false && closed == false;
+  }
+
   // Used for testing.  Current points:
   //   startDoFlush
   //   startCommitMerge

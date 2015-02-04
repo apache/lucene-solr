@@ -54,7 +54,6 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     return CompressingCodec.randomInstance(random());
   }
 
-  @Test(expected=IllegalArgumentException.class)
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
     // test explicitly needs files to always be actually deleted
@@ -94,11 +93,13 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     try {
       iw.addDocument(invalidDoc);
       iw.commit();
+    } catch(IllegalArgumentException iae) {
+      // expected
+      assertEquals(iae, iw.getTragicException());
     }
-    finally {
-      // Abort should have closed the deleter:
-      dir.close();
-    }
+    // Writer should be closed by tragedy
+    assertFalse(iw.isOpen());
+    dir.close();
   }
 
   public void testZFloat() throws Exception {
