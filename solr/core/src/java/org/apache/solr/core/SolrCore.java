@@ -162,7 +162,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore, Exception>());
 
   
-  public static Logger log = LoggerFactory.getLogger(SolrCore.class);
+  public static final Logger log = LoggerFactory.getLogger(SolrCore.class);
+  public static final Logger requestLog = LoggerFactory.getLogger(SolrCore.class.getName() + ".Request");
 
   private String name;
   private String logid; // used to show what name is set
@@ -1998,9 +1999,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     preDecorateResponse(req, rsp);
 
-    if (log.isDebugEnabled() && rsp.getToLog().size() > 0) {
+    if (requestLog.isDebugEnabled() && rsp.getToLog().size() > 0) {
       // log request at debug in case something goes wrong and we aren't able to log later
-      log.debug(rsp.getToLogAsString(logid));
+      requestLog.debug(rsp.getToLogAsString(logid));
     }
 
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
@@ -2012,8 +2013,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     postDecorateResponse(handler, req, rsp);
 
     if (rsp.getToLog().size() > 0) {
-      if (log.isInfoEnabled()) {
-        log.info(rsp.getToLogAsString(logid));
+      if (requestLog.isInfoEnabled()) {
+        requestLog.info(rsp.getToLogAsString(logid));
       }
 
       if (log.isWarnEnabled()) {

@@ -28,53 +28,56 @@ import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RequestLoggingTest extends SolrTestCaseJ4 {
-  private static final Logger solrLogger = Logger.getLogger(SolrCore.class);
-  
-  private Level oldLevel;
-  
-  private Appender appender;
-  
   private StringWriter writer;
-  
+  private Appender appender;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
   @Before
-  public void setupLogger() {
-    oldLevel = solrLogger.getLevel();
-    solrLogger.setLevel(Level.DEBUG);
-    
+  public void setupAppender() {
     writer = new StringWriter();
     appender = new WriterAppender(new SimpleLayout(), writer);
-    
-    solrLogger.addAppender(appender);
   }
-  
-  @After
-  public void resetLogger() {
-    solrLogger.setLevel(oldLevel);
-    solrLogger.removeAppender(appender);
-  }
-  
+
   @Test
-  public void testLogBeforeExecute() {
-    assertQ(req("q", "*:*"));
-    
-    String output = writer.toString();
-    Matcher matcher = Pattern.compile("DEBUG.*q=\\*:\\*.*").matcher(output);
-    assertTrue(matcher.find());
-    final String group = matcher.group();
-    final String msg = "Should not have post query information";
-    assertFalse(msg, group.contains("hits"));
-    assertFalse(msg, group.contains("status"));
-    assertFalse(msg, group.contains("QTime"));
+  public void testLogBeforeExecuteWithCoreLogger() {
+    Logger logger = Logger.getLogger(SolrCore.class);
+    testLogBeforeExecute(logger);
+  }
+
+  @Test
+  public void testLogBeforeExecuteWithRequestLogger() {
+    Logger logger = Logger.getLogger("org.apache.solr.core.SolrCore.Request");
+    testLogBeforeExecute(logger);
+  }
+
+  public void testLogBeforeExecute(Logger logger) {
+    Level level = logger.getLevel();
+    logger.setLevel(Level.DEBUG);
+    logger.addAppender(appender);
+
+    try {
+      assertQ(req("q", "*:*"));
+
+      String output = writer.toString();
+      Matcher matcher = Pattern.compile("DEBUG.*q=\\*:\\*.*").matcher(output);
+      assertTrue(matcher.find());
+      final String group = matcher.group();
+      final String msg = "Should not have post query information";
+      assertFalse(msg, group.contains("hits"));
+      assertFalse(msg, group.contains("status"));
+      assertFalse(msg, group.contains("QTime"));
+    } finally {
+      logger.setLevel(level);
+      logger.removeAppender(appender);
+    }
   }
 }
