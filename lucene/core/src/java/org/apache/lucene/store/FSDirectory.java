@@ -124,11 +124,6 @@ public abstract class FSDirectory extends BaseDirectory {
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
   private int chunkSize = DEFAULT_READ_CHUNK_SIZE;
 
-  // returns the canonical version of the directory, creating it if it doesn't exist.
-  private static File getCanonicalPath(File file) throws IOException {
-    return new File(file.getCanonicalPath());
-  }
-
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
@@ -140,7 +135,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (lockFactory == null) {
       lockFactory = new NativeFSLockFactory();
     }
-    directory = getCanonicalPath(path);
+    directory = path.getCanonicalFile();
 
     if (directory.exists() && !directory.isDirectory())
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
