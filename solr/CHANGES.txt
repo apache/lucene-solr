@@ -45,6 +45,10 @@ New Features
   deprecated in favour of close(). (Mark Miller, Tomás Fernández Löbbe, Alan
   Woodward)
 
+* SOLR-6648: Add support in AnalyzingInfixLookupFactory and BlendedInfixLookupFactory 
+  for setting 'highlight' and 'allTermsRequired' in the suggester configuration.
+  (Boon Low, Varun Thacker via Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 

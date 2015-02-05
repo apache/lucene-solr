@@ -58,6 +58,15 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
   protected static final String MIN_PREFIX_CHARS = "minPrefixChars";
   
   /** 
+   * Boolean clause matching option for multiple terms 
+   * Default is true - all terms required. 
+   */
+  protected static final String ALL_TERMS_REQUIRED = "allTermsRequired";
+  
+  /** Highlight suggest terms  - default is true. */
+  protected static final String HIGHLIGHT = "highlight";
+    
+  /** 
    * Default path where the index for the suggester is stored/loaded from
    * */
   private static final String DEFAULT_INDEX_PATH = "analyzingInfixSuggesterIndexDir";
@@ -94,11 +103,19 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     int minPrefixChars = params.get(MIN_PREFIX_CHARS) != null
     ? Integer.parseInt(params.get(MIN_PREFIX_CHARS).toString())
     : AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS;
+    
+    boolean allTermsRequired = params.get(ALL_TERMS_REQUIRED) != null
+    ? Boolean.getBoolean(params.get(ALL_TERMS_REQUIRED).toString())
+    : AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED;
+    
+    boolean highlight = params.get(HIGHLIGHT) != null
+    ? Boolean.getBoolean(params.get(HIGHLIGHT).toString())
+    : AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT; 
 
     try {
-      return new AnalyzingInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                         FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
-                                         queryAnalyzer, minPrefixChars, true) {
+      return new AnalyzingInfixSuggester(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
+                                         queryAnalyzer, minPrefixChars, true, 
+                                         allTermsRequired, highlight) {
         @Override
         public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
           List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);

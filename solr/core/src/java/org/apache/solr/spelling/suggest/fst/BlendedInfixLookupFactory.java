@@ -93,6 +93,14 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
     int minPrefixChars = params.get(MIN_PREFIX_CHARS) != null
     ? Integer.parseInt(params.get(MIN_PREFIX_CHARS).toString())
     : AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS;
+    
+    boolean allTermsRequired = params.get(ALL_TERMS_REQUIRED) != null
+    ? Boolean.getBoolean(params.get(ALL_TERMS_REQUIRED).toString())
+    : AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED;
+    
+    boolean highlight = params.get(HIGHLIGHT) != null
+    ? Boolean.getBoolean(params.get(HIGHLIGHT).toString())
+    : AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT;
 
     BlenderType blenderType = getBlenderType(params.get(BLENDER_TYPE));
     
@@ -101,10 +109,10 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
     : BlendedInfixSuggester.DEFAULT_NUM_FACTOR;
     
     try {
-      return new BlendedInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                       FSDirectory.open(new File(indexPath).toPath()),
+      return new BlendedInfixSuggester(FSDirectory.open(new File(indexPath).toPath()),
                                        indexAnalyzer, queryAnalyzer, minPrefixChars,
-                                       blenderType, numFactor, true) {
+                                       blenderType, numFactor, true,
+                                       allTermsRequired, highlight) {
         @Override
         public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
           List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
