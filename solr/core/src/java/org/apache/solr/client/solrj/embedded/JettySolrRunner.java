@@ -148,10 +148,6 @@ public class JettySolrRunner {
     }
   }
 
-
-
-
-
   public JettySolrRunner(String solrHome, String context, int port) {
     this.init(solrHome, context, port, true);
     this.name = "jetty-" + JETTY_ID_COUNTER.incrementAndGet();
@@ -218,11 +214,19 @@ public class JettySolrRunner {
   
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
-
     this.solrHome = solrHome;
     this.stopAtShutdown = stopAtShutdown;
 
     System.setProperty("solr.solr.home", solrHome);
+    
+    QueuedThreadPool qtp = new QueuedThreadPool();
+    qtp.setMaxThreads(10000);
+    qtp.setIdleTimeout((int) TimeUnit.SECONDS.toMillis(5));
+    qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
+    server = new Server(qtp);
+    server.manage(qtp);
+    server.setStopAtShutdown(stopAtShutdown);
+    
     if (System.getProperty("jetty.testMode") != null) {
       // if this property is true, then jetty will be configured to use SSL
       // leveraging the same system properties as java to specify
@@ -236,15 +240,6 @@ public class JettySolrRunner {
       final boolean useSsl = sslConfig == null ? false : sslConfig.isSSLMode();
       final SslContextFactory sslcontext = new SslContextFactory(false);
       sslInit(useSsl, sslcontext);
-
-      QueuedThreadPool qtp = new QueuedThreadPool();
-      qtp.setMaxThreads(10000);
-      qtp.setIdleTimeout((int) TimeUnit.SECONDS.toMillis(5));
-      qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
-
-      server = new Server(qtp);
-      server.setStopAtShutdown(stopAtShutdown);
-      server.manage(qtp);
 
       ServerConnector connector;
       if (useSsl) {
@@ -273,15 +268,7 @@ public class JettySolrRunner {
     } else {
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
       connector.setPort(port);
-
-      QueuedThreadPool qtp = new QueuedThreadPool();
-      qtp.setMaxThreads(10000);
-      qtp.setIdleTimeout((int) TimeUnit.SECONDS.toMillis(5));
-      qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(1));
-
-      server = new Server(qtp);
-      server.setStopAtShutdown(stopAtShutdown);
-      server.manage(qtp);
+      server.setConnectors(new Connector[] {connector});
     }
 
     // Initialize the servlets
