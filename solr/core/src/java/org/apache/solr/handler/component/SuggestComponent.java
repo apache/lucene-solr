@@ -79,7 +79,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   /** SolrConfig label to identify boolean value to build suggesters on optimize */
   private static final String BUILD_ON_OPTIMIZE_LABEL = "buildOnOptimize";
   
-  /** SolrConfig label to identify boolean value to build suggesters on optimize */
+  /** SolrConfig label to identify boolean value to build suggesters on startup */
   private static final String BUILD_ON_STARTUP_LABEL = "buildOnStartup";
   
   @SuppressWarnings("unchecked")
