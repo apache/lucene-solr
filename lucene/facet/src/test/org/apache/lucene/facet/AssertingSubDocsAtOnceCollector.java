@@ -54,4 +54,9 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
       }
     }
   }
+
+  @Override
+  public boolean needsScores() {
+    return false;
+  }
 }

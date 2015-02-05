@@ -146,4 +146,8 @@ public class FieldFacetAccumulator extends ValueAccumulator {
   @Override
   public NamedList<?> export() { return null; }
 
+  @Override
+  public boolean needsScores() {
+    return true; // TODO: is this true?
+  }
 }

@@ -92,12 +92,12 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
           throw new UnsupportedOperationException();
         }
 
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) {
+        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
           return new BulkScorer() {
             @Override
             public int score(LeafCollector collector, int min, int max) throws IOException {

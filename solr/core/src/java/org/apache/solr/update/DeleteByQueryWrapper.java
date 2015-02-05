@@ -82,8 +82,8 @@ final class DeleteByQueryWrapper extends Query {
       public void normalize(float norm, float topLevelBoost) { inner.normalize(norm, topLevelBoost); }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs);
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+        return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs, needsScores);
       }
     };
   }

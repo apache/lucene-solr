@@ -178,8 +178,8 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     }
     
     // not efficient, but simple!
-    TopDocs td1 = s1.search(q1, filter, reader.maxDoc());
-    TopDocs td2 = s2.search(q2, filter, reader.maxDoc());
+    TopDocs td1 = s1.search(q1, filter, reader.maxDoc(), random().nextBoolean() ? Sort.INDEXORDER : Sort.RELEVANCE);
+    TopDocs td2 = s2.search(q2, filter, reader.maxDoc(), random().nextBoolean() ? Sort.INDEXORDER : Sort.RELEVANCE);
     assertTrue(td1.totalHits <= td2.totalHits);
     
     // fill the superset into a bitset

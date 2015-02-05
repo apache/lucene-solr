@@ -60,6 +60,9 @@ Optimizations
   are greater than one and is used when queries produce dense result sets.
   (Adrien Grand)
 
+* LUCENE-6218: Don't decode frequencies or match all positions when scoring
+  is not needed. (Robert Muir)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
@@ -67,6 +70,9 @@ API Changes
 
 * LUCENE-6217: Add IndexWriter.isOpen and getTragicException.  (Simon
   Willnauer, Mike McCandless)
+
+* LUCENE-6218: Add Collector.needsScores() and needsScores parameter
+  to Weight.scorer(). (Robert Muir)
 
 Other
 

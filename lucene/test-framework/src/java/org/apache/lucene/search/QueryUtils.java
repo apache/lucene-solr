@@ -264,7 +264,7 @@ public class QueryUtils {
               if (scorer == null) {
                 Weight w = s.createNormalizedWeight(q);
                 LeafReaderContext context = readerContextArray.get(leafPtr);
-                scorer = w.scorer(context, context.reader().getLiveDocs());
+                scorer = w.scorer(context, context.reader().getLiveDocs(), true);
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -302,6 +302,11 @@ public class QueryUtils {
           }
 
           @Override
+          public boolean needsScores() {
+            return true;
+          }
+
+          @Override
           protected void doSetNextReader(LeafReaderContext context) throws IOException {
             // confirm that skipping beyond the last doc, on the
             // previous reader, hits NO_MORE_DOCS
@@ -311,7 +316,7 @@ public class QueryUtils {
               indexSearcher.setSimilarity(s.getSimilarity());
               Weight w = indexSearcher.createNormalizedWeight(q);
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
-              Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
+              Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs(), true);
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -333,7 +338,7 @@ public class QueryUtils {
           indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
           LeafReaderContext ctx = previousReader.getContext();
-          Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
+          Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs(), true);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -364,7 +369,7 @@ public class QueryUtils {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = s.createNormalizedWeight(q);
-            Scorer scorer = w.scorer(context.get(leafPtr), liveDocs);
+            Scorer scorer = w.scorer(context.get(leafPtr), liveDocs, true);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -382,6 +387,11 @@ public class QueryUtils {
           throw new RuntimeException(e);
         }
       }
+      
+      @Override
+      public boolean needsScores() {
+        return true;
+      }
 
       @Override
       protected void doSetNextReader(LeafReaderContext context) throws IOException {
@@ -392,7 +402,7 @@ public class QueryUtils {
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
           indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
-          Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
+          Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs(), true);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -413,7 +423,7 @@ public class QueryUtils {
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
       indexSearcher.setSimilarity(s.getSimilarity());
       Weight w = indexSearcher.createNormalizedWeight(q);
-      Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
+      Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs(), true);
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -425,8 +435,8 @@ public class QueryUtils {
   public static void checkBulkScorerSkipTo(Random r, Query query, IndexSearcher searcher) throws IOException {
     Weight weight = searcher.createNormalizedWeight(query);
     for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
-      final Scorer scorer = weight.scorer(context, context.reader().getLiveDocs());
-      final BulkScorer bulkScorer = weight.bulkScorer(context, context.reader().getLiveDocs());
+      final Scorer scorer = weight.scorer(context, context.reader().getLiveDocs(), true);
+      final BulkScorer bulkScorer = weight.bulkScorer(context, context.reader().getLiveDocs(), true);
       if (scorer == null && bulkScorer == null) {
         continue;
       }

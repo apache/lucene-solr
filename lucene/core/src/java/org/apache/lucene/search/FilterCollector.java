@@ -44,5 +44,9 @@ public class FilterCollector implements Collector {
   public String toString() {
     return getClass().getSimpleName() + "(" + in + ")";
   }
-  
+
+  @Override
+  public boolean needsScores() {
+    return in.needsScores();
+  }
 }

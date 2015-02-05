@@ -95,6 +95,11 @@ public class BooleanQueryTst {
       }
       totalMatched++;
     }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
 
     void checkNrHits() {
       Assert.assertEquals(queryText + ": nr of hits", expectedDocNrs.length, totalMatched);

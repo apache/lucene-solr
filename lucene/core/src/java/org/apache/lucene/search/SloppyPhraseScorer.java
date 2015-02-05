@@ -50,11 +50,13 @@ final class SloppyPhraseScorer extends Scorer {
   
   private int numMatches;
   private final long cost;
+  final boolean needsScores;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SimScorer docScorer) {
+      int slop, Similarity.SimScorer docScorer, boolean needsScores) {
     super(weight);
     this.docScorer = docScorer;
+    this.needsScores = needsScores;
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
@@ -114,6 +116,9 @@ final class SloppyPhraseScorer extends Scorer {
         if (matchLength <= slop) {
           freq += docScorer.computeSlopFactor(matchLength); // score match
           numMatches++;
+          if (!needsScores) {
+            return freq;
+          }
         }      
         pq.add(pp);
         pp = pq.pop();

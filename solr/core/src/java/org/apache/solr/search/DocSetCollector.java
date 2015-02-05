@@ -84,6 +84,11 @@ public class DocSetCollector extends SimpleCollector {
   }
 
   @Override
+  public boolean needsScores() {
+    return false;
+  }
+
+  @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.base = context.docBase;
   }

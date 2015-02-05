@@ -302,6 +302,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         public void collect(int docID) throws IOException {
           assertEquals(3, scorer.freq());
         }
+        
+        @Override
+        public boolean needsScores() {
+          return true;
+        }
       });
 
     w.close();

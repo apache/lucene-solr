@@ -56,6 +56,11 @@ public class TestCachingCollector extends LuceneTestCase {
 
     @Override
     public void collect(int doc) throws IOException {}
+    
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
 
   }
 
@@ -78,6 +83,11 @@ public class TestCachingCollector extends LuceneTestCase {
         public void collect(int doc) {
           assertEquals(prevDocID + 1, doc);
           prevDocID = doc;
+        }
+        
+        @Override
+        public boolean needsScores() {
+          return false;
         }
       });
     }

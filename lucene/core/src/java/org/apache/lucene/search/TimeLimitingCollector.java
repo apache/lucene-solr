@@ -157,6 +157,11 @@ public class TimeLimitingCollector implements Collector {
     };
   }
   
+  @Override
+  public boolean needsScores() {
+    return collector.needsScores();
+  }
+
   /**
    * This is so the same timer can be used with a multi-phase search process such as grouping. 
    * We don't want to create a new TimeLimitingCollector for each phase because that would 

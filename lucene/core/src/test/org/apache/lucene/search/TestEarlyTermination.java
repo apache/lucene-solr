@@ -80,7 +80,11 @@ public class TestEarlyTermination extends LuceneTestCase {
             collectionTerminated = false;
           }
         }
-
+        
+        @Override
+        public boolean needsScores() {
+          return false;
+        }
       };
 
       searcher.search(new MatchAllDocsQuery(), collector);

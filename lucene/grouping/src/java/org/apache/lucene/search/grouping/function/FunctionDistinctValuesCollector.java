@@ -89,4 +89,9 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     }
 
   }
+  
+  @Override
+  public boolean needsScores() {
+    return true; // TODO, maybe we don't?
+  }
 }

@@ -196,8 +196,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return mainWeight.getValueForNormalization();
     }
 
-    public Scorer scorer(LeafReaderContext context, Bits bits) throws IOException {
-      return mainWeight.scorer(context, bits);
+    public Scorer scorer(LeafReaderContext context, Bits bits, boolean needsScores) throws IOException {
+      return mainWeight.scorer(context, bits, needsScores);
     }
 
     public Query getQuery() {
@@ -264,6 +264,11 @@ public class ReRankQParserPlugin extends QParserPlugin {
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       return mainCollector.getLeafCollector(context);
+    }
+
+    @Override
+    public boolean needsScores() {
+      return true;
     }
 
     public TopDocs topDocs(int start, int howMany) {

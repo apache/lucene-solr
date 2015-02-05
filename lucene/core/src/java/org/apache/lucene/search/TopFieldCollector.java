@@ -129,8 +129,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final FieldValueHitQueue<Entry> queue;
 
-    public NonScoringCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
+    public NonScoringCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
+      super(queue, numHits, fillFields, sort.needsScores());
       this.queue = queue;
     }
 
@@ -216,8 +216,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final FieldValueHitQueue<Entry> queue;
 
-    public ScoringNoMaxScoreCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
+    public ScoringNoMaxScoreCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
+      super(queue, numHits, fillFields, true);
       this.queue = queue;
     }
 
@@ -315,8 +315,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final FieldValueHitQueue<Entry> queue;
 
-    public ScoringMaxScoreCollector(FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
-      super(queue, numHits, fillFields);
+    public ScoringMaxScoreCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields) {
+      super(queue, numHits, fillFields, true);
       this.queue = queue;
       maxScore = Float.MIN_NORMAL; // otherwise we would keep NaN
     }
@@ -414,9 +414,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final boolean trackMaxScore;
     final FieldDoc after;
 
-    public PagingFieldCollector(FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
+    public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
                                 boolean trackDocScores, boolean trackMaxScore) {
-      super(queue, numHits, fillFields);
+      super(queue, numHits, fillFields, trackDocScores || trackMaxScore || sort.needsScores());
       this.queue = queue;
       this.trackDocScores = trackDocScores;
       this.trackMaxScore = trackMaxScore;
@@ -520,16 +520,23 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
   int docBase;
+  final boolean needsScores;
 
   // Declaring the constructor private prevents extending this class by anyone
   // else. Note that the class cannot be final since it's extended by the
   // internal versions. If someone will define a constructor with any other
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
-  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean fillFields) {
+  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean fillFields, boolean needsScores) {
     super(pq);
+    this.needsScores = needsScores;
     this.numHits = numHits;
     this.fillFields = fillFields;
+  }
+
+  @Override
+  public boolean needsScores() {
+    return needsScores;
   }
 
   /**
@@ -622,11 +629,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     if (after == null) {
       if (trackMaxScore) {
-        return new ScoringMaxScoreCollector(queue, numHits, fillFields);
+        return new ScoringMaxScoreCollector(sort, queue, numHits, fillFields);
       } else if (trackDocScores) {
-        return new ScoringNoMaxScoreCollector(queue, numHits, fillFields);
+        return new ScoringNoMaxScoreCollector(sort, queue, numHits, fillFields);
       } else {
-        return new NonScoringCollector(queue, numHits, fillFields);
+        return new NonScoringCollector(sort, queue, numHits, fillFields);
       }
     } else {
       if (after.fields == null) {
@@ -637,7 +644,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(queue, after, numHits, fillFields, trackDocScores, trackMaxScore);
+      return new PagingFieldCollector(sort, queue, after, numHits, fillFields, trackDocScores, trackMaxScore);
     }
   }
 

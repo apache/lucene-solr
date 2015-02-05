@@ -174,5 +174,9 @@ public class ExportQParserPlugin extends QParserPlugin {
       return new TopDocs(totalHits, scoreDocs, 0.0f);
     }
 
+    @Override
+    public boolean needsScores() {
+      return true; // TODO: is this the case?
+    }
   }
 }

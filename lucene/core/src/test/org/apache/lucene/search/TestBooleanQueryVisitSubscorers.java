@@ -234,6 +234,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     public List<String> getSummaries() {
       return summaries;
     }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -282,8 +287,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher) throws IOException {
       return new BooleanWeight(searcher, false) {
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          Scorer scorer = scorer(context, acceptDocs);
+        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+          Scorer scorer = scorer(context, acceptDocs, needsScores);
           if (scorer == null) {
             return null;
           }

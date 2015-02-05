@@ -75,13 +75,13 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
         return null;
       }
-      DocsEnum docs = termsEnum.docs(acceptDocs, null);
+      DocsEnum docs = termsEnum.docs(acceptDocs, null, needsScores ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
       assert docs != null;
       return new TermScorer(this, docs, similarity.simScorer(stats, context));
     }
@@ -110,7 +110,7 @@ public class TermQuery extends Query {
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

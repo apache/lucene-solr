@@ -207,4 +207,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     return new TopDocs(totalHits, results, maxScore);
   }
+
+  @Override
+  public boolean needsScores() {
+    return true;
+  }
 }

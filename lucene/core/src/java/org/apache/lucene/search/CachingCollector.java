@@ -297,6 +297,11 @@ public abstract class CachingCollector extends FilterCollector {
       @Override
       public void collect(int doc) {}
 
+      @Override
+      public boolean needsScores() {
+        return true;
+      }
+
     };
     return create(other, cacheScores, maxRAMMB);
   }

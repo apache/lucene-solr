@@ -436,15 +436,13 @@ on the built-in available scoring models and extending or changing Similarity.
                 that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will just defer to the Similarity's implementation:
                 {@link org.apache.lucene.search.similarities.Similarity.SimWeight#normalize SimWeight#normalize(float,float)}.</li>
             <li>
-                {@link org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)
-                  scorer(LeafReaderContext context, Bits acceptDocs)} &mdash;
+                {@link org.apache.lucene.search.Weight#scorer scorer()} &mdash;
                 Construct a new {@link org.apache.lucene.search.Scorer Scorer} for this Weight. See <a href="#scorerClass">The Scorer Class</a>
                 below for help defining a Scorer. As the name implies, the Scorer is responsible for doing the actual scoring of documents 
                 given the Query.
             </li>
             <li>
-                {@link org.apache.lucene.search.Weight#bulkScorer(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)
-                  scorer(LeafReaderContext context, Bits acceptDocs)} &mdash;
+                {@link org.apache.lucene.search.Weight#bulkScorer bulkScorer()} &mdash;
                 Construct a new {@link org.apache.lucene.search.BulkScorer BulkScorer} for this Weight. See <a href="#bulkScorerClass">The BulkScorer Class</a>
                 below for help defining a BulkScorer. This is an optional method, and most queries do not implement it.
             </li>

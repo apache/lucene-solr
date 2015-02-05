@@ -103,4 +103,8 @@ abstract class TermsCollector extends SimpleCollector {
     }
   }
 
+  @Override
+  public boolean needsScores() {
+    return false;
+  }
 }

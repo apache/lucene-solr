@@ -310,6 +310,11 @@ public class TestJoinUtil extends LuceneTestCase {
             assertFalse("optimized bulkScorer was not used for join query embedded in boolean query!", sawFive);
           }
         }
+        
+        @Override
+        public boolean needsScores() {
+          return false;
+        }
       });
 
     indexSearcher.getIndexReader().close();
@@ -495,6 +500,11 @@ public class TestJoinUtil extends LuceneTestCase {
               }
             };
           }
+          
+          @Override
+          public boolean needsScores() {
+            return topScoreDocCollector.needsScores();
+          }
         });
         // Asserting bit set...
         if (VERBOSE) {
@@ -673,6 +683,11 @@ public class TestJoinUtil extends LuceneTestCase {
           public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
+
+          @Override
+          public boolean needsScores() {
+            return true;
+          }
         });
       } else {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
@@ -704,6 +719,11 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           public void setScorer(Scorer scorer) {
             this.scorer = scorer;
+          }
+          
+          @Override
+          public boolean needsScores() {
+            return true;
           }
         });
       }
@@ -757,6 +777,11 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setScorer(Scorer scorer) {}
+          
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
         });
       }
       queryVals.put(uniqueRandomValue, docToJoinScore);

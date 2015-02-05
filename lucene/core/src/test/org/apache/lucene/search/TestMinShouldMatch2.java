@@ -131,11 +131,11 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     case DOC_VALUES:
       return new SlowMinShouldMatchScorer(weight, reader, searcher);
     case SCORER:
-      return weight.scorer(reader.getContext(), null);
+      return weight.scorer(reader.getContext(), null, true);
     case BULK_SCORER:
-      final BulkScorer bulkScorer = weight.booleanScorer(reader.getContext(), null);
+      final BulkScorer bulkScorer = weight.booleanScorer(reader.getContext(), null, true);
       if (bulkScorer == null) {
-        if (weight.scorer(reader.getContext(), null) != null) {
+        if (weight.scorer(reader.getContext(), null, true) != null) {
           throw new AssertionError("BooleanScorer should be applicable for this query");
         }
         return null;

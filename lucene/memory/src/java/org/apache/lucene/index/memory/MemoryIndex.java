@@ -568,7 +568,11 @@ public class MemoryIndex {
         public void setScorer(Scorer scorer) {
           this.scorer = scorer;
         }
-
+        
+        @Override
+        public boolean needsScores() {
+          return true;
+        }
       });
       float score = scores[0];
       return score;

@@ -682,6 +682,11 @@ public class TestDrillSideways extends FacetTestCase {
                              protected void doSetNextReader(LeafReaderContext context) throws IOException {
                                lastDocID = -1;
                              }
+
+                            @Override
+                            public boolean needsScores() {
+                              return false;
+                            }
                            });
 
       // Also separately verify that DS respects the

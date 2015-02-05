@@ -189,7 +189,7 @@ public class TestBooleanOr extends LuceneTestCase {
     Weight w = s.createNormalizedWeight(bq);
 
     assertEquals(1, s.getIndexReader().leaves().size());
-    BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), null);
+    BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), null, true);
 
     final FixedBitSet hits = new FixedBitSet(docCount);
     final AtomicInteger end = new AtomicInteger();
@@ -199,6 +199,11 @@ public class TestBooleanOr extends LuceneTestCase {
         public void collect(int doc) {
           assertTrue("collected doc=" + doc + " beyond max=" + end, doc < end.intValue());
           hits.set(doc);
+        }
+        
+        @Override
+        public boolean needsScores() {
+          return false;
         }
       };
 

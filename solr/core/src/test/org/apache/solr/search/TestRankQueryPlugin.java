@@ -760,6 +760,11 @@ public class TestRankQueryPlugin extends QParserPlugin {
     public int getTotalHits() {
       return list.size();
     }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
   }
 
   class TestCollector1 extends TopDocsCollector {
@@ -816,6 +821,11 @@ public class TestRankQueryPlugin extends QParserPlugin {
 
     public int getTotalHits() {
       return list.size();
+    }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
     }
   }
 

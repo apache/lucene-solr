@@ -320,7 +320,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
       doc = -1;
       this.needsFreq = (flags & DocsEnum.FLAG_FREQS) != 0;
-      if (!indexHasFreq) {
+      if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
       accum = 0;

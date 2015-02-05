@@ -115,6 +115,11 @@ public class TestScorerPerf extends LuceneTestCase {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
+    
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
   }
 
 

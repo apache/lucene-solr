@@ -76,4 +76,9 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
     }
     return null;
   }
+  
+  @Override
+  public boolean needsScores() {
+    return true; // TODO, maybe we don't?
+  }
 }
