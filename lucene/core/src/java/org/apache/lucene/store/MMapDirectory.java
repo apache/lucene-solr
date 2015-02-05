@@ -28,6 +28,7 @@ import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.util.Locale;
+import java.util.concurrent.Future;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.store.ByteBufferIndexInput.BufferCleaner;
@@ -66,15 +67,19 @@ import org.apache.lucene.util.Constants;
  * <p>This class supplies the workaround mentioned in the bug report
  * (see {@link #setUseUnmap}), which may fail on
  * non-Sun JVMs. It forcefully unmaps the buffer on close by using
- * an undocumented internal cleanup functionality.
- * {@link #UNMAP_SUPPORTED} is <code>true</code>, if the workaround
- * can be enabled (with no guarantees).
+ * an undocumented internal cleanup functionality. If
+ * {@link #UNMAP_SUPPORTED} is <code>true</code>, the workaround
+ * will be automatically enabled (with no guarantees; if you discover
+ * any problems, you can disable it).
  * <p>
  * <b>NOTE:</b> Accessing this class either directly or
  * indirectly from a thread while it's interrupted can close the
  * underlying channel immediately if at the same time the thread is
  * blocked on IO. The channel will remain closed and subsequent access
- * to {@link MMapDirectory} will throw a {@link ClosedChannelException}. 
+ * to {@link MMapDirectory} will throw a {@link ClosedChannelException}. If
+ * your application uses either {@link Thread#interrupt()} or
+ * {@link Future#cancel(boolean)} you should use the legacy {@code RAFDirectory}
+ * from the Lucene {@code misc} module in favor of {@link MMapDirectory}.
  * </p>
  * @see <a href="http://blog.thetaphi.de/2012/07/use-lucenes-mmapdirectory-on-64bit.html">Blog post about MMapDirectory</a>
  */

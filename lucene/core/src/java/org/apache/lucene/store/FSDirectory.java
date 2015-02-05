@@ -24,6 +24,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,14 +42,14 @@ import org.apache.lucene.util.IOUtils;
  *
  * <ul>
  *
- *  <li> {@link SimpleFSDirectory} is a straightforward
+ *  <li>{@link SimpleFSDirectory} is a straightforward
  *       implementation using Files.newByteChannel.
  *       However, it has poor concurrent performance
  *       (multiple threads will bottleneck) as it
  *       synchronizes when multiple threads read from the
  *       same file.
  *
- *  <li> {@link NIOFSDirectory} uses java.nio's
+ *  <li>{@link NIOFSDirectory} uses java.nio's
  *       FileChannel's positional io when reading to avoid
  *       synchronization when reading from the same file.
  *       Unfortunately, due to a Windows-only <a
@@ -60,9 +61,7 @@ import org.apache.lucene.util.IOUtils;
  *       {@code RAFDirectory} instead. See {@link NIOFSDirectory} java doc
  *       for details.
  *        
- *        
- *
- *  <li> {@link MMapDirectory} uses memory-mapped IO when
+ *  <li>{@link MMapDirectory} uses memory-mapped IO when
  *       reading. This is a good choice if you have plenty
  *       of virtual memory relative to your index size, eg
  *       if you are running on a 64 bit JRE, or you are
@@ -86,14 +85,9 @@ import org.apache.lucene.util.IOUtils;
  *       an important limitation to be aware of. This class supplies a
  *       (possibly dangerous) workaround mentioned in the bug report,
  *       which may fail on non-Sun JVMs.
- *       
- *       Applications using {@link Thread#interrupt()} or
- *       {@link Future#cancel(boolean)} should use
- *       {@code RAFDirectory} instead. See {@link MMapDirectory}
- *       java doc for details.
  * </ul>
  *
- * Unfortunately, because of system peculiarities, there is
+ * <p>Unfortunately, because of system peculiarities, there is
  * no single overall best implementation.  Therefore, we've
  * added the {@link #open} method, to allow Lucene to choose
  * the best FSDirectory implementation given your
@@ -102,6 +96,15 @@ import org.apache.lucene.util.IOUtils;
  * specific implementation, it's best to simply use {@link
  * #open}.  For all others, you should instantiate the
  * desired implementation directly.
+ *
+ * <p><b>NOTE:</b> Accessing one of the above subclasses either directly or
+ * indirectly from a thread while it's interrupted can close the
+ * underlying channel immediately if at the same time the thread is
+ * blocked on IO. The channel will remain closed and subsequent access
+ * to the index will throw a {@link ClosedChannelException}.
+ * Applications using {@link Thread#interrupt()} or
+ * {@link Future#cancel(boolean)} should use the slower legacy
+ * {@code RAFDirectory} from the {@code misc} Lucene module instead.
  *
  * <p>The locking implementation is by default {@link
  * NativeFSLockFactory}, but can be changed by
@@ -131,7 +134,7 @@ public abstract class FSDirectory extends BaseDirectory {
    *  The directory returned uses the {@link NativeFSLockFactory}.
    *  The directory is created at the named location if it does not yet exist.
    *
-   *  <p>Currently this returns {@link MMapDirectory} for most Solaris
+   *  <p>Currently this returns {@link MMapDirectory} for Linux, MacOSX, Solaris,
    *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other
    *  non-Windows JREs, and {@link SimpleFSDirectory} for other
    *  JREs on Windows. It is highly recommended that you consult the
