@@ -882,6 +882,9 @@ Other Changes
   
 * SOLR-5918: ant clean does not remove ZooKeeper data (Varun Thacker, Steve Rowe)
 
+* SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
+  at least one jetty to kill. (shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
