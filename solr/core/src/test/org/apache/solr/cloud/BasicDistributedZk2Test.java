@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -52,7 +52,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
-  
+
   public BasicDistributedZk2Test() {
     super();
     sliceCount = 2;
