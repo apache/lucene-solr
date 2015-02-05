@@ -49,7 +49,8 @@ import org.apache.lucene.util.FixedBitSet;
  *  counting.  Use the {@code search} utility methods to
  *  perform an "ordinary" search but also collect into a
  *  {@link Collector}. */
-public class FacetsCollector extends SimpleCollector {
+// redundant 'implements Collector' to workaround javadocs bugs
+public class FacetsCollector extends SimpleCollector implements Collector {
 
   private LeafReaderContext context;
   private Scorer scorer;
