@@ -1644,6 +1644,59 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
   }
 
+  @Test
+  public void testMoreLikeThis() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+    for (int i=0; i<20; i++)  {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "testMoreLikeThis" + i);
+      doc.addField("x_s", "x_" + i);
+      doc.addField("y_s", "y_" + (i % 3));
+      doc.addField("z_s", "z_" + i);
+      client.add(doc);
+    }
+    client.commit();
+
+    // test with mlt.fl having comma separated values
+    SolrQuery q = new SolrQuery("*:*");
+    q.setRows(20);
+    q.setParam("mlt", "true");
+    q.setParam("mlt.mintf", "0");
+    q.setParam("mlt.count", "2");
+    q.setParam("mlt.fl", "x_s,y_s,z_s");
+    QueryResponse response = client.query(q);
+    System.out.printf("Results: " + response.getResponse());
+    assertEquals(20, response.getResults().getNumFound());
+    NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
+    for (int i=0; i<20; i++)  {
+      String id = "testMoreLikeThis" + i;
+      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
+      assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+    }
+
+    // now test with multiple mlt.fl parameters
+    q = new SolrQuery("*:*");
+    q.setRows(20);
+    q.setParam("mlt", "true");
+    q.setParam("mlt.mintf", "0");
+    q.setParam("mlt.count", "2");
+    q.setParam("mlt.fl", "x_s", "y_s", "z_s");
+    response = client.query(q);
+    System.out.printf("Results: " + response.getResponse());
+    assertEquals(20, response.getResults().getNumFound());
+    moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
+    for (int i=0; i<20; i++)  {
+      String id = "testMoreLikeThis" + i;
+      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
+      assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+    }
+  }
+
   /** 
    * Depth first search of a SolrInputDocument looking for a decendent by id, 
    * returns null if it's not a decendent 

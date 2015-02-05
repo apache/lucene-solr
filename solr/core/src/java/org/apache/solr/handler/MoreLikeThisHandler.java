@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
@@ -314,7 +315,19 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       this.needDocSet = params.getBool(FacetParams.FACET,false);
       
       SolrParams required = params.required();
-      String[] fields = splitList.split( required.get(MoreLikeThisParams.SIMILARITY_FIELDS) );
+      String[] fl = required.getParams(MoreLikeThisParams.SIMILARITY_FIELDS);
+      List<String> list = new ArrayList<>();
+      for (String f : fl) {
+        if (!StringUtils.isEmpty(f))  {
+          String[] strings = splitList.split(f);
+          for (String string : strings) {
+            if (!StringUtils.isEmpty(string)) {
+              list.add(string);
+            }
+          }
+        }
+      }
+      String[] fields = list.toArray(new String[list.size()]);
       if( fields.length < 1 ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
             "MoreLikeThis requires at least one similarity field: "+MoreLikeThisParams.SIMILARITY_FIELDS );
