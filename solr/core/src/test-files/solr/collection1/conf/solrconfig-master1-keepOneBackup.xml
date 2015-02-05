@@ -32,6 +32,7 @@
     <lst name="master">
       <str name="replicateAfter">commit</str>
       <str name="confFiles">schema-replication2.xml:schema.xml</str>
+      <str name="backupAfter">commit</str>
     </lst>    
     <str name="maxNumberOfBackups">1</str>
   </requestHandler>
