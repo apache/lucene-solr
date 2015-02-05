@@ -887,6 +887,10 @@ Other Changes
   
 * SOLR-5918: ant clean does not remove ZooKeeper data (Varun Thacker, Steve Rowe)
 
+* SOLR-7020: 'bin/solr start' should automatically use an SSL-enabled alternate jetty
+  configuration file when in SSL mode, eliminating the need for manual jetty.xml edits.
+  (Steve Rowe)
+
 * SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
   at least one jetty to kill. (shalin)
 
