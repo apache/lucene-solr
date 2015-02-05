@@ -92,7 +92,9 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
     if (numShards == -1) {
-      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2);
+      // we make sure that there's at least one shard with more than one replica
+      // so that the ChaosMonkey has something to kill
+      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
     }
     fixShardCount(numShards);
   }
