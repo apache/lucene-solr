@@ -97,6 +97,10 @@ New Features
   collection that has a replica on all nodes where there is a replica in the to index
   (Jack Lo, Timothy Potter)
 
+* SOLR-6648: Add support in AnalyzingInfixLookupFactory and BlendedInfixLookupFactory 
+  for setting 'highlight' and 'allTermsRequired' in the suggester configuration.
+  (Boon Low, Varun Thacker via Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
