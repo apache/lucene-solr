@@ -1666,7 +1666,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     q.setParam("mlt.count", "2");
     q.setParam("mlt.fl", "x_s,y_s,z_s");
     QueryResponse response = client.query(q);
-    System.out.printf("Results: " + response.getResponse());
     assertEquals(20, response.getResults().getNumFound());
     NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
@@ -1685,7 +1684,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     q.setParam("mlt.count", "2");
     q.setParam("mlt.fl", "x_s", "y_s", "z_s");
     response = client.query(q);
-    System.out.printf("Results: " + response.getResponse());
     assertEquals(20, response.getResults().getNumFound());
     moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
