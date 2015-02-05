@@ -96,7 +96,9 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 5 : 3) + 1;
     }
     if (shardCount == -1) {
-      shardCount = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2);
+      // we make sure that there's at least one shard with more than one replica
+      // so that the ChaosMonkey has something to kill
+      shardCount = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
     }
   }
   
