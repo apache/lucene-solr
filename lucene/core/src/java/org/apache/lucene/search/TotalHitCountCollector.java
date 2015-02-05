@@ -34,4 +34,9 @@ public class TotalHitCountCollector extends SimpleCollector {
   public void collect(int doc) {
     totalHits++;
   }
+
+  @Override
+  public boolean needsScores() {
+    return false;
+  }
 }

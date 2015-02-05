@@ -1457,6 +1457,29 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     dir.close();
   }
   
+  public void testDidntWantFreqsButAskedAnyway() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newTextField("field", "value", Field.Store.NO));
+    iw.addDocument(doc);
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    LeafReader ar = getOnlySegmentReader(ir);
+    TermsEnum termsEnum = ar.terms("field").iterator(null);
+    assertTrue(termsEnum.seekExact(new BytesRef("value")));
+    DocsEnum docsEnum = termsEnum.docs(null, null, DocsEnum.FLAG_NONE);
+    assertEquals(0, docsEnum.nextDoc());
+    assertEquals(1, docsEnum.freq());
+    assertEquals(1, docsEnum.nextDoc());
+    assertEquals(1, docsEnum.freq());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
   // tests that ghost fields still work
   // TODO: can this be improved?
   public void testGhosts() throws Exception {

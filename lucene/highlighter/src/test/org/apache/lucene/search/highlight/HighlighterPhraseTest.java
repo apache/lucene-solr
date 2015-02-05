@@ -133,6 +133,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         public void setScorer(org.apache.lucene.search.Scorer scorer) {
           // Do Nothing
         }
+
+        @Override
+        public boolean needsScores() {
+          return false;
+        }
       });
       assertEquals(1, bitset.cardinality());
       final int maxDoc = indexReader.maxDoc();

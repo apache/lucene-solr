@@ -586,7 +586,7 @@ public class IndexSearcher {
         // continue with the following leaf
         continue;
       }
-      BulkScorer scorer = weight.bulkScorer(ctx, ctx.reader().getLiveDocs());
+      BulkScorer scorer = weight.bulkScorer(ctx, ctx.reader().getLiveDocs(), collector.needsScores());
       if (scorer != null) {
         try {
           scorer.score(leafCollector);

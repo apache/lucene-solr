@@ -70,6 +70,11 @@ public class TestTopDocsCollector extends LuceneTestCase {
         }
       };
     }
+    
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
 
   }
 

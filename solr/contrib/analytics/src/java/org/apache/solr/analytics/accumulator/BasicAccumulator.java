@@ -167,4 +167,9 @@ public class BasicAccumulator extends ValueAccumulator {
   public long getNumQueries() {
     return 0l;
   }
+  
+  @Override
+  public boolean needsScores() {
+    return true; // TODO: is this true?
+  }
 }

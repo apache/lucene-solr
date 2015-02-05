@@ -152,4 +152,9 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
       this.doc = doc + readerContext.docBase;
     }
   }
+
+  @Override
+  public boolean needsScores() {
+    return true; // TODO, maybe we don't: e.g. return sortWithinGroup.needsScores()
+  }
 }

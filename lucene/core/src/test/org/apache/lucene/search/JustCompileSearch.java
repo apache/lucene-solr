@@ -53,6 +53,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
+    public boolean needsScores() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileDocIdSet extends DocIdSet {
@@ -253,7 +257,11 @@ final class JustCompileSearch {
     public TopDocs topDocs( int start, int end ) {
         throw new UnsupportedOperationException( UNSUPPORTED_MSG );
     }
-    
+
+    @Override
+    public boolean needsScores() {
+      throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    }
   }
 
   static final class JustCompileWeight extends Weight {
@@ -279,7 +287,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

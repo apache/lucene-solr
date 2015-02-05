@@ -89,13 +89,13 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
       return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
+      return ((AllScorer)scorer(context, context.reader().getLiveDocs(), true)).explain(doc);
     }
   }
 

@@ -90,6 +90,11 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     @Override public void setScorer(Scorer scorer) {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
 
   }
 

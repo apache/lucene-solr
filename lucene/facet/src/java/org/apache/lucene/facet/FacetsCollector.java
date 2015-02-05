@@ -169,6 +169,11 @@ public class FacetsCollector extends SimpleCollector {
   }
 
   @Override
+  public boolean needsScores() {
+    return true;
+  }
+
+  @Override
   public final void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
   }

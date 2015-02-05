@@ -34,7 +34,7 @@ import org.apache.lucene.util.Bits;
  * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)})
+ * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits, boolean)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -49,7 +49,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)}.
+ * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits, boolean)}.
  * </ol>
  * 
  * @since 2.9
@@ -87,11 +87,13 @@ public abstract class Weight {
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
+   * @param needsScores
+   *          True if document scores ({@link Scorer#score}) or match frequencies ({@link Scorer#freq}) are needed.
    *          
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException;
 
   /**
    * Optional method, to return a {@link BulkScorer} to
@@ -106,14 +108,16 @@ public abstract class Weight {
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
+   * @param needsScores
+   *          True if document scores are needed.
    *
    * @return a {@link BulkScorer} which scores documents and
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
 
-    Scorer scorer = scorer(context, acceptDocs);
+    Scorer scorer = scorer(context, acceptDocs, needsScores);
     if (scorer == null) {
       // No docs match
       return null;

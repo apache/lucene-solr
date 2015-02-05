@@ -482,4 +482,9 @@ public class ToParentBlockJoinCollector implements Collector {
   public float getMaxScore() {
     return maxScore;
   }
+
+  @Override
+  public boolean needsScores() {
+    return trackScores || trackMaxScore || sort.needsScores();
+  }
 }

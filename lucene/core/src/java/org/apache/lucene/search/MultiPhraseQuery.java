@@ -179,7 +179,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
       assert !termArrays.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -249,15 +249,15 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        return new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context));
+        return new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context), needsScores);
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context), needsScores);
       }
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

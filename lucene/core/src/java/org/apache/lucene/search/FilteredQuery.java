@@ -119,7 +119,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -128,12 +128,12 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredScorer(context, weight, filterDocIdSet);
+        return strategy.filteredScorer(context, weight, filterDocIdSet, needsScores);
       }
 
       // return a filtering top scorer
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -142,7 +142,7 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredBulkScorer(context, weight, filterDocIdSet);
+        return strategy.filteredBulkScorer(context, weight, filterDocIdSet, needsScores);
       }
     };
   }
@@ -465,7 +465,7 @@ public class FilteredQuery extends Query {
      * @throws IOException if an {@link IOException} occurs
      */
     public abstract Scorer filteredScorer(LeafReaderContext context,
-        Weight weight, DocIdSet docIdSet) throws IOException;
+        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException;
 
     /**
      * Returns a filtered {@link BulkScorer} based on this
@@ -480,8 +480,8 @@ public class FilteredQuery extends Query {
      * @return a filtered top scorer
      */
     public BulkScorer filteredBulkScorer(LeafReaderContext context,
-        Weight weight, DocIdSet docIdSet) throws IOException {
-      Scorer scorer = filteredScorer(context, weight, docIdSet);
+        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
+      Scorer scorer = filteredScorer(context, weight, docIdSet, needsScores);
       if (scorer == null) {
         return null;
       }
@@ -502,7 +502,7 @@ public class FilteredQuery extends Query {
   public static class RandomAccessFilterStrategy extends FilterStrategy {
 
     @Override
-    public Scorer filteredScorer(LeafReaderContext context, Weight weight, DocIdSet docIdSet) throws IOException {
+    public Scorer filteredScorer(LeafReaderContext context, Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
         // this means the filter does not accept any documents.
@@ -514,11 +514,11 @@ public class FilteredQuery extends Query {
       final boolean useRandomAccess = filterAcceptDocs != null && useRandomAccess(filterAcceptDocs, filterIter.cost());
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs
-        return weight.scorer(context, filterAcceptDocs);
+        return weight.scorer(context, filterAcceptDocs, needsScores);
       } else {
         // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
         // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-        final Scorer scorer = weight.scorer(context, null);
+        final Scorer scorer = weight.scorer(context, null, needsScores);
         return (scorer == null) ? null : new LeapFrogScorer(weight, filterIter, scorer, scorer);
       }
     }
@@ -551,14 +551,14 @@ public class FilteredQuery extends Query {
 
     @Override
     public Scorer filteredScorer(LeafReaderContext context,
-        Weight weight, DocIdSet docIdSet) throws IOException {
+        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
         // this means the filter does not accept any documents.
         return null;
       }
       // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-      final Scorer scorer = weight.scorer(context, null);
+      final Scorer scorer = weight.scorer(context, null, needsScores);
       if (scorer == null) {
         return null;
       }
@@ -587,30 +587,28 @@ public class FilteredQuery extends Query {
   private static final class QueryFirstFilterStrategy extends FilterStrategy {
     @Override
     public Scorer filteredScorer(final LeafReaderContext context,
-        Weight weight,
-        DocIdSet docIdSet) throws IOException {
+        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
       if (filterAcceptDocs == null) {
         // Filter does not provide random-access Bits; we
         // must fallback to leapfrog:
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, weight, docIdSet);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, weight, docIdSet, needsScores);
       }
-      final Scorer scorer = weight.scorer(context, null);
+      final Scorer scorer = weight.scorer(context, null, needsScores);
       return scorer == null ? null : new QueryFirstScorer(weight,
           filterAcceptDocs, scorer);
     }
 
     @Override
     public BulkScorer filteredBulkScorer(final LeafReaderContext context,
-        Weight weight,
-        DocIdSet docIdSet) throws IOException {
+        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
       if (filterAcceptDocs == null) {
         // Filter does not provide random-access Bits; we
         // must fallback to leapfrog:
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, docIdSet);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, docIdSet, needsScores);
       }
-      final Scorer scorer = weight.scorer(context, null);
+      final Scorer scorer = weight.scorer(context, null, needsScores);
       return scorer == null ? null : new QueryFirstBulkScorer(scorer, filterAcceptDocs);
     }
   }

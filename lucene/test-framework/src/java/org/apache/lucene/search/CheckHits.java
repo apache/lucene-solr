@@ -139,6 +139,11 @@ public class CheckHits {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
     }
+    
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
   }
 
   /**
@@ -506,6 +511,11 @@ public class CheckHits {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
+    }
+    
+    @Override
+    public boolean needsScores() {
+      return true;
     }
   }
 

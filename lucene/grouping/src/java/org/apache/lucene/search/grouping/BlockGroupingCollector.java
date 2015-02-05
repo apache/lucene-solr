@@ -528,4 +528,9 @@ public class BlockGroupingCollector extends SimpleCollector {
       leafComparators[i] = comparators[i].getLeafComparator(readerContext);
     }
   }
+
+  @Override
+  public boolean needsScores() {
+    return needsScores;
+  }
 }

@@ -167,7 +167,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;

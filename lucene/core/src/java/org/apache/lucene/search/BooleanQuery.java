@@ -242,7 +242,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, context.reader().getLiveDocs()) == null) {
+        if (w.scorer(context, context.reader().getLiveDocs(), true) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -307,12 +307,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
      *  cannot be used. */
     // pkg-private for forcing use of BooleanScorer in tests
-    BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
       List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
+        BulkScorer subScorer = w.bulkScorer(context, acceptDocs, needsScores);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -342,8 +342,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs);
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+      final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs, needsScores);
       if (bulkScorer != null) { // BooleanScorer is applicable
         // TODO: what is the right heuristic here?
         final long costThreshold;
@@ -366,12 +366,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return bulkScorer;
         }
       }
-      return super.bulkScorer(context, acceptDocs);
+      return super.bulkScorer(context, acceptDocs, needsScores);
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs)
-        throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
       // initially the user provided value,
       // but if minNrShouldMatch == optional.size(),
       // we will optimize and move these to required, making this 0
@@ -383,7 +382,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, acceptDocs);
+        Scorer subScorer = w.scorer(context, acceptDocs, needsScores && c.isProhibited() == false);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -414,6 +413,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         // optional scorer. Therefore if there are not enough optional scorers
         // no documents will be matched by the query
         return null;
+      }
+      
+      // we don't need scores, so if we have required clauses, drop optional clauses completely
+      if (!needsScores && minShouldMatch == 0 && required.size() > 0) {
+        optional.clear();
       }
       
       // three cases: conjunction, disjunction, or mix

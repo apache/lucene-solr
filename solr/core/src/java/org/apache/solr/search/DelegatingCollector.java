@@ -64,6 +64,11 @@ public class DelegatingCollector extends SimpleCollector {
   }
 
   @Override
+  public boolean needsScores() {
+    return delegate.needsScores();
+  }
+
+  @Override
   public void collect(int doc) throws IOException {
     leafDelegate.collect(doc);
   }

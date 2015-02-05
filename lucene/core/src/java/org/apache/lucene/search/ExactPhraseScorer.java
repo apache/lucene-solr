@@ -55,11 +55,13 @@ final class ExactPhraseScorer extends Scorer {
   private int freq;
 
   private final Similarity.SimScorer docScorer;
+  private final boolean needsScores;
   
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer) throws IOException {
+                    Similarity.SimScorer docScorer, boolean needsScores) throws IOException {
     super(weight);
     this.docScorer = docScorer;
+    this.needsScores = needsScores;
 
     chunkStates = new ChunkState[postings.length];
 
@@ -233,6 +235,9 @@ final class ExactPhraseScorer extends Scorer {
             final int posIndex = cs.pos - chunkStart;
             if (posIndex >= 0 && gens[posIndex] == gen && counts[posIndex] == endMinus1) {
               freq++;
+              if (!needsScores) {
+                return freq; // we determined there was a match.
+              }
             }
           }
 

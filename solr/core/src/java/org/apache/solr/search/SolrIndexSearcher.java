@@ -1640,6 +1640,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           public void collect(int doc) {
             numHits[0]++;
           }
+          
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
         };
       } else {
         collector = new SimpleCollector() {
@@ -1653,6 +1658,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
             numHits[0]++;
             float score = scorer.score();
             if (score > topscore[0]) topscore[0]=score;            
+          }
+          
+          @Override
+          public boolean needsScores() {
+            return true;
           }
         };
       }
@@ -1737,6 +1747,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           public void collect(int doc) throws IOException {
             float score = scorer.score();
             if (score > topscore[0]) topscore[0] = score;
+          }
+          
+          @Override
+          public boolean needsScores() {
+            return true;
           }
         };
         
@@ -2488,7 +2503,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, context.reader().getLiveDocs());
+        Scorer scorer = w.scorer(context, context.reader().getLiveDocs(), true);
         if (scorer == null) return null;
         iterators.add(scorer);
       }

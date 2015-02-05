@@ -81,7 +81,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
     if (stats == null) {
       return null;
     } else {
@@ -91,7 +91,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs());
+    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs(), true);
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

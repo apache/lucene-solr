@@ -93,6 +93,16 @@ public class MultiCollector implements Collector {
   }
 
   @Override
+  public boolean needsScores() {
+    for (Collector collector : collectors) {
+      if (collector.needsScores()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     final LeafCollector[] leafCollectors = new LeafCollector[collectors.length];
     for (int i = 0; i < collectors.length; ++i) {

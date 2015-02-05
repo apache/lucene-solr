@@ -46,6 +46,10 @@ public class MultiCollectorTest extends LuceneTestCase {
       setScorerCalled = true;
     }
 
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
   }
 
   @Test

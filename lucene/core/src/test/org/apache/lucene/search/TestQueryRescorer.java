@@ -443,7 +443,7 @@ public class TestQueryRescorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(final LeafReaderContext context, Bits acceptDocs) throws IOException {
+        public Scorer scorer(final LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
 
           return new Scorer(null) {
             int docID = -1;

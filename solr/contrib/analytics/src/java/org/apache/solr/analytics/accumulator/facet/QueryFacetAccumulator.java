@@ -66,4 +66,8 @@ public class QueryFacetAccumulator extends ValueAccumulator {
     return null;
   }
 
+  @Override
+  public boolean needsScores() {
+    return true; // TODO: is this true?
+  }
 }
