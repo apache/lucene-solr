@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -54,7 +53,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -72,7 +70,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
@@ -1058,6 +1055,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               numberToKeep = Integer.MAX_VALUE;
             }            
             SnapShooter snapShooter = new SnapShooter(core, null, null);
+            snapShooter.validateCreateSnapshot();
             snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);

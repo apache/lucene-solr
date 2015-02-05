@@ -17,14 +17,18 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.lucene.util.IOUtils;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.Lists;
+import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -36,16 +40,8 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.CheckBackupStatus;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -405,84 +401,29 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
-    File location = createTempDir().toFile();
-    params.set("location", location.getAbsolutePath());
+    Path location = createTempDir();
+    location = FilterPath.unwrap(location).toRealPath();
+    params.set("location", location.toString());
 
     QueryRequest request = new QueryRequest(params);
-    NamedList<Object> results = client.request(request );
+    client.request(request);
     
     checkForBackupSuccess(client, location);
   }
 
-  private void checkForBackupSuccess(final HttpSolrClient client, File location)
-      throws InterruptedException, IOException {
-    class CheckStatus extends Thread {
-      volatile String fail = null;
-      volatile String response = null;
-      volatile boolean success = false;
-      final Pattern p = Pattern
-          .compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
-      
-      CheckStatus() {}
-      
-      @Override
-      public void run() {
-        String masterUrl = client.getBaseURL() + "/replication?command="
-            + ReplicationHandler.CMD_DETAILS;
-        
-        try {
-          response = client.getHttpClient().execute(new HttpGet(masterUrl), new BasicResponseHandler());
-          if (response.contains("<str name=\"status\">success</str>")) {
-            Matcher m = p.matcher(response);
-            if (!m.find()) {
-              fail("could not find the completed timestamp in response.");
-            }
-            
-            success = true;
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
-          fail = e.getMessage();
-        }
-        
-      };
+  private void checkForBackupSuccess(HttpSolrClient client, Path location) throws InterruptedException, IOException {
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(client);
+    while (!checkBackupStatus.success) {
+      checkBackupStatus.fetchStatus();
+      Thread.sleep(1000);
     }
-    
-    int waitCnt = 0;
-    CheckStatus checkStatus = new CheckStatus();
-    while (true) {
-      checkStatus.run();
-      if (checkStatus.fail != null) {
-        fail(checkStatus.fail);
-      }
-      if (checkStatus.success) {
-        break;
-      }
-      Thread.sleep(500);
-      if (waitCnt == 90) {
-        fail("Backup success not detected:" + checkStatus.response);
-      }
-      waitCnt++;
-    }
-    
-    File[] files = location.listFiles(new FilenameFilter() {
-      
-      @Override
-      public boolean accept(File dir, String name) {
-        if (name.startsWith("snapshot")) {
-          return true;
-        }
-        return false;
-      }
-    });
-    assertEquals(Arrays.asList(files).toString(), 1, files.length);
-    File snapDir = files[0];
-    
-    IOUtils.rm(snapDir.toPath());
+    ArrayList<Path> files = Lists.newArrayList(Files.newDirectoryStream(location, "snapshot*").iterator());
+
+    assertEquals(Arrays.asList(files).toString(), 1, files.size());
+
   }
   
   private void addNewReplica() throws Exception {
-    JettySolrRunner newReplica = createJettys(1).get(0);
     
     waitForRecoveriesToFinish(false);
     
