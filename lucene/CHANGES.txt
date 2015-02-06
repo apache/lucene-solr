@@ -43,6 +43,10 @@ API Changes
 * LUCENE-6218, LUCENE-6220: Add Collector.needsScores() and needsScores
   parameter to Query.createWeight(). (Robert Muir, Adrien Grand)
 
+* LUCENE-6222: Removed TermFilter, use a QueryWrapperFilter(TermQuery)
+  instead. This will be as efficient now that queries can opt out from
+  scoring. (Adrien Grand)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
