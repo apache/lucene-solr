@@ -437,7 +437,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         }
 
         // Merge:
-        return (TopFieldDocs) TopDocs.merge(sort, numHits, shardHits);
+        return TopDocs.merge(sort, numHits, shardHits);
       }
 
       public TopFieldDocs localSearch(Query query, int numHits, Sort sort) throws IOException {
