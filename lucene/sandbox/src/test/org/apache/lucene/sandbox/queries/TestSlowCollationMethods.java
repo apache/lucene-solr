@@ -99,13 +99,13 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     });
     final Sort sort = new Sort(sf);
     
-    final TopDocs docs1 = searcher.search(TermRangeQuery.newStringRange("field", null, splitDoc, true, true), null, numDocs/(1+random().nextInt(4)), sort);
+    final TopFieldDocs docs1 = searcher.search(TermRangeQuery.newStringRange("field", null, splitDoc, true, true), null, numDocs/(1+random().nextInt(4)), sort);
     doCheckSorting(docs1);
     
-    final TopDocs docs2 = searcher.search(TermRangeQuery.newStringRange("field", splitDoc, null, true, true), null, numDocs/(1+random().nextInt(4)), sort);
+    final TopFieldDocs docs2 = searcher.search(TermRangeQuery.newStringRange("field", splitDoc, null, true, true), null, numDocs/(1+random().nextInt(4)), sort);
     doCheckSorting(docs2);
     
-    final TopDocs docs = TopDocs.merge(sort, numDocs/(1+random().nextInt(4)), new TopDocs[]{docs1, docs2});
+    final TopFieldDocs docs = TopDocs.merge(sort, numDocs/(1+random().nextInt(4)), new TopFieldDocs[]{docs1, docs2});
     doCheckSorting(docs);
   }
   

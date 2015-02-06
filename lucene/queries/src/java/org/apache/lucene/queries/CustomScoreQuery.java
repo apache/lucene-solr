@@ -186,19 +186,14 @@ public class CustomScoreQuery extends Query {
     boolean qStrict;
     float queryWeight;
 
-    public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.subQueryWeight = subQuery.createWeight(searcher);
+    public CustomWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      super(CustomScoreQuery.this);
+      this.subQueryWeight = subQuery.createWeight(searcher, needsScores);
       this.valSrcWeights = new Weight[scoringQueries.length];
       for(int i = 0; i < scoringQueries.length; i++) {
-        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher);
+        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores);
       }
       this.qStrict = strict;
-    }
-
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#getQuery() */
-    @Override
-    public Query getQuery() {
-      return CustomScoreQuery.this;
     }
 
     @Override
@@ -234,14 +229,14 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-      Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs, needsScores);
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs);
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(context, acceptDocs, needsScores);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context, acceptDocs);
       }
       return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }
@@ -350,8 +345,8 @@ public class CustomScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new CustomWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new CustomWeight(searcher, needsScores);
   }
 
   /**

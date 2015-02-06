@@ -109,12 +109,8 @@ public class ConstantScoreQuery extends Query {
     private float queryWeight;
     
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.innerWeight = (query == null) ? null : query.createWeight(searcher);
-    }
-
-    @Override
-    public Query getQuery() {
-      return ConstantScoreQuery.this;
+      super(ConstantScoreQuery.this);
+      this.innerWeight = (query == null) ? null : query.createWeight(searcher, false);
     }
 
     @Override
@@ -134,14 +130,14 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        return super.bulkScorer(context, acceptDocs, needsScores);
+        return super.bulkScorer(context, acceptDocs);
       } else {
         assert query != null && innerWeight != null;
-        BulkScorer bulkScorer = innerWeight.bulkScorer(context, acceptDocs, false);
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, acceptDocs);
         if (bulkScorer == null) {
           return null;
         }
@@ -150,7 +146,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -161,7 +157,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, acceptDocs, false);
+        disi = innerWeight.scorer(context, acceptDocs);
       }
 
       if (disi == null) {
@@ -172,7 +168,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, context.reader().getLiveDocs(), true);
+      final Scorer cs = scorer(context, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -279,7 +275,7 @@ public class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 

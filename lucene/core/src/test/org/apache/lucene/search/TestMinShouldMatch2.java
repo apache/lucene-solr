@@ -125,17 +125,17 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq);
+    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq, true);
     
     switch (mode) {
     case DOC_VALUES:
       return new SlowMinShouldMatchScorer(weight, reader, searcher);
     case SCORER:
-      return weight.scorer(reader.getContext(), null, true);
+      return weight.scorer(reader.getContext(), null);
     case BULK_SCORER:
-      final BulkScorer bulkScorer = weight.booleanScorer(reader.getContext(), null, true);
+      final BulkScorer bulkScorer = weight.booleanScorer(reader.getContext(), null);
       if (bulkScorer == null) {
-        if (weight.scorer(reader.getContext(), null, true) != null) {
+        if (weight.scorer(reader.getContext(), null) != null) {
           throw new AssertionError("BooleanScorer should be applicable for this query");
         }
         return null;

@@ -89,16 +89,12 @@ public class MatchAllDocsQuery extends Query {
     private float queryNorm;
 
     public MatchAllDocsWeight(IndexSearcher searcher) {
+      super(MatchAllDocsQuery.this);
     }
 
     @Override
     public String toString() {
       return "weight(" + MatchAllDocsQuery.this + ")";
-    }
-
-    @Override
-    public Query getQuery() {
-      return MatchAllDocsQuery.this;
     }
 
     @Override
@@ -114,7 +110,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 
@@ -133,7 +129,7 @@ public class MatchAllDocsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
     return new MatchAllDocsWeight(searcher);
   }
 

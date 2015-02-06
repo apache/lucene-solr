@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -72,11 +71,13 @@ public abstract class Query implements Cloneable {
 
   /**
    * Expert: Constructs an appropriate Weight implementation for this query.
-   * 
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
+   *
+   * @param needsScores   True if document scores ({@link Scorer#score}) or match
+   *                      frequencies ({@link Scorer#freq}) are needed.
    */
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 

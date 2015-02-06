@@ -1142,7 +1142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       List<Weight> weights = new ArrayList<>(notCached.size());
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createNormalizedWeight(qq));
+        weights.add(createNormalizedWeight(qq, true));
       }
       pf.filter = new FilterImpl(answer, weights);
     } else {
@@ -2503,7 +2503,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, context.reader().getLiveDocs(), true);
+        Scorer scorer = w.scorer(context, context.reader().getLiveDocs());
         if (scorer == null) return null;
         iterators.add(scorer);
       }

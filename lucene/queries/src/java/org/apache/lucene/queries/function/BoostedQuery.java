@@ -62,8 +62,8 @@ public class BoostedQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new BoostedQuery.BoostedWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new BoostedQuery.BoostedWeight(searcher, needsScores);
   }
 
   private class BoostedWeight extends Weight {
@@ -71,16 +71,12 @@ public class BoostedQuery extends Query {
     Weight qWeight;
     Map fcontext;
 
-    public BoostedWeight(IndexSearcher searcher) throws IOException {
+    public BoostedWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      super(BoostedQuery.this);
       this.searcher = searcher;
-      this.qWeight = q.createWeight(searcher);
+      this.qWeight = q.createWeight(searcher, needsScores);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
-    }
-
-    @Override
-    public Query getQuery() {
-      return BoostedQuery.this;
     }
 
     @Override
@@ -97,8 +93,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(context, acceptDocs, needsScores);
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, acceptDocs);
       if (subQueryScorer == null) {
         return null;
       }

@@ -190,7 +190,7 @@ public class TestBlockJoin extends LuceneTestCase {
     //System.out.println("TEST: now test up");
 
     // Now join "up" (map parent hits to child docs) instead...:
-    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter, random().nextBoolean());
+    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
     BooleanQuery fullChildQuery = new BooleanQuery();
     fullChildQuery.add(new BooleanClause(parentJoinQuery, Occur.MUST));
     fullChildQuery.add(new BooleanClause(childQuery, Occur.MUST));
@@ -334,15 +334,15 @@ public class TestBlockJoin extends LuceneTestCase {
     TermQuery us = new TermQuery(new Term("country", "United States"));
     assertEquals("@ US we have java and ruby", 2, 
         s.search(new ToChildBlockJoinQuery(us, 
-                          parentsFilter, random().nextBoolean()), 10).totalHits );
+                          parentsFilter), 10).totalHits );
 
-    assertEquals("java skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter, random().nextBoolean()),
+    assertEquals("java skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter),
         skill("java"), 10).totalHits );
 
     BooleanQuery rubyPython = new BooleanQuery();
     rubyPython.add(new TermQuery(new Term("skill", "ruby")), Occur.SHOULD);
     rubyPython.add(new TermQuery(new Term("skill", "python")), Occur.SHOULD);
-    assertEquals("ruby skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter, random().nextBoolean()),
+    assertEquals("ruby skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter),
                                           new QueryWrapperFilter(rubyPython), 10).totalHits );
 
     r.close();
@@ -878,7 +878,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       // Maps parent query to child docs:
-      final ToChildBlockJoinQuery parentJoinQuery2 = new ToChildBlockJoinQuery(parentQuery2, parentsFilter, random().nextBoolean());
+      final ToChildBlockJoinQuery parentJoinQuery2 = new ToChildBlockJoinQuery(parentQuery2, parentsFilter);
 
       // To run against the block-join index:
       final Query childJoinQuery2;
@@ -1147,8 +1147,8 @@ public class TestBlockJoin extends LuceneTestCase {
                               new TermQuery(new Term("parent", "1"))));
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null, true);
+    Weight weight = s.createNormalizedWeight(q, true);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(1, disi.advance(1));
     r.close();
     dir.close();
@@ -1181,8 +1181,8 @@ public class TestBlockJoin extends LuceneTestCase {
                               new TermQuery(new Term("isparent", "yes"))));
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null, true);
+    Weight weight = s.createNormalizedWeight(q, true);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(2, disi.advance(0));
     r.close();
     dir.close();
@@ -1507,7 +1507,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     Query parentQuery = new TermQuery(new Term("parent", "2"));
 
-    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter, random().nextBoolean());
+    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
     TopDocs topdocs = s.search(parentJoinQuery, 3);
     assertEquals(1, topdocs.totalHits);
     

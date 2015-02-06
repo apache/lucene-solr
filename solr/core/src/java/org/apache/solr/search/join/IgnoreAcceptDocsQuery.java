@@ -53,8 +53,8 @@ public class IgnoreAcceptDocsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    Weight inner = q.createWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    Weight inner = q.createWeight(searcher, needsScores);
     return new IADWeight(inner);
   }
 
@@ -62,17 +62,13 @@ public class IgnoreAcceptDocsQuery extends Query {
     Weight w;
 
     IADWeight(Weight delegate) {
+      super(q);
       this.w = delegate;
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return w.explain(context, doc);
-    }
-
-    @Override
-    public Query getQuery() {
-      return q;
     }
 
     @Override
@@ -86,8 +82,8 @@ public class IgnoreAcceptDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-      return w.scorer(context, null, needsScores);
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return w.scorer(context, null);
     }
   }
 

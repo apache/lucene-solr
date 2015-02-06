@@ -35,13 +35,14 @@ import java.util.TreeSet;
  * Expert-only.  Public for use by other weight implementations
  */
 public class SpanWeight extends Weight {
-  protected Similarity similarity;
-  protected Map<Term,TermContext> termContexts;
-  protected SpanQuery query;
+  protected final Similarity similarity;
+  protected final Map<Term,TermContext> termContexts;
+  protected final SpanQuery query;
   protected Similarity.SimWeight stats;
 
   public SpanWeight(SpanQuery query, IndexSearcher searcher)
     throws IOException {
+    super(query);
     this.similarity = searcher.getSimilarity();
     this.query = query;
     
@@ -66,9 +67,6 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Query getQuery() { return query; }
-
-  @Override
   public float getValueForNormalization() throws IOException {
     return stats == null ? 1.0f : stats.getValueForNormalization();
   }
@@ -81,7 +79,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
     if (stats == null) {
       return null;
     } else {
@@ -91,7 +89,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs(), true);
+    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

@@ -66,14 +66,10 @@ public class FunctionQuery extends Query {
     protected final Map context;
 
     public FunctionWeight(IndexSearcher searcher) throws IOException {
+      super(FunctionQuery.this);
       this.searcher = searcher;
       this.context = ValueSource.newContext(searcher);
       func.createWeight(context, searcher);
-    }
-
-    @Override
-    public Query getQuery() {
-      return FunctionQuery.this;
     }
 
     @Override
@@ -89,13 +85,13 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, context.reader().getLiveDocs(), true)).explain(doc);
+      return ((AllScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -181,7 +177,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 

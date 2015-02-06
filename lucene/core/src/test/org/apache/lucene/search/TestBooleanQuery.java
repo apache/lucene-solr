@@ -233,9 +233,9 @@ public class TestBooleanQuery extends LuceneTestCase {
         q.add(new BooleanClause(new TermQuery(new Term("field", term)), BooleanClause.Occur.SHOULD));
       }
 
-      Weight weight = s.createNormalizedWeight(q);
+      Weight weight = s.createNormalizedWeight(q, true);
 
-      Scorer scorer = weight.scorer(s.leafContexts.get(0), null, true);
+      Scorer scorer = weight.scorer(s.leafContexts.get(0), null);
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<>();
@@ -251,8 +251,8 @@ public class TestBooleanQuery extends LuceneTestCase {
       // verify exact match:
       for(int iter2=0;iter2<10;iter2++) {
 
-        weight = s.createNormalizedWeight(q);
-        scorer = weight.scorer(s.leafContexts.get(0), null, true);
+        weight = s.createNormalizedWeight(q, true);
+        scorer = weight.scorer(s.leafContexts.get(0), null);
 
         if (VERBOSE) {
           System.out.println("  iter2=" + iter2);

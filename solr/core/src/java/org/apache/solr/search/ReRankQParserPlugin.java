@@ -174,8 +174,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     }
 
-    public Weight createWeight(IndexSearcher searcher) throws IOException{
-      return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
+      return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher, needsScores);
     }
   }
 
@@ -185,23 +185,20 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Weight mainWeight;
     private double reRankWeight;
 
-    public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher) throws IOException {
+    public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher, boolean needsScores) throws IOException {
+      super(mainQuery);
       this.reRankQuery = reRankQuery;
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
-      this.mainWeight = mainQuery.createWeight(searcher);
+      this.mainWeight = mainQuery.createWeight(searcher, needsScores);
     }
 
     public float getValueForNormalization() throws IOException {
       return mainWeight.getValueForNormalization();
     }
 
-    public Scorer scorer(LeafReaderContext context, Bits bits, boolean needsScores) throws IOException {
-      return mainWeight.scorer(context, bits, needsScores);
-    }
-
-    public Query getQuery() {
-      return mainWeight.getQuery();
+    public Scorer scorer(LeafReaderContext context, Bits bits) throws IOException {
+      return mainWeight.scorer(context, bits);
     }
 
     public void normalize(float norm, float topLevelBoost) {

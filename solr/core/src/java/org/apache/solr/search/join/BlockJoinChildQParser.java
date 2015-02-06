@@ -29,7 +29,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   }
 
   protected Query createQuery(Query parentListQuery, Query query) {
-    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery), false);
+    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery));
   }
 
   @Override

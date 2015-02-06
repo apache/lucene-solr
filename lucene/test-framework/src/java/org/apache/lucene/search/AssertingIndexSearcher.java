@@ -55,8 +55,8 @@ public class AssertingIndexSearcher extends IndexSearcher {
   
   /** Ensures, that the returned {@code Weight} is not normalized again, which may produce wrong scores. */
   @Override
-  public Weight createNormalizedWeight(Query query) throws IOException {
-    final Weight w = super.createNormalizedWeight(query);
+  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+    final Weight w = super.createNormalizedWeight(query, needsScores);
     return new AssertingWeight(random, w) {
 
       @Override

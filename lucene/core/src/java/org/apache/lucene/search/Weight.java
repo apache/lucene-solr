@@ -34,14 +34,14 @@ import org.apache.lucene.util.Bits;
  * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits, boolean)})
+ * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher)}).
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, boolean)}).
  * <li>The {@link #getValueForNormalization()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
  * {@link Similarity#queryNorm(float)} of the query clauses contained in the
@@ -49,12 +49,21 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits, boolean)}.
+ * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)}.
  * </ol>
  * 
  * @since 2.9
  */
 public abstract class Weight {
+
+  protected final Query parentQuery;
+
+  /** Sole constructor, typically invoked by sub-classes.
+   * @param query         the parent query
+   */
+  protected Weight(Query query) {
+    this.parentQuery = query;
+  }
 
   /**
    * An explanation of the score computation for the named document.
@@ -67,7 +76,9 @@ public abstract class Weight {
   public abstract Explanation explain(LeafReaderContext context, int doc) throws IOException;
 
   /** The query that this concerns. */
-  public abstract Query getQuery();
+  public final Query getQuery() {
+    return parentQuery;
+  }
   
   /** The value for normalization of contained query clauses (e.g. sum of squared weights). */
   public abstract float getValueForNormalization() throws IOException;
@@ -87,13 +98,11 @@ public abstract class Weight {
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
-   * @param needsScores
-   *          True if document scores ({@link Scorer#score}) or match frequencies ({@link Scorer#freq}) are needed.
    *          
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException;
+  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException;
 
   /**
    * Optional method, to return a {@link BulkScorer} to
@@ -108,16 +117,14 @@ public abstract class Weight {
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
-   * @param needsScores
-   *          True if document scores are needed.
    *
    * @return a {@link BulkScorer} which scores documents and
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
-    Scorer scorer = scorer(context, acceptDocs, needsScores);
+    Scorer scorer = scorer(context, acceptDocs);
     if (scorer == null) {
       // No docs match
       return null;

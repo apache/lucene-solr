@@ -212,10 +212,13 @@ public class PhraseQuery extends Query {
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
+    private final boolean needsScores;
     private transient TermContext states[];
 
-    public PhraseWeight(IndexSearcher searcher)
+    public PhraseWeight(IndexSearcher searcher, boolean needsScores)
       throws IOException {
+      super(PhraseQuery.this);
+      this.needsScores = needsScores;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
@@ -232,9 +235,6 @@ public class PhraseQuery extends Query {
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
     @Override
-    public Query getQuery() { return PhraseQuery.this; }
-
-    @Override
     public float getValueForNormalization() {
       return stats.getValueForNormalization();
     }
@@ -245,7 +245,7 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -298,7 +298,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -319,8 +319,8 @@ public class PhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new PhraseWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new PhraseWeight(searcher, needsScores);
   }
 
   /**

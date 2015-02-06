@@ -174,24 +174,25 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
     private final boolean disableCoord;
+    private final boolean needsScores;
 
-    public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
+    public BooleanWeight(IndexSearcher searcher, boolean needsScores, boolean disableCoord)
       throws IOException {
+      super(BooleanQuery.this);
+      this.needsScores = needsScores;
       this.similarity = searcher.getSimilarity();
       this.disableCoord = disableCoord;
       weights = new ArrayList<>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = clauses.get(i);
-        Weight w = c.getQuery().createWeight(searcher);
+        final boolean queryNeedsScores = needsScores && c.getOccur() != Occur.MUST_NOT;
+        Weight w = c.getQuery().createWeight(searcher, queryNeedsScores);
         weights.add(w);
         if (!c.isProhibited()) {
           maxCoord++;
         }
       }
     }
-
-    @Override
-    public Query getQuery() { return BooleanQuery.this; }
 
     @Override
     public float getValueForNormalization() throws IOException {
@@ -242,7 +243,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, context.reader().getLiveDocs(), true) == null) {
+        if (w.scorer(context, context.reader().getLiveDocs()) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -307,12 +308,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
      *  cannot be used. */
     // pkg-private for forcing use of BooleanScorer in tests
-    BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        BulkScorer subScorer = w.bulkScorer(context, acceptDocs, needsScores);
+        BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -342,8 +343,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-      final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs, needsScores);
+    public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs);
       if (bulkScorer != null) { // BooleanScorer is applicable
         // TODO: what is the right heuristic here?
         final long costThreshold;
@@ -366,11 +367,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return bulkScorer;
         }
       }
-      return super.bulkScorer(context, acceptDocs, needsScores);
+      return super.bulkScorer(context, acceptDocs);
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       // initially the user provided value,
       // but if minNrShouldMatch == optional.size(),
       // we will optimize and move these to required, making this 0
@@ -382,7 +383,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, acceptDocs, needsScores && c.isProhibited() == false);
+        Scorer subScorer = w.scorer(context, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -532,8 +533,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new BooleanWeight(searcher, disableCoord);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new BooleanWeight(searcher, needsScores, disableCoord);
   }
 
   @Override

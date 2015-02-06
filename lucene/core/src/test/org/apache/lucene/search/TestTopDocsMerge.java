@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -56,8 +54,9 @@ public class TestTopDocsMerge extends LuceneTestCase {
     }
 
     public TopDocs search(Weight weight, int topN) throws IOException {
-      return search(ctx, weight, null, topN);
-    }
+      TopScoreDocCollector collector = TopScoreDocCollector.create(topN);
+      search(ctx, weight, collector);
+      return collector.topDocs();    }
 
     @Override
     public String toString() {
@@ -252,9 +251,14 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // ... then all shards:
-      final Weight w = searcher.createNormalizedWeight(query);
+      final Weight w = searcher.createNormalizedWeight(query, true);
 
-      final TopDocs[] shardHits = new TopDocs[subSearchers.length];
+      final TopDocs[] shardHits;
+      if (sort == null) {
+        shardHits = new TopDocs[subSearchers.length];
+      } else {
+        shardHits = new TopFieldDocs[subSearchers.length];
+      }
       for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
         final TopDocs subHits;
         final ShardSearcher subSearcher = subSearchers[shardIDX];
@@ -280,9 +284,17 @@ public class TestTopDocsMerge extends LuceneTestCase {
       // Merge:
       final TopDocs mergedHits;
       if (useFrom) {
-        mergedHits = TopDocs.merge(sort, from, size, shardHits);
+        if (sort == null) {
+          mergedHits = TopDocs.merge(from, size, shardHits);
+        } else {
+          mergedHits = TopDocs.merge(sort, from, size, (TopFieldDocs[]) shardHits);
+        }
       } else {
-        mergedHits = TopDocs.merge(sort, numHits, shardHits);
+        if (sort == null) {
+          mergedHits = TopDocs.merge(numHits, shardHits);
+        } else {
+          mergedHits = TopDocs.merge(sort, numHits, (TopFieldDocs[]) shardHits);
+        }
       }
 
       if (mergedHits.scoreDocs != null) {

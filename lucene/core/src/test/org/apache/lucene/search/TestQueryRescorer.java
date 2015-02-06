@@ -424,14 +424,9 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
 
-      return new Weight() {
-
-        @Override
-        public Query getQuery() {
-          return FixedScoreQuery.this;
-        }
+      return new Weight(FixedScoreQuery.this) {
 
         @Override
         public float getValueForNormalization() {
@@ -443,7 +438,7 @@ public class TestQueryRescorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(final LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+        public Scorer scorer(final LeafReaderContext context, Bits acceptDocs) throws IOException {
 
           return new Scorer(null) {
             int docID = -1;

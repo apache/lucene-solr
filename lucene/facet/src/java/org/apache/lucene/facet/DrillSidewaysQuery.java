@@ -74,8 +74,8 @@ class DrillSidewaysQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    final Weight baseWeight = baseQuery.createWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores);
     final Object[] drillDowns = new Object[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
       Query query = drillDownQueries[dim];
@@ -85,19 +85,14 @@ class DrillSidewaysQuery extends Query {
       } else {
         // TODO: would be nice if we could say "we will do no
         // scoring" here....
-        drillDowns[dim] = searcher.rewrite(query).createWeight(searcher);
+        drillDowns[dim] = searcher.rewrite(query).createWeight(searcher, needsScores);
       }
     }
 
-    return new Weight() {
+    return new Weight(DrillSidewaysQuery.this) {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return baseWeight.explain(context, doc);
-      }
-
-      @Override
-      public Query getQuery() {
-        return baseQuery;
       }
 
       @Override
@@ -111,17 +106,17 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?
-        Scorer baseScorer = baseWeight.scorer(context, acceptDocs, needsScores);
+        Scorer baseScorer = baseWeight.scorer(context, acceptDocs);
 
         DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
@@ -166,7 +161,7 @@ class DrillSidewaysQuery extends Query {
               dims[dim].disi = disi;
             }
           } else {
-            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, null, needsScores);
+            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, null);
             if (disi == null) {
               nullCount++;
               continue;

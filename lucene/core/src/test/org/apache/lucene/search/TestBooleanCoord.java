@@ -706,15 +706,15 @@ public class TestBooleanCoord extends LuceneTestCase {
   /** asserts score for our single matching good doc */
   private void assertScore(final float expected, Query query) throws Exception {
     // test in-order
-    Weight weight = searcher.createNormalizedWeight(query);
-    Scorer scorer = weight.scorer(reader.leaves().get(0), null, true);
+    Weight weight = searcher.createNormalizedWeight(query, true);
+    Scorer scorer = weight.scorer(reader.leaves().get(0), null);
     assertTrue(scorer.docID() == -1 || scorer.docID() == DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, scorer.nextDoc());
     assertEquals(expected, scorer.score(), 0.0001f);
     
     // test bulk scorer
     final AtomicBoolean seen = new AtomicBoolean(false);
-    BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), null, true);
+    BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), null);
     assertNotNull(bulkScorer);
     bulkScorer.score(new LeafCollector() {
       Scorer scorer;

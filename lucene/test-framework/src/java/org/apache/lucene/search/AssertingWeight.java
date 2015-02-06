@@ -33,6 +33,7 @@ class AssertingWeight extends Weight {
   final Weight in;
 
   AssertingWeight(Random random, Weight in) {
+    super(in.getQuery());
     this.random = random;
     this.in = in;
   }
@@ -40,11 +41,6 @@ class AssertingWeight extends Weight {
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     return in.explain(context, doc);
-  }
-
-  @Override
-  public Query getQuery() {
-    return in.getQuery();
   }
 
   @Override
@@ -58,15 +54,15 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-    final Scorer inScorer = in.scorer(context, acceptDocs, needsScores);
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    final Scorer inScorer = in.scorer(context, acceptDocs);
     assert inScorer == null || inScorer.docID() == -1;
     return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
   }
 
   @Override
-  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-    BulkScorer inScorer = in.bulkScorer(context, acceptDocs, needsScores);
+  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    BulkScorer inScorer = in.bulkScorer(context, acceptDocs);
     if (inScorer == null) {
       return null;
     }

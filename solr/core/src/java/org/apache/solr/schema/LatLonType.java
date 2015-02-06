@@ -318,16 +318,12 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     protected Map lonContext;
 
     public SpatialWeight(IndexSearcher searcher) throws IOException {
+      super(SpatialDistanceQuery.this);
       this.searcher = searcher;
       this.latContext = ValueSource.newContext(searcher);
       this.lonContext = ValueSource.newContext(searcher);
       latSource.createWeight(latContext, searcher);
       lonSource.createWeight(lonContext, searcher);
-    }
-
-    @Override
-    public Query getQuery() {
-      return SpatialDistanceQuery.this;
     }
 
     @Override
@@ -343,13 +339,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, context.reader().getLiveDocs(), true)).explain(doc);
+      return ((SpatialScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -545,7 +541,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     // if we were supposed to use bboxQuery, then we should have been rewritten using that query
     assert bboxQuery == null;
     return new SpatialWeight(searcher);

@@ -601,7 +601,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(new ToChildBlockJoinQuery(new TermQuery(
-        new Term(FIELD_NAME, "parent")), parentFilter, false), Occur.MUST);
+        new Term(FIELD_NAME, "parent")), parentFilter), Occur.MUST);
     booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "child")), Occur.MUST);
     query = booleanQuery;
     

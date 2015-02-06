@@ -284,11 +284,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   static class BooleanQuery2 extends BooleanQuery {
 
     @Override
-    public Weight createWeight(IndexSearcher searcher) throws IOException {
-      return new BooleanWeight(searcher, false) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new BooleanWeight(searcher, needsScores, false) {
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-          Scorer scorer = scorer(context, acceptDocs, needsScores);
+        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+          Scorer scorer = scorer(context, acceptDocs);
           if (scorer == null) {
             return null;
           }

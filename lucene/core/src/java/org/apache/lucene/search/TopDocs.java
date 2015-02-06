@@ -158,7 +158,6 @@ public class TopDocs {
 
     // Returns true if first is < second
     @Override
-    @SuppressWarnings({"unchecked","rawtypes"})
     public boolean lessThan(ShardRef first, ShardRef second) {
       assert first != second;
       final FieldDoc firstFD = (FieldDoc) shardHits[first.shardIndex][first.hitIndex];
@@ -195,25 +194,48 @@ public class TopDocs {
   }
 
   /** Returns a new TopDocs, containing topN results across
-   *  the provided TopDocs, sorting by the specified {@link
+   *  the provided TopDocs, sorting by score. Each {@link TopDocs}
+   *  instance must be sorted.
+   *  @lucene.experimental */
+  public static TopDocs merge(int topN, TopDocs[] shardHits) throws IOException {
+    return merge(0, topN, shardHits);
+  }
+
+  /**
+   * Same as {@link #merge(int, TopDocs[])} but also ignores the top
+   * {@code start} top docs. This is typically useful for pagination.
+   * @lucene.experimental
+   */
+  public static TopDocs merge(int start, int topN, TopDocs[] shardHits) throws IOException {
+    return mergeAux(null, start, topN, shardHits);
+  }
+
+  /** Returns a new TopFieldDocs, containing topN results across
+   *  the provided TopFieldDocs, sorting by the specified {@link
    *  Sort}.  Each of the TopDocs must have been sorted by
    *  the same Sort, and sort field values must have been
    *  filled (ie, <code>fillFields=true</code> must be
-   *  passed to {@link
-   *  TopFieldCollector#create}.
-   *
-   * <p>Pass sort=null to merge sort by score descending.
-   *
+   *  passed to {@link TopFieldCollector#create}).
    * @lucene.experimental */
-  public static TopDocs merge(Sort sort, int topN, TopDocs[] shardHits) throws IOException {
+  public static TopFieldDocs merge(Sort sort, int topN, TopFieldDocs[] shardHits) throws IOException {
     return merge(sort, 0, topN, shardHits);
   }
 
   /**
-   * Same as {@link #merge(Sort, int, TopDocs[])} but also slices the result at the same time based
-   * on the provided start and size. The return TopDocs will always have a scoreDocs with length of at most size.
+   * Same as {@link #merge(Sort, int, TopFieldDocs[])} but also ignores the top
+   * {@code start} top docs. This is typically useful for pagination.
+   * @lucene.experimental
    */
-  public static TopDocs merge(Sort sort, int start, int size, TopDocs[] shardHits) throws IOException {
+  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits) throws IOException {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must be non-null when merging field-docs");
+    }
+    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits);
+  }
+
+  /** Auxiliary method used by the {@link #merge} impls. A sort value of null
+   *  is used to indicate that docs should be sorted by score. */
+  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits) throws IOException {
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
       queue = new ScoreMergeSortQueue(shardHits);

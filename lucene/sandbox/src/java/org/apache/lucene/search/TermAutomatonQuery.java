@@ -188,7 +188,7 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
     Map<Integer,TermContext> termStates = new HashMap<>();
 
@@ -347,6 +347,7 @@ public class TermAutomatonQuery extends Query {
     private final Similarity similarity;
 
     public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates) throws IOException {
+      super(TermAutomatonQuery.this);
       this.automaton = automaton;
       this.searcher = searcher;
       this.termStates = termStates;
@@ -370,11 +371,6 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public Query getQuery() {
-      return TermAutomatonQuery.this;
-    }
-
-    @Override
     public float getValueForNormalization() {
       return stats.getValueForNormalization();
     }
@@ -385,7 +381,7 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
       // Initialize the enums; null for a given slot means that term didn't appear in this reader
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];

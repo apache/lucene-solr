@@ -55,7 +55,7 @@ public class ToParentBlockJoinIndexSearcher extends IndexSearcher {
       // we force the use of Scorer (not BulkScorer) to make sure
       // that the scorer passed to LeafCollector.setScorer supports
       // Scorer.getChildren
-      Scorer scorer = weight.scorer(ctx, ctx.reader().getLiveDocs(), true);
+      Scorer scorer = weight.scorer(ctx, ctx.reader().getLiveDocs());
       if (scorer != null) {
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);
         leafCollector.setScorer(scorer);

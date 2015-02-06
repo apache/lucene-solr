@@ -64,16 +64,13 @@ final class DeleteByQueryWrapper extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
-    final Weight inner = in.createWeight(privateContext);
-    return new Weight() {
+    final Weight inner = in.createWeight(privateContext, needsScores);
+    return new Weight(DeleteByQueryWrapper.this) {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException { throw new UnsupportedOperationException(); }
-
-      @Override
-      public Query getQuery() { return DeleteByQueryWrapper.this; }
 
       @Override
       public float getValueForNormalization() throws IOException { return inner.getValueForNormalization(); }
@@ -82,8 +79,8 @@ final class DeleteByQueryWrapper extends Query {
       public void normalize(float norm, float topLevelBoost) { inner.normalize(norm, topLevelBoost); }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-        return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs, needsScores);
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+        return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs);
       }
     };
   }
