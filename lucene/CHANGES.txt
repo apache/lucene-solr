@@ -79,6 +79,10 @@ API Changes
   are replaced by TermsEnum.postings(). (Alan Woodward, Simon Willnauer,
   Robert Muir)
 
+* LUCENE-6222: Removed TermFilter, use a QueryWrapperFilter(TermQuery)
+  instead. This will be as efficient now that queries can opt out from
+  scoring. (Adrien Grand)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
