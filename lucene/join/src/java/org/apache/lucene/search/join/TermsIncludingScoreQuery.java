@@ -21,18 +21,16 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -137,11 +135,11 @@ class TermsIncludingScoreQuery extends Query {
         if (terms != null) {
           segmentTermsEnum = terms.iterator(segmentTermsEnum);
           BytesRef spare = new BytesRef();
-          DocsEnum docsEnum = null;
+          PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
             if (segmentTermsEnum.seekExact(TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
-              docsEnum = segmentTermsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
-              if (docsEnum.advance(doc) == doc) {
+              postingsEnum = segmentTermsEnum.postings(null, postingsEnum, PostingsEnum.FLAG_NONE);
+              if (postingsEnum.advance(doc) == doc) {
                 final float score = TermsIncludingScoreQuery.this.scores[ords[i]];
                 return new ComplexExplanation(true, score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
               }
@@ -183,9 +181,10 @@ class TermsIncludingScoreQuery extends Query {
           return new SVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
         }
       }
+
     };
   }
-
+  
   class SVInOrderScorer extends Scorer {
 
     final DocIdSetIterator matchingDocsIterator;
@@ -205,12 +204,12 @@ class TermsIncludingScoreQuery extends Query {
 
     protected void fillDocsAndScores(FixedBitSet matchingDocs, Bits acceptDocs, TermsEnum termsEnum) throws IOException {
       BytesRef spare = new BytesRef();
-      DocsEnum docsEnum = null;
+      PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
-          for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
+          for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             matchingDocs.set(doc);
             // In the case the same doc is also related to a another doc, a score might be overwritten. I think this
             // can only happen in a many-to-many relation
@@ -228,6 +227,26 @@ class TermsIncludingScoreQuery extends Query {
     @Override
     public int freq() throws IOException {
       return 1;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override
@@ -261,12 +280,12 @@ class TermsIncludingScoreQuery extends Query {
     @Override
     protected void fillDocsAndScores(FixedBitSet matchingDocs, Bits acceptDocs, TermsEnum termsEnum) throws IOException {
       BytesRef spare = new BytesRef();
-      DocsEnum docsEnum = null;
+      PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
-          for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
+          for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             // I prefer this:
             /*if (scores[doc] < score) {
               scores[doc] = score;

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.idversion;
+package org.apache.lucene.search.grouping;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,32 +19,17 @@ package org.apache.lucene.codecs.idversion;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 
-class SingleDocsEnum extends PostingsEnum {
+class FakeScorer extends Scorer {
 
-  private int doc;
-  private int singleDocID;
-  private Bits liveDocs;
+  float score;
+  int doc = -1;
+  int freq = 1;
 
-  /** For reuse */
-  public void reset(int singleDocID, Bits liveDocs) {
-    doc = -1;
-    this.liveDocs = liveDocs;
-    this.singleDocID = singleDocID;
-  }
-
-  @Override
-  public int nextDoc() {
-    if (doc == -1 && (liveDocs == null || liveDocs.get(singleDocID))) {
-      doc = singleDocID;
-    } else {
-      doc = NO_MORE_DOCS;
-    }
-    
-    return doc;
+  FakeScorer() {
+    super(null);
   }
 
   @Override
@@ -53,42 +38,47 @@ class SingleDocsEnum extends PostingsEnum {
   }
 
   @Override
-  public int advance(int target) {
-    if (doc == -1 && target <= singleDocID && (liveDocs == null || liveDocs.get(singleDocID))) {
-      doc = singleDocID;
-    } else {
-      doc = NO_MORE_DOCS;
-    }
-    return doc;
+  public int nextDoc() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public long cost() {
-    return 1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public int freq() {
-    return 1;
+  public int freq() throws IOException {
+    return freq;
   }
 
   @Override
   public int nextPosition() throws IOException {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public int startOffset() throws IOException {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public int endOffset() throws IOException {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public BytesRef getPayload() throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public float score() throws IOException {
+    return score;
   }
 }

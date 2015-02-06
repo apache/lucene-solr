@@ -111,7 +111,6 @@ public class MultiCollector implements Collector {
     return new MultiLeafCollector(leafCollectors);
   }
 
-
   private static class MultiLeafCollector implements LeafCollector {
 
     private final LeafCollector[] collectors;

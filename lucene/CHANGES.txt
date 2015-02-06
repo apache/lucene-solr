@@ -74,6 +74,11 @@ API Changes
 * LUCENE-6218: Add Collector.needsScores() and needsScores parameter
   to Weight.scorer(). (Robert Muir)
 
+* LUCENE-4524: Merge DocsEnum and DocsAndPositionsEnum into a single
+  PostingsEnum iterator.  TermsEnum.docs() and TermsEnum.docsAndPositions()
+  are replaced by TermsEnum.postings(). (Alan Woodward, Simon Willnauer,
+  Robert Muir)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.

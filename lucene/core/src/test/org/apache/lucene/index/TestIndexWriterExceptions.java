@@ -530,7 +530,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
-    DocsEnum tdocs = TestUtil.docs(random(), reader,
+    PostingsEnum tdocs = TestUtil.docs(random(), reader,
         t.field(),
         new BytesRef(t.text()),
         MultiFields.getLiveDocs(reader),

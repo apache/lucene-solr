@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -325,7 +325,7 @@ public class TermAutomatonQuery extends Query {
 
   static class EnumAndScorer {
     public final int termID;
-    public final DocsAndPositionsEnum posEnum;
+    public final PostingsEnum posEnum;
 
     // How many positions left in the current document:
     public int posLeft;
@@ -333,7 +333,7 @@ public class TermAutomatonQuery extends Query {
     // Current position
     public int pos;
 
-    public EnumAndScorer(int termID, DocsAndPositionsEnum posEnum) {
+    public EnumAndScorer(int termID, PostingsEnum posEnum) {
       this.termID = termID;
       this.posEnum = posEnum;
     }
@@ -399,8 +399,7 @@ public class TermAutomatonQuery extends Query {
 
           TermsEnum termsEnum = context.reader().terms(field).iterator(null);
           termsEnum.seekExact(term, state);
-          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(),
-                                                  termsEnum.docsAndPositions(acceptDocs, null, 0));
+          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(acceptDocs, null, PostingsEnum.FLAG_POSITIONS));
         }
       }
 

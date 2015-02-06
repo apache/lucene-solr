@@ -26,17 +26,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -183,14 +190,14 @@ public class TestPayloads extends LuceneTestCase {
 
     byte[] verifyPayloadData = new byte[payloadDataLength];
     offset = 0;
-    DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
+    PostingsEnum[] tps = new PostingsEnum[numTerms];
     for (int i = 0; i < numTerms; i++) {
       tps[i] = MultiFields.getTermPositionsEnum(reader,
                                                 MultiFields.getLiveDocs(reader),
                                                 terms[i].field(),
                                                 new BytesRef(terms[i].text()));
     }
-        
+
     while (tps[0].nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       for (int i = 1; i < numTerms; i++) {
         tps[i].nextDoc();
@@ -208,13 +215,13 @@ public class TestPayloads extends LuceneTestCase {
         }
       }
     }
-        
+
     assertByteArrayEquals(payloadData, verifyPayloadData);
         
     /*
      *  test lazy skipping
      */        
-    DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+    PostingsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                MultiFields.getLiveDocs(reader),
                                                                terms[0].field(),
                                                                new BytesRef(terms[0].text()));
@@ -237,7 +244,6 @@ public class TestPayloads extends LuceneTestCase {
     payload = tp.getPayload();
     assertEquals("Wrong payload length.", 1, payload.length);
     assertEquals(payload.bytes[payload.offset], payloadData[5 * numTerms]);
-                
         
     /*
      * Test different lengths at skip points
@@ -448,7 +454,7 @@ public class TestPayloads extends LuceneTestCase {
     final int numThreads = 5;
     final int numDocs = atLeast(50);
     final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
-        
+
     Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     final String field = "test";
@@ -480,10 +486,10 @@ public class TestPayloads extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
     Bits liveDocs = MultiFields.getLiveDocs(reader);
-    DocsAndPositionsEnum tp = null;
+    PostingsEnum tp = null;
     while (terms.next() != null) {
       String termText = terms.term().utf8ToString();
-      tp = terms.docsAndPositions(liveDocs, tp);
+      tp = terms.postings(liveDocs, tp, PostingsEnum.FLAG_PAYLOADS);
       while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         int freq = tp.freq();
         for (int i = 0; i < freq; i++) {
@@ -603,7 +609,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    PostingsEnum de = sr.termDocsEnum(new Term("field", "withPayload"), PostingsEnum.FLAG_POSITIONS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -637,7 +643,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    PostingsEnum de = sr.termDocsEnum(new Term("field", "withPayload"), PostingsEnum.FLAG_POSITIONS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

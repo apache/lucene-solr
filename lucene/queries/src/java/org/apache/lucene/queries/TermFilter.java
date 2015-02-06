@@ -18,7 +18,7 @@ package org.apache.lucene.queries;
  */
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -69,7 +69,7 @@ final public class TermFilter extends Filter {
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return termsEnum.docs(acceptDocs, null, DocsEnum.FLAG_NONE);
+        return termsEnum.postings(acceptDocs, null, PostingsEnum.FLAG_NONE);
       }
 
       @Override

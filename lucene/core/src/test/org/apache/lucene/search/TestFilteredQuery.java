@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -432,13 +432,13 @@ public class TestFilteredQuery extends LuceneTestCase {
               Bits acceptDocs) throws IOException {
             final boolean nullBitset = random().nextInt(10) == 5;
             final LeafReader reader = context.reader();
-            DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
-            if (termDocsEnum == null) {
+            PostingsEnum termPostingsEnum = reader.termDocsEnum(new Term("field", "0"));
+            if (termPostingsEnum == null) {
               return null; // no docs -- return null
             }
             final BitSet bitSet = new BitSet(reader.maxDoc());
             int d;
-            while ((d = termDocsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+            while ((d = termPostingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
               bitSet.set(d, true);
             }
             return new DocIdSet() {
@@ -526,8 +526,8 @@ public class TestFilteredQuery extends LuceneTestCase {
           }
           @Override
           public DocIdSetIterator iterator() throws IOException {
-            final DocsEnum termDocsEnum = context.reader().termDocsEnum(new Term("field", "0"));
-            if (termDocsEnum == null) {
+            final PostingsEnum termPostingsEnum = context.reader().termDocsEnum(new Term("field", "0"));
+            if (termPostingsEnum == null) {
               return null;
             }
             return new DocIdSetIterator() {
@@ -537,24 +537,24 @@ public class TestFilteredQuery extends LuceneTestCase {
               public int nextDoc() throws IOException {
                 assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, nextCalled || advanceCalled ^ !queryFirst);  
                 nextCalled = true;
-                return termDocsEnum.nextDoc();
+                return termPostingsEnum.nextDoc();
               }
               
               @Override
               public int docID() {
-                return termDocsEnum.docID();
+                return termPostingsEnum.docID();
               }
               
               @Override
               public int advance(int target) throws IOException {
                 assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, advanceCalled || nextCalled ^ queryFirst);  
                 advanceCalled = true;
-                return termDocsEnum.advance(target);
+                return termPostingsEnum.advance(target);
               }
               
               @Override
               public long cost() {
-                return termDocsEnum.cost();
+                return termPostingsEnum.cost();
               } 
             };
           }

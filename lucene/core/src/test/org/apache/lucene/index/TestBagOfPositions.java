@@ -144,7 +144,7 @@ public class TestBagOfPositions extends LuceneTestCase {
       assertEquals(value, termsEnum.totalTermFreq());
       // don't really need to check more than this, as CheckIndex
       // will verify that totalTermFreq == total number of positions seen
-      // from a docsAndPositionsEnum.
+      // from a postingsEnum.
     }
     ir.close();
     iw.close();

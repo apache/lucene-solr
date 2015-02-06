@@ -139,31 +139,17 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
       // and randomly *not* unwrap?
-      if (reuse instanceof AssertingDocsEnum) {
-        reuse = ((AssertingDocsEnum) reuse).in;
+      if (reuse instanceof AssertingPostingsEnum) {
+        reuse = ((AssertingPostingsEnum) reuse).in;
       }
-      DocsEnum docs = super.docs(liveDocs, reuse, flags);
-      return docs == null ? null : new AssertingDocsEnum(docs);
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      assertThread("Terms enums", creationThread);
-      assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
-
-      // TODO: should we give this thing a random to be super-evil,
-      // and randomly *not* unwrap?
-      if (reuse instanceof AssertingDocsAndPositionsEnum) {
-        reuse = ((AssertingDocsAndPositionsEnum) reuse).in;
-      }
-      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
-      return docs == null ? null : new AssertingDocsAndPositionsEnum(docs);
+      PostingsEnum docs = super.postings(liveDocs, reuse, flags);
+      return docs == null ? null : new AssertingPostingsEnum(docs);
     }
 
     // TODO: we should separately track if we are 'at the end' ?
@@ -274,12 +260,14 @@ public class AssertingLeafReader extends FilterLeafReader {
   static enum DocsEnumState { START, ITERATING, FINISHED };
 
   /** Wraps a docsenum with additional checks */
-  public static class AssertingDocsEnum extends FilterDocsEnum {
+  public static class AssertingPostingsEnum extends FilterDocsEnum {
     private final Thread creationThread = Thread.currentThread();
     private DocsEnumState state = DocsEnumState.START;
+    int positionCount = 0;
+    int positionMax = 0;
     private int doc;
-    
-    public AssertingDocsEnum(DocsEnum in) {
+
+    public AssertingPostingsEnum(PostingsEnum in) {
       super(in);
       this.doc = in.docID();
     }
@@ -292,9 +280,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
       if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
+        positionMax = 0;
       } else {
         state = DocsEnumState.ITERATING;
+        positionMax = super.freq();
       }
+      positionCount = 0;
       assert super.docID() == nextDoc;
       return doc = nextDoc;
     }
@@ -308,78 +299,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
       if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
-      } else {
-        state = DocsEnumState.ITERATING;
-      }
-      assert super.docID() == advanced;
-      return doc = advanced;
-    }
-
-    @Override
-    public int docID() {
-      assertThread("Docs enums", creationThread);
-      assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
-      return doc;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      assertThread("Docs enums", creationThread);
-      assert state != DocsEnumState.START : "freq() called before nextDoc()/advance()";
-      assert state != DocsEnumState.FINISHED : "freq() called after NO_MORE_DOCS";
-      int freq = super.freq();
-      assert freq > 0;
-      return freq;
-    }
-  }
-  
-  static class AssertingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
-    private final Thread creationThread = Thread.currentThread();
-    private DocsEnumState state = DocsEnumState.START;
-    private int positionMax = 0;
-    private int positionCount = 0;
-    private int doc;
-
-    public AssertingDocsAndPositionsEnum(DocsAndPositionsEnum in) {
-      super(in);
-      int docid = in.docID();
-      assert docid == -1 : "invalid initial doc id: " + docid;
-      doc = -1;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      assertThread("Docs enums", creationThread);
-      assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
-      int nextDoc = super.nextDoc();
-      assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc;
-      positionCount = 0;
-      if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
-        state = DocsEnumState.FINISHED;
         positionMax = 0;
       } else {
         state = DocsEnumState.ITERATING;
         positionMax = super.freq();
       }
-      assert super.docID() == nextDoc;
-      return doc = nextDoc;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      assertThread("Docs enums", creationThread);
-      assert state != DocsEnumState.FINISHED : "advance() called after NO_MORE_DOCS";
-      assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
-      int advanced = super.advance(target);
-      assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
       positionCount = 0;
-      if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
-        state = DocsEnumState.FINISHED;
-        positionMax = 0;
-      } else {
-        state = DocsEnumState.ITERATING;
-        positionMax = super.freq();
-      }
       assert super.docID() == advanced;
       return doc = advanced;
     }
@@ -403,7 +328,6 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int nextPosition() throws IOException {
-      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "nextPosition() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "nextPosition() called after NO_MORE_DOCS";
       assert positionCount < positionMax : "nextPosition() called more than freq() times!";
@@ -415,7 +339,6 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int startOffset() throws IOException {
-      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "startOffset() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "startOffset() called after NO_MORE_DOCS";
       assert positionCount > 0 : "startOffset() called before nextPosition()!";
@@ -424,7 +347,6 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int endOffset() throws IOException {
-      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "endOffset() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "endOffset() called after NO_MORE_DOCS";
       assert positionCount > 0 : "endOffset() called before nextPosition()!";
@@ -433,16 +355,15 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef getPayload() throws IOException {
-      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "getPayload() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
       assert positionCount > 0 : "getPayload() called before nextPosition()!";
       BytesRef payload = super.getPayload();
-      assert payload == null || payload.isValid() && payload.length > 0 : "getPayload() returned payload with invalid length!";
+      assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
       return payload;
     }
   }
-  
+
   /** Wraps a NumericDocValues but with additional asserts */
   public static class AssertingNumericDocValues extends NumericDocValues {
     private final Thread creationThread = Thread.currentThread();

@@ -17,17 +17,27 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -35,7 +45,7 @@ import org.junit.BeforeClass;
  * Tests {@link PhraseQuery}.
  *
  * @see TestPositionIncrement
- */ 
+ */
 public class TestPhraseQuery extends LuceneTestCase {
 
   /** threshold for comparing floats */
@@ -184,7 +194,7 @@ public class TestPhraseQuery extends LuceneTestCase {
    * slop is the total number of positional moves allowed
    * to line up a phrase
    */
-  public void testMulipleTerms() throws Exception {
+  public void testMultipleTerms() throws Exception {
     query.setSlop(2);
     query.add(new Term("field", "one"));
     query.add(new Term("field", "three"));
@@ -670,7 +680,7 @@ public class TestPhraseQuery extends LuceneTestCase {
         }
       }
 
-      assertTrue("phrase '" + sb + "' not found; start=" + start, found);
+      assertTrue("phrase '" + sb + "' not found; start=" + start + ", it=" + i + ", expected doc " + docID, found);
     }
 
     reader.close();

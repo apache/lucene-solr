@@ -17,11 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+
+import java.io.IOException;
 
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedSetDocValues}. */
@@ -106,12 +106,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
     throw new UnsupportedOperationException();
   }
 

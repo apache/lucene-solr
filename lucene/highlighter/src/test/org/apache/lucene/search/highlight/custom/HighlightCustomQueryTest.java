@@ -16,9 +16,6 @@ package org.apache.lucene.search.highlight.custom;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -35,6 +32,9 @@ import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
 import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Tests the extensibility of {@link WeightedSpanTermExtractor} and

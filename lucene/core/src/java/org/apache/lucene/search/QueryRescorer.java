@@ -17,12 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.LeafReaderContext;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import org.apache.lucene.index.LeafReaderContext;
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.

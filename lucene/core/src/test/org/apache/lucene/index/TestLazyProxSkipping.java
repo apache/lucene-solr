@@ -154,7 +154,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.close();
         IndexReader reader = DirectoryReader.open(directory);
 
-        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+        PostingsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),
                                                                    this.field,
                                                                    new BytesRef("b"));

@@ -16,6 +16,7 @@ package org.apache.lucene.codecs.perfield;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -265,7 +266,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
     dir.close();
   }
-  
+
   public void testSameCodecDifferentInstance() throws Exception {
     Codec codec = new AssertingCodec() {
       @Override

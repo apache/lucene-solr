@@ -18,7 +18,7 @@ package org.apache.lucene.sandbox.queries;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -100,13 +100,13 @@ public class DuplicateFilter extends Filter {
 
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator(null);
-      DocsEnum docs = null;
+      PostingsEnum docs = null;
       while (true) {
         BytesRef currTerm = termsEnum.next();
         if (currTerm == null) {
           break;
         } else {
-          docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
+          docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.FLAG_NONE);
           int doc = docs.nextDoc();
           if (doc != DocIdSetIterator.NO_MORE_DOCS) {
             if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
@@ -136,7 +136,7 @@ public class DuplicateFilter extends Filter {
 
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator(null);
-      DocsEnum docs = null;
+      PostingsEnum docs = null;
       while (true) {
         BytesRef currTerm = termsEnum.next();
         if (currTerm == null) {
@@ -144,7 +144,7 @@ public class DuplicateFilter extends Filter {
         } else {
           if (termsEnum.docFreq() > 1) {
             // unset potential duplicates
-            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
+            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.FLAG_NONE);
             int doc = docs.nextDoc();
             if (doc != DocIdSetIterator.NO_MORE_DOCS) {
               if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {

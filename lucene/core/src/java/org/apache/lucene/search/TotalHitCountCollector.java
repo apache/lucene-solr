@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-
 /**
  * Just counts the total number of hits.
  */

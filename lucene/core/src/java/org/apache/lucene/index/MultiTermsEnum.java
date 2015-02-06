@@ -17,13 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments.
@@ -37,8 +37,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private final TermsEnumWithSlice[] subs;        // all of our subs (one per sub-reader)
   private final TermsEnumWithSlice[] currentSubs; // current subs that have at least one term for this field
   private final TermsEnumWithSlice[] top;
-  private final MultiDocsEnum.EnumWithSlice[] subDocs;
-  private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
+  private final MultiPostingsEnum.EnumWithSlice[] subDocs;
 
   private BytesRef lastSeek;
   private boolean lastSeekExact;
@@ -77,14 +76,11 @@ public final class MultiTermsEnum extends TermsEnum {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
-    subDocs = new MultiDocsEnum.EnumWithSlice[slices.length];
-    subDocsAndPositions = new MultiDocsAndPositionsEnum.EnumWithSlice[slices.length];
+    subDocs = new MultiPostingsEnum.EnumWithSlice[slices.length];
     for(int i=0;i<slices.length;i++) {
       subs[i] = new TermsEnumWithSlice(i, slices[i]);
-      subDocs[i] = new MultiDocsEnum.EnumWithSlice();
+      subDocs[i] = new MultiPostingsEnum.EnumWithSlice();
       subDocs[i].slice = slices[i];
-      subDocsAndPositions[i] = new MultiDocsAndPositionsEnum.EnumWithSlice();
-      subDocsAndPositions[i].slice = slices[i];
     }
     currentSubs = new TermsEnumWithSlice[slices.length];
   }
@@ -331,17 +327,18 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    MultiDocsEnum docsEnum;
+  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    MultiPostingsEnum docsEnum;
+
     // Can only reuse if incoming enum is also a MultiDocsEnum
-    if (reuse != null && reuse instanceof MultiDocsEnum) {
-      docsEnum = (MultiDocsEnum) reuse;
+    if (reuse != null && reuse instanceof MultiPostingsEnum) {
+      docsEnum = (MultiPostingsEnum) reuse;
       // ... and was previously created w/ this MultiTermsEnum:
       if (!docsEnum.canReuse(this)) {
-        docsEnum = new MultiDocsEnum(this, subs.length);
+        docsEnum = new MultiPostingsEnum(this, subs.length);
       }
     } else {
-      docsEnum = new MultiDocsEnum(this, subs.length);
+      docsEnum = new MultiPostingsEnum(this, subs.length);
     }
     
     final MultiBits multiLiveDocs;
@@ -380,16 +377,16 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      assert entry.index < docsEnum.subDocsEnum.length: entry.index + " vs " + docsEnum.subDocsEnum.length + "; " + subs.length;
-      final DocsEnum subDocsEnum = entry.terms.docs(b, docsEnum.subDocsEnum[entry.index], flags);
-      if (subDocsEnum != null) {
-        docsEnum.subDocsEnum[entry.index] = subDocsEnum;
-        subDocs[upto].docsEnum = subDocsEnum;
+      assert entry.index < docsEnum.subPostingsEnums.length: entry.index + " vs " + docsEnum.subPostingsEnums.length + "; " + subs.length;
+      final PostingsEnum subPostingsEnum = entry.terms.postings(b, docsEnum.subPostingsEnums[entry.index], flags);
+      if (subPostingsEnum != null) {
+        docsEnum.subPostingsEnums[entry.index] = subPostingsEnum;
+        subDocs[upto].postingsEnum = subPostingsEnum;
         subDocs[upto].slice = entry.subSlice;
         upto++;
       } else {
         // should this be an error?
-        assert false : "One of our subs cannot provide a docsenum";
+        return null;    // We can't support what is being asked for
       }
     }
 
@@ -397,82 +394,6 @@ public final class MultiTermsEnum extends TermsEnum {
       return null;
     } else {
       return docsEnum.reset(subDocs, upto);
-    }
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-    MultiDocsAndPositionsEnum docsAndPositionsEnum;
-    // Can only reuse if incoming enum is also a MultiDocsAndPositionsEnum
-    if (reuse != null && reuse instanceof MultiDocsAndPositionsEnum) {
-      docsAndPositionsEnum = (MultiDocsAndPositionsEnum) reuse;
-      // ... and was previously created w/ this MultiTermsEnum:
-      if (!docsAndPositionsEnum.canReuse(this)) {
-        docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
-      }
-    } else {
-      docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
-    }
-    
-    final MultiBits multiLiveDocs;
-    if (liveDocs instanceof MultiBits) {
-      multiLiveDocs = (MultiBits) liveDocs;
-    } else {
-      multiLiveDocs = null;
-    }
-
-    int upto = 0;
-
-    for(int i=0;i<numTop;i++) {
-
-      final TermsEnumWithSlice entry = top[i];
-
-      final Bits b;
-
-      if (multiLiveDocs != null) {
-        // Optimize for common case: requested skip docs is a
-        // congruent sub-slice of MultiBits: in this case, we
-        // just pull the liveDocs from the sub reader, rather
-        // than making the inefficient
-        // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(top[i].subSlice);
-        if (sub.matches) {
-          b = sub.result;
-        } else {
-          // custom case: requested skip docs is foreign:
-          // must slice it on every access (very
-          // inefficient)
-          b = new BitsSlice(liveDocs, top[i].subSlice);
-        }
-      } else if (liveDocs != null) {
-        b = new BitsSlice(liveDocs, top[i].subSlice);
-      } else {
-        // no deletions
-        b = null;
-      }
-
-      assert entry.index < docsAndPositionsEnum.subDocsAndPositionsEnum.length: entry.index + " vs " + docsAndPositionsEnum.subDocsAndPositionsEnum.length + "; " + subs.length;
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index], flags);
-
-      if (subPostings != null) {
-        docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index] = subPostings;
-        subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
-        subDocsAndPositions[upto].slice = entry.subSlice;
-        upto++;
-      } else {
-        if (entry.terms.docs(b, null, DocsEnum.FLAG_NONE) != null) {
-          // At least one of our subs does not store
-          // offsets or positions -- we can't correctly
-          // produce a MultiDocsAndPositions enum
-          return null;
-        }
-      }
-    }
-
-    if (upto == 0) {
-      return null;
-    } else {
-      return docsAndPositionsEnum.reset(subDocsAndPositions, upto);
     }
   }
 

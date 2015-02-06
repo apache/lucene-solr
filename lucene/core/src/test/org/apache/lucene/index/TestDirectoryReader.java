@@ -93,7 +93,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     // test mixing up TermDocs and TermEnums from different readers.
     TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator(null);
     te2.seekCeil(new BytesRef("wow"));
-    DocsEnum td = TestUtil.docs(random(), mr2,
+    PostingsEnum td = TestUtil.docs(random(), mr2,
         "body",
         te2.term(),
         MultiFields.getLiveDocs(mr2),
@@ -348,7 +348,7 @@ void assertTermDocsCount(String msg,
                                    Term term,
                                    int expected)
   throws IOException {
-  DocsEnum tdocs = TestUtil.docs(random(), reader,
+  PostingsEnum tdocs = TestUtil.docs(random(), reader,
       term.field(),
       new BytesRef(term.text()),
       MultiFields.getLiveDocs(reader),
@@ -633,8 +633,8 @@ public void testFilesOpenClose() throws IOException {
 
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
-        DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);
-        DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null);
+        PostingsEnum tp1 = enum1.postings(liveDocs, null, PostingsEnum.FLAG_ALL);
+        PostingsEnum tp2 = enum2.postings(liveDocs, null, PostingsEnum.FLAG_ALL);
 
         while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

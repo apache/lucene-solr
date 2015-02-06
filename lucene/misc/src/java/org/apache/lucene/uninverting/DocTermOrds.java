@@ -25,8 +25,7 @@ import java.util.List;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -165,7 +164,7 @@ public class DocTermOrds implements Accountable {
   protected int ordBase;
 
   /** Used while uninverting. */
-  protected DocsEnum docsEnum;
+  protected PostingsEnum postingsEnum;
 
   /** Returns total bytes used. */
   public long ramBytesUsed() {
@@ -326,7 +325,7 @@ public class DocTermOrds implements Accountable {
     // frequent terms ahead of time.
 
     int termNum = 0;
-    docsEnum = null;
+    postingsEnum = null;
 
     // Loop begins with te positioned to first term (we call
     // seek above):
@@ -366,13 +365,13 @@ public class DocTermOrds implements Accountable {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        docsEnum = te.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
+        postingsEnum = te.postings(liveDocs, postingsEnum, PostingsEnum.FLAG_NONE);
 
         // dF, but takes deletions into account
         int actualDF = 0;
 
         for (;;) {
-          int doc = docsEnum.nextDoc();
+          int doc = postingsEnum.nextDoc();
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
@@ -613,13 +612,8 @@ public class DocTermOrds implements Accountable {
     }
 
     @Override    
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-      return termsEnum.docs(liveDocs, reuse, flags);
-    }
-
-    @Override    
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      return termsEnum.docsAndPositions(liveDocs, reuse, flags);
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      return termsEnum.postings(liveDocs, reuse, flags);
     }
 
     @Override

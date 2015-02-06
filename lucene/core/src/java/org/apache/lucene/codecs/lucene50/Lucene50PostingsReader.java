@@ -24,11 +24,11 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
@@ -193,39 +193,38 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    BlockDocsEnum docsEnum;
-    if (reuse instanceof BlockDocsEnum) {
-      docsEnum = (BlockDocsEnum) reuse;
-      if (!docsEnum.canReuse(docIn, fieldInfo)) {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+
+    if ((flags & PostingsEnum.FLAG_POSITIONS) < PostingsEnum.FLAG_POSITIONS) {
+      BlockDocsEnum docsEnum;
+      if (reuse instanceof BlockDocsEnum) {
+        docsEnum = (BlockDocsEnum) reuse;
+        if (!docsEnum.canReuse(docIn, fieldInfo)) {
+          docsEnum = new BlockDocsEnum(fieldInfo);
+        }
+      } else {
         docsEnum = new BlockDocsEnum(fieldInfo);
       }
-    } else {
-      docsEnum = new BlockDocsEnum(fieldInfo);
+      return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
     }
-    return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
-  }
 
-  // TODO: specialize to liveDocs vs not
-  
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags)
-    throws IOException {
-
+    boolean indexHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-    if ((!indexHasOffsets || (flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0) &&
-        (!indexHasPayloads || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
-      BlockDocsAndPositionsEnum docsAndPositionsEnum;
-      if (reuse instanceof BlockDocsAndPositionsEnum) {
-        docsAndPositionsEnum = (BlockDocsAndPositionsEnum) reuse;
+    if (!indexHasPositions)
+      return null;
+
+    if ((!indexHasOffsets || (flags & PostingsEnum.FLAG_OFFSETS) == 0) &&
+        (!indexHasPayloads || (flags & PostingsEnum.FLAG_PAYLOADS) == 0)) {
+      BlockPostingsEnum docsAndPositionsEnum;
+      if (reuse instanceof BlockPostingsEnum) {
+        docsAndPositionsEnum = (BlockPostingsEnum) reuse;
         if (!docsAndPositionsEnum.canReuse(docIn, fieldInfo)) {
-          docsAndPositionsEnum = new BlockDocsAndPositionsEnum(fieldInfo);
+          docsAndPositionsEnum = new BlockPostingsEnum(fieldInfo);
         }
       } else {
-        docsAndPositionsEnum = new BlockDocsAndPositionsEnum(fieldInfo);
+        docsAndPositionsEnum = new BlockPostingsEnum(fieldInfo);
       }
       return docsAndPositionsEnum.reset(liveDocs, (IntBlockTermState) termState);
     } else {
@@ -302,7 +301,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public DocsEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
+    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
       this.liveDocs = liveDocs;
 
       docFreq = termState.docFreq;
@@ -319,7 +318,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       }
 
       doc = -1;
-      this.needsFreq = (flags & DocsEnum.FLAG_FREQS) != 0;
+      this.needsFreq = (flags & PostingsEnum.FLAG_FREQS) != 0;
       if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
@@ -334,6 +333,12 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     @Override
     public int freq() throws IOException {
       return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      assert false;   // shouldn't be calling nextPosition() on this
+      return -1;
     }
 
     @Override
@@ -472,7 +477,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
 
 
-  final class BlockDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  final class BlockPostingsEnum extends PostingsEnum {
     
     private final byte[] encoded;
 
@@ -535,7 +540,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private Bits liveDocs;
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
     
-    public BlockDocsAndPositionsEnum(FieldInfo fieldInfo) throws IOException {
+    public BlockPostingsEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = Lucene50PostingsReader.this.docIn;
       this.docIn = null;
       this.posIn = Lucene50PostingsReader.this.posIn.clone();
@@ -550,7 +555,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public DocsAndPositionsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
+    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
 
       docFreq = termState.docFreq;
@@ -769,6 +774,9 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
+
+      assert posPendingCount > 0;
+
       if (posPendingFP != -1) {
         posIn.seek(posPendingFP);
         posPendingFP = -1;
@@ -813,7 +821,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
 
   // Also handles payloads + offsets
-  final class EverythingEnum extends DocsAndPositionsEnum {
+  final class EverythingEnum extends PostingsEnum {
     
     private final byte[] encoded;
 
@@ -960,8 +968,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
       }
 
-      this.needsOffsets = (flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0;
-      this.needsPayloads = (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0;
+      this.needsOffsets = (flags & PostingsEnum.FLAG_OFFSETS) != 0;
+      this.needsPayloads = (flags & PostingsEnum.FLAG_PAYLOADS) != 0;
 
       doc = -1;
       accum = 0;
@@ -1228,6 +1236,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
+      assert posPendingCount > 0;
+      
       if (posPendingFP != -1) {
         posIn.seek(posPendingFP);
         posPendingFP = -1;

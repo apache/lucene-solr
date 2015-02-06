@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Terms;
@@ -263,7 +263,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
       if (matchedTokens.contains(docTerm) || (prefixToken != null && docTerm.startsWith(prefixToken))) {
  
-        DocsAndPositionsEnum docPosEnum = it.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
+        PostingsEnum docPosEnum = it.postings(null, null, PostingsEnum.FLAG_OFFSETS);
         docPosEnum.nextDoc();
 
         // use the first occurrence of the term

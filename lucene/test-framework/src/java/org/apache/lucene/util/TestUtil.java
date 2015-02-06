@@ -46,6 +46,8 @@ import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -71,8 +73,7 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -92,8 +93,8 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -102,8 +103,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * General utility methods for Lucene unit tests. 
@@ -997,7 +996,7 @@ public final class TestUtil {
   // Returns a DocsEnum, but randomly sometimes uses a
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
-  public static DocsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+  public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
     final Terms terms = MultiFields.getTerms(r, field);
     if (terms == null) {
       return null;
@@ -1011,25 +1010,24 @@ public final class TestUtil {
 
   // Returns a DocsEnum from a positioned TermsEnum, but
   // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
-  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+  public static PostingsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
         final int posFlags;
         switch (random.nextInt(4)) {
-          case 0: posFlags = 0; break;
-          case 1: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS; break;
-          case 2: posFlags = DocsAndPositionsEnum.FLAG_PAYLOADS; break;
-          default: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS; break;
+          case 0: posFlags = PostingsEnum.FLAG_POSITIONS; break;
+          case 1: posFlags = PostingsEnum.FLAG_OFFSETS; break;
+          case 2: posFlags = PostingsEnum.FLAG_PAYLOADS; break;
+          default: posFlags = PostingsEnum.FLAG_OFFSETS | PostingsEnum.FLAG_PAYLOADS; break;
         }
-        // TODO: cast to DocsAndPositionsEnum?
-        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, posFlags);
+        PostingsEnum docsAndPositions = termsEnum.postings(liveDocs, null, posFlags);
         if (docsAndPositions != null) {
           return docsAndPositions;
         }
       }
-      flags |= DocsEnum.FLAG_FREQS;
+      flags |= PostingsEnum.FLAG_FREQS;
     }
-    return termsEnum.docs(liveDocs, reuse, flags);
+    return termsEnum.postings(liveDocs, reuse, flags);
   }
   
   public static CharSequence stringToCharSequence(String string, Random random) {

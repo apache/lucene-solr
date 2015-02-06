@@ -24,6 +24,7 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -259,24 +260,60 @@ final class Sorter {
   }
   
   static final Scorer FAKESCORER = new Scorer(null) {
-    
-    @Override
-    public float score() throws IOException { throw new UnsupportedOperationException(); }
-    
-    @Override
-    public int freq() throws IOException { throw new UnsupportedOperationException(); }
+
+    float score;
+    int doc = -1;
+    int freq = 1;
 
     @Override
-    public int docID() { throw new UnsupportedOperationException(); }
+    public int docID() {
+      return doc;
+    }
 
     @Override
-    public int nextDoc() throws IOException { throw new UnsupportedOperationException(); }
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
-    public int advance(int target) throws IOException { throw new UnsupportedOperationException(); }
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
-    public long cost() { throw new UnsupportedOperationException(); }
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
   };
   
 }

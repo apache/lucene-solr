@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AssertingLeafReader;
+import org.apache.lucene.util.BytesRef;
 
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
@@ -63,13 +64,13 @@ public class AssertingScorer extends Scorer {
 
   final Random random;
   final Scorer in;
-  final AssertingLeafReader.AssertingDocsEnum docsEnumIn;
+  final AssertingLeafReader.AssertingPostingsEnum docsEnumIn;
 
   private AssertingScorer(Random random, Scorer in) {
     super(in.weight);
     this.random = random;
     this.in = in;
-    this.docsEnumIn = new AssertingLeafReader.AssertingDocsEnum(in);
+    this.docsEnumIn = new AssertingLeafReader.AssertingPostingsEnum(in);
   }
 
   public Scorer getIn() {
@@ -108,6 +109,30 @@ public class AssertingScorer extends Scorer {
   public int freq() throws IOException {
     assert iterating();
     return in.freq();
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    assert iterating();
+    return in.nextPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    assert iterating();
+    return in.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    assert iterating();
+    return in.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    assert iterating();
+    return in.getPayload();
   }
 
   @Override

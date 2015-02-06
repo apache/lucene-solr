@@ -17,11 +17,11 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
+class SinglePostingsEnum extends PostingsEnum {
   private int doc;
   private int pos;
   private int singleDocID;
@@ -29,7 +29,7 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private long version;
   private final BytesRef payload;
 
-  public SingleDocsAndPositionsEnum() {
+  public SinglePostingsEnum() {
     payload = new BytesRef(8);
     payload.length = 8;
   }

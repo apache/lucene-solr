@@ -106,12 +106,7 @@ class SortedDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
     throw new UnsupportedOperationException();
   }
 

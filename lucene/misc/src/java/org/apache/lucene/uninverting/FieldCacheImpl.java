@@ -30,7 +30,7 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
@@ -280,7 +280,7 @@ class FieldCacheImpl implements FieldCache {
 
         final TermsEnum termsEnum = termsEnum(terms);
 
-        DocsEnum docs = null;
+        PostingsEnum docs = null;
         FixedBitSet docsWithField = null;
         while(true) {
           final BytesRef term = termsEnum.next();
@@ -288,7 +288,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
           visitTerm(term);
-          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -408,7 +408,7 @@ class FieldCacheImpl implements FieldCache {
           return new BitsEntry(new Bits.MatchAllBits(maxDoc));
         }
         final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
+        PostingsEnum docs = null;
         while(true) {
           final BytesRef term = termsEnum.next();
           if (term == null) {
@@ -419,7 +419,7 @@ class FieldCacheImpl implements FieldCache {
             res = new FixedBitSet(maxDoc);
           }
 
-          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
           // TODO: use bulk API
           while (true) {
             final int docID = docs.nextDoc();
@@ -686,7 +686,7 @@ class FieldCacheImpl implements FieldCache {
 
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
+        PostingsEnum docs = null;
 
         while(true) {
           final BytesRef term = termsEnum.next();
@@ -698,7 +698,7 @@ class FieldCacheImpl implements FieldCache {
           }
 
           termOrdToBytesOffset.add(bytes.copyUsingLengthPrefix(term));
-          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -836,7 +836,7 @@ class FieldCacheImpl implements FieldCache {
       if (terms != null) {
         int termCount = 0;
         final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
+        PostingsEnum docs = null;
         while(true) {
           if (termCount++ == termCountHardLimit) {
             // app is misusing the API (there is more than
@@ -850,7 +850,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
           final long pointer = bytes.copyUsingLengthPrefix(term);
-          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {

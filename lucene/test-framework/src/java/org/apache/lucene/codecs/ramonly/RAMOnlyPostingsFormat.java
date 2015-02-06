@@ -34,8 +34,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
@@ -252,8 +251,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
-        DocsEnum docsEnum = null;
-        DocsAndPositionsEnum posEnum = null;
+        PostingsEnum postingsEnum = null;
         int enumFlags;
 
         IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -265,18 +263,18 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         if (writeFreqs == false) {
           enumFlags = 0;
         } else if (writePositions == false) {
-          enumFlags = DocsEnum.FLAG_FREQS;
+          enumFlags = PostingsEnum.FLAG_FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+            enumFlags = PostingsEnum.FLAG_PAYLOADS;
           } else {
             enumFlags = 0;
           }
         } else {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS;
           } else {
-            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.FLAG_OFFSETS;
           }
         }
 
@@ -286,20 +284,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
             break;
           }
           RAMPostingsWriterImpl postingsWriter = termsConsumer.startTerm(term);
-
-          if (writePositions) {
-            posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-            docsEnum = posEnum;
-          } else {
-            docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
-            posEnum = null;
-          }
+          postingsEnum = termsEnum.postings(null, postingsEnum, enumFlags);
 
           int docFreq = 0;
           long totalTermFreq = 0;
           while (true) {
-            int docID = docsEnum.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            int docID = postingsEnum.nextDoc();
+            if (docID == PostingsEnum.NO_MORE_DOCS) {
               break;
             }
             docsSeen.set(docID);
@@ -307,7 +298,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
             int freq;
             if (writeFreqs) {
-              freq = docsEnum.freq();
+              freq = postingsEnum.freq();
               totalTermFreq += freq;
             } else {
               freq = -1;
@@ -316,13 +307,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
             postingsWriter.startDoc(docID, freq);
             if (writePositions) {
               for (int i=0;i<freq;i++) {
-                int pos = posEnum.nextPosition();
-                BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+                int pos = postingsEnum.nextPosition();
+                BytesRef payload = writePayloads ? postingsEnum.getPayload() : null;
                 int startOffset;
                 int endOffset;
                 if (writeOffsets) {
-                  startOffset = posEnum.startOffset();
-                  endOffset = posEnum.endOffset();
+                  startOffset = postingsEnum.startOffset();
+                  endOffset = postingsEnum.endOffset();
                 } else {
                   startOffset = -1;
                   endOffset = -1;
@@ -479,17 +470,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
       return new RAMDocsEnum(ramField.termToDocs.get(current), liveDocs);
     }
 
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-      return new RAMDocsAndPositionsEnum(ramField.termToDocs.get(current), liveDocs);
-    }
   }
 
-  private static class RAMDocsEnum extends DocsEnum {
+  private static class RAMDocsEnum extends PostingsEnum {
     private final RAMTerm ramTerm;
     private final Bits liveDocs;
     private RAMDoc current;
@@ -532,59 +519,10 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public int docID() {
       return current.docID;
     }
-    
-    @Override
-    public long cost() {
-      return ramTerm.docs.size();
-    } 
-  }
-
-  private static class RAMDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final RAMTerm ramTerm;
-    private final Bits liveDocs;
-    private RAMDoc current;
-    int upto = -1;
-    int posUpto = 0;
-
-    public RAMDocsAndPositionsEnum(RAMTerm ramTerm, Bits liveDocs) {
-      this.ramTerm = ramTerm;
-      this.liveDocs = liveDocs;
-    }
-
-    @Override
-    public int advance(int targetDocID) throws IOException {
-      return slowAdvance(targetDocID);
-    }
-
-    // TODO: override bulk read, for better perf
-    @Override
-    public int nextDoc() {
-      while(true) {
-        upto++;
-        if (upto < ramTerm.docs.size()) {
-          current = ramTerm.docs.get(upto);
-          if (liveDocs == null || liveDocs.get(current.docID)) {
-            posUpto = 0;
-            return current.docID;
-          }
-        } else {
-          return NO_MORE_DOCS;
-        }
-      }
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return current.positions.length;
-    }
-
-    @Override
-    public int docID() {
-      return current.docID;
-    }
 
     @Override
     public int nextPosition() {
+      assert posUpto < current.positions.length;
       return current.positions[posUpto++];
     }
 

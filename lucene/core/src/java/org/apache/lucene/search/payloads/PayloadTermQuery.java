@@ -17,26 +17,26 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.TermSpans;
+import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
-import org.apache.lucene.search.spans.SpanScorer;
+import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 
 /**
  * This class is very similar to
@@ -120,7 +120,7 @@ public class PayloadTermQuery extends SpanTermQuery {
 
       protected void processPayload(Similarity similarity) throws IOException {
         if (termSpans.isPayloadAvailable()) {
-          final DocsAndPositionsEnum postings = termSpans.getPostings();
+          final PostingsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),

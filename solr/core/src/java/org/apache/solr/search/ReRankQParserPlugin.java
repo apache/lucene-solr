@@ -17,16 +17,33 @@
 
 package org.apache.solr.search;
 
-import com.carrotsearch.hppc.IntIntOpenHashMap;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Set;
 
+import com.carrotsearch.hppc.IntFloatOpenHashMap;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -34,27 +51,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ScoreDoc;
-
-import com.carrotsearch.hppc.IntFloatOpenHashMap;
-
-import org.apache.lucene.util.Bits;
 import org.apache.solr.request.SolrRequestInfo;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.Arrays;
-import java.util.Comparator;
 
 /*
 *

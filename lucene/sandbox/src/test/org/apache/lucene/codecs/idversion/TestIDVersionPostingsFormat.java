@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -39,7 +38,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -331,9 +330,9 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("  found in seg=" + termsEnums[seg]);
           }
-          docsEnums[seg] = termsEnums[seg].docs(liveDocs[seg], docsEnums[seg], 0);
-          int docID = docsEnums[seg].nextDoc();
-          if (docID != DocsEnum.NO_MORE_DOCS) {
+          postingsEnums[seg] = termsEnums[seg].postings(liveDocs[seg], postingsEnums[seg], 0);
+          int docID = postingsEnums[seg].nextDoc();
+          if (docID != PostingsEnum.NO_MORE_DOCS) {
             lastVersion = ((IDVersionSegmentTermsEnum) termsEnums[seg]).getVersion();
             return docBases[seg] + docID;
           }

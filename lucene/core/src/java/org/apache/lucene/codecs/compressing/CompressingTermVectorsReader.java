@@ -17,19 +17,6 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_IDX;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.OFFSETS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PAYLOADS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CHUNK_STATS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
@@ -40,8 +27,7 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -65,6 +51,18 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_DAT;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_IDX;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.OFFSETS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PAYLOADS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CHUNK_STATS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
 /**
  * {@link TermVectorsReader} for {@link CompressingTermVectorsFormat}.
@@ -937,30 +935,27 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-      final TVDocsEnum docsEnum;
-      if (reuse != null && reuse instanceof TVDocsEnum) {
-        docsEnum = (TVDocsEnum) reuse;
+    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+
+      if ((flags & PostingsEnum.FLAG_POSITIONS) >= PostingsEnum.FLAG_POSITIONS) {
+        if (positions == null && startOffsets == null)
+          return null;
+      }
+
+      final TVPostingsEnum docsEnum;
+      if (reuse != null && reuse instanceof TVPostingsEnum) {
+        docsEnum = (TVPostingsEnum) reuse;
       } else {
-        docsEnum = new TVDocsEnum();
+        docsEnum = new TVPostingsEnum();
       }
 
       docsEnum.reset(liveDocs, termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
       return docsEnum;
     }
 
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      if (positions == null && startOffsets == null) {
-        return null;
-      }
-      // TODO: slightly sheisty
-      return (DocsAndPositionsEnum) docs(liveDocs, reuse, flags);
-    }
-
   }
 
-  private static class TVDocsEnum extends DocsAndPositionsEnum {
+  private static class TVPostingsEnum extends PostingsEnum {
 
     private Bits liveDocs;
     private int doc = -1;
@@ -974,7 +969,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     private int basePayloadOffset;
     private int i;
 
-    TVDocsEnum() {
+    TVPostingsEnum() {
       payload = new BytesRef();
     }
 

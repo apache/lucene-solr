@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -141,7 +141,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *        determined by the largest integer. Smaller block size result in smaller variance among width 
  *        of integers hence smaller indexes. Larger block size result in more efficient bulk i/o hence
  *        better acceleration. This value should always be a multiple of 64, currently fixed as 128 as 
- *        a tradeoff. It is also the skip interval used to accelerate {@link DocsEnum#advance(int)}.
+ *        a tradeoff. It is also the skip interval used to accelerate {@link org.apache.lucene.index.PostingsEnum#advance(int)}.
  *    <li>DocFPDelta determines the position of this term's TermFreqs within the .doc file. 
  *        In particular, it is the difference of file offset between this term's
  *        data and previous term's data (or zero, for the first term in the block).On disk it is 

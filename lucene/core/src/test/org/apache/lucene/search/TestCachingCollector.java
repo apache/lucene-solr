@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCachingCollector extends LuceneTestCase {
@@ -38,6 +39,26 @@ public class TestCachingCollector extends LuceneTestCase {
     public int freq() throws IOException { return 0; }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int docID() { return 0; }
 
     @Override
@@ -45,7 +66,7 @@ public class TestCachingCollector extends LuceneTestCase {
 
     @Override
     public int advance(int target) throws IOException { return 0; }
-    
+
     @Override
     public long cost() {
       return 1;

@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -563,7 +563,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       List<LeafReaderContext>leaves = indexSearcher.getTopReaderContext().leaves();
       TermsEnum termsEnum = null;
-      DocsEnum docsEnum = null;
+      PostingsEnum postingsEnum = null;
       for(LeafReaderContext leaf : leaves) {
         LeafReader reader = leaf.reader();
         int docBase = leaf.docBase;
@@ -574,9 +574,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         while(it.hasNext()) {
           BytesRef ref = it.next();
           if(termsEnum.seekExact(ref)) {
-            docsEnum = termsEnum.docs(liveDocs, docsEnum);
-            int doc = docsEnum.nextDoc();
-            if(doc != DocsEnum.NO_MORE_DOCS) {
+            postingsEnum = termsEnum.postings(liveDocs, postingsEnum);
+            int doc = postingsEnum.nextDoc();
+            if(doc != PostingsEnum.NO_MORE_DOCS) {
               //Found the document.
               int p = boosted.get(ref);
               boostDocs.put(doc+docBase, p);
@@ -637,7 +637,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       private int bottomVal;
       private int topVal;
       private TermsEnum termsEnum;
-      private DocsEnum docsEnum;
+      private PostingsEnum postingsEnum;
       Set<String> seen = new HashSet<>(elevations.ids.size());
 
       @Override
@@ -692,13 +692,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         for (String id : elevations.ids) {
           term.copyChars(id);
           if (seen.contains(id) == false  && termsEnum.seekExact(term.get())) {
-            docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
-            if (docsEnum != null) {
-              int docId = docsEnum.nextDoc();
+            postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+            if (postingsEnum != null) {
+              int docId = postingsEnum.nextDoc();
               if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
               termValues[ordSet.put(docId)] = term.toBytesRef();
               seen.add(id);
-              assert docsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+              assert postingsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
             }
           }
         }

@@ -25,9 +25,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -84,7 +84,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
+    PostingsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
                                                                           MultiFields.getLiveDocs(reader),
                                                                           "preanalyzed",
                                                                           new BytesRef("term1"));

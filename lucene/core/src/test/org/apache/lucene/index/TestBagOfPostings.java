@@ -136,7 +136,7 @@ public class TestBagOfPostings extends LuceneTestCase {
       assertEquals(value, termsEnum.docFreq());
       // don't really need to check more than this, as CheckIndex
       // will verify that docFreq == actual number of documents seen
-      // from a docsAndPositionsEnum.
+      // from a postingsEnum.
     }
     ir.close();
     iw.close();

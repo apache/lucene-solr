@@ -17,9 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.util.LuceneTestCase;
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -32,7 +30,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
+import java.io.IOException;
+
+@Seed("229FAA1086FF0F29:DD686BC5E10B2080")
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static final String S_1 = "A A A";

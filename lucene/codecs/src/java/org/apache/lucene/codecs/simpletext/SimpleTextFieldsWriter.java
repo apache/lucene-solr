@@ -20,8 +20,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 class SimpleTextFieldsWriter extends FieldsConsumer {
-  
+
   private IndexOutput out;
   private final BytesRefBuilder scratch = new BytesRefBuilder();
   private final SegmentWriteState writeState;
@@ -79,22 +78,21 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
       int flags = 0;
       if (hasPositions) {
-        
+        flags = PostingsEnum.FLAG_POSITIONS;
         if (hasPayloads) {
-          flags = flags | DocsAndPositionsEnum.FLAG_PAYLOADS;
+          flags = flags | PostingsEnum.FLAG_PAYLOADS;
         }
         if (hasOffsets) {
-          flags = flags | DocsAndPositionsEnum.FLAG_OFFSETS;
+          flags = flags | PostingsEnum.FLAG_OFFSETS;
         }
       } else {
         if (hasFreqs) {
-          flags = flags | DocsEnum.FLAG_FREQS;
+          flags = flags | PostingsEnum.FLAG_FREQS;
         }
       }
 
       TermsEnum termsEnum = terms.iterator(null);
-      DocsAndPositionsEnum posEnum = null;
-      DocsEnum docsEnum = null;
+      PostingsEnum postingsEnum = null;
 
       // for each term in field
       while(true) {
@@ -103,20 +101,16 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
           break;
         }
 
-        if (hasPositions) {
-          posEnum = termsEnum.docsAndPositions(null, posEnum, flags);
-          docsEnum = posEnum;
-        } else {
-          docsEnum = termsEnum.docs(null, docsEnum, flags);
-        }
-        assert docsEnum != null: "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
+        postingsEnum = termsEnum.postings(null, postingsEnum, flags);
+
+        assert postingsEnum != null: "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
 
         boolean wroteTerm = false;
 
         // for each doc in field+term
         while(true) {
-          int doc = docsEnum.nextDoc();
-          if (doc == DocsEnum.NO_MORE_DOCS) {
+          int doc = postingsEnum.nextDoc();
+          if (doc == PostingsEnum.NO_MORE_DOCS) {
             break;
           }
 
@@ -143,7 +137,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
           write(Integer.toString(doc));
           newline();
           if (hasFreqs) {
-            int freq = docsEnum.freq();
+            int freq = postingsEnum.freq();
             write(FREQ);
             write(Integer.toString(freq));
             newline();
@@ -154,15 +148,15 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
               // for each pos in field+term+doc
               for(int i=0;i<freq;i++) {
-                int position = posEnum.nextPosition();
+                int position = postingsEnum.nextPosition();
 
                 write(POS);
                 write(Integer.toString(position));
                 newline();
 
                 if (hasOffsets) {
-                  int startOffset = posEnum.startOffset();
-                  int endOffset = posEnum.endOffset();
+                  int startOffset = postingsEnum.startOffset();
+                  int endOffset = postingsEnum.endOffset();
                   assert endOffset >= startOffset;
                   assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
                   lastStartOffset = startOffset;
@@ -174,7 +168,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
                   newline();
                 }
 
-                BytesRef payload = posEnum.getPayload();
+                BytesRef payload = postingsEnum.getPayload();
 
                 if (payload != null && payload.length > 0) {
                   assert payload.length != 0;

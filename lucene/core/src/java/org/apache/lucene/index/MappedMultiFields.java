@@ -103,10 +103,23 @@ public class MappedMultiFields extends FilterFields {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
       if (liveDocs != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
+
+      MappingMultiPostingsEnum mappingDocsAndPositionsEnum;
+      if (reuse instanceof MappingMultiPostingsEnum) {
+        mappingDocsAndPositionsEnum = (MappingMultiPostingsEnum) reuse;
+      } else {
+        mappingDocsAndPositionsEnum = new MappingMultiPostingsEnum(mergeState);
+      }
+
+      MultiPostingsEnum docsAndPositionsEnum = (MultiPostingsEnum) in.postings(liveDocs, mappingDocsAndPositionsEnum.multiDocsAndPositionsEnum, flags);
+      mappingDocsAndPositionsEnum.reset(docsAndPositionsEnum);
+      return mappingDocsAndPositionsEnum;
+
+/*
       MappingMultiDocsEnum mappingDocsEnum;
       if (reuse instanceof MappingMultiDocsEnum) {
         mappingDocsEnum = (MappingMultiDocsEnum) reuse;
@@ -116,24 +129,7 @@ public class MappedMultiFields extends FilterFields {
       
       MultiDocsEnum docsEnum = (MultiDocsEnum) in.docs(liveDocs, mappingDocsEnum.multiDocsEnum, flags);
       mappingDocsEnum.reset(docsEnum);
-      return mappingDocsEnum;
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      if (liveDocs != null) {
-        throw new IllegalArgumentException("liveDocs must be null");
-      }
-      MappingMultiDocsAndPositionsEnum mappingDocsAndPositionsEnum;
-      if (reuse instanceof MappingMultiDocsAndPositionsEnum) {
-        mappingDocsAndPositionsEnum = (MappingMultiDocsAndPositionsEnum) reuse;
-      } else {
-        mappingDocsAndPositionsEnum = new MappingMultiDocsAndPositionsEnum(mergeState);
-      }
-      
-      MultiDocsAndPositionsEnum docsAndPositionsEnum = (MultiDocsAndPositionsEnum) in.docsAndPositions(liveDocs, mappingDocsAndPositionsEnum.multiDocsAndPositionsEnum, flags);
-      mappingDocsAndPositionsEnum.reset(docsAndPositionsEnum);
-      return mappingDocsAndPositionsEnum;
+      return mappingDocsEnum;*/
     }
   }
 }

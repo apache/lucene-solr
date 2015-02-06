@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -62,6 +60,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
 /**
  * Abstract class to do basic tests for a docvalues format.
@@ -1156,8 +1156,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
     for (Entry<String, String> entry : entrySet) {
       // pk lookup
-      DocsEnum termDocsEnum = slowR.termDocsEnum(new Term("id", entry.getKey()));
-      int docId = termDocsEnum.nextDoc();
+      PostingsEnum termPostingsEnum = slowR.termDocsEnum(new Term("id", entry.getKey()));
+      int docId = termPostingsEnum.nextDoc();
       expected = new BytesRef(entry.getValue());
       final BytesRef actual = docValues.get(docId);
       assertEquals(expected, actual);
@@ -2085,7 +2085,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       );
     }
   }
-  
+
   public void testSortedNumericsMultipleValuesVsStoredFields() throws Exception {
     assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);

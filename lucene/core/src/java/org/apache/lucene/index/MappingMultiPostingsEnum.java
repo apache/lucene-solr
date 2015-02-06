@@ -17,9 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.MultiPostingsEnum.EnumWithSlice;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments,
@@ -28,28 +29,28 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-final class MappingMultiDocsEnum extends DocsEnum {
-  private MultiDocsEnum.EnumWithSlice[] subs;
+final class MappingMultiPostingsEnum extends PostingsEnum {
+  private MultiPostingsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
   MergeState.DocMap currentMap;
-  DocsEnum current;
+  PostingsEnum current;
   int currentBase;
   int doc = -1;
-  private final MergeState mergeState;
-  MultiDocsEnum multiDocsEnum;
+  private MergeState mergeState;
+  MultiPostingsEnum multiDocsAndPositionsEnum;
 
   /** Sole constructor. */
-  public MappingMultiDocsEnum(MergeState mergeState) {
+  public MappingMultiPostingsEnum(MergeState mergeState) {
     this.mergeState = mergeState;
   }
 
-  MappingMultiDocsEnum reset(MultiDocsEnum docsEnum) {
-    this.numSubs = docsEnum.getNumSubs();
-    this.subs = docsEnum.getSubs();
-    this.multiDocsEnum = docsEnum;
+  MappingMultiPostingsEnum reset(MultiPostingsEnum postingsEnum) {
+    this.numSubs = postingsEnum.getNumSubs();
+    this.subs = postingsEnum.getSubs();
     upto = -1;
     current = null;
+    this.multiDocsAndPositionsEnum = postingsEnum;
     return this;
   }
 
@@ -88,10 +89,9 @@ final class MappingMultiDocsEnum extends DocsEnum {
         } else {
           upto++;
           final int reader = subs[upto].slice.readerIndex;
-          current = subs[upto].docsEnum;
+          current = subs[upto].postingsEnum;
           currentBase = mergeState.docBase[reader];
           currentMap = mergeState.docMaps[reader];
-          assert currentMap.maxDoc() == subs[upto].slice.length: "readerIndex=" + reader + " subs.len=" + subs.length + " len1=" + currentMap.maxDoc() + " vs " + subs[upto].slice.length;
         }
       }
 
@@ -108,12 +108,32 @@ final class MappingMultiDocsEnum extends DocsEnum {
       }
     }
   }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return current.nextPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return current.startOffset();
+  }
   
+  @Override
+  public int endOffset() throws IOException {
+    return current.endOffset();
+  }
+  
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return current.getPayload();
+  }
+
   @Override
   public long cost() {
     long cost = 0;
     for (EnumWithSlice enumWithSlice : subs) {
-      cost += enumWithSlice.docsEnum.cost();
+      cost += enumWithSlice.postingsEnum.cost();
     }
     return cost;
   }

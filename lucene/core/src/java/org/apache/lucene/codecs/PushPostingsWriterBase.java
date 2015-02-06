@@ -19,8 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum;
@@ -42,8 +41,7 @@ import org.apache.lucene.util.FixedBitSet;
 public abstract class PushPostingsWriterBase extends PostingsWriterBase {
 
   // Reused in writeTerm
-  private DocsEnum docsEnum;
-  private DocsAndPositionsEnum posEnum;
+  private PostingsEnum postingsEnum;
   private int enumFlags;
 
   /** {@link FieldInfo} of current field being written. */
@@ -100,18 +98,18 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
     if (writeFreqs == false) {
       enumFlags = 0;
     } else if (writePositions == false) {
-      enumFlags = DocsEnum.FLAG_FREQS;
+      enumFlags = PostingsEnum.FLAG_FREQS;
     } else if (writeOffsets == false) {
       if (writePayloads) {
-        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+        enumFlags = PostingsEnum.FLAG_PAYLOADS;
       } else {
-        enumFlags = 0;
+        enumFlags = PostingsEnum.FLAG_POSITIONS;
       }
     } else {
       if (writePayloads) {
-        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+        enumFlags = PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS;
       } else {
-        enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+        enumFlags = PostingsEnum.FLAG_OFFSETS;
       }
     }
 
@@ -121,26 +119,21 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   @Override
   public final BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException {
     startTerm();
-    if (writePositions == false) {
-      docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
-    } else {
-      posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-      docsEnum = posEnum;
-    }
-    assert docsEnum != null;
+    postingsEnum = termsEnum.postings(null, postingsEnum, enumFlags);
+    assert postingsEnum != null;
 
     int docFreq = 0;
     long totalTermFreq = 0;
     while (true) {
-      int docID = docsEnum.nextDoc();
-      if (docID == DocsEnum.NO_MORE_DOCS) {
+      int docID = postingsEnum.nextDoc();
+      if (docID == PostingsEnum.NO_MORE_DOCS) {
         break;
       }
       docFreq++;
       docsSeen.set(docID);
       int freq;
       if (writeFreqs) {
-        freq = docsEnum.freq();
+        freq = postingsEnum.freq();
         totalTermFreq += freq;
       } else {
         freq = -1;
@@ -149,13 +142,13 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
 
       if (writePositions) {
         for(int i=0;i<freq;i++) {
-          int pos = posEnum.nextPosition();
-          BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+          int pos = postingsEnum.nextPosition();
+          BytesRef payload = writePayloads ? postingsEnum.getPayload() : null;
           int startOffset;
           int endOffset;
           if (writeOffsets) {
-            startOffset = posEnum.startOffset();
-            endOffset = posEnum.endOffset();
+            startOffset = postingsEnum.startOffset();
+            endOffset = postingsEnum.endOffset();
           } else {
             startOffset = -1;
             endOffset = -1;

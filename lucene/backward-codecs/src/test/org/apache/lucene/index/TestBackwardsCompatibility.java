@@ -932,7 +932,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.addDocument(doc);
   }
 
-  private int countDocs(DocsEnum docs) throws IOException {
+  private int countDocs(PostingsEnum docs) throws IOException {
     int count = 0;
     while((docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       count ++;
@@ -958,7 +958,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // should be found exactly
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, PostingsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       // should hit end of field
@@ -970,12 +970,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
                    terms.seekCeil(new BytesRef("a")));
       assertTrue(terms.term().bytesEquals(aaaTerm));
-      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, PostingsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, DocsEnum.FLAG_NONE)));
+      assertEquals(35, countDocs(TestUtil.docs(random(), terms, null, null, PostingsEnum.FLAG_NONE)));
       assertNull(terms.next());
 
       r.close();

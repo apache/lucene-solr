@@ -97,7 +97,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // Sometimes use .advance():
     SKIPPING,
 
-    // Sometimes reuse the Docs/AndPositionsEnum across terms:
+    // Sometimes reuse the PostingsEnum across terms:
     REUSE_ENUMS,
 
     // Sometimes pass non-null live docs:
@@ -121,7 +121,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
   /** Given the same random seed this always enumerates the
    *  same random postings */
-  private static class SeedPostings extends DocsAndPositionsEnum {
+  private static class SeedPostings extends PostingsEnum {
     // Used only to generate docIDs; this way if you pull w/
     // or w/o positions you get the same docID sequence:
     private final Random docRandom;
@@ -234,7 +234,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         return 0;
       }
       assert posUpto < freq;
-
+      
       if (posUpto == 0 && random.nextBoolean()) {
         // Sometimes index pos = 0
       } else if (posSpacing == 1) {
@@ -270,7 +270,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       posUpto++;
       return pos;
     }
-  
+
     @Override
     public int startOffset() {
       return startOffset;
@@ -414,10 +414,10 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
         // NOTE: sort of silly: we enum all the docs just to
         // get the maxDoc
-        DocsEnum docsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS, true);
+        PostingsEnum postingsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS, true);
         int doc;
         int lastDoc = 0;
-        while((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+        while((doc = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
           lastDoc = doc;
         }
         maxDoc = Math.max(lastDoc, maxDoc);
@@ -639,32 +639,27 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     }
 
     @Override
-    public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
       if (liveDocs != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
-      if ((flags & DocsEnum.FLAG_FREQS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
+      if (PostingsEnum.requiresPositions(flags)) {
+        if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          return null;
+        }
+        if ((flags & PostingsEnum.FLAG_OFFSETS) == PostingsEnum.FLAG_OFFSETS && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+          return null;
+        }
+        if ((flags & PostingsEnum.FLAG_PAYLOADS) == PostingsEnum.FLAG_PAYLOADS && allowPayloads == false) {
+          return null;
+        }
+      }
+      if ((flags & PostingsEnum.FLAG_FREQS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
         return null;
       }
       return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);
     }
 
-    @Override
-    public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      if (liveDocs != null) {
-        throw new IllegalArgumentException("liveDocs must be null");
-      }
-      if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-        return null;
-      }
-      if ((flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
-        return null;
-      }
-      if ((flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0 && allowPayloads == false) {
-        return null;
-      }
-      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);
-    }
   }
 
   // TODO maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
@@ -745,8 +740,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
   private static class ThreadState {
     // Only used with REUSE option:
-    public DocsEnum reuseDocsEnum;
-    public DocsAndPositionsEnum reuseDocsAndPositionsEnum;
+    public PostingsEnum reusePostingsEnum;
   }
 
   private void verifyEnum(ThreadState threadState,
@@ -809,78 +803,74 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && (alwaysTestMax || random().nextInt(3) <= 2);
 
-    DocsEnum prevDocsEnum = null;
+    PostingsEnum prevPostingsEnum = null;
 
-    DocsEnum docsEnum;
-    DocsAndPositionsEnum docsAndPositionsEnum;
+    PostingsEnum postingsEnum;
 
     if (!doCheckPositions) {
       if (allowPositions && random().nextInt(10) == 7) {
         // 10% of the time, even though we will not check positions, pull a DocsAndPositions enum
         
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
-          prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
+          prevPostingsEnum = threadState.reusePostingsEnum;
         }
 
-        int flags = 0;
+        int flags = PostingsEnum.FLAG_POSITIONS;
         if (alwaysTestMax || random().nextBoolean()) {
-          flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+          flags |= PostingsEnum.FLAG_OFFSETS;
         }
         if (alwaysTestMax || random().nextBoolean()) {
-          flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+          flags |= PostingsEnum.FLAG_PAYLOADS;
         }
 
         if (VERBOSE) {
-          System.out.println("  get DocsAndPositionsEnum (but we won't check positions) flags=" + flags);
+          System.out.println("  get DocsEnum (but we won't check positions) flags=" + flags);
         }
 
-        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
-        docsEnum = threadState.reuseDocsAndPositionsEnum;
-        docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
+        threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, flags);
+        postingsEnum = threadState.reusePostingsEnum;
       } else {
         if (VERBOSE) {
           System.out.println("  get DocsEnum");
         }
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
-          prevDocsEnum = threadState.reuseDocsEnum;
+          prevPostingsEnum = threadState.reusePostingsEnum;
         }
-        threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
-        docsEnum = threadState.reuseDocsEnum;
-        docsAndPositionsEnum = null;
+        threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, doCheckFreqs ? PostingsEnum.FLAG_FREQS : PostingsEnum.FLAG_NONE);
+        postingsEnum = threadState.reusePostingsEnum;
       }
     } else {
       if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
-        prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
+        prevPostingsEnum = threadState.reusePostingsEnum;
       }
 
-      int flags = 0;
+      int flags = PostingsEnum.FLAG_POSITIONS;
       if (alwaysTestMax || doCheckOffsets || random().nextInt(3) == 1) {
-        flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+        flags |= PostingsEnum.FLAG_OFFSETS;
       }
       if (alwaysTestMax || doCheckPayloads|| random().nextInt(3) == 1) {
-        flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+        flags |= PostingsEnum.FLAG_PAYLOADS;
       }
 
       if (VERBOSE) {
-        System.out.println("  get DocsAndPositionsEnum flags=" + flags);
+        System.out.println("  get DocsEnum flags=" + flags);
       }
 
-      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
-      docsEnum = threadState.reuseDocsAndPositionsEnum;
-      docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
+      threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, flags);
+      postingsEnum = threadState.reusePostingsEnum;
     }
 
-    assertNotNull("null DocsEnum", docsEnum);
-    int initialDocID = docsEnum.docID();
-    assertEquals("inital docID should be -1" + docsEnum, -1, initialDocID);
+    assertNotNull("null DocsEnum", postingsEnum);
+    int initialDocID = postingsEnum.docID();
+    assertEquals("inital docID should be -1" + postingsEnum, -1, initialDocID);
 
     if (VERBOSE) {
-      if (prevDocsEnum == null) {
-        System.out.println("  got enum=" + docsEnum);
-      } else if (prevDocsEnum == docsEnum) {
-        System.out.println("  got reuse enum=" + docsEnum);
+      if (prevPostingsEnum == null) {
+        System.out.println("  got enum=" + postingsEnum);
+      } else if (prevPostingsEnum == postingsEnum) {
+        System.out.println("  got reuse enum=" + postingsEnum);
       } else {
-        System.out.println("  got enum=" + docsEnum + " (reuse of " + prevDocsEnum + " failed)");
+        System.out.println("  got enum=" + postingsEnum + " (reuse of " + prevPostingsEnum + " failed)");
       }
     }
 
@@ -930,10 +920,10 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     while (expected.upto <= stopAt) {
       if (expected.upto == stopAt) {
         if (stopAt == expected.docFreq) {
-          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.nextDoc());
 
           // Common bug is to forget to set this.doc=NO_MORE_DOCS in the enum!:
-          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.docID());
+          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.docID());
         }
         break;
       }
@@ -944,7 +934,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
           // Pick target we know exists:
           final int skipCount = TestUtil.nextInt(random(), 1, skipInc);
           for(int skip=0;skip<skipCount;skip++) {
-            if (expected.nextDoc() == DocsEnum.NO_MORE_DOCS) {
+            if (expected.nextDoc() == PostingsEnum.NO_MORE_DOCS) {
               break;
             }
           }
@@ -958,21 +948,21 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         }
 
         if (expected.upto >= stopAt) {
-          int target = random().nextBoolean() ? maxDoc : DocsEnum.NO_MORE_DOCS;
+          int target = random().nextBoolean() ? maxDoc : PostingsEnum.NO_MORE_DOCS;
           if (VERBOSE) {
             System.out.println("  now advance to end (target=" + target + ")");
           }
-          assertEquals("DocsEnum should have ended but didn't", DocsEnum.NO_MORE_DOCS, docsEnum.advance(target));
+          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.advance(target));
           break;
         } else {
           if (VERBOSE) {
             if (targetDocID != -1) {
-              System.out.println("  now advance to random target=" + targetDocID + " (" + expected.upto + " of " + stopAt + ") current=" + docsEnum.docID());
+              System.out.println("  now advance to random target=" + targetDocID + " (" + expected.upto + " of " + stopAt + ") current=" + postingsEnum.docID());
             } else {
-              System.out.println("  now advance to known-exists target=" + expected.docID() + " (" + expected.upto + " of " + stopAt + ") current=" + docsEnum.docID());
+              System.out.println("  now advance to known-exists target=" + expected.docID() + " (" + expected.upto + " of " + stopAt + ") current=" + postingsEnum.docID());
             }
           }
-          int docID = docsEnum.advance(targetDocID != -1 ? targetDocID : expected.docID());
+          int docID = postingsEnum.advance(targetDocID != -1 ? targetDocID : expected.docID());
           assertEquals("docID is wrong", expected.docID(), docID);
         }
       } else {
@@ -980,9 +970,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         if (VERBOSE) {
           System.out.println("  now nextDoc to " + expected.docID() + " (" + expected.upto + " of " + stopAt + ")");
         }
-        int docID = docsEnum.nextDoc();
+        int docID = postingsEnum.nextDoc();
         assertEquals("docID is wrong", expected.docID(), docID);
-        if (docID == DocsEnum.NO_MORE_DOCS) {
+        if (docID == PostingsEnum.NO_MORE_DOCS) {
           break;
         }
       }
@@ -991,12 +981,12 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         if (VERBOSE) {
           System.out.println("    now freq()=" + expected.freq());
         }
-        int freq = docsEnum.freq();
+        int freq = postingsEnum.freq();
         assertEquals("freq is wrong", expected.freq(), freq);
       }
 
       if (doCheckPositions) {
-        int freq = docsEnum.freq();
+        int freq = postingsEnum.freq();
         int numPosToConsume;
         if (!alwaysTestMax && options.contains(Option.PARTIAL_POS_CONSUME) && random().nextInt(5) == 1) {
           numPosToConsume = random().nextInt(freq);
@@ -1009,7 +999,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
           if (VERBOSE) {
             System.out.println("    now nextPosition to " + pos);
           }
-          assertEquals("position is wrong", pos, docsAndPositionsEnum.nextPosition());
+          assertEquals("position is wrong", pos, postingsEnum.nextPosition());
 
           if (doCheckPayloads) {
             BytesRef expectedPayload = expected.getPayload();
@@ -1018,9 +1008,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                 System.out.println("      now check expectedPayload length=" + (expectedPayload == null ? 0 : expectedPayload.length));
               }
               if (expectedPayload == null || expectedPayload.length == 0) {
-                assertNull("should not have payload", docsAndPositionsEnum.getPayload());
+                assertNull("should not have payload", postingsEnum.getPayload());
               } else {
-                BytesRef payload = docsAndPositionsEnum.getPayload();
+                BytesRef payload = postingsEnum.getPayload();
                 assertNotNull("should have payload but doesn't", payload);
 
                 assertEquals("payload length is wrong", expectedPayload.length, payload.length);
@@ -1032,7 +1022,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                 
                 // make a deep copy
                 payload = BytesRef.deepCopyOf(payload);
-                assertEquals("2nd call to getPayload returns something different!", payload, docsAndPositionsEnum.getPayload());
+                assertEquals("2nd call to getPayload returns something different!", payload, postingsEnum.getPayload());
               }
             } else {
               if (VERBOSE) {
@@ -1046,8 +1036,8 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
               if (VERBOSE) {
                 System.out.println("      now check offsets: startOff=" + expected.startOffset() + " endOffset=" + expected.endOffset());
               }
-              assertEquals("startOffset is wrong", expected.startOffset(), docsAndPositionsEnum.startOffset());
-              assertEquals("endOffset is wrong", expected.endOffset(), docsAndPositionsEnum.endOffset());
+              assertEquals("startOffset is wrong", expected.startOffset(), postingsEnum.startOffset());
+              assertEquals("endOffset is wrong", expected.endOffset(), postingsEnum.endOffset());
             } else {
               if (VERBOSE) {
                 System.out.println("      skip check offsets");
@@ -1057,8 +1047,8 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
             if (VERBOSE) {
               System.out.println("      now check offsets are -1");
             }
-            assertEquals("startOffset isn't -1", -1, docsAndPositionsEnum.startOffset());
-            assertEquals("endOffset isn't -1", -1, docsAndPositionsEnum.endOffset());
+            assertEquals("startOffset isn't -1", -1, postingsEnum.startOffset());
+            assertEquals("endOffset isn't -1", -1, postingsEnum.endOffset());
           }
         }
       }
@@ -1406,6 +1396,41 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       IOUtils.rm(path);
     }
   }
+
+  protected boolean isPostingsEnumReuseImplemented() {
+    return true;
+  }
+
+  public void testPostingsEnumReuse() throws Exception {
+
+    Path path = createTempDir("testPostingsEnumReuse");
+    Directory dir = newFSDirectory(path);
+
+    FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, random().nextBoolean(), true);
+    Collections.shuffle(allTerms, random());
+    FieldAndTerm fieldAndTerm = allTerms.get(0);
+
+    Terms terms = fieldsProducer.terms(fieldAndTerm.field);
+    TermsEnum te = terms.iterator(null);
+
+    te.seekExact(fieldAndTerm.term);
+    checkReuse(te, PostingsEnum.FLAG_FREQS, PostingsEnum.FLAG_ALL, false);
+    if (isPostingsEnumReuseImplemented())
+      checkReuse(te, PostingsEnum.FLAG_ALL, PostingsEnum.FLAG_ALL, true);
+
+    fieldsProducer.close();
+    dir.close();
+    IOUtils.rm(path);
+  }
+
+  protected static void checkReuse(TermsEnum termsEnum, int firstFlags, int secondFlags, boolean shouldReuse) throws IOException {
+    PostingsEnum postings1 = termsEnum.postings(null, null, firstFlags);
+    PostingsEnum postings2 = termsEnum.postings(null, postings1, secondFlags);
+    if (shouldReuse)
+      assertSame("Expected PostingsEnum " + postings1.getClass().getName() + " to be reused", postings1, postings2);
+    else
+      assertNotSame("Expected PostingsEnum " + postings1.getClass().getName() + " to not be reused", postings1, postings2);
+  }
   
   public void testJustEmptyField() throws Exception {
     Directory dir = newDirectory();
@@ -1470,7 +1495,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     LeafReader ar = getOnlySegmentReader(ir);
     TermsEnum termsEnum = ar.terms("field").iterator(null);
     assertTrue(termsEnum.seekExact(new BytesRef("value")));
-    DocsEnum docsEnum = termsEnum.docs(null, null, DocsEnum.FLAG_NONE);
+    PostingsEnum docsEnum = termsEnum.postings(null, null, DocsEnum.FLAG_NONE);
     assertEquals(0, docsEnum.nextDoc());
     assertEquals(1, docsEnum.freq());
     assertEquals(1, docsEnum.nextDoc());
@@ -1506,8 +1531,8 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       TermsEnum termsEnum = terms.iterator(null);
       BytesRef term = termsEnum.next();
       if (term != null) {
-        DocsEnum docsEnum = termsEnum.docs(null, null);
-        assertTrue(docsEnum.nextDoc() == DocsEnum.NO_MORE_DOCS);
+        PostingsEnum postingsEnum = termsEnum.postings(null, null);
+        assertTrue(postingsEnum.nextDoc() == PostingsEnum.NO_MORE_DOCS);
       }
     }
     ir.close();
@@ -1592,27 +1617,24 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                     assert terms != null;
 
                     TermsEnum termsEnum = terms.iterator(null);
-                    DocsEnum docs = null;
+                    PostingsEnum docs = null;
                     while(termsEnum.next() != null) {
                       BytesRef term = termsEnum.term();
-
-                      if (random().nextBoolean()) {
-                        docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
-                      } else if (docs instanceof DocsAndPositionsEnum) {
-                        docs = termsEnum.docsAndPositions(null, (DocsAndPositionsEnum) docs, 0);
+                      boolean noPositions = random().nextBoolean();
+                      if (noPositions) {
+                        docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_FREQS);
                       } else {
-                        docs = termsEnum.docsAndPositions(null, null, 0);
+                        docs = termsEnum.postings(null, null, PostingsEnum.FLAG_POSITIONS);
                       }
                       int docFreq = 0;
                       long totalTermFreq = 0;
-                      while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                      while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
                         docFreq++;
                         totalTermFreq += docs.freq();
-                        if (docs instanceof DocsAndPositionsEnum) {
-                          DocsAndPositionsEnum posEnum = (DocsAndPositionsEnum) docs;
-                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
-                          for(int i=0;i<limit;i++) {
-                            posEnum.nextPosition();
+                        int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                        if (!noPositions) {
+                          for (int i = 0; i < limit; i++) {
+                            docs.nextPosition();
                           }
                         }
                       }
@@ -1646,24 +1668,22 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                     // Also test seeking the TermsEnum:
                     for(String term : termFreqs.keySet()) {
                       if (termsEnum.seekExact(new BytesRef(term))) {
-                        if (random().nextBoolean()) {
-                          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
-                        } else if (docs instanceof DocsAndPositionsEnum) {
-                          docs = termsEnum.docsAndPositions(null, (DocsAndPositionsEnum) docs, 0);
+                        boolean noPositions = random().nextBoolean();
+                        if (noPositions) {
+                          docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_FREQS);
                         } else {
-                          docs = termsEnum.docsAndPositions(null, null, 0);
+                          docs = termsEnum.postings(null, null, PostingsEnum.FLAG_POSITIONS);
                         }
 
                         int docFreq = 0;
                         long totalTermFreq = 0;
-                        while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                        while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
                           docFreq++;
                           totalTermFreq += docs.freq();
-                          if (docs instanceof DocsAndPositionsEnum) {
-                            DocsAndPositionsEnum posEnum = (DocsAndPositionsEnum) docs;
-                            int limit = TestUtil.nextInt(random(), 1, docs.freq());
-                            for(int i=0;i<limit;i++) {
-                              posEnum.nextPosition();
+                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                          if (!noPositions) {
+                            for (int i = 0; i < limit; i++) {
+                              docs.nextPosition();
                             }
                           }
                         }
