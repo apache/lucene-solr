@@ -136,7 +136,7 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredBulkScorer(context, weight, filterDocIdSet, needsScores);
+        return strategy.filteredBulkScorer(context, weight, filterDocIdSet);
 
       }
     };
@@ -452,7 +452,7 @@ public class FilteredQuery extends Query {
      * @return a filtered top scorer
      */
     public BulkScorer filteredBulkScorer(LeafReaderContext context,
-        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
+        Weight weight, DocIdSet docIdSet) throws IOException {
       Scorer scorer = filteredScorer(context, weight, docIdSet);
       if (scorer == null) {
         return null;
@@ -573,12 +573,12 @@ public class FilteredQuery extends Query {
 
     @Override
     public BulkScorer filteredBulkScorer(final LeafReaderContext context,
-        Weight weight, DocIdSet docIdSet, boolean needsScores) throws IOException {
+        Weight weight, DocIdSet docIdSet) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
       if (filterAcceptDocs == null) {
         // Filter does not provide random-access Bits; we
         // must fallback to leapfrog:
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, docIdSet, needsScores);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, docIdSet);
       }
       final Scorer scorer = weight.scorer(context, null);
       return scorer == null ? null : new QueryFirstBulkScorer(scorer, filterAcceptDocs);
