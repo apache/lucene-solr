@@ -101,6 +101,10 @@ New Features
   for setting 'highlight' and 'allTermsRequired' in the suggester configuration.
   (Boon Low, Varun Thacker via Tomás Fernández Löbbe)
 
+* SOLR-7083:Support managing all named components in solrconfig such as
+  requestHandler, queryParser, queryResponseWriter, valueSourceParser,
+  transformer, queryConverter (Noble Paul)
+
 Bug Fixes
 ----------------------
 

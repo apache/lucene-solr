@@ -95,7 +95,7 @@ public class SolrConfig extends Config implements MapSerializable{
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
   private RequestParams requestParams;
 
-  static enum PluginOpts {
+  public static enum PluginOpts {
     MULTI_OK, 
     REQUIRE_NAME,
     REQUIRE_CLASS,
@@ -295,7 +295,7 @@ public class SolrConfig extends Config implements MapSerializable{
     Config.log.info("Loaded SolrConfig: " + name);
   }
 
-  public static List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
+  public static final  List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
       .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
@@ -323,6 +323,11 @@ public class SolrConfig extends Config implements MapSerializable{
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK))
       .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
       .build();
+  private static final Map<String, SolrPluginInfo> clsVsInfo = new HashMap<>();
+
+  static {
+    for (SolrPluginInfo plugin : plugins) clsVsInfo.put(plugin.clazz.getName(), plugin);
+  }
 
   public static class SolrPluginInfo{
 
@@ -627,9 +632,21 @@ public class SolrConfig extends Config implements MapSerializable{
    * SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    * IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
-  public List<PluginInfo> getPluginInfos(String  type){
+  public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
-    return result == null ? Collections.<PluginInfo>emptyList(): result; 
+    SolrPluginInfo info = clsVsInfo.get(type);
+    if (info != null && info.options.contains(REQUIRE_NAME)) {
+      Map<String, Map> infos = overlay.getNamedPlugins(info.tag);
+      if (!infos.isEmpty()) {
+        LinkedHashMap<String, PluginInfo> map = new LinkedHashMap<>();
+        if (result != null) for (PluginInfo pluginInfo : result) map.put(pluginInfo.name, pluginInfo);
+        for (Map.Entry<String, Map> e : infos.entrySet()) {
+          map.put(e.getKey(), new PluginInfo(info.tag, e.getValue()));
+        }
+        result = new ArrayList<>(map.values());
+      }
+    }
+    return result == null ? Collections.<PluginInfo>emptyList() : result;
   }
   public PluginInfo getPluginInfo(String  type){
     List<PluginInfo> result = pluginStore.get(type);
@@ -741,10 +758,8 @@ public class SolrConfig extends Config implements MapSerializable{
       if(plugin.options.contains(PluginOpts.REQUIRE_NAME)){
         LinkedHashMap items = new LinkedHashMap();
         for (PluginInfo info : infos) items.put(info.name, info.toMap());
-        if(tag.equals(SolrRequestHandler.TYPE)){
-          for (Map.Entry e : overlay.getReqHandlers().entrySet())  items.put(e.getKey(),e.getValue());
-        }
-        result.put(tag,items);
+        for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
+        result.put(tag, items);
       } else {
         if(plugin.options.contains(MULTI_OK)){
           ArrayList<Map> l = new ArrayList<>();

@@ -164,13 +164,8 @@ public final class RequestHandlers {
     Map<String, PluginInfo> infoMap= new LinkedHashMap<>();
     //deduping implicit and explicit requesthandlers
     for (PluginInfo info : implicits) infoMap.put(info.name,info);
-    for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
-      if (infoMap.containsKey(info.name)) infoMap.remove(info.name);
-    for (Map.Entry e : core.getSolrConfig().getOverlay().getReqHandlers().entrySet())
-      infoMap.put((String)e.getKey(), new PluginInfo(SolrRequestHandler.TYPE, (Map)e.getValue()));
-
+    for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) infoMap.put(info.name, info);
     ArrayList<PluginInfo> infos = new ArrayList<>(infoMap.values());
-    infos.addAll(config.getPluginInfos(SolrRequestHandler.class.getName()));
     for (PluginInfo info : infos) {
       try {
         SolrRequestHandler requestHandler;

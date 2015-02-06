@@ -18,23 +18,6 @@ package org.apache.solr.core;
  */
 
 
-import com.google.common.collect.ImmutableList;
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.handler.TestSolrConfigHandlerCloud;
-import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
-import org.apache.solr.util.RestTestBase;
-import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.Before;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
-import org.restlet.ext.servlet.ServerServlet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -48,10 +31,25 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Arrays.asList;
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
+import org.apache.solr.util.RestTestBase;
+import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
+import org.junit.Before;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
+import org.restlet.ext.servlet.ServerServlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
-import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
 public class TestSolrConfigHandler extends RestTestBase {
   public static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandler.class);
@@ -223,6 +221,152 @@ public class TestSolrConfigHandler extends RestTestBase {
     }
     assertTrue( "Could not delete requestHandler  ", success);
 
+    payload = "{\n" +
+        "'create-queryconverter' : { 'name' : 'qc', 'class': 'org.apache.solr.spelling.SpellingQueryConverter'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "queryConverter", "qc", "class"),
+        "org.apache.solr.spelling.SpellingQueryConverter",
+        10);
+    payload = "{\n" +
+        "'update-queryconverter' : { 'name' : 'qc', 'class': 'org.apache.solr.spelling.SuggestQueryConverter'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "queryConverter", "qc", "class"),
+        "org.apache.solr.spelling.SuggestQueryConverter",
+        10);
+
+    payload = "{\n" +
+        "'delete-queryconverter' : 'qc'" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "queryConverter", "qc"),
+        null,
+        10);
+
+    payload = "{\n" +
+        "'create-searchcomponent' : { 'name' : 'tc', 'class': 'org.apache.solr.handler.component.TermsComponent'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "searchComponent", "tc", "class"),
+        "org.apache.solr.handler.component.TermsComponent",
+        10);
+    payload = "{\n" +
+        "'update-searchcomponent' : { 'name' : 'tc', 'class': 'org.apache.solr.handler.component.TermVectorComponent' }\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "searchComponent", "tc", "class"),
+        "org.apache.solr.handler.component.TermVectorComponent",
+        10);
+
+    payload = "{\n" +
+        "'delete-searchcomponent' : 'tc'" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "searchComponent", "tc"),
+        null,
+        10);
+   //<valueSourceParser name="countUsage" class="org.apache.solr.core.CountUsageValueSourceParser"/>
+    payload = "{\n" +
+        "'create-valuesourceparser' : { 'name' : 'cu', 'class': 'org.apache.solr.core.CountUsageValueSourceParser'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "valueSourceParser", "cu", "class"),
+        "org.apache.solr.core.CountUsageValueSourceParser",
+        10);
+    //  <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
+//    <float name="nvlFloatValue">0.0</float>
+//    </valueSourceParser>
+    payload = "{\n" +
+        "'update-valuesourceparser' : { 'name' : 'cu', 'class': 'org.apache.solr.search.function.NvlValueSourceParser'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "valueSourceParser", "cu", "class"),
+        "org.apache.solr.search.function.NvlValueSourceParser",
+        10);
+
+    payload = "{\n" +
+        "'delete-valuesourceparser' : 'cu'" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "valueSourceParser", "cu"),
+        null,
+        10);
+//    <transformer name="mytrans2" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+//    <int name="value">5</int>
+//    </transformer>
+    payload = "{\n" +
+        "'create-transformer' : { 'name' : 'mytrans', 'class': 'org.apache.solr.response.transform.ValueAugmenterFactory', 'value':'5'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "transformer", "mytrans", "class"),
+        "org.apache.solr.response.transform.ValueAugmenterFactory",
+        10);
+
+    payload = "{\n" +
+        "'update-transformer' : { 'name' : 'mytrans', 'class': 'org.apache.solr.response.transform.ValueAugmenterFactory', 'value':'6'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "transformer","mytrans","value"),
+        "6",
+        10);
+
+    payload = "{\n" +
+        "'delete-transformer' : 'mytrans'" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrServer,
+        Arrays.asList("config", "transformer", "mytrans"),
+        null,
+        10);
+
   }
 
   public static Map testForResponseElement(RestTestHarness harness,
@@ -252,7 +396,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     }
 
-    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(m)), success);
+    assertTrue(MessageFormat.format("Could not get expected value  ''{0}'' for path ''{1}'' full output: {2}", expected, StrUtils.join(jsonPath, '/'), getAsString(m)), success);
     return m;
   }
 
