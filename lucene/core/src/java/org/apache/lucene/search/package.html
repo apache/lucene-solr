@@ -569,7 +569,7 @@ on the built-in available scoring models and extending or changing Similarity.
    by the {@link org.apache.lucene.search.Weight Weight} object depends on what type of Query was
    submitted. In most real world applications with multiple query terms, the 
    {@link org.apache.lucene.search.Scorer Scorer} is going to be a <code>BooleanScorer2</code> created
-   from {@link org.apache.lucene.search.BooleanQuery.BooleanWeight BooleanWeight} (see the section on
+   from {@link org.apache.lucene.search.BooleanWeight BooleanWeight} (see the section on
    <a href="#customQueriesExpert">custom queries</a> for info on changing this).
 </p>
 <p>Assuming a BooleanScorer2, we first initialize the Coordinator, which is used to apply the coord() 

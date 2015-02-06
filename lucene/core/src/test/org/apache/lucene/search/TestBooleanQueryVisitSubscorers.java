@@ -283,7 +283,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
 
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new BooleanWeight(searcher, needsScores, false) {
+      return new BooleanWeight(this, searcher, needsScores, false) {
         @Override
         public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
           Scorer scorer = scorer(context, acceptDocs);
