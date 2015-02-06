@@ -291,10 +291,7 @@
         <!-- in this example, we will only use synonyms at query time
         <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         -->
-        <!-- Case insensitive stop word removal.
-          add enablePositionIncrements=true in both the index and query
-          analyzers to leave a 'gap' for more accurate phrase queries.
-        -->
+        <!-- Case insensitive stop word removal. -->
         <filter class="solr.StopFilterFactory"
                 ignoreCase="true"
                 words="lang/stopwords_en.txt"
@@ -341,10 +338,7 @@
         <!-- in this example, we will only use synonyms at query time
         <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         -->
-        <!-- Case insensitive stop word removal.
-          add enablePositionIncrements=true in both the index and query
-          analyzers to leave a 'gap' for more accurate phrase queries.
-        -->
+        <!-- Case insensitive stop word removal. -->
         <filter class="solr.StopFilterFactory"
                 ignoreCase="true"
                 words="lang/stopwords_en.txt"
