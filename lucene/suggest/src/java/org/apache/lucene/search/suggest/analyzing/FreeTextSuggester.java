@@ -110,7 +110,8 @@ import org.apache.lucene.util.fst.Util.TopResults;
  *
  * @lucene.experimental
  */
-public class FreeTextSuggester extends Lookup {
+// redundant 'implements Accountable' to workaround javadocs bugs
+public class FreeTextSuggester extends Lookup implements Accountable {
 
   /** Codec name used in the header for the saved model. */
   public final static String CODEC_NAME = "freetextsuggest";

@@ -60,7 +60,8 @@ import org.apache.lucene.util.fst.Util.TopResults;
  * 
  * @lucene.experimental
  */
-public class WFSTCompletionLookup extends Lookup {
+// redundant 'implements Accountable' to workaround javadocs bugs
+public class WFSTCompletionLookup extends Lookup implements Accountable {
   
   /**
    * FST<Long>, weights are encoded as costs: (Integer.MAX_VALUE-weight)
