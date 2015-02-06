@@ -46,7 +46,6 @@ public class ConfigOverlay implements MapSerializable{
   private final Map<String, Object> data;
   private Map<String,Object> props;
   private Map<String,Object> userProps;
-  private Map<String, Map> reqHandlers;
 
   public ConfigOverlay(Map<String,Object> jsonObj, int znodeVersion){
     if(jsonObj == null) jsonObj= Collections.EMPTY_MAP;
@@ -56,9 +55,6 @@ public class ConfigOverlay implements MapSerializable{
     if(props == null) props= Collections.EMPTY_MAP;
     userProps = (Map<String, Object>) data.get("userProps");
     if(userProps == null) userProps= Collections.EMPTY_MAP;
-    reqHandlers = (Map<String, Map>) data.get(SolrRequestHandler.TYPE);
-    if(reqHandlers == null) reqHandlers = new LinkedHashMap<>();
-
   }
   public Object getXPathProperty(String xpath){
     return getXPathProperty(xpath,true);
@@ -266,22 +262,24 @@ public class ConfigOverlay implements MapSerializable{
     result.putAll(data);
     return result;
   }
-
-  public Map<String, Map> getReqHandlers() {
+  public Map<String, Map> getNamedPlugins(String typ){
+    Map<String, Map> reqHandlers = (Map<String, Map>) data.get(typ);
+    if(reqHandlers == null) return Collections.EMPTY_MAP;
     return Collections.unmodifiableMap(reqHandlers);
   }
 
-  public ConfigOverlay addReqHandler(Map<String, Object> info) {
+
+  public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
     Map dataCopy =  RequestParams.getDeepCopy(data, 4);
-    Map reqHandler = (Map) dataCopy.get(SolrRequestHandler.TYPE);
-    if(reqHandler== null) dataCopy.put(SolrRequestHandler.TYPE, reqHandler = new LinkedHashMap());
+    Map reqHandler = (Map) dataCopy.get(typ);
+    if(reqHandler== null) dataCopy.put(typ, reqHandler = new LinkedHashMap());
     reqHandler.put(info.get(CoreAdminParams.NAME) , info);
     return new ConfigOverlay(dataCopy, this.znodeVersion);
   }
 
-  public ConfigOverlay deleteHandler(String name) {
+  public ConfigOverlay deleteNamedPlugin(String name, String typ) {
     Map dataCopy =  RequestParams.getDeepCopy(data,4);
-    Map reqHandler = (Map) dataCopy.get(SolrRequestHandler.TYPE);
+    Map reqHandler = (Map) dataCopy.get(typ);
     if(reqHandler==null) return this;
     reqHandler.remove(name);
     return new ConfigOverlay(dataCopy,this.znodeVersion);

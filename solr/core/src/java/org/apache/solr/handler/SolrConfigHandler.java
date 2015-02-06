@@ -22,13 +22,16 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -43,11 +46,16 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.PluginsRegistry;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.SchemaManager;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +64,25 @@ import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 public class SolrConfigHandler extends RequestHandlerBase {
   public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
   public static final boolean configEditing_disabled = Boolean.getBoolean("disable.configEdit");
+  private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
+
+  static {
+    Map<String, SolrConfig.SolrPluginInfo> map = new HashMap<>();
+    for (SolrConfig.SolrPluginInfo plugin : SolrConfig.plugins) {
+      if (plugin.options.contains(REQUIRE_NAME)) {
+        map.put(plugin.tag.toLowerCase(Locale.ROOT), plugin);
+
+      }
+    }
+    namedPlugins = Collections.unmodifiableMap(map);
+  }
+
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -186,7 +208,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
     private void handleParams(ArrayList<CommandOperation> ops, RequestParams params) {
       for (CommandOperation op : ops) {
         switch (op.name) {
-          case CREATE:
+          case SET:
           case UPDATE: {
             Map<String, Object> map = op.getDataMap();
             if (op.hasError()) break;
@@ -282,13 +304,25 @@ public class SolrConfigHandler extends RequestHandlerBase {
         case UNSET_USER_PROPERTY:
           overlay = applyUnsetUserProp(op, overlay);
           break;
-        case UPDATE_REQHANDLER:
-        case CREATE_REQHANDLER:
-          overlay = applyRequestHandler(op, overlay);
-          break;
-        case DELETE_REQHANDLER:
-          overlay = applyDeleteHandler(op,overlay);
-          break;
+        default: {
+          List<String> pcs = StrUtils.splitSmart(op.name.toLowerCase(Locale.ROOT), '-');
+          if (pcs.size() != 2) {
+            op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+          } else {
+            String prefix = pcs.get(0);
+            String name = pcs.get(1);
+            if (cmdPrefixes.contains(prefix) && namedPlugins.containsKey(name)) {
+              SolrConfig.SolrPluginInfo info = namedPlugins.get(name);
+              if ("delete".equals(prefix)) {
+                overlay = deleteNamedComponent(op, overlay, info.tag);
+              } else {
+                overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create"));
+              }
+            } else {
+              op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+            }
+          }
+        }
       }
     }
     List errs = CommandOperation.captureErrors(ops);
@@ -308,49 +342,54 @@ public class SolrConfigHandler extends RequestHandlerBase {
     }
 
   }
-
-    private ConfigOverlay applyDeleteHandler(CommandOperation op, ConfigOverlay overlay) {
+    private ConfigOverlay deleteNamedComponent(CommandOperation op, ConfigOverlay overlay, String typ) {
       String name = op.getStr(CommandOperation.ROOT_OBJ);
-      if(op.hasError()) return overlay;
-      if(overlay.getReqHandlers().containsKey(name)){
-        return overlay.deleteHandler(name);
+      if (op.hasError()) return overlay;
+      if (overlay.getNamedPlugins(typ).containsKey(name)) {
+        return overlay.deleteNamedPlugin(name, typ);
       } else {
-        op.addError(MessageFormat.format("NO such requestHandler ''{0}'' ",name));
+        op.addError(MessageFormat.format("NO such {0} ''{1}'' ", typ, name));
         return overlay;
       }
-
     }
 
-    private ConfigOverlay applyRequestHandler(CommandOperation op, ConfigOverlay overlay) {
-      String name=op.getStr(NAME);
-      op.getStr(CLASS_NAME);
+    private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info , CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
+      String name = op.getStr(NAME);
+      String clz = op.getStr(CLASS_NAME);
       op.getMap(PluginInfo.DEFAULTS, null);
-      op.getMap(PluginInfo.INVARIANTS,null);
-      op.getMap(PluginInfo.APPENDS,null);
-      if(op.hasError()) return overlay;
-
-
-      if(CREATE_REQHANDLER.equals(op.name)) {
-        if (overlay.getReqHandlers().containsKey(name)) {
-          op.addError(MessageFormat.format(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, UPDATE_REQHANDLER));
+      op.getMap(PluginInfo.INVARIANTS, null);
+      op.getMap(PluginInfo.APPENDS, null);
+      if (op.hasError()) return overlay;
+      if (!verifyClass(op, clz, info.clazz)) return overlay;
+      if (overlay.getNamedPlugins(info.tag).containsKey(name)) {
+        if (isCeate) {
+          op.addError(MessageFormat.format(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.tag.toLowerCase(Locale.ROOT)));
           return overlay;
         } else {
-          return overlay.addReqHandler(op.getDataMap());
+          return overlay.addNamedPlugin(op.getDataMap(), info.tag);
         }
-      } else if(UPDATE_REQHANDLER.equals(op.name)){
-        if (!overlay.getReqHandlers().containsKey(name)) {
-          op.addError(MessageFormat.format(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, CREATE_REQHANDLER));
-          return overlay;
+      } else {
+        if (isCeate) {
+          return overlay.addNamedPlugin(op.getDataMap(), info.tag);
         } else {
-          return overlay.addReqHandler(op.getDataMap());
-
+          op.addError(MessageFormat.format(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, "create-" + info.tag.toLowerCase(Locale.ROOT)));
+          return overlay;
         }
       }
+    }
 
-      return overlay;
+    private boolean verifyClass(CommandOperation op, String clz, Class expected) {
+      if (op.getStr("lib", null) == null) {
+        //this is not dynamically loaded so we can verify the class right away
+        try {
+          SolrCore.createInstance(clz, expected, expected.getSimpleName(), req.getCore());
+        } catch (Exception e) {
+          op.addError(e.getMessage());
+          return false;
+        }
 
-
-
+      }
+      return true;
     }
 
     private ConfigOverlay applySetUserProp(CommandOperation op, ConfigOverlay overlay) {
@@ -476,10 +515,9 @@ public class SolrConfigHandler extends RequestHandlerBase {
   public static final String UNSET_PROPERTY = "unset-property";
   public static final String SET_USER_PROPERTY = "set-user-property";
   public static final String UNSET_USER_PROPERTY = "unset-user-property";
-  public static final String CREATE_REQHANDLER = "create-requesthandler";
-  public static final String DELETE_REQHANDLER = "delete-requesthandler";
-  public static final String UPDATE_REQHANDLER = "update-requesthandler";
-  public static final String CREATE = "set";
+  public static final String SET = "set";
   public static final String UPDATE = "update";
+  public static final String CREATE = "create";
+  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE , UPDATE, "delete");
 
 }
