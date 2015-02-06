@@ -16,13 +16,12 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
 /**
  * Holds all state required for {@link PostingsReaderBase}
- * to produce a {@link DocsEnum} without re-seeking the
+ * to produce a {@link org.apache.lucene.index.PostingsEnum} without re-seeking the
  * terms dict.
  */
 public class BlockTermState extends OrdTermState {

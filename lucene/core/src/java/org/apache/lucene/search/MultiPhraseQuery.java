@@ -21,9 +21,8 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -197,11 +196,11 @@ public class MultiPhraseQuery extends Query {
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
 
-        final DocsAndPositionsEnum postingsEnum;
+        final PostingsEnum postingsEnum;
         int docFreq;
 
         if (terms.length > 1) {
-          postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum);
+          postingsEnum = new UnionPostingsEnum(liveDocs, context, terms, termContexts, termsEnum);
 
           // coarse -- this overcounts since a given doc can
           // have more than one term:
@@ -229,11 +228,11 @@ public class MultiPhraseQuery extends Query {
             return null;
           }
           termsEnum.seekExact(term.bytes(), termState);
-          postingsEnum = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.postings(liveDocs, null, PostingsEnum.FLAG_POSITIONS);
 
           if (postingsEnum == null) {
             // term does exist, but has no positions
-            assert termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE) != null: "termstate found but no term exists in reader";
+            assert termsEnum.postings(liveDocs, null, PostingsEnum.FLAG_NONE) != null: "termstate found but no term exists in reader";
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
@@ -408,15 +407,15 @@ public class MultiPhraseQuery extends Query {
  */
 
 // TODO: if ever we allow subclassing of the *PhraseScorer
-class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
+class UnionPostingsEnum extends PostingsEnum {
 
-  private static final class DocsQueue extends PriorityQueue<DocsAndPositionsEnum> {
-    DocsQueue(List<DocsAndPositionsEnum> docsEnums) throws IOException {
-      super(docsEnums.size());
+  private static final class DocsQueue extends PriorityQueue<PostingsEnum> {
+    DocsQueue(List<PostingsEnum> postingsEnums) throws IOException {
+      super(postingsEnums.size());
 
-      Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
+      Iterator<PostingsEnum> i = postingsEnums.iterator();
       while (i.hasNext()) {
-        DocsAndPositionsEnum postings = i.next();
+        PostingsEnum postings = i.next();
         if (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           add(postings);
         }
@@ -424,7 +423,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
 
     @Override
-    public final boolean lessThan(DocsAndPositionsEnum a, DocsAndPositionsEnum b) {
+    public final boolean lessThan(PostingsEnum a, PostingsEnum b) {
       return a.docID() < b.docID();
     }
   }
@@ -473,8 +472,8 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private IntQueue _posList;
   private long cost;
 
-  public UnionDocsAndPositionsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-    List<DocsAndPositionsEnum> docsEnums = new LinkedList<>();
+  public UnionPostingsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term, TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+    List<PostingsEnum> postingsEnums = new LinkedList<>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
       TermState termState = termContexts.get(term).get(context.ord);
@@ -483,16 +482,16 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+      PostingsEnum postings = termsEnum.postings(liveDocs, null, PostingsEnum.FLAG_POSITIONS);
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
       }
       cost += postings.cost();
-      docsEnums.add(postings);
+      postingsEnums.add(postings);
     }
 
-    _queue = new DocsQueue(docsEnums);
+    _queue = new DocsQueue(postingsEnums);
     _posList = new IntQueue();
   }
 
@@ -509,7 +508,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     _doc = _queue.top().docID();
 
     // merge sort all positions together
-    DocsAndPositionsEnum postings;
+    PostingsEnum postings;
     do {
       postings = _queue.top();
 
@@ -554,7 +553,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   @Override
   public final int advance(int target) throws IOException {
     while (_queue.top() != null && target > _queue.top().docID()) {
-      DocsAndPositionsEnum postings = _queue.pop();
+      PostingsEnum postings = _queue.pop();
       if (postings.advance(target) != NO_MORE_DOCS) {
         _queue.add(postings);
       }

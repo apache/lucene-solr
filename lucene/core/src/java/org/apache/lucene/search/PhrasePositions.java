@@ -29,13 +29,13 @@ final class PhrasePositions {
   int count;            // remaining pos in this doc
   int offset;           // position in phrase
   final int ord;                                  // unique across all PhrasePositions instances
-  final DocsAndPositionsEnum postings;            // stream of docs & positions
+  final PostingsEnum postings;            // stream of docs & positions
   PhrasePositions next;                           // used to make lists
   int rptGroup = -1; // >=0 indicates that this is a repeating PP
   int rptInd; // index in the rptGroup
   final Term[] terms; // for repetitions initialization 
 
-  PhrasePositions(DocsAndPositionsEnum postings, int o, int ord, Term[] terms) {
+  PhrasePositions(PostingsEnum postings, int o, int ord, Term[] terms) {
     this.postings = postings;
     offset = o;
     this.ord = ord;

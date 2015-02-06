@@ -25,7 +25,7 @@ import java.util.Random;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
@@ -321,7 +321,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final Terms terms = fields.terms("f");
     final TermsEnum te = terms.iterator(null);
     assertEquals(new BytesRef("a"), te.next());
-    final DocsAndPositionsEnum dpe = te.docsAndPositions(null, null);
+    final PostingsEnum dpe = te.postings(null, null, PostingsEnum.FLAG_ALL);
     assertEquals(0, dpe.nextDoc());
     assertEquals(2, dpe.freq());
     assertEquals(0, dpe.nextPosition());

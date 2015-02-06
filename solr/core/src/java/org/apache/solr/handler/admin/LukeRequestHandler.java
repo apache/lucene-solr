@@ -386,18 +386,18 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
   private static Document getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
-    DocsEnum docsEnum = null;
+    PostingsEnum postingsEnum = null;
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef text;
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a better way?
-    for (int idx = 0; idx < 1000 && docsEnum == null; ++idx) {
+    for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
       text = termsEnum.next();
       if (text == null) { // Ran off the end of the terms enum without finding any live docs with that field in them.
         return null;
       }
-      docsEnum = termsEnum.docs(reader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
-      if (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        return reader.document(docsEnum.docID());
+      postingsEnum = termsEnum.postings(reader.getLiveDocs(), postingsEnum, PostingsEnum.FLAG_NONE);
+      if (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        return reader.document(postingsEnum.docID());
       }
     }
     return null;

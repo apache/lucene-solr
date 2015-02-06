@@ -31,8 +31,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -291,18 +290,9 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
-      }
-
-      @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        if (!hasPositions()) {
-          return null;
-        }
-        decodeMetaData();
-        return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
+        return postingsReader.postings(fieldInfo, state, liveDocs, reuse, flags);
       }
 
       @Override

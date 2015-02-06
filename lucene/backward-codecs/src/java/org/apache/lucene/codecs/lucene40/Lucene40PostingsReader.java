@@ -25,12 +25,12 @@ import java.util.Collections;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
@@ -197,7 +197,12 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+
+    if (PostingsEnum.requiresPositions(flags)) {
+      return fullPostings(fieldInfo, termState, liveDocs, reuse, flags);
+    }
+
     if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
@@ -205,7 +210,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     return newDocsEnum(liveDocs, fieldInfo, (StandardTermState)termState);
   }
   
-  private boolean canReuse(DocsEnum reuse, Bits liveDocs) {
+  private boolean canReuse(PostingsEnum reuse, Bits liveDocs) {
     if (reuse != null && (reuse instanceof SegmentDocsEnumBase)) {
       SegmentDocsEnumBase docsEnum = (SegmentDocsEnumBase) reuse;
       // If you are using ParellelReader, and pass in a
@@ -227,9 +232,8 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     }
   }
 
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags)
+  protected PostingsEnum fullPostings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+                                               PostingsEnum reuse, int flags)
     throws IOException {
 
     boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -663,7 +667,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   // TODO specialize DocsAndPosEnum too
   
   // Decodes docs & positions. payloads nor offsets are present.
-  private final class SegmentDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final class SegmentDocsAndPositionsEnum extends PostingsEnum {
     final IndexInput startFreqIn;
     private final IndexInput freqIn;
     private final IndexInput proxIn;
@@ -866,7 +870,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   }
   
   // Decodes docs & positions & (payloads and/or offsets)
-  private class SegmentFullPositionsEnum extends DocsAndPositionsEnum {
+  private class SegmentFullPositionsEnum extends PostingsEnum {
     final IndexInput startFreqIn;
     private final IndexInput freqIn;
     private final IndexInput proxIn;

@@ -32,8 +32,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
@@ -382,19 +381,13 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       public long totalTermFreq() throws IOException {
         return delegate().totalTermFreq();
       }
-      
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-          DocsAndPositionsEnum reuse, int flags) throws IOException {
-        return delegate().docsAndPositions(liveDocs, reuse, flags);
-      }
-
-      @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags)
+      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags)
           throws IOException {
-        return delegate().docs(liveDocs, reuse, flags);
+        return delegate().postings(liveDocs, reuse, flags);
       }
+
     }
 
     @Override
@@ -460,7 +453,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
         FuzzySet bloomFilter = null;
 
-        DocsEnum docsEnum = null;
+        PostingsEnum postingsEnum = null;
         while (true) {
           BytesRef term = termsEnum.next();
           if (term == null) {
@@ -476,8 +469,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
             bloomFilters.put(fieldInfo, bloomFilter);
           }
           // Make sure there's at least one doc for this term:
-          docsEnum = termsEnum.docs(null, docsEnum, 0);
-          if (docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+          if (postingsEnum.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
             bloomFilter.addValue(term);
           }
         }

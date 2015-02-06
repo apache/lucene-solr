@@ -31,7 +31,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -455,7 +455,7 @@ public class PostingsHighlighter {
     
   private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<LeafReaderContext> leaves, int maxPassages, Query query) throws IOException {  
     Map<Integer,Object> highlights = new HashMap<>();
-    
+
     PassageFormatter fieldFormatter = getFormatter(field);
     if (fieldFormatter == null) {
       throw new NullPointerException("PassageFormatter cannot be null");
@@ -477,7 +477,7 @@ public class PostingsHighlighter {
 
     // we are processing in increasing docid order, so we only need to reinitialize stuff on segment changes
     // otherwise, we will just advance() existing enums to the new document in the same segment.
-    DocsAndPositionsEnum postings[] = null;
+    PostingsEnum postings[] = null;
     TermsEnum termsEnum = null;
     int lastLeaf = -1;
     
@@ -499,7 +499,7 @@ public class PostingsHighlighter {
         Terms t = r.terms(field);
         if (t != null) {
           termsEnum = t.iterator(null);
-          postings = new DocsAndPositionsEnum[terms.length];
+          postings = new PostingsEnum[terms.length];
         }
       }
       if (termsEnum == null) {
@@ -508,7 +508,7 @@ public class PostingsHighlighter {
       
       // if there are multi-term matches, we have to initialize the "fake" enum for each document
       if (automata.length > 0) {
-        DocsAndPositionsEnum dp = MultiTermHighlighting.getDocsEnum(analyzer.tokenStream(field, content), automata);
+        PostingsEnum dp = MultiTermHighlighting.getDocsEnum(analyzer.tokenStream(field, content), automata);
         dp.advance(doc - subContext.docBase);
         postings[terms.length-1] = dp; // last term is the multiterm matcher
       }
@@ -534,7 +534,7 @@ public class PostingsHighlighter {
   // we can intersect these with the postings lists via BreakIterator.preceding(offset),s
   // score each sentence as norm(sentenceStartOffset) * sum(weight * tf(freq))
   private Passage[] highlightDoc(String field, BytesRef terms[], int contentLength, BreakIterator bi, int doc, 
-      TermsEnum termsEnum, DocsAndPositionsEnum[] postings, int n) throws IOException {
+      TermsEnum termsEnum, PostingsEnum[] postings, int n) throws IOException {
     PassageScorer scorer = getScorer(field);
     if (scorer == null) {
       throw new NullPointerException("PassageScorer cannot be null");
@@ -543,7 +543,7 @@ public class PostingsHighlighter {
     float weights[] = new float[terms.length];
     // initialize postings
     for (int i = 0; i < terms.length; i++) {
-      DocsAndPositionsEnum de = postings[i];
+      PostingsEnum de = postings[i];
       int pDoc;
       if (de == EMPTY) {
         continue;
@@ -552,7 +552,7 @@ public class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
-        de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
+        de = postings[i] = termsEnum.postings(null, null, PostingsEnum.FLAG_OFFSETS);
         if (de == null) {
           // no positions available
           throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
@@ -590,7 +590,7 @@ public class PostingsHighlighter {
     
     OffsetsEnum off;
     while ((off = pq.poll()) != null) {
-      final DocsAndPositionsEnum dp = off.dp;
+      final PostingsEnum dp = off.dp;
       int start = dp.startOffset();
       if (start == -1) {
         throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
@@ -698,11 +698,11 @@ public class PostingsHighlighter {
   }
   
   private static class OffsetsEnum implements Comparable<OffsetsEnum> {
-    DocsAndPositionsEnum dp;
+    PostingsEnum dp;
     int pos;
     int id;
     
-    OffsetsEnum(DocsAndPositionsEnum dp, int id) throws IOException {
+    OffsetsEnum(PostingsEnum dp, int id) throws IOException {
       this.dp = dp;
       this.id = id;
       this.pos = 1;
@@ -724,10 +724,10 @@ public class PostingsHighlighter {
     }
   }
   
-  private static final DocsAndPositionsEnum EMPTY = new DocsAndPositionsEnum() {
+  private static final PostingsEnum EMPTY = new PostingsEnum() {
 
     @Override
-    public int nextPosition() throws IOException { return 0; }
+    public int nextPosition() throws IOException { return -1; }
 
     @Override
     public int startOffset() throws IOException { return Integer.MAX_VALUE; }

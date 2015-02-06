@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 
 /** 
  * A {@code FilterScorer} contains another {@code Scorer}, which it
@@ -32,11 +32,25 @@ import org.apache.lucene.util.AttributeSource;
  * further override some of these methods and may also provide additional
  * methods and fields.
  */
-abstract class FilterScorer extends Scorer {
+public abstract class FilterScorer extends Scorer {
   protected final Scorer in;
-  
+
+  /**
+   * Create a new FilterScorer
+   * @param in the {@link Scorer} to wrap
+   */
   public FilterScorer(Scorer in) {
     super(in.weight);
+    this.in = in;
+  }
+
+  /**
+   * Create a new FilterScorer with a specific weight
+   * @param in the {@link Scorer} to wrap
+   * @param weight a {@link Weight}
+   */
+  public FilterScorer(Scorer in, Weight weight) {
+    super(weight);
     this.in = in;
   }
   
@@ -61,6 +75,11 @@ abstract class FilterScorer extends Scorer {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    return in.nextPosition();
+  }
+
+  @Override
   public int advance(int target) throws IOException {
     return in.advance(target);
   }
@@ -68,6 +87,21 @@ abstract class FilterScorer extends Scorer {
   @Override
   public long cost() {
     return in.cost();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return in.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return in.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return in.getPayload();
   }
 
   @Override

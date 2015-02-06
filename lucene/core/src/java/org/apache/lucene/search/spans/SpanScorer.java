@@ -19,9 +19,10 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Public for extension only.
@@ -96,16 +97,37 @@ public class SpanScorer extends Scorer {
   public int freq() throws IOException {
     return numMatches;
   }
-  
+
+  @Override
+  public int nextPosition() throws IOException {
+    throw new UnsupportedOperationException("SpanQueries do not support nextPosition() iteration");
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
   /** Returns the intermediate "sloppy freq" adjusted for edit distance 
    *  @lucene.internal */
   // only public so .payloads can see it.
   public float sloppyFreq() throws IOException {
     return freq;
   }
-  
+
   @Override
   public long cost() {
     return spans.cost();
   }
+
 }

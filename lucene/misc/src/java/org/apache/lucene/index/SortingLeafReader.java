@@ -20,21 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Sorter.DocMap;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
@@ -52,7 +37,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 /**
  * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
  * {@link Sort}. You can use this class to sort an index as follows:
- * 
+ *
  * <pre class="prettyprint">
  * IndexWriter writer; // writer to which the sorted index will be added
  * DirectoryReader reader; // reader on the input index
@@ -62,7 +47,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * writer.close();
  * reader.close();
  * </pre>
- * 
+ *
  * @lucene.experimental
  */
 public class SortingLeafReader extends FilterLeafReader {
@@ -94,7 +79,7 @@ public class SortingLeafReader extends FilterLeafReader {
 
     private final Sorter.DocMap docMap;
     private final IndexOptions indexOptions;
-    
+
     public SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
@@ -118,7 +103,7 @@ public class SortingLeafReader extends FilterLeafReader {
 
     final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
     private final IndexOptions indexOptions;
-    
+
     public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions) {
       super(in);
       this.docMap = docMap;
@@ -145,8 +130,35 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, final int flags) throws IOException {
-      final DocsEnum inReuse;
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, final int flags) throws IOException {
+
+      if (PostingsEnum.requiresPositions(flags)) {
+        final PostingsEnum inReuse;
+        final SortingPostingsEnum wrapReuse;
+        if (reuse != null && reuse instanceof SortingPostingsEnum) {
+          // if we're asked to reuse the given DocsEnum and it is Sorting, return
+          // the wrapped one, since some Codecs expect it.
+          wrapReuse = (SortingPostingsEnum) reuse;
+          inReuse = wrapReuse.getWrapped();
+        } else {
+          wrapReuse = null;
+          inReuse = reuse;
+        }
+
+        final PostingsEnum inDocsAndPositions = in.postings(newToOld(liveDocs), inReuse, flags);
+        if (inDocsAndPositions == null) {
+          return null;
+        }
+
+        // we ignore the fact that offsets may be stored but not asked for,
+        // since this code is expected to be used during addIndexes which will
+        // ask for everything. if that assumption changes in the future, we can
+        // factor in whether 'flags' says offsets are not required.
+        final boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        return new SortingPostingsEnum(docMap.size(), wrapReuse, inDocsAndPositions, docMap, storeOffsets);
+      }
+
+      final PostingsEnum inReuse;
       final SortingDocsEnum wrapReuse;
       if (reuse != null && reuse instanceof SortingDocsEnum) {
         // if we're asked to reuse the given DocsEnum and it is Sorting, return
@@ -158,45 +170,18 @@ public class SortingLeafReader extends FilterLeafReader {
         inReuse = reuse;
       }
 
-      final DocsEnum inDocs = in.docs(newToOld(liveDocs), inReuse, flags);
-      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & DocsEnum.FLAG_FREQS) != 0;
+      final PostingsEnum inDocs = in.postings(newToOld(liveDocs), inReuse, flags);
+      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & PostingsEnum.FLAG_FREQS) != 0;
       return new SortingDocsEnum(docMap.size(), wrapReuse, inDocs, withFreqs, docMap);
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, final int flags) throws IOException {
-      final DocsAndPositionsEnum inReuse;
-      final SortingDocsAndPositionsEnum wrapReuse;
-      if (reuse != null && reuse instanceof SortingDocsAndPositionsEnum) {
-        // if we're asked to reuse the given DocsEnum and it is Sorting, return
-        // the wrapped one, since some Codecs expect it.
-        wrapReuse = (SortingDocsAndPositionsEnum) reuse;
-        inReuse = wrapReuse.getWrapped();
-      } else {
-        wrapReuse = null;
-        inReuse = reuse;
-      }
-
-      final DocsAndPositionsEnum inDocsAndPositions = in.docsAndPositions(newToOld(liveDocs), inReuse, flags);
-      if (inDocsAndPositions == null) {
-        return null;
-      }
-
-      // we ignore the fact that offsets may be stored but not asked for,
-      // since this code is expected to be used during addIndexes which will
-      // ask for everything. if that assumption changes in the future, we can
-      // factor in whether 'flags' says offsets are not required.
-      final boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      return new SortingDocsAndPositionsEnum(docMap.size(), wrapReuse, inDocsAndPositions, docMap, storeOffsets);
     }
 
   }
 
   private static class SortingBinaryDocValues extends BinaryDocValues {
-    
+
     private final BinaryDocValues in;
     private final Sorter.DocMap docMap;
-    
+
     SortingBinaryDocValues(BinaryDocValues in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
@@ -207,7 +192,7 @@ public class SortingLeafReader extends FilterLeafReader {
       return in.get(docMap.newToOld(docID));
     }
   }
-  
+
   private static class SortingNumericDocValues extends NumericDocValues {
 
     private final NumericDocValues in;
@@ -223,33 +208,33 @@ public class SortingLeafReader extends FilterLeafReader {
       return in.get(docMap.newToOld(docID));
     }
   }
-  
+
   private static class SortingSortedNumericDocValues extends SortedNumericDocValues {
-    
+
     private final SortedNumericDocValues in;
     private final Sorter.DocMap docMap;
-    
+
     SortingSortedNumericDocValues(SortedNumericDocValues in, DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
     }
-    
+
     @Override
     public int count() {
       return in.count();
     }
-    
+
     @Override
     public void setDocument(int doc) {
       in.setDocument(docMap.newToOld(doc));
     }
-    
+
     @Override
     public long valueAt(int index) {
       return in.valueAt(index);
     }
   }
-  
+
   private static class SortingBits implements Bits {
 
     private final Bits in;
@@ -270,12 +255,12 @@ public class SortingLeafReader extends FilterLeafReader {
       return in.length();
     }
   }
-  
+
   private static class SortingSortedDocValues extends SortedDocValues {
-    
+
     private final SortedDocValues in;
     private final Sorter.DocMap docMap;
-    
+
     SortingSortedDocValues(SortedDocValues in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
@@ -306,12 +291,12 @@ public class SortingLeafReader extends FilterLeafReader {
       return in.lookupTerm(key);
     }
   }
-  
+
   private static class SortingSortedSetDocValues extends SortedSetDocValues {
-    
+
     private final SortedSetDocValues in;
     private final Sorter.DocMap docMap;
-    
+
     SortingSortedSetDocValues(SortedSetDocValues in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
@@ -344,14 +329,14 @@ public class SortingLeafReader extends FilterLeafReader {
   }
 
   static class SortingDocsEnum extends FilterDocsEnum {
-    
+
     private static final class DocFreqSorter extends TimSorter {
-      
+
       private int[] docs;
       private int[] freqs;
       private final int[] tmpDocs;
       private int[] tmpFreqs;
-      
+
       public DocFreqSorter(int maxDoc) {
         super(maxDoc / 64);
         this.tmpDocs = new int[maxDoc / 64];
@@ -369,13 +354,13 @@ public class SortingLeafReader extends FilterLeafReader {
       protected int compare(int i, int j) {
         return docs[i] - docs[j];
       }
-      
+
       @Override
       protected void swap(int i, int j) {
         int tmpDoc = docs[i];
         docs[i] = docs[j];
         docs[j] = tmpDoc;
-        
+
         if (freqs != null) {
           int tmpFreq = freqs[i];
           freqs[i] = freqs[j];
@@ -421,7 +406,7 @@ public class SortingLeafReader extends FilterLeafReader {
     private final int upto;
     private final boolean withFreqs;
 
-    SortingDocsEnum(int maxDoc, SortingDocsEnum reuse, final DocsEnum in, boolean withFreqs, final Sorter.DocMap docMap) throws IOException {
+    SortingDocsEnum(int maxDoc, SortingDocsEnum reuse, final PostingsEnum in, boolean withFreqs, final Sorter.DocMap docMap) throws IOException {
       super(in);
       this.maxDoc = maxDoc;
       this.withFreqs = withFreqs;
@@ -470,7 +455,7 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     // for testing
-    boolean reused(DocsEnum other) {
+    boolean reused(PostingsEnum other) {
       if (other == null || !(other instanceof SortingDocsEnum)) {
         return false;
       }
@@ -483,43 +468,43 @@ public class SortingLeafReader extends FilterLeafReader {
       // don't bother to implement efficiently for now.
       return slowAdvance(target);
     }
-    
+
     @Override
     public int docID() {
       return docIt < 0 ? -1 : docIt >= upto ? NO_MORE_DOCS : docs[docIt];
     }
-    
+
     @Override
     public int freq() throws IOException {
       return withFreqs && docIt < upto ? freqs[docIt] : 1;
     }
-    
+
     @Override
     public int nextDoc() throws IOException {
       if (++docIt >= upto) return NO_MORE_DOCS;
       return docs[docIt];
     }
-    
-    /** Returns the wrapped {@link DocsEnum}. */
-    DocsEnum getWrapped() {
+
+    /** Returns the wrapped {@link PostingsEnum}. */
+    PostingsEnum getWrapped() {
       return in;
     }
   }
-  
-  static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
-    
+
+  static class SortingPostingsEnum extends FilterDocsEnum {
+
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
      * offsets in one go. Everytime a doc ID is 'swapped', its corresponding offset
      * is swapped too.
      */
     private static final class DocOffsetSorter extends TimSorter {
-      
+
       private int[] docs;
       private long[] offsets;
       private final int[] tmpDocs;
       private final long[] tmpOffsets;
-      
+
       public DocOffsetSorter(int maxDoc) {
         super(maxDoc / 64);
         this.tmpDocs = new int[maxDoc / 64];
@@ -535,13 +520,13 @@ public class SortingLeafReader extends FilterLeafReader {
       protected int compare(int i, int j) {
         return docs[i] - docs[j];
       }
-      
+
       @Override
       protected void swap(int i, int j) {
         int tmpDoc = docs[i];
         docs[i] = docs[j];
         docs[j] = tmpDoc;
-        
+
         long tmpOffset = offsets[i];
         offsets[i] = offsets[j];
         offsets[j] = tmpOffset;
@@ -570,16 +555,16 @@ public class SortingLeafReader extends FilterLeafReader {
         return tmpDocs[i] - docs[j];
       }
     }
-    
+
     private final int maxDoc;
     private final DocOffsetSorter sorter;
     private int[] docs;
     private long[] offsets;
     private final int upto;
-    
+
     private final IndexInput postingInput;
     private final boolean storeOffsets;
-    
+
     private int docIt = -1;
     private int pos;
     private int startOffset = -1;
@@ -589,7 +574,7 @@ public class SortingLeafReader extends FilterLeafReader {
 
     private final RAMFile file;
 
-    SortingDocsAndPositionsEnum(int maxDoc, SortingDocsAndPositionsEnum reuse, final DocsAndPositionsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
+    SortingPostingsEnum(int maxDoc, SortingPostingsEnum reuse, final PostingsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
       super(in);
       this.maxDoc = maxDoc;
       this.storeOffsets = storeOffsets;
@@ -632,14 +617,14 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     // for testing
-    boolean reused(DocsAndPositionsEnum other) {
-      if (other == null || !(other instanceof SortingDocsAndPositionsEnum)) {
+    boolean reused(PostingsEnum other) {
+      if (other == null || !(other instanceof SortingPostingsEnum)) {
         return false;
       }
-      return docs == ((SortingDocsAndPositionsEnum) other).docs;
+      return docs == ((SortingPostingsEnum) other).docs;
     }
 
-    private void addPositions(final DocsAndPositionsEnum in, final IndexOutput out) throws IOException {
+    private void addPositions(final PostingsEnum in, final IndexOutput out) throws IOException {
       int freq = in.freq();
       out.writeVInt(freq);
       int previousPosition = 0;
@@ -648,7 +633,7 @@ public class SortingLeafReader extends FilterLeafReader {
         final int pos = in.nextPosition();
         final BytesRef payload = in.getPayload();
         // The low-order bit of token is set only if there is a payload, the
-        // previous bits are the delta-encoded position. 
+        // previous bits are the delta-encoded position.
         final int token = (pos - previousPosition) << 1 | (payload == null ? 0 : 1);
         out.writeVInt(token);
         previousPosition = pos;
@@ -665,34 +650,34 @@ public class SortingLeafReader extends FilterLeafReader {
         }
       }
     }
-    
+
     @Override
     public int advance(final int target) throws IOException {
       // need to support it for checkIndex, but in practice it won't be called, so
       // don't bother to implement efficiently for now.
       return slowAdvance(target);
     }
-    
+
     @Override
     public int docID() {
       return docIt < 0 ? -1 : docIt >= upto ? NO_MORE_DOCS : docs[docIt];
     }
-    
+
     @Override
     public int endOffset() throws IOException {
       return endOffset;
     }
-    
+
     @Override
     public int freq() throws IOException {
       return currFreq;
     }
-    
+
     @Override
     public BytesRef getPayload() throws IOException {
       return payload.length == 0 ? null : payload;
     }
-    
+
     @Override
     public int nextDoc() throws IOException {
       if (++docIt >= upto) return DocIdSetIterator.NO_MORE_DOCS;
@@ -703,7 +688,7 @@ public class SortingLeafReader extends FilterLeafReader {
       endOffset = 0;
       return docs[docIt];
     }
-    
+
     @Override
     public int nextPosition() throws IOException {
       final int token = postingInput.readVInt();
@@ -724,14 +709,14 @@ public class SortingLeafReader extends FilterLeafReader {
       }
       return pos;
     }
-    
+
     @Override
     public int startOffset() throws IOException {
       return startOffset;
     }
 
-    /** Returns the wrapped {@link DocsAndPositionsEnum}. */
-    DocsAndPositionsEnum getWrapped() {
+    /** Returns the wrapped {@link PostingsEnum}. */
+    PostingsEnum getWrapped() {
       return in;
     }
   }
@@ -767,12 +752,12 @@ public class SortingLeafReader extends FilterLeafReader {
   public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
     in.document(docMap.newToOld(docID), visitor);
   }
-  
+
   @Override
   public Fields fields() throws IOException {
     return new SortingFields(in.fields(), in.getFieldInfos(), docMap);
   }
-  
+
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     BinaryDocValues oldDocValues = in.getBinaryDocValues(field);
@@ -782,7 +767,7 @@ public class SortingLeafReader extends FilterLeafReader {
       return new SortingBinaryDocValues(oldDocValues, docMap);
     }
   }
-  
+
   @Override
   public Bits getLiveDocs() {
     final Bits inLiveDocs = in.getLiveDocs();
@@ -792,7 +777,7 @@ public class SortingLeafReader extends FilterLeafReader {
       return new SortingBits(inLiveDocs, docMap);
     }
   }
-  
+
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     final NumericDocValues norm = in.getNormValues(field);
@@ -809,7 +794,7 @@ public class SortingLeafReader extends FilterLeafReader {
     if (oldDocValues == null) return null;
     return new SortingNumericDocValues(oldDocValues, docMap);
   }
-  
+
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field)
       throws IOException {
@@ -830,7 +815,7 @@ public class SortingLeafReader extends FilterLeafReader {
       return new SortingSortedDocValues(sortedDV, docMap);
     }
   }
-  
+
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     SortedSetDocValues sortedSetDV = in.getSortedSetDocValues(field);
@@ -838,7 +823,7 @@ public class SortingLeafReader extends FilterLeafReader {
       return null;
     } else {
       return new SortingSortedSetDocValues(sortedSetDV, docMap);
-    }  
+    }
   }
 
   @Override

@@ -19,8 +19,9 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -29,10 +30,8 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-
 /** Only purpose is to punch through and return a
  *  DrillSidewaysScorer */ 
 

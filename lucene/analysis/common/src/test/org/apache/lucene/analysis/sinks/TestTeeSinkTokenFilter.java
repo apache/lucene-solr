@@ -31,7 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Terms;
@@ -111,7 +111,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TermsEnum termsEnum = vector.iterator(null);
     termsEnum.next();
     assertEquals(2, termsEnum.totalTermFreq());
-    DocsAndPositionsEnum positions = termsEnum.docsAndPositions(null, null);
+    PostingsEnum positions = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertTrue(positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, positions.freq());
     positions.nextPosition();

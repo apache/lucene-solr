@@ -31,8 +31,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -317,8 +317,8 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
-        DocsEnum docsEnum = null;
-        DocsAndPositionsEnum posEnum = null;
+        PostingsEnum postingsEnum = null;
+        PostingsEnum posEnum = null;
         int enumFlags;
 
         IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -330,18 +330,19 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         if (writeFreqs == false) {
           enumFlags = 0;
         } else if (writePositions == false) {
-          enumFlags = DocsEnum.FLAG_FREQS;
+          enumFlags = PostingsEnum.FLAG_FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
-          } else {
-            enumFlags = 0;
+            enumFlags = PostingsEnum.FLAG_PAYLOADS;
+          }
+          else {
+            enumFlags = PostingsEnum.FLAG_POSITIONS;
           }
         } else {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS;
           } else {
-            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.FLAG_OFFSETS;
           }
         }
 
@@ -353,18 +354,18 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           termsWriter.postingsWriter.reset();
 
           if (writePositions) {
-            posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-            docsEnum = posEnum;
+            posEnum = termsEnum.postings(null, posEnum, enumFlags);
+            postingsEnum = posEnum;
           } else {
-            docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
+            postingsEnum = termsEnum.postings(null, postingsEnum, enumFlags);
             posEnum = null;
           }
 
           int docFreq = 0;
           long totalTermFreq = 0;
           while (true) {
-            int docID = docsEnum.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            int docID = postingsEnum.nextDoc();
+            if (docID == PostingsEnum.NO_MORE_DOCS) {
               break;
             }
             docsSeen.set(docID);
@@ -372,7 +373,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
             int freq;
             if (writeFreqs) {
-              freq = docsEnum.freq();
+              freq = postingsEnum.freq();
               totalTermFreq += freq;
             } else {
               freq = -1;
@@ -545,14 +546,14 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public int freq() {
       return freq;
     }
-    
+
     @Override
     public long cost() {
       return numDocs;
     }
   }
 
-  private final static class FSTDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class FSTPostingsEnum extends PostingsEnum {
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
@@ -572,7 +573,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private int pos;
     private final BytesRef payload = new BytesRef();
 
-    public FSTDocsAndPositionsEnum(boolean storePayloads, boolean storeOffsets) {
+    public FSTPostingsEnum(boolean storePayloads, boolean storeOffsets) {
       this.storePayloads = storePayloads;
       this.storeOffsets = storeOffsets;
     }
@@ -581,7 +582,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       return storePayloads == this.storePayloads && storeOffsets == this.storeOffsets;
     }
     
-    public FSTDocsAndPositionsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
+    public FSTPostingsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
       assert numDocs > 0;
 
       // System.out.println("D&P reset bytes this=" + this);
@@ -807,7 +808,27 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
+
+      if ((flags & PostingsEnum.FLAG_POSITIONS) >= PostingsEnum.FLAG_POSITIONS) {
+        if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          return null;
+        }
+        boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        decodeMetaData();
+        FSTPostingsEnum docsAndPositionsEnum;
+        if (reuse == null || !(reuse instanceof FSTPostingsEnum)) {
+          docsAndPositionsEnum = new FSTPostingsEnum(field.hasPayloads(), hasOffsets);
+        } else {
+          docsAndPositionsEnum = (FSTPostingsEnum) reuse;
+          if (!docsAndPositionsEnum.canReuse(field.hasPayloads(), hasOffsets)) {
+            docsAndPositionsEnum = new FSTPostingsEnum(field.hasPayloads(), hasOffsets);
+          }
+        }
+        //System.out.println("D&P reset this=" + this);
+        return docsAndPositionsEnum.reset(postingsSpare, liveDocs, docFreq);
+      }
+
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
@@ -820,27 +841,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         }
       }
       return docsEnum.reset(this.postingsSpare, liveDocs, docFreq);
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-
-      boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-        return null;
-      }
-      decodeMetaData();
-      FSTDocsAndPositionsEnum docsAndPositionsEnum;
-      if (reuse == null || !(reuse instanceof FSTDocsAndPositionsEnum)) {
-        docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.hasPayloads(), hasOffsets);
-      } else {
-        docsAndPositionsEnum = (FSTDocsAndPositionsEnum) reuse;        
-        if (!docsAndPositionsEnum.canReuse(field.hasPayloads(), hasOffsets)) {
-          docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.hasPayloads(), hasOffsets);
-        }
-      }
-      //System.out.println("D&P reset this=" + this);
-      return docsAndPositionsEnum.reset(postingsSpare, liveDocs, docFreq);
     }
 
     @Override

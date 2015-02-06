@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.prefix;
 import java.io.IOException;
 
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
@@ -80,7 +80,7 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
     protected final int maxDoc;
 
     protected TermsEnum termsEnum;//remember to check for null!
-    protected DocsEnum docsEnum;
+    protected PostingsEnum postingsEnum;
 
     public BaseTermsEnumTraverser(LeafReaderContext context, Bits acceptDocs) throws IOException {
       this.context = context;
@@ -94,8 +94,8 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
 
     protected void collectDocs(BitSet bitSet) throws IOException {
       assert termsEnum != null;
-      docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
-      bitSet.or(docsEnum);
+      postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+      bitSet.or(postingsEnum);
     }
 
   }

@@ -179,13 +179,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits bits, DocsEnum reuse, int flags) throws IOException {
-    return tenum.docs(bits, reuse, flags);
-  }
-    
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse, int flags) throws IOException {
-    return tenum.docsAndPositions(bits, reuse, flags);
+  public PostingsEnum postings(Bits bits, PostingsEnum reuse, int flags) throws IOException {
+    return tenum.postings(bits, reuse, flags);
   }
   
   /** This enum does not support seeking!

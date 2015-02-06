@@ -61,7 +61,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
     log.fine("Building Cache [" + reader.maxDoc() + "]");
     idx = new ShapeFieldCache<>(reader.maxDoc(),defaultSize);
     int count = 0;
-    DocsEnum docs = null;
+    PostingsEnum docs = null;
     Terms terms = reader.terms(shapeField);
     TermsEnum te = null;
     if (terms != null) {
@@ -70,7 +70,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
       while (term != null) {
         T shape = readShape(term);
         if( shape != null ) {
-          docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
+          docs = te.postings(null, docs, PostingsEnum.FLAG_NONE);
           Integer docid = docs.nextDoc();
           while (docid != DocIdSetIterator.NO_MORE_DOCS) {
             idx.add( docid, shape );

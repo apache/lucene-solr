@@ -215,75 +215,24 @@ public class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-      return in.docs(liveDocs, reuse, flags);
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      return in.postings(liveDocs, reuse, flags);
     }
 
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      return in.docsAndPositions(liveDocs, reuse, flags);
-    }
   }
 
-  /** Base class for filtering {@link DocsEnum} implementations. */
-  public static class FilterDocsEnum extends DocsEnum {
+  /** Base class for filtering {@link PostingsEnum} implementations. */
+  public static class FilterDocsEnum extends PostingsEnum {
     /** The underlying DocsEnum instance. */
-    protected final DocsEnum in;
+    protected final PostingsEnum in;
 
     /**
      * Create a new FilterDocsEnum
      * @param in the underlying DocsEnum instance.
      */
-    public FilterDocsEnum(DocsEnum in) {
+    public FilterDocsEnum(PostingsEnum in) {
       if (in == null) {
         throw new NullPointerException("incoming DocsEnum cannot be null");
-      }
-      this.in = in;
-    }
-
-    @Override
-    public AttributeSource attributes() {
-      return in.attributes();
-    }
-
-    @Override
-    public int docID() {
-      return in.docID();
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return in.freq();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return in.nextDoc();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return in.advance(target);
-    }
-
-    @Override
-    public long cost() {
-      return in.cost();
-    }
-  }
-
-  /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
-  public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    /** The underlying DocsAndPositionsEnum instance. */
-    protected final DocsAndPositionsEnum in;
-
-    /**
-     * Create a new FilterDocsAndPositionsEnum
-     * @param in the underlying DocsAndPositionsEnum instance.
-     */
-    public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
-      if (in == null) {
-        throw new NullPointerException("incoming DocsAndPositionsEnum cannot be null");
       }
       this.in = in;
     }
@@ -332,7 +281,7 @@ public class FilterLeafReader extends LeafReader {
     public BytesRef getPayload() throws IOException {
       return in.getPayload();
     }
-    
+
     @Override
     public long cost() {
       return in.cost();

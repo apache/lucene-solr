@@ -25,7 +25,7 @@ import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
@@ -166,7 +166,7 @@ public class SolrIndexSplitter {
     if (termsEnum == null) return docSets;
 
     BytesRef term = null;
-    DocsEnum docsEnum = null;
+    PostingsEnum postingsEnum = null;
 
     CharsRefBuilder idRef = new CharsRefBuilder();
     for (;;) {
@@ -195,9 +195,9 @@ public class SolrIndexSplitter {
         hash = hashRouter.sliceHash(idString, null, null, null);
       }
 
-      docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.FLAG_NONE);
       for (;;) {
-        int doc = docsEnum.nextDoc();
+        int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) break;
         if (ranges == null) {
           docSets[currPartition].set(doc);

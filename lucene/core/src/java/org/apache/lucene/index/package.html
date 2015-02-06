@@ -99,9 +99,7 @@ if (found) {
   // get the document frequency
   System.out.println(termsEnum.docFreq());
   // enumerate through documents
-  DocsEnum docs = termsEnum.docs(null, null);
-  // enumerate through documents and positions
-  DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
+  PostingsEnum docs = termsEnum.postings(null, null);
 }
 </pre>
 </p>
@@ -110,7 +108,7 @@ if (found) {
     Documents
 </h4>
 <p>
-{@link org.apache.lucene.index.DocsEnum} is an extension of 
+{@link org.apache.lucene.index.PostingsEnum} is an extension of
 {@link org.apache.lucene.search.DocIdSetIterator}that iterates over the list of
 documents for a term, along with the term frequency within that document.
 <pre class="prettyprint">
@@ -126,20 +124,21 @@ while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
     Positions
 </h4>
 <p>
-{@link org.apache.lucene.index.DocsAndPositionsEnum} is an extension of 
-{@link org.apache.lucene.index.DocsEnum} that additionally allows iteration
+PostingsEnum also allows iteration
 of the positions a term occurred within the document, and any additional
-per-position information (offsets and payload)
+per-position information (offsets and payload).  The information available
+is controlled by flags passed to TermsEnum#postings
 <pre class="prettyprint">
 int docid;
-while ((docid = docsAndPositionsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+PostingsEnum postings = termsEnum.postings(null, null, PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS);
+while ((docid = postings.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
   System.out.println(docid);
-  int freq = docsAndPositionsEnum.freq();
+  int freq = postings.freq();
   for (int i = 0; i < freq; i++) {
-     System.out.println(docsAndPositionsEnum.nextPosition());
-     System.out.println(docsAndPositionsEnum.startOffset());
-     System.out.println(docsAndPositionsEnum.endOffset());
-     System.out.println(docsAndPositionsEnum.getPayload());
+     System.out.println(postings.nextPosition());
+     System.out.println(postings.startOffset());
+     System.out.println(postings.endOffset());
+     System.out.println(postings.getPayload());
   }
 }
 </pre>

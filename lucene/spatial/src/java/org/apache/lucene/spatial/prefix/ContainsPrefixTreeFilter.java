@@ -21,7 +21,7 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -176,9 +176,9 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     private SmallDocSet collectDocs(Bits acceptContains) throws IOException {
       SmallDocSet set = null;
 
-      docsEnum = termsEnum.docs(acceptContains, docsEnum, DocsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(acceptContains, postingsEnum, PostingsEnum.FLAG_NONE);
       int docid;
-      while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (set == null) {
           int size = termsEnum.docFreq();
           if (size <= 0)

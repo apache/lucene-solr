@@ -31,8 +31,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -40,27 +40,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.SortingLeafReader.SortingDocsAndPositionsEnum;
 import org.apache.lucene.index.SortingLeafReader.SortingDocsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermStatistics;
@@ -254,7 +235,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   public void testDocsAndPositionsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator(null);
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
-    DocsAndPositionsEnum sortedPositions = termsEnum.docsAndPositions(null, null);
+    PostingsEnum sortedPositions = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     int doc;
     
     // test nextDoc()
@@ -270,10 +251,10 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     // test advance()
-    final DocsAndPositionsEnum reuse = sortedPositions;
-    sortedPositions = termsEnum.docsAndPositions(null, reuse);
-    if (sortedPositions instanceof SortingDocsAndPositionsEnum) {
-      assertTrue(((SortingDocsAndPositionsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
+    final PostingsEnum reuse = sortedPositions;
+    sortedPositions = termsEnum.postings(null, reuse, PostingsEnum.FLAG_ALL);
+    if (sortedPositions instanceof SortingDocsEnum) {
+      assertTrue(((SortingDocsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }
     doc = 0;
     while ((doc = sortedPositions.advance(doc + TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -315,7 +296,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     Bits mappedLiveDocs = randomLiveDocs(sortedReader.maxDoc());
     TermsEnum termsEnum = sortedReader.terms(DOCS_ENUM_FIELD).iterator(null);
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOCS_ENUM_TERM)));
-    DocsEnum docs = termsEnum.docs(mappedLiveDocs, null);
+    PostingsEnum docs = termsEnum.postings(mappedLiveDocs, null);
 
     int doc;
     int prev = -1;
@@ -330,8 +311,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
     }
 
-    DocsEnum reuse = docs;
-    docs = termsEnum.docs(mappedLiveDocs, reuse);
+    PostingsEnum reuse = docs;
+    docs = termsEnum.postings(mappedLiveDocs, reuse);
     if (docs instanceof SortingDocsEnum) {
       assertTrue(((SortingDocsEnum) docs).reused(reuse)); // make sure reuse worked
     }

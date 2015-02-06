@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -985,7 +985,13 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
+
+    if (PostingsEnum.requiresPositions(flags) && fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+      // Positions were not indexed:
+      return null;
+    }
+
     assert !eof;
     //if (DEBUG) {
     //System.out.println("BTTR.docs seg=" + segment);
@@ -994,19 +1000,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
     //if (DEBUG) {
     //System.out.println("  state=" + currentFrame.state);
     //}
-    return fr.parent.postingsReader.docs(fr.fieldInfo, currentFrame.state, skipDocs, reuse, flags);
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-    if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-      // Positions were not indexed:
-      return null;
-    }
-
-    assert !eof;
-    currentFrame.decodeMetaData();
-    return fr.parent.postingsReader.docsAndPositions(fr.fieldInfo, currentFrame.state, skipDocs, reuse, flags);
+    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.state, skipDocs, reuse, flags);
   }
 
   @Override

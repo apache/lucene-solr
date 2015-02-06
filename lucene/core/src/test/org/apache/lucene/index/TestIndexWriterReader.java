@@ -53,7 +53,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
-    DocsEnum td = TestUtil.docs(random(), r,
+    PostingsEnum td = TestUtil.docs(random(), r,
         t.field(), new BytesRef(t.text()),
         MultiFields.getLiveDocs(r),
         null,

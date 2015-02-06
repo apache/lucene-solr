@@ -17,8 +17,11 @@
 
 package org.apache.solr.search.join;
 
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -26,9 +29,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Set;
 
 public class IgnoreAcceptDocsQuery extends Query {
   private final Query q;

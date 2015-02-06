@@ -23,11 +23,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -711,7 +711,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     assertTrue(scorer.docID() == -1 || scorer.docID() == DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, scorer.nextDoc());
     assertEquals(expected, scorer.score(), 0.0001f);
-    
+
     // test bulk scorer
     final AtomicBoolean seen = new AtomicBoolean(false);
     BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), null);
@@ -733,7 +733,7 @@ public class TestBooleanCoord extends LuceneTestCase {
       }
     }, 0, 1);
     assertTrue(seen.get());
-    
+
     // test the explanation
     Explanation expl = weight.explain(reader.leaves().get(0), 0);
     assertEquals(expected, expl.getValue(), 0.0001f);

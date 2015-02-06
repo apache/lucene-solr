@@ -27,7 +27,7 @@ import java.util.Collections;
  * This <code>Scorer</code> implements {@link Scorer#advance(int)},
  * and it uses the skipTo() on the given scorers.
  */
-class ReqExclScorer extends Scorer {
+class ReqExclScorer extends FilterScorer {
   private Scorer reqScorer;
   private DocIdSetIterator exclDisi;
   private int doc = -1;
@@ -37,7 +37,7 @@ class ReqExclScorer extends Scorer {
    * @param exclDisi indicates exclusion.
    */
   public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
-    super(reqScorer.weight);
+    super(reqScorer);
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
   }
@@ -103,11 +103,6 @@ class ReqExclScorer extends Scorer {
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
-  
-  @Override
-  public int freq() throws IOException {
-    return reqScorer.freq();
-  }
 
   @Override
   public Collection<ChildScorer> getChildren() {
@@ -129,8 +124,4 @@ class ReqExclScorer extends Scorer {
     return doc = toNonExcluded();
   }
 
-  @Override
-  public long cost() {
-    return reqScorer.cost();
-  }
 }

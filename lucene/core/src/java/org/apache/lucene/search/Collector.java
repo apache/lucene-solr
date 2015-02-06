@@ -72,7 +72,7 @@ public interface Collector {
    *          next atomic reader context
    */
   LeafCollector getLeafCollector(LeafReaderContext context) throws IOException;
-
+  
   /**
    * Indicates if document scores are needed by this collector.
    * 

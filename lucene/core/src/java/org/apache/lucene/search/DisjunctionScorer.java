@@ -22,15 +22,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Base class for Scorers that score disjunctions.
  */
 abstract class DisjunctionScorer extends Scorer {
+
   private final ScorerPriorityQueue subScorers;
 
   /** The document number of the current match. */
   protected int doc = -1;
+  protected int numScorers;
   /** Number of matching scorers for the current match. */
   private int freq = -1;
   /** Linked list of scorers which are on the current doc */
@@ -54,6 +57,26 @@ abstract class DisjunctionScorer extends Scorer {
       children.add(new ChildScorer(scorer.scorer, "SHOULD"));
     }
     return children;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null;
   }
 
   @Override

@@ -68,7 +68,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Token "" occurred once
     assertEquals(1, termsEnum.totalTermFreq());
 
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
@@ -77,7 +77,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     // Token "abcd" occurred three times
     assertEquals(new BytesRef("abcd"), termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
     assertEquals(3, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -117,7 +117,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -152,7 +152,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -190,7 +190,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -225,7 +225,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -261,7 +261,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
@@ -269,14 +269,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(11, dpEnum.startOffset());
     assertEquals(17, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(18, dpEnum.startOffset());
@@ -305,7 +305,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -314,7 +314,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(7, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
@@ -347,7 +347,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -356,7 +356,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(6, dpEnum.startOffset());

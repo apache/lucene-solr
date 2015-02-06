@@ -44,53 +44,23 @@ import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
@@ -826,7 +796,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(leafReader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
+    PostingsEnum docs = termsEnum.postings(leafReader.getLiveDocs(), null, PostingsEnum.FLAG_NONE);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -848,7 +818,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       
       TermsEnum te = terms.iterator(null);
       if (te.seekExact(idBytes)) {
-        DocsEnum docs = te.docs(reader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
+        PostingsEnum docs = te.postings(reader.getLiveDocs(), null, PostingsEnum.FLAG_NONE);
         int id = docs.nextDoc();
         if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
         assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
@@ -1193,28 +1163,28 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     int bitsSet = 0;
     FixedBitSet fbs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, DocsEnum.FLAG_NONE);
-    if (deState.docsEnum == null) {
-      deState.docsEnum = docsEnum;
+    PostingsEnum postingsEnum = deState.termsEnum.postings(deState.liveDocs, deState.postingsEnum, PostingsEnum.FLAG_NONE);
+    if (deState.postingsEnum == null) {
+      deState.postingsEnum = postingsEnum;
     }
 
-    if (docsEnum instanceof MultiDocsEnum) {
-      MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-      int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+    if (postingsEnum instanceof MultiPostingsEnum) {
+      MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
+      int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
       for (int subindex = 0; subindex<numSubs; subindex++) {
-        MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-        if (sub.docsEnum == null) continue;
+        MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
+        if (sub.postingsEnum == null) continue;
         int base = sub.slice.start;
         int docid;
         
         if (largestPossible > docs.length) {
           if (fbs == null) fbs = new FixedBitSet(maxDoc());
-          while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             fbs.set(docid + base);
             bitsSet++;
           }
         } else {
-          while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             docs[upto++] = docid + base;
           }
         }
@@ -1223,12 +1193,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       int docid;
       if (largestPossible > docs.length) {
         if (fbs == null) fbs = new FixedBitSet(maxDoc());
-        while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           fbs.set(docid);
           bitsSet++;
         }
       } else {
-        while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           docs[upto++] = docid;
         }
       }
@@ -2119,7 +2089,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public String fieldName;  // currently interned for as long as lucene requires it
     public TermsEnum termsEnum;
     public Bits liveDocs;
-    public DocsEnum docsEnum;
+    public PostingsEnum postingsEnum;
 
     public int minSetSizeCached;
 

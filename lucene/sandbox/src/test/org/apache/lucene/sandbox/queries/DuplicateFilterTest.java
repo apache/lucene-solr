@@ -134,7 +134,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = TestUtil.docs(random(), reader,
+      PostingsEnum td = TestUtil.docs(random(), reader,
           KEY_FIELD,
           new BytesRef(url),
           MultiFields.getLiveDocs(reader),
@@ -158,7 +158,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = TestUtil.docs(random(), reader,
+      PostingsEnum td = TestUtil.docs(random(), reader,
           KEY_FIELD,
           new BytesRef(url),
           MultiFields.getLiveDocs(reader),

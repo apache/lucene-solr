@@ -44,6 +44,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.DelegatingCollector;
@@ -482,6 +483,26 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public long cost() {
       return maxDoc;
     }
@@ -504,6 +525,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));
       return result;
     }
+
   }
 
   @Override

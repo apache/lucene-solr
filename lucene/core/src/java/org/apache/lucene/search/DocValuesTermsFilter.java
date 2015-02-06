@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
@@ -63,7 +62,7 @@ import org.apache.lucene.util.FixedBitSet;
  * 
  * In contrast, TermsFilter builds up an {@link FixedBitSet},
  * keyed by docID, every time it's created, by enumerating
- * through all matching docs using {@link DocsEnum} to seek
+ * through all matching docs using {@link org.apache.lucene.index.PostingsEnum} to seek
  * and scan through each term's docID list.  While there is
  * no linear scan of all docIDs, besides the allocation of
  * the underlying array in the {@link FixedBitSet}, this

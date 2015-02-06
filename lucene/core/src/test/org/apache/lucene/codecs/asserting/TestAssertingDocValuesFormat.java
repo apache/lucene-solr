@@ -27,5 +27,10 @@ public class TestAssertingDocValuesFormat extends BasePostingsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
-  } 
+  }
+
+  @Override
+  protected boolean isPostingsEnumReuseImplemented() {
+    return false;
+  }
 }

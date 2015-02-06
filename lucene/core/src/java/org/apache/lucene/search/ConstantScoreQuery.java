@@ -17,16 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that wraps another query or a filter and simply returns a constant score equal to the
@@ -131,7 +132,6 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
         return super.bulkScorer(context, acceptDocs);
@@ -147,23 +147,26 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
         final DocIdSet dis = filter.getDocIdSet(context, acceptDocs);
         if (dis == null) {
           return null;
         }
-        disi = dis.iterator();
+        final DocIdSetIterator disi = dis.iterator();
+        if (disi == null)
+          return null;
+        return new ConstantDocIdSetIteratorScorer(disi, this, queryWeight);
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, acceptDocs);
+        Scorer scorer = innerWeight.scorer(context, acceptDocs);
+        if (scorer == null) {
+          return null;
+        }
+        return new ConstantScoreScorer(scorer, queryWeight);
       }
 
-      if (disi == null) {
-        return null;
-      }
-      return new ConstantScorer(disi, this, queryWeight);
+
     }
 
     @Override
@@ -212,7 +215,7 @@ public class ConstantScoreQuery extends Query {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          in.setScorer(new ConstantScorer(scorer, weight, theScore));
+          in.setScorer(new ConstantScoreScorer(scorer, theScore));
         }
       };
     }
@@ -223,11 +226,40 @@ public class ConstantScoreQuery extends Query {
     }
   }
 
-  protected class ConstantScorer extends Scorer {
+  protected class ConstantScoreScorer extends FilterScorer {
+
+    private final float score;
+
+    public ConstantScoreScorer(Scorer wrapped, float score) {
+      super(wrapped);
+      this.score = score;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 1;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      if (query != null) {
+        return Collections.singletonList(new ChildScorer(in, "constant"));
+      } else {
+        return Collections.emptyList();
+      }
+    }
+  }
+
+  protected class ConstantDocIdSetIteratorScorer extends Scorer {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
 
-    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w, float theScore) {
+    public ConstantDocIdSetIteratorScorer(DocIdSetIterator docIdSetIterator, Weight w, float theScore) {
       super(w);
       this.theScore = theScore;
       this.docIdSetIterator = docIdSetIterator;
@@ -255,10 +287,30 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
-    
+
     @Override
     public long cost() {
       return docIdSetIterator.cost();

@@ -244,7 +244,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = DirectoryReader.open(dir);
-      DocsEnum tdocs = TestUtil.docs(random(), reader,
+      PostingsEnum tdocs = TestUtil.docs(random(), reader,
           "field",
           new BytesRef("aaa"),
           MultiFields.getLiveDocs(reader),

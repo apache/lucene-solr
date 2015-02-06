@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * A {@link BulkScorer}-backed scorer.
  */
@@ -76,6 +78,26 @@ public class BulkScorerWrapperScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     return freqs[i];
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null;
   }
 
   @Override

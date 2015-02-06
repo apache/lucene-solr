@@ -30,12 +30,12 @@ import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsIndexReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -884,7 +884,14 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
     }
 
     @Override
-    public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+
+      if (PostingsEnum.requiresPositions(flags)) {
+        if (positions == null && startOffsets == null) {
+          return null;
+        }
+      }
+
       final TVDocsEnum docsEnum;
       if (reuse != null && reuse instanceof TVDocsEnum) {
         docsEnum = (TVDocsEnum) reuse;
@@ -896,18 +903,9 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
       return docsEnum;
     }
 
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      if (positions == null && startOffsets == null) {
-        return null;
-      }
-      // TODO: slightly sheisty
-      return (DocsAndPositionsEnum) docs(liveDocs, reuse, flags);
-    }
-
   }
 
-  private static class TVDocsEnum extends DocsAndPositionsEnum {
+  private static class TVDocsEnum extends PostingsEnum {
 
     private Bits liveDocs;
     private int doc = -1;

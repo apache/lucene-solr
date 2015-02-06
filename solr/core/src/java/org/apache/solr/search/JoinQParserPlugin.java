@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ComplexExplanation;
@@ -63,7 +63,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.RefCounted;
-
 
 public class JoinQParserPlugin extends QParserPlugin {
   public static final String NAME = "join";
@@ -402,14 +401,14 @@ class JoinQuery extends Query {
       fromDeState.fieldName = fromField;
       fromDeState.liveDocs = fromLiveDocs;
       fromDeState.termsEnum = termsEnum;
-      fromDeState.docsEnum = null;
+      fromDeState.postingsEnum = null;
       fromDeState.minSetSizeCached = minDocFreqFrom;
 
       toDeState = new SolrIndexSearcher.DocsEnumState();
       toDeState.fieldName = toField;
       toDeState.liveDocs = toLiveDocs;
       toDeState.termsEnum = toTermsEnum;
-      toDeState.docsEnum = null;
+      toDeState.postingsEnum = null;
       toDeState.minSetSizeCached = minDocFreqTo;
 
       while (term != null) {
@@ -425,18 +424,18 @@ class JoinQuery extends Query {
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
           // OK to skip liveDocs, since we check for intersection with docs matching query
-          fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum, DocsEnum.FLAG_NONE);
-          DocsEnum docsEnum = fromDeState.docsEnum;
+          fromDeState.postingsEnum = fromDeState.termsEnum.postings(null, fromDeState.postingsEnum, PostingsEnum.FLAG_NONE);
+          PostingsEnum postingsEnum = fromDeState.postingsEnum;
 
-          if (docsEnum instanceof MultiDocsEnum) {
-            MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-            int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+          if (postingsEnum instanceof MultiPostingsEnum) {
+            MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
+            int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
             outer: for (int subindex = 0; subindex<numSubs; subindex++) {
-              MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-              if (sub.docsEnum == null) continue;
+              MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
+              if (sub.postingsEnum == null) continue;
               int base = sub.slice.start;
               int docid;
-              while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (fastForRandomSet.exists(docid+base)) {
                   intersects = true;
                   break outer;
@@ -445,7 +444,7 @@ class JoinQuery extends Query {
             }
           } else {
             int docid;
-            while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
               if (fastForRandomSet.exists(docid)) {
                 intersects = true;
                 break;
@@ -490,25 +489,25 @@ class JoinQuery extends Query {
               toTermDirectCount++;
 
               // need to use liveDocs here so we don't map to any deleted ones
-              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum, DocsEnum.FLAG_NONE);
-              DocsEnum docsEnum = toDeState.docsEnum;              
+              toDeState.postingsEnum = toDeState.termsEnum.postings(toDeState.liveDocs, toDeState.postingsEnum, PostingsEnum.FLAG_NONE);
+              PostingsEnum postingsEnum = toDeState.postingsEnum;
 
-              if (docsEnum instanceof MultiDocsEnum) {
-                MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-                int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+              if (postingsEnum instanceof MultiPostingsEnum) {
+                MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
+                int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
                 for (int subindex = 0; subindex<numSubs; subindex++) {
-                  MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-                  if (sub.docsEnum == null) continue;
+                  MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
+                  if (sub.postingsEnum == null) continue;
                   int base = sub.slice.start;
                   int docid;
-                  while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     resultListDocs++;
                     resultBits.set(docid + base);
                   }
                 }
               } else {
                 int docid;
-                while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                   resultListDocs++;
                   resultBits.set(docid);
                 }
@@ -621,6 +620,26 @@ class JoinQuery extends Query {
     @Override
     public int freq() throws IOException {
       return 1;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -96,7 +96,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
-    DocsEnum td = TestUtil.docs(random(),
+    PostingsEnum td = TestUtil.docs(random(),
         reader,
         "partnum",
         new BytesRef("Q36"),

@@ -43,6 +43,11 @@ API Changes
 * LUCENE-6218, LUCENE-6220: Add Collector.needsScores() and needsScores
   parameter to Query.createWeight(). (Robert Muir, Adrien Grand)
 
+* LUCENE-4524: Merge DocsEnum and DocsAndPositionsEnum into a single
+  PostingsEnum iterator.  TermsEnum.docs() and TermsEnum.docsAndPositions()
+  are replaced by TermsEnum.postings(). (Alan Woodward, Simon Willnauer,
+  Robert Muir)
+
 * LUCENE-6222: Removed TermFilter, use a QueryWrapperFilter(TermQuery)
   instead. This will be as efficient now that queries can opt out from
   scoring. (Adrien Grand)

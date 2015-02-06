@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -205,38 +205,27 @@ public abstract class LeafReader extends IndexReader {
     return fields().terms(field);
   }
 
-  /** Returns {@link DocsEnum} for the specified term.
+  /** Returns {@link PostingsEnum} for the specified term.
    *  This will return null if either the field or
    *  term does not exist.
-   *  @see TermsEnum#docs(Bits, DocsEnum) */
-  public final DocsEnum termDocsEnum(Term term) throws IOException {
+   *  @see TermsEnum#postings(Bits, PostingsEnum) */
+  public final PostingsEnum termDocsEnum(Term term, int flags) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
     final Terms terms = terms(term.field());
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
       if (termsEnum.seekExact(term.bytes())) {
-        return termsEnum.docs(getLiveDocs(), null);
+        return termsEnum.postings(getLiveDocs(), null, flags);
       }
     }
     return null;
   }
 
-  /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  term.  This will return null if the
-   *  field or term does not exist or positions weren't indexed.
-   *  @see TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum) */
-  public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
-    assert term.field() != null;
-    assert term.bytes() != null;
-    final Terms terms = terms(term.field());
-    if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term.bytes())) {
-        return termsEnum.docsAndPositions(getLiveDocs(), null);
-      }
-    }
-    return null;
+  /** Returns {@link PostingsEnum} for the specified term
+   *  with {@link PostingsEnum#FLAG_FREQS}. */
+  public final PostingsEnum termDocsEnum(Term term) throws IOException {
+    return termDocsEnum(term, PostingsEnum.FLAG_FREQS);
   }
 
   /** Returns {@link NumericDocValues} for this field, or

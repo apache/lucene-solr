@@ -18,23 +18,24 @@ package org.apache.lucene.queries;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.Arrays;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -281,6 +282,8 @@ public class CustomScoreQuery extends Query {
     private final CustomScoreProvider provider;
     private final float[] vScores; // reused in score() to avoid allocating this array for each doc
 
+    // TODO : can we use FilterScorer here instead?
+
     // constructor
     private CustomScorer(CustomScoreProvider provider, CustomWeight w, float qWeight,
         Scorer subQueryScorer, Scorer[] valSrcScorers) {
@@ -320,6 +323,26 @@ public class CustomScoreQuery extends Query {
     @Override
     public int freq() throws IOException {
       return subQueryScorer.freq();
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return subQueryScorer.nextPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return subQueryScorer.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return subQueryScorer.endOffset();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return subQueryScorer.getPayload();
     }
 
     @Override

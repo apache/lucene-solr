@@ -125,7 +125,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
-    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
+    PostingsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     int freq = termPositions.freq();
@@ -197,7 +197,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
-    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
+    PostingsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     int freq = termPositions.freq();
     assertEquals(3, freq);
@@ -239,18 +239,18 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
-    DocsAndPositionsEnum termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term1"));
+    PostingsEnum termPositions = reader.termDocsEnum(new Term("preanalyzed", "term1"), PostingsEnum.FLAG_ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
-    termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term2"));
+    termPositions = reader.termDocsEnum(new Term("preanalyzed", "term2"), PostingsEnum.FLAG_ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
     
-    termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term3"));
+    termPositions = reader.termDocsEnum(new Term("preanalyzed", "term3"), PostingsEnum.FLAG_ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());

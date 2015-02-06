@@ -21,15 +21,16 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 class DrillSidewaysScorer extends BulkScorer {
@@ -173,7 +174,7 @@ class DrillSidewaysScorer extends BulkScorer {
     //}
     int docID = baseScorer.docID();
 
-    nextDoc: while (docID != DocsEnum.NO_MORE_DOCS) {
+    nextDoc: while (docID != PostingsEnum.NO_MORE_DOCS) {
       LeafCollector failedCollector = null;
       for (int i=0;i<disis.length;i++) {
         // TODO: should we sort this 2nd dimension of
@@ -650,6 +651,26 @@ class DrillSidewaysScorer extends BulkScorer {
     @Override
     public int freq() {
       return 1+dims.length;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

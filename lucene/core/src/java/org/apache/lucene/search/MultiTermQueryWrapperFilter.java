@@ -19,9 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -94,9 +92,9 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     assert termsEnum != null;
 
     BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
-    DocsEnum docs = null;
+    PostingsEnum docs = null;
     while (termsEnum.next() != null) {
-      docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
+      docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.FLAG_NONE);
       builder.or(docs);
     }
     return builder.build();

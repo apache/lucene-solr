@@ -80,7 +80,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
       BytesRef b = te.next();
       assertNotNull(b);
       assertEquals(t, b.utf8ToString());
-      DocsEnum td = TestUtil.docs(random(), te, liveDocs, null, DocsEnum.FLAG_NONE);
+      PostingsEnum td = TestUtil.docs(random(), te, liveDocs, null, PostingsEnum.FLAG_NONE);
       assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, td.docID());
       assertEquals(td.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);

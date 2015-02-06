@@ -27,9 +27,9 @@ import org.apache.lucene.util.BytesRefIterator;
 /** Iterator to seek ({@link #seekCeil(BytesRef)}, {@link
  * #seekExact(BytesRef)}) or step through ({@link
  * #next} terms to obtain frequency information ({@link
- * #docFreq}), {@link DocsEnum} or {@link
- * DocsAndPositionsEnum} for the current term ({@link
- * #docs}.
+ * #docFreq}), {@link PostingsEnum} or {@link
+ * PostingsEnum} for the current term ({@link
+ * #postings}.
  * 
  * <p>Term enumerations are always ordered by
  * BytesRef.compareTo, which is Unicode sort
@@ -138,57 +138,30 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  deleted documents into account. */
   public abstract long totalTermFreq() throws IOException;
 
-  /** Get {@link DocsEnum} for the current term.  Do not
+  /** Get {@link PostingsEnum} for the current term.  Do not
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
    *  
    * @param liveDocs unset bits are documents that should not
    * be returned
-   * @param reuse pass a prior DocsEnum for possible reuse */
-  public final DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
-    return docs(liveDocs, reuse, DocsEnum.FLAG_FREQS);
+   * @param reuse pass a prior PostingsEnum for possible reuse */
+  public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse) throws IOException {
+    return postings(liveDocs, reuse, PostingsEnum.FLAG_FREQS);
   }
 
-  /** Get {@link DocsEnum} for the current term, with
-   *  control over whether freqs are required.  Do not
-   *  call this when the enum is unpositioned.  This method
-   *  will not return null.
+  /** Get {@link PostingsEnum} for the current term, with
+   *  control over whether freqs, positions, offsets or payloads
+   *  are required.  Do not call this when the enum is
+   *  unpositioned.  This method may return null if the postings
+   *  information required is not available from the index
    *  
    * @param liveDocs unset bits are documents that should not
    * be returned
-   * @param reuse pass a prior DocsEnum for possible reuse
+   * @param reuse pass a prior PostingsEnum for possible reuse
    * @param flags specifies which optional per-document values
-   *        you require; see {@link DocsEnum#FLAG_FREQS} 
-   * @see #docs(Bits, DocsEnum, int) */
-  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException;
-
-  /** Get {@link DocsAndPositionsEnum} for the current term.
-   *  Do not call this when the enum is unpositioned.  This
-   *  method will return null if positions were not
-   *  indexed.
-   *  
-   *  @param liveDocs unset bits are documents that should not
-   *  be returned
-   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
-   *  @see #docsAndPositions(Bits, DocsAndPositionsEnum, int) */
-  public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    return docsAndPositions(liveDocs, reuse, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
-  }
-
-  /** Get {@link DocsAndPositionsEnum} for the current term,
-   *  with control over whether offsets and payloads are
-   *  required.  Some codecs may be able to optimize their
-   *  implementation when offsets and/or payloads are not required.
-   *  Do not call this when the enum is unpositioned.  This
-   *  will return null if positions were not indexed.
-
-   *  @param liveDocs unset bits are documents that should not
-   *  be returned
-   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
-   *  @param flags specifies which optional per-position values you
-   *         require; see {@link DocsAndPositionsEnum#FLAG_OFFSETS} and 
-   *         {@link DocsAndPositionsEnum#FLAG_PAYLOADS}. */
-  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException;
+   *        you require; see {@link PostingsEnum#FLAG_FREQS}
+   * @see #postings(Bits, PostingsEnum, int) */
+  public abstract PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -245,12 +218,7 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-      throw new IllegalStateException("this method should never be called");
-    }
-      
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
       
@@ -273,5 +241,6 @@ public abstract class TermsEnum implements BytesRefIterator {
     public void seekExact(BytesRef term, TermState state) {
       throw new IllegalStateException("this method should never be called");
     }
+
   };
 }

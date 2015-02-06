@@ -23,9 +23,11 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
+
   protected int lastDoc = -1;
   protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
@@ -34,7 +36,7 @@ class ConjunctionScorer extends Scorer {
   ConjunctionScorer(Weight weight, Scorer[] scorers) {
     this(weight, scorers, 1f);
   }
-  
+
   ConjunctionScorer(Weight weight, Scorer[] scorers, float coord) {
     super(weight);
     this.coord = coord;
@@ -109,10 +111,30 @@ class ConjunctionScorer extends Scorer {
     }
     return sum * coord;
   }
-  
+
   @Override
   public int freq() {
     return docsAndFreqs.length;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null;
   }
 
   @Override
@@ -133,7 +155,7 @@ class ConjunctionScorer extends Scorer {
     final long cost;
     final Scorer scorer;
     int doc = -1;
-   
+
     DocsAndFreqs(Scorer scorer) {
       this.scorer = scorer;
       this.cost = scorer.cost();

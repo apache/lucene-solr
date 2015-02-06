@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -205,7 +205,7 @@ public final class TermsFilter extends Filter implements Accountable {
     final BytesRef spare = new BytesRef(this.termsBytes);
     Terms terms = null;
     TermsEnum termsEnum = null;
-    DocsEnum docs = null;
+    PostingsEnum docs = null;
     for (TermsAndField termsAndField : this.termsAndFields) {
       if ((terms = fields.terms(termsAndField.field)) != null) {
         termsEnum = terms.iterator(termsEnum); // this won't return null
@@ -213,7 +213,7 @@ public final class TermsFilter extends Filter implements Accountable {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
-            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
+            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.FLAG_NONE); // no freq since we don't need them
             builder.or(docs);
           }
         }

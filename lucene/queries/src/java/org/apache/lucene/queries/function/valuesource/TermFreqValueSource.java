@@ -17,17 +17,21 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.*;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.Map;
-
 /**
- * Function that returns {@link DocsEnum#freq()} for the
+ * Function that returns {@link org.apache.lucene.index.PostingsEnum#freq()} for the
  * supplied term in every document.
  * <p>
  * If the term does not exist in the document, returns 0.
@@ -49,7 +53,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
     final Terms terms = fields.terms(indexedField);
 
     return new IntDocValues(this) {
-      DocsEnum docs ;
+      PostingsEnum docs ;
       int atDoc;
       int lastDocRequested = -1;
 
@@ -61,7 +65,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
           if (termsEnum.seekExact(indexedBytes)) {
-            docs = termsEnum.docs(null, null);
+            docs = termsEnum.postings(null, null);
           } else {
             docs = null;
           }
@@ -70,10 +74,30 @@ public class TermFreqValueSource extends DocFreqValueSource {
         }
 
         if (docs == null) {
-          docs = new DocsEnum() {
+          docs = new PostingsEnum() {
             @Override
             public int freq() {
               return 0;
+            }
+
+            @Override
+            public int nextPosition() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public int startOffset() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public int endOffset() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public BytesRef getPayload() throws IOException {
+              throw new UnsupportedOperationException();
             }
 
             @Override

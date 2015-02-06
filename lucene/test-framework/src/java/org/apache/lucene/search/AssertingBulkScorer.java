@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -57,10 +57,10 @@ final class AssertingBulkScorer extends BulkScorer {
   @Override
   public void score(LeafCollector collector) throws IOException {
     assert max == 0;
-    collector = new AssertingLeafCollector(random, collector, 0, DocsEnum.NO_MORE_DOCS);
+    collector = new AssertingLeafCollector(random, collector, 0, PostingsEnum.NO_MORE_DOCS);
     if (random.nextBoolean()) {
       try {
-        final int next = score(collector, 0, DocsEnum.NO_MORE_DOCS);
+        final int next = score(collector, 0, PostingsEnum.NO_MORE_DOCS);
         assert next == DocIdSetIterator.NO_MORE_DOCS;
       } catch (UnsupportedOperationException e) {
         in.score(collector);

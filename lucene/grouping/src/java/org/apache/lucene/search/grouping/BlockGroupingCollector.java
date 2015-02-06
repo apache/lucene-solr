@@ -17,13 +17,23 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
-import java.util.Collection;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -85,56 +95,6 @@ public class BlockGroupingCollector extends SimpleCollector {
   private Scorer scorer;
   private final GroupQueue groupQueue;
   private boolean groupCompetes;
-
-  private final static class FakeScorer extends Scorer {
-
-    float score;
-    int doc;
-
-    public FakeScorer() {
-      super(null);
-    }
-
-    @Override
-    public float score() {
-      return score;
-    }
-    
-    @Override
-    public int freq() {
-      throw new UnsupportedOperationException(); // TODO: wtf does this class do?
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      return 1;
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      throw new UnsupportedOperationException();
-    }
-  }
 
   private static final class OneGroup {
     LeafReaderContext readerContext;

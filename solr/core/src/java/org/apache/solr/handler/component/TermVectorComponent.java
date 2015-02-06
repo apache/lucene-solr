@@ -1,19 +1,17 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -24,17 +22,15 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermVectorParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
@@ -335,7 +331,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     docNL.add(field, fieldNL);
 
     BytesRef text;
-    DocsAndPositionsEnum dpEnum = null;
+    PostingsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {
       String term = text.utf8ToString();
       NamedList<Object> termInfo = new NamedList<>();
@@ -345,7 +341,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         termInfo.add("tf", freq);
       }
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
       boolean useOffsets = false;
       boolean usePositions = false;
       if (dpEnum != null) {

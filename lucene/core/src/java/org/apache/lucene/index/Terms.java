@@ -111,7 +111,7 @@ public abstract class Terms {
   public abstract int getDocCount() throws IOException;
 
   /** Returns true if documents in this field store
-   *  per-document term frequency ({@link DocsEnum#freq}). */
+   *  per-document term frequency ({@link PostingsEnum#freq}). */
   public abstract boolean hasFreqs();
 
   /** Returns true if documents in this field store offsets. */

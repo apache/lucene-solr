@@ -17,11 +17,31 @@
 
 package org.apache.solr.request;
 
-import org.apache.lucene.index.DocsEnum;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -74,26 +94,6 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -742,7 +742,7 @@ public class SimpleFacets {
       }
     }
 
-    DocsEnum docsEnum = null;
+    PostingsEnum postingsEnum = null;
     CharsRefBuilder charsRef = new CharsRefBuilder();
 
     if (docs.size() >= mincount) {
@@ -767,36 +767,36 @@ public class SimpleFacets {
               deState.fieldName = field;
               deState.liveDocs = r.getLiveDocs();
               deState.termsEnum = termsEnum;
-              deState.docsEnum = docsEnum;
+              deState.postingsEnum = postingsEnum;
             }
 
             c = searcher.numDocs(docs, deState);
 
-            docsEnum = deState.docsEnum;
+            postingsEnum = deState.postingsEnum;
           } else {
             // iterate over TermDocs to calculate the intersection
 
             // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
+            postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.FLAG_NONE);
             c=0;
 
-            if (docsEnum instanceof MultiDocsEnum) {
-              MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-              int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+            if (postingsEnum instanceof MultiPostingsEnum) {
+              MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
+              int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
               for (int subindex = 0; subindex<numSubs; subindex++) {
-                MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-                if (sub.docsEnum == null) continue;
+                MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
+                if (sub.postingsEnum == null) continue;
                 int base = sub.slice.start;
                 int docid;
-                while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                   if (fastForRandomSet.exists(docid+base)) c++;
                 }
               }
             } else {
               int docid;
-              while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (fastForRandomSet.exists(docid)) c++;
               }
             }

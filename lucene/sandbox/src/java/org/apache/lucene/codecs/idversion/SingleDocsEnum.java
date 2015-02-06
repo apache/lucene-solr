@@ -17,10 +17,13 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.util.Bits;
+import java.io.IOException;
 
-class SingleDocsEnum extends DocsEnum {
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+
+class SingleDocsEnum extends PostingsEnum {
 
   private int doc;
   private int singleDocID;
@@ -67,5 +70,25 @@ class SingleDocsEnum extends DocsEnum {
   @Override
   public int freq() {
     return 1;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    throw new UnsupportedOperationException();
   }
 }

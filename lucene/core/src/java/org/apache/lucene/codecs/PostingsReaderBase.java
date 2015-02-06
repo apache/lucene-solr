@@ -20,8 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
@@ -31,8 +30,8 @@ import org.apache.lucene.util.Bits;
 
 /** The core terms dictionaries (BlockTermsReader,
  *  BlockTreeTermsReader) interact with a single instance
- *  of this class to manage creation of {@link DocsEnum} and
- *  {@link DocsAndPositionsEnum} instances.  It provides an
+ *  of this class to manage creation of {@link org.apache.lucene.index.PostingsEnum} and
+ *  {@link org.apache.lucene.index.PostingsEnum} instances.  It provides an
  *  IndexInput (termsIn) where this class may read any
  *  previously stored data that it had written in its
  *  corresponding {@link PostingsWriterBase} at indexing
@@ -66,12 +65,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsEnum docs(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsEnum reuse, int flags) throws IOException;
-
-  /** Must fully consume state, since after this call that
-   *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
-                                                        int flags) throws IOException;
+  public abstract PostingsEnum postings(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, PostingsEnum reuse, int flags) throws IOException;
   
   /** 
    * Checks consistency of this reader.
@@ -81,7 +75,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
-  
+
   @Override
   public abstract void close() throws IOException;
 }

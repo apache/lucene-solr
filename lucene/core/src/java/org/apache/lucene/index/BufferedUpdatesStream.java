@@ -380,7 +380,7 @@ class BufferedUpdatesStream implements Accountable {
     final int startDelCount;
 
     TermsEnum termsEnum;
-    DocsEnum docsEnum;
+    PostingsEnum postingsEnum;
     BytesRef term;
     boolean any;
 
@@ -568,12 +568,12 @@ class BufferedUpdatesStream implements Accountable {
         if (state.delGen < delGen) {
 
           // we don't need term frequencies for this
-          state.docsEnum = state.termsEnum.docs(state.rld.getLiveDocs(), state.docsEnum, DocsEnum.FLAG_NONE);
+          state.postingsEnum = state.termsEnum.postings(state.rld.getLiveDocs(), state.postingsEnum, PostingsEnum.FLAG_NONE);
 
-          assert state.docsEnum != null;
+          assert state.postingsEnum != null;
 
           while (true) {
-            final int docID = state.docsEnum.nextDoc();
+            final int docID = state.postingsEnum.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
@@ -629,7 +629,7 @@ class BufferedUpdatesStream implements Accountable {
     
     String currentField = null;
     TermsEnum termsEnum = null;
-    DocsEnum docsEnum = null;
+    PostingsEnum postingsEnum = null;
     
     for (DocValuesUpdate update : updates) {
       Term term = update.term;
@@ -664,14 +664,14 @@ class BufferedUpdatesStream implements Accountable {
 
       if (termsEnum.seekExact(term.bytes())) {
         // we don't need term frequencies for this
-        docsEnum = termsEnum.docs(segState.rld.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
+        postingsEnum = termsEnum.postings(segState.rld.getLiveDocs(), postingsEnum, PostingsEnum.FLAG_NONE);
 
         DocValuesFieldUpdates dvUpdates = dvUpdatesContainer.getUpdates(update.field, update.type);
         if (dvUpdates == null) {
           dvUpdates = dvUpdatesContainer.newUpdates(update.field, update.type, segState.reader.maxDoc());
         }
         int doc;
-        while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           if (doc >= limit) {
             break; // no more docs that can be updated for this term
           }
