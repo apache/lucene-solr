@@ -1,5 +1,29 @@
 package org.apache.solr.handler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.RequestParams;
+import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestHarness;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
+import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,37 +41,9 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.apache.lucene.util.LuceneTestCase.BadApple;
-
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.RequestParams;
-import org.apache.solr.core.TestSolrConfigHandler;
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestHarness;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static org.apache.solr.handler.TestBlobHandler.getAsString;
-
-public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
-  static final Logger log =  LoggerFactory.getLogger(TestSolrConfigHandlerCloud.class);
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6924")
+public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
+  static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandlerCloud.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {
@@ -55,7 +51,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrClient)client).getBaseURL();
+          return ((HttpSolrClient) client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);
@@ -73,29 +69,15 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
     setupHarnesses();
-    testReqHandlerAPIs();
     testReqParams();
   }
 
-  private void testReqHandlerAPIs() throws Exception {
+  private void testReqParams() throws Exception {
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
-    }
-
-    RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    String testServerBaseUrl = urls.get(random().nextInt(urls.size()));
-    TestSolrConfigHandler.reqhandlertests(writeHarness, testServerBaseUrl , cloudClient);
-  }
-
-  private void testReqParams() throws Exception{
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
-    List<String> urls = new ArrayList<>();
-    for (Slice slice : coll.getSlices()) {
-      for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add("" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -107,7 +89,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "  }";
 
 
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
 
     Map result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -139,7 +121,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         asList("params", "a"),
         "A val",
         5);
-    compareValues(result, "", asList( "params", RequestParams.USEPARAM));
+    compareValues(result, "", asList("params", RequestParams.USEPARAM));
 
     TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -153,7 +135,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
         "}";
 
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -172,7 +154,6 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         5);
 
 
-
     writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
     payload = " {\n" +
         "  'set' : {'y':{\n" +
@@ -184,9 +165,9 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "  }";
 
 
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
 
-   result =  TestSolrConfigHandler.testForResponseElement(
+    result = TestSolrConfigHandler.testForResponseElement(
         null,
         urls.get(random().nextInt(urls.size())),
         "/config/params?wt=json",
@@ -206,8 +187,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         5);
     compareValues(result, "BY val", asList("params", "b"));
     compareValues(result, null, asList("params", "a"));
-    compareValues(result, Arrays.asList("val 1", "val 2")  , asList("params", "d"));
-    compareValues(result, "20"  , asList("params", "i"));
+    compareValues(result, Arrays.asList("val 1", "val 2"), asList("params", "d"));
+    compareValues(result, "20", asList("params", "i"));
     payload = " {\n" +
         "  'update' : {'y': {\n" +
         "                'c':'CY val modified',\n" +
@@ -218,7 +199,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "  }";
 
 
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
 
     result = TestSolrConfigHandler.testForResponseElement(
         null,
@@ -240,7 +221,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         "  }";
 
 
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
     result = TestSolrConfigHandler.testForResponseElement(
         null,
         urls.get(random().nextInt(urls.size())),
@@ -252,7 +233,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     compareValues(result, null, asList("response", "params", "y", "c"));
 
     payload = " {'delete' : 'y'}";
-    TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
     TestSolrConfigHandler.testForResponseElement(
         null,
         urls.get(random().nextInt(urls.size())),
@@ -265,9 +246,5 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static void compareValues(Map result, Object expected, List<String> jsonPath) {
-    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
-        Objects.equals(expected, ConfigOverlay.getObjectByPath(result, false, jsonPath)));
-  }
 
 }
