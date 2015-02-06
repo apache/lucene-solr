@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.BooleanWeight;
 import org.apache.lucene.util.PriorityQueue;
 
 /**

@@ -83,6 +83,9 @@ API Changes
   instead. This will be as efficient now that queries can opt out from
   scoring. (Adrien Grand)
 
+* LUCENE-6223: Move BooleanQuery.BooleanWeight to BooleanWeight.
+  (Robert Muir)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
