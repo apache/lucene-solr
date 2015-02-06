@@ -70,16 +70,11 @@ public class TestBooleanScorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher) throws IOException {
-      return new Weight() {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new Weight(CrazyMustUseBulkScorerQuery.this) {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Query getQuery() {
-          return CrazyMustUseBulkScorerQuery.this;
         }
 
         @Override
@@ -92,12 +87,12 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
           throw new UnsupportedOperationException();
         }
 
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
+        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) {
           return new BulkScorer() {
             @Override
             public int score(LeafCollector collector, int min, int max) throws IOException {

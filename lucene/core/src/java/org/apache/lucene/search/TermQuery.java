@@ -47,9 +47,12 @@ public class TermQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
     private final TermContext termStates;
-    
-    public TermWeight(IndexSearcher searcher, TermContext termStates)
+    private final boolean needsScores;
+
+    public TermWeight(IndexSearcher searcher, boolean needsScores, TermContext termStates)
         throws IOException {
+      super(TermQuery.this);
+      this.needsScores = needsScores;
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
@@ -64,11 +67,6 @@ public class TermQuery extends Query {
     }
     
     @Override
-    public Query getQuery() {
-      return TermQuery.this;
-    }
-    
-    @Override
     public float getValueForNormalization() {
       return stats.getValueForNormalization();
     }
@@ -79,7 +77,7 @@ public class TermQuery extends Query {
     }
     
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
@@ -117,7 +115,7 @@ public class TermQuery extends Query {
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -170,7 +168,7 @@ public class TermQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermContext termState;
     if (perReaderTermState == null
@@ -186,7 +184,7 @@ public class TermQuery extends Query {
     // we must not ignore the given docFreq - if set use the given value (lie)
     if (docFreq != -1) termState.setDocFreq(docFreq);
     
-    return new TermWeight(searcher, termState);
+    return new TermWeight(searcher, needsScores, termState);
   }
   
   @Override

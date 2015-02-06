@@ -123,9 +123,9 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    final Weight originalWeight = originalQuery.createWeight(searcher);
-    return new Weight() {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
+    return new Weight(TermsIncludingScoreQuery.this) {
 
       private TermsEnum segmentTermsEnum;
 
@@ -150,11 +150,6 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Query getQuery() {
-        return TermsIncludingScoreQuery.this;
-      }
-
-      @Override
       public float getValueForNormalization() throws IOException {
         return originalWeight.getValueForNormalization() * TermsIncludingScoreQuery.this.getBoost() * TermsIncludingScoreQuery.this.getBoost();
       }
@@ -165,7 +160,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;

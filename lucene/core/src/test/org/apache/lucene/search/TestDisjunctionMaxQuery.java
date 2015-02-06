@@ -178,9 +178,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     QueryUtils.check(random(), dq, s);
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
-    final Weight dw = s.createNormalizedWeight(dq);
+    final Weight dw = s.createNormalizedWeight(dq, true);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs(), true);
+    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -194,9 +194,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     QueryUtils.check(random(), dq, s);
-    final Weight dw = s.createNormalizedWeight(dq);
+    final Weight dw = s.createNormalizedWeight(dq, true);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs(), true);
+    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

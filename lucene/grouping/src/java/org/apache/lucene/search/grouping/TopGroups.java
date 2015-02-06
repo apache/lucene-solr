@@ -21,6 +21,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldDocs;
 
 import java.io.IOException;
 
@@ -130,7 +131,12 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<T>[] mergedGroupDocs = new GroupDocs[numGroups];
 
-    final TopDocs[] shardTopDocs = new TopDocs[shardGroups.length];
+    final TopDocs[] shardTopDocs;
+    if (docSort == null) {
+      shardTopDocs = new TopDocs[shardGroups.length];
+    } else {
+      shardTopDocs = new TopFieldDocs[shardGroups.length];
+    }
     float totalMaxScore = Float.MIN_VALUE;
 
     for(int groupIDX=0;groupIDX<numGroups;groupIDX++) {
@@ -157,15 +163,27 @@ public class TopGroups<GROUP_VALUE_TYPE> {
         }
         */
 
-        shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
-                                             shardGroupDocs.scoreDocs,
-                                             shardGroupDocs.maxScore);
+        if (docSort == null) {
+          shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
+                                               shardGroupDocs.scoreDocs,
+                                               shardGroupDocs.maxScore);
+        } else {
+          shardTopDocs[shardIDX] = new TopFieldDocs(shardGroupDocs.totalHits,
+              shardGroupDocs.scoreDocs,
+              docSort.getSort(),
+              shardGroupDocs.maxScore);
+        }
         maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
         totalHits += shardGroupDocs.totalHits;
         scoreSum += shardGroupDocs.score;
       }
 
-      final TopDocs mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, shardTopDocs);
+      final TopDocs mergedTopDocs;
+      if (docSort == null) {
+        mergedTopDocs = TopDocs.merge(docOffset + docTopN, shardTopDocs);
+      } else {
+        mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, (TopFieldDocs[]) shardTopDocs);
+      }
 
       // Slice;
       final ScoreDoc[] mergedScoreDocs;

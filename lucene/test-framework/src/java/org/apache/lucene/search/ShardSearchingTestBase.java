@@ -360,7 +360,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         }
 
         // Merge:
-        return TopDocs.merge(null, numHits, shardHits);
+        return TopDocs.merge(numHits, shardHits);
       }
 
       public TopDocs localSearch(Query query, int numHits) throws IOException {
@@ -369,6 +369,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
       @Override
       public TopDocs searchAfter(ScoreDoc after, Query query, int numHits) throws IOException {
+        if (after == null) {
+          return super.searchAfter(after, query, numHits);
+        }
         final TopDocs[] shardHits = new TopDocs[nodeVersions.length];
         // results are merged in that order: score, shardIndex, doc. therefore we set
         // after to after.score and depending on the nodeID we set doc to either:
@@ -412,7 +415,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         }
 
         // Merge:
-        return TopDocs.merge(null, numHits, shardHits);
+        return TopDocs.merge(numHits, shardHits);
       }
 
       public TopDocs localSearchAfter(ScoreDoc after, Query query, int numHits) throws IOException {
@@ -422,14 +425,14 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public TopFieldDocs search(Query query, int numHits, Sort sort) throws IOException {
         assert sort != null;
-        final TopDocs[] shardHits = new TopDocs[nodeVersions.length];
+        final TopFieldDocs[] shardHits = new TopFieldDocs[nodeVersions.length];
         for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
           if (nodeID == myNodeID) {
             // My node; run using local shard searcher we
             // already aquired:
             shardHits[nodeID] = localSearch(query, numHits, sort);
           } else {
-            shardHits[nodeID] = searchNode(nodeID, nodeVersions, query, sort, numHits, null);
+            shardHits[nodeID] = (TopFieldDocs) searchNode(nodeID, nodeVersions, query, sort, numHits, null);
           }
         }
 

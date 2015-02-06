@@ -698,4 +698,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return new TopFieldDocs(totalHits, results, ((FieldValueHitQueue<Entry>) pq).getFields(), maxScore);
   }
 
+  @Override
+  public TopFieldDocs topDocs() {
+    return (TopFieldDocs) super.topDocs();
+  }
 }

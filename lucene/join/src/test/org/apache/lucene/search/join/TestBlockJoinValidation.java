@@ -107,7 +107,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   public void testNextDocValidationForToChildBjq() throws Exception {
     Query parentQueryWithRandomChild = createParentsQueryWithOneChild(getRandomChildNumber(0));
 
-    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, false);
+    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter);
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.INVALID_QUERY_MESSAGE);
     indexSearcher.search(blockJoinQuery, 1);
@@ -117,7 +117,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   public void testValidationForToChildBjqWithChildFilterQuery() throws Exception {
     Query parentQueryWithRandomChild = createParentQuery();
 
-    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, false);
+    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter);
     Filter childFilter = new QueryWrapperFilter(new TermQuery(new Term("common_field", "1")));
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.ILLEGAL_ADVANCE_ON_PARENT);
@@ -131,7 +131,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     // in BJQ must be greater than child number in Boolean clause
     int nextRandomChildNumber = getRandomChildNumber(randomChildNumber);
     Query parentQueryWithRandomChild = createParentsQueryWithOneChild(nextRandomChildNumber);
-    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, false);
+    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter);
     // advance() method is used by ConjunctionScorer, so we need to create Boolean conjunction query
     BooleanQuery conjunctionQuery = new BooleanQuery();
     WildcardQuery childQuery = new WildcardQuery(new Term("child", createFieldValue(randomChildNumber)));

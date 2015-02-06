@@ -141,9 +141,12 @@ public class MultiPhraseQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
     private final Map<Term,TermContext> termContexts = new HashMap<>();
+    private final boolean needsScores;
 
-    public MultiPhraseWeight(IndexSearcher searcher)
+    public MultiPhraseWeight(IndexSearcher searcher, boolean needsScores)
       throws IOException {
+      super(MultiPhraseQuery.this);
+      this.needsScores = needsScores;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       
@@ -165,9 +168,6 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Query getQuery() { return MultiPhraseQuery.this; }
-
-    @Override
     public float getValueForNormalization() {
       return stats.getValueForNormalization();
     }
@@ -178,7 +178,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -256,7 +256,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -296,8 +296,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new MultiPhraseWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new MultiPhraseWeight(searcher, needsScores);
   }
 
   /** Prints a user-readable version of this query. */

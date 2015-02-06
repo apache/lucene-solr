@@ -132,7 +132,7 @@ class ChildDocTransformer extends TransformerWithContext {
 
     try {
       Query parentQuery = idFt.getFieldQuery(null, idField, parentIdExt);
-      Query query = new ToChildBlockJoinQuery(parentQuery, parentsFilter, false);
+      Query query = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
       DocList children = context.searcher.getDocList(query, childFilterQuery, new Sort(), 0, limit);
       if(children.matches() > 0) {
         DocIterator i = children.iterator();

@@ -287,13 +287,12 @@ final class JustCompileSearch {
 
   static final class JustCompileWeight extends Weight {
 
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    protected JustCompileWeight() {
+      super(null);
     }
 
     @Override
-    public Query getQuery() {
+    public Explanation explain(LeafReaderContext context, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -308,7 +307,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

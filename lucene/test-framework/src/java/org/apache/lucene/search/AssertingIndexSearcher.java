@@ -56,8 +56,8 @@ public class AssertingIndexSearcher extends IndexSearcher {
   
   /** Ensures, that the returned {@code Weight} is not normalized again, which may produce wrong scores. */
   @Override
-  public Weight createNormalizedWeight(Query query) throws IOException {
-    final Weight w = super.createNormalizedWeight(query);
+  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+    final Weight w = super.createNormalizedWeight(query, needsScores);
     return new AssertingWeight(random, w) {
 
       @Override
@@ -66,8 +66,8 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
-        Scorer scorer = w.scorer(context, acceptDocs, needsScores);
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+        Scorer scorer = w.scorer(context, acceptDocs);
         if (scorer != null) {
           // check that scorer obeys disi contract for docID() before next()/advance
           try {

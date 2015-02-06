@@ -389,7 +389,7 @@ on the built-in available scoring models and extending or changing Similarity.
         {@link org.apache.lucene.search.Query Query} class has several methods that are important for
         derived classes:
         <ol>
-            <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher) createWeight(IndexSearcher searcher)} &mdash; A
+            <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean) createWeight(IndexSearcher searcher,boolean)} &mdash; A
                 {@link org.apache.lucene.search.Weight Weight} is the internal representation of the
                 Query, so each Query implementation must
                 provide an implementation of Weight. See the subsection on <a
@@ -398,7 +398,7 @@ on the built-in available scoring models and extending or changing Similarity.
             <li>{@link org.apache.lucene.search.Query#rewrite(IndexReader) rewrite(IndexReader reader)} &mdash; Rewrites queries into primitive queries. Primitive queries are:
                 {@link org.apache.lucene.search.TermQuery TermQuery},
                 {@link org.apache.lucene.search.BooleanQuery BooleanQuery}, <span
-                    >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher) createWeight(IndexSearcher searcher)}</span></li>
+                    >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean) createWeight(IndexSearcher searcher,boolean)}</span></li>
         </ol>
     </p>
 <a name="weightClass"></a>
@@ -546,8 +546,8 @@ on the built-in available scoring models and extending or changing Similarity.
 <p>Assuming we are not sorting (since sorting doesn't affect the raw Lucene score),
    we call one of the search methods of the IndexSearcher, passing in the
    {@link org.apache.lucene.search.Weight Weight} object created by
-   {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query)
-    IndexSearcher.createNormalizedWeight(Query)}, 
+   {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query,boolean)
+    IndexSearcher.createNormalizedWeight(Query,boolean)}, 
    {@link org.apache.lucene.search.Filter Filter} and the number of results we want.
    This method returns a {@link org.apache.lucene.search.TopDocs TopDocs} object,
    which is an internal collection of search results. The IndexSearcher creates

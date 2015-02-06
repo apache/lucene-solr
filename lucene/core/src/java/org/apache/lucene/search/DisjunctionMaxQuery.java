@@ -118,15 +118,12 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     protected ArrayList<Weight> weights = new ArrayList<>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
-    public DisjunctionMaxWeight(IndexSearcher searcher) throws IOException {
+    public DisjunctionMaxWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      super(DisjunctionMaxQuery.this);
       for (Query disjunctQuery : disjuncts) {
-        weights.add(disjunctQuery.createWeight(searcher));
+        weights.add(disjunctQuery.createWeight(searcher, needsScores));
       }
     }
-
-    /** Return our associated DisjunctionMaxQuery */
-    @Override
-    public Query getQuery() { return DisjunctionMaxQuery.this; }
 
     /** Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
     @Override
@@ -153,11 +150,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context, acceptDocs, needsScores);
+        Scorer subScorer = w.scorer(context, acceptDocs);
         if (subScorer != null) {
           scorers.add(subScorer);
         }
@@ -197,8 +194,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /** Create the Weight used to score us */
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new DisjunctionMaxWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new DisjunctionMaxWeight(searcher, needsScores);
   }
 
   /** Optimize our representation and our subqueries representations

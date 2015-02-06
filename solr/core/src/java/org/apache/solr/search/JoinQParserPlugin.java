@@ -210,7 +210,7 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher);
   }
 
@@ -224,6 +224,7 @@ class JoinQuery extends Query {
     ResponseBuilder rb;
 
     public JoinQueryWeight(SolrIndexSearcher searcher) {
+      super(JoinQuery.this);
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -281,11 +282,6 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public Query getQuery() {
-      return JoinQuery.this;
-    }
-
-    @Override
     public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
@@ -303,7 +299,7 @@ class JoinQuery extends Query {
 
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -572,7 +568,7 @@ class JoinQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs(), true);
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();

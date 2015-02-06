@@ -109,17 +109,12 @@ public class TestNeedsScores extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher) throws IOException {
-      final Weight w = in.createWeight(searcher);
-      return new Weight() {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      final Weight w = in.createWeight(searcher, needsScores);
+      return new Weight(AssertNeedsScores.this) {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return w.explain(context, doc);
-        }
-
-        @Override
-        public Query getQuery() {
-          return AssertNeedsScores.this;
         }
 
         @Override
@@ -133,9 +128,9 @@ public class TestNeedsScores extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs, boolean needsScores) throws IOException {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
           assertEquals("query=" + in, value, needsScores);
-          return w.scorer(context, acceptDocs, needsScores);
+          return w.scorer(context, acceptDocs);
         }
       };
     }
