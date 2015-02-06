@@ -616,6 +616,9 @@ Bug Fixes
     * olap.* in AnalyticsComponent
   (Alexandre Rafalovitch & hossman)
 
+* SOLR-6920: A replicated index can end up corrupted when small files end up with the same 
+  file name and size. (Varun Thacker, Mark Miller)
+
 Optimizations
 ----------------------
 

@@ -138,7 +138,7 @@ public class HdfsTestUtil {
     String dir = uri.toString()
         + "/"
         + new File(dataDir).toString().replaceAll(":", "_")
-            .replaceAll("/", "_");
+            .replaceAll("/", "_").replaceAll(" ", "_");
     return dir;
   }
 

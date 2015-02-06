@@ -16,43 +16,25 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
-import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.handler.ReplicationHandler.ALIAS;
+import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
+import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
+import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.FILE;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.ReplicationHandler.GENERATION;
+import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
+import static org.apache.solr.handler.ReplicationHandler.NAME;
+import static org.apache.solr.handler.ReplicationHandler.OFFSET;
+import static org.apache.solr.handler.ReplicationHandler.SIZE;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -94,25 +76,43 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
 
-import static org.apache.solr.handler.ReplicationHandler.ALIAS;
-import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
-import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
-import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
-import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
-import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
-import static org.apache.solr.handler.ReplicationHandler.COMMAND;
-import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
-import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
-import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
-import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
-import static org.apache.solr.handler.ReplicationHandler.FILE;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.GENERATION;
-import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
-import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
-import static org.apache.solr.handler.ReplicationHandler.NAME;
-import static org.apache.solr.handler.ReplicationHandler.OFFSET;
-import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p/> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -445,8 +445,7 @@ public class SnapPuller {
               + isFullCopyNeeded);
           successfulInstall = false;
           
-          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir,
-              latestGeneration);
+          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
           LOG.info("Total time taken for download : "
               + ((System.currentTimeMillis() - replicationStartTime) / 1000)
               + " secs");
@@ -796,15 +795,17 @@ public class SnapPuller {
    * @param indexDir                 the indexDir to be merged to
    * @param latestGeneration         the version number
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex,
-      Directory indexDir, Directory tmpIndexDir, long latestGeneration)
+  private void downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
     for (Map<String,Object> file : filesToDownload) {
-      if (!slowFileExists(indexDir, (String) file.get(NAME))
-          || downloadCompleteIndex) {
+      String filename = (String) file.get(NAME);
+      CompareResult compareResult = compareFile(indexDir, filename, (Long) file.get(SIZE), (Long) file.get(CHECKSUM));
+      if (!compareResult.equal || downloadCompleteIndex
+          || (!compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
+          || filename.startsWith("segments_")))) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
@@ -814,6 +815,54 @@ public class SnapPuller {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
+    }
+  }
+
+  static class CompareResult {
+    boolean equal = false;
+    boolean checkSummed = false;
+  }
+  
+  private CompareResult compareFile(Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
+    CompareResult compareResult = new CompareResult();
+    try {
+      try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
+        long indexFileLen = indexInput.length();
+        long indexFileChecksum = 0;
+        
+        try {
+          indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
+          compareResult.checkSummed = true;
+        } catch (Exception e) {
+          LOG.warn("Could not retrieve checksum from file.", e);
+          
+          if (indexFileLen == backupIndexFileLen) {
+            compareResult.equal = true;
+            return compareResult;
+          } else {
+            LOG.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
+                "expected length is {} and actual length is {}", filename, backupIndexFileChecksum, indexFileChecksum,
+                backupIndexFileLen, indexFileLen);
+            compareResult.equal = false;
+            return compareResult;
+          }
+        }
+        
+        if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+          compareResult.equal = true;
+          return compareResult;
+        } else {
+          LOG.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
+              "expected length is {} and actual length is {}", filename, backupIndexFileChecksum, indexFileChecksum,
+              backupIndexFileLen, indexFileLen);
+          compareResult.equal = false;
+          return compareResult;
+        }
+      }
+    } catch (IOException e) {
+      LOG.error("Could not read file " + filename + ". Downloading it again", e);
+      compareResult.equal = false;
+      return compareResult;
     }
   }
 
@@ -839,13 +888,22 @@ public class SnapPuller {
    */
   private boolean isIndexStale(Directory dir) throws IOException {
     for (Map<String, Object> file : filesToDownload) {
-      if (slowFileExists(dir, (String) file.get(NAME))
-              && dir.fileLength((String) file.get(NAME)) != (Long) file.get(SIZE)) {
-        LOG.warn("File " + file.get(NAME) + " expected to be " + file.get(SIZE)
-            + " while it is " + dir.fileLength((String) file.get(NAME)));
-        // file exists and size is different, therefore we must assume
-        // corrupted index
-        return true;
+      String filename = (String) file.get(NAME);
+      Long length = (Long) file.get(SIZE);
+      Long checksum = (Long) file.get(CHECKSUM);
+      if (slowFileExists(dir, filename)) {
+        if (checksum != null) {
+          if (!(compareFile(dir, filename, length, checksum).equal)) {
+            // file exists and size or checksum is different, therefore we must download it again
+            return true;
+          }
+        } else {
+          if (length != dir.fileLength(filename)) {
+            LOG.warn("File {} did not match. expected length is {} and actual length is {}",
+                filename, length, dir.fileLength(filename));
+            return true;
+          }
+        }
       }
     }
     return false;

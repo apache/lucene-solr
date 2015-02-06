@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -45,10 +44,13 @@ import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -425,27 +427,49 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     List<Map<String, Object>> result = new ArrayList<>();
     Directory dir = null;
     try {
-      // get all the files in the commit
-      // use a set to workaround possible Lucene bug which returns same file
-      // name multiple times
-      Collection<String> files = new HashSet<>(commit.getFileNames());
       dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      try {
-        
-        for (String fileName : files) {
-          if (fileName.endsWith(".lock")) continue;
+      SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+      for (SegmentCommitInfo commitInfo : infos) {
+        for (String file : commitInfo.files()) {
           Map<String,Object> fileMeta = new HashMap<>();
-          fileMeta.put(NAME, fileName);
-          fileMeta.put(SIZE, dir.fileLength(fileName));
+          fileMeta.put(NAME, file);
+          fileMeta.put(SIZE, dir.fileLength(file));
+          
+          try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+            try {
+              long checksum = CodecUtil.retrieveChecksum(in);
+              fileMeta.put(CHECKSUM, checksum);
+            } catch(Exception e) {
+              LOG.warn("Could not read checksum from index file.", e);
+            }
+          }
+          
           result.add(fileMeta);
         }
-      } finally {
-        core.getDirectoryFactory().release(dir);
       }
+
+      // add the segments_N file
+      Map<String,Object> fileMeta = new HashMap<>();
+      fileMeta.put(NAME, infos.getSegmentsFileName());
+      fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
+      if (infos.getId() != null) {
+        try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+          fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
+        }
+      }
+      result.add(fileMeta);
     } catch (IOException e) {
       rsp.add("status", "unable to get file names for given index generation");
       rsp.add("exception", e);
       LOG.error("Unable to get file names for indexCommit generation: " + gen, e);
+    } finally {
+      if (dir != null) {
+        try {
+          core.getDirectoryFactory().release(dir);
+        } catch (IOException e) {
+          SolrException.log(LOG, "Could not release directory after fetching file list", e);
+        }
+      }
     }
     rsp.add(CMD_GET_FILE_LIST, result);
     if (confFileNameAlias.size() < 1 || core.getCoreDescriptor().getCoreContainer().isZooKeeperAware())
