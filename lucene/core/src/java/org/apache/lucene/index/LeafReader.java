@@ -222,6 +222,8 @@ public abstract class LeafReader extends IndexReader {
     return null;
   }
 
+  /** Returns {@link PostingsEnum} for the specified term
+   *  with {@link PostingsEnum#FLAG_FREQS}. */
   public final PostingsEnum termDocsEnum(Term term) throws IOException {
     return termDocsEnum(term, PostingsEnum.FLAG_FREQS);
   }
