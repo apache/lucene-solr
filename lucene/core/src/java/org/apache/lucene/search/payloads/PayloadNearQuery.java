@@ -46,11 +46,11 @@ import org.apache.lucene.util.ToStringUtils;
  * {@link org.apache.lucene.search.spans.SpanNearQuery} except that it factors
  * in the value of the payloads located at each of the positions where the
  * {@link org.apache.lucene.search.spans.TermSpans} occurs.
- * <p/>
+ * <p>
  * NOTE: In order to take advantage of this with the default scoring implementation
  * ({@link DefaultSimilarity}), you must override {@link DefaultSimilarity#scorePayload(int, int, int, BytesRef)},
  * which returns 1 by default.
- * <p/>
+ * <p>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * 
  * @see org.apache.lucene.search.similarities.Similarity.SimScorer#computePayloadFactor(int, int, int, BytesRef)

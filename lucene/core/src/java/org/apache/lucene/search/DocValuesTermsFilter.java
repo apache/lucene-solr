@@ -32,8 +32,7 @@ import org.apache.lucene.util.FixedBitSet;
  * term value in the specified field is contained in the
  * provided set of allowed terms.
  * 
- * <p/>
- * 
+ * <p>
  * This is the same functionality as TermsFilter (from
  * queries/), except this filter requires that the
  * field contains only a single term for all documents.
@@ -41,9 +40,7 @@ import org.apache.lucene.util.FixedBitSet;
  * also have different performance characteristics, as
  * described below.
  * 
- * 
- * <p/>
- * 
+ * <p>
  * With each search, this filter translates the specified
  * set of Terms into a private {@link FixedBitSet} keyed by
  * term number per unique {@link IndexReader} (normally one
@@ -58,8 +55,7 @@ import org.apache.lucene.util.FixedBitSet;
  * index with a great many small documents may find this
  * linear scan too costly.
  * 
- * <p/>
- * 
+ * <p>
  * In contrast, TermsFilter builds up an {@link FixedBitSet},
  * keyed by docID, every time it's created, by enumerating
  * through all matching docs using {@link org.apache.lucene.index.PostingsEnum} to seek
@@ -70,8 +66,7 @@ import org.apache.lucene.util.FixedBitSet;
  * to the number of terms, which can be exceptionally costly
  * when there are cache misses in the OS's IO cache.
  * 
- * <p/>
- * 
+ * <p>
  * Generally, this filter will be slower on the first
  * invocation for a given field, but subsequent invocations,
  * even if you change the allowed set of Terms, should be
@@ -81,8 +76,7 @@ import org.apache.lucene.util.FixedBitSet;
  * match a very small number of documents, TermsFilter may
  * perform faster.
  *
- * <p/>
- *
+ * <p>
  * Which filter is best is very application dependent.
  */
 

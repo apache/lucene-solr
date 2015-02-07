@@ -96,11 +96,11 @@ public class NewAnalyzerTask extends PerfTask {
   /**
    * Set the params (analyzerName only),  Comma-separate list of Analyzer class names.  If the Analyzer lives in
    * org.apache.lucene.analysis, the name can be shortened by dropping the o.a.l.a part of the Fully Qualified Class Name.
-   * <p/>
+   * <p>
    * Analyzer names may also refer to previously defined AnalyzerFactory's.
-   * <p/>
+   * <p>
    * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) &gt;
-   * <p/>
+   * <p>
    * Example AnalyzerFactory usage:
    * <pre>
    * -AnalyzerFactory(name:'whitespace tokenized',WhitespaceTokenizer)

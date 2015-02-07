@@ -40,10 +40,9 @@ import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 5.0 Field Infos format.
- * <p>
- * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.</p>
+ * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.
  * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
- * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer</p>
+ * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer
  * <p>Data types:
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#checkIndexHeader IndexHeader}</li>
@@ -55,7 +54,6 @@ import org.apache.lucene.store.IndexOutput;
  *   <li>DocValuesGen --&gt; {@link DataOutput#writeLong(long) Int64}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
- * </p>
  * Field Descriptions:
  * <ul>
  *   <li>FieldsCount: the number of fields in this file.</li>

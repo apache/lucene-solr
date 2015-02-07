@@ -36,7 +36,6 @@ import org.apache.lucene.search.similarities.Normalization.NoNormalization;
  *   <li><em>t<sup>d</sup><sub>w</sub></em> is the normalized term frequency;</li>
  *   <li><em>&lambda;<sub>w</sub></em> is a parameter.</li>
  * </ul>
- * </p>
  * <p>The framework described in the paper has many similarities to the DFR
  * framework (see {@link DFRSimilarity}). It is possible that the two
  * Similarities will be merged at one point.</p>
@@ -64,7 +63,6 @@ import org.apache.lucene.search.similarities.Normalization.NoNormalization;
  *                      {@link DFRSimilarity})</blockquote>
  *     </li>
  * </ol>
- * <p>
  * @see DFRSimilarity
  * @lucene.experimental 
  */

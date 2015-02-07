@@ -36,7 +36,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Base class for Directory implementations that store index
  * files in the file system.  
- * <a name="subclasses"/>
+ * <a name="subclasses"></a>
  * There are currently three core
  * subclasses:
  *

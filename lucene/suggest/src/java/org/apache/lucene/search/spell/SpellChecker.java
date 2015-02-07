@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * <p>
- *   Spell Checker class  (Main class) <br/>
+ *   Spell Checker class  (Main class).<br>
  *  (initially inspired by the David Spencer code).
  * </p>
  *

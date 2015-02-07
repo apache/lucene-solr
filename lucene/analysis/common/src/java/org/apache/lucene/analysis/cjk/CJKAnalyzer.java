@@ -40,7 +40,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * File containing default CJK stopwords.
-   * <p/>
+   * <p>
    * Currently it contains some common English words that are not usually
    * useful for searching and some double-byte interpunctions.
    */

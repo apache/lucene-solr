@@ -32,7 +32,7 @@ import org.apache.lucene.util.StringHelper;
 /**
  * A SpatialPrefixTree for single-dimensional numbers and number ranges of fixed precision values (not floating point).
  * Despite its name, the indexed values (and queries) need not actually be ranges, they can be unit instance/values.
- * <p />
+ * <p>
  * Why might you use this instead of Lucene's built-in integer/long support?  Here are some reasons with features based
  * on code in this class, <em>or are possible based on this class but require a subclass to fully realize it</em>.
  * <ul>

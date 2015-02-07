@@ -21,13 +21,11 @@
  * <h2>Parsing? Tokenization? Analysis!</h2>
  * <p>
  * Lucene, an indexing and search library, accepts only plain text input.
- * <p>
  * <h2>Parsing</h2>
  * <p>
  * Applications that build their search capabilities upon Lucene may support documents in various formats &ndash; HTML, XML, PDF, Word &ndash; just to name a few.
  * Lucene does not care about the <i>Parsing</i> of these and other document formats, and it is the responsibility of the 
  * application using Lucene to use an appropriate <i>Parser</i> to convert the original format into plain text before passing that plain text to Lucene.
- * <p>
  * <h2>Tokenization</h2>
  * <p>
  * Plain text passed to Lucene for indexing goes through a process generally called tokenization. Tokenization is the process
@@ -67,8 +65,7 @@
  *       Adding in synonyms at the same token position as the current word can mean better 
  *       matching when users search with words in the synonym set.
  *   </li>
- * </ul> 
- * <p>
+ * </ul>
  * <h2>Core Analysis</h2>
  * <p>
  *   The analysis package provides the mechanism to convert Strings and Readers
@@ -249,7 +246,6 @@
  *         This might sometimes require a modified analyzer &ndash; see the next section on how to do that.
  *     </li>
  *   </ol>
- * </p>
  * <h2>Implementing your own Analyzer and Analysis Components</h2>
  * <p>
  *   Creating your own Analyzer is straightforward. Your Analyzer should subclass {@link org.apache.lucene.analysis.Analyzer}. It can use
@@ -416,7 +412,7 @@
  *    This new attribute makes clear that "IBM" and "International Business Machines" start and end
  *    at the same positions.
  * </p>
- * <a name="corrupt" />
+ * <a name="corrupt"></a>
  * <h3>How to not write corrupt token streams</h3>
  * <p>
  *    There are a few rules to observe when writing custom Tokenizers and TokenFilters:
@@ -586,7 +582,6 @@
  * a chain of a TokenStream and multiple TokenFilters is used, then all TokenFilters in that chain share the Attributes
  * with the TokenStream.
  * </li>
- * <br>
  * <li>
  * Attribute instances are reused for all tokens of a document. Thus, a TokenStream/-Filter needs to update
  * the appropriate Attribute(s) in incrementToken(). The consumer, commonly the Lucene indexer, consumes the data in the
@@ -594,13 +589,11 @@
  * was reached. This means that in each call of incrementToken() a TokenStream/-Filter can safely overwrite the data in
  * the Attribute instances.
  * </li>
- * <br>
  * <li>
  * For performance reasons a TokenStream/-Filter should add/get Attributes during instantiation; i.e., create an attribute in the
  * constructor and store references to it in an instance variable.  Using an instance variable instead of calling addAttribute()/getAttribute() 
  * in incrementToken() will avoid attribute lookups for every token in the document.
  * </li>
- * <br>
  * <li>
  * All methods in AttributeSource are idempotent, which means calling them multiple times always yields the same
  * result. This is especially important to know for addAttribute(). The method takes the <b>type</b> (<code>Class</code>)

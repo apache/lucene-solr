@@ -130,7 +130,6 @@ public class WordlistLoader {
    * <li>The comment character is the vertical line (&#124;).
    * <li>Lines may contain trailing comments.
    * </ul>
-   * </p>
    * 
    * @param reader Reader containing a Snowball stopword list
    * @param result the {@link CharArraySet} to fill with the readers words
@@ -164,7 +163,6 @@ public class WordlistLoader {
    * <li>The comment character is the vertical line (&#124;).
    * <li>Lines may contain trailing comments.
    * </ul>
-   * </p>
    * 
    * @param reader Reader containing a Snowball stopword list
    * @return A {@link CharArraySet} with the reader's words

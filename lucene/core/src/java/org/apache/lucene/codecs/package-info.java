@@ -30,7 +30,6 @@
  *   <li>Norms - see {@link org.apache.lucene.codecs.NormsFormat}</li>
  *   <li>Live documents - see {@link org.apache.lucene.codecs.LiveDocsFormat}</li>
  * </ul>
- * </p>
  *  
  *   For some concrete implementations beyond Lucene's official index format, see
  *   the <a href="{@docRoot}/../codecs/overview-summary.html">Codecs module</a>.
@@ -51,7 +50,6 @@
  * You will need to register the Codec class so that the {@link java.util.ServiceLoader ServiceLoader} can find it, by including a
  * META-INF/services/org.apache.lucene.codecs.Codec file on your classpath that contains the package-qualified
  * name of your codec.
- * </p>
  * 
  * <p>
  *   If you just want to customise the {@link org.apache.lucene.codecs.PostingsFormat}, or use different postings

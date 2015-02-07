@@ -39,7 +39,7 @@ import java.util.List;
  * {@link TermsFilter} of all the cells from
  * {@link SpatialPrefixTree#getTreeCellIterator(com.spatial4j.core.shape.Shape, int)}.
  * It only supports the search of indexed Point shapes.
- * <p/>
+ * <p>
  * The precision of query shapes (distErrPct) is an important factor in using
  * this Strategy. If the precision is too precise then it will result in many
  * terms which will amount to a slower query.

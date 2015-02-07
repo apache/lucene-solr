@@ -25,7 +25,7 @@ import org.apache.lucene.search.Query;
 
 /**
  * This interface should be implemented by every class that wants to build
- * {@link Query} objects from {@link QueryNode} objects. <br/>
+ * {@link Query} objects from {@link QueryNode} objects.
  * 
  * @see QueryBuilder
  * @see QueryTreeBuilder

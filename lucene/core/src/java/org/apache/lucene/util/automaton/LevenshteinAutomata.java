@@ -28,7 +28,6 @@ import org.apache.lucene.util.UnicodeUtil;
  * <p>
  * Implements the algorithm described in:
  * Schulz and Mihov: Fast String Correction with Levenshtein Automata
- * <p>
  * @lucene.experimental
  */
 public class LevenshteinAutomata {
@@ -125,7 +124,6 @@ public class LevenshteinAutomata {
    * <li>There are no transitions to dead states.
    * <li>They are not minimal (some transitions could be combined).
    * </ul>
-   * </p>
    */
   public Automaton toAutomaton(int n) {
     return toAutomaton(n, "");
@@ -141,7 +139,6 @@ public class LevenshteinAutomata {
    * <li>There are no transitions to dead states.
    * <li>They are not minimal (some transitions could be combined).
    * </ul>
-   * </p>
    */
   public Automaton toAutomaton(int n, String prefix) {
     assert prefix != null;

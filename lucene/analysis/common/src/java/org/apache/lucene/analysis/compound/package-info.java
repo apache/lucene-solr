@@ -92,7 +92,7 @@
  * ). The files you need are in the subfolder
  * <i>offo-hyphenation/hyph/</i>
  * .
- * <br />
+ * <br>
  * Credits for the hyphenation code go to the
  * <a href="http://xmlgraphics.apache.org/fop/">Apache FOP project</a>
  * .

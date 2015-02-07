@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
     Analyzer class that sets up the TokenStream chain as you want it.
     To use this with LowerCaseTokenizer, for example, you'd write an
     analyzer like this:
-    <P>
+    <br>
     <PRE class="prettyprint">
     class MyAnalyzer extends Analyzer {
       {@literal @Override}

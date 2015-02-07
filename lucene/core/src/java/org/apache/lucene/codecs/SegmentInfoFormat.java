@@ -26,8 +26,6 @@ import org.apache.lucene.store.IOContext;
 /**
  * Expert: Controls the format of the 
  * {@link SegmentInfo} (segment metadata file).
- * <p>
- * 
  * @see SegmentInfo
  * @lucene.experimental
  */

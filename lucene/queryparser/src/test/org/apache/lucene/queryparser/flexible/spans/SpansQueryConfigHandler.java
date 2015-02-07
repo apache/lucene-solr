@@ -22,8 +22,8 @@ import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 
 /**
- * This query config handler only adds the {@link UniqueFieldAttribute} to it.<br/>
- * <br/>
+ * This query config handler only adds the {@link UniqueFieldAttribute} to it.<br>
+ * <br>
  * 
  * It does not return any configuration for a field in specific.
  */

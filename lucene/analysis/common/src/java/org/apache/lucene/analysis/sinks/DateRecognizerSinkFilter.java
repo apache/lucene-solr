@@ -28,7 +28,6 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * Attempts to parse the {@link CharTermAttribute#buffer()} as a Date using a {@link java.text.DateFormat}.
  * If the value is a Date, it will add it to the sink.
- * <p/> 
  *
  **/
 public class DateRecognizerSinkFilter extends TeeSinkTokenFilter.SinkFilter {

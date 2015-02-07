@@ -35,7 +35,7 @@ import org.apache.lucene.queryparser.flexible.standard.parser.EscapeQuerySyntaxI
  * {@link ConfigurationKeys#ALLOW_LEADING_WILDCARD} is defined in the
  * {@link QueryConfigHandler}. If it is and leading wildcard is not allowed, it
  * looks for every {@link WildcardQueryNode} contained in the query node tree
- * and throws an exception if any of them has a leading wildcard ('*' or '?'). <br/>
+ * and throws an exception if any of them has a leading wildcard ('*' or '?').
  * 
  * @see ConfigurationKeys#ALLOW_LEADING_WILDCARD
  */

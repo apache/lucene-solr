@@ -41,13 +41,13 @@ import org.apache.lucene.util.BytesRef;
  * NumericDocValuesField}, {@link SortedDocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
- * <p/> A field is a section of a Document. Each field has three
+ * <p> A field is a section of a Document. Each field has three
  * parts: name, type and value. Values may be text
  * (String, Reader or pre-analyzed TokenStream), binary
  * (byte[]), or numeric (a Number).  Fields are optionally stored in the
  * index, so that they may be returned with hits on the document.
  *
- * <p/>
+ * <p>
  * NOTE: the field type is an {@link IndexableFieldType}.  Making changes
  * to the state of the IndexableFieldType will impact any
  * Field it is used in.  It is strongly recommended that no

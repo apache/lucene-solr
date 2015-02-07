@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 /** 
  * A filter to apply normal capitalization rules to Tokens.  It will make the first letter
  * capital and the rest lower case.
- * <p/>
+ * <p>
  * This filter is particularly useful to build nice looking facet parameters.  This filter
  * is not appropriate if you intend to use a prefix query.
  */

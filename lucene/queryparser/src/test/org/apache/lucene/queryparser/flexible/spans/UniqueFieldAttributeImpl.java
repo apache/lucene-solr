@@ -23,8 +23,7 @@ import org.apache.lucene.util.AttributeImpl;
 /**
  * This attribute is used by the {@link UniqueFieldQueryNodeProcessor}
  * processor. It holds a value that defines which is the unique field name that
- * should be set in every {@link FieldableNode}.<br/>
- * <br/>
+ * should be set in every {@link FieldableNode}.
  * 
  * @see UniqueFieldQueryNodeProcessor
  */

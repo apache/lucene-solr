@@ -24,6 +24,5 @@
  *    <li>{@link org.apache.lucene.search.payloads.PayloadNearQuery PayloadNearQuery} -- A {@link org.apache.lucene.search.spans.SpanNearQuery SpanNearQuery} that factors in the value of the payloads located 
  *        at each of the positions where the spans occur.</li>
  *   </ol>
- * </p>
  */
 package org.apache.lucene.search.payloads;

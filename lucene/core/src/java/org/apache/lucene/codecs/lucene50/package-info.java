@@ -32,12 +32,13 @@
  * </li>
  * <li><a href="#Overview">Index Structure Overview</a></li>
  * <li><a href="#File_Naming">File Naming</a></li>
- * <li><a href="#file-names">Summary of File Extensions</a></li>
+ * <li><a href="#file-names">Summary of File Extensions</a>
  *   <ul>
  *   <li><a href="#Lock_File">Lock File</a></li>
  *   <li><a href="#History">History</a></li>
  *   <li><a href="#Limitations">Limitations</a></li>
  *   </ul>
+ * </li>
  * </ul>
  * </div>
  * <a name="Introduction"></a>
@@ -57,7 +58,7 @@
  * different programming languages should endeavor to agree on file formats, and
  * generate new versions of this document.</p>
  * </div>
- * <a name="Definitions" id="Definitions"></a>
+ * <a name="Definitions"></a>
  * <h2>Definitions</h2>
  * <div>
  * <p>The fundamental concepts in Lucene are index, document, field and term.</p>
@@ -88,7 +89,7 @@
  * indexed literally.</p>
  * <p>See the {@link org.apache.lucene.document.Field Field}
  * java docs for more information on Fields.</p>
- * <a name="Segments" id="Segments"></a>
+ * <a name="Segments"></a>
  * <h3>Segments</h3>
  * <p>Lucene indexes may be composed of multiple sub-indexes, or <i>segments</i>.
  * Each segment is a fully independent index, which could be searched separately.
@@ -128,7 +129,7 @@
  * </li>
  * </ul>
  * </div>
- * <a name="Overview" id="Overview"></a>
+ * <a name="Overview"></a>
  * <h2>Index Structure Overview</h2>
  * <div>
  * <p>Each segment index maintains the following:</p>
@@ -211,7 +212,7 @@
  * segments_1, then segments_2, etc. The generation is a sequential long integer
  * represented in alpha-numeric (base 36) form.</p>
  * </div>
- * <a name="file-names" id="file-names"></a>
+ * <a name="file-names"></a>
  * <h2>Summary of File Extensions</h2>
  * <div>
  * <p>The following table summarizes the names and extensions of the files in
@@ -316,14 +317,14 @@
  * </tr>
  * </table>
  * </div>
- * <a name="Lock_File" id="Lock_File"></a>
+ * <a name="Lock_File"></a>
  * <h2>Lock File</h2>
  * The write lock, which is stored in the index directory by default, is named
  * "write.lock". If the lock directory is different from the index directory then
  * the write lock will be named "XXXX-write.lock" where XXXX is a unique prefix
  * derived from the full path to the index directory. When this file is present, a
  * writer is currently modifying the index (adding or removing documents). This
- * lock file ensures that only one writer is modifying the index at a time.</p>
+ * lock file ensures that only one writer is modifying the index at a time.
  * <a name="History"></a>
  * <h2>History</h2>
  * <p>Compatibility notes are provided in this document, describing how file
@@ -386,7 +387,7 @@
  * that is suitable for faceting/sorting/analytics.
  * </li>
  * </ul>
- * <a name="Limitations" id="Limitations"></a>
+ * <a name="Limitations"></a>
  * <h2>Limitations</h2>
  * <div>
  * <p>Lucene uses a Java <code>int</code> to refer to

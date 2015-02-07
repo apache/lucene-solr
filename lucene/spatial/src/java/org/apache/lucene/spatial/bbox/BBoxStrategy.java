@@ -53,7 +53,7 @@ import com.spatial4j.core.shape.Shape;
  * href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.java">SpatialClauseAdapter</a>.
  * <p>
  * <b>Characteristics:</b>
- * <p>
+ * <br>
  * <ul>
  * <li>Only indexes Rectangles; just one per field value. Other shapes can be provided
  * and the bounding box will be used.</li>

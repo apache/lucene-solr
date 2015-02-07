@@ -379,7 +379,7 @@ public class GroupingSearch {
   /**
    * Whether to also compute all groups matching the query.
    * This can be used to determine the number of groups, which can be used for accurate pagination.
-   * <p/>
+   * <p>
    * When grouping by doc block the number of groups are automatically included in the {@link TopGroups} and this
    * option doesn't have any influence.
    *
@@ -406,7 +406,7 @@ public class GroupingSearch {
 
   /**
    * Whether to compute all group heads (most relevant document per group) matching the query.
-   * <p/>
+   * <p>
    * This feature isn't enabled when grouping by doc block.
    *
    * @param allGroupHeads Whether to compute all group heads (most relevant document per group) matching the query
@@ -430,7 +430,7 @@ public class GroupingSearch {
    * Sets the initial size of some internal used data structures.
    * This prevents growing data structures many times. This can improve the performance of the grouping at the cost of
    * more initial RAM.
-   * <p/>
+   * <p>
    * The {@link #setAllGroups} and {@link #setAllGroupHeads} features use this option.
    * Defaults to 128.
    *

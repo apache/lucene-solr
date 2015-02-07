@@ -32,7 +32,7 @@ import java.util.Map;
  * A base class for calculating a spatial relevance rank per document from a provided
  * {@link ValueSource} in which {@link FunctionValues#objectVal(int)} returns a {@link
  * com.spatial4j.core.shape.Rectangle}.
- * <p/>
+ * <p>
  * Implementers: remember to implement equals and hashCode if you have
  * fields!
  *

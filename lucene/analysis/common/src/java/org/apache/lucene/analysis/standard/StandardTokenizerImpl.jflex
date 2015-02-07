@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * This class implements Word Break rules from the Unicode Text Segmentation 
  * algorithm, as specified in 
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>. 
- * <p/>
+ * <p>
  * Tokens produced are of the following types:
  * <ul>
  *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>

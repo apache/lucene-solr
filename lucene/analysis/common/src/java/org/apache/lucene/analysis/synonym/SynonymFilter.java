@@ -58,7 +58,7 @@ import org.apache.lucene.util.fst.FST;
  * Then input <code>a b c d e</code> parses to <code>y b c
  * d</code>, ie the 2nd rule "wins" because it started
  * earliest and matched the most input tokens of other rules
- * starting at that point.</p>
+ * starting at that point.
  *
  * <p>A future improvement to this filter could allow
  * non-greedy parsing, such that the 3rd rule would win, and

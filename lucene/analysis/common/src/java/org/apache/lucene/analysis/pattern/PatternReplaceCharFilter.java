@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.charfilter.BaseCharFilter;
  * The pattern match will be done in each "block" in char stream.
  * 
  * <p>
- * ex1) source="aa&nbsp;&nbsp;bb&nbsp;aa&nbsp;bb", pattern="(aa)\\s+(bb)" replacement="$1#$2"<br/>
+ * ex1) source="aa&nbsp;&nbsp;bb&nbsp;aa&nbsp;bb", pattern="(aa)\\s+(bb)" replacement="$1#$2"<br>
  * output="aa#bb&nbsp;aa#bb"
  * </p>
  * 
@@ -39,9 +39,9 @@ import org.apache.lucene.analysis.charfilter.BaseCharFilter;
  * face a trouble.
  * 
  * <p>
- * ex2) source="aa123bb", pattern="(aa)\\d+(bb)" replacement="$1&nbsp;$2"<br/>
- * output="aa&nbsp;bb"<br/>
- * and you want to search bb and highlight it, you will get<br/>
+ * ex2) source="aa123bb", pattern="(aa)\\d+(bb)" replacement="$1&nbsp;$2"<br>
+ * output="aa&nbsp;bb"<br>
+ * and you want to search bb and highlight it, you will get<br>
  * highlight snippet="aa1&lt;em&gt;23bb&lt;/em&gt;"
  * </p>
  * 

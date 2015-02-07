@@ -38,7 +38,7 @@ import java.util.List;
  * File can be specified as a absolute, relative or resource.
  * Two properties can be set:
  * file.query.maker.file=&lt;Full path to file containing queries&gt;
- * <br/>
+ * <br>
  * file.query.maker.default.field=&lt;Name of default field - Default value is "body"&gt;
  *
  * Example:

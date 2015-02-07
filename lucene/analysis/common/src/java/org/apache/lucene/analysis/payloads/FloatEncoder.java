@@ -20,8 +20,7 @@ import org.apache.lucene.util.BytesRef;
  */
 
 /**
- *  Encode a character array Float as a {@link BytesRef}.
- * <p/>
+ * Encode a character array Float as a {@link BytesRef}.
  * @see org.apache.lucene.analysis.payloads.PayloadHelper#encodeFloat(float, byte[], int)
  *
  **/

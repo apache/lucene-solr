@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * algorithm, as specified in 
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
  * URLs and email addresses are also tokenized according to the relevant RFCs.
- * <p/>
+ * <p>
  * Tokens produced are of the following types:
  * <ul>
  *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>

@@ -34,7 +34,7 @@ import org.apache.lucene.search.FuzzyQuery;
  * query configuration for
  * {@link ConfigurationKeys#FUZZY_CONFIG}, gets the
  * fuzzy prefix length and default similarity from it and set to the fuzzy node.
- * For more information about fuzzy prefix length check: {@link FuzzyQuery}. <br/>
+ * For more information about fuzzy prefix length check: {@link FuzzyQuery}.
  * 
  * @see ConfigurationKeys#FUZZY_CONFIG
  * @see FuzzyQuery

@@ -42,8 +42,7 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  * Words are broken across script boundaries, then segmented according to
  * the BreakIterator and typing provided by the {@link DefaultICUTokenizerConfig}.
  *
- * <p/>
- *
+ * <p>
  * To use the default set of per-script rules:
  *
  * <pre class="prettyprint" >
@@ -53,13 +52,13 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * <p/>
- *
+ * <p>
  * You can customize this tokenizer's behavior by specifying per-script rule files,
  * which are compiled by the ICU RuleBasedBreakIterator.  See the
  * <a href="http://userguide.icu-project.org/boundaryanalysis#TOC-RBBI-Rules"
  * >ICU RuleBasedBreakIterator syntax reference</a>.
  *
+ * <p>
  * To add per-script rules, add a "rulefiles" argument, which should contain a
  * comma-separated list of <tt>code:rulefile</tt> pairs in the following format:
  * <a href="http://unicode.org/iso15924/iso15924-codes.html"

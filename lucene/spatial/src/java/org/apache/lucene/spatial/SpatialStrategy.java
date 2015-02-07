@@ -32,7 +32,7 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 /**
  * The SpatialStrategy encapsulates an approach to indexing and searching based
  * on shapes.
- * <p/>
+ * <p>
  * Different implementations will support different features. A strategy should
  * document these common elements:
  * <ul>
@@ -46,10 +46,10 @@ import org.apache.lucene.spatial.query.SpatialArgs;
  * If a strategy only supports certain shapes at index or query time, then in
  * general it will throw an exception if given an incompatible one.  It will not
  * be coerced into compatibility.
- * <p/>
+ * <p>
  * Note that a SpatialStrategy is not involved with the Lucene stored field
  * values of shapes, which is immaterial to indexing and search.
- * <p/>
+ * <p>
  * Thread-safe.
  *
  * @lucene.experimental
@@ -88,7 +88,7 @@ public abstract class SpatialStrategy {
    * Returns the IndexableField(s) from the {@code shape} that are to be
    * added to the {@link org.apache.lucene.document.Document}.  These fields
    * are expected to be marked as indexed and not stored.
-   * <p/>
+   * <p>
    * Note: If you want to <i>store</i> the shape as a string for retrieval in
    * search results, you could add it like this:
    * <pre>document.add(new StoredField(fieldName,ctx.toString(shape)));</pre>
@@ -133,7 +133,7 @@ public abstract class SpatialStrategy {
   /**
    * Make a Filter based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
    * and {@link Shape} from the supplied {@code args}.
-   * <p />
+   * <p>
    * If a subclasses implements
    * {@link #makeQuery(org.apache.lucene.spatial.query.SpatialArgs)}
    * then this method could be simply:

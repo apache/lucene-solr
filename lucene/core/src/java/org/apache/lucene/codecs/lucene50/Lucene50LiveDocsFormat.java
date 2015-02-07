@@ -36,12 +36,11 @@ import org.apache.lucene.util.MutableBits;
 
 /** 
  * Lucene 5.0 live docs format 
- * <p>
  * <p>The .liv file is optional, and only exists when a segment contains
- * deletions.</p>
+ * deletions.
  * <p>Although per-segment, this file is maintained exterior to compound segment
- * files.</p>
- * <p>Deletions (.liv) --&gt; IndexHeader,Generation,Bits</p>
+ * files.
+ * <p>Deletions (.liv) --&gt; IndexHeader,Generation,Bits
  * <ul>
  *   <li>SegmentHeader --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>

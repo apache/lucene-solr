@@ -49,7 +49,7 @@ import org.apache.lucene.spatial.util.ValueSourceFilter;
  *
  * <p>
  * <b>Characteristics:</b>
- * <p>
+ * <br>
  * <ul>
  * <li>Only indexes points; just one per field value.</li>
  * <li>Can query by a rectangle or circle.</li>
@@ -68,7 +68,7 @@ import org.apache.lucene.spatial.util.ValueSourceFilter;
  * an x and y pair of fields.  A Circle query does the same bbox query but adds a
  * ValueSource filter on
  * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
- * <p />
+ * <p>
  * One performance shortcoming with this strategy is that a scenario involving
  * both a search using a Circle and sort will result in calculations for the
  * spatial distance being done twice -- once for the filter and second for the

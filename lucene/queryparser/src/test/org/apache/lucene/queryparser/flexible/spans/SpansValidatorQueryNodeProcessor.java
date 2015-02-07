@@ -33,8 +33,8 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
  * Validates every query node in a query node tree. This processor will pass
  * fine if the query nodes are only {@link BooleanQueryNode}s,
  * {@link OrQueryNode}s or {@link FieldQueryNode}s, otherwise an exception will
- * be thrown. <br/>
- * <br/>
+ * be thrown. <br>
+ * <br>
  * 
  * If they are {@link AndQueryNode} or an instance of anything else that
  * implements {@link FieldQueryNode} the exception will also be thrown.

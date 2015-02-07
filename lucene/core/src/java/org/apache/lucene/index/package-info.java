@@ -19,7 +19,6 @@
  * Code to maintain and access indices.
  * <!-- TODO: add IndexWriter, IndexWriterConfig, DocValues, etc etc -->
  * <h2>Table Of Contents</h2>
- * <p>
  *     <ol>
  *         <li><a href="#postings">Postings APIs</a>
  *             <ul>
@@ -38,7 +37,6 @@
  *             </ul>
  *         </li>
  *     </ol>
- * </p>
  * <a name="postings"></a>
  * <h2>Postings APIs</h2>
  * <a name="fields"></a>
@@ -63,7 +61,6 @@
  *   Terms terms = fields.terms(field);
  * }
  * </pre>
- * </p>
  * <a name="terms"></a>
  * <h3>
  *     Terms
@@ -100,7 +97,6 @@
  *   DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
  * }
  * </pre>
- * </p>
  * <a name="documents"></a>
  * <h3>
  *   Documents
@@ -116,7 +112,6 @@
  *   System.out.println(docsEnum.freq());
  *  }
  * </pre>
- * </p>
  * <a name="positions"></a>
  * <h3>
  *   Positions
@@ -140,14 +135,12 @@
  *   }
  * }
  * </pre>
- * </p>
  * <a name="stats"></a>
  * <h2>Index Statistics</h2>
  * <a name="termstats"></a>
  * <h3>
  *     Term statistics
  * </h3>
- * <p>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.TermsEnum#docFreq}: Returns the number of 
  *            documents that contain at least one occurrence of the term. This statistic 
@@ -162,12 +155,10 @@
  *            for the field. Like docFreq(), it will also count occurrences that appear in 
  *            deleted documents.
  *     </ul>
- * </p>
  * <a name="fieldstats"></a>
  * <h3>
  *     Field statistics
  * </h3>
- * <p>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.Terms#size}: Returns the number of 
  *            unique terms in the field. This statistic may be unavailable 
@@ -194,12 +185,10 @@
  *            ({@link org.apache.lucene.index.IndexOptions#DOCS DOCS}) 
  *            for the field.
  *     </ul>
- * </p>
  * <a name="segmentstats"></a>
  * <h3>
  *     Segment statistics
  * </h3>
- * <p>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.IndexReader#maxDoc}: Returns the number of 
  *            documents (including deleted documents) in the index. 
@@ -210,7 +199,6 @@
  *        <li>{@link org.apache.lucene.index.Fields#size}: Returns the number of indexed
  *            fields.
  *     </ul>
- * </p>
  * <a name="documentstats"></a>
  * <h3>
  *     Document statistics
@@ -220,8 +208,6 @@
  * a {@link org.apache.lucene.search.similarities.Similarity} implementation will store some
  * of these values (possibly in a lossy way), into the normalization value for the document in
  * its {@link org.apache.lucene.search.similarities.Similarity#computeNorm} method.
- * </p>
- * <p>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.FieldInvertState#getLength}: Returns the number of 
  *            tokens for this field in the document. Note that this is just the number
@@ -248,11 +234,8 @@
  *        <li>{@link org.apache.lucene.index.FieldInvertState#getMaxTermFrequency}: Returns the maximum
  *            frequency across all unique terms encountered for this field in the document. 
  *     </ul>
- * </p>
  * <p>
  * Additional user-supplied statistics can be added to the document as DocValues fields and
  * accessed via {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.
- * </p>
- * <p>
  */
 package org.apache.lucene.index;

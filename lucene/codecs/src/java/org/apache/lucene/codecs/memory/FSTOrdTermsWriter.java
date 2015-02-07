@@ -63,9 +63,8 @@ import org.apache.lucene.util.fst.Util;
  *  <li><tt>.tix</tt>: <a href="#Termindex">Term Index</a></li>
  *  <li><tt>.tbk</tt>: <a href="#Termblock">Term Block</a></li>
  * </ul>
- * </p>
  *
- * <a name="Termindex" id="Termindex"></a>
+ * <a name="Termindex"></a>
  * <h3>Term Index</h3>
  * <p>
  *  The .tix contains a list of FSTs, one for each field.
@@ -87,7 +86,7 @@ import org.apache.lucene.util.fst.Util;
  *  </li>
  * </ul>
  *
- * <a name="Termblock" id="Termblock"></a>
+ * <a name="Termblock"></a>
  * <h3>Term Block</h3>
  * <p>
  *  The .tbk contains all the statistics and metadata for terms, along with field summary (e.g. 
@@ -98,7 +97,6 @@ import org.apache.lucene.util.fst.Util;
  *   <li>metadata bytes block: encodes other parts of metadata; </li>
  *   <li>skip block: contains skip data, to speed up metadata seeking and decoding</li>
  *  </ul>
- * </p>
  *
  * <p>File Format:</p>
  * <ul>

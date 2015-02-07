@@ -37,8 +37,8 @@ import org.apache.lucene.util.packed.PackedInts;
  * 1024 chunks, this index computes the average number of bytes per
  * chunk and for every chunk, only stores the difference between<ul>
  * <li>${chunk number} * ${average length of a chunk}</li>
- * <li>and the actual start offset of the chunk</li></ul></p>
- * <p>Data is written as follows:</p>
+ * <li>and the actual start offset of the chunk</li></ul>
+ * <p>Data is written as follows:
  * <ul>
  * <li>PackedIntsVersion, &lt;Block&gt;<sup>BlockCount</sup>, BlocksEndMarker</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
@@ -57,7 +57,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>StartPointerDeltas --&gt; {@link PackedInts packed} array of BlockChunks elements of BitsPerStartPointerDelta bits each, representing the deltas from the average start pointer using <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">ZigZag encoding</a></li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
- * <p>Notes</p>
+ * <p>Notes
  * <ul>
  * <li>For any block, the doc base of the n-th chunk can be restored with
  * <code>DocBase + AvgChunkDocs * n + DocBaseDeltas[n]</code>.</li>

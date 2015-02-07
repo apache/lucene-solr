@@ -17,7 +17,6 @@
 
 /**
  * Normalization of text before the tokenizer.
- * </p>
  * <p>
  *   CharFilters are chainable filters that normalize text before tokenization 
  *   and provide mappings between normalized text offsets and the corresponding 

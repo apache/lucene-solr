@@ -25,7 +25,6 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.
- * <p/>
  * 
  * <p>Takes optional param: traversal size (otherwise all results are traversed).</p>
  * 

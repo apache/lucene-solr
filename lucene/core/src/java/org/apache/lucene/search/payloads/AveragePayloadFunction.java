@@ -20,7 +20,7 @@ package org.apache.lucene.search.payloads;
 
 /**
  * Calculate the final score as the average score of all payloads seen.
- * <p/>
+ * <p>
  * Is thread safe and completely reusable. 
  *
  **/

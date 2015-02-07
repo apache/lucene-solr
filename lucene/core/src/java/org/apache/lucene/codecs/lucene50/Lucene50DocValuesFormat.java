@@ -89,7 +89,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *   <li><tt>.dvm</tt>: DocValues metadata</li>
  * </ol>
  * <ol>
- *   <li><a name="dvm" id="dvm"></a>
+ *   <li><a name="dvm"></a>
  *   <p>The DocValues metadata or .dvm file.</p>
  *   <p>For DocValues field, this stores metadata, such as the offset into the 
  *      DocValues data (.dvd)</p>
@@ -150,7 +150,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      is written for the addresses.
  *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
  *      If it's -1, then there are no missing values. If it's -2, all values are missing.
- *   <li><a name="dvd" id="dvd"></a>
+ *   <li><a name="dvd"></a>
  *   <p>The DocValues data or .dvd file.</p>
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
  *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup>,Footer</p>

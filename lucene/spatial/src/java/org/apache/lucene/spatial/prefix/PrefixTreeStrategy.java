@@ -41,7 +41,7 @@ import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
  * approximate spatial search filter.
  * <p>
  * <b>Characteristics:</b>
- * <p>
+ * <br>
  * <ul>
  * <li>Can index any shape; however only {@link RecursivePrefixTreeStrategy}
  * can effectively search non-point shapes.</li>

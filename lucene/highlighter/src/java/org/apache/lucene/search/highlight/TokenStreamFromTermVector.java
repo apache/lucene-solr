@@ -41,7 +41,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * because you know the term vector has payloads, since the first call to incrementToken() will observe if you asked
  * for them and if not then won't get them.  This TokenStream supports an efficient {@link #reset()}, so there's
  * no need to wrap with a caching impl.
- * <p />
+ * <p>
  * The implementation will create an array of tokens indexed by token position.  As long as there aren't massive jumps
  * in positions, this is fine.  And it assumes there aren't large numbers of tokens at the same position, since it adds
  * them to a linked-list per position in O(N^2) complexity.  When there aren't positions in the term vector, it divides

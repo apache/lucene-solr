@@ -161,7 +161,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * consumed, after {@link #incrementToken()} returned <code>false</code>
    * (using the new <code>TokenStream</code> API). Streams implementing the old API
    * should upgrade to use this feature.
-   * <p/>
+   * <p>
    * This method can be used to perform any end-of-stream operations, such as
    * setting the final offset of a stream. The final offset of a stream might
    * differ from the offset of the last token eg in case one or more whitespaces

@@ -30,11 +30,11 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 /**
  * This processor removes every {@link QueryNode} that is not a leaf and has not
  * children. If after processing the entire tree the root node is not a leaf and
- * has no children, a {@link MatchNoDocsQueryNode} object is returned. <br/>
- * <br/>
+ * has no children, a {@link MatchNoDocsQueryNode} object is returned.
+ * <br>
  * This processor is used at the end of a pipeline to avoid invalid query node
  * tree structures like a {@link GroupQueryNode} or {@link ModifierQueryNode}
- * with no children. <br/>
+ * with no children.
  * 
  * @see QueryNode
  * @see MatchNoDocsQueryNode

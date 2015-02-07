@@ -36,7 +36,7 @@ import java.util.StringTokenizer;
  * <pre>
  *   Intersects(ENVELOPE(-10,-8,22,20)) distErrPct=0.025
  * </pre>
- * <p/>
+ * <p>
  * In the future it would be good to support something at least semi-standardized like a
  * variant of <a href="http://docs.geoserver.org/latest/en/user/filter/ecql_reference.html#spatial-predicate">
  *   [E]CQL</a>.

@@ -80,7 +80,7 @@ import org.w3c.dom.Element;
  * <td>4</td>
  * </tr>
  * </table>
- * <p/>
+ * <p>
  * A {@link ParserException} will be thrown if an error occurs parsing the
  * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
  * specified by <tt>type</tt>.

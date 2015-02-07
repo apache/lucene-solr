@@ -256,7 +256,6 @@ import org.apache.lucene.util.BytesRef;
  * The color codes demonstrate how it relates
  * to those of the <i>conceptual</i> formula:
  *
- * <P>
  * <table cellpadding="2" cellspacing="2" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="formatting only">
  *  <tr><td>
  *  <table cellpadding="" cellspacing="2" border="2" style="margin-left:auto; margin-right:auto" summary="formatting only">
@@ -280,7 +279,7 @@ import org.apache.lucene.util.BytesRef;
  *       <big><big>)</big></big>
  *     </td>
  *   </tr>
- *   <tr valigh="top">
+ *   <tr valign="top">
  *    <td></td>
  *    <td align="center" style="text-align: center"><small>t in q</small></td>
  *    <td></td>
@@ -426,7 +425,7 @@ import org.apache.lucene.util.BytesRef;
  *            <big><big>) <sup>2</sup> </big></big>
  *          </td>
  *        </tr>
- *        <tr valigh="top">
+ *        <tr valign="top">
  *          <td></td>
  *          <td align="center" style="text-align: center"><small>t in q</small></td>
  *          <td></td>
@@ -489,7 +488,7 @@ import org.apache.lucene.util.BytesRef;
  *            {@link org.apache.lucene.index.IndexableField#boost() f.boost}()
  *          </td>
  *        </tr>
- *        <tr valigh="top">
+ *        <tr valign="top">
  *          <td></td>
  *          <td align="center" style="text-align: center"><small>field <i><b>f</b></i> in <i>d</i> named as <i><b>t</b></i></small></td>
  *          <td></td>

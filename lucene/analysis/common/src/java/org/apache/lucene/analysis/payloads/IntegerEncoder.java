@@ -22,7 +22,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  *  Encode a character array Integer as a {@link BytesRef}.
- * <p/>
+ * <p>
  * See {@link org.apache.lucene.analysis.payloads.PayloadHelper#encodeInt(int, byte[], int)}.
  *
  **/

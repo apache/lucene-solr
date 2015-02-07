@@ -23,8 +23,7 @@ import org.apache.lucene.search.Explanation;
 /**
  * The algorithm is implemented as envelope on envelope (rect on rect) overlays rather than
  * complex polygon on complex polygon overlays.
- * <p/>
- * <p/>
+ * <p>
  * Spatial relevance scoring algorithm:
  * <DL>
  *   <DT>queryArea</DT> <DD>the area of the input query envelope</DD>
@@ -43,11 +42,11 @@ import org.apache.lucene.search.Explanation;
  * area is calculated (queryArea, targetArea, intersectionArea). This allows for points or horizontal/vertical lines
  * to be used as the query shape and in such case the descending order should have smallest boxes up front. Without
  * this, a point or line query shape typically scores everything with the same value since there is 0 area.
- * <p />
+ * <p>
  * Note: The actual computation of queryRatio and targetRatio is more complicated so that it considers
  * points and lines. Lines have the ratio of overlap, and points are either 1.0 or 0.0 depending on whether
  * it intersects or not.
- * <p />
+ * <p>
  * Originally based on Geoportal's
  * <a href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialRankingValueSource.java">
  *   SpatialRankingValueSource</a> but modified quite a bit. GeoPortal's algorithm will yield a score of 0

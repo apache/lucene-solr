@@ -86,9 +86,9 @@ public interface Cell {
    * {@code shapeFilter}. The returned cells should have {@link #getShapeRel()} set to
    * their relation with {@code shapeFilter}.  In addition, for non-points {@link #isLeaf()}
    * must be true when that relation is WITHIN.
-   * <p/>
+   * <p>
    * IMPORTANT: Cells returned from this iterator can be shared, as well as the bytes.
-   * <p/>
+   * <p>
    * Precondition: Never called when getLevel() == maxLevel.
    *
    * @param shapeFilter an optional filter for the returned cells.

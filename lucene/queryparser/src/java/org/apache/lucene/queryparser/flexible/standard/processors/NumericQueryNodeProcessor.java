@@ -46,8 +46,8 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNo
  * {@link NumericRangeQueryNode} with upper and lower inclusive and lower and
  * upper equals to the value represented by the {@link FieldQueryNode} converted
  * to {@link Number}. It means that <b>field:1</b> is converted to <b>field:[1
- * TO 1]</b>. <br/>
- * <br/>
+ * TO 1]</b>. <br>
+ * <br>
  * Note that {@link FieldQueryNode}s children of a
  * {@link RangeQueryNode} are ignored.
  * 

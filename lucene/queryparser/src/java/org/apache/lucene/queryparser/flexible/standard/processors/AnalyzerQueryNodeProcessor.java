@@ -57,17 +57,17 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
  * not <code>null</code>, it looks for every {@link FieldQueryNode} that is not
  * {@link WildcardQueryNode}, {@link FuzzyQueryNode} or
  * {@link RangeQueryNode} contained in the query node tree, then it applies
- * the analyzer to that {@link FieldQueryNode} object. <br/>
- * <br/>
+ * the analyzer to that {@link FieldQueryNode} object. <br>
+ * <br>
  * If the analyzer return only one term, the returned term is set to the
- * {@link FieldQueryNode} and it's returned. <br/>
- * <br/>
+ * {@link FieldQueryNode} and it's returned. <br>
+ * <br>
  * If the analyzer return more than one term, a {@link TokenizedPhraseQueryNode}
  * or {@link MultiPhraseQueryNode} is created, whether there is one or more
- * terms at the same position, and it's returned. <br/>
- * <br/>
+ * terms at the same position, and it's returned. <br>
+ * <br>
  * If no term is returned by the analyzer a {@link NoTokenFoundQueryNode} object
- * is returned. <br/>
+ * is returned.
  * 
  * @see ConfigurationKeys#ANALYZER
  * @see Analyzer

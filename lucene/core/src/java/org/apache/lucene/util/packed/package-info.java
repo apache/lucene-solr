@@ -28,9 +28,8 @@
  *     The implementations provide different trade-offs between memory usage and
  *     access speed. The standard usage scenario is replacing large int or long
  *     arrays in order to reduce the memory footprint.
- * </p><p>
+ * <p>
  *     The main access point is the {@link org.apache.lucene.util.packed.PackedInts} factory.
- * </p>
  * 
  * <h3>In-memory structures</h3>
  * 

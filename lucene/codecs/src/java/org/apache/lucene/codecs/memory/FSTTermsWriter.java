@@ -61,7 +61,7 @@ import org.apache.lucene.util.fst.Util;
  * </ul>
  * <p>
  *
- * <a name="Termdictionary" id="Termdictionary"></a>
+ * <a name="Termdictionary"></a>
  * <h3>Term Dictionary</h3>
  * <p>
  *  The .tst contains a list of FSTs, one for each field.
@@ -80,7 +80,6 @@ import org.apache.lucene.util.fst.Util;
  *    Generic byte array: Used to store non-monotonic metadata.
  *   </li>
  *  </ul>
- * </p>
  *
  * File format:
  * <ul>

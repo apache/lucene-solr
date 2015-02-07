@@ -29,14 +29,12 @@ import org.apache.lucene.analysis.util.StemmerUtil;
  * of the <a href="http://snowball.tartarus.org/algorithms/german2/stemmer.html">
  * German2 snowball algorithm</a>.
  * It allows for the fact that ä, ö and ü are sometimes written as ae, oe and ue.
- * <p>
  * <ul>
  *   <li> 'ß' is replaced by 'ss'
  *   <li> 'ä', 'ö', 'ü' are replaced by 'a', 'o', 'u', respectively.
  *   <li> 'ae' and 'oe' are replaced by 'a', and 'o', respectively.
  *   <li> 'ue' is replaced by 'u', when not following a vowel or q.
  * </ul>
- * <p>
  * This is useful if you want this normalization without using
  * the German2 stemmer, or perhaps no stemming at all.
  */

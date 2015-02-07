@@ -22,20 +22,16 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 
 /**
- * <p>
  * A {@link QueryNodeProcessor} is an interface for classes that process a
  * {@link QueryNode} tree.
  * <p>
- * </p>
  * The implementor of this class should perform some operation on a query node
  * tree and return the same or another query node tree.
  * <p>
- * </p>
  * It also may carry a {@link QueryConfigHandler} object that contains
  * configuration about the query represented by the query tree or the
  * collection/index where it's intended to be executed.
  * <p>
- * </p>
  * In case there is any {@link QueryConfigHandler} associated to the query tree
  * to be processed, it should be set using
  * {@link QueryNodeProcessor#setQueryConfigHandler(QueryConfigHandler)} before

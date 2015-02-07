@@ -23,12 +23,10 @@
  * package.
  * 
  * <h2>Table Of Contents</h2>
- * <p>
  *     <ol>
  *         <li><a href="#sims">Summary of the Ranking Methods</a></li>
  *         <li><a href="#changingSimilarity">Changing the Similarity</a></li>
  *     </ol>
- * </p>
  * 
  * 
  * <a name="sims"></a>
@@ -37,10 +35,10 @@
  * <p>{@link org.apache.lucene.search.similarities.DefaultSimilarity} is the original Lucene
  * scoring function. It is based on a highly optimized 
  * <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model</a>. For more
- * information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.</p>
+ * information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.
  * 
  * <p>{@link org.apache.lucene.search.similarities.BM25Similarity} is an optimized
- * implementation of the successful Okapi BM25 model.</p>
+ * implementation of the successful Okapi BM25 model.
  * 
  * <p>{@link org.apache.lucene.search.similarities.SimilarityBase} provides a basic
  * implementation of the Similarity contract and exposes a highly simplified
@@ -63,7 +61,7 @@
  * {@link org.apache.lucene.search.similarities.BM25Similarity}, a difference in
  * performance is to be expected when using the methods listed above. However,
  * optimizations can always be implemented in subclasses; see
- * <a href="#changingSimilarity">below</a>.</p>
+ * <a href="#changingSimilarity">below</a>.
  * 
  * <a name="changingSimilarity"></a>
  * <h2>Changing Similarity</h2>
@@ -74,13 +72,12 @@
  *         href="Similarity.html">Similarity</a> implementation. For instance, some
  *     applications do not need to
  *     distinguish between shorter and longer documents (see <a
- *         href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">a "fair" similarity</a>).</p>
+ *         href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">a "fair" similarity</a>).
  * 
  * <p>To change {@link org.apache.lucene.search.similarities.Similarity}, one must do so for both indexing and
  *     searching, and the changes must happen before
  *     either of these actions take place. Although in theory there is nothing stopping you from changing mid-stream, it
  *     just isn't well-defined what is going to happen.
- * </p>
  * 
  * <p>To make this change, implement your own {@link org.apache.lucene.search.similarities.Similarity} (likely
  *     you'll want to simply subclass an existing method, be it
@@ -91,7 +88,6 @@
  *     before indexing and
  *     {@link org.apache.lucene.search.IndexSearcher#setSimilarity(Similarity)}
  *     before searching.
- * </p>
  * 
  * <h3>Extending {@linkplain org.apache.lucene.search.similarities.SimilarityBase}</h3>
  * <p>
@@ -100,7 +96,7 @@
  * basic implementations for the low level . Subclasses are only required to
  * implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, float, float)}
  * and {@link org.apache.lucene.search.similarities.SimilarityBase#toString()}
- * methods.</p>
+ * methods.
  * 
  * <p>Another option is to extend one of the <a href="#framework">frameworks</a>
  * based on {@link org.apache.lucene.search.similarities.SimilarityBase}. These
@@ -111,7 +107,7 @@
  * {@link org.apache.lucene.search.similarities.AfterEffect} and
  * {@link org.apache.lucene.search.similarities.Normalization}. Instead of
  * subclassing the Similarity, one can simply introduce a new basic model and tell
- * {@link org.apache.lucene.search.similarities.DFRSimilarity} to use it.</p>
+ * {@link org.apache.lucene.search.similarities.DFRSimilarity} to use it.
  * 
  * <h3>Changing {@linkplain org.apache.lucene.search.similarities.DefaultSimilarity}</h3>
  * <p>
@@ -123,17 +119,17 @@
  *             <code>org.apache.lucene.misc</code> gives small
  *             increases as the frequency increases a small amount
  *             and then greater increases when you hit the "sweet spot", i.e. where
- *             you think the frequency of terms is more significant.</p></li>
+ *             you think the frequency of terms is more significant.</li>
  *         <li><p>Overriding tf &mdash; In some applications, it doesn't matter what the score of a document is as long as a
  *             matching term occurs. In these
- *             cases people have overridden Similarity to return 1 from the tf() method.</p></li>
+ *             cases people have overridden Similarity to return 1 from the tf() method.</li>
  *         <li><p>Changing Length Normalization &mdash; By overriding
  *             {@link org.apache.lucene.search.similarities.Similarity#computeNorm(org.apache.lucene.index.FieldInvertState state)},
  *             it is possible to discount how the length of a field contributes
  *             to a score. In {@link org.apache.lucene.search.similarities.DefaultSimilarity},
  *             lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be
  *             1 / (numTerms in field), all fields will be treated
- *             <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</p></li>
+ *             <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</li>
  *     </ol>
  *     In general, Chris Hostetter sums it up best in saying (from <a
  *         href="http://www.gossamer-threads.com/lists/lucene/java-user/39125#39125">the Lucene users's mailing list</a>):
@@ -141,6 +137,5 @@
  *         that
  *         it's "text" is a situation where it *might* make sense to to override your
  *         Similarity method.</blockquote>
- * </p>
  */
 package org.apache.lucene.search.similarities;

@@ -40,7 +40,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * </p> 
  * Another application of the set is that it can be used to perform fuzzy counting because
  * it can estimate reasonably accurately how many unique values are contained in the set. 
- * </p>
  * <p>This class is NOT threadsafe.</p>
  * <p>
  * Internally a Bitset is used to record values and once a client has finished recording
