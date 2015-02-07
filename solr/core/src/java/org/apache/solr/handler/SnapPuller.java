@@ -889,6 +889,9 @@ public class SnapPuller {
           return compareResult;
         }
       }
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      compareResult.equal = false;
+      return compareResult;
     } catch (IOException e) {
       LOG.error("Could not read file " + filename + ". Downloading it again", e);
       compareResult.equal = false;
