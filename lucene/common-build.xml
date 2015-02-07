@@ -164,7 +164,7 @@
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.8"/>
   <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options -Xdoclint:all/protected -Xdoclint:-missing"/>
+  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/8/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
@@ -175,6 +175,9 @@
   <property name="javadoc.maxmemory" value="512m" />
   <property name="javadoc.noindex" value="true"/>
 
+  <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
+  
   <!-- detect bootclasspath from given bootjdk path (including crazy AppleJDK special case) -->
   <first id="-boot-rt.jar">
     <fileset dir="${bootjdk}" erroronmissingdir="false" followsymlinks="true">
@@ -371,9 +374,6 @@
     </fail>
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
-
-  <!-- for now enable only some doclint: -->
-  <property name="javadoc.args" value="-Xdoclint:all -Xdoclint:-missing"/>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
@@ -1863,6 +1863,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
         <compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.doclint.args}"/>
       </javac>
     </sequential>
   </macrodef>
@@ -2026,7 +2027,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       	<sources />
       	      	
         <classpath refid="javadoc.classpath"/>
-        <arg line="${javadoc.args}"/>
+        <arg line="${javadoc.doclint.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       

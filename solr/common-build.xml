@@ -29,8 +29,10 @@
   <property name="javac.source" value="1.8"/>
   <property name="javac.target" value="1.8"/>
   <property name="javac.args" value=""/>
+
   <!-- for now disable doclint: -->
-  <property name="javadoc.args" value="-Xdoclint:none"/>
+  <property name="javadoc.doclint.args" value="-Xdoclint:none"/>
+  <property name="javac.doclint.args" value=""/>
   
   <property name="dest" location="${common-solr.dir}/build" />
   <property name="build.dir" location="${dest}/${ant.project.name}"/>
