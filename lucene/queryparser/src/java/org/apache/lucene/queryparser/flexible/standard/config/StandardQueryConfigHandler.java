@@ -38,7 +38,7 @@ import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
  * This query configuration handler is used for almost every processor defined
  * in the {@link StandardQueryNodeProcessorPipeline} processor pipeline. It holds
  * configuration methods that reproduce the configuration methods that could be set on the old
- * lucene 2.4 QueryParser class. <br/>
+ * lucene 2.4 QueryParser class.
  * 
  * @see StandardQueryNodeProcessorPipeline
  */

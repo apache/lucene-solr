@@ -47,7 +47,7 @@ import java.io.IOException;
  * this class at both <a href="#indextime">index-time</a> and 
  * <a href="#querytime">query-time</a>.
  * <p>
- * <a name="indextime"/>
+ * <a name="indextime">Indexing Time</a>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
  * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.  Lucene makes no assumption
@@ -74,7 +74,7 @@ import java.io.IOException;
  * boost parameter <i>C</i>, and {@link PerFieldSimilarityWrapper} can return different 
  * instances with different boosts depending upon field name.
  * <p>
- * <a name="querytime"/>
+ * <a name="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
  *   <li>The {@link #computeWeight(float, CollectionStatistics, TermStatistics...)} method is called a single time,
@@ -91,7 +91,7 @@ import java.io.IOException;
  *       The score() method is called for each matching document.
  * </ol>
  * <p>
- * <a name="explaintime"/>
+ * <a name="explaintime">Explanations</a>
  * When {@link IndexSearcher#explain(org.apache.lucene.search.Query, int)} is called, queries consult the Similarity's DocScorer for an 
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.

@@ -29,8 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * query. Only the group value is collected, and the order
  * is undefined.  This collector does not determine
  * the most relevant document of a group.
- *
- * <p/>
+ * <p>
  * This is an abstract version. Concrete implementations define
  * what a group actually is and how it is internally collected.
  *
@@ -50,7 +49,7 @@ public abstract class AbstractAllGroupsCollector<GROUP_VALUE_TYPE> extends Simpl
 
   /**
    * Returns the group values
-   * <p/>
+   * <p>
    * This is an unordered collections of group values. For each group that matched the query there is a {@link BytesRef}
    * representing a group value.
    *

@@ -27,25 +27,24 @@ import java.io.IOException;
 /**
  * This filter folds Scandinavian characters åÅäæÄÆ-&gt;a and öÖøØ-&gt;o.
  * It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
- * <p/>
+ * <p>
  * It's a semantically more destructive solution than {@link ScandinavianNormalizationFilter} but
  * can in addition help with matching raksmorgas as räksmörgås.
- * <p/>
+ * <p>
  * blåbærsyltetøj == blåbärsyltetöj == blaabaarsyltetoej == blabarsyltetoj
  * räksmörgås == ræksmørgås == ræksmörgaos == raeksmoergaas == raksmorgas
- * <p/>
+ * <p>
  * Background:
  * Swedish åäö are in fact the same letters as Norwegian and Danish åæø and thus interchangeable
  * when used between these languages. They are however folded differently when people type
  * them on a keyboard lacking these characters.
- * <p/>
+ * <p>
  * In that situation almost all Swedish people use a, a, o instead of å, ä, ö.
- * <p/>
+ * <p>
  * Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø.
  * Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
- * <p/>
+ * <p>
  * This filter solves that mismatch problem, but might also cause new.
- * <p/>
  * @see ScandinavianNormalizationFilter
  */
 public final class ScandinavianFoldingFilter extends TokenFilter {

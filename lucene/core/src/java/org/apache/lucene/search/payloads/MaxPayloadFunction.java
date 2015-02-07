@@ -20,7 +20,7 @@ package org.apache.lucene.search.payloads;
 
 /**
  * Returns the maximum payload score seen, else 1 if there are no payloads on the doc.
- * <p/>
+ * <p>
  * Is thread safe and completely reusable.
  *
  **/

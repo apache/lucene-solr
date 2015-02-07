@@ -47,21 +47,22 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Implementation of a Ternary Search Trie, a data structure for storing
  * <code>String</code> objects that combines the compact size of a binary search
  * tree with the speed of a digital search trie, and is therefore ideal for
- * practical use in sorting and searching data.</p>
- * <p>
+ * practical use in sorting and searching data.
  * 
+ * <p>
  * This data structure is faster than hashing for many typical search problems,
  * and supports a broader range of useful problems and operations. Ternary
  * searches are faster than hashing and more powerful, too.
  * </p>
- * <p>
  * 
+ * <p>
  * The theory of ternary search trees was described at a symposium in 1997 (see
  * "Fast Algorithms for Sorting and Searching Strings," by J.L. Bentley and R.
  * Sedgewick, Proceedings of the 8th Annual ACM-SIAM Symposium on Discrete
  * Algorithms, January 1997). Algorithms in C, Third Edition, by Robert
  * Sedgewick (Addison-Wesley, 1998) provides yet another view of ternary search
  * trees.
+ * </p>
  *
  * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */

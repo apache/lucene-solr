@@ -37,7 +37,7 @@ import org.apache.lucene.search.PrefixQuery;
  * have values containing the prefixed wildcard. However, Lucene
  * {@link PrefixQuery} cannot contain the prefixed wildcard. So, this processor
  * basically removed the prefixed wildcard from the
- * {@link PrefixWildcardQueryNode} value. <br/>
+ * {@link PrefixWildcardQueryNode} value.
  * 
  * @see PrefixQuery
  * @see PrefixWildcardQueryNode

@@ -82,7 +82,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
   /**
    * Returns the group head and puts it into {@link #temporalResult}.
    * If the group head wasn't encountered before then it will be added to the collected group heads.
-   * <p/>
+   * <p>
    * The {@link TemporalResult#stop} property will be <code>true</code> if the group head wasn't encountered before
    * otherwise <code>false</code>.
    *

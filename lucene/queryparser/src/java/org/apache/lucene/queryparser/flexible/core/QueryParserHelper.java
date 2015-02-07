@@ -25,15 +25,12 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 
   
 /**
- * <p>
  * This class is a helper for the query parser framework, it does all the three
  * query parser phrases at once: text parsing, query processing and query
  * building.
- * </p>
  * <p>
  * It contains methods that allows the user to change the implementation used on
  * the three phases.
- * </p>
  * 
  * @see QueryNodeProcessor
  * @see SyntaxParser
@@ -221,17 +218,17 @@ public class QueryParserHelper {
   }
 
   /**
-   * Parses a query string to an object, usually some query object. <br/>
-   * <br/>
-   * In this method the three phases are executed: <br/>
-   * <br/>
+   * Parses a query string to an object, usually some query object.<br>
+   * <br>
+   * In this method the three phases are executed: <br>
+   * <br>
    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1st - the query string is parsed using the
    * text parser returned by {@link #getSyntaxParser()}, the result is a query
-   * node tree <br/>
-   * <br/>
+   * node tree <br>
+   * <br>
    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2nd - the query node tree is processed by the
-   * processor returned by {@link #getQueryNodeProcessor()} <br/>
-   * <br/>
+   * processor returned by {@link #getQueryNodeProcessor()} <br>
+   * <br>
    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3th - a object is built from the query node
    * tree using the builder returned by {@link #getQueryBuilder()}
    * 

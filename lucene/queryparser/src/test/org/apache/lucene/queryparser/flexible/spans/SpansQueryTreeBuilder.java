@@ -27,12 +27,12 @@ import org.apache.lucene.search.spans.SpanQuery;
 
 /**
  * Sets up a query tree builder to build a span query tree from a query node
- * tree.<br/>
- * <br/>
+ * tree.<br>
+ * <br>
  * 
- * The defined map is:<br/>
- * - every BooleanQueryNode instance is delegated to the SpanOrQueryNodeBuilder<br/>
- * - every FieldQueryNode instance is delegated to the SpanTermQueryNodeBuilder <br/>
+ * The defined map is:<br>
+ * - every BooleanQueryNode instance is delegated to the SpanOrQueryNodeBuilder<br>
+ * - every FieldQueryNode instance is delegated to the SpanTermQueryNodeBuilder <br>
  * 
  */
 public class SpansQueryTreeBuilder extends QueryTreeBuilder implements

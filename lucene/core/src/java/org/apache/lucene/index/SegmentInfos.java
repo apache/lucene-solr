@@ -63,9 +63,7 @@ import org.apache.lucene.util.StringHelper;
  * HasSegID, SegID, SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen,
  * UpdatesFiles&gt;<sup>SegCount</sup>, CommitUserData, Footer
  * </ul>
- * </p>
  * Data types:
- * <p>
  * <ul>
  * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>NameCounter, SegCount, DeletionCount --&gt;
@@ -81,9 +79,7 @@ import org.apache.lucene.util.StringHelper;
  * {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}&gt;</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
- * </p>
  * Field Descriptions:
- * <p>
  * <ul>
  * <li>Version counts how often the index has been changed by adding or deleting
  * documents.</li>
@@ -113,7 +109,6 @@ import org.apache.lucene.util.StringHelper;
  * <li>UpdatesFiles stores the set of files that were updated in that segment
  * per field.</li>
  * </ul>
- * </p>
  * 
  * @lucene.experimental
  */

@@ -30,8 +30,7 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
  * node contained in the query tree to the field name defined in the
  * {@link UniqueFieldAttribute}. So, the {@link UniqueFieldAttribute} must be
  * defined in the {@link QueryConfigHandler} object set in this processor,
- * otherwise it throws an exception.<br/>
- * <br/>
+ * otherwise it throws an exception.
  * 
  * @see UniqueFieldAttribute
  */

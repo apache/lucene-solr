@@ -54,7 +54,6 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
    *   <li>center</li>
    * </ul>
    * Note that we remove a long sound in the case of "coffee" that is required.
-   * </p>
    */
   public void testStemVariants() throws IOException {
     assertAnalyzesTo(analyzer, "コピー コーヒー タクシー パーティー パーティ センター",

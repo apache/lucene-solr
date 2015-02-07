@@ -29,7 +29,7 @@ import org.apache.lucene.util.AttributeSource;
  * are intended to be consumed more than once. It caches
  * all token attribute states locally in a List when the first call to
  * {@link #incrementToken()} is called. Subsequent calls will used the cache.
- * <p/>
+ * <p>
  * <em>Important:</em> Like any proper TokenFilter, {@link #reset()} propagates
  * to the input, although only before {@link #incrementToken()} is called the
  * first time. Prior to  Lucene 5, it was never propagated.

@@ -28,8 +28,8 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 
 /**
- * This builder creates {@link SpanOrQuery}s from a {@link BooleanQueryNode}.<br/>
- * <br/>
+ * This builder creates {@link SpanOrQuery}s from a {@link BooleanQueryNode}.<br>
+ * <br>
  * 
  * It assumes that the {@link BooleanQueryNode} instance has at least one child.
  */

@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
  * This analyzer implements light-stemming as specified by: <i> Searching
  * Strategies for the Bulgarian Language </i>
  * http://members.unine.ch/jacques.savoy/Papers/BUIR.pdf
- * <p>
  */
 public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
 

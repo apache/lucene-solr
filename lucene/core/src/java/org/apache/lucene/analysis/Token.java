@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
   <p>
   The start and end offsets permit applications to re-associate a token with
   its source text, e.g., to display highlighted query terms in a document
-  browser, or to show matching text fragments in a <abbr title="KeyWord In Context">KWIC</abbr>
+  browser, or to show matching text fragments in a <a href="http://en.wikipedia.org/wiki/Key_Word_in_Context">KWIC</a>
   display, etc.
   <p>
   The type is a string, assigned by a lexical analyzer
@@ -61,12 +61,10 @@ import org.apache.lucene.util.BytesRef;
   <li>The startOffset and endOffset represent the start and offset in the source text, so be careful in adjusting them.</li>
   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
   </ul>
-  </p>
   <p>
   <b>Please note:</b> With Lucene 3.1, the <code>{@linkplain #toString toString()}</code> method had to be changed to match the
   {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
   This method now only prints the term text, no additional information anymore.
-  </p>
   @deprecated This class is outdated and no longer used since Lucene 2.9. Nuke it finally!
 */
 @Deprecated

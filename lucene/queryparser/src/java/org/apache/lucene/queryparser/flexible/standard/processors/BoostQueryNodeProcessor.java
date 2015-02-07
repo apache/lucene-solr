@@ -32,7 +32,7 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 /**
  * This processor iterates the query node tree looking for every
  * {@link FieldableNode} that has {@link ConfigurationKeys#BOOST} in its
- * config. If there is, the boost is applied to that {@link FieldableNode}. <br/>
+ * config. If there is, the boost is applied to that {@link FieldableNode}.
  * 
  * @see ConfigurationKeys#BOOST
  * @see QueryConfigHandler

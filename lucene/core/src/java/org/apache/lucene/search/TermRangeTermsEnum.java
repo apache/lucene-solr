@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the
  * specified range parameters.  Each term in the enumeration is
- * greater than all that precede it.</p>
+ * greater than all that precede it.
  */
 public class TermRangeTermsEnum extends FilteredTermsEnum {
 

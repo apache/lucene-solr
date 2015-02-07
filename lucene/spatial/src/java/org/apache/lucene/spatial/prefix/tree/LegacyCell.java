@@ -154,7 +154,7 @@ public abstract class LegacyCell implements Cell {
   /**
    * Performant implementations are expected to implement this efficiently by
    * considering the current cell's boundary.
-   * <p/>
+   * <p>
    * Precondition: Never called when getLevel() == maxLevel.
    * Precondition: this.getShape().relate(p) != DISJOINT.
    */

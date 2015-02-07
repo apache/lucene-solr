@@ -31,15 +31,15 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Dictionary represented by a text file.
  * 
- * <p/>Format allowed: 1 entry per line:<br/>
- * An entry can be: <br/>
+ * <p>Format allowed: 1 entry per line:<br>
+ * An entry can be: <br>
  * <ul>
  * <li>suggestion</li>
  * <li>suggestion <code>fieldDelimiter</code> weight</li>
  * <li>suggestion <code>fieldDelimiter</code> weight <code>fieldDelimiter</code> payload</li>
  * </ul>
- * where the default <code>fieldDelimiter</code> is {@value #DEFAULT_FIELD_DELIMITER}<br/>
- * <p/>
+ * where the default <code>fieldDelimiter</code> is {@value #DEFAULT_FIELD_DELIMITER}<br>
+ * <p>
  * <b>NOTE:</b> 
  * <ul>
  * <li>In order to have payload enabled, the first entry has to have a payload</li>
@@ -49,11 +49,11 @@ import org.apache.lucene.util.IOUtils;
  *  then an empty payload is returned</li>
  * <li>An entry cannot have more than two <code>fieldDelimiter</code></li>
  * </ul>
- * <p/>
- * <b>Example:</b><br/>
- * word1 word2 TAB 100 TAB payload1<br/>
- * word3 TAB 101<br/>
- * word4 word3 TAB 102<br/>
+ * <p>
+ * <b>Example:</b><br>
+ * word1 word2 TAB 100 TAB payload1<br>
+ * word3 TAB 101<br>
+ * word4 word3 TAB 102<br>
  */
 public class FileDictionary implements Dictionary {
 

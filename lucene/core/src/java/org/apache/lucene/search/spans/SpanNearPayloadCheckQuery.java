@@ -26,8 +26,6 @@ import java.util.Collection;
 /**
  * Only return those matches that have a specific payload at
  * the given position.
- * <p/>
- * 
  */
 public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
   protected final Collection<byte[]> payloadToMatch;

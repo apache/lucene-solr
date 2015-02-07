@@ -32,15 +32,15 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 
 /**
  * This processor is used to expand terms so the query looks for the same term
- * in different fields. It also boosts a query based on its field. <br/>
- * <br/>
+ * in different fields. It also boosts a query based on its field. <br>
+ * <br>
  * This processor looks for every {@link FieldableNode} contained in the query
  * node tree. If a {@link FieldableNode} is found, it checks if there is a
  * {@link ConfigurationKeys#MULTI_FIELDS} defined in the {@link QueryConfigHandler}. If
  * there is, the {@link FieldableNode} is cloned N times and the clones are
  * added to a {@link BooleanQueryNode} together with the original node. N is
  * defined by the number of fields that it will be expanded to. The
- * {@link BooleanQueryNode} is returned. <br/>
+ * {@link BooleanQueryNode} is returned.
  * 
  * @see ConfigurationKeys#MULTI_FIELDS
  */

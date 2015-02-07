@@ -54,7 +54,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
 
   /**
    * analyzes the tokenizer input using the given analysis engine
-   * <p/>
+   * <p>
    * {@link #cas} will be filled with  extracted metadata (UIMA annotations, feature structures)
    *
    * @throws IOException If there is a low-level I/O error.

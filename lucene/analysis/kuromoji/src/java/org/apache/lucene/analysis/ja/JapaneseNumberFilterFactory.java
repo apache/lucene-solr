@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link JapaneseNumberFilter}.
- * <p>
+ * <br>
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;

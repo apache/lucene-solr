@@ -36,7 +36,6 @@ import org.tartarus.snowball.SnowballProgram;
  *  <li>For the Turkish language, see {@link TurkishLowerCaseFilter}.
  *  <li>For other languages, see {@link LowerCaseFilter}.
  * </ul>
- * </p>
  *
  * <p>
  * Note: This filter is aware of the {@link KeywordAttribute}. To prevent

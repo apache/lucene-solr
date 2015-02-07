@@ -32,7 +32,7 @@ import org.apache.lucene.util.AttributeSource;
  * This TokenFilter provides the ability to set aside attribute states
  * that have already been analyzed.  This is useful in situations where multiple fields share
  * many common analysis steps and then go their separate ways.
- * <p/>
+ * <p>
  * It is also useful for doing things like entity extraction or proper noun analysis as
  * part of the analysis workflow and saving off those tokens for use in another field.
  *

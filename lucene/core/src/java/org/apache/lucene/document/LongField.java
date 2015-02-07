@@ -59,21 +59,21 @@ import org.apache.lucene.util.NumericUtils;
  * value, either by dividing the result of
  * {@link java.util.Date#getTime} or using the separate getters
  * (for year, month, etc.) to construct an <code>int</code> or
- * <code>long</code> value.</p>
+ * <code>long</code> value.
  *
  * <p>To perform range querying or filtering against a
  * <code>LongField</code>, use {@link NumericRangeQuery} or {@link
  * NumericRangeFilter}.  To sort according to a
  * <code>LongField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#LONG}. <code>LongField</code> 
- * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.</p>
+ * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.
  *
  * <p>You may add the same field name as an <code>LongField</code> to
  * the same document more than once.  Range querying and
  * filtering will be the logical OR of all values; so a range query
  * will hit all documents that have at least one value in
  * the range. However sort behavior is not defined.  If you need to sort,
- * you should separately index a single-valued <code>LongField</code>.</p>
+ * you should separately index a single-valued <code>LongField</code>.
  *
  * <p>A <code>LongField</code> will consume somewhat more disk space
  * in the index than an ordinary single-valued field.
@@ -111,7 +111,7 @@ import org.apache.lucene.util.NumericUtils;
  * <p>If you only need to sort by numeric value, and never
  * run range querying/filtering, you can index using a
  * <code>precisionStep</code> of {@link Integer#MAX_VALUE}.
- * This will minimize disk space consumed. </p>
+ * This will minimize disk space consumed.
  *
  * <p>More advanced users can instead use {@link
  * NumericTokenStream} directly, when indexing numbers. This

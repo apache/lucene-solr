@@ -40,16 +40,15 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
  * upper bounds value from the {@link TermRangeQueryNode} object and try
  * to parse their values using a {@link DateFormat}. If the values cannot be
  * parsed to a date value, it will only create the {@link TermRangeQueryNode}
- * using the non-parsed values. <br/>
- * <br/>
+ * using the non-parsed values. <br>
+ * <br>
  * If a {@link ConfigurationKeys#LOCALE} is defined in the
  * {@link QueryConfigHandler} it will be used to parse the date, otherwise
- * {@link Locale#getDefault()} will be used. <br/>
- * <br/>
+ * {@link Locale#getDefault()} will be used. <br>
+ * <br>
  * If a {@link ConfigurationKeys#DATE_RESOLUTION} is defined and the
  * {@link Resolution} is not <code>null</code> it will also be used to parse the
- * date value. <br/>
- * <br/>
+ * date value.
  * 
  * @see ConfigurationKeys#DATE_RESOLUTION
  * @see ConfigurationKeys#LOCALE

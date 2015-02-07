@@ -94,7 +94,6 @@ public class TimeLimitingCollector implements Collector {
    *   collector.setBaseline(baseline);
    *   indexSearcher.search(query, collector);
    * </pre>
-   * </p>
    * @see #setBaseline() 
    */
   public void setBaseline(long clockTime) {

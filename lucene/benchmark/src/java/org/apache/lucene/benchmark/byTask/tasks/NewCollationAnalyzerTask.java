@@ -27,12 +27,11 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
  * Task to support benchmarking collation.
- * <p>
+ * <br>
  * <ul>
  *  <li> <code>NewCollationAnalyzer</code> with the default jdk impl
  *  <li> <code>NewCollationAnalyzer(impl:icu)</code> specify an impl (jdk,icu)
  * </ul>
- * </p>
  */
 public class NewCollationAnalyzerTask extends PerfTask {
   /**

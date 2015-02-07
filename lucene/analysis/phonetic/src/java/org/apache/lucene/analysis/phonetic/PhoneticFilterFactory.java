@@ -40,9 +40,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 /**
  * Factory for {@link PhoneticFilter}.
  * 
- * Create tokens based on phonetic encoders from <a href="
- * http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html
- * ">Apache Commons Codec</a>.
+ * Create tokens based on phonetic encoders from 
+ * <a href="http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html">Apache Commons Codec</a>.
  * <p>
  * This takes one required argument, "encoder", and the rest are optional:
  * <dl>

@@ -384,7 +384,6 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
   /**
    * Expert: return the IndexCommit that this reader has opened.
-   * <p/>
    * @lucene.experimental
    */
   public abstract IndexCommit getIndexCommit() throws IOException;

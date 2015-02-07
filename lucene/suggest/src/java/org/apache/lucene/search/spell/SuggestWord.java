@@ -19,11 +19,9 @@ package org.apache.lucene.search.spell;
  */
 
 /**
- *  SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p/>
+ * SuggestWord, used in suggestSimilar method in SpellChecker class.
+ * <p>
  * Default sort is first by score, then by frequency.
- * 
- *
  */
 public final class SuggestWord{
   

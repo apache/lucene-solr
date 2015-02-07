@@ -43,9 +43,7 @@ import org.apache.lucene.util.Version;
  * <ul>
  *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, Footer
  * </ul>
- * </p>
  * Data types:
- * <p>
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
@@ -55,9 +53,7 @@ import org.apache.lucene.util.Version;
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
- * </p>
  * Field Descriptions:
- * <p>
  * <ul>
  *   <li>SegVersion is the code version that created the segment.</li>
  *   <li>SegSize is the number of documents contained in the segment index.</li>
@@ -70,7 +66,6 @@ import org.apache.lucene.util.Version;
  *       addIndexes), etc.</li>
  *   <li>Files is a list of files referred to by this segment.</li>
  * </ul>
- * </p>
  * 
  * @see SegmentInfos
  * @lucene.experimental

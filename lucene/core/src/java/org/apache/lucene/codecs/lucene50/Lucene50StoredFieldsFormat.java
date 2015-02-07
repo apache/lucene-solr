@@ -38,7 +38,7 @@ import org.apache.lucene.util.packed.PackedInts;
 /**
  * Lucene 5.0 stored fields format.
  *
- * <p><b>Principle</b></p>
+ * <p><b>Principle</b>
  * <p>This {@link StoredFieldsFormat} compresses blocks of documents in
  * order to improve the compression ratio compared to document-level
  * compression. It uses the <a href="http://code.google.com/p/lz4/">LZ4</a>
@@ -50,17 +50,17 @@ import org.apache.lucene.util.packed.PackedInts;
  * compression, you can choose ({@link Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses 
  * the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 60KB blocks 
  * for a better ratio at the expense of slower performance. 
- * These two options can be configured like this: </p>
+ * These two options can be configured like this:
  * <pre class="prettyprint">
  *   // the default: for high performance
  *   indexWriterConfig.setCodec(new Lucene50Codec(Mode.BEST_SPEED));
  *   // instead for higher performance (but slower):
  *   // indexWriterConfig.setCodec(new Lucene50Codec(Mode.BEST_COMPRESSION));
  * </pre>
- * <p><b>File formats</b></p>
- * <p>Stored fields are represented by two files:</p>
+ * <p><b>File formats</b>
+ * <p>Stored fields are represented by two files:
  * <ol>
- * <li><a name="field_data" id="field_data"></a>
+ * <li><a name="field_data"></a>
  * <p>A fields data file (extension <tt>.fdt</tt>). This file stores a compact
  * representation of documents in compressed blocks of 16KB or more. When
  * writing a segment, documents are appended to an in-memory <tt>byte[]</tt>
@@ -106,7 +106,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>DirtyChunkCount --&gt; the number of prematurely flushed chunks in this file</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
- * <p>Notes</p>
+ * <p>Notes
  * <ul>
  * <li>If documents are larger than 16KB then chunks will likely contain only
  * one document. However, documents can never spread across several chunks (all
@@ -123,7 +123,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * 0.5% larger than Docs.</li>
  * </ul>
  * </li>
- * <li><a name="field_index" id="field_index"></a>
+ * <li><a name="field_index"></a>
  * <p>A fields index file (extension <tt>.fdx</tt>).</p>
  * <ul>
  * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
@@ -133,9 +133,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ul>
  * </li>
  * </ol>
- * <p><b>Known limitations</b></p>
+ * <p><b>Known limitations</b>
  * <p>This {@link StoredFieldsFormat} does not support individual documents
- * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.</p>
+ * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.
  * @lucene.experimental
  */
 public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {

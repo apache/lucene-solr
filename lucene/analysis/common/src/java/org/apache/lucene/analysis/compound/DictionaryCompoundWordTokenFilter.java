@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
  * "Donaudampfschiff" even when you only enter "schiff".
  *  It uses a brute-force algorithm to achieve this.
- * <p>
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
 

@@ -46,11 +46,10 @@ import com.ibm.icu.text.UnicodeSet;
  * <li>Conversion from Fullwidth to Halfwidth forms.
  * <li>Script conversions, for example Serbian Cyrillic to Latin
  * </ul>
- * </p>
  * <p>
  * Example usage: <blockquote>stream = new ICUTransformFilter(stream,
  * Transliterator.getInstance("Traditional-Simplified"));</blockquote>
- * </p>
+ * <br>
  * For more details, see the <a
  * href="http://userguide.icu-project.org/transforms/general">ICU User
  * Guide</a>.

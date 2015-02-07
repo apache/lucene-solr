@@ -33,7 +33,6 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
  *  <li><code>ROOT</code>: The root (language-agnostic) Locale
  *  <li>&lt;empty string&gt;: Erase the Locale (null)
  * </ul>
- * </p>
  */
 public class NewLocaleTask extends PerfTask {
   private String language;

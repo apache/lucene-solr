@@ -224,12 +224,12 @@ public class PackedInts {
    * Try to find the {@link Format} and number of bits per value that would
    * restore from disk the fastest reader whose overhead is less than
    * <code>acceptableOverheadRatio</code>.
-   * </p><p>
+   * <p>
    * The <code>acceptableOverheadRatio</code> parameter makes sense for
    * random-access {@link Reader}s. In case you only plan to perform
    * sequential access on this stream later on, you should probably use
    * {@link PackedInts#COMPACT}.
-   * </p><p>
+   * <p>
    * If you don't know how many values you are going to write, use
    * <code>valueCount = -1</code>.
    */
@@ -867,7 +867,7 @@ public class PackedInts {
    * metadata at the beginning of the stream. This method is useful to restore
    * data from streams which have been created using
    * {@link PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)}.
-   * </p><p>
+   * <p>
    * The returned reader will have very little memory overhead, but every call
    * to {@link Reader#get(int)} is likely to perform a disk seek.
    *
@@ -896,7 +896,7 @@ public class PackedInts {
    * Construct a direct {@link Reader} from an {@link IndexInput}. This method
    * is useful to restore data from streams which have been created using
    * {@link PackedInts#getWriter(DataOutput, int, int, float)}.
-   * </p><p>
+   * <p>
    * The returned reader will have very little memory overhead, but every call
    * to {@link Reader#get(int)} is likely to perform a disk seek.
    *
@@ -918,7 +918,7 @@ public class PackedInts {
    * Create a packed integer array with the given amount of values initialized
    * to 0. the valueCount and the bitsPerValue cannot be changed after creation.
    * All Mutables known by this factory are kept fully in RAM.
-   * </p><p>
+   * <p>
    * Positive values of <code>acceptableOverheadRatio</code> will trade space
    * for speed by selecting a faster but potentially less memory-efficient
    * implementation. An <code>acceptableOverheadRatio</code> of
@@ -978,12 +978,12 @@ public class PackedInts {
   /**
    * Expert: Create a packed integer array writer for the given output, format,
    * value count, and number of bits per value.
-   * </p><p>
+   * <p>
    * The resulting stream will be long-aligned. This means that depending on
    * the format which is used, up to 63 bits will be wasted. An easy way to
    * make sure that no space is lost is to always use a <code>valueCount</code>
    * that is a multiple of 64.
-   * </p><p>
+   * <p>
    * This method does not write any metadata to the stream, meaning that it is
    * your responsibility to store it somewhere else in order to be able to
    * recover data from the stream later on:
@@ -993,7 +993,7 @@ public class PackedInts {
    *   <li><code>bitsPerValue</code>,</li>
    *   <li>{@link #VERSION_CURRENT}.</li>
    * </ul>
-   * </p><p>
+   * <p>
    * It is possible to start writing values without knowing how many of them you
    * are actually going to write. To do this, just pass <code>-1</code> as
    * <code>valueCount</code>. On the other hand, for any positive value of
@@ -1001,7 +1001,7 @@ public class PackedInts {
    * write more values than expected and pad the end of stream with zeros in
    * case you have written less than <code>valueCount</code> when calling
    * {@link Writer#finish()}.
-   * </p><p>
+   * <p>
    * The <code>mem</code> parameter lets you control how much memory can be used
    * to buffer changes in memory before flushing to disk. High values of
    * <code>mem</code> are likely to improve throughput. On the other hand, if
@@ -1026,18 +1026,18 @@ public class PackedInts {
   /**
    * Create a packed integer array writer for the given output, format, value
    * count, and number of bits per value.
-   * </p><p>
+   * <p>
    * The resulting stream will be long-aligned. This means that depending on
    * the format which is used under the hoods, up to 63 bits will be wasted.
    * An easy way to make sure that no space is lost is to always use a
    * <code>valueCount</code> that is a multiple of 64.
-   * </p><p>
+   * <p>
    * This method writes metadata to the stream, so that the resulting stream is
    * sufficient to restore a {@link Reader} from it. You don't need to track
    * <code>valueCount</code> or <code>bitsPerValue</code> by yourself. In case
    * this is a problem, you should probably look at
    * {@link #getWriterNoHeader(DataOutput, Format, int, int, int)}.
-   * </p><p>
+   * <p>
    * The <code>acceptableOverheadRatio</code> parameter controls how
    * readers that will be restored from this stream trade space
    * for speed by selecting a faster but potentially less memory-efficient

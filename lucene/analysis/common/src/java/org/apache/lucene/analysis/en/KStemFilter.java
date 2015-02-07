@@ -25,12 +25,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /** A high-performance kstem filter for english.
- * <p/>
+ * <p>
  * See <a href="http://ciir.cs.umass.edu/pubfiles/ir-35.pdf">
  * "Viewing Morphology as an Inference Process"</a>
  * (Krovetz, R., Proceedings of the Sixteenth Annual International ACM SIGIR
  * Conference on Research and Development in Information Retrieval, 191-203, 1993).
- * <p/>
+ * <p>
  * All terms must already be lowercased for this filter to work correctly.
  *
  * <p>

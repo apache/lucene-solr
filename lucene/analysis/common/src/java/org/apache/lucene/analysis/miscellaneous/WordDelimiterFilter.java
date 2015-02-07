@@ -96,42 +96,42 @@ public final class WordDelimiterFilter extends TokenFilter {
 
   /**
    * Causes parts of words to be generated:
-   * <p/>
+   * <p>
    * "PowerShot" =&gt; "Power" "Shot"
    */
   public static final int GENERATE_WORD_PARTS = 1;
 
   /**
    * Causes number subwords to be generated:
-   * <p/>
+   * <p>
    * "500-42" =&gt; "500" "42"
    */
   public static final int GENERATE_NUMBER_PARTS = 2;
 
   /**
    * Causes maximum runs of word parts to be catenated:
-   * <p/>
+   * <p>
    * "wi-fi" =&gt; "wifi"
    */
   public static final int CATENATE_WORDS = 4;
 
   /**
    * Causes maximum runs of word parts to be catenated:
-   * <p/>
+   * <p>
    * "wi-fi" =&gt; "wifi"
    */
   public static final int CATENATE_NUMBERS = 8;
 
   /**
    * Causes all subword parts to be catenated:
-   * <p/>
+   * <p>
    * "wi-fi-4000" =&gt; "wifi4000"
    */
   public static final int CATENATE_ALL = 16;
 
   /**
    * Causes original words are preserved and added to the subword list (Defaults to false)
-   * <p/>
+   * <p>
    * "500-42" =&gt; "500" "42" "500-42"
    */
   public static final int PRESERVE_ORIGINAL = 32;
@@ -150,7 +150,7 @@ public final class WordDelimiterFilter extends TokenFilter {
 
   /**
    * Causes trailing "'s" to be removed for each subword
-   * <p/>
+   * <p>
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;

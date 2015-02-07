@@ -59,7 +59,7 @@ public class DuplicateFilter extends Filter {
   /**
    * "Full" processing mode starts by setting all bits to false and only setting bits
    * for documents that contain the given field and are identified as none-duplicates.
-   * <p/>
+   * <p>
    * "Fast" processing sets all bits to true then unsets all duplicate docs found for the
    * given field. This approach avoids the need to read DocsEnum for terms that are seen
    * to have a document frequency of exactly "1" (i.e. no duplicates). While a potentially

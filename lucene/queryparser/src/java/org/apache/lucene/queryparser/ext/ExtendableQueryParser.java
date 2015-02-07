@@ -55,7 +55,6 @@ import org.apache.lucene.util.Version;
  * <pre>
  *   _customExt:"Apache Lucene\?" OR _customExt:prefix\*
  * </pre>
- * </p>
  * <p>
  * The {@link ExtendableQueryParser} itself does not implement the logic how
  * field and extension key are separated or ordered. All logic regarding the

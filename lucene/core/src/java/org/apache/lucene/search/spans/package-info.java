@@ -53,7 +53,6 @@
  * In all cases, output spans are minimally inclusive.  In other words, a
  * span formed by matching a span in x and y starts at the lesser of the
  * two starts and ends at the greater of the two ends.
- * </p>
  * 
  * <p>For example, a span query which matches "John Kerry" within ten
  * words of "George Bush" within the first 100 words of the document

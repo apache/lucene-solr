@@ -25,7 +25,7 @@ import java.util.Arrays;
  * would make it &gt;= 75% full.  Consider extending and over-riding {@link #hash(int)} if the values might be poor
  * hash keys; Lucene docids should be fine.
  * The internal fields are exposed publicly to enable more efficient use at the expense of better O-O principles.
- * <p/>
+ * <p>
  * To iterate over the integers held in this set, simply use code like this:
  * <pre class="prettyprint">
  * SentinelIntSet set = ...

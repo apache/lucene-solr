@@ -43,11 +43,11 @@ import org.apache.lucene.util.BytesRef;
  * {@link org.apache.lucene.search.spans.SpanTermQuery} except that it factors
  * in the value of the payload located at each of the positions where the
  * {@link org.apache.lucene.index.Term} occurs.
- * <p/>
+ * <p>
  * NOTE: In order to take advantage of this with the default scoring implementation
  * ({@link DefaultSimilarity}), you must override {@link DefaultSimilarity#scorePayload(int, int, int, BytesRef)},
  * which returns 1 by default.
- * <p/>
+ * <p>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * @see org.apache.lucene.search.similarities.Similarity.SimScorer#computePayloadFactor(int, int, int, BytesRef)
  **/
@@ -151,7 +151,7 @@ public class PayloadTermQuery extends SpanTermQuery {
 
       /**
        * Returns the SpanScorer score only.
-       * <p/>
+       * <p>
        * Should not be overridden without good cause!
        * 
        * @return the score for just the Span part w/o the payload

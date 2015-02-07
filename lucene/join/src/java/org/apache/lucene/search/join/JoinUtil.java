@@ -36,16 +36,16 @@ public final class JoinUtil {
 
   /**
    * Method for query time joining.
-   * <p/>
+   * <p>
    * Execute the returned query with a {@link IndexSearcher} to retrieve all documents that have the same terms in the
    * to field that match with documents matching the specified fromQuery and have the same terms in the from field.
-   * <p/>
+   * <p>
    * In the case a single document relates to more than one document the <code>multipleValuesPerDocument</code> option
    * should be set to true. When the <code>multipleValuesPerDocument</code> is set to <code>true</code> only the
    * the score from the first encountered join value originating from the 'from' side is mapped into the 'to' side.
    * Even in the case when a second join value related to a specific document yields a higher score. Obviously this
    * doesn't apply in the case that {@link ScoreMode#None} is used, since no scores are computed at all.
-   * </p>
+   * <p>
    * Memory considerations: During joining all unique join values are kept in memory. On top of that when the scoreMode
    * isn't set to {@link ScoreMode#None} a float value per unique join value is kept in memory for computing scores.
    * When scoreMode is set to {@link ScoreMode#Avg} also an additional integer value is kept in memory per unique

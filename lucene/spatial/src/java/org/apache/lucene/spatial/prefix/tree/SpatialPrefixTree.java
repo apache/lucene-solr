@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  * at variable lengths corresponding to variable precision.  Each string
  * corresponds to a rectangular spatial region.  This approach is
  * also referred to "Grids", "Tiles", and "Spatial Tiers".
- * <p/>
+ * <p>
  * Implementations of this class should be thread-safe and immutable once
  * initialized.
  *

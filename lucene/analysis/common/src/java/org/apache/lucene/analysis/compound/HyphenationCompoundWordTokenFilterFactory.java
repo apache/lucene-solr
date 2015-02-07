@@ -48,7 +48,7 @@ import org.xml.sax.InputSource;
  *  <li><code>onlyLongestMatch</code> (optional): if true, adds only the longest matching subword 
  *    to the stream. defaults to false.
  * </ul>
- * <p>
+ * <br>
  * <pre class="prettyprint">
  * &lt;fieldType name="text_hyphncomp" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;

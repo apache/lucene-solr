@@ -67,12 +67,12 @@ import org.apache.lucene.util.ToStringUtils;
  * </pre>
  * to search for 'studentfirstname:james studentsurname:jones' and find 
  * teacherid 1 without matching teacherid 2 (which has a 'james' in position 0 
- * and 'jones' in position 1). </p>
+ * and 'jones' in position 1).
  * 
  * <p>Note: as {@link #getField()} returns the masked field, scoring will be 
  * done using the Similarity and collection statistics of the field name supplied,
  * but with the term statistics of the real field. This may lead to exceptions,
- * poor performance, and unexpected scoring behaviour.</p>
+ * poor performance, and unexpected scoring behaviour.
  */
 public class FieldMaskingSpanQuery extends SpanQuery {
   private SpanQuery maskedQuery;

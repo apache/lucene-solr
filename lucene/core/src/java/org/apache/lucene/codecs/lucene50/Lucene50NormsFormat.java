@@ -35,7 +35,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * Lucene 5.0 Score normalization format.
  * <p>
  * Encodes normalization values with these strategies:
- * <p>
  * <ul>
  *    <li>Uncompressed: when values fit into a single byte and would require more than 4 bits
  *        per value, they are just encoded as an uncompressed byte array.
@@ -65,7 +64,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li><tt>.nvm</tt>: Norms metadata</li>
  * </ol>
  * <ol>
- *   <li><a name="nvm" id="nvm"></a>
+ *   <li><a name="nvm"></a>
  *   <p>The Norms metadata or .nvm file.</p>
  *   <p>For each norms field, this stores metadata, such as the offset into the 
  *      Norms data (.nvd)</p>
@@ -94,7 +93,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *         <li>6 --&gt; patched table. Documents with very common values are written with a lookup table.
  *             Other values are written using a nested indirect.
  *      </ul>
- *   <li><a name="nvd" id="nvd"></a>
+ *   <li><a name="nvd"></a>
  *   <p>The Norms data or .nvd file.</p>
  *   <p>For each Norms field, this stores the actual per-document data (the heavy-lifting)</p>
  *   <p>Norms data (.nvd) --&gt; Header,&lt;Uncompressed | TableCompressed | DeltaCompressed | MonotonicCompressed &gt;<sup>NumFields</sup>,Footer</p>

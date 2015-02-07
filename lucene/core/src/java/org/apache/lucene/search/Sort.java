@@ -34,7 +34,7 @@ import java.util.Arrays;
  * <p><code>document.add (new Field ("byNumber", Integer.toString(x), Field.Store.NO, Field.Index.NOT_ANALYZED));</code></p>
  * 
  *
- * <p><h3>Valid Types of Values</h3>
+ * <h3>Valid Types of Values</h3>
  *
  * <p>There are four possible kinds of term values which may be put into
  * sorting fields: Integers, Longs, Floats, or Strings.  Unless
@@ -67,14 +67,14 @@ import java.util.Arrays;
  * of term value has higher memory requirements than the other
  * two types.
  *
- * <p><h3>Object Reuse</h3>
+ * <h3>Object Reuse</h3>
  *
  * <p>One of these objects can be
  * used multiple times and the sort order changed between usages.
  *
  * <p>This class is thread safe.
  *
- * <p><h3>Memory Usage</h3>
+ * <h3>Memory Usage</h3>
  *
  * <p>Sorting uses of caches of term values maintained by the
  * internal HitQueue(s).  The cache is static and contains an integer

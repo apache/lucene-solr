@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  * Generates a file containing JFlex macros to accept valid ASCII TLDs 
  * (top level domains), for inclusion in JFlex grammars that can accept 
  * domain names.
- * <p/> 
+ * <p> 
  * The IANA Root Zone Database is queried via HTTP from URL cmdline arg #0, the
  * response is parsed, and the results are written out to a file containing 
  * a JFlex macro that will accept all valid ASCII-only TLDs, including punycode 

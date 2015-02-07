@@ -38,7 +38,6 @@ import org.apache.lucene.store.Directory; // javadoc
  *   <li>Put WindowsDirectory.dll into some directory in your windows PATH
  *   <li>Open indexes with WindowsDirectory and use it.
  * </ol>
- * </p>
  * @lucene.experimental
  */
 public class WindowsDirectory extends FSDirectory {

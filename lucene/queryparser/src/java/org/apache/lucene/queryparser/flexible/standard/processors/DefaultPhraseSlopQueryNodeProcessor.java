@@ -34,7 +34,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNod
  * {@link TokenizedPhraseQueryNode} and {@link MultiPhraseQueryNode} that does
  * not have any {@link SlopQueryNode} applied to it and creates an
  * {@link SlopQueryNode} and apply to it. The new {@link SlopQueryNode} has the
- * same slop value defined in the configuration. <br/>
+ * same slop value defined in the configuration.
  * 
  * @see SlopQueryNode
  * @see ConfigurationKeys#PHRASE_SLOP

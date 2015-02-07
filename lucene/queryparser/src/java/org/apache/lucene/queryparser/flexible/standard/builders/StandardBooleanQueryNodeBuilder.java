@@ -37,7 +37,7 @@ import org.apache.lucene.search.similarities.Similarity;
 /**
  * This builder does the same as the {@link BooleanQueryNodeBuilder}, but this
  * considers if the built {@link BooleanQuery} should have its coord disabled or
- * not. <br/>
+ * not. <br>
  * 
  * @see BooleanQueryNodeBuilder
  * @see BooleanQuery

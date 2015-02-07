@@ -42,7 +42,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * A simplistic Lucene based NaiveBayes classifier, with caching feature, see
  * <code>http://en.wikipedia.org/wiki/Naive_Bayes_classifier</code>
- * <p/>
+ * <p>
  * This is NOT an online classifier.
  *
  * @lucene.experimental

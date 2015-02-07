@@ -73,7 +73,6 @@ import org.apache.lucene.util.Version;
  *   <li><code>boolean expand</code> - true if conflation groups should be expanded, false if they are one-directional</li>
  *   <li><code>{@link Analyzer} analyzer</code> - an analyzer used for each raw synonym</li>
  * </ul>
- * </p>
  * @see SolrSynonymParser SolrSynonymParser: default format
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {

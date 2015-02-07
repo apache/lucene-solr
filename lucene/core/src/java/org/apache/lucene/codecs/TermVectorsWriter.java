@@ -36,7 +36,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Codec API for writing term vectors:
- * <p>
  * <ol>
  *   <li>For every document, {@link #startDocument(int)} is called,
  *       informing the Codec how many fields will be written.

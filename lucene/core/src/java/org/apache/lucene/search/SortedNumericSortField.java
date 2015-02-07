@@ -35,7 +35,6 @@ import org.apache.lucene.index.SortedNumericDocValues;
  * <p>
  * Like sorting by string, this also supports sorting missing values as first or last,
  * via {@link #setMissingValue(Object)}.
- * <p>
  * @see SortedNumericSelector
  */
 public class SortedNumericSortField extends SortField {

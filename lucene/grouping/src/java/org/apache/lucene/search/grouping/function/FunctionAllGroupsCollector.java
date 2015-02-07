@@ -34,8 +34,7 @@ import java.util.TreeSet;
  * query. Only the group value is collected, and the order
  * is undefined.  This collector does not determine
  * the most relevant document of a group.
- *
- * <p/>
+ * <p>
  * Implementation detail: Uses {@link ValueSource} and {@link FunctionValues} to retrieve the
  * field values to group by.
  *

@@ -27,7 +27,7 @@ import org.apache.lucene.search.similarities.Similarity;
 /**
  * A {@link StandardBooleanQueryNode} has the same behavior as
  * {@link BooleanQueryNode}. It only indicates if the coord should be enabled or
- * not for this boolean query. <br/>
+ * not for this boolean query.
  * 
  * @see Similarity#coord(int, int)
  * @see BooleanQuery

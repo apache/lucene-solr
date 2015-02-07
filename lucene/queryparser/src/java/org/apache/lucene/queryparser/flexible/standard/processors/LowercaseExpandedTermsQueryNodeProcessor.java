@@ -39,7 +39,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
  * {@link QueryConfigHandler}. If it is and the expanded terms should be
  * lower-cased, it looks for every {@link WildcardQueryNode},
  * {@link FuzzyQueryNode} and children of a {@link RangeQueryNode} and lower-case its
- * term. <br/>
+ * term.
  * 
  * @see ConfigurationKeys#LOWERCASE_EXPANDED_TERMS
  */

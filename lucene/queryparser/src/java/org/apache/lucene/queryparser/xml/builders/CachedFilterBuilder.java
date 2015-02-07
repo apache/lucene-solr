@@ -36,10 +36,10 @@ import java.util.Map;
  * A good example of this might be a term query on a field with only 2 possible  values -
  * "true" or "false". In a large index, querying or filtering on this field requires reading
  * millions  of document ids from disk which can more usefully be cached as a filter bitset.
- * <p/>
+ * <p>
  * For Queries/Filters to be cached and reused the object must implement hashcode and
  * equals methods correctly so that duplicate queries/filters can be detected in the cache.
- * <p/>
+ * <p>
  * The CoreParser.maxNumCachedFilters property can be used to control the size of the LRU
  * Cache established during the construction of CoreParser instances.
  */

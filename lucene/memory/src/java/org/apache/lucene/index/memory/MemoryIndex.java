@@ -123,7 +123,7 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  * 
  * <p>
  * <b>Example Usage</b> 
- * <p>
+ * <br>
  * <pre class="prettyprint">
  * Analyzer analyzer = new SimpleAnalyzer(version);
  * MemoryIndex index = new MemoryIndex();

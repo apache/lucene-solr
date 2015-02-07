@@ -32,7 +32,6 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Codec API for writing stored fields:
- * <p>
  * <ol>
  *   <li>For every document, {@link #startDocument()} is called,
  *       informing the Codec that a new document has started.

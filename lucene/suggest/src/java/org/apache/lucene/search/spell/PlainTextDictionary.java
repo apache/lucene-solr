@@ -35,10 +35,10 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Dictionary represented by a text file.
  * 
- * <p/>Format allowed: 1 word per line:<br/>
- * word1<br/>
- * word2<br/>
- * word3<br/>
+ * <p>Format allowed: 1 word per line:<br>
+ * word1<br>
+ * word2<br>
+ * word3<br>
  */
 public class PlainTextDictionary implements Dictionary {
 

@@ -32,6 +32,5 @@
  *  <li>CJKAnalyzer: 我是－是中－中国－国人</li>
  *  <li>SmartChineseAnalyzer: 我－是－中国－人</li>
  * </ol>
- * </p>
  */
 package org.apache.lucene.analysis.cjk;

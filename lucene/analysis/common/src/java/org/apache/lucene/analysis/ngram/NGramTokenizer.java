@@ -39,7 +39,7 @@ import org.apache.lucene.util.AttributeFactory;
  * <tr><th>Position length</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
  * <tr><th>Offsets</th><td>[0,2[</td><td>[0,3[</td><td>[1,3[</td><td>[1,4[</td><td>[2,4[</td><td>[2,5[</td><td>[3,5[</td></tr>
  * </table>
- * <a name="version"/>
+ * <a name="version"></a>
  * <p>This tokenizer changed a lot in Lucene 4.4 in order to:<ul>
  * <li>tokenize in a streaming fashion to support streams which are larger
  * than 1024 chars (limit of the previous version),

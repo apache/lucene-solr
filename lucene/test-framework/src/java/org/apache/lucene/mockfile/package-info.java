@@ -25,6 +25,5 @@
  *   <li>{@link org.apache.lucene.mockfile.WindowsFS}: Acts like windows.
  *   <li>{@link org.apache.lucene.mockfile.DisableFsyncFS}: Makes actual fsync calls a no-op.
  * </ul>
- * </p>
  */
 package org.apache.lucene.mockfile;

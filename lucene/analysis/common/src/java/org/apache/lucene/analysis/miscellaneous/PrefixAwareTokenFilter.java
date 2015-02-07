@@ -35,7 +35,7 @@ import java.io.IOException;
  * to be used when updating the token values in the second stream based on that token.
  *
  * The default implementation adds last prefix token end offset to the suffix token start and end offsets.
- * <p/>
+ * <p>
  * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
  * the ones located in org.apache.lucene.analysis.tokenattributes. 
  */
