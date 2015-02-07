@@ -175,6 +175,10 @@
   <property name="javadoc.maxmemory" value="512m" />
   <property name="javadoc.noindex" value="true"/>
 
+  <!-- used only with Java 8: -->
+  <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
+  
   <!-- detect bootclasspath from given bootjdk path (including crazy AppleJDK special case) -->
   <first id="-boot-rt.jar">
     <fileset dir="${bootjdk}" erroronmissingdir="false" followsymlinks="true">
@@ -381,11 +385,12 @@
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
-  <!-- for now disable doclint on JDK 8+: -->
-  <condition property="javadoc.args" value="-Xdoclint:none" else="">
-    <not>
-      <equals arg1="${build.java.runtime}" arg2="1.7"/>
-    </not>
+  <!-- enable doclint only on JDK 8+ (disable on Java 7, so its inverse): -->
+  <condition property="-javadoc.doclint.args" value="" else="${javadoc.doclint.args}">
+    <equals arg1="${build.java.runtime}" arg2="1.7"/>
+  </condition>
+  <condition property="-javac.doclint.args" value="" else="${javac.doclint.args}">
+    <equals arg1="${build.java.runtime}" arg2="1.7"/>
   </condition>
 
   <!-- Import custom ANT tasks. -->
@@ -1878,6 +1883,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
         <compilerarg line="${javac.args}"/>
+        <compilerarg line="${-javac.doclint.args}"/>
       </javac>
     </sequential>
   </macrodef>
@@ -2044,7 +2050,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       	<sources />
       	      	
         <classpath refid="javadoc.classpath"/>
-        <arg line="${javadoc.args}"/>
+        <arg line="${-javadoc.doclint.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       

@@ -41,11 +41,11 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.BooleanModifierNode
  * generates query node trees that consider the boolean operator precedence, but
  * Lucene current syntax does not support boolean precedence, so this processor
  * remove all the precedence and apply the equivalent modifier according to the
- * boolean operation defined on an specific query node. <br/>
- * <br/>
+ * boolean operation defined on an specific query node.
+ * <p>
  * If there is a {@link GroupQueryNode} in the query node tree, the query node
  * tree is not merged with the one above it.
- * 
+ * <p>
  * Example: TODO: describe a good example to show how this processor works
  * 
  * @see org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler
