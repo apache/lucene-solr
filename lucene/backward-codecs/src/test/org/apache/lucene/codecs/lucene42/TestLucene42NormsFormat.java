@@ -39,7 +39,7 @@ public class TestLucene42NormsFormat extends BaseNormsFormatTestCase {
     return codec;
   }
 
-  /** Copy this back to /l/421/lucene/CreateUndeadNorms.java, then:
+  /* Copy this back to /l/421/lucene/CreateUndeadNorms.java, then:
    *   - ant clean
    *   - pushd analysis/common; ant jar; popd
    *   - pushd core; ant jar; popd
@@ -96,7 +96,7 @@ public class CreateUndeadNorms {
   }
 }
 */
-  /** 
+  /*
    * LUCENE-6006: Test undead norms.
    *                                 .....            
    *                             C C  /            

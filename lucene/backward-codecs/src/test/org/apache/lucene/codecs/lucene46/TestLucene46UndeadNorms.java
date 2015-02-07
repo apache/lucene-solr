@@ -31,7 +31,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestLucene46UndeadNorms extends LuceneTestCase {
 
-  /** Copy this back to /l/461/lucene/CreateUndeadNorms.java, then:
+  /* Copy this back to /l/461/lucene/CreateUndeadNorms.java, then:
    *   - ant clean
    *   - pushd analysis/common; ant jar; popd
    *   - pushd core; ant jar; popd
@@ -88,7 +88,7 @@ public class CreateUndeadNorms {
   }
 }
 */
-  /** 
+  /*
    * LUCENE-6006: Test undead norms.
    *                                 .....            
    *                             C C  /            
