@@ -40,7 +40,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEF
 @Deprecated
 public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
 
-  /***
+  /*
   public void testPerformance() throws IOException {
     String s = "now is the time-for all good men to come to-the aid of their country.";
     Token tok = new Token();
@@ -56,7 +56,7 @@ public class TestLucene47WordDelimiterFilter extends BaseTokenStreamTestCase {
 
     System.out.println("ret="+ret+" time="+(System.currentTimeMillis()-start));
   }
-  ***/
+  */
 
   @Test
   public void testOffsets() throws IOException {
