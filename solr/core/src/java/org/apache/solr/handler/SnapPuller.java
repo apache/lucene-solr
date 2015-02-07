@@ -802,10 +802,10 @@ public class SnapPuller {
     }
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
-      CompareResult compareResult = compareFile(indexDir, filename, (Long) file.get(SIZE), (Long) file.get(CHECKSUM));
+      long size = (Long) file.get(SIZE);
+      CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
       if (!compareResult.equal || downloadCompleteIndex
-          || (!compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
-          || filename.startsWith("segments_")))) {
+          || filesToAlwaysDownloadIfChecksumFails(filename, size, compareResult)) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
@@ -816,6 +816,14 @@ public class SnapPuller {
             + " because it already exists");
       }
     }
+  }
+  
+  private boolean filesToAlwaysDownloadIfChecksumFails(String filename,
+      long size, CompareResult compareResult) {
+    // without checksums to compare, we always download .si, .liv, segments_N,
+    // and any file under 100kb
+    return !compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
+    || filename.startsWith("segments_") || size < 100000);
   }
 
   static class CompareResult {
@@ -830,23 +838,32 @@ public class SnapPuller {
         long indexFileLen = indexInput.length();
         long indexFileChecksum = 0;
         
-        try {
-          indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
-          compareResult.checkSummed = true;
-        } catch (Exception e) {
-          LOG.warn("Could not retrieve checksum from file.", e);
+        if (backupIndexFileChecksum != null) {
+          try {
+            indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
+            compareResult.checkSummed = true;
+          } catch (Exception e) {
+            LOG.warn("Could not retrieve checksum from file.", e);
+          }
+        }
+        
+        if (!compareResult.checkSummed) {
+          // we don't have checksums to compare
           
           if (indexFileLen == backupIndexFileLen) {
             compareResult.equal = true;
             return compareResult;
           } else {
-            LOG.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
-                "expected length is {} and actual length is {}", filename, backupIndexFileChecksum, indexFileChecksum,
+            LOG.warn(
+                "File {} did not match. "  + "expected length is {} and actual length is {}",
+                filename, backupIndexFileChecksum, indexFileChecksum,
                 backupIndexFileLen, indexFileLen);
             compareResult.equal = false;
             return compareResult;
           }
         }
+        
+        // we have checksums to compare
         
         if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
           compareResult.equal = true;

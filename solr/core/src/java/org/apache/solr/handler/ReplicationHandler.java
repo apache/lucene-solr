@@ -449,12 +449,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
       // add the segments_N file
+      
       Map<String,Object> fileMeta = new HashMap<>();
       fileMeta.put(NAME, infos.getSegmentsFileName());
       fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
       if (infos.getId() != null) {
         try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
-          fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
+          try {
+            fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
+          } catch(Exception e) {
+             LOG.warn("Could not read checksum from index file.", e);
+          }
         }
       }
       result.add(fileMeta);
