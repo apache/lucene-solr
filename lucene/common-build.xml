@@ -1904,7 +1904,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
   
   <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure" if="ecj-javadoc-lint.supported">
-    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="4.4"
+    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="4.4.1"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
      classpathref="ecj.classpath" name="ecj-component"/>
@@ -1920,21 +1920,29 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
+      <!-- hack: we can tell ECJ not to create classfiles, but it still creates
+           package-info.class files. so redirect output to a tempdir -->
+      <tempfile property="ecj.trash.out" destdir="${java.io.tmpdir}" prefix="ecj"/>
+      <mkdir dir="${ecj.trash.out}"/>
       <javac
         includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
+        destdir="${ecj.trash.out}"
         source="@{javac.source}"
         target="@{javac.source}"
         taskname="ecj-lint">
         <ecj-component/>
         <nested/>
+      <!-- hack: we can't disable classfile creation right now, because we need
+           to specify a destination for buggy package-info.class files
         <compilerarg value="-d"/>
-        <compilerarg value="none"/>
+        <compilerarg value="none"/> -->
         <compilerarg value="-enableJavadoc"/>
         <compilerarg value="-properties"/>
         <compilerarg value="@{configuration}"/>
       </javac>
+      <delete dir="${ecj.trash.out}"/>
     </sequential>
   </macrodef>
 
