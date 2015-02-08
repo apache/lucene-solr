@@ -619,6 +619,12 @@ Bug Fixes
 * SOLR-6920: A replicated index can end up corrupted when small files end up with the same 
   file name and size. (Varun Thacker, Mark Miller)
 
+* SOLR-7033, SOLR-5961: RecoveryStrategy should not publish any state when
+  closed / cancelled and there should always be a pause between recoveries 
+  even when recoveries are rapidly stopped and started as well as when a
+  node attempts to become the leader for a shard. 
+  (Mark Miller, Maxim Novikov)
+
 Optimizations
 ----------------------
 
