@@ -18,8 +18,8 @@ package org.apache.solr.handler.dataimport;
  */
 
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -71,6 +72,17 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private String[] fields;
   private String requestHandler;// 'qt' param
   private int timeout = TIMEOUT_SECS;
+  
+  @Override
+  public void destroy() {
+    try {
+      solrClient.close();
+    } catch (IOException e) {
+
+    } finally {
+      HttpClientUtil.close(((HttpSolrClient) solrClient).getHttpClient());
+    }
+  }
 
   /**
    * Factory method that returns a {@link HttpClient} instance used for interfacing with a source Solr service.
@@ -94,7 +106,6 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             "SolrEntityProcessor: parameter 'url' is required");
       }
 
-      // TODO: we should close this client!
       HttpClient client = getHttpClient();
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin

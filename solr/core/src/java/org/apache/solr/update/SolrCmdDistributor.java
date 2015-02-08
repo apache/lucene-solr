@@ -252,14 +252,11 @@ public class SolrCmdDistributor {
   private void submit(final Req req, boolean isCommit) {
     if (req.synchronous) {
       blockAndDoRetries();
-      
-      HttpSolrClient client = new HttpSolrClient(req.node.getUrl(), clients.getHttpClient());
-      try {
+
+      try (HttpSolrClient client = new HttpSolrClient(req.node.getUrl(), clients.getHttpClient())) {
         client.request(req.uReq);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
-      } finally {
-        client.shutdown();
       }
       
       return;

@@ -70,9 +70,7 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
   protected void initializeIterator() throws IOException {
     try {
       analyzeInput();
-    } catch (AnalysisEngineProcessException e) {
-      throw new IOException(e);
-    } catch (ResourceInitializationException e) {
+    } catch (AnalysisEngineProcessException | ResourceInitializationException e) {
       throw new IOException(e);
     }
     featurePath = cas.createFeaturePath();

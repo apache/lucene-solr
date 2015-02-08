@@ -99,7 +99,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
-  
+
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
 
@@ -212,7 +212,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
-      deleteSnapshot(new ModifiableSolrParams(solrParams), rsp, req);
+      deleteSnapshot(new ModifiableSolrParams(solrParams));
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       String masterUrl = solrParams.get(MASTER_URL);
@@ -272,7 +272,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
+  private void deleteSnapshot(ModifiableSolrParams params) {
     String name = params.get("name");
     if(name == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Missing mandatory param: name");
@@ -329,11 +329,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (!snapPullLock.tryLock())
       return false;
     try {
-      tempSnapPuller = snapPuller;
       if (masterUrl != null) {
+        if (tempSnapPuller != null && tempSnapPuller != snapPuller) {
+          tempSnapPuller.destroy();
+        }
+        
         NamedList<Object> nl = solrParams.toNamedList();
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
+      } else {
+        tempSnapPuller = snapPuller;
       }
       return tempSnapPuller.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
@@ -572,7 +577,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList list = super.getStatistics();
     if (core != null) {
       list.add("indexSize", NumberUtils.readableSize(getIndexSize()));
-      CommitVersionInfo vInfo = getIndexVersion();
+      CommitVersionInfo vInfo = (core != null && !core.isClosed()) ? getIndexVersion(): null;
       list.add("indexVersion", null == vInfo ? 0 : vInfo.version);
       list.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
 
@@ -788,8 +793,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (clzz == List.class) {
       String ss[] = s.split(",");
       List<String> l = new ArrayList<>();
-      for (int i = 0; i < ss.length; i++) {
-        l.add(new Date(Long.valueOf(ss[i])).toString());
+      for (String s1 : ss) {
+        l.add(new Date(Long.valueOf(s1)).toString());
       }
       nl.add(key, l);
     } else {
@@ -1001,6 +1006,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (snapPuller != null) {
           snapPuller.destroy();
         }
+        if (tempSnapPuller != null && tempSnapPuller != snapPuller) {
+          tempSnapPuller.destroy();
+        }
       }
 
       @Override
@@ -1174,6 +1182,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
           in.readBytes(buf, 0, read);
+
           fos.writeInt(read);
           if (useChecksum) {
             checksum.reset();
@@ -1182,6 +1191,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
+          LOG.debug("Wrote {} bytes for file {}", offset + read, fileName);
 
           //Pause if necessary
           maxBytesBeforePause += read;
@@ -1231,8 +1241,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       FileInputStream inputStream = null;
       try {
         initWrite();
-  
-        //if if is a conf file read from config diectory
+
+        //if if is a conf file read from config directory
         File file = new File(core.getResourceLoader().getConfigDir(), cfileName);
 
         if (file.exists() && file.canRead()) {
@@ -1356,7 +1366,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * Boolean param for tests that can be specified when using 
    * {@link #CMD_FETCH_INDEX} to force the current request to block until 
    * the fetch is complete.  <b>NOTE:</b> This param is not advised for 
-   * non-test code, since the the durration of the fetch for non-trivial
+   * non-test code, since the the duration of the fetch for non-trivial
    * indexes will likeley cause the request to time out.
    *
    * @lucene.internal

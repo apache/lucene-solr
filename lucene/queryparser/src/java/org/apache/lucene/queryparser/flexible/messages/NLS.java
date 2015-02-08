@@ -149,9 +149,7 @@ public class NLS {
     try {
       field.set(null, field.getName());
       validateMessage(field.getName(), clazz);
-    } catch (IllegalArgumentException e) {
-      // should not happen
-    } catch (IllegalAccessException e) {
+    } catch (IllegalArgumentException | IllegalAccessException e) {
       // should not happen
     }
   }

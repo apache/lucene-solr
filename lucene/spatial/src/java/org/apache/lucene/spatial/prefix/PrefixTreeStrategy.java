@@ -21,6 +21,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
@@ -31,8 +33,6 @@ import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
 
 /**
  * An abstract SpatialStrategy based on {@link SpatialPrefixTree}. The two
@@ -80,6 +80,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   private final Map<String, PointPrefixTreeFieldCacheProvider> provider = new ConcurrentHashMap<>();
   protected int defaultFieldValuesArrayLen = 2;
   protected double distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;// [ 0 TO 0.5 ]
+  protected boolean pointsOnly = false;//if true, there are no leaves
 
   public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid.getSpatialContext(), fieldName);
@@ -115,6 +116,16 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     this.distErrPct = distErrPct;
   }
 
+  public boolean isPointsOnly() {
+    return pointsOnly;
+  }
+
+  /** True if only indexed points shall be supported. There are no "leafs" in such a case.  See
+   *  {@link org.apache.lucene.spatial.prefix.IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
+  public void setPointsOnly(boolean pointsOnly) {
+    this.pointsOnly = pointsOnly;
+  }
+
   @Override
   public void addFields(Document doc, Shape shape) {
     double distErr = SpatialArgs.calcDistanceFromErrPct(shape, distErrPct, ctx);
@@ -139,6 +150,9 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   protected TokenStream createTokenStream(Shape shape, int detailLevel) {
+    if (pointsOnly && !(shape instanceof Point)) {
+      throw new IllegalArgumentException("pointsOnly is true yet a " + shape.getClass() + " is given for indexing");
+    }
     Iterator<Cell> cells = grid.getTreeCellIterator(shape, detailLevel);
     return new CellTokenStream().setCells(cells);
   }

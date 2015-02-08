@@ -27,7 +27,7 @@ import org.apache.lucene.util.Bits;
 /**
  * Base FieldComparator class for numeric types
  */
-public abstract class NumericComparator<T extends Number> extends FieldComparator<T> {
+public abstract class NumericComparator<T extends Number> extends SimpleFieldComparator<T> {
   private final long[] values;
   private final long missingValue;
   private long bottom;
@@ -78,14 +78,13 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
   }
 
   @Override
-  public FieldComparator<T> setNextReader(LeafReaderContext context) throws IOException {
+  public void doSetNextReader(LeafReaderContext context) throws IOException {
     currentReaderValues = getNumericDocValues(context, field);
     docsWithField = DocValues.getDocsWithField(context.reader(), field);
     // optimization to remove unneeded checks on the bit interface:
     if (docsWithField instanceof Bits.MatchAllBits) {
       docsWithField = null;
     }
-    return this;
   }
     
   @Override

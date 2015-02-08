@@ -29,6 +29,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
@@ -83,9 +85,10 @@ public class TestSegmentMerger extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
 
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(merge1Dir, new MockAnalyzer(random()));
-    SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<LeafReader>asList(reader1, reader2),
+    SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<CodecReader>asList(reader1, reader2),
         si, InfoStream.getDefault(), mergedDir,
-        MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
+        new FieldInfos.FieldNumbers(),
+        newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1))));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.getDocCount();
     assertTrue(docsMerged == 2);

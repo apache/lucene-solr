@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -3004,6 +3006,151 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     directory.close();
   }
 
+  public void testSortedEnumAdvanceIndependently() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("2"));
+    iwriter.addDocument(doc);
+
+    doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("1"));
+    iwriter.addDocument(doc);
+
+    doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("3"));
+    iwriter.addDocument(doc);
+
+    iwriter.commit();
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    doTestSortedSetEnumAdvanceIndependently(DocValues.singleton(dv));
+
+    ireader.close();
+    directory.close();
+  }
+
+  public void testSortedSetEnumAdvanceIndependently() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+
+    Document doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("2"));
+    doc.addAtom("field", new BytesRef("3"));
+    iwriter.addDocument(doc);
+
+    doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("1"));
+    doc.addAtom("field", new BytesRef("3"));
+    iwriter.addDocument(doc);
+
+    doc = iwriter.newDocument();
+    doc.addAtom("field", new BytesRef("1"));
+    doc.addAtom("field", new BytesRef("2"));
+    iwriter.addDocument(doc);
+
+    iwriter.commit();
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    doTestSortedSetEnumAdvanceIndependently(dv);
+
+    ireader.close();
+    directory.close();
+  }
+
+  protected void doTestSortedSetEnumAdvanceIndependently(SortedSetDocValues dv) throws IOException {
+    if (dv.getValueCount() < 2) {
+      return;
+    }
+    List<BytesRef> terms = new ArrayList<>();
+    TermsEnum te = dv.termsEnum();
+    terms.add(BytesRef.deepCopyOf(te.next()));
+    terms.add(BytesRef.deepCopyOf(te.next()));
+
+    // Make sure that calls to next() does not modify the term of the other enum
+    TermsEnum enum1 = dv.termsEnum();
+    TermsEnum enum2 = dv.termsEnum();
+    BytesRefBuilder term1 = new BytesRefBuilder();
+    BytesRefBuilder term2 = new BytesRefBuilder();
+
+    term1.copyBytes(enum1.next());
+    term2.copyBytes(enum2.next());
+    term1.copyBytes(enum1.next());
+
+    assertEquals(term1.get(), enum1.term());
+    assertEquals(term2.get(), enum2.term());
+
+    // Same for seekCeil
+    enum1 = dv.termsEnum();
+    enum2 = dv.termsEnum();
+    term1 = new BytesRefBuilder();
+    term2 = new BytesRefBuilder();
+
+    term2.copyBytes(enum2.next());
+    BytesRefBuilder seekTerm = new BytesRefBuilder();
+    seekTerm.append(terms.get(0));
+    seekTerm.append((byte) 0);
+    enum1.seekCeil(seekTerm.get());
+    term1.copyBytes(enum1.term());
+
+    assertEquals(term1.get(), enum1.term());
+    assertEquals(term2.get(), enum2.term());
+
+    // Same for seekCeil on an exact value
+    enum1 = dv.termsEnum();
+    enum2 = dv.termsEnum();
+    term1 = new BytesRefBuilder();
+    term2 = new BytesRefBuilder();
+
+    term2.copyBytes(enum2.next());
+    enum1.seekCeil(terms.get(1));
+    term1.copyBytes(enum1.term());
+    
+    assertEquals(term1.get(), enum1.term());
+    assertEquals(term2.get(), enum2.term());
+
+    // Same for seekExact
+    enum1 = dv.termsEnum();
+    enum2 = dv.termsEnum();
+    term1 = new BytesRefBuilder();
+    term2 = new BytesRefBuilder();
+
+    term2.copyBytes(enum2.next());
+    final boolean found = enum1.seekExact(terms.get(1));
+    assertTrue(found);
+    term1.copyBytes(enum1.term());
+
+    // Same for seek by ord
+    enum1 = dv.termsEnum();
+    enum2 = dv.termsEnum();
+    term1 = new BytesRefBuilder();
+    term2 = new BytesRefBuilder();
+
+    term2.copyBytes(enum2.next());
+    enum1.seekExact(1);
+    term1.copyBytes(enum1.term());
+
+    assertEquals(term1.get(), enum1.term());
+    assertEquals(term2.get(), enum2.term());
+  }
+
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     return true;
   }
@@ -3023,4 +3170,5 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   protected boolean codecSupportsSortedNumeric() {
     return true;
   }
+
 }

@@ -18,20 +18,6 @@ package org.apache.solr.cloud;
  */
 
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedOverseerNodeNames;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -46,9 +32,22 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedOverseerNodeNames;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 @LuceneTestCase.Slow
 @SuppressSSL     // See SOLR-5776
@@ -60,19 +59,18 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
     client = createCloudClient(null);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    client.shutdown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    client.close();
   }
 
   protected String getSolrXml() {
@@ -80,16 +78,14 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   }
 
   public OverseerRolesTest() {
-    fixShardCount = true;
-
     sliceCount = 2;
-    shardCount = TEST_NIGHTLY ? 6 : 2;
+    fixShardCount(TEST_NIGHTLY ? 6 : 2);
 
     checkCreatedVsState = false;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     testQuitCommand();
     testOverseerRole();
   }

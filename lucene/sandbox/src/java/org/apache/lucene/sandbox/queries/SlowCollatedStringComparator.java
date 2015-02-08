@@ -23,7 +23,7 @@ import java.text.Collator;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
  * This class will be removed in Lucene 5.0
  */
 @Deprecated
-public final class SlowCollatedStringComparator extends FieldComparator<String> {
+public final class SlowCollatedStringComparator extends SimpleFieldComparator<String> {
 
   private final String[] values;
   private BinaryDocValues currentDocTerms;
@@ -93,10 +93,9 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   }
 
   @Override
-  public FieldComparator<String> setNextReader(LeafReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     currentDocTerms = DocValues.getBinary(context.reader(), field);
     docsWithField = DocValues.getDocsWithField(context.reader(), field);
-    return this;
   }
   
   @Override

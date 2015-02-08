@@ -17,14 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -32,8 +26,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -45,9 +39,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Slow
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
@@ -80,16 +80,16 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   public StressHdfsTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : random().nextInt(2) + 1;
+    fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
     testRestartIntoSafeMode = random().nextBoolean();
   }
   
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     
     int cnt = random().nextInt(2) + 1;
@@ -138,11 +138,11 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     int nShards;
     int maxReplicasPerNode;
     if (overshard) {
-      nShards = shardCount * 2;
+      nShards = getShardCount() * 2;
       maxReplicasPerNode = 8;
       rep = 1;
     } else {
-      nShards = shardCount / 2;
+      nShards = getShardCount() / 2;
       maxReplicasPerNode = 1;
       rep = 2;
       if (nShards == 0) nShards = 1;
@@ -163,8 +163,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION);
-      try {
+      try (HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
@@ -182,8 +181,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
         String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
-      } finally {
-        c.shutdown();
       }
     }
     

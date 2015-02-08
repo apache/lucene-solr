@@ -26,11 +26,8 @@ import java.util.List;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.NumberRangePrefixTreeStrategy;
 import org.apache.lucene.spatial.NumberRangePrefixTreeStrategy.Facets;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -39,7 +36,6 @@ import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
-import org.apache.lucene.util.FixedBitSet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -114,47 +110,40 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
         detailLevel = -1 * detailLevel;
       }
 
-      //Randomly pick a filter as Bits/acceptDocs
-      FixedBitSet acceptDocs = null;//the answer
+      //Randomly pick a filter
+      Filter filter = null;
       List<Integer> acceptFieldIds = new ArrayList<>();
       if (usually()) {
         //get all possible IDs into a list, random shuffle it, then randomly choose how many of the first we use to
         // replace the list.
         for (int i = 0; i < indexedShapes.size(); i++) {
-          if (indexedShapes.get(i) == null) {
+          if (indexedShapes.get(i) == null) { // we deleted this one
             continue;
           }
           acceptFieldIds.add(i);
         }
         Collections.shuffle(acceptFieldIds, random());
         acceptFieldIds = acceptFieldIds.subList(0, randomInt(acceptFieldIds.size()));
-        acceptDocs = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
-        //query for their Lucene docIds to put into acceptDocs
         if (!acceptFieldIds.isEmpty()) {
-          BooleanQuery acceptQuery = new BooleanQuery();
+          List<Term> terms = new ArrayList<>();
           for (Integer acceptDocId : acceptFieldIds) {
-            acceptQuery.add(new TermQuery(new Term("id", acceptDocId.toString())), BooleanClause.Occur.SHOULD);
+            terms.add(new Term("id", acceptDocId.toString()));
           }
-          final TopDocs topDocs = indexSearcher.search(acceptQuery, numIndexedShapes);
-
-          for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-            acceptDocs.set(scoreDoc.doc);
-          }
-
+          filter = new TermsFilter(terms);
         }
       }
 
       //Lets do it!
       NumberRangePrefixTree.NRShape facetRange = tree.toRangeShape(tree.toShape(leftCal), tree.toShape(rightCal));
       Facets facets = ((NumberRangePrefixTreeStrategy) strategy)
-          .calcFacets(indexSearcher.getTopReaderContext(), acceptDocs, facetRange, detailLevel);
+          .calcFacets(indexSearcher.getTopReaderContext(), filter, facetRange, detailLevel);
 
       //System.out.println("Q: " + queryIdx + " " + facets);
 
       //Verify results. We do it by looping over indexed shapes and reducing the facet counts.
       Shape facetShapeRounded = facetRange.roundToLevel(detailLevel);
       for (int indexedShapeId = 0; indexedShapeId < indexedShapes.size(); indexedShapeId++) {
-        if (acceptDocs != null && !acceptFieldIds.contains(indexedShapeId)) {
+        if (filter != null && !acceptFieldIds.contains(indexedShapeId)) {
           continue;// this doc was filtered out via acceptDocs
         }
         Shape indexedShape = indexedShapes.get(indexedShapeId);

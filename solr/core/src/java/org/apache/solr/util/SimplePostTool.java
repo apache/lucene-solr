@@ -76,7 +76,7 @@ import java.util.zip.InflaterInputStream;
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
-  private static final String VERSION_OF_THIS_TOOL = "1.5";
+  private static final String VERSION_OF_THIS_TOOL = "5.0.0";  // TODO: hardcoded for now, but eventually to sync with actual Solr version
 
   private static final String DEFAULT_COMMIT = "yes";
   private static final String DEFAULT_OPTIMIZE = "no";
@@ -130,7 +130,7 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_WEB);
     
     mimeMap = new HashMap<>();
-    mimeMap.put("xml", "text/xml");
+    mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
     mimeMap.put("pdf", "application/pdf");
@@ -303,7 +303,7 @@ public class SimplePostTool {
     currentDepth = 0;
     // Skip posting files if special param "-" given  
     if (!args[0].equals("-")) {
-      info("Posting files to base url " + solrUrl + (!auto?" using content-type "+(type==null?DEFAULT_CONTENT_TYPE:type):"")+"..");
+      info("Posting files to [base] url " + solrUrl + (!auto?" using content-type "+(type==null?DEFAULT_CONTENT_TYPE:type):"")+"...");
       if(auto)
         info("Entering auto mode. File endings considered are "+fileTypes);
       if(recursive > 0)
@@ -314,7 +314,7 @@ public class SimplePostTool {
   }
 
   private void doArgsMode() {
-    info("POSTing args to " + solrUrl + "..");
+    info("POSTing args to " + solrUrl + "...");
     for (String a : args) {
       postData(stringToStream(a), null, out, type, solrUrl);
     }
@@ -355,7 +355,7 @@ public class SimplePostTool {
   }
 
   private void doStdinMode() {
-    info("POSTing stdin to " + solrUrl + "..");
+    info("POSTing stdin to " + solrUrl + "...");
     postData(System.in, null, out, type, solrUrl);    
   }
 
@@ -380,7 +380,7 @@ public class SimplePostTool {
     (USAGE_STRING_SHORT+"\n\n" +
      "Supported System Properties and their defaults:\n"+
      "  -Dc=<core/collection>\n"+
-     "  -Durl=<solr-update-url> \n"+
+     "  -Durl=<base Solr update URL> (overrides -Dc option if specified)\n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
@@ -398,13 +398,13 @@ public class SimplePostTool {
      "Data can be read from files specified as commandline args,\n"+
      "URLs specified as args, as raw commandline arg strings or via STDIN.\n"+
      "Examples:\n"+
-     "  java -jar post.jar *.xml\n"+
+     "  java -Dc=gettingstarted -jar post.jar *.xml\n"+
      "  java -Ddata=args -Dc=gettingstarted -jar post.jar '<delete><id>42</id></delete>'\n"+
      "  java -Ddata=stdin -Dc=gettingstarted -jar post.jar < hd.xml\n"+
      "  java -Ddata=web -Dc=gettingstarted -jar post.jar http://example.com/\n"+
      "  java -Dtype=text/csv -Dc=gettingstarted -jar post.jar *.csv\n"+
      "  java -Dtype=application/json -Dc=gettingstarted -jar post.jar *.json\n"+
-     "  java -Durl=http://localhost:8983/solr/update/extract -Dparams=literal.id=a -Dtype=application/pdf -jar post.jar a.pdf\n"+
+     "  java -Durl=http://localhost:8983/solr/techproducts/update/extract -Dparams=literal.id=pdf1 -jar post.jar solr-word.pdf\n"+
      "  java -Dauto -Dc=gettingstarted -jar post.jar *\n"+
      "  java -Dauto -Dc=gettingstarted -Drecursive -jar post.jar afolder\n"+
      "  java -Dauto -Dc=gettingstarted -Dfiletypes=ppt,html -jar post.jar afolder\n"+
@@ -729,7 +729,7 @@ public class SimplePostTool {
    * Does a simple commit operation 
    */
   public void commit() {
-    info("COMMITting Solr index changes to " + solrUrl + "..");
+    info("COMMITting Solr index changes to " + solrUrl + "...");
     doGet(appendParam(solrUrl.toString(), "commit=true"));
   }
 
@@ -737,7 +737,7 @@ public class SimplePostTool {
    * Does a simple optimize operation 
    */
   public void optimize() {
-    info("Performing an OPTIMIZE to " + solrUrl + "..");
+    info("Performing an OPTIMIZE to " + solrUrl + "...");
     doGet(appendParam(solrUrl.toString(), "optimize=true"));
   }
 
@@ -769,16 +769,18 @@ public class SimplePostTool {
     InputStream is = null;
     try {
       URL url = solrUrl;
+      String suffix = "";
       if(auto) {
         if(type == null) {
           type = guessType(file);
         }
         if(type != null) {
-          if(type.equals("text/xml") || type.equals("text/csv") || type.equals("application/json")) {
+          if(type.equals("application/xml") || type.equals("text/csv") || type.equals("application/json")) {
             // Default handler
           } else {
             // SolrCell
-            String urlStr = appendUrlPath(solrUrl, "/extract").toString();
+            suffix = "/extract";
+            String urlStr = appendUrlPath(solrUrl, suffix).toString();
             if(urlStr.indexOf("resource.name")==-1)
               urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
             if(urlStr.indexOf("literal.id")==-1)
@@ -792,7 +794,7 @@ public class SimplePostTool {
       } else {
         if(type == null) type = DEFAULT_CONTENT_TYPE;
       }
-      info("POSTing file " + file.getName() + (auto?" ("+type+")":""));
+      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix);
       is = new FileInputStream(file);
       postData(is, (int)file.length(), output, type, url);
     } catch (IOException e) {

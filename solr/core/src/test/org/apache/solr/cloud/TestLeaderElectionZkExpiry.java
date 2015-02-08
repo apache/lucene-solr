@@ -45,7 +45,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       server.run();
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      cc.load();
 
       final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, 30000, "dummy.host.com", "8984", "/solr", 180000, 180000, true, new CurrentCoreDescriptorProvider() {
         @Override

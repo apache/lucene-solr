@@ -29,6 +29,7 @@ import java.nio.CharBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,6 +59,7 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -70,8 +72,10 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -869,6 +873,16 @@ public final class TestUtil {
     } else {
       return false;
     }
+  }
+  
+  public static void addIndexesSlowly(IndexWriter writer, DirectoryReader... readers) throws IOException {
+    List<CodecReader> leaves = new ArrayList<>();
+    for (DirectoryReader reader : readers) {
+      for (LeafReaderContext context : reader.leaves()) {
+        leaves.add(SlowCodecReaderWrapper.wrap(context.reader()));
+      }
+    }
+    writer.addIndexes(leaves.toArray(new CodecReader[leaves.size()]));
   }
 
   /** just tries to configure things to keep the open file

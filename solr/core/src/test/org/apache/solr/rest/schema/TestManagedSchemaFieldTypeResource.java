@@ -66,6 +66,11 @@ public class TestManagedSchemaFieldTypeResource extends RestTestBase {
     jetty = null;
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
+    
+    if (restTestHarness != null) {
+      restTestHarness.close();
+    }
+    restTestHarness = null;
   }
   
   @Test

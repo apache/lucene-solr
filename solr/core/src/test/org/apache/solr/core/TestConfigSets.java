@@ -46,7 +46,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     System.setProperty("configsets", configSetsBaseDir);
 
     SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
-    CoreContainer container = new CoreContainer(loader, ConfigSolr.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(ConfigSolr.fromString(loader, solrxml));
     container.load();
 
     return container;
@@ -115,12 +115,12 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     System.setProperty("configsets", csd);
 
     SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
-    CoreContainer container = new CoreContainer(loader, ConfigSolr.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(ConfigSolr.fromString(loader, solrxml));
     container.load();
 
     // We initially don't have a /get handler defined
     SolrCore core = container.create(new CoreDescriptor(container, "core1", testDirectory + "/core", "configSet", "configset-2"));
-    assertThat("No /get handler should be defined in the initial configuration",
+    assertThat("No /dump handler should be defined in the initial configuration",
         core.getRequestHandler("/dump"), is(nullValue()));
 
     // Now copy in a config with a /get handler and reload
@@ -129,7 +129,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     container.reload("core1");
 
     core = container.getCore("core1");
-    assertThat("A /get handler should be defined in the reloaded configuration",
+    assertThat("A /dump handler should be defined in the reloaded configuration",
         core.getRequestHandler("/dump"), is(notNullValue()));
     core.close();
 

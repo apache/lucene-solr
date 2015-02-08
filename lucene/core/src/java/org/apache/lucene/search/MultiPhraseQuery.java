@@ -499,7 +499,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   @Override
   public final int nextDoc() throws IOException {
     if (_queue.size() == 0) {
-      return NO_MORE_DOCS;
+      return _doc = NO_MORE_DOCS;
     }
 
     // TODO: move this init into positions(): if the search

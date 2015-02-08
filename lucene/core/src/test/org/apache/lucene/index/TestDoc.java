@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
@@ -47,235 +48,235 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
-
 /** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
 
-    private Path workDir;
-    private Path indexDir;
-    private LinkedList<Path> files;
+  private Path workDir;
+  private Path indexDir;
+  private LinkedList<Path> files;
 
-    /** Set the test case. This test case needs
-     *  a few text files created in the current working directory.
-     */
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        if (VERBOSE) {
-          System.out.println("TEST: setUp");
-        }
-        workDir = createTempDir("TestDoc");
-        indexDir = createTempDir("testIndex");
-
-        Directory directory = newFSDirectory(indexDir);
-        directory.close();
-
-        files = new LinkedList<>();
-        files.add(createOutput("test.txt",
-            "This is the first test file"
-        ));
-
-        files.add(createOutput("test2.txt",
-            "This is the second test file"
-        ));
+  /** Set the test case. This test case needs
+   *  a few text files created in the current working directory.
+   */
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp");
     }
+    workDir = createTempDir("TestDoc");
+    indexDir = createTempDir("testIndex");
 
-    private Path createOutput(String name, String text) throws IOException {
-        Writer fw = null;
-        PrintWriter pw = null;
+    Directory directory = newFSDirectory(indexDir);
+    directory.close();
 
-        try {
-            Path path = workDir.resolve(name);
-            Files.deleteIfExists(path);
+    files = new LinkedList<>();
+    files.add(createOutput("test.txt",
+                           "This is the first test file"
+                           ));
 
-            fw = new OutputStreamWriter(Files.newOutputStream(path), StandardCharsets.UTF_8);
-            pw = new PrintWriter(fw);
-            pw.println(text);
-            return path;
+    files.add(createOutput("test2.txt",
+                           "This is the second test file"
+                           ));
+  }
 
-        } finally {
-            if (pw != null) pw.close();
-            if (fw != null) fw.close();
-        }
+  private Path createOutput(String name, String text) throws IOException {
+    Writer fw = null;
+    PrintWriter pw = null;
+
+    try {
+      Path path = workDir.resolve(name);
+      Files.deleteIfExists(path);
+
+      fw = new OutputStreamWriter(Files.newOutputStream(path), StandardCharsets.UTF_8);
+      pw = new PrintWriter(fw);
+      pw.println(text);
+      return path;
+
+    } finally {
+      if (pw != null) pw.close();
+      if (fw != null) fw.close();
     }
+  }
 
 
-    /** This test executes a number of merges and compares the contents of
-     *  the segments created when using compound file or not using one.
-     *
-     *  TODO: the original test used to print the segment contents to System.out
-     *        for visual validation. To have the same effect, a new method
-     *        checkSegment(String name, ...) should be created that would
-     *        assert various things about the segment.
-     */
-    public void testIndexAndMerge() throws Exception {
-      StringWriter sw = new StringWriter();
-      PrintWriter out = new PrintWriter(sw, true);
+  /** This test executes a number of merges and compares the contents of
+   *  the segments created when using compound file or not using one.
+   *
+   *  TODO: the original test used to print the segment contents to System.out
+   *        for visual validation. To have the same effect, a new method
+   *        checkSegment(String name, ...) should be created that would
+   *        assert various things about the segment.
+   */
+  public void testIndexAndMerge() throws Exception {
+    StringWriter sw = new StringWriter();
+    PrintWriter out = new PrintWriter(sw, true);
       
-      Directory directory = newFSDirectory(indexDir);
+    Directory directory = newFSDirectory(indexDir);
 
-      if (directory instanceof MockDirectoryWrapper) {
-        // We create unreferenced files (we don't even write
-        // a segments file):
-        ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-        // this test itself deletes files (has no retry mechanism)
-        ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
-      }
+    if (directory instanceof MockDirectoryWrapper) {
+      // We create unreferenced files (we don't even write
+      // a segments file):
+      ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+      // this test itself deletes files (has no retry mechanism)
+      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
+    }
 
-      IndexWriter writer = new IndexWriter(
-          directory,
-          newIndexWriterConfig(new MockAnalyzer(random())).
-              setOpenMode(OpenMode.CREATE).
-              setMaxBufferedDocs(-1).
-              setMergePolicy(newLogMergePolicy(10))
-      );
+    IndexWriter writer = new IndexWriter(
+                                         directory,
+                                         newIndexWriterConfig(new MockAnalyzer(random())).
+                                         setOpenMode(OpenMode.CREATE).
+                                         setMaxBufferedDocs(-1).
+                                         setMergePolicy(newLogMergePolicy(10))
+                                         );
       FieldTypes fieldTypes = writer.getFieldTypes();
       fieldTypes.disableExistsFilters();
 
-      SegmentCommitInfo si1 = indexDoc(writer, "test.txt");
-      printSegment(out, si1);
+    SegmentCommitInfo si1 = indexDoc(writer, "test.txt");
+    printSegment(out, si1);
 
-      SegmentCommitInfo si2 = indexDoc(writer, "test2.txt");
-      printSegment(out, si2);
-      writer.close();
+    SegmentCommitInfo si2 = indexDoc(writer, "test2.txt");
+    printSegment(out, si2);
+    writer.close();
 
-      SegmentCommitInfo siMerge = merge(directory, si1, si2, "_merge", false);
-      printSegment(out, siMerge);
+    SegmentCommitInfo siMerge = merge(directory, si1, si2, "_merge", false);
+    printSegment(out, siMerge);
 
-      SegmentCommitInfo siMerge2 = merge(directory, si1, si2, "_merge2", false);
-      printSegment(out, siMerge2);
+    SegmentCommitInfo siMerge2 = merge(directory, si1, si2, "_merge2", false);
+    printSegment(out, siMerge2);
 
-      SegmentCommitInfo siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", false);
-      printSegment(out, siMerge3);
+    SegmentCommitInfo siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", false);
+    printSegment(out, siMerge3);
       
-      directory.close();
-      out.close();
-      sw.close();
+    directory.close();
+    out.close();
+    sw.close();
 
-      String multiFileOutput = sw.toString();
-      //System.out.println(multiFileOutput);
+    String multiFileOutput = sw.toString();
+    //System.out.println(multiFileOutput);
 
-      sw = new StringWriter();
-      out = new PrintWriter(sw, true);
+    sw = new StringWriter();
+    out = new PrintWriter(sw, true);
 
-      directory = newFSDirectory(indexDir);
+    directory = newFSDirectory(indexDir);
 
-      if (directory instanceof MockDirectoryWrapper) {
-        // We create unreferenced files (we don't even write
-        // a segments file):
-        ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-        // this test itself deletes files (has no retry mechanism)
-        ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
+    if (directory instanceof MockDirectoryWrapper) {
+      // We create unreferenced files (we don't even write
+      // a segments file):
+      ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+      // this test itself deletes files (has no retry mechanism)
+      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
+    }
+
+    writer = new IndexWriter(
+                             directory,
+                             newIndexWriterConfig(new MockAnalyzer(random())).
+                             setOpenMode(OpenMode.CREATE).
+                             setMaxBufferedDocs(-1).
+                             setMergePolicy(newLogMergePolicy(10))
+                             );
+
+    fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+
+    si1 = indexDoc(writer, "test.txt");
+    printSegment(out, si1);
+
+    si2 = indexDoc(writer, "test2.txt");
+    printSegment(out, si2);
+    writer.close();
+
+    siMerge = merge(directory, si1, si2, "_merge", true);
+    printSegment(out, siMerge);
+
+    siMerge2 = merge(directory, si1, si2, "_merge2", true);
+    printSegment(out, siMerge2);
+
+    siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", true);
+    printSegment(out, siMerge3);
+      
+    directory.close();
+    out.close();
+    sw.close();
+    String singleFileOutput = sw.toString();
+
+    assertEquals(multiFileOutput, singleFileOutput);
+  }
+
+  private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
+    throws Exception {
+    Path path = workDir.resolve(fileName);
+    Document doc = writer.newDocument();
+    InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
+    doc.addLargeText("contents", is);
+    writer.addDocument(doc);
+    writer.commit();
+    is.close();
+    return writer.newestSegment();
+  }
+
+  private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
+    throws Exception {
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(dir, null);
+    IOContext context = newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1)));
+    SegmentReader r1 = new SegmentReader(fieldTypes, si1, context);
+    SegmentReader r2 = new SegmentReader(fieldTypes, si2, context);
+
+    final Codec codec = Codec.getDefault();
+    TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
+    final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+
+    SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<CodecReader>asList(r1, r2),
+                                             si, InfoStream.getDefault(), trackingDir,
+                                             new FieldInfos.FieldNumbers(), context);
+
+    MergeState mergeState = merger.merge();
+    r1.close();
+    r2.close();;
+    si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
+      
+    if (useCompoundFile) {
+      Collection<String> filesToDelete = si.files();
+      IndexWriter.createCompoundFile(InfoStream.getDefault(), new TrackingDirectoryWrapper(dir), si, newIOContext(random()));
+      si.setUseCompoundFile(true);
+      for (final String fileToDelete : filesToDelete) {
+        si1.info.dir.deleteFile(fileToDelete);
       }
+    }
 
-      writer = new IndexWriter(
-          directory,
-          newIndexWriterConfig(new MockAnalyzer(random())).
-              setOpenMode(OpenMode.CREATE).
-              setMaxBufferedDocs(-1).
-              setMergePolicy(newLogMergePolicy(10))
-      );
-
-      fieldTypes = writer.getFieldTypes();
-      fieldTypes.disableExistsFilters();
-
-      si1 = indexDoc(writer, "test.txt");
-      printSegment(out, si1);
-
-      si2 = indexDoc(writer, "test2.txt");
-      printSegment(out, si2);
-      writer.close();
-
-      siMerge = merge(directory, si1, si2, "_merge", true);
-      printSegment(out, siMerge);
-
-      siMerge2 = merge(directory, si1, si2, "_merge2", true);
-      printSegment(out, siMerge2);
-
-      siMerge3 = merge(directory, siMerge, siMerge2, "_merge3", true);
-      printSegment(out, siMerge3);
-      
-      directory.close();
-      out.close();
-      sw.close();
-      String singleFileOutput = sw.toString();
-
-      assertEquals(multiFileOutput, singleFileOutput);
-   }
-
-   private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
-     throws Exception {
-     Path path = workDir.resolve(fileName);
-     Document doc = writer.newDocument();
-     InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
-     doc.addLargeText("contents", is);
-     writer.addDocument(doc);
-     writer.commit();
-     is.close();
-     return writer.newestSegment();
-   }
-
-   private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
-     throws Exception {
-     FieldTypes fieldTypes = FieldTypes.getFieldTypes(dir, null);
-     IOContext context = newIOContext(random());
-     SegmentReader r1 = new SegmentReader(fieldTypes, si1, context);
-     SegmentReader r2 = new SegmentReader(fieldTypes, si2, context);
-
-     final Codec codec = Codec.getDefault();
-     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-     final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
-
-     SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<LeafReader>asList(r1, r2),
-                                              si, InfoStream.getDefault(), trackingDir,
-                                              MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
-
-     MergeState mergeState = merger.merge();
-     r1.close();
-     r2.close();;
-     si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
-      
-     if (useCompoundFile) {
-       Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, si, newIOContext(random()));
-       si.setUseCompoundFile(true);
-       for (final String fileToDelete : filesToDelete) {
-         si1.info.dir.deleteFile(fileToDelete);
-       }
-     }
-
-     return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
-   }
+    return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
+  }
 
 
-   private void printSegment(PrintWriter out, SegmentCommitInfo si)
-   throws Exception {
-      SegmentReader reader = new SegmentReader(null, si, newIOContext(random()));
+  private void printSegment(PrintWriter out, SegmentCommitInfo si)
+    throws Exception {
+    SegmentReader reader = new SegmentReader(null, si, newIOContext(random()));
 
-      for (int i = 0; i < reader.numDocs(); i++)
-        out.println(reader.document(i));
+    for (int i = 0; i < reader.numDocs(); i++)
+      out.println(reader.document(i));
 
-      Fields fields = reader.fields();
-      for (String field : fields)  {
-        Terms terms = fields.terms(field);
-        assertNotNull(terms);
-        TermsEnum tis = terms.iterator(null);
-        while(tis.next() != null) {
+    Fields fields = reader.fields();
+    for (String field : fields)  {
+      Terms terms = fields.terms(field);
+      assertNotNull(terms);
+      TermsEnum tis = terms.iterator(null);
+      while(tis.next() != null) {
 
-          out.print("  term=" + field + ":" + tis.term());
-          out.println("    DF=" + tis.docFreq());
+        out.print("  term=" + field + ":" + tis.term());
+        out.println("    DF=" + tis.docFreq());
 
-          DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getLiveDocs(), null);
-          while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-            out.print(" doc=" + positions.docID());
-            out.print(" TF=" + positions.freq());
-            out.print(" pos=");
-            out.print(positions.nextPosition());
-            for (int j = 1; j < positions.freq(); j++)
-              out.print("," + positions.nextPosition());
-            out.println("");
-          }
+        DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getLiveDocs(), null);
+        while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+          out.print(" doc=" + positions.docID());
+          out.print(" TF=" + positions.freq());
+          out.print(" pos=");
+          out.print(positions.nextPosition());
+          for (int j = 1; j < positions.freq(); j++)
+            out.print("," + positions.nextPosition());
+          out.println("");
         }
       }
-      reader.close();
     }
+    reader.close();
+  }
 }

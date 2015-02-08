@@ -23,8 +23,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
@@ -48,6 +51,18 @@ import org.slf4j.LoggerFactory;
  */
 public class JarRepository {
   public static Logger log = LoggerFactory.getLogger(JarRepository.class);
+
+  static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
   
   private final CoreContainer coreContainer;
   
@@ -71,8 +86,10 @@ public class JarRepository {
         ClusterState cs = this.coreContainer.getZkController().getZkStateReader().getClusterState();
         DocCollection coll = cs.getCollectionOrNull(CollectionsHandler.SYSTEM_COLL);
         if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
-        Slice slice = coll.getActiveSlices().iterator().next();
-        if (slice == null) throw new SolrException(SERVICE_UNAVAILABLE, ".no active slices for .system collection");
+        ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
+        if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, ".no active slices for .system collection");
+        Collections.shuffle(slices, RANDOM); //do load balancing
+        Slice slice = slices.get(0) ;
         Replica replica = slice.getReplicas().iterator().next();
         if (replica == null) throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
         String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";

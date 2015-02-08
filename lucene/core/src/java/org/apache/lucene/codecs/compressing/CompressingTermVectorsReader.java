@@ -26,6 +26,7 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CHUNK_STATS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
@@ -82,6 +83,9 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private final int numDocs;
   private boolean closed;
   private final BlockPackedReaderIterator reader;
+  private final long numChunks; // number of compressed blocks written
+  private final long numDirtyChunks; // number of incomplete compressed blocks written
+  private final long maxPointer; // end of the data section
 
   // used by clone
   private CompressingTermVectorsReader(CompressingTermVectorsReader reader) {
@@ -95,6 +99,9 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.numDocs = reader.numDocs;
     this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
     this.version = reader.version;
+    this.numChunks = reader.numChunks;
+    this.numDirtyChunks = reader.numDirtyChunks;
+    this.maxPointer = reader.maxPointer;
     this.closed = false;
   }
 
@@ -109,6 +116,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     int version = -1;
     CompressingStoredFieldsIndexReader indexReader = null;
     
+    long maxPointer = -1;
+    
     // Load the index into memory
     final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
     try (ChecksumIndexInput input = d.openChecksumInput(indexName, context)) {
@@ -118,7 +127,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         version = CodecUtil.checkIndexHeader(input, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
         assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == input.getFilePointer();
         indexReader = new CompressingStoredFieldsIndexReader(input, si);
-        input.readVLong(); // the end of the data file
+        maxPointer = input.readVLong(); // the end of the data section
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -128,6 +137,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     
     this.version = version;
     this.indexReader = indexReader;
+    this.maxPointer = maxPointer;
 
     try {
       // Open the data file and read metadata
@@ -141,6 +151,18 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == vectorsStream.getFilePointer();
       
       long pos = vectorsStream.getFilePointer();
+      
+      if (version >= VERSION_CHUNK_STATS) {
+        vectorsStream.seek(maxPointer);
+        numChunks = vectorsStream.readVLong();
+        numDirtyChunks = vectorsStream.readVLong();
+        if (numDirtyChunks > numChunks) {
+          throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, vectorsStream);
+        }
+      } else {
+        numChunks = numDirtyChunks = -1;
+      }
+      
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
@@ -177,12 +199,24 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     return version;
   }
 
-  CompressingStoredFieldsIndexReader getIndex() {
+  CompressingStoredFieldsIndexReader getIndexReader() {
     return indexReader;
   }
 
   IndexInput getVectorsStream() {
     return vectorsStream;
+  }
+  
+  long getMaxPointer() {
+    return maxPointer;
+  }
+  
+  long getNumChunks() {
+    return numChunks;
+  }
+  
+  long getNumDirtyChunks() {
+    return numDirtyChunks;
   }
 
   /**

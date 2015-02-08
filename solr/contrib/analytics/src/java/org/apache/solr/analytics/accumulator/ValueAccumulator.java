@@ -38,9 +38,4 @@ public abstract class ValueAccumulator extends SimpleCollector {
     // NOP
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
-
 }

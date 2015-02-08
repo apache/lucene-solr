@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -36,7 +35,6 @@ import com.google.common.cache.CacheBuilder;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.io.LegacyShapeReadWriterFormat;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -59,6 +57,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.util.DistanceUnits;
 import org.apache.solr.util.MapListener;
 import org.apache.solr.util.SpatialUtils;
 import org.slf4j.Logger;
@@ -71,7 +70,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType implements SpatialQueryable {
 
-  /** A local-param with one of "none" (default), "distance", or "recipDistance". */
+  /** A local-param with one of "none" (default), "distance", "recipDistance" or supported values in ({@link DistanceUnits#getSupportedUnits()}. */
   public static final String SCORE_PARAM = "score";
   /** A local-param boolean that can be set to false to only return the
    * FunctionQuery (score), and thus not do filtering.
@@ -90,6 +89,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
 
+  protected DistanceUnits distanceUnits;
+  @Deprecated
+  protected String units; // for back compat; hopefully null
+
   protected final Set<String> supportedScoreModes;
 
   protected AbstractSpatialFieldType() {
@@ -101,6 +104,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     set.add(NONE);
     set.add(DISTANCE);
     set.add(RECIP_DISTANCE);
+    set.addAll(DistanceUnits.getSupportedUnits());
     set.addAll(moreScoreModes);
     supportedScoreModes = Collections.unmodifiableSet(set);
   }
@@ -109,28 +113,56 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    String units = args.remove("units");
-    if (!"degrees".equals(units))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Must specify units=\"degrees\" on field types with class "+getClass().getSimpleName());
-
-    //replace legacy rect format with ENVELOPE
-    String wbStr = args.get("worldBounds");
-    if (wbStr != null && !wbStr.toUpperCase(Locale.ROOT).startsWith("ENVELOPE")) {
-      log.warn("Using old worldBounds format? Should use ENVELOPE(xMin, xMax, yMax, yMin).");
-      String[] parts = wbStr.split(" ");//"xMin yMin xMax yMax"
-      if (parts.length == 4) {
-        args.put("worldBounds",
-            "ENVELOPE(" + parts[0] + ", " + parts[2] + ", " + parts[3] + ", " + parts[1] + ")");
-      } //else likely eventual exception
-    }
-
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<>(args);
     ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
     args.keySet().removeAll(argsWrap.getSeenKeys());
 
+    final String unitsErrMsg = "units parameter is deprecated, please use distanceUnits instead for field types with class " +
+        getClass().getSimpleName();
+    this.units = args.remove("units");//deprecated
+    if (units != null) {
+      if ("degrees".equals(units)) {
+        log.warn(unitsErrMsg);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
+      }
+    }
+
+    final String distanceUnitsStr = args.remove("distanceUnits");
+    if (distanceUnitsStr == null) {
+      if (units != null) {
+        this.distanceUnits = DistanceUnits.BACKCOMPAT;
+      } else {
+        this.distanceUnits = ctx.isGeo() ? DistanceUnits.KILOMETERS : DistanceUnits.DEGREES;
+      }
+    } else {
+      // If both units and distanceUnits was specified
+      if (units != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
+      }
+      this.distanceUnits = parseDistanceUnits(distanceUnitsStr);
+      if (this.distanceUnits == null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Must specify distanceUnits as one of "+ DistanceUnits.getSupportedUnits() +
+                " on field types with class "+getClass().getSimpleName());
+    }
+
     argsParser = newSpatialArgsParser();
+  }
+
+  /** if {@code str} is non-null, returns {@link org.apache.solr.util.DistanceUnits#valueOf(String)}
+   * (which will return null if not found),
+   * else returns {@link #distanceUnits} (only null before initialized in {@code init()}.
+   * @param str maybe null
+   * @return maybe null
+   */
+  public DistanceUnits parseDistanceUnits(String str) {
+    if (str == null) {
+      return this.distanceUnits;
+    } else {
+      return DistanceUnits.valueOf(str);
+    }
   }
 
   protected SpatialArgsParser newSpatialArgsParser() {
@@ -192,18 +224,17 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected Shape parseShape(String str) {
     if (str.length() == 0)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty string shape");
-    //In Solr trunk we only support "lat, lon" (or x y) as an additional format; in v4.0 we do the
-    // weird Circle & Rect formats too (Spatial4j LegacyShapeReadWriterFormat).
-    try {
-      Shape shape = LegacyShapeReadWriterFormat.readShapeOrNull(str, ctx);
-      if (shape != null)
-        return shape;
-      return ctx.readShapeFromWkt(str);
-    } catch (Exception e) {
-      String message = e.getMessage();
-      if (!message.contains(str))
-        message = "Couldn't parse shape '" + str + "' because: " + message;
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
+    if (Character.isLetter(str.charAt(0))) {//WKT starts with a letter
+      try {
+        return ctx.readShapeFromWkt(str);
+      } catch (Exception e) {
+        String message = e.getMessage();
+        if (!message.contains(str))
+          message = "Couldn't parse shape '" + str + "' because: " + message;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
+      }
+    } else {
+      return SpatialUtils.parsePointSolrException(str, ctx);
     }
   }
 
@@ -281,7 +312,12 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   protected SpatialArgs parseSpatialArgs(QParser parser, String externalVal) {
     try {
-      return argsParser.parse(externalVal, ctx);
+      SpatialArgs args = argsParser.parse(externalVal, ctx);
+      // Convert parsed args.distErr to degrees (using distanceUnits)
+      if (args.getDistErr() != null) {
+        args.setDistErr(args.getDistErr() * distanceUnits.multiplierFromThisUnitToDegrees());
+      }
+      return args;
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -315,6 +351,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return new FilteredQuery(functionQuery, filter);
   }
 
+  @Override
+  public double getSphereRadius() {
+      return distanceUnits.getEarthRadius();
+  }
+
   /** The set of values supported for the score local-param. Not null. */
   public Set<String> getSupportedScoreModes() {
     return supportedScoreModes;
@@ -324,19 +365,29 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     if (score == null) {
       return null;
     }
-    switch (score) {
-      case NONE:
+
+    final double multiplier; // default multiplier for degrees
+
+    switch(score) {
       case "":
+      case NONE:
         return null;
-      case DISTANCE:
-        double multiplier = 1.0;//TODO support units=kilometers
-        return strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
       case RECIP_DISTANCE:
         return strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
+      case DISTANCE:
+        multiplier = distanceUnits.multiplierFromDegreesToThisUnit();
+        break;
       default:
+        DistanceUnits du = parseDistanceUnits(score);
+        if (du != null) {
+          multiplier = du.multiplierFromDegreesToThisUnit();
+        } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "'score' local-param must be one of " + supportedScoreModes);
+              "'score' local-param must be one of " + supportedScoreModes + ", it was: " + score);
     }
+  }
+
+    return strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
   }
 
   /**
@@ -367,6 +418,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   public SortField getSortField(SchemaField field, boolean top) {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on SpatialField: " + field.getName()+
       ", instead try sorting by query.");
+  }
+
+  public DistanceUnits getDistanceUnits() {
+    return this.distanceUnits;
   }
 }
 

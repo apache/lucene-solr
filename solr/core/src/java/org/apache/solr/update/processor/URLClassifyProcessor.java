@@ -125,9 +125,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
             document.setField(canonicalUrlFieldname, getCanonicalUrl(normalizedURL));
           }
           log.debug(document.toString());
-        } catch (MalformedURLException e) {
-          log.warn("cannot get the normalized url for \"" + url + "\" due to " + e.getMessage());
-        } catch (URISyntaxException e) {
+        } catch (MalformedURLException | URISyntaxException e) {
           log.warn("cannot get the normalized url for \"" + url + "\" due to " + e.getMessage());
         }
       }

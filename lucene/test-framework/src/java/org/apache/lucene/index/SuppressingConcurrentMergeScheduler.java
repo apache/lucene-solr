@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.store.Directory;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,22 +19,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.IOUtils;
-
 /** A {@link ConcurrentMergeScheduler} that ignores AlreadyClosedException. */
 public abstract class SuppressingConcurrentMergeScheduler extends ConcurrentMergeScheduler {
   @Override
-  protected void handleMergeException(Throwable exc) {
+  protected void handleMergeException(Directory dir, Throwable exc) {
     while (true) {
       if (isOK(exc)) {
         return;
       }
       exc = exc.getCause();
       if (exc == null) {
-        super.handleMergeException(exc);
+        super.handleMergeException(dir, exc);
       }
     }
   }

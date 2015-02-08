@@ -20,6 +20,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -32,7 +34,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
@@ -73,10 +74,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -176,14 +179,11 @@ public class SnapPuller {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
 
-    HttpClient httpClient = HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager());
-
-    return httpClient;
+    return HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager());
   }
 
   public SnapPuller(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
-    final SolrParams params = SolrParams.toSolrParams(initArgs);
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -246,19 +246,16 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX modify to use shardhandler
-    NamedList rsp;
-    try {
+
+    // TODO modify to use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       
-      rsp = client.request(req);
+      return client.request(req);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
-    } finally {
-      client.shutdown();
     }
-    return rsp;
   }
 
   /**
@@ -271,8 +268,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient);  //XXX modify to use shardhandler
-    try {
+
+    // TODO modify to use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       NamedList response = client.request(req);
@@ -291,8 +289,6 @@ public class SnapPuller {
 
     } catch (SolrServerException e) {
       throw new IOException(e);
-    } finally {
-      client.shutdown();
     }
   }
 
@@ -407,13 +403,41 @@ public class SnapPuller {
         }
         
         if (!isFullCopyNeeded) {
-          // rollback - and do it before we download any files
-          // so we don't remove files we thought we didn't need
-          // to download later
-          solrCore.getUpdateHandler().getSolrCoreState()
-          .closeIndexWriter(core, true);
+          // a searcher might be using some flushed but not committed segments
+          // because of soft commits (which open a searcher on IW's data)
+          // so we need to close the existing searcher on the last commit
+          // and wait until we are able to clean up all unused lucene files
+          if (solrCore.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+            solrCore.closeSearcher();
+          }
+
+          // rollback and reopen index writer and wait until all unused files
+          // are successfully deleted
+          solrCore.getUpdateHandler().newIndexWriter(true);
+          RefCounted<IndexWriter> writer = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+          try {
+            IndexWriter indexWriter = writer.get();
+            int c = 0;
+            indexWriter.deleteUnusedFiles();
+            while (hasUnusedFiles(indexDir, commit)) {
+              indexWriter.deleteUnusedFiles();
+              LOG.info("Sleeping for 1000ms to wait for unused lucene index files to be delete-able");
+              Thread.sleep(1000);
+              c++;
+              if (c >= 30)  {
+                LOG.warn("SnapPuller unable to cleanup unused lucene index files so we must do a full copy instead");
+                isFullCopyNeeded = true;
+                break;
+              }
+            }
+            if (c > 0)  {
+              LOG.info("SnapPuller slept for " + (c * 1000) + "ms for unused lucene index files to be delete-able");
+            }
+          } finally {
+            writer.decref();
+          }
+          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(core, true);
         }
-        
         boolean reloadCore = false;
         
         try {
@@ -490,7 +514,7 @@ public class SnapPuller {
             solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
           }
           
-          openNewSearcherAndUpdateCommitPoint(isFullCopyNeeded);
+          openNewSearcherAndUpdateCommitPoint();
         }
         
         replicationStartTime = 0;
@@ -542,6 +566,24 @@ public class SnapPuller {
         }
       }
     }
+  }
+
+  private boolean hasUnusedFiles(Directory indexDir, IndexCommit commit) throws IOException {
+    Set<String> currentFiles = new HashSet<>();
+    String segmentsFileName = commit.getSegmentsFileName();
+    SegmentInfos infos = SegmentInfos.readCommit(indexDir, segmentsFileName);
+    for (SegmentCommitInfo info : infos.asList()) {
+      Set<String> files = info.info.files(); // All files that belong to this segment
+      currentFiles.addAll(files);
+    }
+    String[] allFiles = indexDir.listAll();
+    for (String file : allFiles) {
+      if (!file.equals(segmentsFileName) && !currentFiles.contains(file) && !file.endsWith(".lock")) {
+        LOG.info("Found unused file: " + file);
+        return true;
+      }
+    }
+    return false;
   }
 
   private volatile Exception fsyncException;
@@ -651,9 +693,7 @@ public class SnapPuller {
     List<String> l = new ArrayList<>();
     if (str != null && str.length() != 0) {
       String[] ss = str.split(",");
-      for (int i = 0; i < ss.length; i++) {
-        l.add(ss[i]);
-      }
+      Collections.addAll(l, ss);
     }
     sb.append(replicationTime);
     if (!l.isEmpty()) {
@@ -666,7 +706,7 @@ public class SnapPuller {
     return sb;
   }
 
-  private void openNewSearcherAndUpdateCommitPoint(boolean isFullCopyNeeded) throws IOException {
+  private void openNewSearcherAndUpdateCommitPoint() throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     
@@ -678,9 +718,7 @@ public class SnapPuller {
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
-        } catch (InterruptedException e) {
-          SolrException.log(LOG, e);
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
           SolrException.log(LOG, e);
         }
       }
@@ -703,8 +741,7 @@ public class SnapPuller {
   private String createTempindexDir(SolrCore core, String tmpIdxDirName) {
     // TODO: there should probably be a DirectoryFactory#concatPath(parent, name)
     // or something
-    String tmpIdxDir = core.getDataDir() + tmpIdxDirName;
-    return tmpIdxDir;
+    return core.getDataDir() + tmpIdxDirName;
   }
 
   private void reloadCore() {
@@ -731,7 +768,7 @@ public class SnapPuller {
 
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
     LOG.info("Starting download of configuration files from master: " + confFilesToDownload);
-    confFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
+    confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
     try {
       boolean status = tmpconfDir.mkdirs();
@@ -822,7 +859,7 @@ public class SnapPuller {
    * Copy a file by the File#renameTo() method. If it fails, it is considered a failure
    * <p/>
    */
-  private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname, List<String> copiedfiles) {
+  private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname) {
     LOG.debug("Moving file: {}", fname);
     boolean success = false;
     try {
@@ -856,7 +893,6 @@ public class SnapPuller {
       }
     }
     String segmentsFile = null;
-    List<String> movedfiles = new ArrayList<>();
     for (Map<String, Object> f : filesDownloaded) {
       String fname = (String) f.get(NAME);
       // the segments file must be copied last
@@ -868,12 +904,11 @@ public class SnapPuller {
         segmentsFile = fname;
         continue;
       }
-      if (!moveAFile(tmpIdxDir, indexDir, fname, movedfiles)) return false;
-      movedfiles.add(fname);
+      if (!moveAFile(tmpIdxDir, indexDir, fname)) return false;
     }
     //copy the segments file last
     if (segmentsFile != null) {
-      if (!moveAFile(tmpIdxDir, indexDir, segmentsFile, movedfiles)) return false;
+      if (!moveAFile(tmpIdxDir, indexDir, segmentsFile)) return false;
     }
     return true;
   }
@@ -899,7 +934,7 @@ public class SnapPuller {
   private void copyTmpConfFiles2Conf(File tmpconfDir) {
     boolean status = false;
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<File>())) {
+    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<>())) {
       File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
       if (!oldFile.getParentFile().exists()) {
         status = oldFile.getParentFile().mkdirs();
@@ -1111,7 +1146,7 @@ public class SnapPuller {
       return null;
     tmp = new HashMap<>(tmp);
     if (tmpFileFetcher != null)
-      tmp.put("bytesDownloaded", tmpFileFetcher.bytesDownloaded);
+      tmp.put("bytesDownloaded", tmpFileFetcher.getBytesDownloaded());
     return tmp;
   }
 
@@ -1132,58 +1167,53 @@ public class SnapPuller {
     }
   }
 
+  private interface FileInterface {
+    public void sync() throws IOException;
+    public void write(byte[] buf, int packetSize) throws IOException;
+    public void close() throws Exception;
+    public void delete() throws Exception;
+  }
+
   /**
    * The class acts as a client for ReplicationHandler.FileStream. It understands the protocol of wt=filestream
    *
    * @see org.apache.solr.handler.ReplicationHandler.DirectoryFileStream
    */
-  private class DirectoryFileFetcher {
-    boolean includeChecksum = true;
-
-    Directory copy2Dir;
-
-    String fileName;
-
-    String saveAs;
-
-    long size;
-
-    long bytesDownloaded = 0;
-
-    byte[] buf = new byte[1024 * 1024];
-
-    Checksum checksum;
-
-    int errorCount = 0;
-
+  private class FileFetcher {
+    private final FileInterface file;
+    private boolean includeChecksum = true;
+    private String fileName;
+    private String saveAs;
     private boolean isConf;
-
-    private boolean aborted = false;
-
     private Long indexGen;
 
-    private IndexOutput outStream;
+    private long size;
+    private long bytesDownloaded = 0;
+    private byte[] buf = new byte[1024 * 1024];
+    private Checksum checksum;
+    private int errorCount = 0;
+    private boolean aborted = false;
 
-    DirectoryFileFetcher(Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
+    FileFetcher(FileInterface file, Map<String, Object> fileDetails, String saveAs,
                 boolean isConf, long latestGen) throws IOException {
-      this.copy2Dir = tmpIndexDir;
+      this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       this.isConf = isConf;
       this.saveAs = saveAs;
-
       indexGen = latestGen;
-      
-      outStream = copy2Dir.createOutput(saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
-
       if (includeChecksum)
         checksum = new Adler32();
+    }
+
+    public long getBytesDownloaded() {
+      return bytesDownloaded;
     }
 
     /**
      * The main method which downloads file
      */
-    void fetchFile() throws Exception {
+    public void fetchFile() throws Exception {
       try {
         while (true) {
           final FastInputStream is = getStream();
@@ -1202,12 +1232,12 @@ public class SnapPuller {
         }
       } finally {
         cleanup();
-        //if cleanup suceeds . The file is downloaded fully. do an fsync
+        //if cleanup succeeds . The file is downloaded fully. do an fsync
         fsyncService.submit(new Runnable(){
           @Override
           public void run() {
             try {
-              copy2Dir.sync(Collections.singleton(saveAs));
+              file.sync();
             } catch (IOException e) {
               fsyncException = e;
             }
@@ -1231,7 +1261,7 @@ public class SnapPuller {
           //read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            LOG.warn("No content received for file: " + currentFile);
+            LOG.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
           if (buf.length < packetSize)
@@ -1249,36 +1279,36 @@ public class SnapPuller {
             checksum.update(buf, 0, packetSize);
             long checkSumClient = checksum.getValue();
             if (checkSumClient != checkSumServer) {
-              LOG.error("Checksum not matched between client and server for: " + currentFile);
+              LOG.error("Checksum not matched between client and server for file: {}", fileName);
               //if checksum is wrong it is a problem return for retry
               return 1;
             }
           }
           //if everything is fine, write down the packet to the file
-          writeBytes(packetSize);
+          file.write(buf, packetSize);
           bytesDownloaded += packetSize;
+          LOG.debug("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
           if (bytesDownloaded >= size)
             return 0;
-          //errorcount is always set to zero after a successful packet
+          //errorCount is always set to zero after a successful packet
           errorCount = 0;
         }
       } catch (ReplicationHandlerException e) {
         throw e;
       } catch (Exception e) {
-        LOG.warn("Error in fetching packets ", e);
-        //for any failure , increment the error count
+        LOG.warn("Error in fetching file: {} (downloaded {} of {} bytes)",
+            fileName, bytesDownloaded, size, e);
+        //for any failure, increment the error count
         errorCount++;
-        //if it fails for the same pacaket for   MAX_RETRIES fail and come out
+        //if it fails for the same packet for MAX_RETRIES fail and come out
         if (errorCount > MAX_RETRIES) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Fetch failed for file:" + fileName, e);
+              "Failed to fetch file: " + fileName +
+                  " (downloaded " + bytesDownloaded + " of " + size + " bytes" +
+                  ", error count: " + errorCount + " > " + MAX_RETRIES + ")", e);
         }
         return ERR;
       }
-    }
-
-    protected void writeBytes(int packetSize) throws IOException {
-      outStream.writeBytes(buf, 0, packetSize);
     }
 
     /**
@@ -1287,7 +1317,7 @@ public class SnapPuller {
      */
     private int readInt(byte[] b) {
       return (((b[0] & 0xff) << 24) | ((b[1] & 0xff) << 16)
-              | ((b[2] & 0xff) << 8) | (b[3] & 0xff));
+          | ((b[2] & 0xff) << 8) | (b[3] & 0xff));
 
     }
 
@@ -1296,9 +1326,9 @@ public class SnapPuller {
      */
     private long readLong(byte[] b) {
       return (((long) (b[0] & 0xff)) << 56) | (((long) (b[1] & 0xff)) << 48)
-              | (((long) (b[2] & 0xff)) << 40) | (((long) (b[3] & 0xff)) << 32)
-              | (((long) (b[4] & 0xff)) << 24) | ((b[5] & 0xff) << 16)
-              | ((b[6] & 0xff) << 8) | ((b[7] & 0xff));
+          | (((long) (b[2] & 0xff)) << 40) | (((long) (b[3] & 0xff)) << 32)
+          | (((long) (b[4] & 0xff)) << 24) | ((b[5] & 0xff) << 16)
+          | ((b[6] & 0xff) << 8) | ((b[7] & 0xff));
 
     }
 
@@ -1307,30 +1337,30 @@ public class SnapPuller {
      */
     private void cleanup() {
       try {
-        outStream.close();
-      } catch (Exception e) {/* noop */
-          LOG.error("Error closing the file stream: "+ this.saveAs ,e);
+        file.close();
+      } catch (Exception e) {/* no-op */
+        LOG.error("Error closing file: {}", this.saveAs, e);
       }
       if (bytesDownloaded != size) {
         //if the download is not complete then
         //delete the file being downloaded
         try {
-          copy2Dir.deleteFile(saveAs);
+          file.delete();
         } catch (Exception e) {
-          LOG.error("Error deleting file in cleanup" + e.getMessage());
+          LOG.error("Error deleting file: {}", this.saveAs, e);
         }
-        //if the failure is due to a user abort it is returned nomally else an exception is thrown
+        //if the failure is due to a user abort it is returned normally else an exception is thrown
         if (!aborted)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Unable to download " + fileName + " completely. Downloaded "
-                          + bytesDownloaded + "!=" + size);
+              "Unable to download " + fileName + " completely. Downloaded "
+                  + bytesDownloaded + "!=" + size);
       }
     }
 
     /**
      * Open a new stream using HttpClient
      */
-    FastInputStream getStream() throws IOException {
+    private FastInputStream getStream() throws IOException {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -1346,7 +1376,7 @@ public class SnapPuller {
         params.set(FILE, fileName);
       }
       if (useInternal) {
-        params.set(COMPRESSION, "true"); 
+        params.set(COMPRESSION, "true");
       }
       //use checksum
       if (this.includeChecksum) {
@@ -1354,18 +1384,18 @@ public class SnapPuller {
       }
       //wt=filestream this is a custom protocol
       params.set(CommonParams.WT, FILE_STREAM);
-        // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
-        // the server starts from the offset
+      // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
+      // the server starts from the offset
       if (bytesDownloaded > 0) {
         params.set(OFFSET, Long.toString(bytesDownloaded));
       }
-      
+
 
       NamedList response;
       InputStream is = null;
-      
-      HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null);  //XXX use shardhandler
-      try {
+
+      // TODO use shardhandler
+      try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null)) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         QueryRequest req = new QueryRequest(params);
@@ -1379,326 +1409,134 @@ public class SnapPuller {
         //close stream on error
         IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
-      } finally {
-        client.shutdown();
       }
     }
   }
-  
-  /**
-   * The class acts as a client for ReplicationHandler.FileStream. It understands the protocol of wt=filestream
-   *
-   * @see org.apache.solr.handler.ReplicationHandler.LocalFsFileStream
-   */
-  private class LocalFsFileFetcher {
-    boolean includeChecksum = true;
 
+  private class DirectoryFile implements FileInterface {
+    private final String saveAs;
+    private Directory copy2Dir;
+    private IndexOutput outStream;
+
+    DirectoryFile(Directory tmpIndexDir, String saveAs) throws IOException {
+      this.saveAs = saveAs;
+      this.copy2Dir = tmpIndexDir;
+      outStream = copy2Dir.createOutput(this.saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
+    }
+
+    public void sync() throws IOException {
+      copy2Dir.sync(Collections.singleton(saveAs));
+    }
+
+    public void write(byte[] buf, int packetSize) throws IOException {
+      outStream.writeBytes(buf, 0, packetSize);
+    }
+
+    public void close() throws Exception {
+      outStream.close();
+    }
+
+    public void delete() throws Exception {
+      copy2Dir.deleteFile(saveAs);
+    }
+  }
+
+  private class DirectoryFileFetcher extends FileFetcher {
+    DirectoryFileFetcher(Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
+                boolean isConf, long latestGen) throws IOException {
+      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, isConf, latestGen);
+    }
+  }
+
+  private class LocalFsFile implements FileInterface {
     private File copy2Dir;
 
-    String fileName;
-
-    String saveAs;
-
-    long size;
-
-    long bytesDownloaded = 0;
-
     FileChannel fileChannel;
-    
     private FileOutputStream fileOutputStream;
-
-    byte[] buf = new byte[1024 * 1024];
-
-    Checksum checksum;
-
     File file;
 
-    int errorCount = 0;
-
-    private boolean isConf;
-
-    private boolean aborted = false;
-
-    private Long indexGen;
-
-    // TODO: could do more code sharing with DirectoryFileFetcher
-    LocalFsFileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
-                boolean isConf, long latestGen) throws IOException {
+    LocalFsFile(File dir, String saveAs) throws IOException {
       this.copy2Dir = dir;
-      this.fileName = (String) fileDetails.get(NAME);
-      this.size = (Long) fileDetails.get(SIZE);
-      this.isConf = isConf;
-      this.saveAs = saveAs;
-
-      indexGen = latestGen;
 
       this.file = new File(copy2Dir, saveAs);
-      
+
       File parentDir = this.file.getParentFile();
       if( ! parentDir.exists() ){
         if ( ! parentDir.mkdirs() ) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                  "Failed to create (sub)directory for file: " + saveAs);
+              "Failed to create (sub)directory for file: " + saveAs);
         }
       }
-      
+
       this.fileOutputStream = new FileOutputStream(file);
       this.fileChannel = this.fileOutputStream.getChannel();
-
-      if (includeChecksum)
-        checksum = new Adler32();
     }
 
-    /**
-     * The main method which downloads file
-     */
-    void fetchFile() throws Exception {
-      try {
-        while (true) {
-          final FastInputStream is = getStream();
-          int result;
-          try {
-            //fetch packets one by one in a single request
-            result = fetchPackets(is);
-            if (result == 0 || result == NO_CONTENT) {
-              return;
-            }
-            //if there is an error continue. But continue from the point where it got broken
-          } finally {
-            IOUtils.closeQuietly(is);
-          }
-        }
-      } finally {
-        cleanup();
-        //if cleanup suceeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(new Runnable(){
-          @Override
-          public void run() {
-            try {
-              FileUtils.sync(file);
-            } catch (IOException e) {
-              fsyncException = e;
-            }
-          }
-        });
-      }
+    public void sync() throws IOException {
+      FileUtils.sync(file);
     }
 
-    private int fetchPackets(FastInputStream fis) throws Exception {
-      byte[] intbytes = new byte[4];
-      byte[] longbytes = new byte[8];
-      try {
-        while (true) {
-          if (stop) {
-            stop = false;
-            aborted = true;
-            throw new ReplicationHandlerException("User aborted replication");
-          }
-          long checkSumServer = -1;
-          fis.readFully(intbytes);
-          //read the size of the packet
-          int packetSize = readInt(intbytes);
-          if (packetSize <= 0) {
-            LOG.warn("No content received for file: " + currentFile);
-            return NO_CONTENT;
-          }
-          if (buf.length < packetSize)
-            buf = new byte[packetSize];
-          if (checksum != null) {
-            //read the checksum
-            fis.readFully(longbytes);
-            checkSumServer = readLong(longbytes);
-          }
-          //then read the packet of bytes
-          fis.readFully(buf, 0, packetSize);
-          //compare the checksum as sent from the master
-          if (includeChecksum) {
-            checksum.reset();
-            checksum.update(buf, 0, packetSize);
-            long checkSumClient = checksum.getValue();
-            if (checkSumClient != checkSumServer) {
-              LOG.error("Checksum not matched between client and server for: " + currentFile);
-              //if checksum is wrong it is a problem return for retry
-              return 1;
-            }
-          }
-          //if everything is fine, write down the packet to the file
-          fileChannel.write(ByteBuffer.wrap(buf, 0, packetSize));
-          bytesDownloaded += packetSize;
-          if (bytesDownloaded >= size)
-            return 0;
-          //errorcount is always set to zero after a successful packet
-          errorCount = 0;
-        }
-      } catch (ReplicationHandlerException e) {
-        throw e;
-      } catch (Exception e) {
-        LOG.warn("Error in fetching packets ", e);
-        //for any failure , increment the error count
-        errorCount++;
-        //if it fails for the same pacaket for   MAX_RETRIES fail and come out
-        if (errorCount > MAX_RETRIES) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Fetch failed for file:" + fileName, e);
-        }
-        return ERR;
-      }
+    public void write(byte[] buf, int packetSize) throws IOException {
+      fileChannel.write(ByteBuffer.wrap(buf, 0, packetSize));
     }
 
-    /**
-     * The webcontainer flushes the data only after it fills the buffer size. So, all data has to be read as readFully()
-     * other wise it fails. So read everything as bytes and then extract an integer out of it
-     */
-    private int readInt(byte[] b) {
-      return (((b[0] & 0xff) << 24) | ((b[1] & 0xff) << 16)
-              | ((b[2] & 0xff) << 8) | (b[3] & 0xff));
-
+    public void close() throws Exception {
+      //close the FileOutputStream (which also closes the Channel)
+      fileOutputStream.close();
     }
 
-    /**
-     * Same as above but to read longs from a byte array
-     */
-    private long readLong(byte[] b) {
-      return (((long) (b[0] & 0xff)) << 56) | (((long) (b[1] & 0xff)) << 48)
-              | (((long) (b[2] & 0xff)) << 40) | (((long) (b[3] & 0xff)) << 32)
-              | (((long) (b[4] & 0xff)) << 24) | ((b[5] & 0xff) << 16)
-              | ((b[6] & 0xff) << 8) | ((b[7] & 0xff));
-
-    }
-
-    /**
-     * cleanup everything
-     */
-    private void cleanup() {
-      try {
-        //close the FileOutputStream (which also closes the Channel)
-        fileOutputStream.close();
-      } catch (Exception e) {/* noop */
-          LOG.error("Error closing the file stream: "+ this.saveAs ,e);
-      }
-      if (bytesDownloaded != size) {
-        //if the download is not complete then
-        //delete the file being downloaded
-        try {
-          Files.delete(file.toPath());
-        } catch (SecurityException e) {
-          LOG.error("Error deleting file in cleanup" + e.getMessage());
-        } catch (Throwable other) {
-          // TODO: should this class care if a file couldnt be deleted?
-          // this just emulates previous behavior, where only SecurityException would be handled.
-        }
-        //if the failure is due to a user abort it is returned nomally else an exception is thrown
-        if (!aborted)
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Unable to download " + fileName + " completely. Downloaded "
-                          + bytesDownloaded + "!=" + size);
-      }
-    }
-
-    /**
-     * Open a new stream using HttpClient
-     */
-    FastInputStream getStream() throws IOException {
-
-      ModifiableSolrParams params = new ModifiableSolrParams();
-
-//    //the method is command=filecontent
-      params.set(COMMAND, CMD_GET_FILE);
-      params.set(GENERATION, Long.toString(indexGen));
-      params.set(CommonParams.QT, "/replication");
-      //add the version to download. This is used to reserve the download
-      if (isConf) {
-        //set cf instead of file for config file
-        params.set(CONF_FILE_SHORT, fileName);
-      } else {
-        params.set(FILE, fileName);
-      }
-      if (useInternal) {
-        params.set(COMPRESSION, "true"); 
-      }
-      //use checksum
-      if (this.includeChecksum) {
-        params.set(CHECKSUM, true);
-      }
-      //wt=filestream this is a custom protocol
-      params.set(CommonParams.WT, FILE_STREAM);
-        // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
-        // the server starts from the offset
-      if (bytesDownloaded > 0) {
-        params.set(OFFSET, Long.toString(bytesDownloaded));
-      }
-      
-
-      NamedList response;
-      InputStream is = null;
-      HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null);  //XXX use shardhandler
-      try {
-        client.setSoTimeout(60000);
-        client.setConnectionTimeout(15000);
-        QueryRequest req = new QueryRequest(params);
-        response = client.request(req);
-        is = (InputStream) response.get("stream");
-        if(useInternal) {
-          is = new InflaterInputStream(is);
-        }
-        return new FastInputStream(is);
-      } catch (Exception e) {
-        //close stream on error
-        IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", e);
-      } finally {
-        client.shutdown();
-      }
+    public void delete() throws Exception {
+      Files.delete(file.toPath());
     }
   }
-  
+
+  private class LocalFsFileFetcher extends FileFetcher {
+    LocalFsFileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
+                boolean isConf, long latestGen) throws IOException {
+      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, isConf, latestGen);
+    }
+  }
+
   NamedList getDetails() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
     params.set(CommonParams.QT, "/replication");
-    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX use shardhandler
-    NamedList rsp;
-    try {
+
+    // TODO use shardhandler
+    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       QueryRequest request = new QueryRequest(params);
-      rsp = client.request(request);
-    } finally {
-      client.shutdown();
+      return client.request(request);
     }
-    return rsp;
   }
 
   static Integer readInterval(String interval) {
     if (interval == null)
       return null;
     int result = 0;
-    if (interval != null) {
-      Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
-      if (m.find()) {
-        String hr = m.group(1);
-        String min = m.group(2);
-        String sec = m.group(3);
-        result = 0;
-        try {
-          if (sec != null && sec.length() > 0)
-            result += Integer.parseInt(sec);
-          if (min != null && min.length() > 0)
-            result += (60 * Integer.parseInt(min));
-          if (hr != null && hr.length() > 0)
-            result += (60 * 60 * Integer.parseInt(hr));
-          result *= 1000;
-        } catch (NumberFormatException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  INTERVAL_ERR_MSG);
-        }
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                INTERVAL_ERR_MSG);
+    Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
+    if (m.find()) {
+      String hr = m.group(1);
+      String min = m.group(2);
+      String sec = m.group(3);
+      result = 0;
+      try {
+        if (sec != null && sec.length() > 0)
+          result += Integer.parseInt(sec);
+        if (min != null && min.length() > 0)
+          result += (60 * Integer.parseInt(min));
+        if (hr != null && hr.length() > 0)
+          result += (60 * 60 * Integer.parseInt(hr));
+        result *= 1000;
+      } catch (NumberFormatException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, INTERVAL_ERR_MSG);
       }
-
+    } else {
+      throw new SolrException(ErrorCode.SERVER_ERROR, INTERVAL_ERR_MSG);
     }
+
     return result;
   }
 

@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,9 +50,9 @@ import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossColl
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     testCreateAndDeleteCollection();
     testCreateAndDeleteShard();
     testReloadCollection();
@@ -65,19 +66,6 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     testList();
     testAddAndDeleteReplicaProp();
     testBalanceShardUnique();
-  }
-
-  public void tearDown() throws Exception {
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
   }
 
   protected void testCreateAndDeleteCollection() throws Exception {
@@ -269,9 +257,8 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
 
     Replica replica1 = testCollection.getReplica("core_node1");
 
-    HttpSolrClient solrServer = new HttpSolrClient(replica1.getStr("base_url"));
-    try {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), solrServer);
+    try (HttpSolrClient client = new HttpSolrClient(replica1.getStr("base_url"))) {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), client);
       NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
       String dataDirStr = (String) coreStatus.get("dataDir");
       String instanceDirStr = (String) coreStatus.get("instanceDir");
@@ -279,9 +266,6 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
           new File(instanceDirStr).getAbsolutePath(), instanceDir.getAbsolutePath());
       assertEquals("Data dir does not match param given in property.dataDir syntax",
           new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
-
-    } finally {
-      solrServer.shutdown();
     }
 
     CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();

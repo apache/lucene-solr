@@ -64,7 +64,10 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(LeafCollector collector, int maxDoc) throws IOException {
+  public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
+    if (min != 0) {
+      throw new IllegalArgumentException("min must be 0, got " + min);
+    }
     if (maxDoc != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("maxDoc must be Integer.MAX_VALUE");
     }
@@ -150,7 +153,7 @@ class DrillSidewaysScorer extends BulkScorer {
       doUnionScoring(collector, disis, sidewaysCollectors);
     }
 
-    return false;
+    return Integer.MAX_VALUE;
   }
 
   /** Used when base query is highly constraining vs the

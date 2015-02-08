@@ -16,6 +16,7 @@
  */
 package org.apache.solr.hadoop;
 
+import java.net.URLEncoder;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -34,8 +35,6 @@ public class MorphlineMapperTest extends MRUnitBase {
   @BeforeClass
   public static void beforeClass() {
     assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
-    assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
-    assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
   }
   
   @Test
@@ -46,7 +45,9 @@ public class MorphlineMapperTest extends MRUnitBase {
     Configuration config = mapDriver.getConfiguration();
     setupHadoopConfig(config);
 
-    mapDriver.withInput(new LongWritable(0L), new Text("hdfs://localhost/" + DOCUMENTS_DIR + "/sample-statuses-20120906-141433.avro"));
+    mapDriver.withInput(new LongWritable(0L), new Text("hdfs://localhost/" +
+        URLEncoder.encode(DOCUMENTS_DIR, "UTF-8").replace("+", "%20") +
+        "/sample-statuses-20120906-141433.avro"));
 
     SolrInputDocument sid = new SolrInputDocument();
     sid.addField("id", "uniqueid1");

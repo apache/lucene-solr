@@ -33,9 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 
 public class TestCollectionAPI extends ReplicaPropertiesBase {
 
@@ -54,23 +54,17 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    fixShardCount = true;
+  public void distribSetUp() throws Exception {
     sliceCount = 2;
-    shardCount = 2;
-    super.setUp();
+    super.distribSetUp();
   }
 
-  @Override
-  public void doTest() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+  @Test
+  @ShardsFixed(num = 2)
+  public void test() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
       createCollection(null, COLLECTION_NAME, 2, 2, 2, client, null, "conf1");
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
-    } finally {
-      //remove collections
-      client.shutdown();
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
@@ -89,8 +83,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
@@ -111,16 +105,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD1);
       assertNotNull(selectedShardStatus);
 
-    } finally {
-      //remove collections
-      client.shutdown();
     }
   }
 
 
   private void listCollection() throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
       SolrRequest request = new QueryRequest(params);
@@ -132,17 +122,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
       assertTrue(COLLECTION_NAME1 + " was not found in list", collections.contains(COLLECTION_NAME1));
-    } finally {
-      //remove collections
-      client.shutdown();
     }
-
 
   }
 
   private void clusterStatusNoCollection() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       SolrRequest request = new QueryRequest(params);
@@ -159,16 +145,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       List<String> liveNodes = (List<String>) cluster.get("live_nodes");
       assertNotNull("Live nodes should not be null", liveNodes);
       assertFalse(liveNodes.isEmpty());
-    } finally {
-      //remove collections
-      client.shutdown();
     }
 
   }
 
   private void clusterStatusWithCollection() throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
@@ -182,15 +164,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
-    } finally {
-      //remove collections
-      client.shutdown();
     }
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(DEFAULT_COLLECTION);
-    try {
+    try (CloudSolrClient client = createCloudClient(DEFAULT_COLLECTION)) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "a!123"); // goes to shard2. see ShardRoutingTest for details
       client.add(doc);
@@ -215,15 +193,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals(1, shardStatus.size());
       Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD2);
       assertNotNull(selectedShardStatus);
-    } finally {
-      //remove collections
-      client.shutdown();
     }
   }
 
   private void clusterStatusAliasTest() throws Exception  {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
@@ -253,14 +227,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
-    } finally {
-      client.shutdown();
     }
   }
 
   private void clusterStatusRolesTest() throws Exception  {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
       Replica replica = client.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
 
@@ -287,14 +258,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(overseer);
       assertEquals(1, overseer.size());
       assertTrue(overseer.contains(replica.getNodeName()));
-    } finally {
-      client.shutdown();
     }
   }
 
   private void replicaPropTest() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+    try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
       Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -570,8 +538,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.node_name");
       verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.base_url");
 
-    } finally {
-      client.shutdown();
     }
   }
 

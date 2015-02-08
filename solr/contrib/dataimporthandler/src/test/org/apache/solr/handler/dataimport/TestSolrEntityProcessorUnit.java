@@ -32,9 +32,12 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     List<Doc> docs = generateUniqueDocs(2);
 
     MockSolrEntityProcessor processor = createAndInit(docs);
-
-    assertExpectedDocs(docs, processor);
-    assertEquals(1, processor.getQueryCount());
+    try {
+      assertExpectedDocs(docs, processor);
+      assertEquals(1, processor.getQueryCount());
+    } finally {
+      processor.destroy();
+    }
   }
 
   private MockSolrEntityProcessor createAndInit(List<Doc> docs) {
@@ -46,8 +49,12 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
 
     int rowsNum = 10;
     MockSolrEntityProcessor processor = createAndInit(docs, rowsNum);
-    assertExpectedDocs(docs, processor);
-    assertEquals(5, processor.getQueryCount());
+    try {
+      assertExpectedDocs(docs, processor);
+      assertEquals(5, processor.getQueryCount());
+    } finally {
+      processor.destroy();
+    }
   }
 
   private MockSolrEntityProcessor createAndInit(List<Doc> docs, int rowsNum) {
@@ -67,15 +74,19 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     docs.add(testDoc);
 
     MockSolrEntityProcessor processor = createAndInit(docs);
-    Map<String, Object> next = processor.nextRow();
-    assertNotNull(next);
-
-    @SuppressWarnings("unchecked")
-    List<Comparable> multiField = (List<Comparable>) next.get("description");
-    assertEquals(testDoc.getValues("description").size(), multiField.size());
-    assertEquals(testDoc.getValues("description"), multiField);
-    assertEquals(1, processor.getQueryCount());
-    assertNull(processor.nextRow());
+    try {
+      Map<String, Object> next = processor.nextRow();
+      assertNotNull(next);
+  
+      @SuppressWarnings("unchecked")
+      List<Comparable> multiField = (List<Comparable>) next.get("description");
+      assertEquals(testDoc.getValues("description").size(), multiField.size());
+      assertEquals(testDoc.getValues("description"), multiField);
+      assertEquals(1, processor.getQueryCount());
+      assertNull(processor.nextRow());
+    } finally {
+      processor.destroy();
+    }
   }
 
   private List<Doc> generateUniqueDocs(int numDocs) {

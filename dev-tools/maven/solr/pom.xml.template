@@ -103,7 +103,6 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <systemPropertyVariables>
-              <tests.jettyConnector>${tests.jettyConnector}</tests.jettyConnector>
               <tests.disableHdfs>${tests.disableHdfs}</tests.disableHdfs>
             </systemPropertyVariables>
           </configuration>

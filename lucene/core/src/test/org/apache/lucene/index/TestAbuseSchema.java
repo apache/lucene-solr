@@ -789,9 +789,9 @@ public class TestAbuseSchema extends LuceneTestCase {
     Directory dir2 = newDirectory();
     conf = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir2, conf);
-    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
-    writer.addIndexes(readers);
-    readers[0].close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    TestUtil.addIndexesSlowly(writer, reader);
+    reader.close();
     field = new LowSchemaField(a, "dv", new BytesRef("foo"), IndexOptions.NONE, false);
     field.setDocValuesType(DocValuesType.BINARY);
     doc = new ArrayList<>();

@@ -131,19 +131,19 @@ public class TestSchemaResource extends SolrRestletTestBase {
              "/schema/dynamicFields/[1]/name=='ignored_*'",
              "/schema/dynamicFields/[2]/name=='*_mfacet'",
                  
-             "/schema/copyFields/[6]=={'source':'title','dest':'dest_sub_no_ast_s'}",
+             "/schema/copyFields/[1]=={'source':'src_sub_no_ast_i','dest':'title'}",
 
-             "/schema/copyFields/[7]=={'source':'*_i','dest':'title'}",
-             "/schema/copyFields/[8]=={'source':'*_i','dest':'*_s'}",
-             "/schema/copyFields/[9]=={'source':'*_i','dest':'*_dest_sub_s'}",
-             "/schema/copyFields/[10]=={'source':'*_i','dest':'dest_sub_no_ast_s'}",
+             "/schema/copyFields/[7]=={'source':'title','dest':'dest_sub_no_ast_s'}",
+             "/schema/copyFields/[8]=={'source':'*_i','dest':'title'}",
+             "/schema/copyFields/[9]=={'source':'*_i','dest':'*_s'}",
+             "/schema/copyFields/[10]=={'source':'*_i','dest':'*_dest_sub_s'}",
+             "/schema/copyFields/[11]=={'source':'*_i','dest':'dest_sub_no_ast_s'}",
 
-             "/schema/copyFields/[11]=={'source':'*_src_sub_i','dest':'title'}",
-             "/schema/copyFields/[12]=={'source':'*_src_sub_i','dest':'*_s'}",
-             "/schema/copyFields/[13]=={'source':'*_src_sub_i','dest':'*_dest_sub_s'}",
-             "/schema/copyFields/[14]=={'source':'*_src_sub_i','dest':'dest_sub_no_ast_s'}",
+             "/schema/copyFields/[12]=={'source':'*_src_sub_i','dest':'title'}",
+             "/schema/copyFields/[13]=={'source':'*_src_sub_i','dest':'*_s'}",
+             "/schema/copyFields/[14]=={'source':'*_src_sub_i','dest':'*_dest_sub_s'}",
+             "/schema/copyFields/[15]=={'source':'*_src_sub_i','dest':'dest_sub_no_ast_s'}",
 
-             "/schema/copyFields/[15]=={'source':'src_sub_no_ast_i','dest':'title'}",
              "/schema/copyFields/[16]=={'source':'src_sub_no_ast_i','dest':'*_s'}",
              "/schema/copyFields/[17]=={'source':'src_sub_no_ast_i','dest':'*_dest_sub_s'}",
              "/schema/copyFields/[18]=={'source':'src_sub_no_ast_i','dest':'dest_sub_no_ast_s'}");

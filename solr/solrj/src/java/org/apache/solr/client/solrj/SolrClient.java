@@ -26,13 +26,20 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -41,7 +48,7 @@ import java.util.List;
  *
  * @since 5.0, replaced {@code SolrServer}
  */
-public abstract class SolrClient implements Serializable {
+public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
   private DocumentObjectBinder binder;
@@ -332,6 +339,56 @@ public abstract class SolrClient implements Serializable {
   }
 
   /**
+   * Retrieves the SolrDocument associated with the given identifier.
+   *
+   * @return retrieved SolrDocument, null if no document is found.
+   */
+  public SolrDocument getById(String id) throws SolrServerException {
+    return getById(id, null);
+  }
+
+  /**
+   * Retrieves the SolrDocument associated with the given identifier and uses
+   * the SolrParams to execute the request.
+   *
+   * @return retrieved SolrDocument, null if no document is found.
+   */
+  public SolrDocument getById(String id, SolrParams params) throws SolrServerException {
+    SolrDocumentList docs = getById(Arrays.asList(id), params);
+    if (!docs.isEmpty()) {
+      return docs.get(0);
+    }
+    return null;
+  }
+
+  /**
+   * Retrieves the SolrDocuments associated with the given identifiers.
+   * If a document was not found, it will not be added to the SolrDocumentList.
+   */
+  public SolrDocumentList getById(Collection<String> ids) throws SolrServerException {
+    return getById(ids, null);
+  }
+
+  /**
+   * Retrieves the SolrDocuments associated with the given identifiers and uses
+   * the SolrParams to execute the request.
+   * If a document was not found, it will not be added to the SolrDocumentList.
+   */
+  public SolrDocumentList getById(Collection<String> ids, SolrParams params) throws SolrServerException {
+    if (ids == null || ids.isEmpty()) {
+      throw new IllegalArgumentException("Must provide an identifier of a document to retrieve.");
+    }
+
+    ModifiableSolrParams reqParams = new ModifiableSolrParams(params);
+    if (StringUtils.isEmpty(reqParams.get(CommonParams.QT))) {
+      reqParams.set(CommonParams.QT, "/get");
+    }
+    reqParams.set("ids", (String[]) ids.toArray());
+
+    return query(reqParams).getResults();
+  }
+  
+  /**
    * SolrServer implementations need to implement how a request is actually processed
    */
   public abstract NamedList<Object> request(final SolrRequest request) throws SolrServerException, IOException;
@@ -343,10 +400,4 @@ public abstract class SolrClient implements Serializable {
     return binder;
   }
 
-  /**
-   * Release allocated resources.
-   *
-   * @since solr 4.0
-   */
-  public abstract void shutdown();
 }

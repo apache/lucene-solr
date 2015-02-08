@@ -84,9 +84,9 @@ fi
 SOLR_INSTALL_FILE=${SOLR_ARCHIVE##*/}
 is_tar=true
 if [ ${SOLR_INSTALL_FILE: -4} == ".tgz" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE:0:-4}
+  SOLR_DIR=${SOLR_INSTALL_FILE%.tgz}
 elif [ ${SOLR_INSTALL_FILE: -4} == ".zip" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE:0:-4}
+  SOLR_DIR=${SOLR_INSTALL_FILE%.zip}
   is_tar=false
 else
   print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz or .zip file!"
@@ -166,16 +166,16 @@ if [ ! -d "$SOLR_EXTRACT_DIR" ]; then
   exit 1
 fi
 
+if [ -z "$SOLR_SERVICE" ]; then
+  SOLR_SERVICE=solr
+fi
+
 if [ -z "$SOLR_VAR_DIR" ]; then
-  SOLR_VAR_DIR=/var/solr
+  SOLR_VAR_DIR=/var/$SOLR_SERVICE
 fi
 
 if [ -z "$SOLR_USER" ]; then
   SOLR_USER=solr
-fi
-
-if [ -z "$SOLR_SERVICE" ]; then
-  SOLR_SERVICE=solr
 fi
 
 if [ -z "$SOLR_PORT" ]; then
@@ -183,7 +183,7 @@ if [ -z "$SOLR_PORT" ]; then
 fi
 
 if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
-  echo -e "\nERROR: /etc/init.d/$SOLR_SERVICE already exists! Perhaps solr is already setup as a service on this host?\n" 1>&2
+  echo -e "\nERROR: /etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host?\n" 1>&2
   exit 1
 fi
 

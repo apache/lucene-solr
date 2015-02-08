@@ -23,7 +23,10 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
   @Test
   public void testGetAllCopyFields() throws Exception {
     assertQ("/schema/copyfields?indent=on&wt=xml",
-            "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='title']"
+        "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
+            +"                                      and str[@name='dest'][.='title']]",
+
+        "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='title']"
            +"                                      and str[@name='dest'][.='title_stemmed']"
            +"                                      and int[@name='maxChars'][.='200']]",
 
@@ -65,10 +68,6 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
 
             "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
            +"                                      and str[@name='sourceDynamicBase'][.='*_i']"
-           +"                                      and str[@name='dest'][.='title']]",
-
-            "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
-           +"                                      and str[@name='sourceDynamicBase'][.='*_i']"
            +"                                      and str[@name='dest'][.='*_s']]",
 
             "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
@@ -105,19 +104,19 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
   @Test
   public void testJsonGetAllCopyFields() throws Exception {
     assertJQ("/schema/copyfields?indent=on&wt=json",
-             "/copyFields/[6]=={'source':'title','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
+             "/copyFields/[1]=={'source':'src_sub_no_ast_i','dest':'title'}",
+             "/copyFields/[7]=={'source':'title','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
 
-             "/copyFields/[7]=={'source':'*_i','dest':'title'}",
-             "/copyFields/[8]=={'source':'*_i','dest':'*_s'}",
-             "/copyFields/[9]=={'source':'*_i','dest':'*_dest_sub_s','destDynamicBase':'*_s'}",
-             "/copyFields/[10]=={'source':'*_i','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
+             "/copyFields/[8]=={'source':'*_i','dest':'title'}",
+             "/copyFields/[9]=={'source':'*_i','dest':'*_s'}",
+             "/copyFields/[10]=={'source':'*_i','dest':'*_dest_sub_s','destDynamicBase':'*_s'}",
+             "/copyFields/[11]=={'source':'*_i','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
 
-             "/copyFields/[11]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'title'}",
-             "/copyFields/[12]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'*_s'}",
-             "/copyFields/[13]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'*_dest_sub_s','destDynamicBase':'*_s'}",
-             "/copyFields/[14]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
+             "/copyFields/[12]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'title'}",
+             "/copyFields/[13]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'*_s'}",
+             "/copyFields/[14]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'*_dest_sub_s','destDynamicBase':'*_s'}",
+             "/copyFields/[15]=={'source':'*_src_sub_i','sourceDynamicBase':'*_i','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}",
 
-             "/copyFields/[15]=={'source':'src_sub_no_ast_i','sourceDynamicBase':'*_i','dest':'title'}",
              "/copyFields/[16]=={'source':'src_sub_no_ast_i','sourceDynamicBase':'*_i','dest':'*_s'}",
              "/copyFields/[17]=={'source':'src_sub_no_ast_i','sourceDynamicBase':'*_i','dest':'*_dest_sub_s','destDynamicBase':'*_s'}",
              "/copyFields/[18]=={'source':'src_sub_no_ast_i','sourceDynamicBase':'*_i','dest':'dest_sub_no_ast_s','destDynamicBase':'*_s'}");

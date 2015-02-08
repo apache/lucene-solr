@@ -22,46 +22,42 @@ import java.util.Random;
 
 import org.apache.lucene.index.LeafReaderContext;
 
-/** Wraps another Collector and checks that
- *  acceptsDocsOutOfOrder is respected. */
+/**
+ * A collector that asserts that it is used correctly.
+ */
+class AssertingCollector extends FilterCollector {
 
-public class AssertingCollector extends FilterCollector {
+  private final Random random;
+  private int maxDoc = -1;
 
-  public static Collector wrap(Random random, Collector other, boolean inOrder) {
-    return other instanceof AssertingCollector ? other : new AssertingCollector(random, other, inOrder);
+  /** Wrap the given collector in order to add assertions. */
+  public static Collector wrap(Random random, Collector in) {
+    if (in instanceof AssertingCollector) {
+      return in;
+    }
+    return new AssertingCollector(random, in);
   }
 
-  final Random random;
-  final boolean inOrder;
-
-  AssertingCollector(Random random, Collector in, boolean inOrder) {
+  private AssertingCollector(Random random, Collector in) {
     super(in);
     this.random = random;
-    this.inOrder = inOrder;
   }
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    return new FilterLeafCollector(super.getLeafCollector(context)) {
-
-      int lastCollected = -1;
-
-      @Override
-      public void setScorer(Scorer scorer) throws IOException {
-        super.setScorer(AssertingScorer.getAssertingScorer(random, scorer));
-      }
-
+    final LeafCollector in = super.getLeafCollector(context);
+    final int docBase = context.docBase;
+    return new AssertingLeafCollector(random, in, 0, DocIdSetIterator.NO_MORE_DOCS) {
       @Override
       public void collect(int doc) throws IOException {
-        if (inOrder || !acceptsDocsOutOfOrder()) {
-          assert doc > lastCollected : "Out of order : " + lastCollected + " " + doc;
-        }
-        in.collect(doc);
-        lastCollected = doc;
+        // check that documents are scored in order globally,
+        // not only per segment
+        assert docBase + doc >= maxDoc : "collection is not in order: current doc="
+            + (docBase + doc) + " while " + maxDoc + " has already been collected";
+        super.collect(doc);
+        maxDoc = docBase + doc;
       }
-
     };
   }
 
 }
-

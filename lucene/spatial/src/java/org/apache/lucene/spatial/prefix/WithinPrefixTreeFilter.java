@@ -19,15 +19,6 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.spatial.prefix.tree.Cell;
-import org.apache.lucene.spatial.prefix.tree.CellIterator;
-import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
-
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
@@ -35,6 +26,14 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
+import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Finds docs where its indexed shape is {@link org.apache.lucene.spatial.query.SpatialOperation#IsWithin
@@ -165,7 +164,10 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
       @Override
       protected void visitLeaf(Cell cell) throws IOException {
-        //visitRelation is declared as a field, populated by visit() so we don't recompute it
+        //visitRelation is declared as a field, populated by visit() so we don't recompute it.
+        // We have a specialized visitScanned() which doesn't call this. If we didn't, we would
+        // not be able to assume visitRelation is from a prior visit() call since in scanning,
+        // parent cells aren't visited.
         assert detailLevel != cell.getLevel();
         assert visitRelation == cell.getShape().relate(queryShape);
         if (allCellsIntersectQuery(cell, visitRelation))
@@ -199,6 +201,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
       @Override
       protected void visitScanned(Cell cell) throws IOException {
+        //slightly optimize over default impl; required for our 'visitRelation' field re-use above
         if (allCellsIntersectQuery(cell, null)) {
           collectDocs(inside);
         } else {

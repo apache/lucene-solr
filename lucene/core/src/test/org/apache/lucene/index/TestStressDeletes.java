@@ -49,6 +49,7 @@ public class TestStressDeletes extends LuceneTestCase {
     final Map<Integer,Boolean> exists = new ConcurrentHashMap<>();
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 2, 6)];
     final CountDownLatch startingGun = new CountDownLatch(1);
+    final int deleteMode = random().nextInt(3);
     for(int i=0;i<threads.length;i++) {
       threads[i] = new Thread() {
           @Override
@@ -61,11 +62,24 @@ public class TestStressDeletes extends LuceneTestCase {
                   Boolean v = exists.get(id);
                   if (v == null || v.booleanValue() == false) {
                     Document doc = w.newDocument();
-                    doc.addUniqueInt("id", id);
+                    doc.addInt("id", id);
                     w.addDocument(doc);
                     exists.put(id, true);
                   } else {
-                    w.deleteDocuments(fieldTypes.newIntTerm("id", id));
+                    if (deleteMode == 0) {
+                      // Always delete by term
+                      w.deleteDocuments(fieldTypes.newIntTerm("id", id));
+                    } else if (deleteMode == 1) {
+                      // Always delete by query
+                      w.deleteDocuments(fieldTypes.newExactIntQuery("id", id));
+                    } else {
+                      // Mixed
+                      if (random().nextBoolean()) {
+                        w.deleteDocuments(fieldTypes.newIntTerm("id", id));
+                      } else {
+                        w.deleteDocuments(fieldTypes.newExactIntQuery("id", id));
+                      }
+                    }
                     exists.put(id, false);
                   }
                 }

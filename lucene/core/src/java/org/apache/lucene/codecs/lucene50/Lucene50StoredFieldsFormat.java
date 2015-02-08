@@ -71,7 +71,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <a href="http://fastcompression.blogspot.fr/2011/05/lz4-explained.html">compression format</a>.</p>
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
- * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, &lt;Chunk&gt;<sup>ChunkCount</sup></li>
+ * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, &lt;Chunk&gt;<sup>ChunkCount</sup>, ChunkCount, DirtyChunkCount, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
@@ -102,6 +102,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>FieldNum --&gt; an ID of the field</li>
  * <li>Value --&gt; {@link DataOutput#writeString(String) String} | BinaryValue | Int | Float | Long | Double depending on Type</li>
  * <li>BinaryValue --&gt; ValueLength &lt;Byte&gt;<sup>ValueLength</sup></li>
+ * <li>ChunkCount --&gt; the number of chunks in this file</li>
+ * <li>DirtyChunkCount --&gt; the number of prematurely flushed chunks in this file</li>
+ * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes</p>
  * <ul>
@@ -123,9 +126,10 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li><a name="field_index" id="field_index"></a>
  * <p>A fields index file (extension <tt>.fdx</tt>).</p>
  * <ul>
- * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;</li>
+ * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
+ * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </li>
  * </ol>

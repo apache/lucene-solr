@@ -94,9 +94,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
     if (config == null) {
       try {
         config = getDefaultConfig(core.getResourceLoader().getClassLoader());
-      } catch (MimeTypeException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      } catch (IOException e) {
+      } catch (MimeTypeException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }

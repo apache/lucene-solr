@@ -207,7 +207,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     w.forceMerge(1);
     w.commit();
     w.close();
-    IndexReader reader = DirectoryReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
 
     Directory dir2 = newDirectory();
     if (dir2 instanceof MockDirectoryWrapper) {
@@ -221,7 +221,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     w = new IndexWriter(dir2, cfg);
     fieldTypes = w.getFieldTypes();
     fieldTypes.disableExistsFilters();
-    w.addIndexes(reader);
+    TestUtil.addIndexesSlowly(w, reader);
+
     w.commit();
     w.close();
 

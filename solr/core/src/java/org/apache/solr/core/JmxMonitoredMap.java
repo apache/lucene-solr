@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
@@ -279,7 +280,9 @@ public class JmxMonitoredMap<K, V> extends
           }
         }
       } catch (Exception e) {
-        LOG.warn("Could not getStatistics on info bean {}", infoBean.getName(), e);
+        // don't log issue if the core is closing
+        if (!(SolrException.getRootCause(e) instanceof AlreadyClosedException))
+          LOG.warn("Could not getStatistics on info bean {}", infoBean.getName(), e);
       }
 
       MBeanAttributeInfo[] attrInfoArr = attrInfoList

@@ -24,14 +24,11 @@ import java.util.LinkedHashSet;
  *
  */
 public class DefaultSolrParams extends SolrParams {
+
   protected final SolrParams params;
   protected final SolrParams defaults;
 
-  /**
-   * @deprecated (3.6) Use {@link SolrParams#wrapDefaults(SolrParams, SolrParams)} instead.
-   */
-  @Deprecated
-  public DefaultSolrParams(SolrParams params, SolrParams defaults) {
+  protected DefaultSolrParams(SolrParams params, SolrParams defaults) {
     assert params != null && defaults != null;
     this.params = params;
     this.defaults = defaults;

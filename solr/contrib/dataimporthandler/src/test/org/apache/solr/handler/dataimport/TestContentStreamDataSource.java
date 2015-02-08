@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.File;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -31,6 +28,10 @@ import org.apache.solr.common.params.UpdateParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.util.List;
 
 /**
  * Test for ContentStreamDataSource
@@ -67,17 +68,17 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
-    solrServer.request(req);
-    ModifiableSolrParams qparams = new ModifiableSolrParams();
-    qparams.add("q", "*:*");
-    QueryResponse qres = solrServer.query(qparams);
-    SolrDocumentList results = qres.getResults();
-    assertEquals(2, results.getNumFound());
-    SolrDocument doc = results.get(0);
-    assertEquals("1", doc.getFieldValue("id"));
-    assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
-    solrServer.shutdown();
+    try (HttpSolrClient solrClient = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"))) {
+      solrClient.request(req);
+      ModifiableSolrParams qparams = new ModifiableSolrParams();
+      qparams.add("q", "*:*");
+      QueryResponse qres = solrClient.query(qparams);
+      SolrDocumentList results = qres.getResults();
+      assertEquals(2, results.getNumFound());
+      SolrDocument doc = results.get(0);
+      assertEquals("1", doc.getFieldValue("id"));
+      assertEquals("Hello C1", ((List) doc.getFieldValue("desc")).get(0));
+    }
   }
 
   @Test
@@ -87,22 +88,22 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         "clean", "false", UpdateParams.COMMIT, "false", 
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
-    HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr"));
-    solrServer.request(req);
-    Thread.sleep(100);
-    ModifiableSolrParams queryAll = params("q", "*");
-    QueryResponse qres = solrServer.query(queryAll);
-    SolrDocumentList results = qres.getResults();
-    assertEquals(0, results.getNumFound());
-    Thread.sleep(1000);
-    for (int i = 0; i < 10; i++) {
-      qres = solrServer.query(queryAll);
-      results = qres.getResults();
-      if (2 == results.getNumFound()) {
-        solrServer.shutdown();
-        return;
+    try (HttpSolrClient solrServer = new HttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/collection1"))) {
+      solrServer.request(req);
+      Thread.sleep(100);
+      ModifiableSolrParams queryAll = params("q", "*");
+      QueryResponse qres = solrServer.query(queryAll);
+      SolrDocumentList results = qres.getResults();
+      assertEquals(0, results.getNumFound());
+      Thread.sleep(1000);
+      for (int i = 0; i < 10; i++) {
+        qres = solrServer.query(queryAll);
+        results = qres.getResults();
+        if (2 == results.getNumFound()) {
+          return;
+        }
+        Thread.sleep(500);
       }
-      Thread.sleep(500);
     }
     fail("Commit should have occured but it did not");
   }
@@ -165,6 +166,8 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       FileUtils.copyFile(getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
       FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
+
+      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 
   }

@@ -134,7 +134,7 @@ public class SchemaManager {
       if (!errs.isEmpty()) return errs;
       SolrResourceLoader loader = req.getCore().getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
-
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         StringWriter sw = new StringWriter();
         try {
           managedIndexSchema.persist(sw);
@@ -145,7 +145,7 @@ public class SchemaManager {
         }
 
         try {
-          ZkController.persistConfigResourceToZooKeeper(loader,
+          ZkController.persistConfigResourceToZooKeeper(zkLoader,
               managedIndexSchema.getSchemaZkVersion(),
               managedIndexSchema.getResourceName(),
               sw.toString().getBytes(StandardCharsets.UTF_8),

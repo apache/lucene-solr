@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -58,13 +59,39 @@ public class RequestParams implements MapSerializable{
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof Map) {
           Map value = (Map) e.getValue();
-          Map copy = new LinkedHashMap<>(value);
+          Map copy = getMapCopy(value);
           Map meta = (Map) copy.remove("");
           this.paramsets.put((String) e.getKey(), new VersionedParams(Collections.unmodifiableMap(copy) ,meta));
         }
       }
     }
     this.znodeVersion = znodeVersion;
+  }
+
+  private static Map getMapCopy(Map value) {
+    Map copy = new LinkedHashMap<>();
+    for (Object o1 : value.entrySet()) {
+      Map.Entry entry = (Map.Entry) o1;
+      if("".equals( entry.getKey())){
+        copy.put(entry.getKey(),entry.getValue());
+        continue;
+      }
+      if (entry.getValue() != null) {
+        if (entry.getValue() instanceof List) {
+          List l = (List) entry.getValue();
+          String[] sarr = new String[l.size()];
+          for (int i = 0; i < l.size(); i++) {
+            if( l.get(i) != null)  sarr[i]= String.valueOf(l.get(i));
+          }
+          copy.put(entry.getKey(), sarr);
+        } else {
+          copy.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+      } else {
+        copy.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return copy;
   }
 
   public VersionedParams getParams(String name){
@@ -77,7 +104,7 @@ public class RequestParams implements MapSerializable{
 
   @Override
   public Map<String, Object> toMap() {
-    return getMapWithVersion(data,znodeVersion);
+    return getMapWithVersion(data, znodeVersion);
   }
 
   public static Map<String, Object> getMapWithVersion(Map<String, Object> data, int znodeVersion) {
@@ -135,9 +162,9 @@ public class RequestParams implements MapSerializable{
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
-    } else if(requestParams == null) {
+    } else  {
       Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-      requestParams = new RequestParams((Map) o[0],(Integer)o[1]);
+      requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
     }
 
     return requestParams;

@@ -75,7 +75,7 @@ import javax.xml.xpath.XPathFactory;
  */
 public class GetMavenDependenciesTask extends Task {
   private static final Pattern PROPERTY_PREFIX_FROM_IVY_XML_FILE_PATTERN = Pattern.compile
-      ("[/\\\\](lucene|solr)[/\\\\](?:(?:contrib|(analysis)|(example))[/\\\\])?([^/\\\\]+)[/\\\\]ivy\\.xml");
+      ("[/\\\\](lucene|solr)[/\\\\](?:(?:contrib|(analysis)|(example)|(server))[/\\\\])?([^/\\\\]+)[/\\\\]ivy\\.xml");
   private static final Pattern COORDINATE_KEY_PATTERN = Pattern.compile("/([^/]+)/([^/]+)");
   private static final Pattern MODULE_DEPENDENCIES_COORDINATE_KEY_PATTERN
       = Pattern.compile("(.*?)(\\.test)?\\.dependencies");
@@ -251,7 +251,7 @@ public class GetMavenDependenciesTask extends Task {
   }
 
   /**
-   * For each module that include other modules' external dependencies via
+   * For each module that includes other modules' external dependencies via
    * including all files under their ".../lib/" dirs in their (test.)classpath,
    * add the other modules' dependencies to its set of external dependencies. 
    */
@@ -320,6 +320,7 @@ public class GetMavenDependenciesTask extends Task {
         if (globalOptionalExternalDependencies.contains(dependencyCoordinate)
             || (perModuleOptionalExternalDependencies.containsKey(module)
                 && perModuleOptionalExternalDependencies.get(module).contains(dependencyCoordinate))) {
+          // make a copy of the dep and set optional=true
           dep = new ExternalDependency(dep.groupId, dep.artifactId, dep.classifier, dep.isTestDependency, true);
         }
         deps.add(dep);
@@ -681,7 +682,7 @@ public class GetMavenDependenciesTask extends Task {
     String module = getModuleName(ivyXmlFile);
     log("Collecting external dependencies from: " + ivyXmlFile.getPath(), verboseLevel);
     Document document = documentBuilder.parse(ivyXmlFile);
-    // Exclude the 'start' configuration in solr/example/ivy.xml
+    // Exclude the 'start' configuration in solr/server/ivy.xml
     String dependencyPath = "/ivy-module/dependencies/dependency[not(starts-with(@conf,'start'))]";
     NodeList dependencies = (NodeList)xpath.evaluate(dependencyPath, document, XPathConstants.NODESET);
     for (int depNum = 0 ; depNum < dependencies.getLength() ; ++depNum) {
@@ -813,12 +814,13 @@ public class GetMavenDependenciesTask extends Task {
     builder.append(matcher.group(1));
     if (null != matcher.group(2)) { // "lucene/analysis/..."
       builder.append("-analyzers");
-    }
-    if (null != matcher.group(3)) { // "solr/example/..."
+    } else if (null != matcher.group(3)) { // "solr/example/..."
       builder.append("-example");
+    } else if (null != matcher.group(4)) { // "solr/server/..."
+      builder.append("-server");
     }
     builder.append('-');
-    builder.append(matcher.group(4));
+    builder.append(matcher.group(5));
     return builder.toString().replace("solr-solr-", "solr-");
   }
 

@@ -41,6 +41,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.junit.Test;
 
 /**
  * We want to make sure that when migrating between http and https modes the
@@ -51,9 +52,9 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 @SuppressSSL
 @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6213")
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     //Migrate from HTTP -> HTTPS -> HTTP
     assertReplicaInformation("http");
     testMigrateSSL(new SSLTestConfig(true, false));

@@ -173,7 +173,6 @@ public class TestPayloads extends LuceneTestCase {
     // flush
     writer.close();
         
-        
     /*
      * Verify the index
      * first we test if all payloads are stored correctly
@@ -272,7 +271,6 @@ public class TestPayloads extends LuceneTestCase {
     payloadData = generateRandomData(2000);
     analyzer.setPayloadData(fieldName, payloadData, 100, 1500);
     writer.addDocument(d);
-
         
     writer.forceMerge(1);
     // flush

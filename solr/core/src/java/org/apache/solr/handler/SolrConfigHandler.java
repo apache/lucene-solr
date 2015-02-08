@@ -40,6 +40,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.PluginsRegistry;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -99,7 +100,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private void handleGET() {
       if(parts.size() == 1) {
-        resp.add("solrConfig", req.getCore().getSolrConfig().toMap());
+        resp.add("config", getConfigDetails());
       } else {
         if(ConfigOverlay.NAME.equals(parts.get(1))){
           resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().toMap());
@@ -118,10 +119,25 @@ public class SolrConfigHandler extends RequestHandlerBase {
           }
 
         } else {
-          Map<String, Object> m = req.getCore().getSolrConfig().toMap();
-          resp.add("solrConfig", ZkNodeProps.makeMap(parts.get(1),m.get(parts.get(1))));
+          Map<String, Object> m = getConfigDetails();
+          resp.add("config", ZkNodeProps.makeMap(parts.get(1),m.get(parts.get(1))));
         }
       }
+    }
+
+    private Map<String, Object> getConfigDetails() {
+      Map<String, Object> map = req.getCore().getSolrConfig().toMap();
+      Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
+      if(reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers =  new LinkedHashMap<>());
+      List<PluginInfo> plugins = PluginsRegistry.getHandlers(req.getCore());
+      for (PluginInfo plugin : plugins) {
+        if(SolrRequestHandler.TYPE.equals( plugin.type)){
+          if(!reqHandlers.containsKey(plugin.name)){
+            reqHandlers.put(plugin.name,plugin.toMap());
+          }
+        }
+      }
+      return map;
     }
 
 
@@ -236,11 +252,16 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
-        ZkController.persistConfigResourceToZooKeeper(loader,params.getZnodeVersion(),
-            RequestParams.RESOURCE,params.toByteArray(),true);
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        if(ops.isEmpty()) {
+          ZkController.touchConfDir(zkLoader);
+        }else {
+          ZkController.persistConfigResourceToZooKeeper(zkLoader, params.getZnodeVersion(),
+              RequestParams.RESOURCE, params.toByteArray(), true);
+        }
 
       } else {
-        SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, params.toByteArray());
+        SolrResourceLoader.persistConfLocally(loader, RequestParams.RESOURCE, params.toByteArray());
         req.getCore().getSolrConfig().refreshRequestParams();
       }
 
@@ -278,7 +299,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     SolrResourceLoader loader = req.getCore().getResourceLoader();
     if (loader instanceof ZkSolrResourceLoader) {
-      ZkController.persistConfigResourceToZooKeeper(loader,overlay.getZnodeVersion(),
+      ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader,overlay.getZnodeVersion(),
           ConfigOverlay.RESOURCE_NAME,overlay.toByteArray(),true);
 
     } else {

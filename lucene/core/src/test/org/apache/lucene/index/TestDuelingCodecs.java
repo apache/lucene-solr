@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -41,7 +42,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
   private Directory rightDir;
   private IndexReader rightReader;
   private Codec rightCodec;
-  
+  private RandomIndexWriter leftWriter;
+  private RandomIndexWriter rightWriter;
+  private long seed;
   private String info;  // for debugging
 
   @Override
@@ -55,10 +58,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
     leftCodec = Codec.forName("SimpleText");
     rightCodec = new RandomCodec(random());
 
-    leftDir = newDirectory();
-    rightDir = newDirectory();
+    leftDir = newFSDirectory(createTempDir("leftDir"));
+    rightDir = newFSDirectory(createTempDir("rightDir"));
 
-    long seed = random().nextLong();
+    seed = random().nextLong();
 
     // must use same seed because of random payloads, etc
     int maxTermLength = TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH);
@@ -80,44 +83,23 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightConfig.setMergePolicy(newLogMergePolicy());
 
     // must use same seed because of random docvalues fields, etc
-    RandomIndexWriter leftWriter = new RandomIndexWriter(new Random(seed), leftDir, leftConfig);
-    RandomIndexWriter rightWriter = new RandomIndexWriter(new Random(seed), rightDir, rightConfig);
-    
-    int numdocs = atLeast(100);
-    createRandomIndex(numdocs, leftWriter, seed);
-    createRandomIndex(numdocs, rightWriter, seed);
+    leftWriter = new RandomIndexWriter(new Random(seed), leftDir, leftConfig);
+    rightWriter = new RandomIndexWriter(new Random(seed), rightDir, rightConfig);
 
-    leftReader = maybeWrapReader(leftWriter.getReader());
-    leftWriter.close();
-    rightReader = maybeWrapReader(rightWriter.getReader());
-    rightWriter.close();
-    
-    // check that our readers are valid
-    TestUtil.checkReader(leftReader);
-    TestUtil.checkReader(rightReader);
-    
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
   }
   
   @Override
   public void tearDown() throws Exception {
-    if (leftReader != null) {
-      leftReader.close();
-    }
-    if (rightReader != null) {
-      rightReader.close();   
-    }
-
-    if (leftDir != null) {
-      leftDir.close();
-    }
-    if (rightDir != null) {
-      rightDir.close();
-    }
-    
+    IOUtils.close(leftWriter,
+                  rightWriter,
+                  leftReader,
+                  rightReader,
+                  leftDir,
+                  rightDir);
     super.tearDown();
   }
-  
+
   /**
    * populates a writer with random stuff. this must be fully reproducable with the seed!
    */
@@ -160,7 +142,28 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks the two indexes are equivalent
    */
   public void testEquals() throws IOException {
+    int numdocs = TEST_NIGHTLY ? atLeast(2000) : atLeast(100);
+    createRandomIndex(numdocs, leftWriter, seed);
+    createRandomIndex(numdocs, rightWriter, seed);
+
+    leftReader = leftWriter.getReader();
+    rightReader = rightWriter.getReader();
+    
     assertReaderEquals(info, leftReader, rightReader);
   }
 
+  public void testCrazyReaderEquals() throws IOException {
+    int numdocs = atLeast(100);
+    createRandomIndex(numdocs, leftWriter, seed);
+    createRandomIndex(numdocs, rightWriter, seed);
+
+    leftReader = wrapReader(leftWriter.getReader());
+    rightReader = wrapReader(rightWriter.getReader());
+    
+    // check that our readers are valid
+    TestUtil.checkReader(leftReader);
+    TestUtil.checkReader(rightReader);
+    
+    assertReaderEquals(info, leftReader, rightReader);
+  }
 }

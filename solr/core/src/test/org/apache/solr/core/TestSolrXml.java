@@ -88,8 +88,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("trans cache size", 66, cfg.getTransientCacheSize());
     assertEquals("zk client timeout", 77, cfg.getZkClientTimeout());
     assertEquals("zk host", "testZkHost", cfg.getZkHost());
-    assertEquals("persistent", true, cfg.isPersistent());
-    assertEquals("core admin path", ConfigSolr.DEFAULT_CORE_ADMIN_PATH, cfg.getAdminPath());
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.

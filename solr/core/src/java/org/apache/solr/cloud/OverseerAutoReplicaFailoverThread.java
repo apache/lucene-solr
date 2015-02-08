@@ -17,19 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
@@ -44,8 +33,19 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 // TODO: how to tmp exclude nodes?
@@ -85,6 +85,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private volatile boolean isClosed;
   private ZkStateReader zkStateReader;
   private final Cache<String,Long> baseUrlForBadNodes;
+  private Set<String> liveNodes = Collections.EMPTY_SET;
 
   private final int workLoopDelay;
   private final int waitAfterExpiration;
@@ -151,11 +152,13 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       return;
     }
     if (clusterState != null) {
-      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0) {
+      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0 &&
+          liveNodes.equals(clusterState.getLiveNodes())) {
         // nothing has changed, no work to do
         return;
       }
-      
+
+      liveNodes = clusterState.getLiveNodes();
       lastClusterStateVersion = clusterState.getZkClusterStateVersion();
       Set<String> collections = clusterState.getCollections();
       for (final String collection : collections) {
@@ -418,12 +421,11 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean createSolrCore(final String collection,
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName) {
-    HttpSolrClient server = null;
-    try {
+
+    try (HttpSolrClient client = new HttpSolrClient(createUrl)) {
       log.debug("create url={}", createUrl);
-      server = new HttpSolrClient(createUrl);
-      server.setConnectionTimeout(30000);
-      server.setSoTimeout(60000);
+      client.setConnectionTimeout(30000);
+      client.setSoTimeout(60000);
       Create createCmd = new Create();
       createCmd.setCollection(collection);
       createCmd.setCoreNodeName(coreNodeName);
@@ -432,14 +434,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       createCmd.setCoreName(coreName);
       createCmd.setDataDir(dataDir);
       createCmd.setUlogDir(ulogDir);
-      server.request(createCmd);
+      client.request(createCmd);
     } catch (Exception e) {
       SolrException.log(log, "Exception trying to create new replica on " + createUrl, e);
       return false;
-    } finally {
-      if (server != null) {
-        server.shutdown();
-      }
     }
     return true;
   }

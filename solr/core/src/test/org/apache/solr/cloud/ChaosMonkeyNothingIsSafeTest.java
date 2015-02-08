@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,12 +29,12 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slow
-@SuppressSSL
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 20;
@@ -86,10 +86,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     return randVals;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     // can help to hide this when testing and looking at logs
     //ignoreException("shard update error");
     System.setProperty("numShards", Integer.toString(sliceCount));
@@ -97,28 +96,27 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
   
   @Override
-  @After
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     System.clearProperty("numShards");
-    super.tearDown();
-    resetExceptionIgnores();
+    super.distribTearDown();
   }
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
     sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
-    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
-    
     if (sliceCount == -1) {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 5 : 3) + 1;
     }
-    if (shardCount == -1) {
-      shardCount = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2);
+
+    int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
+    if (numShards == -1) {
+      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2);
     }
+    fixShardCount(numShards);
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     boolean testsSuccesful = false;
     try {
       handle.clear();
@@ -252,13 +250,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         zkServer.run();
       }
       
-      CloudSolrClient client = createCloudClient("collection1");
-      try {
+
+      try (CloudSolrClient client = createCloudClient("collection1")) {
           createCollection(null, "testcollection",
               1, 1, 1, client, null, "conf1");
 
-      } finally {
-        client.shutdown();
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
@@ -290,7 +286,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
-    private HttpClient httpClient = HttpClientUtil.createClient(null);
+    private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
     private ConcurrentUpdateSolrClient cusc;
@@ -389,7 +385,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       stop = true;
       cusc.blockUntilFinished();
       cusc.shutdownNow();
-      httpClient.getConnectionManager().shutdown();
+      IOUtils.closeQuietly(httpClient);
     }
 
     @Override

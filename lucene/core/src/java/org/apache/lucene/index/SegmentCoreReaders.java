@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,16 +33,12 @@ import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
-final class SegmentCoreReaders implements Accountable {
-
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SegmentCoreReaders.class);
+final class SegmentCoreReaders {
 
   // Counts how many other readers share the core objects
   // (freqStream, proxStream, tis, etc.) of this reader;
@@ -81,13 +75,6 @@ final class SegmentCoreReaders implements Accountable {
     @Override
     protected TermVectorsReader initialValue() {
       return (termVectorsReaderOrig == null) ? null : termVectorsReaderOrig.clone();
-    }
-  };
-
-  final CloseableThreadLocal<Map<String,Object>> normsLocal = new CloseableThreadLocal<Map<String,Object>>() {
-    @Override
-    protected Map<String,Object> initialValue() {
-      return new HashMap<>();
     }
   };
 
@@ -157,31 +144,12 @@ final class SegmentCoreReaders implements Accountable {
     throw new AlreadyClosedException("SegmentCoreReaders is already closed");
   }
 
-  NumericDocValues getNormValues(FieldInfos infos, String field) throws IOException {
-    Map<String,Object> normFields = normsLocal.get();
-
-    NumericDocValues norms = (NumericDocValues) normFields.get(field);
-    if (norms != null) {
-      return norms;
-    } else {
-      FieldInfo fi = infos.fieldInfo(field);
-      if (fi == null || !fi.hasNorms()) {
-        // Field does not exist or does not index norms
-        return null;
-      }
-      assert normsProducer != null;
-      norms = normsProducer.getNorms(fi);
-      normFields.put(field, norms);
-      return norms;
-    }
-  }
-
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
 //      System.err.println("--- closing core readers");
       Throwable th = null;
       try {
-        IOUtils.close(termVectorsLocal, fieldsReaderLocal, normsLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
+        IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
             cfsReader, normsProducer);
       } catch (Throwable throwable) {
         th = throwable;
@@ -216,15 +184,5 @@ final class SegmentCoreReaders implements Accountable {
   
   void removeCoreClosedListener(CoreClosedListener listener) {
     coreClosedListeners.remove(listener);
-  }
-
-  // TODO: remove this, it can just be on SR
-  @Override
-  public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED +
-        ((normsProducer!=null) ? normsProducer.ramBytesUsed() : 0) +
-        ((fields!=null) ? fields.ramBytesUsed() : 0) + 
-        ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
-        ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);
   }
 }

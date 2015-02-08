@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -41,18 +42,16 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
   
   public PeerSyncTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
 
     // TODO: a better way to do this?
     configString = "solrconfig-tlog.xml";
     schemaString = "schema.xml";
   }
-  
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     handle.put("score", SKIPVAL);

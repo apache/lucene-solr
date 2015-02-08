@@ -77,7 +77,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream, AtomicLong uniqueValuesRAM) {
     this.infoStream = config.getInfoStream();
-    this.stallControl = new DocumentsWriterStallControl();
+    this.stallControl = new DocumentsWriterStallControl(config);
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
     this.config = config;

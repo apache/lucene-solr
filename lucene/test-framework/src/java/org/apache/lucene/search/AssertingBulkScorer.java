@@ -18,39 +18,31 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Random;
-import java.util.WeakHashMap;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.util.VirtualMethod;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 /** Wraps a Scorer with additional checks */
-public class AssertingBulkScorer extends BulkScorer {
+final class AssertingBulkScorer extends BulkScorer {
 
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class);
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class, int.class);
-
-  public static BulkScorer wrap(Random random, BulkScorer other) {
+  public static BulkScorer wrap(Random random, BulkScorer other, int maxDoc) {
     if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
-    return new AssertingBulkScorer(random, other);
-  }
-
-  public static boolean shouldWrap(BulkScorer inScorer) {
-    return SCORE_COLLECTOR.isOverriddenAsOf(inScorer.getClass()) || SCORE_COLLECTOR_RANGE.isOverriddenAsOf(inScorer.getClass());
+    return new AssertingBulkScorer(random, other, maxDoc);
   }
 
   final Random random;
   final BulkScorer in;
+  final int maxDoc;
+  int max = 0;
 
-  private AssertingBulkScorer(Random random, BulkScorer in) {
+  private AssertingBulkScorer(Random random, BulkScorer in, int maxDoc) {
     this.random = random;
     this.in = in;
+    this.maxDoc = maxDoc;
   }
 
   public BulkScorer getIn() {
@@ -59,10 +51,12 @@ public class AssertingBulkScorer extends BulkScorer {
 
   @Override
   public void score(LeafCollector collector) throws IOException {
+    assert max == 0;
+    collector = new AssertingLeafCollector(random, collector, 0, DocsEnum.NO_MORE_DOCS);
     if (random.nextBoolean()) {
       try {
-        final boolean remaining = in.score(collector, DocsEnum.NO_MORE_DOCS);
-        assert !remaining;
+        final int next = score(collector, 0, DocsEnum.NO_MORE_DOCS);
+        assert next == DocIdSetIterator.NO_MORE_DOCS;
       } catch (UnsupportedOperationException e) {
         in.score(collector);
       }
@@ -72,8 +66,19 @@ public class AssertingBulkScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(LeafCollector collector, int max) throws IOException {
-    return in.score(collector, max);
+  public int score(LeafCollector collector, int min, final int max) throws IOException {
+    assert min >= this.max: "Scoring backward: min=" + min + " while previous max was max=" + this.max;
+    assert min < max : "max must be greater than min, got min=" + min + ", and max=" + max;
+    this.max = max;
+    collector = new AssertingLeafCollector(random, collector, min, max);
+    final int next = in.score(collector, min, max);
+    assert next >= max;
+    if (max >= maxDoc || next >= maxDoc) {
+      assert next == DocIdSetIterator.NO_MORE_DOCS;
+      return DocIdSetIterator.NO_MORE_DOCS;
+    } else {
+      return RandomInts.randomIntBetween(random, max, next);
+    }
   }
 
   @Override

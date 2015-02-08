@@ -22,8 +22,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFieldTypes extends LuceneTestCase {
 
@@ -102,7 +104,7 @@ public class TestFieldTypes extends LuceneTestCase {
     doc.addInt("field", 5);
     w.addDocument(doc);
     w.close();
-    IndexReader sub = DirectoryReader.open(dir);
+    DirectoryReader sub = DirectoryReader.open(dir);
 
     w = newIndexWriter(newIndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     doc = w.newDocument();
@@ -110,7 +112,7 @@ public class TestFieldTypes extends LuceneTestCase {
     w.addDocument(doc);
 
     try {
-      w.addIndexes(sub);
+      TestUtil.addIndexesSlowly(w, sub);
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
       assertEquals("field \"field\": cannot change value type from SHORT_TEXT to INT", ise.getMessage());

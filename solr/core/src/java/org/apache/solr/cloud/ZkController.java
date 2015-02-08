@@ -50,7 +50,6 @@ import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -614,15 +613,13 @@ public final class ZkController {
 
       ShardHandler shardHandler;
       UpdateShardHandler updateShardHandler;
-      String adminPath;
       shardHandler = cc.getShardHandlerFactory().getShardHandler();
       updateShardHandler = cc.getUpdateShardHandler();
-      adminPath = cc.getAdminPath();
       
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer(shardHandler, updateShardHandler,
-            adminPath, zkStateReader, this, cc.getConfig());
+            CoreContainer.CORES_HANDLER_PATH, zkStateReader, this, cc.getConfig());
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
         overseerElector.setup(context);
@@ -855,12 +852,10 @@ public final class ZkController {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (IOException e) {
+    } catch (KeeperException | IOException e) {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
-    
+
 
     // in this case, we want to wait for the leader as long as the leader might 
     // wait for a vote, at least - but also long enough that a large cluster has
@@ -1636,9 +1631,7 @@ public final class ZkController {
         log.info("Replica "+myCoreNodeName+
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
             
-        HttpSolrClient client = null;
-        client = new HttpSolrClient(leaderBaseUrl);
-        try {
+        try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
           client.setConnectionTimeout(15000);
           client.setSoTimeout(120000);
           WaitForState prepCmd = new WaitForState();
@@ -1689,8 +1682,8 @@ public final class ZkController {
               }
             }
           }
-        } finally {
-          client.shutdown();
+        } catch (IOException e) {
+          SolrException.log(log, "Error closing HttpSolrClient", e);
         }
       }
     }
@@ -2023,14 +2016,10 @@ public final class ZkController {
       stateData = zkClient.getData(znodePath, null, new Stat(), false);
     } catch (NoNodeException ignoreMe) {
       // safe to ignore as this znode will only exist if the leader initiated recovery
-    } catch (ConnectionLossException cle) {
+    } catch (ConnectionLossException | SessionExpiredException cle) {
       // sort of safe to ignore ??? Usually these are seen when the core is going down
       // or there are bigger issues to deal with than reading this znode
       log.warn("Unable to read "+znodePath+" due to: "+cle);
-    } catch (SessionExpiredException see) {
-      // sort of safe to ignore ??? Usually these are seen when the core is going down
-      // or there are bigger issues to deal with than reading this znode
-      log.warn("Unable to read "+znodePath+" due to: "+see);
     } catch (Exception exc) {
       log.error("Failed to read data from znode "+znodePath+" due to: "+exc);
       if (exc instanceof SolrException) {
@@ -2151,10 +2140,9 @@ public final class ZkController {
    *
    * @return true on success
    */
-  public static boolean persistConfigResourceToZooKeeper( SolrResourceLoader loader, int znodeVersion ,
+  public static boolean persistConfigResourceToZooKeeper( ZkSolrResourceLoader zkLoader, int znodeVersion ,
                                                           String resourceName, byte[] content,
                                                           boolean createIfNotExists) {
-    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
@@ -2162,12 +2150,12 @@ public final class ZkController {
     try {
       try {
         zkClient.setData(resourceLocation , content,znodeVersion, true);
-        zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
+        touchConfDir(zkLoader);
       } catch (NoNodeException e) {
         if(createIfNotExists){
           try {
             zkClient.create(resourceLocation,content, CreateMode.PERSISTENT,true);
-            zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
+            touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
@@ -2204,6 +2192,21 @@ public final class ZkController {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
     return true;
+  }
+
+  public static void touchConfDir(ZkSolrResourceLoader zkLoader)  {
+    SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+    try {
+      zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
+    } catch (Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt(); // Restore the interrupted status
+      }
+      final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
+      log.error(msg, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+
+    }
   }
 
   public static  class ResourceModifiedInZkException extends SolrException {

@@ -36,6 +36,11 @@ REM command line args
 IF "%SOLR_INCLUDE%"=="" set "SOLR_INCLUDE=%SOLR_TIP%\bin\solr.in.cmd"
 IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
 
+REM URL scheme for contacting Solr
+set SOLR_URL_SCHEME=http
+IF DEFINED SOLR_SSL_OPTS set SOLR_URL_SCHEME=https
+IF NOT DEFINED SOLR_SSL_OPTS set SOLR_SSL_OPTS=
+
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
 REM Try to detect JAVA_HOME from the registry
@@ -76,6 +81,11 @@ IF "%1"=="healthcheck" (
   SHIFT
   goto parse_healthcheck_args
 )
+IF "%1"=="create" (
+  set SCRIPT_CMD=create
+  SHIFT
+  goto parse_create_args
+)
 IF "%1"=="create_core" (
   set SCRIPT_CMD=create_core
   SHIFT
@@ -85,6 +95,11 @@ IF "%1"=="create_collection" (
   set SCRIPT_CMD=create_collection
   SHIFT
   goto parse_create_args
+)
+IF "%1"=="delete" (
+  set SCRIPT_CMD=delete
+  SHIFT
+  goto parse_delete_args
 )
 goto parse_args
 
@@ -98,14 +113,16 @@ IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto healthcheck_usage
+IF "%SCRIPT_CMD%"=="create" goto create_usage
 IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
 IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
+IF "%SCRIPT_CMD%"=="delete" goto delete_usage
 goto done
 
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create_core, create_collection
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -188,42 +205,107 @@ goto done
 @echo.
 goto done
 
+:create_usage
+echo.
+echo Usage: solr create [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port]
+echo.
+echo   Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
+echo   mode (collection). In other words, this action detects which mode Solr is running in, and then takes
+echo   the appropriate action (either create_core or create_collection). For detailed usage instructions, do:
+echo.
+echo     bin\solr create_core -help
+echo.
+echo        or
+echo.
+echo     bin\solr create_collection -help
+echo.
+goto done
+
+:delete_usage
+echo.
+echo Usage: solr delete [-c name] [-deleteConfig boolean] [-p port]
+echo.
+echo  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
+echo  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also
+echo  delete the configuration directory from ZooKeeper so long as it is not being used by another collection.
+echo  You can override this behavior by passing -deleteConfig false when running this command.
+echo.
+echo   -c name     Name of core to create
+echo.
+echo   -deleteConfig boolean Delete the configuration directory from ZooKeeper; default is true
+echo.
+echo   -p port     Port of a local Solr instance where you want to create the new core
+echo                 If not specified, the script will search the local system for a running
+echo                 Solr instance and will use the port of the first server it finds.
+echo.
+goto done
+
 :create_core_usage
 echo.
-echo Usage: solr create_core [-n name] [-c configset]
+echo Usage: solr create_core [-c name] [-d confdir] [-p port]
 echo.
-echo   -n name       Name of core to create
+echo   -c name     Name of core to create
 echo.
-echo   -c configset  Name of configuration directory to use, valid options are:
+echo   -d confdir  Configuration directory to copy when creating the new core, built-in options are:
+echo.
 echo       basic_configs: Minimal Solr configuration
 echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
+echo.
 echo       If not specified, default is: data_driven_schema_configs
+echo.
+echo       Alternatively, you can pass the path to your own configuration directory instead of using
+echo       one of the built-in configurations, such as: bin\solr create_core -c mycore -d c:/tmp/myconfig
+echo.
+echo   -p port     Port of a local Solr instance where you want to create the new core
+echo                 If not specified, the script will search the local system for a running
+echo                 Solr instance and will use the port of the first server it finds.
 echo.
 goto done
 
 :create_collection_usage
 echo.
-echo Usage: solr create_collection [-n name] [-c configset] [-shards #] [-replicationFactor #]
+echo Usage: solr create_collection [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port]
 echo.
-echo   -n name               Name of collection to create
+echo   -c name               Name of collection to create
 echo.
-echo   -c configset          Name of configuration directory to use, valid options are:
+echo   -d confdir            Configuration directory to copy when creating the new collection, built-in options are:
+echo.
 echo       basic_configs: Minimal Solr configuration
 echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
+echo.
 echo       If not specified, default is: data_driven_schema_configs
+echo.
+echo       Alternatively, you can pass the path to your own configuration directory instead of using
+echo       one of the built-in configurations, such as: bin\solr create_collection -c mycoll -d c:/tmp/myconfig
+echo.
+echo       By default the script will upload the specified confdir directory into ZooKeeper using the same
+echo         name as the collection (-c) option. Alternatively, if you want to reuse an existing directory
+echo         or create a confdir in ZooKeeper that can be shared by multiple collections, use the -n option
+echo.
+echo   -n configName         Name the configuration directory in ZooKeeper; by default, the configuration
+echo                             will be uploaded to ZooKeeper using the collection name (-c), but if you want
+echo                             to use an existing directory or override the name of the configuration in
+echo                              ZooKeeper, then use the -c option.
 echo.
 echo   -shards #             Number of shards to split the collection into
 echo.
 echo   -replicationFactor #  Number of copies of each document in the collection
 echo.
+echo   -p port               Port of a local Solr instance where you want to create the new collection
+echo                           If not specified, the script will search the local system for a running
+echo                           Solr instance and will use the port of the first server it finds.
+echo.
 goto done
 
 REM Really basic command-line arg parsing
 :parse_args
+
+set "arg=%~1"
+set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
@@ -255,6 +337,7 @@ IF "%1"=="-noprompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="-key" goto set_stop_key
 IF "%1"=="-all" goto set_stop_all
+IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
 
 :set_script_cmd
@@ -440,6 +523,17 @@ SHIFT
 SHIFT
 goto parse_args
 
+:set_passthru
+set "PASSTHRU=%~1=%~2"
+IF NOT "%SOLR_OPTS%"=="" (
+  set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
+) ELSE (
+  set "SOLR_OPTS=%PASSTHRU%"
+)
+SHIFT
+SHIFT
+goto parse_args
+
 :set_noprompt
 set NO_USER_PROMPT=1
 SHIFT
@@ -475,6 +569,9 @@ IF "%EXAMPLE%"=="" (
   IF NOT EXIST "!SOLR_HOME!\solr.xml" (
     copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
   )
+  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
+    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
+  )
 ) ELSE IF "%EXAMPLE%"=="cloud" (
   set SOLR_MODE=solrcloud
   goto cloud_example_start
@@ -485,6 +582,9 @@ IF "%EXAMPLE%"=="" (
   set "SOLR_HOME=%SOLR_TIP%\example\schemaless\solr"
   IF NOT EXIST "!SOLR_HOME!\solr.xml" (
     copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
+  )
+  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
+    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
   )
 ) ELSE (
   @echo.
@@ -528,36 +628,72 @@ IF NOT "%TMP%"=="%SOLR_HOME%" (
 IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
-      for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+      set found_it=0
+      for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
         set SOME_SOLR_PORT=
-        For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+        For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
         if NOT "!SOME_SOLR_PORT!"=="" (
-          for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find ":!SOME_SOLR_PORT!"') do (
-            @echo Stopping Solr running on port !SOME_SOLR_PORT!
-            set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
-            "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-            del %SOLR_TIP%\bin\solr-!SOME_SOLR_PORT!.port
-            timeout /T 5
-            REM Kill it if it is still running after the graceful shutdown
-            For /f "tokens=5" %%M in ('netstat -nao ^| find /i "listening" ^| find ":!SOME_SOLR_PORT!"') do (taskkill /f /PID %%M)
+          for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+            @REM j is the ip:port and k is the pid
+            IF NOT "%%k"=="0" (
+              @REM split the ip:port var by colon to see if the ip is 0.0.0.0
+              for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
+                @REM x is the ip
+                IF "%%x"=="0.0.0.0" (
+                  set found_it=1
+                  @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
+                  set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
+                  "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+                  del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
+                  timeout /T 5
+                  REM Kill it if it is still running after the graceful shutdown
+                  For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+                    IF "%%N"=="%%k" (
+                      for /f "delims=: tokens=1,2" %%a IN ("%%M") do (
+                        IF "%%a"=="0.0.0.0" (
+                          @echo Forcefully killing process %%N
+                          taskkill /f /PID %%N
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
           )
         )
       )
+      if "!found_it!"=="0" echo No Solr nodes found to stop.
     ) ELSE (
       set SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use -all to stop all running nodes on this host.
       goto err
     )
   ) ELSE (
     set found_it=0
-    For /f "tokens=5" %%M in ('netstat -nao ^| find /i "listening" ^| find ":%SOLR_PORT%"') do (
-      set found_it=1
-      @echo Stopping Solr running on port %SOLR_PORT%
-      set /A STOP_PORT=%SOLR_PORT% - 1000
-      "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-      del %SOLR_TIP%\bin\solr-%SOLR_PORT%.port
-      timeout /T 5
-      REM Kill it if it is still running after the graceful shutdown
-      For /f "tokens=5" %%j in ('netstat -nao ^| find /i "listening" ^| find ":%SOLR_PORT%"') do (taskkill /f /PID %%j)
+    For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+      IF NOT "%%N"=="0" (
+        for /f "delims=: tokens=1,2" %%x IN ("%%M") do (
+          IF "%%x"=="0.0.0.0" (
+            set found_it=1
+            @echo Stopping Solr process %%N running on port %SOLR_PORT%
+            set /A STOP_PORT=%SOLR_PORT% - 1000
+            "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+            timeout /T 5
+            REM Kill it if it is still running after the graceful shutdown
+            For /f "tokens=2,5" %%j in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+              IF "%%N"=="%%k" (
+                for /f "delims=: tokens=1,2" %%a IN ("%%j") do (
+                  IF "%%a"=="0.0.0.0" (
+                    @echo Forcefully killing process %%N
+                    taskkill /f /PID %%N
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
     )
     if "!found_it!"=="0" echo No Solr found running on port %SOLR_PORT%
   )
@@ -569,9 +705,15 @@ IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
-  For /f "tokens=5" %%j in ('netstat -aon ^| find /i "listening" ^| find ":%SOLR_PORT%"') do (
-    set "SCRIPT_ERROR=Process %%j is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
-    goto err
+  For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+    IF NOT "%%k"=="0" (
+      for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
+        IF "%%x"=="0.0.0.0" (
+          set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
+          goto err
+        )
+      )
+    )
   )
 )
 
@@ -691,12 +833,22 @@ IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
-IF NOT "%LOG4J_CONFIG%"=="" set "START_OPTS=%START_OPTS% -Dlog4j.configuration=%LOG4J_CONFIG%"
+IF NOT "%SOLR_SSL_OPTS%"=="" (
+  set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_PORT%"
+  IF DEFINED SOLR_SSL_PORT set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_SSL_PORT%"
+  set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
+)
+
+IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:%SOLR_SERVER_DIR%\resources\log4j.properties"
 
 cd "%SOLR_SERVER_DIR%"
 
 IF NOT EXIST "!SOLR_LOGS_DIR!" (
   mkdir "!SOLR_LOGS_DIR!"
+)
+
+IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
+  mkdir "%SOLR_SERVER_DIR%\tmp"
 )
 
 @echo.
@@ -705,13 +857,13 @@ IF NOT EXIST "!SOLR_LOGS_DIR!" (
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
-  echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
-  "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar
+  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+  "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar
 ) ELSE (
-  START /B "Solr-%SOLR_PORT%" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
-  echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
+  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
+  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 )
 
 
@@ -728,29 +880,29 @@ IF "%EXAMPLE%"=="techproducts" (
 IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
   timeout /T 10
   IF "%SOLR_MODE%"=="solrcloud" (
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
       org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE_NAME! -shards 1 -replicationFactor 1 ^
-      -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
+      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr
   ) ELSE (
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl http://localhost:%SOLR_PORT%/solr ^
-      -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
+      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr ^
+      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
   )
 )
 
 IF "%EXAMPLE%"=="techproducts" (
   @echo.
   @echo Indexing tech product example docs from %SOLR_TIP%\example\exampledocs
-  "%JAVA%" -Durl=http://localhost:%SOLR_PORT%/solr/%EXAMPLE%/update -jar %SOLR_TIP%/example/exampledocs/post.jar %SOLR_TIP%/example/exampledocs/*.xml
+  "%JAVA%" %SOLR_SSL_OPTS% -Durl=!SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr/%EXAMPLE%/update -jar "%SOLR_TIP%/example/exampledocs/post.jar" "%SOLR_TIP%/example/exampledocs/*.xml"
 )
 
 @echo.
 IF NOT "%EXAMPLE%"=="" (
   @echo Solr %EXAMPLE% example launched successfully.
 )
-@echo Direct your Web browser to http://localhost:%SOLR_PORT%/solr to visit the Solr Admin UI
+@echo Direct your Web browser to !SOLR_URL_SCHEME!://localhost:%SOLR_PORT%/solr to visit the Solr Admin UI
 @echo.
 
 goto done
@@ -842,19 +994,19 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
       set "DASHZ="
     )
     @echo Starting node1 on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node1\solr
-    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node1\solr
+    @echo solr -cloud -p !NODE_PORT! -s example\node1\solr !DASHZ! !DASHM!
+    START "Solr-!NODE_PORT!" /D "%SDIR%" solr -f -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s "%CLOUD_EXAMPLE_DIR%\node1\solr"
     set NODE1_PORT=!NODE_PORT!
-    echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
+    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
   ) ELSE (
     IF "!ZK_HOST!"=="" (
       set /A ZK_PORT=!NODE1_PORT!+1000
       set "ZK_HOST=localhost:!ZK_PORT!"
     )
     @echo Starting node%%x on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node%%x\solr
-    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node%%x\solr
-    echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
+    @echo solr -cloud -p !NODE_PORT! -s example\node%%x\solr -z !ZK_HOST! !DASHM!
+    START "Solr-!NODE_PORT!" /D "%SDIR%" solr -f -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s "%CLOUD_EXAMPLE_DIR%\node%%x\solr"
+    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
   )
 
   timeout /T 10
@@ -899,13 +1051,13 @@ echo !CLOUD_CONFIG!
 goto create_collection
 
 :create_collection
-"%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI create_collection -name !CLOUD_COLLECTION! -shards !CLOUD_NUM_SHARDS! -replicationFactor !CLOUD_REPFACT! ^
-  -config !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
+  -confdir !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
 
 echo.
-echo SolrCloud example is running, please visit http://localhost:%NODE1_PORT%/solr"
+echo SolrCloud example is running, please visit !SOLR_URL_SCHEME!://localhost:%NODE1_PORT%/solr"
 echo.
 
 REM End of interactive cloud example
@@ -915,19 +1067,23 @@ goto done
 :get_info
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
-for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
   set SOME_SOLR_PORT=
-  For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+  For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
   if NOT "!SOME_SOLR_PORT!"=="" (
-    for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find /i "!SOME_SOLR_PORT!"') do (
-      for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
-        @echo.
-        set has_info=1
-        echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-        "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-          -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-          org.apache.solr.util.SolrCLI status -solr http://localhost:!SOME_SOLR_PORT!/solr
-        @echo.
+    for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+      IF NOT "%%k"=="0" (
+        for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
+          if "%%x"=="0.0.0.0" (
+            @echo.
+            set has_info=1
+            echo Found Solr process %%k running on port !SOME_SOLR_PORT!
+            "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+              -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+              org.apache.solr.util.SolrCLI status -solr !SOLR_URL_SCHEME!://localhost:!SOME_SOLR_PORT!/solr
+            @echo.
+          )
+        )
       )
     )
   )
@@ -962,33 +1118,45 @@ goto parse_healthcheck_args
 :run_healthcheck
 IF NOT DEFINED HEALTHCHECK_COLLECTION goto healthcheck_usage
 IF NOT DEFINED HEALTHCHECK_ZK_HOST set "HEALTHCHECK_ZK_HOST=localhost:9983"
-"%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !HEALTHCHECK_ZK_HOST!
 goto done
 
 :parse_create_args
 IF [%1]==[] goto run_create
-IF "%1"=="-c" goto set_create_config
-IF "%1"=="-configset" goto set_create_config
-IF "%1"=="-n" goto set_create_name
-IF "%1"=="-name" goto set_create_name
+IF "%1"=="-c" goto set_create_name
+IF "%1"=="-core" goto set_create_name
+IF "%1"=="-collection" goto set_create_name
+IF "%1"=="-d" goto set_create_confdir
+IF "%1"=="-confdir" goto set_create_confdir
+IF "%1"=="-n" goto set_create_confname
+IF "%1"=="-confname" goto set_create_confname
+IF "%1"=="-s" goto set_create_shards
 IF "%1"=="-shards" goto set_create_shards
+IF "%1"=="-rf" goto set_create_rf
 IF "%1"=="-replicationFactor" goto set_create_rf
 IF "%1"=="-p" goto set_create_port
+IF "%1"=="-port" goto set_create_port
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 goto run_create
 
-:set_create_configset
-set CREATE_CONFIGSET=%~2
+:set_create_name
+set CREATE_NAME=%~2
 SHIFT
 SHIFT
 goto parse_create_args
 
-:set_create_name
-set CREATE_NAME=%~2
+:set_create_confdir
+set CREATE_CONFDIR=%~2
+SHIFT
+SHIFT
+goto parse_create_args
+
+:set_create_confname
+set CREATE_CONFNAME=%~2
 SHIFT
 SHIFT
 goto parse_create_args
@@ -1013,21 +1181,22 @@ goto parse_create_args
 
 :run_create
 IF "!CREATE_NAME!"=="" (
-  set "SCRIPT_ERROR=Name (-n) is a required parameter for %SCRIPT_CMD%"
+  set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
   goto invalid_cmd_line
 )
-IF "!CREATE_CONFIGSET!"=="" set CREATE_CONFIGSET=data_driven_schema_configs
+IF "!CREATE_CONFDIR!"=="" set CREATE_CONFDIR=data_driven_schema_configs
 IF "!CREATE_NUM_SHARDS!"=="" set CREATE_NUM_SHARDS=1
 IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
+IF "!CREATE_CONFNAME!"=="" set CREATE_CONFNAME=!CREATE_NAME!
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (
-      for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find /i "!SOME_SOLR_PORT!"') do (
-        set CREATE_PORT=!SOME_SOLR_PORT!
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+        IF NOT "%%k"=="0" set CREATE_PORT=!SOME_SOLR_PORT!
       )
     )
   )
@@ -1037,20 +1206,85 @@ if "!CREATE_PORT!"=="" (
   goto err
 )
 
-@echo Found Solr node running on port !CREATE_PORT!
-
 if "%SCRIPT_CMD%"=="create_core" (
-  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME!  -solrUrl http://localhost:!CREATE_PORT!/solr ^
-    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
+    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME! -solrUrl !SOLR_URL_SCHEME!://localhost:!CREATE_PORT!/solr ^
+    -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
 ) else (
-  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI create_collection -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
-    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
+  "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI create -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
+  -confname !CREATE_CONFNAME! -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl !SOLR_URL_SCHEME!://localhost:!CREATE_PORT!/solr
 )
+
 goto done
+
+:parse_delete_args
+IF [%1]==[] goto run_delete
+IF "%1"=="-c" goto set_delete_name
+IF "%1"=="-core" goto set_delete_name
+IF "%1"=="-collection" goto set_delete_name
+IF "%1"=="-p" goto set_delete_port
+IF "%1"=="-port" goto set_delete_port
+IF "%1"=="-deleteConfig" goto set_delete_config
+IF "%1"=="-help" goto usage
+IF "%1"=="-usage" goto usage
+IF "%1"=="/?" goto usage
+goto run_delete
+
+:set_delete_name
+set DELETE_NAME=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:set_delete_port
+set DELETE_PORT=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:set_delete_config
+set DELETE_CONFIG=%~2
+SHIFT
+SHIFT
+goto parse_delete_args
+
+:run_delete
+IF "!DELETE_NAME!"=="" (
+  set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
+  goto invalid_cmd_line
+)
+
+REM Find a port that Solr is running on
+if "!DELETE_PORT!"=="" (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+    set SOME_SOLR_PORT=
+    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+    if NOT "!SOME_SOLR_PORT!"=="" (
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+        IF NOT "%%k"=="0" set DELETE_PORT=!SOME_SOLR_PORT!
+      )
+    )
+  )
+)
+if "!DELETE_PORT!"=="" (
+  set "SCRIPT_ERROR=Could not find a running Solr instance on this host! Please use the -p option to specify the port."
+  goto err
+)
+
+if "!DELETE_CONFIG!"=="" (
+  set DELETE_CONFIG=true
+)
+
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+-classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+org.apache.solr.util.SolrCLI delete -name !DELETE_NAME! -deleteConfig !DELETE_CONFIG! ^
+-solrUrl !SOLR_URL_SCHEME!://localhost:!DELETE_PORT!/solr
+
+goto done
+
 
 :invalid_cmd_line
 @echo.
@@ -1070,6 +1304,8 @@ IF "%FIRST_ARG%"=="start" (
   goto stop_usage
 ) ELSE IF "%FIRST_ARG%"=="healthcheck" (
   goto healthcheck_usage
+) ELSE IF "%FIRST_ARG%"=="create" (
+  goto create_usage
 ) ELSE IF "%FIRST_ARG%"=="create_core" (
   goto create_core_usage
 ) ELSE IF "%FIRST_ARG%"=="create_collection" (

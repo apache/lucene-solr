@@ -22,8 +22,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.List;
@@ -35,29 +34,22 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   public LeaderInitiatedRecoveryOnCommitTest() {
     super();
     sliceCount = 1;
-    shardCount = 4;
+    fixShardCount(4);
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
 
   @Override
-  @After
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     System.clearProperty("numShards");
 
-    try {
-      super.tearDown();
-    } catch (Exception exc) {
-    }
+    super.distribTearDown();
 
-    resetExceptionIgnores();
-
-    // close socket proxies after super.tearDown
+    // close socket proxies after super.distribTearDown
     if (!proxies.isEmpty()) {
       for (SocketProxy proxy : proxies.values()) {
         proxy.close();
@@ -65,8 +57,8 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     }
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     oneShardTest();
     multiShardTest();
   }
@@ -91,8 +83,9 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // let's find the leader of shard2 and ask him to commit
     Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
-    HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")));
-    client.commit();
+    try (HttpSolrClient server = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")))) {
+      server.commit();
+    }
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -133,8 +126,9 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     leaderProxy.close();
 
     Replica replica = notLeaders.get(0);
-    HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")));
-    client.commit();
+    try (HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")))) {
+      client.commit();
+    }
 
     Thread.sleep(sleepMsBeforeHealPartition);
 

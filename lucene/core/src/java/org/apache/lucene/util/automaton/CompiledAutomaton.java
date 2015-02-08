@@ -321,6 +321,7 @@ public class CompiledAutomaton {
     if (this.finite) {
       commonSuffixRef = null;
     } else {
+      // NOTE: this is a very costly operation!  We should test if it's really warranted in practice...
       commonSuffixRef = Operations.getCommonSuffixBytesRef(binary, maxDeterminizedStates);
     }
     runAutomaton = new ByteRunAutomaton(binary, true, maxDeterminizedStates);

@@ -458,7 +458,7 @@ class DocumentsWriterPerThread {
         final double newSegmentSize = segmentInfoPerCommit.sizeInBytes()/1024./1024.;
         infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
-                " newFlushedSize(includes docstores)=" + nf.format(newSegmentSize) + " MB" +
+                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
                 " docs/MB=" + nf.format(flushState.segmentInfo.getDocCount() / newSegmentSize));
       }
 
@@ -497,7 +497,10 @@ class DocumentsWriterPerThread {
     try {
       
       if (indexWriterConfig.getUseCompoundFile()) {
-        filesToDelete.addAll(IndexWriter.createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context));
+        Set<String> originalFiles = newSegment.info.files();
+        // TODO: like addIndexes, we are relying on createCompoundFile to successfully cleanup...
+        IndexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context);
+        filesToDelete.addAll(originalFiles);
         newSegment.info.setUseCompoundFile(true);
       }
 

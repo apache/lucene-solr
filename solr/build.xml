@@ -20,8 +20,8 @@
   
   <target name="usage" description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
-    <echo message="Use 'ant example' to create a runnable example configuration." />
-    <echo message="Use 'ant run-example' to create and run the example." />
+    <echo message="Use 'ant server' to create the Solr server." />
+    <echo message="Use 'bin/solr' to run the Solr after it is created." />
     <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
@@ -38,9 +38,9 @@
   <!-- ========================================================================= -->
   <!-- ============================== USER TASKS =============================== -->
   <!-- ========================================================================= -->
- 
-  <target name="example" description="Creates a runnable example configuration."
-          depends="dist-contrib,build-war">
+
+  <target name="server" depends="dist-contrib,server-war"
+          description="Creates a Solr server">
     <jar destfile="${example}/exampledocs/post.jar"
          basedir="${dest}/solr-core/classes/java"
          includes="org/apache/solr/util/SimplePostTool*.class">
@@ -51,11 +51,12 @@
     <delete includeemptydirs="true">
       <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
     </delete>
-    <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
+    <echo>See ${common-solr.dir}/README.txt for how to run the Solr server.</echo>
   </target>
   
-  <target name="run-example" depends="example"
+  <target name="run-example" depends="server"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
+    <property name="example.solr.home" location="${server.dir}/solr"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
     <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
@@ -63,9 +64,12 @@
     </condition>
     <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <exec executable="${common-solr.dir}/bin/solr" failonerror="true">
-      <arg line="-e techproducts -p ${example.jetty.port} -m ${example.heap.size} -d ${server.dir} -a '${example.jvm.line}'"/>
-    </exec>
+    <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
+      <jvmarg line="${example.jvm.line}"/>
+      <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
+      <sysproperty key="jetty.port" value="${example.jetty.port}"/>
+      <sysproperty key="jetty.home" value="${server.dir}"/>
+    </java>
   </target>
  
   <!-- setup proxy for download tasks -->
@@ -151,7 +155,7 @@
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
       via string parameter, that must be splitted by the XSL at '|'.
     --> 
-    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl" force="true">
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/index.xsl" force="true">
       <outputproperty name="method" value="html"/>
       <outputproperty name="version" value="4.0"/>
       <outputproperty name="encoding" value="UTF-8"/>
@@ -162,12 +166,12 @@
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="SYSTEM_REQUIREMENTS.txt"/>
-      <globmapper from="*.txt" to="*.html"/>
+      <fileset dir="site" includes="**/*.mdtext"/>
+      <globmapper from="*.mdtext" to="*.html"/>
     </pegdown>
 
     <copy todir="${javadoc.dir}">
-      <fileset dir="site/html" includes="**/*"/>
+      <fileset dir="site/assets" />
     </copy>
   </target>
 
@@ -308,7 +312,7 @@
       </fileset>
       <fileset dir="server">
         <include name="**/data/**/*" />
-        <include name="solr/zoo_data" />
+        <include name="solr/zoo_data/" />
         <include name="start.jar" />
         <include name="logs/*" />
         <include name="webapps/**/*" />
@@ -337,7 +341,7 @@
   
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, build-war" />
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib" />
  
   <target name="dist-test-framework" depends="init-dist"
           description="Creates the Solr test-framework JAR.">
@@ -351,9 +355,9 @@
     <contrib-crawl target="dist" failonerror="true" />
   </target>
   
-  <target name="build-war"
+  <target name="server-war"
           description="Creates the Solr WAR Distribution file.">
-    <ant dir="webapp" target="dist" inheritall="false">
+    <ant dir="webapp" target="server-war" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -450,7 +454,7 @@
       <param name="called.from.create-package" value="true"/>
       <target name="init-dist"/>
       <target name="dist"/>
-      <target name="example"/>
+      <target name="server"/>
       <target name="documentation"/>
     </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
@@ -478,14 +482,15 @@
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template" />
+                            **/*pom.xml.template server/etc/test/" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/" />
+                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/"
+                  excludes="server/etc/test/**" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar
@@ -567,7 +572,7 @@
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
             javadocs generates invalid XML if you deprecate a method that takes a parameter
             with a generic type -->
-      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
+      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html,quickstart.html"/>
     </jtidy-macro>
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
@@ -575,7 +580,7 @@
     <!-- TODO: add missing docs for all classes and bump this to level=class -->
     <check-missing-javadocs dir="${javadoc.dir}" level="package"/>
   </target>
- 
+
   <target name="-ecj-javadoc-lint" depends="compile,compile-test,jar-test-framework,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
@@ -737,5 +742,20 @@
     <ant dir="solrj" target="-append-module-dependencies-properties" inheritAll="false"/>
     <ant dir="test-framework" target="-append-module-dependencies-properties" inheritAll="false"/>
     <contrib-crawl target="-append-module-dependencies-properties"/>
+  </target>
+
+  <target name="example" depends="server">
+    <!-- no description so -p doesn't list it -->
+    <echo>
+
+    ! ! ! NOTICE NOTICE NOTICE ! ! !
+
+    'ant example' is no longer recomended
+
+    Use 'ant server' instead
+
+    'ant example' is going to be removed at some point
+
+    </echo>
   </target>
 </project>

@@ -19,8 +19,8 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -47,11 +48,13 @@ import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +73,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private UpdateShardHandler updateShardHandler;
   
   public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
-    updateShardHandler = new UpdateShardHandler(new ConfigSolr() {
+    updateShardHandler = new UpdateShardHandler(new ConfigSolr(null, null) {
 
       @Override
       public CoresLocator getCoresLocator() {
@@ -78,17 +81,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
 
       @Override
-      protected String getShardHandlerFactoryConfigPath() {
+      public PluginInfo getShardHandlerFactoryPluginInfo() {
         return null;
       }
 
       @Override
-      public boolean isPersistent() {
-        return false;
-      }});
+      protected String getProperty(CfgProp key) {
+        return null;
+      }
+    });
     
-    fixShardCount = true;
-    shardCount = 4;
     stress = 0;
   }
 
@@ -105,6 +107,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   // we don't get helpful override behavior due to the method being static
   @Override
   protected void createServers(int numShards) throws Exception {
+
+    System.setProperty("configSetBaseDir", TEST_HOME());
+    System.setProperty("coreRootDirectory", testDir.toPath().resolve("control").toString());
+    writeCoreProperties(testDir.toPath().resolve("control/cores"), DEFAULT_TEST_CORENAME);
     controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
 
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
@@ -113,6 +119,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
+      String shardname = "shard" + i;
+      Path coresPath = testDir.toPath().resolve(shardname).resolve("cores");
+      writeCoreProperties(coresPath, DEFAULT_TEST_CORENAME);
+      System.setProperty("coreRootDirectory", testDir.toPath().resolve(shardname).toString());
       JettySolrRunner j = createJetty(new File(getSolrHome()),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
@@ -125,9 +135,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     shards = sb.toString();
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     del("*:*");
     
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
@@ -309,7 +320,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     cmdDistrib.finish();
 
-    assertEquals(shardCount, commits.get());
+    assertEquals(getShardCount(), commits.get());
     
     for (SolrClient c : clients) {
       NamedList<Object> resp = c.request(new LukeRequest());
@@ -506,14 +517,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
   
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     updateShardHandler.close();
-    super.tearDown();
+    super.distribTearDown();
   }
 
   private void testDistribOpenSearcher() {

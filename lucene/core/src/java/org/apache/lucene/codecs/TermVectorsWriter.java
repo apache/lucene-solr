@@ -196,7 +196,6 @@ public abstract class TermVectorsWriter implements Closeable {
         }
         addAllDocVectors(vectors, mergeState);
         docCount++;
-        mergeState.checkAbort.work(300);
       }
     }
     finish(mergeState.mergeFieldInfos, docCount);

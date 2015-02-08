@@ -79,11 +79,6 @@ public abstract class Weight {
    * Returns a {@link Scorer} which scores documents in/out-of order according
    * to <code>scoreDocsInOrder</code>.
    * <p>
-   * <b>NOTE:</b> even if <code>scoreDocsInOrder</code> is false, it is
-   * recommended to check whether the returned <code>Scorer</code> indeed scores
-   * documents out of order (i.e., call {@link #scoresDocsOutOfOrder()}), as
-   * some <code>Scorer</code> implementations will always return documents
-   * in-order.<br>
    * <b>NOTE:</b> null can be returned if no documents will be scored by this
    * query.
    * 
@@ -108,15 +103,6 @@ public abstract class Weight {
    *
    * @param context
    *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
-   * @param scoreDocsInOrder
-   *          specifies whether in-order scoring of documents is required. Note
-   *          that if set to false (i.e., out-of-order scoring is required),
-   *          this method can return whatever scoring mode it supports, as every
-   *          in-order scorer is also an out-of-order one. However, an
-   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
-   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
-   *          request an in-order scorer if use of these
-   *          methods is required.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -125,7 +111,7 @@ public abstract class Weight {
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
     Scorer scorer = scorer(context, acceptDocs);
     if (scorer == null) {
@@ -150,7 +136,7 @@ public abstract class Weight {
     }
 
     @Override
-    public boolean score(LeafCollector collector, int max) throws IOException {
+    public int score(LeafCollector collector, int min, int max) throws IOException {
       // TODO: this may be sort of weird, when we are
       // embedded in a BooleanScorer, because we are
       // called for every chunk of 2048 documents.  But,
@@ -158,13 +144,13 @@ public abstract class Weight {
       // Collector doing something "interesting" in
       // setScorer will be forced to use BS2 anyways:
       collector.setScorer(scorer);
-      if (max == DocIdSetIterator.NO_MORE_DOCS) {
+      if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, scorer);
-        return false;
+        return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
-        if (doc < 0) {
-          doc = scorer.nextDoc();
+        if (doc < min) {
+          doc = scorer.advance(min);
         }
         return scoreRange(collector, scorer, doc, max);
       }
@@ -174,12 +160,12 @@ public abstract class Weight {
      *  separate this from {@link #scoreAll} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static boolean scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
+    static int scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
       while (currentDoc < end) {
         collector.collect(currentDoc);
         currentDoc = scorer.nextDoc();
       }
-      return currentDoc != DocIdSetIterator.NO_MORE_DOCS;
+      return currentDoc;
     }
     
     /** Specialized method to bulk-score all hits; we
@@ -187,25 +173,9 @@ public abstract class Weight {
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
-      int doc;
-      while ((doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
         collector.collect(doc);
       }
     }
-  }
-
-  /**
-   * Returns true iff this implementation scores docs only out of order. This
-   * method is used in conjunction with {@link Collector}'s
-   * {@link LeafCollector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #bulkScorer(org.apache.lucene.index.LeafReaderContext, boolean, Bits)} to
-   * create a matching {@link Scorer} instance for a given {@link Collector}, or
-   * vice versa.
-   * <p>
-   * <b>NOTE:</b> the default implementation returns <code>false</code>, i.e.
-   * the <code>Scorer</code> scores documents in-order.
-   */
-  public boolean scoresDocsOutOfOrder() {
-    return false;
   }
 }

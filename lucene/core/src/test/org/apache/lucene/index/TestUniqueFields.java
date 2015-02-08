@@ -520,8 +520,8 @@ public class TestUniqueFields extends LuceneTestCase {
     } catch (NotUniqueException nue) {
       // expected
     }
-    IndexReader r = mgr.acquire();
-    w.addIndexes(new IndexReader[] {r});
+    DirectoryReader r = mgr.acquire();
+    TestUtil.addIndexesSlowly(w, r);
     r.close();
     w.close();
 

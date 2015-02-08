@@ -69,10 +69,6 @@ public class TestDocBoost extends LuceneTestCase {
          protected void doSetNextReader(LeafReaderContext context) throws IOException {
            base = context.docBase;
          }
-         @Override
-         public boolean acceptsDocsOutOfOrder() {
-           return true;
-         }
        });
 
     float lastScore = 0.0f;

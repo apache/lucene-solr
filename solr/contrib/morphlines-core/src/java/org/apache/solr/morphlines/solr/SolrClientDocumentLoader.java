@@ -105,9 +105,9 @@ public class SolrClientDocumentLoader implements DocumentLoader {
   }
 
   @Override
-  public void shutdown() {
+  public void shutdown() throws IOException {
     LOGGER.trace("shutdown");
-    client.shutdown();
+    client.close();
   }
 
   @Override

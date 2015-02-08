@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import com.google.common.base.Strings;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -49,10 +50,14 @@ public class CloudDescriptor {
   public CloudDescriptor(String coreName, Properties props, CoreDescriptor cd) {
     this.cd = cd;
     this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
+    if (Strings.isNullOrEmpty(shardId))
+      this.shardId = null;
     // If no collection name is specified, we default to the core name
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
     this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
     this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
+    if (Strings.isNullOrEmpty(nodeName))
+      this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
   }
   

@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.OutputStreamWriter;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
 
@@ -56,6 +57,19 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       throws Exception { 
     // creates the data dir
     initCore(null, null, solrHome);
+
+    Path coresDir = createTempDir().resolve("cores");
+
+    System.setProperty("coreRootDirectory", coresDir.toString());
+    System.setProperty("configSetBaseDir", solrHome);
+
+    Properties props = new Properties();
+    props.setProperty("name", DEFAULT_TEST_CORENAME);
+    props.setProperty("configSet", "collection1");
+    props.setProperty("config", "${solrconfig:solrconfig.xml}");
+    props.setProperty("schema", "${schema:schema.xml}");
+
+    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
 
     ignoreException("maxWarmingSearchers");
 
@@ -85,7 +99,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       jetty.stop();
       jetty = null;
     }
-    if (client != null) client.shutdown();
+    if (client != null) client.close();
     client = null;
   }
 
@@ -120,7 +134,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
         throw new RuntimeException( ex );
       }
     } else {
-      return new EmbeddedSolrServer( h.getCoreContainer(), "" );
+      return new EmbeddedSolrServer( h.getCoreContainer(), "collection1" );
     }
   }
 

@@ -338,6 +338,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
     
+    zkMap.put("/configs/myconfig", null);
+    
     return liveNodes;
   }
 

@@ -23,6 +23,8 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -51,7 +53,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.SolrQueryRequest;
-
 import org.junit.Ignore;
 
 import java.io.IOException;
@@ -410,7 +411,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-          FieldComparator comparator = null;
+          FieldComparator<?> comparator = null;
+          LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
           int lastIdx = -1;
@@ -433,12 +435,12 @@ public class TestRankQueryPlugin extends QParserPlugin {
 
             if (comparator == null) {
               comparator = sortField.getComparator(1,0);
-              comparator = comparator.setNextReader(currentLeaf);
+              leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
             doc -= currentLeaf.docBase;  // adjust for what segment this is in
-            comparator.setScorer(new FakeScorer(doc, score));
-            comparator.copy(0, doc);
+            leafComparator.setScorer(new FakeScorer(doc, score));
+            leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
             vals[position] = val;
@@ -705,24 +707,28 @@ public class TestRankQueryPlugin extends QParserPlugin {
   class TestCollector extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
-    private NumericDocValues values;
-    private int base;
 
     public TestCollector(PriorityQueue pq) {
       super(pq);
     }
 
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      final int base = context.docBase;
+      final NumericDocValues values = DocValues.getNumeric(context.reader(), "sort_i");
+      return new LeafCollector() {
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {}
+        
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
+        }
 
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
-      values = DocValues.getNumeric(context.reader(), "sort_i");
-      base = context.docBase;
-    }
-
-    public void collect(int doc) {
-      list.add(new ScoreDoc(doc+base, (float)values.get(doc)));
+        public void collect(int doc) {
+          list.add(new ScoreDoc(doc+base, (float)values.get(doc)));
+        }
+      };
     }
 
     public int topDocsSize() {
@@ -759,27 +765,27 @@ public class TestRankQueryPlugin extends QParserPlugin {
   class TestCollector1 extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
-    private int base;
-    private Scorer scorer;
 
     public TestCollector1(PriorityQueue pq) {
       super(pq);
     }
 
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
-      base = context.docBase;
-    }
-
-    public void setScorer(Scorer scorer) {
-      this.scorer = scorer;
-    }
-
-    public void collect(int doc) throws IOException {
-      list.add(new ScoreDoc(doc+base, scorer.score()));
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      final int base = context.docBase;
+      return new LeafCollector() {
+        
+        Scorer scorer;
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+        }
+        
+        public void collect(int doc) throws IOException {
+          list.add(new ScoreDoc(doc+base, scorer.score()));
+        }
+      };
     }
 
     public int topDocsSize() {
@@ -812,8 +818,5 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return list.size();
     }
   }
-
-
-
 
 }

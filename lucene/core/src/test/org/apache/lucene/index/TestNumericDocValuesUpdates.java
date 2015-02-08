@@ -284,42 +284,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
-  @Test
-  public void testUpdateAndDeleteSameDocument() throws Exception {
-    // update and delete same document in same commit session
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(10); // control segment flushing
-    IndexWriter writer = new IndexWriter(dir, conf);
-    
-    writer.addDocument(doc(writer, 0));
-    writer.addDocument(doc(writer, 1));
-    
-    if (random().nextBoolean()) {
-      writer.commit();
-    }
-    
-    writer.deleteDocuments(new Term("id", "doc-0"));
-    writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 17L);
-    
-    final DirectoryReader reader;
-    if (random().nextBoolean()) { // not NRT
-      writer.close();
-      reader = DirectoryReader.open(dir);
-    } else { // NRT
-      reader = DirectoryReader.open(writer, true);
-      writer.close();
-    }
-    
-    LeafReader r = reader.leaves().get(0).reader();
-    assertFalse(r.getLiveDocs().get(0));
-    assertEquals(1, r.getNumericDocValues("val").get(0)); // deletes are currently applied first
-    
-    reader.close();
-    dir.close();
-  }
-  
+
   @Test
   public void testMultipleDocValuesTypes() throws Exception {
     Directory dir = newDirectory();
@@ -1186,7 +1151,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.addIndexes(dir1);
     } else {
       DirectoryReader reader = DirectoryReader.open(dir1);
-      writer.addIndexes(reader);
+      TestUtil.addIndexesSlowly(writer, reader);
       reader.close();
     }
     writer.close();

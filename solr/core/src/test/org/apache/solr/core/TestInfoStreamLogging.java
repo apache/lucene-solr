@@ -31,7 +31,7 @@ public class TestInfoStreamLogging extends SolrTestCaseJ4 {
   }
   
   public void testIndexConfig() throws Exception {
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
 
     assertTrue(iwc.getInfoStream() instanceof LoggingInfoStream);
   }

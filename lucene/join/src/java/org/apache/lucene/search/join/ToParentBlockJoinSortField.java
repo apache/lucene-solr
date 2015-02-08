@@ -18,6 +18,7 @@ package org.apache.lucene.search.join;
  */
 
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.SortField;
 
 import java.io.IOException;

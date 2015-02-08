@@ -18,8 +18,9 @@ package org.apache.solr.core;
  */
 
 import com.google.common.collect.Lists;
+
 import org.apache.solr.common.SolrException;
-import org.apache.solr.util.IOUtils;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

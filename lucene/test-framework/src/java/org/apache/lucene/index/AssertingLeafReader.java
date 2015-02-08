@@ -280,20 +280,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int doc;
     
     public AssertingDocsEnum(DocsEnum in) {
-      this(in, true);
-    }
-
-    public AssertingDocsEnum(DocsEnum in, boolean failOnUnsupportedDocID) {
       super(in);
-      try {
-        int docid = in.docID();
-        assert docid == -1 : in.getClass() + ": invalid initial doc id: " + docid;
-      } catch (UnsupportedOperationException e) {
-        if (failOnUnsupportedDocID) {
-          throw e;
-        }
-      }
-      doc = -1;
+      this.doc = in.docID();
     }
 
     @Override

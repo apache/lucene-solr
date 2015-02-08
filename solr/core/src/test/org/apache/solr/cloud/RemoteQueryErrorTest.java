@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +37,11 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
   public RemoteQueryErrorTest() {
     super();
     sliceCount = 1;
-    shardCount = random().nextBoolean() ? 3 : 4;
+    fixShardCount(random().nextBoolean() ? 3 : 4);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     
@@ -66,7 +67,7 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
       } catch(Exception ex) {
         fail("Expected a SolrException to occur, instead received: " + ex.getClass());
       } finally {
-        solrClient.shutdown();
+        solrClient.close();
       }
     }
   }

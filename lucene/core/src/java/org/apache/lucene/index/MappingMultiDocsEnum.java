@@ -98,13 +98,6 @@ final class MappingMultiDocsEnum extends DocsEnum {
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
-
-        mergeState.checkAbortCount++;
-        if (mergeState.checkAbortCount > 60000) {
-          mergeState.checkAbort.work(mergeState.checkAbortCount/5.0);
-          mergeState.checkAbortCount = 0;
-        }
-
         // compact deletions
         doc = currentMap.get(doc);
         if (doc == -1) {

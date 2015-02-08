@@ -16,15 +16,7 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-
 import org.apache.http.HttpEntity;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -32,16 +24,24 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
-public class RestTestHarness extends BaseTestHarness {
+public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private HttpClient httpClient = HttpClientUtil.createClient(new
+  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
       ModifiableSolrParams());
   
   public RestTestHarness(RESTfulServerProvider serverProvider) {
@@ -50,6 +50,10 @@ public class RestTestHarness extends BaseTestHarness {
   
   public String getBaseURL() {
     return serverProvider.getBaseURL();
+  }
+
+  public String getAdminURL() {
+    return getBaseURL().replace("/collection1", "");
   }
   
   /**
@@ -94,6 +98,10 @@ public class RestTestHarness extends BaseTestHarness {
    */
   public String query(String request) throws Exception {
     return getResponse(new HttpGet(getBaseURL() + request));
+  }
+
+  public String adminQuery(String request) throws Exception {
+    return getResponse(new HttpGet(getAdminURL() + request));
   }
 
   /**
@@ -151,17 +159,25 @@ public class RestTestHarness extends BaseTestHarness {
     }
   }
 
-
+  public String checkAdminResponseStatus(String xml, String code) throws Exception {
+    try {
+      String response = adminQuery(xml);
+      String valid = validateXPath(response, "//int[@name='status']="+code );
+      return (null == valid) ? null : response;
+    } catch (XPathExpressionException e) {
+      throw new RuntimeException("?!? static xpath has bug?", e);
+    }
+  }
   /**
    * Reloads the first core listed in the response to the core admin handler STATUS command
    */
   @Override
   public void reload() throws Exception {
     String coreName = (String)evaluateXPath
-        (query("/admin/cores?action=STATUS"),
+        (adminQuery("/admin/cores?action=STATUS"),
          "//lst[@name='status']/lst[1]/str[@name='name']",
          XPathConstants.STRING);
-    String xml = checkResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
+    String xml = checkAdminResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
@@ -194,5 +210,10 @@ public class RestTestHarness extends BaseTestHarness {
     } finally {
       EntityUtils.consumeQuietly(entity);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    httpClient.close();
   }
 }

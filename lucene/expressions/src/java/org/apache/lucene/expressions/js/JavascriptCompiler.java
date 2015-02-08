@@ -565,7 +565,7 @@ public class JavascriptCompiler {
         checkFunction(method, JavascriptCompiler.class.getClassLoader());
         map.put(call, method);
       }
-    } catch (NoSuchMethodException | ClassNotFoundException | IOException e) {
+    } catch (ReflectiveOperationException | IOException e) {
       throw new Error("Cannot resolve function", e);
     }
     DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);

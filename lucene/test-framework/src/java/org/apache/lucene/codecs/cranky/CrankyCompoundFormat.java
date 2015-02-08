@@ -18,11 +18,9 @@ package org.apache.lucene.codecs.cranky;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -42,15 +40,10 @@ class CrankyCompoundFormat extends CompoundFormat {
   }
   
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from CompoundFormat.write()");
     }
-    delegate.write(dir, si, files, checkAbort, context);
-  }
-  
-  @Override
-  public String[] files(SegmentInfo si) {
-    return delegate.files(si);
+    delegate.write(dir, si, context);
   }
 }

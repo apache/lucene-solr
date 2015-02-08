@@ -25,7 +25,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -68,9 +67,6 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     Directory cdir = dir;
     if (dir instanceof NRTCachingDirectory) {
       cdir = ((NRTCachingDirectory)dir).getDelegate();
-    }
-    if (cdir instanceof RateLimitedDirectoryWrapper) {
-      cdir = ((RateLimitedDirectoryWrapper)dir).getDelegate();
     }
     if (cdir instanceof TrackingDirectoryWrapper) {
       cdir = ((TrackingDirectoryWrapper)dir).getDelegate();

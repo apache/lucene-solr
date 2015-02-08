@@ -17,6 +17,9 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import static java.util.Arrays.asList;
+import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
@@ -44,13 +47,11 @@ import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 
 public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
@@ -69,11 +70,25 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
-
+  
   @Override
-  public void doTest() throws Exception {
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    for (RestTestHarness h : restTestHarnesses) {
+      h.close();
+    }
+  }
+
+  @Test
+  public void test() throws Exception {
     setupHarnesses();
-    reloadTest();
+    try {
+      reloadTest();
+    } finally {
+      for (RestTestHarness h : restTestHarnesses) {
+        h.close();
+      }
+    }
   }
 
   private void reloadTest() throws Exception {
@@ -81,7 +96,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     String confPath = ZkController.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
-    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"solrConfig", "/config");
+    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 
   }
 

@@ -22,17 +22,17 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.Test;
 
 public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestBase {
 
   public SimpleCollectionCreateDeleteTest() {
-    fixShardCount = true;
     sliceCount = 1;
-    shardCount = 1;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 1)
+  public void test() throws Exception {
     String overseerNode = OverseerCollectionProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
     String notOverseerNode = null;
     for (CloudJettyRunner cloudJetty : cloudJettys) {

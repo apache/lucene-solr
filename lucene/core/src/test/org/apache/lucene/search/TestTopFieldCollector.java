@@ -61,7 +61,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
-          false, false, true);
+          false, false);
       
       is.search(q, tdc);
       
@@ -80,7 +80,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, false,
-          false, true);
+          false);
       
       is.search(q, tdc);
       
@@ -100,7 +100,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false, true);
+          false);
       
       is.search(q, tdc);
       
@@ -121,7 +121,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false, true);
+          false);
 
       is.search(q, tdc);
       
@@ -141,7 +141,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          true, true);
+          true);
       
       is.search(q, tdc);
       
@@ -153,110 +153,13 @@ public class TestTopFieldCollector extends LuceneTestCase {
       assertTrue(!Float.isNaN(td.getMaxScore()));
     }
   }
-  
-  public void testOutOfOrderDocsScoringSort() throws Exception {
 
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    boolean[][] tfcOptions = new boolean[][] {
-        new boolean[] { false, false, false },
-        new boolean[] { false, false, true },
-        new boolean[] { false, true, false },
-        new boolean[] { false, true, true },
-        new boolean[] { true, false, false },
-        new boolean[] { true, false, true },
-        new boolean[] { true, true, false },
-        new boolean[] { true, true, true },
-    };
-    String[] actualTFCClasses = new String[] {
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector" 
-    };
-    
-    BooleanQuery bq = new BooleanQuery();
-    // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-    // which delegates to BS if there are no mandatory clauses.
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-    // the clause instead of BQ.
-    bq.setMinimumNumberShouldMatch(1);
-    for(int i = 0; i < sort.length; i++) {
-      for(int j = 0; j < tfcOptions.length; j++) {
-        TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
-            tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
-
-        assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
-        
-        is.search(bq, tdc);
-        
-        TopDocs td = tdc.topDocs();
-        ScoreDoc[] sd = td.scoreDocs;
-        assertEquals(10, sd.length);
-      }
-    }
-  }
-  
-  // OutOfOrderMulti*Collector
-  public void testOutOfOrderDocsScoringSortMulti() throws Exception {
-
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE) };
-    boolean[][] tfcOptions = new boolean[][] {
-        new boolean[] { false, false, false },
-        new boolean[] { false, false, true },
-        new boolean[] { false, true, false },
-        new boolean[] { false, true, true },
-        new boolean[] { true, false, false },
-        new boolean[] { true, false, true },
-        new boolean[] { true, true, false },
-        new boolean[] { true, true, true },
-    };
-    String[] actualTFCClasses = new String[] {
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector" 
-    };
-    
-    BooleanQuery bq = new BooleanQuery();
-    // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-    // which delegates to BS if there are no mandatory clauses.
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-    // the clause instead of BQ.
-    bq.setMinimumNumberShouldMatch(1);
-    for(int i = 0; i < sort.length; i++) {
-      for(int j = 0; j < tfcOptions.length; j++) {
-        TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
-            tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
-
-        assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
-        
-        is.search(bq, tdc);
-        
-        TopDocs td = tdc.topDocs();
-        ScoreDoc[] sd = td.scoreDocs;
-        assertEquals(10, sd.length);
-      }
-    }
-  }
-  
   public void testSortWithScoreAndMaxScoreTrackingNoResults() throws Exception {
     
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));

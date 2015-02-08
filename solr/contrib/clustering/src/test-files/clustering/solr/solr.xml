@@ -20,14 +20,10 @@
  solr.xml mimicking the old default solr.xml
 -->
 
-<solr persistent="false">
-  <cores adminPath="/admin/cores" defaultCoreName="collection1"
-         host="${host:}" hostPort="${hostPort:}" hostContext="${hostContext:}"
-         zkClientTimeout="${zkClientTimeout:15000}">
-    <core name="collection1" shard="${shard:}" collection="${collection:collection1}" instanceDir="collection1"/>
-    
+<solr>
+
     <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
      <str name="urlScheme">${urlScheme:}</str>
      </shardHandlerFactory>
-  </cores>
+
 </solr>

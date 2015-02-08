@@ -39,6 +39,7 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,13 +59,12 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   
   public FullSolrCloudDistribCmdsTest() {
     super();
-    fixShardCount = true;
-    shardCount = 6;
     sliceCount = 3;
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 6)
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     
@@ -375,13 +375,11 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
           try {
             uReq.process(cloudClient);
             uReq.process(controlClient);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
           }
 
-          
+
         }
       }
     };
@@ -432,12 +430,11 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
   
   private long testConcurrentIndexing(long docId) throws Exception {
-    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
-        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2);
     QueryResponse results = query(cloudClient);
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
-    try {
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
+        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2)) {
       concurrentClient.setConnectionTimeout(120000);
       for (int i = 0; i < cnt; i++) {
         index_specific(concurrentClient, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
@@ -448,8 +445,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
       checkShardConsistency();
       assertDocCounts(VERBOSE);
-    } finally {
-      concurrentClient.shutdown();
     }
     results = query(cloudClient);
     assertEquals(beforeCount + cnt, results.getResults().getNumFound());
@@ -499,11 +494,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private QueryResponse query(SolrClient client) throws SolrServerException {
     SolrQuery query = new SolrQuery("*:*");
     return client.query(query);
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
   }
   
   protected SolrInputDocument addRandFields(SolrInputDocument sdoc) {

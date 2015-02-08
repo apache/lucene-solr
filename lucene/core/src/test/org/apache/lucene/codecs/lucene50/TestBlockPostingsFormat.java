@@ -67,4 +67,21 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     w.close();
     d.close();
   }
+
+  private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
+    try {
+      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  public void testInvalidBlockSizes() throws Exception {
+    shouldFail(0, 0);
+    shouldFail(10, 8);
+    shouldFail(-1, 10);
+    shouldFail(10, -1);
+    shouldFail(10, 12);
+  }
 }

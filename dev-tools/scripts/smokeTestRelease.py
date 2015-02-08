@@ -635,8 +635,6 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
     textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE', 'SYSTEM_REQUIREMENTS'))
     if isSrc:
       textFiles.append('BUILD')
-  elif not isSrc:
-    textFiles.append('SYSTEM_REQUIREMENTS')
 
   for fileName in textFiles:
     fileName += '.txt'
@@ -686,8 +684,6 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
   if project == 'lucene':
     if len(l) > 0:
       raise RuntimeError('%s: unexpected files/dirs in artifact %s: %s' % (project, artifact, l))
-  elif isSrc and not os.path.exists('%s/solr/SYSTEM_REQUIREMENTS.txt' % unpackPath):
-    raise RuntimeError('%s: solr/SYSTEM_REQUIREMENTS.txt does not exist in artifact %s' % (project, artifact))
 
   if isSrc:
     print('    make sure no JARs/WARs in src dist...')
@@ -856,7 +852,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
     print('      startup done')
     # Create the techproducts config (used to be collection1)
-    subprocess.call(['bin/solr','create_core','-n','techproducts','-c','sample_techproducts_configs'])
+    subprocess.call(['bin/solr','create_core','-c','techproducts','-d','sample_techproducts_configs'])
     os.chdir('example')
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')

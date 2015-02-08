@@ -40,7 +40,7 @@
   <target name="compile-core"/>
   <target name="compile-test"/>
 
-  <target name="dist"
+  <target name="server-war"
           description="Creates the Solr WAR Distribution file."
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"

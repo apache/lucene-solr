@@ -32,10 +32,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,33 +60,30 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
   @Override
-  @After
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     if (!success) {
       printLayoutOnTearDown = true;
     }
-    super.tearDown();
-    resetExceptionIgnores();
+    super.distribTearDown();
   }
   
   public SyncSliceTest() {
     super();
     sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : 4;
+    fixShardCount(TEST_NIGHTLY ? 7 : 4);
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -132,13 +128,12 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
-    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
-    // we only set the connect timeout, not so timeout
-    baseClient.setConnectionTimeout(30000);
-    baseClient.request(request);
-    baseClient.shutdown();
-    baseClient = null;
-    
+    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
+      // we only set the connect timeout, not so timeout
+      baseClient.setConnectionTimeout(30000);
+      baseClient.request(request);
+    }
+
     waitForThingsToLevelOut(15);
     
     checkShardConsistency(false, true);
@@ -160,7 +155,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     Set<CloudJettyRunner> jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
-    assertEquals(shardCount - 1, jetties.size());
+    assertEquals(getShardCount() - 1, jetties.size());
     
     chaosMonkey.killJetty(leaderJetty);
     
@@ -224,7 +219,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
-    assertEquals(shardCount - 1, jetties.size());
+    assertEquals(getShardCount() - 1, jetties.size());
 
     
     // kill the current leader

@@ -66,11 +66,6 @@ public class TestConstantScoreQuery extends LuceneTestCase {
         assertEquals("Score differs from expected", expectedScore, this.scorer.score(), 0);
         count[0]++;
       }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
-      }
     });
     assertEquals("invalid number of results", 1, count[0]);
   }

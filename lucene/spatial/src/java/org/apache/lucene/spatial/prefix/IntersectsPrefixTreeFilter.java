@@ -17,18 +17,17 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
 
 /**
  * A Filter matching documents that have an {@link SpatialRelation#INTERSECTS}
@@ -88,12 +87,6 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
       @Override
       protected void visitLeaf(Cell cell) throws IOException {
         collectDocs(results);
-      }
-
-      @Override
-      protected void visitScanned(Cell cell) throws IOException {
-        if (queryShape.relate(cell.getShape()).intersects())
-          collectDocs(results);
       }
 
     }.getDocIdSet();

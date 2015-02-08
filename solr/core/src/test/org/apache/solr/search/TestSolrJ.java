@@ -163,25 +163,22 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
 
   public void doCommitPerf() throws Exception {
-    HttpSolrClient client = new HttpSolrClient("http://127.0.0.1:8983/solr");
 
-    long start = System.currentTimeMillis();
+    try (HttpSolrClient client = new HttpSolrClient("http://127.0.0.1:8983/solr")) {
 
-    for (int i=0; i<10000; i++) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", Integer.toString(i % 13));
-      client.add(doc);
-      client.commit(true, true, true);
+      long start = System.currentTimeMillis();
+
+      for (int i = 0; i < 10000; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", Integer.toString(i % 13));
+        client.add(doc);
+        client.commit(true, true, true);
+      }
+
+      long end = System.currentTimeMillis();
+      System.out.println("TIME: " + (end-start));
     }
 
-    long end = System.currentTimeMillis();
-
-    client.shutdown();
-
-    System.out.println("TIME: " + (end-start));
   }
-
-
-
 
 }

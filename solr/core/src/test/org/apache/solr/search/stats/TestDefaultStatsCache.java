@@ -22,23 +22,24 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
 
 public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   private int docId = 0;
   
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
   }
   
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("solr.statsCache");
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     del("*:*");
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;

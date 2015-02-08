@@ -75,6 +75,7 @@ public class ConfigOverlay implements MapSerializable{
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
       if(i < hierarchy.size()-1){
+        if (!(obj.get(s) instanceof Map)) return null;
         obj = (Map) obj.get(s);
         if(obj == null) return null;
       } else {

@@ -901,36 +901,48 @@ public class IndexSchema {
       String msg = "copyField dest :'" + dest + "' is not an explicit field and doesn't match a dynamicField.";
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
-    if (sourceIsDynamicFieldReference || sourceIsGlob) {
-      if (null != destDynamicField) { // source: glob or no-asterisk dynamic field ref; dest: dynamic field ref
+    if (sourceIsGlob) {
+      if (null != destDynamicField) { // source: glob ; dest: dynamic field ref
         registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
         incrementCopyFieldTargetCount(destSchemaField);
-      } else {                        // source: glob or no-asterisk dynamic field ref; dest: explicit field
+      } else {                        // source: glob ; dest: explicit field
         destDynamicField = new DynamicField(destSchemaField);
         registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, null));
         incrementCopyFieldTargetCount(destSchemaField);
       }
-    } else {                          
-      if (null != destDynamicField) { // source: explicit field; dest: dynamic field reference
+    } else if (sourceIsDynamicFieldReference) {
+        if (null != destDynamicField) {  // source: no-asterisk dynamic field ref ; dest: dynamic field ref
+          registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
+          incrementCopyFieldTargetCount(destSchemaField);
+        } else {                        // source: no-asterisk dynamic field ref ; dest: explicit field
+          sourceSchemaField = getField(source);
+          registerExplicitSrcAndDestFields(source, maxChars, destSchemaField, sourceSchemaField);
+        }
+    } else {
+      if (null != destDynamicField) { // source: explicit field ; dest: dynamic field reference
         if (destDynamicField.pattern instanceof DynamicReplacement.DynamicPattern.NameEquals) {
           // Dynamic dest with no asterisk is acceptable
           registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
           incrementCopyFieldTargetCount(destSchemaField);
-        } else {
+        } else {                    // source: explicit field ; dest: dynamic field with an asterisk
           String msg = "copyField only supports a dynamic destination with an asterisk "
                      + "if the source also has an asterisk";
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
-      } else {                        // source & dest: explicit fields 
-        List<CopyField> copyFieldList = copyFieldsMap.get(source);
-        if (copyFieldList == null) {
-          copyFieldList = new ArrayList<>();
-          copyFieldsMap.put(source, copyFieldList);
-        }
-        copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
-        incrementCopyFieldTargetCount(destSchemaField);
+      } else {                        // source & dest: explicit fields
+        registerExplicitSrcAndDestFields(source, maxChars, destSchemaField, sourceSchemaField);
       }
     }
+  }
+
+  private void registerExplicitSrcAndDestFields(String source, int maxChars, SchemaField destSchemaField, SchemaField sourceSchemaField) {
+    List<CopyField> copyFieldList = copyFieldsMap.get(source);
+    if (copyFieldList == null) {
+      copyFieldList = new ArrayList<>();
+      copyFieldsMap.put(source, copyFieldList);
+    }
+    copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
+    incrementCopyFieldTargetCount(destSchemaField);
   }
   
   private void incrementCopyFieldTargetCount(SchemaField dest) {

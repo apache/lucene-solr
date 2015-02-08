@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import com.carrotsearch.hppc.IntIntOpenHashMap;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -33,7 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;
-
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,6 +44,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.ScoreDoc;
+
 import com.carrotsearch.hppc.IntFloatOpenHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -246,33 +248,22 @@ public class ReRankQParserPlugin extends QParserPlugin {
       this.boostedPriority = boostedPriority;
       Sort sort = cmd.getSort();
       if(sort == null) {
-        this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length),true);
+        this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
       } else {
         sort = sort.rewrite(searcher);
-        this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true, true);
+        this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
       }
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
     }
 
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    public void collect(int doc) throws IOException {
-      mainCollector.collect(doc);
-    }
-
-    public void setScorer(Scorer scorer) throws IOException{
-      mainCollector.setScorer(scorer);
-    }
-
-    public void doSetNextReader(LeafReaderContext context) throws IOException{
-      mainCollector.getLeafCollector(context);
-    }
-
     public int getTotalHits() {
       return mainCollector.getTotalHits();
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      return mainCollector.getLeafCollector(context);
     }
 
     public TopDocs topDocs(int start, int howMany) {
@@ -387,6 +378,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
     }
+
   }
 
   public class BoostedComp implements Comparator {

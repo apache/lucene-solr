@@ -17,6 +17,9 @@ package org.apache.lucene.spatial.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.LeafReaderContext;
@@ -25,9 +28,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * The area of a Shape retrieved from a ValueSource via
@@ -41,11 +41,13 @@ public class ShapeAreaValueSource extends ValueSource {
   private final ValueSource shapeValueSource;
   private final SpatialContext ctx;//not part of identity; should be associated with shapeValueSource indirectly
   private final boolean geoArea;
+  private double multiplier;
 
-  public ShapeAreaValueSource(ValueSource shapeValueSource, SpatialContext ctx, boolean geoArea) {
+  public ShapeAreaValueSource(ValueSource shapeValueSource, SpatialContext ctx, boolean geoArea, double multiplier) {
     this.shapeValueSource = shapeValueSource;
     this.ctx = ctx;
     this.geoArea = geoArea;
+    this.multiplier = multiplier;
   }
 
   @Override
@@ -70,7 +72,7 @@ public class ShapeAreaValueSource extends ValueSource {
           return 0;//or NaN?
         //This part of Spatial4j API is kinda weird. Passing null means 2D area, otherwise geo
         //   assuming ctx.isGeo()
-        return shape.getArea( geoArea ? ctx : null );
+        return shape.getArea( geoArea ? ctx : null ) * multiplier;
       }
 
       @Override

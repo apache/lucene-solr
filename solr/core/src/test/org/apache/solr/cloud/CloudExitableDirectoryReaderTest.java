@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +44,8 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
     return configString;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     waitForRecoveriesToFinish(false);
@@ -77,17 +78,18 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
     time than this. Keeping it at 5 because the delaying search component delays all requests 
     by at 1 second.
      */
-    long fiveSeconds = 5000L;
+    int fiveSeconds = 5000;
     
-    Long timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
+    Integer timeAllowed = TestUtil.nextInt(random(), fiveSeconds, Integer.MAX_VALUE);
     assertSuccess(params("q", "name:a*", "timeAllowed",timeAllowed.toString()));
 
     assertPartialResults(params("q", "name:a*", "timeAllowed", "1"));
 
-    timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
+    timeAllowed = TestUtil.nextInt(random(), fiveSeconds, Integer.MAX_VALUE);
     assertSuccess(params("q", "name:b*", "timeAllowed",timeAllowed.toString()));
 
-    timeAllowed = TestUtil.nextLong(random(), Long.MIN_VALUE, -1L);  // negative timeAllowed should disable timeouts
+    // negative timeAllowed should disable timeouts
+    timeAllowed = TestUtil.nextInt(random(), Integer.MIN_VALUE, -1); 
     assertSuccess(params("q", "name:b*", "timeAllowed",timeAllowed.toString()));
 
     assertSuccess(params("q","name:b*")); // no time limitation

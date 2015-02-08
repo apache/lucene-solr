@@ -228,12 +228,9 @@ public class CommandHandler {
 
     try {
       searcher.search(query, luceneFilter, collector);
-    } catch (TimeLimitingCollector.TimeExceededException x) {
+    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       partialResults = true;
       logger.warn( "Query: " + query + "; " + x.getMessage() );
-    } catch (ExitableDirectoryReader.ExitingReaderException e) {
-      partialResults = true;
-      logger.warn( "Query: " + query + "; " + e.getMessage() );
     }
 
     if (includeHitCount) {

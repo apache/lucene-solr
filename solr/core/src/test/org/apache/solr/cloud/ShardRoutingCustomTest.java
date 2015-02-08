@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
@@ -34,8 +35,8 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     sliceCount = 0;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       doCustomSharding();

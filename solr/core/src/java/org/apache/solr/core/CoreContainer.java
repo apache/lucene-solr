@@ -17,21 +17,8 @@
 
 package org.apache.solr.core;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -51,8 +38,20 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 
 /**
@@ -102,9 +101,14 @@ public class CoreContainer {
   protected final CoresLocator coresLocator;
   
   private String hostName;
+
   private final JarRepository jarRepository = new JarRepository(this);
-  
-  private Map<String ,SolrRequestHandler> containerHandlers = new HashMap<>();
+
+  public static final String CORES_HANDLER_PATH = "/admin/cores";
+  public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
+  public static final String INFO_HANDLER_PATH = "/admin/info";
+
+  private Map<String, SolrRequestHandler> containerHandlers = new HashMap<>();
 
   public SolrRequestHandler getRequestHandler(String path) {
     return RequestHandlerBase.getRequestHandler(path, containerHandlers);
@@ -112,7 +116,6 @@ public class CoreContainer {
 
   public Map<String, SolrRequestHandler> getRequestHandlers(){
     return this.containerHandlers;
-
   }
 
  // private ClientConnectionManager clientConnectionManager = new PoolingClientConnectionManager();
@@ -137,7 +140,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(loader, ConfigSolr.fromSolrHome(loader, loader.getInstanceDir()));
+    this(ConfigSolr.fromSolrHome(loader, loader.getInstanceDir()));
   }
 
   /**
@@ -154,19 +157,15 @@ public class CoreContainer {
    * Create a new CoreContainer using the given SolrResourceLoader,
    * configuration and CoresLocator.  The container's cores are
    * not loaded.
-   * @param loader the SolrResourceLoader
    * @param config a ConfigSolr representation of this container's configuration
    * @see #load()
    */
-  public CoreContainer(SolrResourceLoader loader, ConfigSolr config) {
-    this.loader = checkNotNull(loader);
-    this.solrHome = loader.getInstanceDir();
-    this.cfg = checkNotNull(config);
-    this.coresLocator = config.getCoresLocator();
+  public CoreContainer(ConfigSolr config) {
+    this(config, config.getCoresLocator());
   }
 
-  public CoreContainer(SolrResourceLoader loader, ConfigSolr config, CoresLocator locator) {
-    this.loader = checkNotNull(loader);
+  public CoreContainer(ConfigSolr config, CoresLocator locator) {
+    this.loader = config.getSolrResourceLoader();
     this.solrHome = loader.getInstanceDir();
     this.cfg = checkNotNull(config);
     this.coresLocator = locator;
@@ -194,8 +193,13 @@ public class CoreContainer {
    */
   public static CoreContainer createAndLoad(String solrHome, File configFile) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    CoreContainer cc = new CoreContainer(loader, ConfigSolr.fromFile(loader, configFile));
-    cc.load();
+    CoreContainer cc = new CoreContainer(ConfigSolr.fromFile(loader, configFile));
+    try {
+      cc.load();
+    } catch (Exception e) {
+      cc.shutdown();
+      throw e;
+    }
     return cc;
   }
   
@@ -238,15 +242,15 @@ public class CoreContainer {
     zkSys.initZooKeeper(this, solrHome, cfg);
 
     collectionsHandler = createHandler(cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    containerHandlers.put("/admin/collections" , collectionsHandler);
+    containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
     infoHandler        = createHandler(cfg.getInfoHandlerClass(), InfoHandler.class);
-    containerHandlers.put("/admin/info" , infoHandler);
+    containerHandlers.put(INFO_HANDLER_PATH, infoHandler);
     coreAdminHandler   = createHandler(cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
-    containerHandlers.put(cfg.getAdminPath() , coreAdminHandler);
+    containerHandlers.put(CORES_HANDLER_PATH, coreAdminHandler);
 
     coreConfigService = cfg.createCoreConfigService(loader, zkSys.getZkController());
 
-    containerProperties = cfg.getSolrProperties("solr");
+    containerProperties = cfg.getSolrProperties();
 
     // setup executor to load cores in parallel
     // do not limit the size of the executor in zk mode since cores may try and wait for each other.
@@ -341,10 +345,9 @@ public class CoreContainer {
     }
 
     try {
-      coreAdminHandler.shutdown();
+      if (coreAdminHandler != null) coreAdminHandler.shutdown();
     } catch (Exception e) {
-      log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.");
-      e.printStackTrace();
+      log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
     }
 
     try {
@@ -519,11 +522,15 @@ public class CoreContainer {
 
       return core;
 
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
+    } catch (Throwable t) {
+      SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
+      log.error("Error creating core [{}]: {}", dcore.getName(), t.getMessage(), t);
+      coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      throw t;
     }
 
   }
@@ -591,8 +598,6 @@ public class CoreContainer {
    */
   public void reload(String name) {
 
-    name = checkDefault(name);
-
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
@@ -615,11 +620,6 @@ public class CoreContainer {
 
   }
 
-  //5.0 remove all checkDefaults?
-  private String checkDefault(String name) {
-    return (null == name || name.isEmpty()) ? getDefaultCoreName() : name;
-  } 
-
   /**
    * Swaps two SolrCore descriptors.
    */
@@ -627,8 +627,6 @@ public class CoreContainer {
     if( n0 == null || n1 == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Can not swap unnamed cores." );
     }
-    n0 = checkDefault(n0);
-    n1 = checkDefault(n1);
     solrCores.swap(n0, n1);
 
     coresLocator.swap(this, solrCores.getCoreDescriptor(n0), solrCores.getCoreDescriptor(n1));
@@ -653,8 +651,6 @@ public class CoreContainer {
    * @param deleteInstanceDir if true, delete the core's instance directory on close
    */
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
-
-    name = checkDefault(name);
 
     // check for core-init errors first
     CoreLoadFailure loadFailure = coreInitFailures.remove(name);
@@ -707,7 +703,6 @@ public class CoreContainer {
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);
-        name = checkDefault(name);
         SolrCore old = solrCores.remove(name);
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
@@ -744,8 +739,6 @@ public class CoreContainer {
    * @exception SolrException if a SolrCore with this name failed to be initialized
    */
   public SolrCore getCore(String name) {
-
-    name = checkDefault(name);
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
     SolrCore core = solrCores.getCoreFromAnyList(name, true);
@@ -813,26 +806,6 @@ public class CoreContainer {
     return infoHandler;
   }
 
-  // ---------------- Multicore self related methods ---------------
-
-  /**
-   * the default core name, or null if there is no default core name
-   */
-  public String getDefaultCoreName() {
-    return cfg.getDefaultCoreName();
-  }
-
-  // all of the following properties aren't synchronized
-  // but this should be OK since they normally won't be changed rapidly
-  @Deprecated
-  public boolean isPersistent() {
-    return cfg.isPersistent();
-  }
-  
-  public String getAdminPath() {
-    return cfg.getAdminPath();
-  }
-  
   public String getHostName() {
     return this.hostName;
   }

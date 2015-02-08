@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -150,15 +151,24 @@ public class Config {
       if (substituteProps) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
-    } catch (ParserConfigurationException e)  {
+    } catch (ParserConfigurationException | SAXException | TransformerException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (SAXException e)  {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (TransformerException e) {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  /*
+     * Assert that assertCondition is true.
+     * If not, prints reason as log warning.
+     * If failCondition is true, then throw exception instead of warning
+     */
+  public static void assertWarnOrFail(String reason, boolean assertCondition, boolean failCondition) {
+    if (assertCondition) {
+      return;
+    } else if (failCondition) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN, reason);
+    } else {
+      log.warn(reason);
     }
   }
 

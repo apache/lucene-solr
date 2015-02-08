@@ -69,6 +69,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   private final boolean needsScores;
 
   private final FieldComparator<?>[] comparators;
+  private final LeafFieldComparator[] leafComparators;
   private final int[] reversed;
   private final int compIDXEnd;
   private int bottomSlot;
@@ -202,7 +203,7 @@ public class BlockGroupingCollector extends SimpleCollector {
           bottomSlot = bottomGroup.comparatorSlot;
           //System.out.println("    set bottom=" + bottomSlot);
           for (int i = 0; i < comparators.length; i++) {
-            comparators[i].setBottom(bottomSlot);
+            leafComparators[i].setBottom(bottomSlot);
           }
           //System.out.println("     QUEUE FULL");
         } else {
@@ -231,7 +232,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
         //System.out.println("    set bottom=" + bottomSlot);
         for (int i = 0; i < comparators.length; i++) {
-          comparators[i].setBottom(bottomSlot);
+          leafComparators[i].setBottom(bottomSlot);
         }
       }
     }
@@ -278,6 +279,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
     final SortField[] sortFields = groupSort.getSort();
     comparators = new FieldComparator<?>[sortFields.length];
+    leafComparators = new LeafFieldComparator[sortFields.length];
     compIDXEnd = comparators.length - 1;
     reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
@@ -343,21 +345,21 @@ public class BlockGroupingCollector extends SimpleCollector {
         if (!needsScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: needsScores=false");
         }
-        collector = TopScoreDocCollector.create(maxDocsPerGroup, true);
+        collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores, true);
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores);
       }
 
-      collector.setScorer(fakeScorer);
-      collector.getLeafCollector(og.readerContext);
+      LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);
+      leafCollector.setScorer(fakeScorer);
       for(int docIDX=0;docIDX<og.count;docIDX++) {
         final int doc = og.docs[docIDX];
         fakeScorer.doc = doc;
         if (needsScores) {
           fakeScorer.score = og.scores[docIDX];
         }
-        collector.collect(doc);
+        leafCollector.collect(doc);
       }
       totalGroupedHitCount += og.count;
 
@@ -402,7 +404,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    for (FieldComparator<?> comparator : comparators) {
+    for (LeafFieldComparator comparator : leafComparators) {
       comparator.setScorer(scorer);
     }
   }
@@ -443,7 +445,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         assert !queueFull;
 
         //System.out.println("    init copy to bottomSlot=" + bottomSlot);
-        for (FieldComparator<?> fc : comparators) {
+        for (LeafFieldComparator fc : leafComparators) {
           fc.copy(bottomSlot, doc);
           fc.setBottom(bottomSlot);
         }        
@@ -451,7 +453,7 @@ public class BlockGroupingCollector extends SimpleCollector {
       } else {
         // Compare to bottomSlot
         for (int compIDX = 0;; compIDX++) {
-          final int c = reversed[compIDX] * comparators[compIDX].compareBottom(doc);
+          final int c = reversed[compIDX] * leafComparators[compIDX].compareBottom(doc);
           if (c < 0) {
             // Definitely not competitive -- done
             return;
@@ -468,7 +470,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
         //System.out.println("       best w/in group!");
         
-        for (FieldComparator<?> fc : comparators) {
+        for (LeafFieldComparator fc : leafComparators) {
           fc.copy(bottomSlot, doc);
           // Necessary because some comparators cache
           // details of bottom slot; this forces them to
@@ -481,7 +483,7 @@ public class BlockGroupingCollector extends SimpleCollector {
       // We're not sure this group will make it into the
       // queue yet
       for (int compIDX = 0;; compIDX++) {
-        final int c = reversed[compIDX] * comparators[compIDX].compareBottom(doc);
+        final int c = reversed[compIDX] * leafComparators[compIDX].compareBottom(doc);
         if (c < 0) {
           // Definitely not competitive -- done
           //System.out.println("    doc doesn't compete w/ top groups");
@@ -498,7 +500,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         }
       }
       groupCompetes = true;
-      for (FieldComparator<?> fc : comparators) {
+      for (LeafFieldComparator fc : leafComparators) {
         fc.copy(bottomSlot, doc);
         // Necessary because some comparators cache
         // details of bottom slot; this forces them to
@@ -508,11 +510,6 @@ public class BlockGroupingCollector extends SimpleCollector {
       topGroupDoc = doc;
       //System.out.println("        doc competes w/ top groups");
     }
-  }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
   }
 
   @Override
@@ -528,7 +525,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
     currentReaderContext = readerContext;
     for (int i=0; i<comparators.length; i++) {
-      comparators[i] = comparators[i].setNextReader(readerContext);
+      leafComparators[i] = comparators[i].getLeafComparator(readerContext);
     }
   }
 }

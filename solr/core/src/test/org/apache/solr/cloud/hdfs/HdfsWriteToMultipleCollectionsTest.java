@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -40,6 +41,7 @@ import org.apache.solr.store.blockcache.Cache;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,15 +79,15 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   public HdfsWriteToMultipleCollectionsTest() {
     super();
     sliceCount = 1;
-    shardCount = 3;
+    fixShardCount(3);
   }
   
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     int docCount = random().nextInt(1313) + 1;
     int cnt = random().nextInt(4) + 1;
     for (int i = 0; i < cnt; i++) {
@@ -116,10 +118,8 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       client.commit();
       collectionsCount += client.query(new SolrQuery("*:*")).getResults().getNumFound();
     }
-    
-    for (CloudSolrClient client : cloudClients) {
-      client.shutdown();
-    }
+
+    IOUtils.close(cloudClients);
 
     assertEquals(addCnt, collectionsCount);
     

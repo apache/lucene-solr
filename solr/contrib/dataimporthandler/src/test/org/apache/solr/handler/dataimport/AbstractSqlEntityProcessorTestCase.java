@@ -1,5 +1,9 @@
 package org.apache.solr.handler.dataimport;
 
+import junit.framework.Assert;
+import org.junit.After;
+import org.junit.Before;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.sql.Connection;
@@ -16,11 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import junit.framework.Assert;
-
-import org.junit.After;
-import org.junit.Before;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -634,8 +633,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
           + "newColumnName=''countryAdded_s'' newColumnValue=''country_added'' "
           : "");
       if (countryCached) {
-        sb.append(random().nextBoolean() ? "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' "
-            : "processor=''CachedSqlEntityProcessor'' ");
+        sb.append("processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' ");
         if (useSimpleCaches) {
           sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' ''>\n");
         } else {
@@ -671,8 +669,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
           + "newColumnName=''sportsAdded_s'' newColumnValue=''sport_added'' "
           : "");
       if (sportsCached) {
-        sb.append(random().nextBoolean() ? "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' "
-            : "processor=''CachedSqlEntityProcessor'' ");
+        sb.append("processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' ");
         if (useSimpleCaches) {
           sb.append("query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID=${People.ID} ORDER BY ID'' ");
         } else {

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -405,7 +406,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     if (ms instanceof ConcurrentMergeScheduler) {
       iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
           @Override
-          protected void handleMergeException(Throwable exc) {
+          protected void handleMergeException(Directory dir, Throwable exc) {
             assertTrue(exc instanceof IllegalArgumentException);
           }
         });

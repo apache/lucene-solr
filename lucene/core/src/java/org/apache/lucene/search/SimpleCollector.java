@@ -45,9 +45,6 @@ public abstract class SimpleCollector implements Collector, LeafCollector {
   // redeclare methods so that javadocs are inherited on sub-classes
 
   @Override
-  public abstract boolean acceptsDocsOutOfOrder();
-
-  @Override
   public abstract void collect(int doc) throws IOException;
 
 }

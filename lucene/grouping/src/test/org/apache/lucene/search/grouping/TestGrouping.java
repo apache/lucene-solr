@@ -835,7 +835,7 @@ public class TestGrouping extends LuceneTestCase {
             }
           } else {
             // Collect only into cache, then replay multiple times:
-            c = cCache = CachingCollector.create(false, true, maxCacheMB);
+            c = cCache = CachingCollector.create(true, maxCacheMB);
           }
         } else {
           cCache = null;

@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -702,6 +703,61 @@ public class TestSort extends LuceneTestCase {
     assertEquals(4.2333333333332, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0d);
     assertEquals(4.2333333333333, searcher.doc(td.scoreDocs[2].doc).getDouble("value").doubleValue(), 0.0d);
     assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests sorting on multiple sort fields */
+  public void testMultiSort() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = writer.newDocument();
+    doc.addAtom("value1", new BytesRef("foo"));
+    doc.addInt("value2", 0);
+    writer.addDocument(doc);
+
+    doc = writer.newDocument();
+    doc.addAtom("value1", new BytesRef("bar"));
+    doc.addInt("value2", 1);
+    writer.addDocument(doc);
+
+    doc = writer.newDocument();
+    doc.addAtom("value1", new BytesRef("bar"));
+    doc.addInt("value2", 0);
+    writer.addDocument(doc);
+
+    doc = writer.newDocument();
+    doc.addAtom("value1", new BytesRef("foo"));
+    doc.addInt("value2", 1);
+    writer.addDocument(doc);
+
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(
+        new SortField("value1", SortField.Type.STRING),
+        new SortField("value2", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // 'bar' comes before 'foo'
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).getBinary("value1").utf8ToString());
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).getBinary("value1").utf8ToString());
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).getBinary("value1").utf8ToString());
+    assertEquals("foo", searcher.doc(td.scoreDocs[3].doc).getBinary("value1").utf8ToString());
+    // 0 comes before 1
+    assertEquals(0, searcher.doc(td.scoreDocs[0].doc).getInt("value2").intValue());
+    assertEquals(1, searcher.doc(td.scoreDocs[1].doc).getInt("value2").intValue());
+    assertEquals(0, searcher.doc(td.scoreDocs[2].doc).getInt("value2").intValue());
+    assertEquals(1, searcher.doc(td.scoreDocs[3].doc).getInt("value2").intValue());
+
+    // Now with overflow
+    td = searcher.search(new MatchAllDocsQuery(), 1, sort);
+    assertEquals(4, td.totalHits);
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).getBinary("value1").utf8ToString());
+    assertEquals(0, searcher.doc(td.scoreDocs[0].doc).getInt("value2").intValue());
 
     ir.close();
     dir.close();

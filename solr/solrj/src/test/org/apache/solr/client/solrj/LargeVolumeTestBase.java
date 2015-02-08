@@ -118,7 +118,7 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
           log.info("Caught benign exception during commit: " + e.getMessage());
         }
         if (!(client instanceof EmbeddedSolrServer)) {
-          client.shutdown();
+          client.close();
         }
 
       } catch (Exception e) {

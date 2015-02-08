@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.search.Query;
-import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpatialParams;
@@ -76,10 +75,11 @@ public class SpatialFilterQParser extends QParser {
       FieldType type = sf.getType();
 
       if (type instanceof SpatialQueryable) {
-        double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+        SpatialQueryable queryable = ((SpatialQueryable)type);
+        double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, queryable.getSphereRadius());
         SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius);
         opts.bbox = bbox;
-        result = ((SpatialQueryable)type).createSpatialQuery(this, opts);
+        result = queryable.createSpatialQuery(this, opts);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field " + fields[0]
                 + " does not support spatial filtering");

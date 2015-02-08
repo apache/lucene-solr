@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -40,10 +40,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   private static final int MAX_TIMEOUT_SECONDS = 60;
   private static final boolean DEBUG = false;
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
 
     useJettyDataDir = false;
 
@@ -52,66 +51,59 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   }
 
   public CollectionsAPIAsyncDistributedZkTest() {
-    fixShardCount = true;
-
     sliceCount = 1;
-    shardCount = 1;
   }
 
-  @Override
-  public void doTest() throws Exception {
-
-    testSolrJAPICalls();
+  @Test
+  @ShardsFixed(num = 1)
+  public void testSolrJAPICalls() throws Exception {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      Create createCollectionRequest = new Create();
+      createCollectionRequest.setCollectionName("testasynccollectioncreation");
+      createCollectionRequest.setNumShards(1);
+      createCollectionRequest.setConfigName("conf1");
+      createCollectionRequest.setAsyncId("1001");
+      createCollectionRequest.process(client);
+  
+      String state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, client);
+  
+      assertEquals("CreateCollection task did not complete!", "completed", state);
+  
+  
+      createCollectionRequest = new Create();
+      createCollectionRequest.setCollectionName("testasynccollectioncreation");
+      createCollectionRequest.setNumShards(1);
+      createCollectionRequest.setConfigName("conf1");
+      createCollectionRequest.setAsyncId("1002");
+      createCollectionRequest.process(client);
+  
+      state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, client);
+  
+      assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
+  
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
+      addReplica.setCollectionName("testasynccollectioncreation");
+      addReplica.setShardName("shard1");
+      addReplica.setAsyncId("1003");
+      client.request(addReplica);
+      state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, client);
+      assertEquals("Add replica did not complete", "completed", state);
+  
+  
+      SplitShard splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("testasynccollectioncreation");
+      splitShardRequest.setShardName("shard1");
+      splitShardRequest.setAsyncId("1004");
+      splitShardRequest.process(client);
+  
+      state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, client);
+  
+      assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
+    }
 
     if (DEBUG) {
-      super.printLayout();
+      printLayout();
     }
-  }
-
-  private void testSolrJAPICalls() throws Exception {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-
-    Create createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName("testasynccollectioncreation");
-    createCollectionRequest.setNumShards(1);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setAsyncId("1001");
-    createCollectionRequest.process(client);
-
-    String state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, client);
-
-    assertEquals("CreateCollection task did not complete!", "completed", state);
-
-
-    createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName("testasynccollectioncreation");
-    createCollectionRequest.setNumShards(1);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setAsyncId("1002");
-    createCollectionRequest.process(client);
-
-    state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, client);
-
-    assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
-
-    CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
-    addReplica.setCollectionName("testasynccollectioncreation");
-    addReplica.setShardName("shard1");
-    addReplica.setAsyncId("1003");
-    client.request(addReplica);
-    state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, client);
-    assertEquals("Add replica did not complete", "completed", state);
-
-
-    SplitShard splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("testasynccollectioncreation");
-    splitShardRequest.setShardName("shard1");
-    splitShardRequest.setAsyncId("1004");
-    splitShardRequest.process(client);
-
-    state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, client);
-
-    assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
   }
 
   private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
@@ -138,10 +130,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

@@ -22,13 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /** Sorts a field by a provided deferenced sort key. */
-class SortKeyComparator extends FieldComparator<BytesRef> {
+class SortKeyComparator extends SimpleFieldComparator<BytesRef> {
 
   // TODO: we could cache the sort keys...
   private final BytesRef[] values;
@@ -85,13 +85,12 @@ class SortKeyComparator extends FieldComparator<BytesRef> {
   }
 
   @Override
-  public FieldComparator<BytesRef> setNextReader(LeafReaderContext context) throws IOException {
+  public void doSetNextReader(LeafReaderContext context) throws IOException {
     docTerms = DocValues.getBinary(context.reader(), field);
     docsWithField = DocValues.getDocsWithField(context.reader(), field);
     if (docsWithField instanceof Bits.MatchAllBits) {
       docsWithField = null;
     }
-    return this;
   }
     
   @Override

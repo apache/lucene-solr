@@ -539,15 +539,20 @@ public abstract class ReindexingReader implements Closeable {
       }
 
       @Override
-      public List<LeafReader> getMergeReaders() throws IOException {
+      public List<CodecReader> getMergeReaders() throws IOException {
         if (parallelReaders == null) {
           parallelReaders = new ArrayList<>();
-          for (LeafReader reader : super.getMergeReaders()) {
-            parallelReaders.add(getCurrentReader(reader, schemaGen));
+          for (CodecReader reader : super.getMergeReaders()) {
+            parallelReaders.add(getCurrentReader((SegmentReader) reader, schemaGen));
           }
         }
 
-        return parallelReaders;
+        // TODO: fix ParallelLeafReader, if this is a good use case
+        List<CodecReader> mergeReaders = new ArrayList<>();
+        for (LeafReader reader : parallelReaders) {
+          mergeReaders.add(SlowCodecReaderWrapper.wrap(reader));
+        }
+        return mergeReaders;
       }
 
       @Override

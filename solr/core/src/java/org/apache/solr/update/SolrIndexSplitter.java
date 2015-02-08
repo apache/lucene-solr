@@ -21,13 +21,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -120,7 +121,7 @@ public class SolrIndexSplitter {
       } else {
         SolrCore core = searcher.getCore();
         String path = paths.get(partitionNumber);
-        iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + (ranges != null ? " " + ranges.get(partitionNumber) : ""), path,
+        iw = SolrIndexWriter.create(core, "SplittingIndexWriter"+partitionNumber + (ranges != null ? " " + ranges.get(partitionNumber) : ""), path,
                                     core.getDirectoryFactory(), true, core.getLatestSchema(),
                                     core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
       }
@@ -129,8 +130,8 @@ public class SolrIndexSplitter {
         // This removes deletions but optimize might still be needed because sub-shards will have the same number of segments as the parent shard.
         for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
           log.info("SolrIndexSplitter: partition #" + partitionNumber + " partitionCount=" + numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "") + " segment #"+segmentNumber + " segmentCount=" + leaves.size());
-          IndexReader subReader = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
-          iw.addIndexes(subReader);
+          CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
+          iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
         }
         success = true;
       } finally {
@@ -232,12 +233,12 @@ public class SolrIndexSplitter {
 
 
   // change livedocs on the reader to delete those docs we don't want
-  static class LiveDocsReader extends FilterLeafReader {
+  static class LiveDocsReader extends FilterCodecReader {
     final FixedBitSet liveDocs;
     final int numDocs;
 
-    public LiveDocsReader(LeafReaderContext context, FixedBitSet liveDocs) throws IOException {
-      super(context.reader());
+    public LiveDocsReader(CodecReader in, FixedBitSet liveDocs) throws IOException {
+      super(in);
       this.liveDocs = liveDocs;
       this.numDocs = liveDocs.cardinality();
     }

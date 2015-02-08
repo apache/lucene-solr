@@ -26,9 +26,11 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -55,19 +57,17 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     }
   }
 
-
-
   @Override
-  public void doTest() throws Exception {
-
-   setupHarnesses();
-   dynamicLoading();
-
-
-
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    for (RestTestHarness r : restTestHarnesses) {
+      r.close();
+    }
   }
 
-  private void dynamicLoading() throws Exception {
+  @Test
+  public void testDynamicLoading() throws Exception {
+    setupHarnesses();
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandler' , 'lib':'test','version':'1'}\n" +
         "}";
@@ -129,7 +129,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     payload = "{\n" +
-        "'update-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandlerV2' , 'lib':'test','version':'2'}\n" +
+        "'update-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandlerV2' , 'lib':'test','version':2}\n" +
         "}";
 
     client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -139,10 +139,10 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "/config/overlay?wt=json",
         null,
         Arrays.asList("overlay", "requestHandler", "/test1", "version"),
-        "2",10);
+        2l,10);
 
     success= false;
-    for(int i=0;i<50;i++) {
+    for(int i=0;i<100;i++) {
       map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
       if(BlobStoreTestRequestHandlerV2.class.getName().equals(map.get("class"))) {
         success = true;
@@ -153,7 +153,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
     assertTrue("New version of class is not loaded " + new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8), success);
 
-    for(int i=0;i<50;i++) {
+    for(int i=0;i<100;i++) {
       map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
       if("X val".equals(map.get("x"))){
          success = true;
@@ -200,7 +200,5 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     zipOut.close();
     return bos.getByteBuffer();
   }
-
-
 
 }

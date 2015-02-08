@@ -289,14 +289,12 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         private Scorer scorer;
 
         @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
-
-        @Override
         public void setScorer(Scorer scorer) {
-          assert scorer instanceof TermAutomatonScorer;
           this.scorer = scorer;
+          while (scorer instanceof AssertingScorer) {
+            scorer = ((AssertingScorer) scorer).getIn();
+          }
+          assert scorer instanceof TermAutomatonScorer;
         }
 
         @Override

@@ -551,7 +551,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     
     Directory dir2 = newDirectory();
     w = new RandomIndexWriter(random(), dir2);
-    w.addIndexes(reader);
+    TestUtil.addIndexesSlowly(w.w, reader);
     reader.close();
     dir.close();
 
@@ -679,7 +679,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       }
       dirs[i] = newDirectory();
       IndexWriter adder = new IndexWriter(dirs[i], new IndexWriterConfig(null));
-      adder.addIndexes(reader);
+      TestUtil.addIndexesSlowly(adder, reader);
       adder.commit();
       adder.close();
       

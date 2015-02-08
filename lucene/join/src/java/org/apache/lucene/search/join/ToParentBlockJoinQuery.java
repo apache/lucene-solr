@@ -194,11 +194,6 @@ public class ToParentBlockJoinQuery extends Query {
       }
       return new ComplexExplanation(false, 0.0f, "Not a match");
     }
-
-    @Override
-    public boolean scoresDocsOutOfOrder() {
-      return false;
-    }
   }
 
   static class BlockJoinScorer extends Scorer {

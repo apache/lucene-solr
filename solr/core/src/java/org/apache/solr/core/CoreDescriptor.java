@@ -23,7 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.IOUtils;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.PropertiesUtil;
 
 import java.io.File;

@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * 
@@ -39,8 +40,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   }
 
   public DistributedQueryElevationComponentTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
 
     // TODO: a better way to do this?
@@ -59,8 +58,9 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     System.clearProperty("elevate.data.file");
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     
     
     del("*:*");

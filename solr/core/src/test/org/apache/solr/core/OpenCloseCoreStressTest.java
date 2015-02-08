@@ -18,8 +18,8 @@
 package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -93,59 +93,49 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   @After
   public void tearDownServer() throws Exception {
     if (jetty != null) jetty.stop();
-    for(SolrClient client: indexingClients) {
-      client.shutdown();
-    }
-    for(SolrClient client: queryingClients) {
-      client.shutdown();
-    }
+    IOUtils.close(indexingClients);
+    IOUtils.close(queryingClients);
     indexingClients.clear();
     queryingClients.clear();
   }
 
   @Test
   public void test5Seconds() throws Exception {
-    doStress(5, random().nextBoolean());
+    doStress(5);
   }
   
   @Test
   @Nightly
   public void test15SecondsOld() throws Exception {
-    doStress(15, true);
+    doStress(15);
   }
 
   @Test
   @Nightly
   public void test15SecondsNew() throws Exception {
-    doStress(15, false);
+    doStress(15);
   }
 
   @Test
   @Nightly
   public void test10MinutesOld() throws Exception {
-    doStress(300, true);
+    doStress(300);
   }
 
   @Test
   @Nightly
   public void test10MinutesNew() throws Exception {
-    doStress(300, false);
+    doStress(300);
   }
 
   @Test
   @Weekly
-  public void test1HourOld() throws Exception {
-    doStress(1800, true);
+  public void test1Hour() throws Exception {
+    doStress(1800);
   }
-
-  @Test
-  @Weekly
-  public void test1HourNew() throws Exception {
-    doStress(1800, false);
-  }
-
-
+  
   private void buildClients() throws Exception {
+
     jetty.start();
     url = buildUrl(jetty.getLocalPort(), "/solr/");
 
@@ -169,8 +159,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
   // Unless things go _really_ well, stop after you have the directories set up.
-  private void doStress(int secondsToRun, boolean oldStyle) throws Exception {
-    makeCores(solrHomeDirectory, oldStyle);
+  private void doStress(int secondsToRun) throws Exception {
+    makeCores(solrHomeDirectory);
 
     //MUST start the server after the cores are made.
     buildClients();
@@ -213,25 +203,22 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void makeCores(File home, boolean oldStyle) throws Exception {
+  private void makeCores(File home) throws Exception {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     String srcSolrXml = "solr-stress-new.xml";
 
-    if (oldStyle) {
-      srcSolrXml = "solr-stress-old.xml";
-    }
     FileUtils.copyFile(new File(testSrcRoot, srcSolrXml), new File(home, "solr.xml"));
 
     // create directories in groups of 100 until you have enough.
     for (int idx = 0; idx < numCores; ++idx) {
       String coreName = String.format(Locale.ROOT, "%05d_core", idx);
-      makeCore(new File(home, coreName), testSrcRoot, oldStyle);
+      makeCore(new File(home, coreName), testSrcRoot);
       coreCounts.put(coreName, 0L);
       coreNames.add(coreName);
     }
   }
 
-  private void makeCore(File coreDir, File testSrcRoot, boolean oldStyle) throws IOException {
+  private void makeCore(File coreDir, File testSrcRoot) throws IOException {
     File conf = new File(coreDir, "conf");
 
     if (!conf.mkdirs()) log.warn("mkdirs returned false in makeCore... ignoring");
@@ -244,9 +231,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(testConf, "solrconfig.snippet.randomindexconfig.xml"),
         new File(conf, "solrconfig.snippet.randomindexconfig.xml"));
 
-    if (!oldStyle) {
-      FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
-    }
+    FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
 
   }
 

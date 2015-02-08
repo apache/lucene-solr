@@ -116,11 +116,6 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         private int baseDoc;
 
         @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-
-        @Override
         public void collect(int i) {
           bitset.set(this.baseDoc + i);
         }

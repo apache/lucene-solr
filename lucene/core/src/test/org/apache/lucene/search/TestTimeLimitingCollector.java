@@ -355,11 +355,6 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
-    
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
 
   }
 

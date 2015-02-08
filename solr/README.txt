@@ -32,31 +32,27 @@ To start Solr for the first time after installation, simply do:
 
   bin/solr start
 
-This will launch a Solr server in the background of your shell, bound
-to port 8983. After starting Solr, you can create a new core for indexing
-your data by doing:
-
-  bin/solr create_core -n <name>
-
-This will create a core that uses a data-driven schema which tries to guess
-the correct field type when you add documents to the index. To see all available
-options for creating a new core, execute:
-
-  bin/solr create_core -help
-
-Alternatively, you can launch Solr in "cloud" mode, which allows you to scale
-out using sharding and replication. To launch Solr in cloud mode, do:
+This will launch a standalone Solr server in the background of your shell,
+listening on port 8983. Alternatively, you can launch Solr in "cloud" mode,
+which allows you to scale out using sharding and replication. To launch Solr
+in cloud mode, do:
 
   bin/solr start -cloud
-
-After starting Solr in cloud mode, you can create a new collection for indexing
-your data by doing:
-
-  bin/solr create_collection -n <name>
 
 To see all available options for starting Solr, please do:
 
   bin/solr start -help
+
+After starting Solr, create either a core or collection depending on whether
+Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
+
+  bin/solr create -c <name>
+
+This will create a collection that uses a data-driven schema which tries to guess
+the correct field type when you add documents to the index. To see all available
+options for creating a new collection, execute:
+
+  bin/solr create -help
 
 After starting Solr, direct your Web browser to the Solr Admin Console at:
 
@@ -83,37 +79,18 @@ For instance, if you want to run the Solr Data Import Handler example, do:
 Indexing Documents
 ---------------
 
-To add documents to the index, use the post.jar (or post.sh script) in
-the example/exampledocs subdirectory (while Solr is running), for example:
+To add documents to the index, use bin/post.  For example:
 
-     cd example/exampledocs
-     java -jar -Dc=<collection_name> post.jar *.xml
-Or:  sh post.sh *.xml
+     bin/post -c <collection_name> example/exampledocs/*.xml
 
 For more information about Solr examples please read...
 
  * example/solr/README.txt
    For more information about the "Solr Home" and Solr specific configuration
- * http://lucene.apache.org/solr/tutorial.html
-   For a Tutorial using this example configuration
- * http://wiki.apache.org/solr/SolrResources
+ * http://lucene.apache.org/solr/quickstart.html
+   For a Quick Start guide
+ * http://lucene.apache.org/solr/resources.html
    For a list of other tutorials and introductory articles.
-
-
-In addition, Solr ships with several example configurations that
-help you learn about Solr. To run one of the examples, you would do:
-
-  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
-
-    cloud        : SolrCloud example
-    dih          : Data Import Handler (rdbms, mail, rss, tika)
-    schemaless   : Schema-less example (schema is inferred from data during indexing)
-    techproducts : Kitchen sink example providing comprehensive examples of Solr features
-
-
-A tutorial is available at:
-
-   http://lucene.apache.org/solr/tutorial.html
 
 or linked from "docs/index.html" in a binary distribution.
 
@@ -173,7 +150,7 @@ Instructions for Building Apache Solr from Source
    for building, testing, and packaging Solr.
   
    NOTE: 
-   To see Solr in action, you may want to use the "ant example" command to build
+   To see Solr in action, you may want to use the "ant server" command to build
    and package Solr into the server/webapps directory. See also server/README.txt.
 
 

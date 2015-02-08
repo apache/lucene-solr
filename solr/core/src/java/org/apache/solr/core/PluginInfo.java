@@ -40,7 +40,7 @@ public class PluginInfo implements MapSerializable{
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
-  public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
+  public PluginInfo(String type, Map<String, String> attrs, NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     this.className = attrs.get(CLASS_NAME);
@@ -63,12 +63,15 @@ public class PluginInfo implements MapSerializable{
 
   public PluginInfo(String type, Map<String,Object> map) {
     LinkedHashMap m = new LinkedHashMap<>(map);
-    NamedList nl = new NamedList();
-    for (String s : asList(DEFAULTS, APPENDS, INVARIANTS)) if (m.get(s) != null) nl.add(s, map.remove(s));
+    initArgs = new NamedList();
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      Object value = entry.getValue();
+      if (value instanceof Map) value = new NamedList((Map) value);
+      initArgs.add(entry.getKey(), value);
+    }
     this.type = type;
     this.name = (String) m.get(NAME);
     this.className = (String) m.get(CLASS_NAME);
-    this.initArgs = nl;
     attributes = unmodifiableMap(m);
     this.children =  Collections.<PluginInfo>emptyList();
     isFromSolrConfig = true;

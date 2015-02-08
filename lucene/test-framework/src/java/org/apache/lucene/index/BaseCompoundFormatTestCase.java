@@ -53,7 +53,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     Directory dir = newDirectory();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptySet());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     assertEquals(0, cfs.listAll().length);
     cfs.close();
@@ -72,7 +73,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       createSequenceFile(dir, testfile, (byte) 0, data[i]);
       
       SegmentInfo si = newSegmentInfo(dir, "_" + i);
-      si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+      si.setFiles(Collections.singleton(testfile));
+      si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
       Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
       
       IndexInput expected = dir.openInput(testfile, newIOContext(random()));
@@ -96,7 +98,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     createSequenceFile(dir, files[1], (byte) 0, 114);
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(files), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Arrays.asList(files));
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
 
     for (String file : files) {
@@ -122,7 +125,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.singleton(testfile));
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     assertEquals(1, cfs.listAll().length);
     cfs.close();
@@ -147,7 +151,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, myContext);
+    si.setFiles(Collections.singleton(testfile));
+    si.getCodec().compoundFormat().write(dir, si, myContext);
     dir.close();
   }
   
@@ -166,7 +171,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, context);
+    si.setFiles(Collections.singleton(testfile));
+    si.getCodec().compoundFormat().write(dir, si, context);
 
     dir.close();
   }
@@ -211,7 +217,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     Directory dir = newDirectory();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptyList());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
       cfs.createOutput("bogus", IOContext.DEFAULT);
@@ -233,7 +240,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
  
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptyList());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
       cfs.deleteFile(testfile);
@@ -255,7 +263,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
  
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptyList());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
       cfs.renameFile(testfile, "bogus");
@@ -277,7 +286,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
  
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptyList());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
       cfs.sync(Collections.singleton(testfile));
@@ -299,7 +309,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.close();
  
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Collections.emptyList());
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
       cfs.makeLock("foobar");
@@ -338,7 +349,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     String files[] = dir.listAll();
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(files), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Arrays.asList(files));
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     
     for (int i = 0; i < files.length; i++) {
@@ -369,7 +381,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(0, dir.getFileHandleCount());
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(dir.listAll()), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(Arrays.asList(dir.listAll()));
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     
     final IndexInput[] ins = new IndexInput[FILE_COUNT];
@@ -722,7 +735,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     }
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, files, MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    si.setFiles(files);
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     return cfs;
   }

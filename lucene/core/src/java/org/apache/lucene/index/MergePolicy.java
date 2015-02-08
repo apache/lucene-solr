@@ -17,15 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.RateLimiter;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -107,11 +108,14 @@ public abstract class MergePolicy {
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
 
+    /** A private {@link RateLimiter} for this merge, used to rate limit writes and abort. */
+    public final MergeRateLimiter rateLimiter;
+
+    volatile long mergeStartNS = -1;
+
     /** Total number of documents in segments to be merged, not accounting for deletions. */
     public final int totalDocCount;
-    boolean aborted;
     Throwable error;
-    boolean paused;
 
     /** Sole constructor.
      * @param segments List of {@link SegmentCommitInfo}s
@@ -127,6 +131,8 @@ public abstract class MergePolicy {
         count += info.info.getDocCount();
       }
       totalDocCount = count;
+
+      rateLimiter = new MergeRateLimiter(this);
     }
 
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
@@ -139,12 +145,12 @@ public abstract class MergePolicy {
      *  reorders doc IDs, it must override {@link #getDocMap} too so that
      *  deletes that happened during the merge can be applied to the newly
      *  merged segment. */
-    public List<LeafReader> getMergeReaders() throws IOException {
+    public List<CodecReader> getMergeReaders() throws IOException {
       if (readers == null) {
         throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
       }
-      final List<LeafReader> readers = new ArrayList<>(this.readers.size());
-      for (LeafReader reader : this.readers) {
+      final List<CodecReader> readers = new ArrayList<>(this.readers.size());
+      for (SegmentReader reader : this.readers) {
         if (reader.numDocs() > 0) {
           readers.add(reader);
         }
@@ -186,68 +192,16 @@ public abstract class MergePolicy {
       return error;
     }
 
-    /** Mark this merge as aborted.  If this is called
-     *  before the merge is committed then the merge will
-     *  not be committed. */
-    synchronized void abort() {
-      aborted = true;
-      notifyAll();
-    }
-
-    /** Returns true if this merge was aborted. */
-    synchronized boolean isAborted() {
-      return aborted;
-    }
-
-    /** Called periodically by {@link IndexWriter} while
-     *  merging to see if the merge is aborted. */
-    public synchronized void checkAborted(Directory dir) throws MergeAbortedException {
-      if (aborted) {
-        throw new MergeAbortedException("merge is aborted: " + segString(dir));
-      }
-
-      while (paused) {
-        try {
-          // In theory we could wait() indefinitely, but we
-          // do 250 msec, defensively
-          wait(250);
-        } catch (InterruptedException ie) {
-          throw new RuntimeException(ie);
-        }
-        if (aborted) {
-          throw new MergeAbortedException("merge is aborted: " + segString(dir));
-        }
-      }
-    }
-
-    /** Set or clear whether this merge is paused paused (for example
-     *  {@link ConcurrentMergeScheduler} will pause merges
-     *  if too many are running). */
-    synchronized public void setPause(boolean paused) {
-      this.paused = paused;
-      if (!paused) {
-        // Wakeup merge thread, if it's waiting
-        notifyAll();
-      }
-    }
-
-    /** Returns true if this merge is paused.
-     *
-     *  @see #setPause(boolean) */
-    synchronized public boolean getPause() {
-      return paused;
-    }
-
     /** Returns a readable description of the current merge
      *  state. */
-    public String segString(Directory dir) {
+    public String segString() {
       StringBuilder b = new StringBuilder();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
         if (i > 0) {
           b.append(' ');
         }
-        b.append(segments.get(i).toString(dir, 0));
+        b.append(segments.get(i).toString());
       }
       if (info != null) {
         b.append(" into ").append(info.info.name);
@@ -255,7 +209,7 @@ public abstract class MergePolicy {
       if (maxNumSegments != -1) {
         b.append(" [maxNumSegments=" + maxNumSegments + "]");
       }
-      if (aborted) {
+      if (rateLimiter.getAbort()) {
         b.append(" [ABORTED]");
       }
       return b.toString();
@@ -321,7 +275,7 @@ public abstract class MergePolicy {
       b.append("MergeSpec:\n");
       final int count = merges.size();
       for(int i=0;i<count;i++) {
-        b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString(dir));
+        b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString());
       }
       return b.toString();
     }
@@ -538,5 +492,4 @@ public abstract class MergePolicy {
     v *= 1024 * 1024;
     this.maxCFSSegmentSize = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
   }
-
 }

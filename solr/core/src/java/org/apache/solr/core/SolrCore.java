@@ -17,6 +17,47 @@
 
 package org.apache.solr.core;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -38,6 +79,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -97,7 +139,6 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -108,46 +149,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -441,7 +442,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     solrCoreState.increfSolrCoreState();
     SolrCore currentCore;
     boolean indexDirChange = !getNewIndexDir().equals(getIndexDir());
-    if (indexDirChange || !coreConfig.getSolrConfig().nrtMode) {
+    if (indexDirChange) {
       // the directory is changing, don't pass on state
       currentCore = null;
     } else {
@@ -459,13 +460,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     core.getSearcher(true, false, null, true);
     
     return core;
-  }
-
-
-  // gets a non-caching searcher
-  public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(this, getNewIndexDir(), getLatestSchema(), getSolrConfig().indexConfig, 
-                                 name, false, directoryFactory);
   }
 
 
@@ -542,7 +536,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, 
+        SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true, 
                                                         getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
         writer.close();
       }
@@ -852,13 +846,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
             @Override
             public DirectoryReader call() throws Exception {
-              if(getSolrConfig().nrtMode) {
-                // if in NRT mode, need to open from the previous writer
-                return indexReaderFactory.newReader(iw, core);
-              } else {
-                // if not NRT, need to create a new reader from the directory
-                return indexReaderFactory.newReader(iw.getDirectory(), core);
-              }
+              return indexReaderFactory.newReader(iw, core);
             }
           };
         }
@@ -1500,7 +1488,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     SolrIndexSearcher tmp;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
-    boolean nrt = solrConfig.nrtMode && updateHandlerReopens;
 
     openSearcherLock.lock();
     try {
@@ -1509,7 +1496,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       String newIndexDirFile = null;
 
       // if it's not a normal near-realtime update, check that paths haven't changed.
-      if (!nrt) {
+      if (!updateHandlerReopens) {
         indexDirFile = getDirectoryFactory().normalize(getIndexDir());
         newIndexDirFile = getDirectoryFactory().normalize(newIndexDir);
       }
@@ -1521,7 +1508,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         }
       }
 
-      if (newestSearcher != null && (nrt || indexDirFile.equals(newIndexDirFile))) {
+      if (newestSearcher != null && (updateHandlerReopens || indexDirFile.equals(newIndexDirFile))) {
 
         DirectoryReader newReader;
         DirectoryReader currentReader = newestSearcher.get().getRawReader();
@@ -1531,12 +1518,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState()
             .getIndexWriter(null);
         try {
-          if (writer != null && solrConfig.nrtMode) {
+          if (writer != null) {
             // if in NRT mode, open from the writer
             newReader = DirectoryReader.openIfChanged(currentReader, writer.get(), true);
           } else {
             // verbose("start reopen without writer, reader=", currentReader);
-            // if not in NRT mode, just re-open the reader
             newReader = DirectoryReader.openIfChanged(currentReader);
             // verbose("reopen result", newReader);
           }
@@ -1583,7 +1569,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           DirectoryReader newReader = newReaderCreator.call();
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
-        } else if (solrConfig.nrtMode) {
+        } else  {
           RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
@@ -1593,12 +1579,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
-        } else {
-         // normal open that happens at startup
-        // verbose("non-reopen START:");
-        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig,
-                                    "main", true, directoryFactory);
-        // verbose("non-reopen DONE: searcher=",tmp);
         }
       }
 

@@ -133,18 +133,22 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        SVInnerScorer scorer = (SVInnerScorer) bulkScorer(context, false, null);
-        if (scorer != null) {
-          return scorer.explain(doc);
+        Terms terms = context.reader().terms(field);
+        if (terms != null) {
+          segmentTermsEnum = terms.iterator(segmentTermsEnum);
+          BytesRef spare = new BytesRef();
+          DocsEnum docsEnum = null;
+          for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
+            if (segmentTermsEnum.seekExact(TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
+              docsEnum = segmentTermsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
+              if (docsEnum.advance(doc) == doc) {
+                final float score = TermsIncludingScoreQuery.this.scores[ords[i]];
+                return new ComplexExplanation(true, score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
+              }
+            }
+          }
         }
         return new ComplexExplanation(false, 0.0f, "Not a match");
-      }
-
-      @Override
-      public boolean scoresDocsOutOfOrder() {
-        // We have optimized impls below if we are allowed
-        // to score out-of-order:
-        return true;
       }
 
       @Override
@@ -179,141 +183,7 @@ class TermsIncludingScoreQuery extends Query {
           return new SVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
         }
       }
-
-      @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
-
-        if (scoreDocsInOrder) {
-          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
-        } else {
-          Terms terms = context.reader().terms(field);
-          if (terms == null) {
-            return null;
-          }
-          // what is the runtime...seems ok?
-          final long cost = context.reader().maxDoc() * terms.size();
-
-          segmentTermsEnum = terms.iterator(segmentTermsEnum);
-          // Optimized impls that take advantage of docs
-          // being allowed to be out of order:
-          if (multipleValuesPerDocument) {
-            return new MVInnerScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
-          } else {
-            return new SVInnerScorer(this, acceptDocs, segmentTermsEnum, cost);
-          }
-        }
-      }
     };
-  }
-
-  // This impl assumes that the 'join' values are used uniquely per doc per field. Used for one to many relations.
-  class SVInnerScorer extends BulkScorer {
-
-    final BytesRef spare = new BytesRef();
-    final Bits acceptDocs;
-    final TermsEnum termsEnum;
-    final long cost;
-
-    int upto;
-    DocsEnum docsEnum;
-    DocsEnum reuse;
-    int scoreUpto;
-    int doc;
-
-    SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, long cost) {
-      this.acceptDocs = acceptDocs;
-      this.termsEnum = termsEnum;
-      this.cost = cost;
-      this.doc = -1;
-    }
-
-    @Override
-    public boolean score(LeafCollector collector, int max) throws IOException {
-      FakeScorer fakeScorer = new FakeScorer();
-      collector.setScorer(fakeScorer);
-      if (doc == -1) {
-        doc = nextDocOutOfOrder();
-      }
-      while(doc < max) {
-        fakeScorer.doc = doc;
-        fakeScorer.score = scores[ords[scoreUpto]];
-        collector.collect(doc);
-        doc = nextDocOutOfOrder();
-      }
-
-      return doc != DocsEnum.NO_MORE_DOCS;
-    }
-
-    int nextDocOutOfOrder() throws IOException {
-      while (true) {
-        if (docsEnum != null) {
-          int docId = docsEnumNextDoc();
-          if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-            docsEnum = null;
-          } else {
-            return doc = docId;
-          }
-        }
-
-        if (upto == terms.size()) {
-          return doc = DocIdSetIterator.NO_MORE_DOCS;
-        }
-
-        scoreUpto = upto;
-        if (termsEnum.seekExact(terms.get(ords[upto++], spare))) {
-          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
-        }
-      }
-    }
-
-    protected int docsEnumNextDoc() throws IOException {
-      return docsEnum.nextDoc();
-    }
-
-    private Explanation explain(int target) throws IOException {
-      int docId;
-      do {
-        docId = nextDocOutOfOrder();
-        if (docId < target) {
-          int tempDocId = docsEnum.advance(target);
-          if (tempDocId == target) {
-            docId = tempDocId;
-            break;
-          }
-        } else if (docId == target) {
-          break;
-        }
-        docsEnum = null; // goto the next ord.
-      } while (docId != DocIdSetIterator.NO_MORE_DOCS);
-
-      return new ComplexExplanation(true, scores[ords[scoreUpto]], "Score based on join value " + termsEnum.term().utf8ToString());
-    }
-  }
-
-  // This impl that tracks whether a docid has already been emitted. This check makes sure that docs aren't emitted
-  // twice for different join values. This means that the first encountered join value determines the score of a document
-  // even if other join values yield a higher score.
-  class MVInnerScorer extends SVInnerScorer {
-
-    final FixedBitSet alreadyEmittedDocs;
-
-    MVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) {
-      super(weight, acceptDocs, termsEnum, cost);
-      alreadyEmittedDocs = new FixedBitSet(maxDoc);
-    }
-
-    @Override
-    protected int docsEnumNextDoc() throws IOException {
-      while (true) {
-        int docId = docsEnum.nextDoc();
-        if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-          return docId;
-        }
-        if (!alreadyEmittedDocs.getAndSet(docId)) {
-          return docId;//if it wasn't previously set, return it
-        }
-      }
-    }
   }
 
   class SVInOrderScorer extends Scorer {

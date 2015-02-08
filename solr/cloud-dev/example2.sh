@@ -12,7 +12,7 @@ rm -r -f example/solr/zoo_data
 rm -r -f example/solr/collection1/data
 rm -f example/example.log
 
-ant example dist
+ant server dist
 
 cp -r -f example example2
 cp -r -f example example3

@@ -32,18 +32,15 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 
 import junit.framework.AssertionFailedError;
+import org.junit.Test;
 
 public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCase {
   
   public static final String SPECIAL = ""; 
 
-  public DistributedFacetPivotLargeTest() {
-    this.fixShardCount = true;
-    this.shardCount = 4; // we leave one empty as an edge case
-  }
-  
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     this.stress = 0 ;
     handle.clear();
     handle.put("QTime", SKIPVAL);

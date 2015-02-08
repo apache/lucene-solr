@@ -17,24 +17,26 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
-
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 
 
 /**
@@ -45,51 +47,28 @@ public class ConfigSolrXml extends ConfigSolr {
   protected static Logger log = LoggerFactory.getLogger(ConfigSolrXml.class);
 
   private final CoresLocator coresLocator;
+  private final Config config;
+  private final Map<CfgProp, Object> propMap = new HashMap<>();
 
   public ConfigSolrXml(Config config) {
-    super(config);
-    try {
-      checkForIllegalConfig();
-      fillPropMap();
-      coresLocator = new CorePropertiesLocator(getCoreRootDirectory());
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+    super(config.getResourceLoader(), loadProperties(config));
+    this.config = config;
+    this.config.substituteProperties();
+    checkForIllegalConfig();
+    fillPropMap();
+    coresLocator = new CorePropertiesLocator(getCoreRootDirectory());
   }
 
-  private void checkForIllegalConfig() throws IOException {
+  private void checkForIllegalConfig() {
 
-    // Do sanity checks - we don't want to find old style config
     failIfFound("solr/@coreLoadThreads");
     failIfFound("solr/@persistent");
     failIfFound("solr/@sharedLib");
     failIfFound("solr/@zkHost");
 
-    failIfFound("solr/logging/@class");
-    failIfFound("solr/logging/@enabled");
-    failIfFound("solr/logging/watcher/@size");
-    failIfFound("solr/logging/watcher/@threshold");
+    failIfFound("solr/cores");
 
-    failIfFound("solr/cores/@adminHandler");
-    failIfFound("solr/cores/@distribUpdateConnTimeout");
-    failIfFound("solr/cores/@distribUpdateSoTimeout");
-    failIfFound("solr/cores/@host");
-    failIfFound("solr/cores/@hostContext");
-    failIfFound("solr/cores/@hostPort");
-    failIfFound("solr/cores/@leaderVoteWait");
-    failIfFound("solr/cores/@leaderConflictResolveWait");
-    failIfFound("solr/cores/@genericCoreNodeNames");
-    failIfFound("solr/cores/@managementPath");
-    failIfFound("solr/cores/@shareSchema");
-    failIfFound("solr/cores/@transientCacheSize");
-    failIfFound("solr/cores/@zkClientTimeout");
-
-    // These have no counterpart in 5.0, asking for any of these in Solr 5.0
-    // will result in an error being
-    // thrown.
-    failIfFound("solr/cores/@defaultCoreName");
     failIfFound("solr/@persistent");
-    failIfFound("solr/cores/@adminPath");
 
   }
 
@@ -97,7 +76,32 @@ public class ConfigSolrXml extends ConfigSolr {
 
     if (config.getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          " solr.xml may be a mix of old and new style formats.");
+          "\n. Please upgrade your solr.xml: https://cwiki.apache.org/confluence/display/solr/Format+of+solr.xml");
+    }
+  }
+
+  protected String getProperty(CfgProp key) {
+    if (!propMap.containsKey(key) || propMap.get(key) == null)
+      return null;
+    return propMap.get(key).toString();
+  }
+
+  private static Properties loadProperties(Config config) {
+    try {
+      Node node = ((NodeList) config.evaluate("solr", XPathConstants.NODESET)).item(0);
+      XPath xpath = config.getXPath();
+      NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
+      Properties properties = new Properties();
+      for (int i = 0; i < props.getLength(); i++) {
+        Node prop = props.item(i);
+        properties.setProperty(DOMUtil.getAttr(prop, "name"),
+            PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
+      }
+      return properties;
+    }
+    catch (XPathExpressionException e) {
+      log.warn("Error parsing solr.xml: " + e.getMessage());
+      return null;
     }
   }
 
@@ -247,24 +251,9 @@ public class ConfigSolrXml extends ConfigSolr {
     }
   }
 
-  @Override
-  public String getDefaultCoreName() {
-    return "collection1";
-  }
-
-  @Override
-  public boolean isPersistent() {
-    return true;
-  }
-
-  @Override
-  protected String getShardHandlerFactoryConfigPath() {
-    return "solr/shardHandlerFactory";
-  }
-
-  @Override
-  public String getAdminPath() {
-    return DEFAULT_CORE_ADMIN_PATH;
+  public PluginInfo getShardHandlerFactoryPluginInfo() {
+    Node node = config.getNode("solr/shardHandlerFactory", false);
+    return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
   }
 
   @Override

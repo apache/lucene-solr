@@ -56,7 +56,7 @@ public class MatchAllDocsQuery extends Query {
       while(liveDocs != null && doc < maxDoc && !liveDocs.get(doc)) {
         doc++;
       }
-      if (doc == maxDoc) {
+      if (doc >= maxDoc) { // can be > maxDoc when called from advance()
         doc = NO_MORE_DOCS;
       }
       return doc;

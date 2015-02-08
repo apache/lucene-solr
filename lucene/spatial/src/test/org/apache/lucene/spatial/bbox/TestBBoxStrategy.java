@@ -298,9 +298,11 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     adoc("100", ctx.makeRectangle(0, 20, 40, 80));
     adoc("999", (Shape) null);
     commit();
-    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false),
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false, 1.0),
         new float[]{800f, 0f}, 0f);
-    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true),//geo
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true, 1.0),//geo
         new float[]{391.93f, 0f}, 0.01f);
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true, 2.0),
+        new float[]{783.86f, 0f}, 0.01f); // testing with a different multiplier
   }
 }

@@ -31,9 +31,8 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.MockConfigSolr;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,20 +49,8 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   static final int TIMEOUT = 10000;
   private AtomicInteger killCounter = new AtomicInteger();
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(15);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();

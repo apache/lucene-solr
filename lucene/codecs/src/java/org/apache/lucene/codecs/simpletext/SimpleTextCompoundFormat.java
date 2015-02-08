@@ -29,7 +29,6 @@ import java.util.Locale;
 
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -157,11 +156,11 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     
-    int numFiles = files.size();
-    String names[] = files.toArray(new String[numFiles]);
+    int numFiles = si.files().size();
+    String names[] = si.files().toArray(new String[numFiles]);
     Arrays.sort(names);
     long startOffsets[] = new long[numFiles];
     long endOffsets[] = new long[numFiles];
@@ -181,8 +180,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
           out.copyBytes(in, in.length());
         }
         endOffsets[i] = out.getFilePointer();
-        
-        checkAbort.work(endOffsets[i] - startOffsets[i]);
       }
       
       long tocPos = out.getFilePointer();
@@ -211,11 +208,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       SimpleTextUtil.write(out, df.format(tocPos), scratch);
       SimpleTextUtil.writeNewline(out);
     }
-  }
-
-  @Override
-  public String[] files(SegmentInfo si) {
-    return new String[] { IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION) };
   }
   
   // helper method to strip strip away 'prefix' from 'scratch' and return as String

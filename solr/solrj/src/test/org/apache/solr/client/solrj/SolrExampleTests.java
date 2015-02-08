@@ -213,13 +213,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     if (jetty != null) {
       // check system wide system handler + "/admin/info/system"
       String url = jetty.getBaseUrl().toString();
-      HttpSolrClient adminClient = new HttpSolrClient(url);
-      SolrQuery q = new SolrQuery();
-      q.set("qt", "/admin/info/system");
-      QueryResponse rsp = adminClient.query(q);
-      assertNotNull(rsp.getResponse().get("mode"));
-      assertNotNull(rsp.getResponse().get("lucene"));
-      adminClient.shutdown();
+      try (HttpSolrClient adminClient = new HttpSolrClient(url)) {
+        SolrQuery q = new SolrQuery();
+        q.set("qt", "/admin/info/system");
+        QueryResponse rsp = adminClient.query(q);
+        assertNotNull(rsp.getResponse().get("mode"));
+        assertNotNull(rsp.getResponse().get("lucene"));
+      }
     }
   }
 
@@ -256,7 +256,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
-    query.addSortField( "price", SolrQuery.ORDER.asc );
+    query.addSort(new SolrQuery.SortClause("price", SolrQuery.ORDER.asc));
     QueryResponse rsp = client.query( query );
     
     assertEquals(2, rsp.getResults().getNumFound());
@@ -495,7 +495,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
     query.set( CommonParams.FL, "id,price,[docid],[explain style=nl],score,aaa:[value v=aaa],ten:[value v=10 t=int]" );
-    query.addSortField( "price", SolrQuery.ORDER.asc );
+    query.addSort(new SolrQuery.SortClause("price", SolrQuery.ORDER.asc));
     QueryResponse rsp = client.query( query );
     
     SolrDocumentList out = rsp.getResults();
@@ -547,7 +547,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     if (!(client instanceof EmbeddedSolrServer)) {
       /* Do not close in case of using EmbeddedSolrServer,
        * as that would close the CoreContainer */
-      client.shutdown();
+      client.close();
     }
   }
   

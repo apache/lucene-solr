@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -48,15 +49,15 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterExceptions extends LuceneTestCase {
@@ -360,12 +361,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1208
   public void testExceptionJustBeforeFlush() throws IOException {
     Directory dir = newDirectory();
+
+    final AtomicBoolean doCrash = new AtomicBoolean();
+
     Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
       public TokenStreamComponents createComponents(String fieldName) {
         MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
+        TokenStream stream = tokenizer;
+        if (doCrash.get()) {
+          stream = new CrashingFilter(fieldName, stream);
+        }
+        return new TokenStreamComponents(tokenizer, stream);
       }
     };
 
@@ -379,6 +387,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     Document crashDoc = w.newDocument();
     crashDoc.addLargeText("crash", "do it on token 4");
+    doCrash.set(true);
     try {
       w.addDocument(crashDoc);
       fail("did not hit expected exception");
@@ -1184,7 +1193,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.close();
   }
 
-  // Simulate a corrupt index by removing one of the cfs
+  // Simulate a corrupt index by removing one of the
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
@@ -1222,8 +1231,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     for (SegmentCommitInfo si : sis) {
       assertTrue(si.info.getUseCompoundFile());
-      String cfsFiles[] = si.info.getCodec().compoundFormat().files(si.info);
-      dir.deleteFile(cfsFiles[0]);
+      List<String> victims = new ArrayList<String>(si.info.files());
+      Collections.shuffle(victims, random());
+      dir.deleteFile(victims.get(0));
       corrupted = true;
       break;
     }
@@ -1859,16 +1869,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (ms instanceof ConcurrentMergeScheduler) {
           final ConcurrentMergeScheduler suppressFakeIOE = new ConcurrentMergeScheduler() {
               @Override
-              protected void handleMergeException(Throwable exc) {
+              protected void handleMergeException(Directory dir, Throwable exc) {
                 // suppress only FakeIOException:
                 if (!(exc instanceof FakeIOException)) {
-                  super.handleMergeException(exc);
+                  super.handleMergeException(dir, exc);
                 }
               }
             };
           final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
           suppressFakeIOE.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
-          suppressFakeIOE.setMergeThreadPriority(cms.getMergeThreadPriority());
           iwc.setMergeScheduler(suppressFakeIOE);
         }
         

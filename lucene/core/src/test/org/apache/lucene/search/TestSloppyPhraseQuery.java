@@ -190,11 +190,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       totalHits++;
       max = Math.max(max, scorer.freq());
     }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
   }
   
   /** checks that no scores or freqs are infinite */
@@ -211,11 +206,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       public void collect(int doc) throws IOException {
         assertFalse(Float.isInfinite(scorer.freq()));
         assertFalse(Float.isInfinite(scorer.score()));
-      }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return false;
       }
     });
     QueryUtils.check(random(), pq, searcher);

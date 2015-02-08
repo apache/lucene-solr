@@ -81,11 +81,6 @@ public class FilteredQuery extends Query {
   public Weight createWeight(final IndexSearcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
     return new Weight() {
-      
-      @Override
-      public boolean scoresDocsOutOfOrder() {
-        return true;
-      }
 
       @Override
       public float getValueForNormalization() throws IOException { 
@@ -138,7 +133,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering top scorer
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -147,7 +142,7 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredBulkScorer(context, weight, scoreDocsInOrder, filterDocIdSet);
+        return strategy.filteredBulkScorer(context, weight, filterDocIdSet);
       }
     };
   }
@@ -225,12 +220,12 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public boolean score(LeafCollector collector, int maxDoc) throws IOException {
+    public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:
       collector.setScorer(scorer);
-      if (scorer.docID() == -1) {
-        scorer.nextDoc();
+      if (scorer.docID() < min) {
+        scorer.advance(min);
       }
       while (true) {
         final int scorerDoc = scorer.docID();
@@ -244,7 +239,7 @@ public class FilteredQuery extends Query {
         }
       }
 
-      return scorer.docID() != Scorer.NO_MORE_DOCS;
+      return scorer.docID();
     }
   }
   
@@ -480,7 +475,7 @@ public class FilteredQuery extends Query {
      * @return a filtered top scorer
      */
     public BulkScorer filteredBulkScorer(LeafReaderContext context,
-        Weight weight, boolean scoreDocsInOrder, DocIdSet docIdSet) throws IOException {
+        Weight weight, DocIdSet docIdSet) throws IOException {
       Scorer scorer = filteredScorer(context, weight, docIdSet);
       if (scorer == null) {
         return null;
@@ -603,13 +598,12 @@ public class FilteredQuery extends Query {
     @Override
     public BulkScorer filteredBulkScorer(final LeafReaderContext context,
         Weight weight,
-        boolean scoreDocsInOrder, // ignored (we always top-score in order)
         DocIdSet docIdSet) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
       if (filterAcceptDocs == null) {
         // Filter does not provide random-access Bits; we
         // must fallback to leapfrog:
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, scoreDocsInOrder, docIdSet);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, docIdSet);
       }
       final Scorer scorer = weight.scorer(context, null);
       return scorer == null ? null : new QueryFirstBulkScorer(scorer, filterAcceptDocs);

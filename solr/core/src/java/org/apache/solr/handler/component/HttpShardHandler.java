@@ -152,11 +152,8 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrClient client = new HttpSolrClient(url, httpClient);
-            try {
+            try (SolrClient client = new HttpSolrClient(url, httpClient)) {
               ssr.nl = client.request(req);
-            } finally {
-              client.shutdown();
             }
           } else {
             LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
@@ -282,7 +279,6 @@ public class HttpShardHandler extends ShardHandler {
 
         clusterState =  zkController.getClusterState();
         String shardKeys =  params.get(ShardParams._ROUTE_);
-        if(shardKeys == null) shardKeys = params.get(ShardParams.SHARD_KEYS);//eprecated
 
         // This will be the complete list of slices we need to query for this request.
         slices = new HashMap<>();

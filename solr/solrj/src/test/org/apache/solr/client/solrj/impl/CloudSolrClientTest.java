@@ -20,8 +20,9 @@ package org.apache.solr.client.solrj.impl;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -44,16 +45,14 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -95,34 +94,69 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     return SOLR_HOME;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
     
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-  
   public CloudSolrClientTest() {
     super();
     sliceCount = 2;
-    shardCount = 3;
+    fixShardCount(3);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     allTests();
     stateVersionParamTest();
     customHttpClientTest();
+    testOverwriteOption();
+  }
+
+  private void testOverwriteOption() throws Exception, SolrServerException,
+      IOException {
+    String collectionName = "overwriteCollection";
+    createCollection(collectionName, controlClientCloud, 1, 1);
+    waitForRecoveriesToFinish(collectionName, false);
+    try (CloudSolrClient cloudClient = createCloudClient(collectionName)) {
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField(id, "0");
+      doc1.addField("a_t", "hello1");
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField(id, "0");
+      doc2.addField("a_t", "hello2");
+      
+      UpdateRequest request = new UpdateRequest();
+      request.add(doc1);
+      request.add(doc2);
+      request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+      NamedList<Object> response = cloudClient.request(request);
+      QueryResponse resp = cloudClient.query(new SolrQuery("*:*"));
+      
+      assertEquals("There should be one document because overwrite=true", 1, resp.getResults().getNumFound());
+      
+      doc1 = new SolrInputDocument();
+      doc1.addField(id, "1");
+      doc1.addField("a_t", "hello1");
+      doc2 = new SolrInputDocument();
+      doc2.addField(id, "1");
+      doc2.addField("a_t", "hello2");
+      
+      request = new UpdateRequest();
+      // overwrite=false
+      request.add(doc1, false);
+      request.add(doc2, false);
+      request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+      response = cloudClient.request(request);
+      
+      resp = cloudClient.query(new SolrQuery("*:*"));
+
+      assertEquals("There should be 3 documents because there should be two id=1 docs due to overwrite=false", 3, resp.getResults().getNumFound());
+    }
   }
 
   private void allTests() throws Exception {
@@ -175,10 +209,11 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      HttpSolrClient solrClient = new HttpSolrClient(url);
-      QueryResponse queryResponse = queryRequest.process(solrClient);
-      SolrDocumentList docList = queryResponse.getResults();
-      assertTrue(docList.getNumFound() == 1);
+      try (HttpSolrClient solrClient = new HttpSolrClient(url)) {
+        QueryResponse queryResponse = queryRequest.process(solrClient);
+        SolrDocumentList docList = queryResponse.getResults();
+        assertTrue(docList.getNumFound() == 1);
+      }
     }
     
     // Test the deleteById routing for UpdateRequest
@@ -196,10 +231,7 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     assertTrue(docs.getNumFound() == 0);
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    
-    CloudSolrClient threadedClient = null;
-    try {
-      threadedClient = new CloudSolrClient(zkServer.getZkAddress());
+    try (CloudSolrClient threadedClient = new CloudSolrClient(zkServer.getZkAddress())) {
       threadedClient.setParallelUpdates(true);
       threadedClient.setDefaultCollection(collectionName);
       response = threadedClient.request(request);
@@ -218,13 +250,12 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        HttpSolrClient solrClient = new HttpSolrClient(url);
-        QueryResponse queryResponse = queryRequest.process(solrClient);
-        SolrDocumentList docList = queryResponse.getResults();
-        assertTrue(docList.getNumFound() == 1);
+        try (HttpSolrClient solrClient = new HttpSolrClient(url)) {
+          QueryResponse queryResponse = queryRequest.process(solrClient);
+          SolrDocumentList docList = queryResponse.getResults();
+          assertTrue(docList.getNumFound() == 1);
+        }
       }
-    } finally {
-      threadedClient.shutdown();
     }
 
     // Test that queries with _route_ params are routed by the client
@@ -315,22 +346,25 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
 
     controlClient.commit();
     cloudClient.commit();
-    cloudClient.shutdown();
+    cloudClient.close();
   }
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
-    HttpSolrClient client = new HttpSolrClient(baseUrl + "/"+ collectionName);
-    client.setConnectionTimeout(15000);
-    client.setSoTimeout(60000);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/mbeans");
-    params.set("stats", "true");
-    params.set("key", "standard");
-    params.set("cat", "QUERYHANDLER");
-    // use generic request to avoid extra processing of queries
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> resp = client.request(req);
+
+    NamedList<Object> resp;
+    try (HttpSolrClient client = new HttpSolrClient(baseUrl + "/"+ collectionName)) {
+      client.setConnectionTimeout(15000);
+      client.setSoTimeout(60000);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/admin/mbeans");
+      params.set("stats", "true");
+      params.set("key", "standard");
+      params.set("cat", "QUERYHANDLER");
+      // use generic request to avoid extra processing of queries
+      QueryRequest req = new QueryRequest(params);
+      resp = client.request(req);
+    }
     return (Long) resp.findRecursive("solr-mbeans", "QUERYHANDLER",
         "standard", "stats", "requests");
   }
@@ -342,37 +376,38 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
   }
 
   private void stateVersionParamTest() throws Exception {
-    CloudSolrClient client = createCloudClient(null);
-    try {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
       String collectionName = "checkStateVerCol";
       createCollection(collectionName, client, 2, 2);
       waitForRecoveriesToFinish(collectionName, false);
       DocCollection coll = client.getZkStateReader().getClusterState().getCollection(collectionName);
       Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
-      HttpSolrClient solrClient = new HttpSolrClient(r.getStr(ZkStateReader.BASE_URL_PROP) + "/"+collectionName);
-
-
       SolrQuery q = new SolrQuery().setQuery("*:*");
-
-      log.info("should work query, result {}", solrClient.query(q));
-      //no problem
-      q.setParam(CloudSolrClient.STATE_VERSION, collectionName + ":" + coll.getZNodeVersion());
-      log.info("2nd query , result {}", solrClient.query(q));
-      //no error yet good
-
-      q.setParam(CloudSolrClient.STATE_VERSION, collectionName+":"+ (coll.getZNodeVersion() -1)); //an older version expect error
-
       HttpSolrClient.RemoteSolrException sse = null;
-      try {
-        solrClient.query(q);
-        log.info("expected query error");
-      } catch (HttpSolrClient.RemoteSolrException e) {
-        sse = e;
+
+      try (HttpSolrClient solrClient = new HttpSolrClient(r.getStr(ZkStateReader.BASE_URL_PROP) + "/"+collectionName)) {
+
+        log.info("should work query, result {}", solrClient.query(q));
+        //no problem
+        q.setParam(CloudSolrClient.STATE_VERSION, collectionName + ":" + coll.getZNodeVersion());
+        log.info("2nd query , result {}", solrClient.query(q));
+        //no error yet good
+
+        q.setParam(CloudSolrClient.STATE_VERSION, collectionName + ":" + (coll.getZNodeVersion() - 1)); //an older version expect error
+
+        try {
+          solrClient.query(q);
+          log.info("expected query error");
+        } catch (HttpSolrClient.RemoteSolrException e) {
+          sse = e;
+        }
+
+        assertNotNull(sse);
+        assertEquals(" Error code should be ", sse.code(), SolrException.ErrorCode.INVALID_STATE.code);
+
       }
-      solrClient.shutdown();
-      assertNotNull(sse);
-      assertEquals(" Error code should be ", sse.code(), SolrException.ErrorCode.INVALID_STATE.code);
 
       //now send the request to another node that does n ot serve the collection
 
@@ -392,68 +427,56 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
       }
       log.info("thenode which does not serve this collection{} ",theNode);
       assertNotNull(theNode);
-      solrClient = new HttpSolrClient(theNode + "/"+collectionName);
 
-      q.setParam(CloudSolrClient.STATE_VERSION, collectionName+":"+coll.getZNodeVersion());
+      try (SolrClient solrClient = new HttpSolrClient(theNode + "/"+collectionName)) {
 
-      try {
-        solrClient.query(q);
-        log.info("error was expected");
-      } catch (HttpSolrClient.RemoteSolrException e) {
-        sse = e;
+        q.setParam(CloudSolrClient.STATE_VERSION, collectionName + ":" + coll.getZNodeVersion());
+        try {
+          solrClient.query(q);
+          log.info("error was expected");
+        } catch (HttpSolrClient.RemoteSolrException e) {
+          sse = e;
+        }
+        assertNotNull(sse);
+        assertEquals(" Error code should be ", sse.code(), SolrException.ErrorCode.INVALID_STATE.code);
       }
-      solrClient.shutdown();
-      assertNotNull(sse);
-      assertEquals(" Error code should be ",  sse.code() , SolrException.ErrorCode.INVALID_STATE.code);
-    } finally {
-      client.shutdown();
     }
 
   }
 
-  public void testShutdown() throws MalformedURLException {
-    CloudSolrClient client = new CloudSolrClient("[ff01::114]:33332");
-    try {
+  public void testShutdown() throws IOException {
+    try (CloudSolrClient client = new CloudSolrClient("[ff01::114]:33332")) {
       client.setZkConnectTimeout(100);
       client.connect();
       fail("Expected exception");
     } catch (SolrException e) {
       assertTrue(e.getCause() instanceof TimeoutException);
-    } finally {
-      client.shutdown();
     }
   }
 
-  public void testWrongZkChrootTest() throws MalformedURLException {
-    CloudSolrClient client = null;
-    try {
-      client = new CloudSolrClient(zkServer.getZkAddress() + "/xyz/foo");
+  public void testWrongZkChrootTest() throws IOException {
+    try (CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress() + "/xyz/foo")) {
       client.setDefaultCollection(DEFAULT_COLLECTION);
       client.setZkClientTimeout(1000 * 60);
       client.connect();
       fail("Expected exception");
     } catch(SolrException e) {
       assertTrue(e.getCause() instanceof KeeperException);
-    } finally {
-      client.shutdown();
     }
     // see SOLR-6146 - this test will fail by virtue of the zkClient tracking performed
     // in the afterClass method of the base class
   }
 
-  public void customHttpClientTest() {
-    CloudSolrClient solrClient = null;
+  public void customHttpClientTest() throws IOException {
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 1000);
-    HttpClient client = null;
 
-    try {
-      client = HttpClientUtil.createClient(params);
-      solrClient = new CloudSolrClient(zkServer.getZkAddress(), client);
+    try (CloseableHttpClient client = HttpClientUtil.createClient(params);
+         CloudSolrClient solrClient = new CloudSolrClient(zkServer.getZkAddress(), client)) {
+
       assertTrue(solrClient.getLbClient().getHttpClient() == client);
-    } finally {
-      solrClient.shutdown();
-      client.getConnectionManager().shutdown();
+
     }
   }
 }

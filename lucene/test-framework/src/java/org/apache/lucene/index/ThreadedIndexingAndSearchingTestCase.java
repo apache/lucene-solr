@@ -442,6 +442,11 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       } else if (mp instanceof LogMergePolicy) {
         ((LogMergePolicy) mp).setMaxMergeDocs(100000);
       }
+      // when running nightly, merging can still have crazy parameters, 
+      // and might use many per-field codecs. turn on CFS for IW flushes
+      // and ensure CFS ratio is reasonable to keep it contained.
+      conf.setUseCompoundFile(true);
+      mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
     }
 
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {

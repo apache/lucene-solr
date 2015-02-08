@@ -52,10 +52,8 @@ public class SearchWithCollectorTask extends SearchTask {
   @Override
   protected Collector createCollector() throws Exception {
     Collector collector = null;
-    if (clnName.equalsIgnoreCase("topScoreDocOrdered") == true) {
-      collector = TopScoreDocCollector.create(numHits(), true);
-    } else if (clnName.equalsIgnoreCase("topScoreDocUnOrdered") == true) {
-      collector = TopScoreDocCollector.create(numHits(), false);
+    if (clnName.equalsIgnoreCase("topScoreDoc") == true) {
+      collector = TopScoreDocCollector.create(numHits());
     } else if (clnName.length() > 0){
       collector = Class.forName(clnName).asSubclass(Collector.class).newInstance();
 

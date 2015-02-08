@@ -85,15 +85,18 @@ public class TestSortLocale extends LuceneTestCase {
     IndexSearcher is = newSearcher(ir);
     
     int numChecks = atLeast(100);
-    for (int i = 0; i < numChecks; i++) {
-      String start = TestUtil.randomSimpleString(random());
-      String end = TestUtil.randomSimpleString(random());
-      Query query = new ConstantScoreQuery(fieldTypes.newStringDocValuesRangeFilter("collated", start, true, end, true));
-      doTestRanges(is, start, end, query, collator);
+
+    try {
+      for (int i = 0; i < numChecks; i++) {
+        String start = TestUtil.randomSimpleString(random());
+        String end = TestUtil.randomSimpleString(random());
+        Query query = new ConstantScoreQuery(fieldTypes.newStringDocValuesRangeFilter("collated", start, true, end, true));
+        doTestRanges(is, start, end, query, collator);
+      }
+    } finally {    
+      ir.close();
+      dir.close();
     }
-    
-    ir.close();
-    dir.close();
   }
   
   private void doTestRanges(IndexSearcher is, String startPoint, String endPoint, Query query, Collator collator) throws Exception { 
@@ -103,8 +106,8 @@ public class TestSortLocale extends LuceneTestCase {
     TopDocs docs = is.search(query, is.getIndexReader().maxDoc());
     for (ScoreDoc doc : docs.scoreDocs) {
       String value = is.doc(doc.doc).getString("field");
-      assertTrue(collator.compare(value, startPoint) >= 0);
-      assertTrue(collator.compare(value, endPoint) <= 0);
+      assertTrue(collate(collator, value, startPoint) >= 0);
+      assertTrue(collate(collator, value, endPoint) <= 0);
     }
     
     // negative test
@@ -114,7 +117,7 @@ public class TestSortLocale extends LuceneTestCase {
     docs = is.search(bq, is.getIndexReader().maxDoc());
     for (ScoreDoc doc : docs.scoreDocs) {
       String value = is.doc(doc.doc).getString("field");
-      assertTrue(collator.compare(value, startPoint) < 0 || collator.compare(value, endPoint) > 0);
+      assertTrue(collate(collator, value, startPoint) < 0 || collate(collator, value, endPoint) > 0);
     }
   }
 }

@@ -36,7 +36,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.IOUtils;
@@ -350,7 +349,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         directory = create(fullPath, createLockFactory(rawLockType), dirContext);
         boolean success = false;
         try {
-          directory = rateLimit(directory);
           CacheValue newCacheValue = new CacheValue(fullPath, directory);
           byDirectoryCache.put(directory, newCacheValue);
           byPathCache.put(fullPath, newCacheValue);
@@ -370,25 +368,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
 
-  private Directory rateLimit(Directory directory) {
-    if (maxWriteMBPerSecDefault != null || maxWriteMBPerSecFlush != null || maxWriteMBPerSecMerge != null || maxWriteMBPerSecRead != null) {
-      directory = new RateLimitedDirectoryWrapper(directory);
-      if (maxWriteMBPerSecDefault != null) {
-        ((RateLimitedDirectoryWrapper)directory).setMaxWriteMBPerSec(maxWriteMBPerSecDefault, Context.DEFAULT);
-      }
-      if (maxWriteMBPerSecFlush != null) {
-        ((RateLimitedDirectoryWrapper)directory).setMaxWriteMBPerSec(maxWriteMBPerSecFlush, Context.FLUSH);
-      }
-      if (maxWriteMBPerSecMerge != null) {
-        ((RateLimitedDirectoryWrapper)directory).setMaxWriteMBPerSec(maxWriteMBPerSecMerge, Context.MERGE);
-      }
-      if (maxWriteMBPerSecRead != null) {
-        ((RateLimitedDirectoryWrapper)directory).setMaxWriteMBPerSec(maxWriteMBPerSecRead, Context.READ);
-      }
-    }
-    return directory;
-  }
-  
   /*
    * (non-Javadoc)
    * 

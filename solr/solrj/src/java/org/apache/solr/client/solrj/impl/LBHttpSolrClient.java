@@ -21,7 +21,9 @@ import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.SolrException;
@@ -221,7 +223,12 @@ public class LBHttpSolrClient extends SolrClient {
     this.parser = parser;
     if (httpClient == null) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(HttpClientUtil.PROP_USE_RETRY, false);
+      if (solrServerUrl.length > 1) {
+        // we prefer retrying another server
+        params.set(HttpClientUtil.PROP_USE_RETRY, false);
+      } else {
+        params.set(HttpClientUtil.PROP_USE_RETRY, true);
+      }
       this.httpClient = HttpClientUtil.createClient(params);
     } else {
       this.httpClient = httpClient;
@@ -288,7 +295,13 @@ public class LBHttpSolrClient extends SolrClient {
     boolean isUpdate = req.request instanceof IsUpdateRequest;
     List<ServerWrapper> skipped = null;
 
+    long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
+    long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (String serverStr : req.getServers()) {
+      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+        break;
+      }
+      
       serverStr = normalize(serverStr);
       // if the server is currently a zombie, just skip to the next one
       ServerWrapper wrapper = zombieServers.get(serverStr);
@@ -318,6 +331,10 @@ public class LBHttpSolrClient extends SolrClient {
     // try the servers we previously skipped
     if (skipped != null) {
       for (ServerWrapper wrapper : skipped) {
+        if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+          break;
+        }
+
         ex = doRequest(wrapper.client, req, rsp, isUpdate, true, wrapper.getKey());
         if (ex == null) {
           return rsp; // SUCCESS
@@ -452,12 +469,12 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   @Override
-  public void shutdown() {
+  public void close() {
     if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdownNow();
     }
     if(clientIsInternal) {
-      httpClient.getConnectionManager().shutdown();
+      HttpClientUtil.close(httpClient);
     }
   }
 
@@ -482,7 +499,13 @@ public class LBHttpSolrClient extends SolrClient {
     int maxTries = serverList.length;
     Map<String,ServerWrapper> justFailed = null;
 
+    long timeAllowedNano = getTimeAllowedInNanos(request);
+    long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (int attempts=0; attempts<maxTries; attempts++) {
+      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+        break;
+      }
+      
       int count = counter.incrementAndGet() & Integer.MAX_VALUE;
       ServerWrapper wrapper = serverList[count % serverList.length];
       wrapper.lastUsed = System.currentTimeMillis();
@@ -506,9 +529,12 @@ public class LBHttpSolrClient extends SolrClient {
       }
     }
 
-
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
+      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+        break;
+      }
+      
       if (wrapper.standard==false || justFailed!=null && justFailed.containsKey(wrapper.getKey())) continue;
       try {
         NamedList<Object> rsp = wrapper.client.request(request);
@@ -537,6 +563,19 @@ public class LBHttpSolrClient extends SolrClient {
     } else {
       throw new SolrServerException("No live SolrServers available to handle this request", ex);
     }
+  }
+  
+  /**
+   * @return time allowed in nanos, returns -1 if no time_allowed is specified.
+   */
+  private long getTimeAllowedInNanos(final SolrRequest req) {
+    SolrParams reqParams = req.getParams();
+    return reqParams == null ? -1 : 
+      TimeUnit.NANOSECONDS.convert(reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
+  }
+  
+  private boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {
+    return timeAllowedNano > 0 && System.nanoTime() > timeOutTime;
   }
   
   /**

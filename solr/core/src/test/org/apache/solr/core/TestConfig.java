@@ -17,17 +17,14 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.SolrIndexConfig;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.update.SolrIndexConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -36,7 +33,6 @@ import org.w3c.dom.NodeList;
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 
 public class TestConfig extends SolrTestCaseJ4 {
 
@@ -117,10 +113,10 @@ public class TestConfig extends SolrTestCaseJ4 {
     SolrIndexConfig sic = sc.indexConfig;
     assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
     assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
-    assertEquals("default useCompoundFile", false, sic.useCompoundFile);
+    assertEquals("default useCompoundFile", false, sic.getUseCompoundFile());
 
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-    IndexWriterConfig iwc = sic.toIndexWriterConfig(indexSchema);
+    IndexWriterConfig iwc = sic.toIndexWriterConfig(h.getCore());
 
     assertNotNull("null mp", iwc.getMergePolicy());
     assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
@@ -140,7 +136,7 @@ public class TestConfig extends SolrTestCaseJ4 {
                  Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
                                     sic.ramBufferSizeMB, 0.0D);
     assertEquals("useCompoundFile sysprop", 
-                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
+                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.getUseCompoundFile());
   }
 
 }

@@ -120,8 +120,7 @@ public abstract class ReadTask extends PerfTask {
             // pulling the Weight ourselves:
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
                                                                    true, withScore(),
-                                                                   withMaxScore(),
-                                                                   false);
+                                                                   withMaxScore());
             searcher.search(q, null, collector);
             hits = collector.topDocs();
           } else {
@@ -187,7 +186,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
   protected Collector createCollector() throws Exception {
-    return TopScoreDocCollector.create(numHits(), true);
+    return TopScoreDocCollector.create(numHits());
   }
 
 

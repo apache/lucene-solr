@@ -16,11 +16,13 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.apache.lucene.util.Constants;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,17 +33,14 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
 
 @ThreadLeakAction({Action.WARN})
 @ThreadLeakLingering(linger = 0)
@@ -49,15 +48,10 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @ThreadLeakScope(Scope.NONE)
 @Slow
 public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
-  
-  @BeforeClass
-  public static void beforeClass2() {
-    assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
-    assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
-  }
-  
-  @Override
-  public void doTest() throws Exception {
+
+
+  @Test
+  public void test() throws Exception {
     
     waitForRecoveriesToFinish(false);
     

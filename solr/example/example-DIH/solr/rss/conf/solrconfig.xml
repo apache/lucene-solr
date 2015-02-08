@@ -276,15 +276,6 @@
     <unlockOnStartup>false</unlockOnStartup>
       -->
 
-    <!-- If true, IndexReaders will be opened/reopened from the IndexWriter
-         instead of from the Directory. Hosts in a master/slave setup
-         should have this set to false while those in a SolrCloud
-         cluster need to be set to true. Default: true
-      -->
-    <!-- 
-    <nrtMode>true</nrtMode>
-      -->
-
     <!-- Commit Deletion Policy
          Custom deletion policies can be specified here. The class must
          implement org.apache.lucene.index.IndexDeletionPolicy.
@@ -1704,8 +1695,9 @@
   <!--
      Custom response writers can be declared as needed...
     -->
-    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy"/>
-  
+  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
+    <str name="template.base.dir">${velocity.template.base.dir:}</str>
+  </queryResponseWriter>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

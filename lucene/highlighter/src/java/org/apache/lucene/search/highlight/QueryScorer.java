@@ -54,6 +54,7 @@ public class QueryScorer implements Scorer {
   private boolean skipInitExtractor;
   private boolean wrapToCaching = true;
   private int maxCharsToAnalyze;
+  private boolean usePayloads = false;
 
   /**
    * @param query Query to use for highlighting
@@ -213,6 +214,7 @@ public class QueryScorer implements Scorer {
     qse.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
     qse.setExpandMultiTermQuery(expandMultiTermQuery);
     qse.setWrapIfNotCachingTokenFilter(wrapToCaching);
+    qse.setUsePayloads(usePayloads);
     if (reader == null) {
       this.fieldWeightedSpanTerms = qse.getWeightedSpanTerms(query,
           tokenStream, field);
@@ -259,7 +261,19 @@ public class QueryScorer implements Scorer {
   public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
     this.expandMultiTermQuery = expandMultiTermQuery;
   }
-  
+
+  /**
+   * Whether or not we should capture payloads in {@link MemoryIndex} at each position so that queries can access them.
+   * This does not apply to term vector based TokenStreams, which support payloads only when the term vector has them.
+   */
+  public boolean isUsePayloads() {
+    return usePayloads;
+  }
+
+  public void setUsePayloads(boolean usePayloads) {
+    this.usePayloads = usePayloads;
+  }
+
   /**
    * By default, {@link TokenStream}s that are not of the type
    * {@link CachingTokenFilter} are wrapped in a {@link CachingTokenFilter} to

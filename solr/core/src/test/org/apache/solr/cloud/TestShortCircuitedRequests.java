@@ -23,18 +23,18 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.Test;
 
 public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
 
   public TestShortCircuitedRequests() {
     schemaString = "schema15.xml";      // we need a string id
     super.sliceCount = 4;
-    super.shardCount = 4;
-    super.fixShardCount = true;  // we only want to test with exactly 4 slices.
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     waitForRecoveriesToFinish(false);
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     index("id", "a!doc1");  // shard3

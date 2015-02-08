@@ -70,14 +70,14 @@ public class SolrQueryTest extends LuceneTestCase {
     b = q.removeFacetQuery("a:b");
     Assert.assertEquals(null, q.getFacetQuery());   
     
-    q.addSortField("price", SolrQuery.ORDER.asc);
-    q.addSortField("date", SolrQuery.ORDER.desc);
-    q.addSortField("qty", SolrQuery.ORDER.desc);
-    q.removeSortField("date", SolrQuery.ORDER.desc);
-    Assert.assertEquals(2, q.getSortFields().length);
-    q.removeSortField("price", SolrQuery.ORDER.asc);
-    q.removeSortField("qty", SolrQuery.ORDER.desc);
-    Assert.assertEquals(null, q.getSortFields());
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.addSort("date", SolrQuery.ORDER.desc);
+    q.addSort("qty", SolrQuery.ORDER.desc);
+    q.removeSort(new SortClause("date", SolrQuery.ORDER.desc));
+    Assert.assertEquals(2, q.getSorts().size());
+    q.removeSort(new SortClause("price", SolrQuery.ORDER.asc));
+    q.removeSort(new SortClause("qty", SolrQuery.ORDER.desc));
+    Assert.assertEquals(0, q.getSorts().size());
     
     q.addHighlightField("hl1");
     q.addHighlightField("hl2");
@@ -103,21 +103,6 @@ public class SolrQueryTest extends LuceneTestCase {
     
     // System.out.println(q);
   }
-  
-  /*
-   * Verifies that the old (deprecated) sort methods
-   * allows mix-and-match between the raw field and
-   * the itemized apis.
-   */
-  public void testSortFieldRawStringAndMethods() {
-    SolrQuery q = new SolrQuery("dog");
-    q.set("sort", "price asc,date desc,qty desc");
-    q.removeSortField("date", SolrQuery.ORDER.desc);
-    Assert.assertEquals(2, q.getSortFields().length);
-    q.set("sort", "price asc, date desc, qty desc");
-    q.removeSortField("date", SolrQuery.ORDER.desc);
-    Assert.assertEquals(2, q.getSortFields().length);
-  }
 
   /*
    *  Verifies that you can use removeSortField() twice, which
@@ -125,13 +110,13 @@ public class SolrQueryTest extends LuceneTestCase {
    */
   public void testSortFieldRemoveAfterRemove() {
     SolrQuery q = new SolrQuery("dog");
-    q.addSortField("price", SolrQuery.ORDER.asc);
-    q.addSortField("date", SolrQuery.ORDER.desc);
-    q.addSortField("qty", SolrQuery.ORDER.desc);
-    q.removeSortField("date", SolrQuery.ORDER.desc);
-    Assert.assertEquals(2, q.getSortFields().length);
-    q.removeSortField("qty", SolrQuery.ORDER.desc);
-    Assert.assertEquals(1, q.getSortFields().length);
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.addSort("date", SolrQuery.ORDER.desc);
+    q.addSort("qty", SolrQuery.ORDER.desc);
+    q.removeSort("date");
+    Assert.assertEquals(2, q.getSorts().size());
+    q.removeSort("qty");
+    Assert.assertEquals(1, q.getSorts().size());
   }
 
   /*
@@ -140,9 +125,9 @@ public class SolrQueryTest extends LuceneTestCase {
    */
   public void testSortFieldRemoveLast() {
     SolrQuery q = new SolrQuery("dog");
-    q.addSortField("date", SolrQuery.ORDER.desc);
-    q.addSortField("qty", SolrQuery.ORDER.desc);
-    q.removeSortField("qty", SolrQuery.ORDER.desc);
+    q.addSort("date", SolrQuery.ORDER.desc);
+    q.addSort("qty", SolrQuery.ORDER.desc);
+    q.removeSort("qty");
     Assert.assertEquals("date desc", q.getSortField());
   }
 
@@ -276,9 +261,9 @@ public class SolrQueryTest extends LuceneTestCase {
 
   public void testFacetSortLegacy() {
     SolrQuery q = new SolrQuery("dog");
-    assertTrue("expected default value to be true", q.getFacetSort());
-    q.setFacetSort(false);
-    assertFalse("expected set value to be false", q.getFacetSort());
+    assertEquals("expected default value to be SORT_COUNT", FacetParams.FACET_SORT_COUNT, q.getFacetSortString());
+    q.setFacetSort(FacetParams.FACET_SORT_INDEX);
+    assertEquals("expected set value to be SORT_INDEX", FacetParams.FACET_SORT_INDEX, q.getFacetSortString());
   }
 
   public void testFacetNumericRange() {
@@ -343,7 +328,7 @@ public class SolrQueryTest extends LuceneTestCase {
       assertEquals("foo", q.setFacetPrefix("foo").get( FacetParams.FACET_PREFIX, null ) );
       assertEquals("foo", q.setFacetPrefix("a", "foo").getFieldParam( "a", FacetParams.FACET_PREFIX, null ) );
 
-      assertEquals( Boolean.TRUE, q.setMissing(Boolean.TRUE.toString()).getBool( FacetParams.FACET_MISSING ) );
+      assertEquals( Boolean.TRUE, q.setFacetMissing(Boolean.TRUE).getBool( FacetParams.FACET_MISSING ) );
       assertEquals( Boolean.FALSE, q.setFacetMissing( Boolean.FALSE ).getBool( FacetParams.FACET_MISSING ) );      
       assertEquals( "true", q.setParam( "xxx", true ).getParams( "xxx" )[0] );
 

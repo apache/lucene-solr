@@ -126,13 +126,7 @@ public class EnumField extends PrimitiveFieldType {
           enumStringToIntMap.put(valueStr, i);
         }
       }
-      catch (ParserConfigurationException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing enums config.", e);
-      }
-      catch (SAXException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing enums config.", e);
-      }
-      catch (XPathExpressionException e) {
+      catch (ParserConfigurationException | XPathExpressionException | SAXException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing enums config.", e);
       }
     }

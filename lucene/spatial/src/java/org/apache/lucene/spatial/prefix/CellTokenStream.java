@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * A TokenStream used internally by {@link org.apache.lucene.spatial.prefix.PrefixTreeStrategy}.
@@ -123,6 +124,31 @@ class CellTokenStream extends TokenStream {
     public void reflectWith(AttributeReflector reflector) {
       fillBytesRef();
       reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
+    }
+
+    @Override
+    public CellTermAttributeImpl clone() {
+      final CellTermAttributeImpl clone = (CellTermAttributeImpl) super.clone();
+      clone.bytes = BytesRef.deepCopyOf(bytes);
+      return clone;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(cell, omitLeafByte);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      CellTermAttributeImpl other = (CellTermAttributeImpl) obj;
+      if (cell == null) {
+        if (other.cell != null) return false;
+      } else if (!cell.equals(other.cell)) return false;
+      if (omitLeafByte != other.omitLeafByte) return false;
+      return true;
     }
   }
 

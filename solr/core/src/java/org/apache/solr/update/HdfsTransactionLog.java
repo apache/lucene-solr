@@ -33,6 +33,8 @@ import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.util.FSHDFSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +80,9 @@ public class HdfsTransactionLog extends TransactionLog {
       }
       this.tlogFile = tlogFile;
       
-      // TODO: look into forcefully taking over any lease
       if (fs.exists(tlogFile) && openExisting) {
+        FSHDFSUtils.recoverFileLease(fs, tlogFile, fs.getConf());
+        
         tlogOutStream = fs.append(tlogFile);
       } else {
         fs.delete(tlogFile, false);
@@ -114,6 +117,8 @@ public class HdfsTransactionLog extends TransactionLog {
 
       success = true;
 
+      assert ObjectReleaseTracker.track(this);
+      
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
@@ -305,6 +310,7 @@ public class HdfsTransactionLog extends TransactionLog {
       log.error("Exception closing tlog.", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
+      assert ObjectReleaseTracker.release(this);
       if (deleteOnClose) {
         try {
           fs.delete(tlogFile, true);

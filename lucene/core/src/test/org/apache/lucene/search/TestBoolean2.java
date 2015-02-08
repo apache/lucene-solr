@@ -129,11 +129,14 @@ public class TestBoolean2 extends LuceneTestCase {
   };
 
   public void queriesTest(Query query, int[] expDocNrs) throws Exception {
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, false);
+    // The asserting searcher will sometimes return the bulk scorer and
+    // sometimes return a default impl around the scorer so that we can
+    // compare BS1 and BS2
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
     searcher.search(query, null, collector);
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
 
-    collector = TopScoreDocCollector.create(1000, true);
+    collector = TopScoreDocCollector.create(1000);
     searcher.search(query, null, collector);
     ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
 
@@ -281,13 +284,13 @@ public class TestBoolean2 extends LuceneTestCase {
         }
 
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
-            false, true, true, true);
+            false, true, true);
 
         searcher.search(q1, null, collector);
         ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
 
         collector = TopFieldCollector.create(sort, 1000,
-            false, true, true, false);
+            false, true, true);
         
         searcher.search(q1, null, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;

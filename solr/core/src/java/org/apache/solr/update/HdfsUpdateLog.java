@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -35,10 +36,10 @@ import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.HdfsUtil;
-import org.apache.solr.util.IOUtils;
 
 /** @lucene.experimental */
 public class HdfsUpdateLog extends UpdateLog {
@@ -46,6 +47,9 @@ public class HdfsUpdateLog extends UpdateLog {
   private volatile FileSystem fs;
   private volatile Path tlogDir;
   private final String confDir;
+  
+  // used internally by tests to track total count of failed tran log loads in init
+  public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
 
   public HdfsUpdateLog() {
     this.confDir = null;
@@ -66,9 +70,7 @@ public class HdfsUpdateLog extends UpdateLog {
     if (future != null) {
       try {
         future.get();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -191,6 +193,7 @@ public class HdfsUpdateLog extends UpdateLog {
         addOldLog(oldLog, false); // don't remove old logs on startup since more
                                   // than one may be uncapped.
       } catch (Exception e) {
+        INIT_FAILED_LOGS_COUNT.incrementAndGet();
         SolrException.log(log, "Failure to open existing log file (non fatal) "
             + f, e);
         try {
@@ -264,8 +267,6 @@ public class HdfsUpdateLog extends UpdateLog {
           return path.getName().startsWith(prefix);
         }
       });
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

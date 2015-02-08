@@ -82,31 +82,29 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     w.close();
     
     DirectoryReader oneThousand = DirectoryReader.open(dir);
-    IndexReader subReaders[] = new IndexReader[1000];
+    DirectoryReader subReaders[] = new DirectoryReader[1000];
     Arrays.fill(subReaders, oneThousand);
-    MultiReader mr = new MultiReader(subReaders);
     BaseDirectoryWrapper dir2 = newFSDirectory(createTempDir("2BPostingsBytes2"));
     if (dir2 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir2).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     IndexWriter w2 = new IndexWriter(dir2,
         new IndexWriterConfig(null));
-    w2.addIndexes(mr);
+    TestUtil.addIndexesSlowly(w2, subReaders);
     w2.forceMerge(1);
     w2.close();
     oneThousand.close();
     
     DirectoryReader oneMillion = DirectoryReader.open(dir2);
-    subReaders = new IndexReader[2000];
+    subReaders = new DirectoryReader[2000];
     Arrays.fill(subReaders, oneMillion);
-    mr = new MultiReader(subReaders);
     BaseDirectoryWrapper dir3 = newFSDirectory(createTempDir("2BPostingsBytes3"));
     if (dir3 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir3).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     IndexWriter w3 = new IndexWriter(dir3,
         new IndexWriterConfig(null));
-    w3.addIndexes(mr);
+    TestUtil.addIndexesSlowly(w3, subReaders);
     w3.forceMerge(1);
     w3.close();
     oneMillion.close();

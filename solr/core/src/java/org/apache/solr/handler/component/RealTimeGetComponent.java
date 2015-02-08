@@ -177,7 +177,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes.get()));
        if (docid < 0) continue;
-       StoredDocument luceneDocument = searcher.doc(docid);
+       StoredDocument luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        if( transformer != null ) {
          transformer.transform(doc, docid);
@@ -598,9 +598,7 @@ public class RealTimeGetComponent extends SearchComponent
           // TODO: do any kind of validation here?
           updates.add(o);
 
-        } catch (SolrException e) {
-          log.warn("Exception reading log for updates", e);
-        } catch (ClassCastException e) {
+        } catch (SolrException | ClassCastException e) {
           log.warn("Exception reading log for updates", e);
         }
       }

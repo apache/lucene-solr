@@ -83,8 +83,8 @@ public class WeightedSpanTermExtractor {
   private boolean cachedTokenStream;
   private boolean wrapToCaching = true;
   private int maxDocCharsToAnalyze;
+  private boolean usePayloads = false;
   private LeafReader internalReader = null;
-
 
   public WeightedSpanTermExtractor() {
   }
@@ -384,7 +384,7 @@ public class WeightedSpanTermExtractor {
 
       // Use MemoryIndex (index/invert this tokenStream now)
       if (internalReader == null) {
-        final MemoryIndex indexer = new MemoryIndex(true);
+        final MemoryIndex indexer = new MemoryIndex(true, usePayloads);//offsets and payloads
         if (cacheIt) {
           assert !cachedTokenStream;
           tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
@@ -652,7 +652,15 @@ public class WeightedSpanTermExtractor {
   public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
     this.expandMultiTermQuery = expandMultiTermQuery;
   }
-  
+
+  public boolean isUsePayloads() {
+    return usePayloads;
+  }
+
+  public void setUsePayloads(boolean usePayloads) {
+    this.usePayloads = usePayloads;
+  }
+
   public boolean isCachedTokenStream() {
     return cachedTokenStream;
   }

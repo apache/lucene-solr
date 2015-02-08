@@ -17,10 +17,16 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -32,11 +38,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.
@@ -178,6 +179,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     IndexSchema schema = parser.getReq().getSchema();
+
     if (dimension == 1){
       //TODO: Handle distance measures
       String lower = String.valueOf(point[0] - options.distance);
@@ -271,6 +273,13 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
               ") and values (" + externalVal + ").  Only " + i + " values specified");
     }
     return out;
+  }
+
+  @Override
+  public double getSphereRadius() {
+    // This won't likely be used. You should probably be using LatLonType instead if you felt the need for this.
+    // This is here just for backward compatibility reasons.
+    return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }
 
 }

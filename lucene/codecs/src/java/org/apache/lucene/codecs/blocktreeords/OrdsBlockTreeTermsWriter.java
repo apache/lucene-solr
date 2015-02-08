@@ -418,7 +418,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         //  System.out.println("      add sub=" + indexEnt.input + " " + indexEnt.input + " output=" + indexEnt.output);
         //}
         Output output = indexEnt.output;
-        long blockTermCount = output.endOrd - output.startOrd + 1;
+        //long blockTermCount = output.endOrd - output.startOrd + 1;
         Output newOutput = FST_OUTPUTS.newOutput(output.bytes, termOrdOffset+output.startOrd, output.endOrd-termOrdOffset);
         //System.out.println("  append sub=" + indexEnt.input + " output=" + indexEnt.output + " termOrdOffset=" + termOrdOffset + " blockTermCount=" + blockTermCount  + " newOutput=" + newOutput  + " endOrd=" + (termOrdOffset+Long.MAX_VALUE-output.endOrd));
         builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), newOutput);
@@ -603,9 +603,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       // compact format in this case:
       boolean isLeafBlock = hasSubBlocks == false;
 
-      // Number of terms in this block
-      int termCount;
-
       // Number of terms in this block and all sub-blocks (recursively)
       long totalTermCount;
 
@@ -652,12 +649,10 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
           bytesWriter.reset();
           absolute = false;
         }
-        termCount = end-start;
         totalTermCount = end-start;
       } else {
         // Mixed terms and sub-blocks:
         subIndices = new ArrayList<>();
-        termCount = 0;
         totalTermCount = 0;
         for (int i=start;i<end;i++) {
           PendingEntry ent = pending.get(i);
@@ -705,7 +700,6 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
             bytesWriter.reset();
             absolute = false;
 
-            termCount++;
             totalTermCount++;
           } else {
             PendingBlock block = (PendingBlock) ent;

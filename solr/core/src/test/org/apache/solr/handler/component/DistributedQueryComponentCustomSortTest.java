@@ -19,9 +19,8 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
@@ -33,8 +32,6 @@ import java.nio.ByteBuffer;
 public class DistributedQueryComponentCustomSortTest extends BaseDistributedSearchTestCase {
 
   public DistributedQueryComponentCustomSortTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
   }
 
@@ -43,8 +40,9 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     initCore("solrconfig.xml", "schema-custom-field.xml");
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     del("*:*");
 
     index(id, "1", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 

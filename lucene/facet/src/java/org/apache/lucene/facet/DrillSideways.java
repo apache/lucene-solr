@@ -199,8 +199,7 @@ public class DrillSideways {
                                                                       after,
                                                                       true,
                                                                       doDocScores,
-                                                                      doMaxScore,
-                                                                      true);
+                                                                      doMaxScore);
       DrillSidewaysResult r = search(query, hitCollector);
       return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
     } else {
@@ -227,7 +226,7 @@ public class DrillSideways {
       limit = 1; // the collector does not alow numHits = 0
     }
     topN = Math.min(topN, limit);
-    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, true);
+    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after);
     DrillSidewaysResult r = search(query, hitCollector);
     return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
   }
@@ -236,12 +235,7 @@ public class DrillSideways {
    *  (e.g., {@code ToParentBlockJoinCollector}) expects all
    *  sub-scorers to be positioned on the document being
    *  collected.  This will cause some performance loss;
-   *  default is false.  Note that if you return true from
-   *  this method (in a subclass) be sure your collector
-   *  also returns false from {@link
-   *  LeafCollector#acceptsDocsOutOfOrder}: this will trick
-   *  {@code BooleanQuery} into also scoring all subDocs at
-   *  once. */
+   *  default is false. */
   protected boolean scoreSubDocsAtOnce() {
     return false;
   }

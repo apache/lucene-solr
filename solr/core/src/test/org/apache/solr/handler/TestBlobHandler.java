@@ -37,63 +37,69 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.Test;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestBlobHandler.class);
 
-  private void doBlobHandlerTest() throws Exception {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+  @Test
+  public void doBlobHandlerTest() throws Exception {
 
-    CollectionAdminResponse response1;
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-    createCollectionRequest.setCollectionName(".system");
-    createCollectionRequest.setNumShards(1);
-    createCollectionRequest.setReplicationFactor(2);
-    response1 = createCollectionRequest.process(client);
-    assertEquals(0, response1.getStatus());
-    assertTrue(response1.isSuccess());
-    DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
-    Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      CollectionAdminResponse response1;
+      CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
+      createCollectionRequest.setCollectionName(".system");
+      createCollectionRequest.setNumShards(1);
+      createCollectionRequest.setReplicationFactor(2);
+      response1 = createCollectionRequest.process(client);
+      assertEquals(0, response1.getStatus());
+      assertTrue(response1.isSuccess());
+      DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
+      Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
-    String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-    String url = baseUrl + "/.system/config/requestHandler";
-    Map map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
-    assertNotNull(map);
-    assertEquals("solr.BlobHandler", getObjectByPath(map, true, Arrays.asList(
-        "solrConfig",
-        "requestHandler",
-        "/blob",
-        "class")));
+      String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+      String url = baseUrl + "/.system/config/requestHandler";
+      Map map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
+      assertNotNull(map);
+      assertEquals("solr.BlobHandler", getObjectByPath(map, true, Arrays.asList(
+          "config",
+          "requestHandler",
+          "/blob",
+          "class")));
 
-    byte[] bytarr  = new byte[1024];
-    for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
-    byte[] bytarr2  = new byte[2048];
-    for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
-    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
-    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
+      byte[] bytarr  = new byte[1024];
+      for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
+      byte[] bytarr2  = new byte[2048];
+      for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
+      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
+      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
 
-    url = baseUrl + "/.system/blob/test/1";
-    map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
-    List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
-    assertNotNull(l);
-    map = (Map) l.get(0);
-    assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
+      url = baseUrl + "/.system/blob/test/1";
+      map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
+      List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
+      assertNotNull(""+map, l);
+      assertTrue("" + map, l.size() > 0);
+      map = (Map) l.get(0);
+      assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
 
-    compareInputAndOutput(baseUrl+"/.system/blob/test?wt=filestream", bytarr2);
-    compareInputAndOutput(baseUrl+"/.system/blob/test/1?wt=filestream", bytarr);
-
+      compareInputAndOutput(baseUrl+"/.system/blob/test?wt=filestream", bytarr2);
+      compareInputAndOutput(baseUrl+"/.system/blob/test/1?wt=filestream", bytarr);
+    }
   }
 
   public static  void createSysColl(SolrClient client) throws SolrServerException, IOException {
@@ -108,8 +114,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
     System.clearProperty("zkHost");
 
@@ -119,27 +125,32 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   public static void postAndCheck(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytes, int count) throws Exception {
     postData(cloudClient, baseUrl, bytes);
+
     String url;
-    Map map;
+    Map map = null;
     List l;
-    long startTime = System.nanoTime();
-    long maxTimeoutSeconds = 10;
-    while ( true) {
+    long start = System.currentTimeMillis();
+    int i=0;
+    for(;i<150;i++) {//10secs
       url = baseUrl + "/.system/blob/test";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
       if(!(""+count).equals(numFound)) {
-        if (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-          Thread.sleep(100);
-          continue;
-        }
+        Thread.sleep(100);
+        continue;
       }
       l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
       assertNotNull(l);
       map = (Map) l.get(0);
       assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
-      break;
+      return;
     }
+    fail(MessageFormat.format("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
+        i,count, System.currentTimeMillis()-start,  getAsString(map)));
+  }
+
+  public static String getAsString(Map map) {
+    return new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8);
   }
 
   private void compareInputAndOutput(String url, byte[] bytarr) throws IOException {
@@ -160,24 +171,25 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static String postData(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
+  public static void postData(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
     HttpPost httpPost = null;
     HttpEntity entity;
-    String response;
+    String response = null;
     try {
       httpPost = new HttpPost(baseUrl+"/.system/blob/test");
       httpPost.setHeader("Content-Type","application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
+      try {
+        response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+        assertFalse("Error in posting blob "+ getAsString(m),m.containsKey("error"));
+      } catch (JSONParser.ParseException e) {
+        log.error(response);
+        fail();
+      }
     } finally {
       httpPost.releaseConnection();
     }
-  }
-
-  @Override
-  public void doTest() throws Exception {
-    doBlobHandlerTest();
-
   }
 }

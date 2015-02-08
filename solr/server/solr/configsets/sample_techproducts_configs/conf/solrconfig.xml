@@ -117,23 +117,7 @@
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
-    
-         
-    <!-- These will be used if you are using the solr.HdfsDirectoryFactory,
-         otherwise they will be ignored. If you don't plan on using hdfs,
-         you can safely remove this section. -->      
-    <!-- The root directory that collection data should be written to. -->     
-    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <!-- The hadoop configuration files to use for the hdfs client. -->    
-    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
-    <!-- Enable/Disable the hdfs cache. -->    
-    <str name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</str>
-    <!-- Enable/Disable using one global cache for all SolrCores. 
-         The settings used will be from the first HdfsDirectoryFactory created. -->    
-    <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
-    
-  </directoryFactory> 
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -272,15 +256,6 @@
      -->
     <!--
     <unlockOnStartup>false</unlockOnStartup>
-      -->
-
-    <!-- If true, IndexReaders will be opened/reopened from the IndexWriter
-         instead of from the Directory. Hosts in a master/slave setup
-         should have this set to false while those in a SolrCloud
-         cluster need to be set to true. Default: true
-      -->
-    <!-- 
-    <nrtMode>true</nrtMode>
       -->
 
     <!-- Commit Deletion Policy
@@ -1364,8 +1339,7 @@
 
        To use this suggester, set the "solr.suggester.enabled=true" system property
     -->
-  <searchComponent name="suggest" class="solr.SuggestComponent" 
-                   enable="${solr.suggester.enabled:false}"     >
+  <searchComponent name="suggest" class="solr.SuggestComponent">
     <lst name="suggester">
       <str name="name">mySuggester</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>      
@@ -1373,11 +1347,12 @@
       <str name="field">cat</str>
       <str name="weightField">price</str>
       <str name="suggestAnalyzerFieldType">string</str>
+      <str name="buildOnStartup">false</str>
     </lst>
   </searchComponent>
 
   <requestHandler name="/suggest" class="solr.SearchHandler" 
-                  startup="lazy" enable="${solr.suggester.enabled:false}" >
+                  startup="lazy" >
     <lst name="defaults">
       <str name="suggest">true</str>
       <str name="suggest.count">10</str>
@@ -1771,7 +1746,9 @@
   <!--
      Custom response writers can be declared as needed...
     -->
-    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy"/>
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
+      <str name="template.base.dir">${velocity.template.base.dir:}</str>
+    </queryResponseWriter>
   
 
   <!-- XSLT response writer transforms the XML output by any xslt file found

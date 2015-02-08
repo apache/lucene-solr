@@ -72,7 +72,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
          control.getDeleteBytesUsed() + control.uniqueValuesRAM.get() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
       control.setApplyAllDeletes();
      if (infoStream.isEnabled("FP")) {
-       infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
+       infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBufferMB=" + indexWriterConfig.getRAMBufferSizeMB());
      }
    }
   }

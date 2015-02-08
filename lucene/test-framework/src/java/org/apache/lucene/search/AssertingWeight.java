@@ -29,14 +29,12 @@ class AssertingWeight extends Weight {
     return other instanceof AssertingWeight ? other : new AssertingWeight(random, other);
   }
 
-  final boolean scoresDocsOutOfOrder;
   final Random random;
   final Weight in;
 
   AssertingWeight(Random random, Weight in) {
     this.random = random;
     this.in = in;
-    scoresDocsOutOfOrder = in.scoresDocsOutOfOrder() || random.nextBoolean();
   }
 
   @Override
@@ -61,43 +59,18 @@ class AssertingWeight extends Weight {
 
   @Override
   public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    // if the caller asks for in-order scoring or if the weight does not support
-    // out-of order scoring then collection will have to happen in-order.
     final Scorer inScorer = in.scorer(context, acceptDocs);
+    assert inScorer == null || inScorer.docID() == -1;
     return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
   }
 
   @Override
-  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
-    // if the caller asks for in-order scoring or if the weight does not support
-    // out-of order scoring then collection will have to happen in-order.
-    BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    BulkScorer inScorer = in.bulkScorer(context, acceptDocs);
     if (inScorer == null) {
       return null;
     }
 
-    if (AssertingBulkScorer.shouldWrap(inScorer)) {
-      // The incoming scorer already has a specialized
-      // implementation for BulkScorer, so we should use it:
-      inScorer = AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
-    } else if (random.nextBoolean()) {
-      // Let super wrap this.scorer instead, so we use
-      // AssertingScorer:
-      inScorer = super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
-    }
-
-    if (scoreDocsInOrder == false && random.nextBoolean()) {
-      // The caller claims it can handle out-of-order
-      // docs; let's confirm that by pulling docs and
-      // randomly shuffling them before collection:
-      inScorer = new AssertingBulkOutOfOrderScorer(new Random(random.nextLong()), inScorer);
-    }
-    return inScorer;
-  }
-
-  @Override
-  public boolean scoresDocsOutOfOrder() {
-    return scoresDocsOutOfOrder;
+    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer, context.reader().maxDoc());
   }
 }
-

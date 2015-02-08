@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
@@ -126,9 +127,10 @@ public class CloudSolrClient extends SolrClient {
 
   }
   private volatile long timeToLive = 60* 1000L;
+  private volatile List<Object> locks = objectList(3);
 
 
-  protected Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
+  protected final Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
@@ -143,7 +145,7 @@ public class CloudSolrClient extends SolrClient {
   };
 
   class ExpiringCachedDocCollection {
-    DocCollection cached;
+    final DocCollection cached;
     long cachedAt;
 
     ExpiringCachedDocCollection(DocCollection cached) {
@@ -458,15 +460,7 @@ public class CloudSolrClient extends SolrClient {
             Thread.currentThread().interrupt();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
-          } catch (KeeperException e) {
-            if (zk != null) zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (IOException e) {
-            if (zk != null) zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (TimeoutException e) {
+          } catch (KeeperException | TimeoutException | IOException e) {
             if (zk != null) zk.close();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
@@ -753,7 +747,7 @@ public class CloudSolrClient extends SolrClient {
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     if (collection != null && !request.getPath().startsWith("/admin")) { // don't do _stateVer_ checking for admin requests
-      Set<String> requestedCollectionNames = getCollectionList(getZkStateReader().getClusterState(), collection);
+      Set<String> requestedCollectionNames = getCollectionNames(getZkStateReader().getClusterState(), collection);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -916,16 +910,13 @@ public class CloudSolrClient extends SolrClient {
             "No collection param specified on request and no default collection has been set.");
       }
       
-      Set<String> collectionsList = getCollectionList(clusterState, collection);
-      if (collectionsList.size() == 0) {
+      Set<String> collectionNames = getCollectionNames(clusterState, collection);
+      if (collectionNames.size() == 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Could not find collection: " + collection);
       }
 
       String shardKeys =  reqParams.get(ShardParams._ROUTE_);
-      if(shardKeys == null) {
-        shardKeys = reqParams.get(ShardParams.SHARD_KEYS); // deprecated
-      }
 
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard
@@ -935,7 +926,7 @@ public class CloudSolrClient extends SolrClient {
       // specified,
       // add it to the Map of slices.
       Map<String,Slice> slices = new HashMap<>();
-      for (String collectionName : collectionsList) {
+      for (String collectionName : collectionNames) {
         DocCollection col = getDocCollection(clusterState, collectionName);
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
@@ -997,6 +988,9 @@ public class CloudSolrClient extends SolrClient {
         theUrlList.addAll(urlList);
       }
       if(theUrlList.isEmpty()) {
+        for (String s : collectionNames) {
+          if(s!=null) collectionStateCache.remove(s);
+        }
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Not enough nodes to handle the request");
       }
 
@@ -1016,11 +1010,11 @@ public class CloudSolrClient extends SolrClient {
     return rsp.getResponse();
   }
 
-  private Set<String> getCollectionList(ClusterState clusterState,
-      String collection) {
+  private Set<String> getCollectionNames(ClusterState clusterState,
+                                         String collection) {
     // Extract each comma separated collection name and store in a List.
     List<String> rawCollectionsList = StrUtils.splitSmart(collection, ",", true);
-    Set<String> collectionsList = new HashSet<>();
+    Set<String> collectionNames = new HashSet<>();
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (!clusterState.getCollections().contains(collectionName)) {
@@ -1028,20 +1022,20 @@ public class CloudSolrClient extends SolrClient {
         String alias = aliases.getCollectionAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
-          collectionsList.addAll(aliasList);
+          collectionNames.addAll(aliasList);
           continue;
         }
 
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
         }
 
-      collectionsList.add(collectionName);
+      collectionNames.add(collectionName);
     }
-    return collectionsList;
+    return collectionNames;
   }
 
   @Override
-  public void shutdown() {
+  public void close() throws IOException {
     if (zkStateReader != null) {
       synchronized(this) {
         if (zkStateReader!= null)
@@ -1051,11 +1045,11 @@ public class CloudSolrClient extends SolrClient {
     }
     
     if (shutdownLBHttpSolrServer) {
-      lbClient.shutdown();
+      lbClient.close();
     }
     
     if (clientIsInternal && myClient!=null) {
-      myClient.getConnectionManager().shutdown();
+      HttpClientUtil.close(myClient);
     }
 
     if(this.threadPool != null && !this.threadPool.isShutdown()) {
@@ -1071,16 +1065,48 @@ public class CloudSolrClient extends SolrClient {
     return updatesToLeaders;
   }
 
-  protected DocCollection getDocCollection(ClusterState clusterState, String collection) throws SolrException {
-    ExpiringCachedDocCollection cachedState = collectionStateCache != null ? collectionStateCache.get(collection) : null;
-    if (cachedState != null && cachedState.cached != null) {
-      return cachedState.cached;
-    }
+  /**If caches are expired they are refreshed after acquiring a lock.
+   * use this to set the number of locks
+   */
+  public void setParallelCacheRefreshes(int n){ locks = objectList(n); }
 
-    DocCollection col = clusterState.getCollectionOrNull(collection);
+  private static ArrayList<Object> objectList(int n) {
+    ArrayList<Object> l =  new ArrayList<>(n);
+    for(int i=0;i<n;i++) l.add(new Object());
+    return l;
+  }
+
+
+  protected DocCollection getDocCollection(ClusterState clusterState, String collection) throws SolrException {
+    if(collection == null) return null;
+    DocCollection col = getFromCache(collection);
+    if(col != null) return col;
+
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+    if(ref == null){
+      //no such collection exists
+      return null;
+    }
+    if(!ref.isLazilyLoaded()) {
+      //it is readily available just return it
+      return ref.get();
+    }
+    List locks = this.locks;
+    final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
+    synchronized (lock){
+      //we have waited for sometime just check once again
+      col = getFromCache(collection);
+      if(col !=null) return col;
+      col = ref.get();
+    }
     if(col == null ) return  null;
     if(col.getStateFormat() >1) collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
     return col;
+  }
+
+  private DocCollection getFromCache(String c){
+    ExpiringCachedDocCollection cachedState = collectionStateCache.get(c);
+    return cachedState != null ? cachedState.cached : null;
   }
 
 

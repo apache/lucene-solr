@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -50,8 +51,8 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -106,20 +107,16 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   public static void beforeThisClass2() throws Exception {
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
 
   
   public BasicDistributedZkTest() {
-    fixShardCount = true;
-    
     sliceCount = 2;
-    shardCount = 4;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     
@@ -133,7 +130,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount; i++) {
+      for (int i = 0; i < getShardCount(); i++) {
         if (i > 0)
           sb.append(',');
         sb.append("shard" + (i + 3));
@@ -141,9 +138,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       params.set("shards", sb.toString());
     }
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
     // setLoggingLevel(null);
 
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -333,7 +331,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set("commitWithin", 10);
     add(cloudClient, params , getDoc("id", 300));
     
-    long timeout = System.currentTimeMillis() + 30000;
+    long timeout = System.currentTimeMillis() + 45000;
     while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
       if (timeout <= System.currentTimeMillis()) {
         fail("commitWithin did not work");
@@ -381,14 +379,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createCmd.setSchemaName("nonexistent_schema.xml");
     
     String url = getBaseUrl(clients.get(0));
-    final HttpSolrClient client = new HttpSolrClient(url);
-    try {
+    try (final HttpSolrClient client = new HttpSolrClient(url)) {
       client.request(createCmd);
       fail("Expected SolrCore create to fail");
     } catch (Exception e) {
       
-    } finally {
-      client.shutdown();
     }
     
     long timeout = System.currentTimeMillis() + 15000;
@@ -509,20 +504,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testStopAndStartCoresInOneInstance() throws Exception {
     SolrClient client = clients.get(0);
     String url3 = getBaseUrl(client);
-    final HttpSolrClient httpSolrClient = new HttpSolrClient(url3);
-    httpSolrClient.setConnectionTimeout(15000);
-    httpSolrClient.setSoTimeout(60000);
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-        5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-        new DefaultSolrThreadFactory("testExecutor"));
-    int cnt = 3;
-    
-    // create the cores
-    createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
-    
-    executor.shutdown();
-    executor.awaitTermination(120, TimeUnit.SECONDS);
-    httpSolrClient.shutdown();
+    try (final HttpSolrClient httpSolrClient = new HttpSolrClient(url3)) {
+      httpSolrClient.setConnectionTimeout(15000);
+      httpSolrClient.setSoTimeout(60000);
+      ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+          5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+          new DefaultSolrThreadFactory("testExecutor"));
+      int cnt = 3;
+
+      // create the cores
+      createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
+
+      executor.shutdown();
+      executor.awaitTermination(120, TimeUnit.SECONDS);
+    }
     
     ChaosMonkey.stop(cloudJettys.get(0).jetty);
     printLayout();
@@ -559,9 +554,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             createCmd.setDataDir(getDataDir(core3dataDir));
 
             client.request(createCmd);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
+          } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
           }
         }
@@ -608,9 +601,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().length()
               - DEFAULT_COLLECTION.length() - 1);
       
-      SolrClient aClient = createNewSolrClient("", baseUrl);
-      res.setResponse(aClient.request(request));
-      aClient.shutdown();
+      try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
+        res.setResponse(aClient.request(request));
+      }
     } else {
       res.setResponse(client.request(request));
     }
@@ -733,21 +726,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws
       SolrServerException, IOException {
-    HttpSolrClient client = new HttpSolrClient(sourceClient.getBaseURL());
-    client.setConnectionTimeout(15000);
-    client.setSoTimeout(60000);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
-    // use generic request to avoid extra processing of queries
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> resp = client.request(req);
-    NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-    NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
-    NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
-    NamedList stats = (NamedList) uhandler.get("stats");
-    Long commits = (Long) stats.get("commits");
-    client.shutdown();
-    return commits;
+    try (HttpSolrClient client = new HttpSolrClient(sourceClient.getBaseURL())) {
+      client.setConnectionTimeout(15000);
+      client.setSoTimeout(60000);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
+      // use generic request to avoid extra processing of queries
+      QueryRequest req = new QueryRequest(params);
+      NamedList<Object> resp = client.request(req);
+      NamedList mbeans = (NamedList) resp.get("solr-mbeans");
+      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
+      NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
+      NamedList stats = (NamedList) uhandler.get("stats");
+      return (Long) stats.get("commits");
+    }
   }
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
@@ -825,32 +817,30 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "slice1"));
     
     // now test that unloading a core gets us a new leader
-    HttpSolrClient unloadClient = new HttpSolrClient(baseUrl);
-    unloadClient.setConnectionTimeout(15000);
-    unloadClient.setSoTimeout(60000);
-    Unload unloadCmd = new Unload(true);
-    unloadCmd.setCoreName(props.getCoreName());
-    
-    String leader = props.getCoreUrl();
-    
-    unloadClient.request(unloadCmd);
-    unloadClient.shutdown();
-    
-    int tries = 50;
-    while (leader.equals(zkStateReader.getLeaderUrl(oneInstanceCollection2, "slice1", 10000))) {
-      Thread.sleep(100);
-      if (tries-- == 0) {
-        fail("Leader never changed");
+    try (HttpSolrClient unloadClient = new HttpSolrClient(baseUrl)) {
+      unloadClient.setConnectionTimeout(15000);
+      unloadClient.setSoTimeout(60000);
+      Unload unloadCmd = new Unload(true);
+      unloadCmd.setCoreName(props.getCoreName());
+
+      String leader = props.getCoreUrl();
+
+      unloadClient.request(unloadCmd);
+
+      int tries = 50;
+      while (leader.equals(zkStateReader.getLeaderUrl(oneInstanceCollection2, "slice1", 10000))) {
+        Thread.sleep(100);
+        if (tries-- == 0) {
+          fail("Leader never changed");
+        }
       }
     }
 
-    for (SolrClient aClient : collectionClients) {
-      aClient.shutdown();
-    }
+    IOUtils.close(collectionClients);
 
   }
 
-  private void testSearchByCollectionName() throws SolrServerException {
+  private void testSearchByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testSearchByCollectionName");
     SolrClient client = clients.get(0);
     final String baseUrl = ((HttpSolrClient) client).getBaseURL().substring(
@@ -860,11 +850,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
-    SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl);
-    SolrQuery query = new SolrQuery("*:*");
-    long oneDocs = client1.query(query).getResults().getNumFound();
-    assertEquals(3, oneDocs);
-    client1.shutdown();
+    try (SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl)) {
+      SolrQuery query = new SolrQuery("*:*");
+      long oneDocs = client1.query(query).getResults().getNumFound();
+      assertEquals(3, oneDocs);
+    }
   }
   
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
@@ -878,9 +868,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
     // test hitting an update url
-    SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl);
-    client1.commit();
-    client1.shutdown();
+    try (SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl)) {
+      client1.commit();
+    }
   }
 
   private void testANewCollectionInOneInstance() throws Exception {
@@ -934,9 +924,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 //    System.out.println("All Docs:" + allDocs);
     
     assertEquals(3, allDocs);
-    for(SolrClient newCollectionClient:collectionClients) {
-      newCollectionClient.shutdown();
-    }
+    IOUtils.close(collectionClients);
+
   }
 
   private void createCollection(String collection,
@@ -950,9 +939,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     Callable call = new Callable() {
       @Override
       public Object call() {
-        HttpSolrClient client = null;
-        try {
-          client = new HttpSolrClient(baseUrl);
+        try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
           client.setConnectionTimeout(15000);
           Create createCmd = new Create();
           createCmd.setRoles("none");
@@ -975,10 +962,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         } catch (Exception e) {
           e.printStackTrace();
           //fail
-        } finally {
-          if (client != null) {
-            client.shutdown();
-          }
         }
         return null;
       }
@@ -1087,9 +1070,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       Callable call = new Callable() {
         @Override
         public Object call() {
-          HttpSolrClient client = null;
-          try {
-            client = new HttpSolrClient(baseUrl);
+
+          try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
             client.setConnectionTimeout(15000);
             client.setSoTimeout(60000);
             Create createCmd = new Create();
@@ -1099,10 +1081,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           } catch (Exception e) {
             e.printStackTrace();
             //fails
-          } finally {
-            if (client != null) {
-              client.shutdown();
-            }
           }
           return null;
         }
@@ -1162,24 +1140,21 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     if (commondCloudSolrClient != null) {
-      commondCloudSolrClient.shutdown();
+      commondCloudSolrClient.close();
     }
     if (otherCollectionClients != null) {
       for (List<SolrClient> clientList : otherCollectionClients.values()) {
-        for (SolrClient client : clientList) {
-          client.shutdown();
-        }
+        IOUtils.close(clientList);
       }
     }
     otherCollectionClients = null;
     List<Runnable> tasks = executor.shutdownNow();
     assertTrue(tasks.isEmpty());
-    
+
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

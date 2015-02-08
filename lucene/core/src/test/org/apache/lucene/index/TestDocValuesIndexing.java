@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -62,7 +63,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     Directory d3 = newDirectory();
     w = new RandomIndexWriter(random(), d3);
-    w.addIndexes(SlowCompositeReaderWrapper.wrap(r1), SlowCompositeReaderWrapper.wrap(r2));
+    w.addIndexes(SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r1)), SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r2)));
     r1.close();
     d1.close();
     r2.close();
@@ -519,9 +520,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       // expected
     }
 
-    IndexReader r = DirectoryReader.open(dir2);
+    DirectoryReader r = DirectoryReader.open(dir2);
     try {
-      w.addIndexes(new IndexReader[] {r});
+      TestUtil.addIndexesSlowly(w, r);
       fail("didn't hit expected exception");
     } catch (IllegalStateException iae) {
       // expected
@@ -685,14 +686,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc = writer.newDocument();
     doc.addAtom("dv", new BytesRef("foo"));
     writer.addDocument(doc);
-    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
+    DirectoryReader reader = DirectoryReader.open(dir);
     try {
-      writer.addIndexes(readers);
+      TestUtil.addIndexesSlowly(writer, reader);
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
       // expected
     }
-    readers[0].close();
+    reader.close();
     writer.close();
 
     dir.close();
@@ -712,6 +713,33 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     conf = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir2, conf);
     writer.addIndexes(dir);
+    doc = writer.newDocument();
+    try {
+      doc.addAtom("dv", new BytesRef("foo"));
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    writer.close();
+    dir2.close();
+    dir.close();
+  }
+
+  public void testTypeChangeViaAddIndexesIR2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = writer.newDocument();
+    doc.addLong("dv", 0L);
+    writer.addDocument(doc);
+    writer.close();
+
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    writer = new IndexWriter(dir2, conf);
+    DirectoryReader reader = DirectoryReader.open(dir);
+    TestUtil.addIndexesSlowly(writer, reader);
+    reader.close();
     doc = writer.newDocument();
     try {
       doc.addAtom("dv", new BytesRef("foo"));

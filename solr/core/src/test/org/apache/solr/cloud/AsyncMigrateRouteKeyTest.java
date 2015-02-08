@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -36,13 +36,8 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
 
   private static final int MAX_WAIT_SECONDS = 2 * 60;
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(15);
 
     multipleShardMigrateTest();
@@ -117,14 +112,9 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrClient baseServer = null;
-
-    try {
-      baseServer = new HttpSolrClient(baseUrl);
+    try (HttpSolrClient baseServer = new HttpSolrClient(baseUrl)) {
       baseServer.setConnectionTimeout(15000);
       return baseServer.request(request);
-    } finally {
-      baseServer.shutdown();
     }
   }
 }

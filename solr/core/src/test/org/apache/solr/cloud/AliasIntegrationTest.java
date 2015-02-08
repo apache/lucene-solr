@@ -33,10 +33,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,6 +49,8 @@ import java.util.List;
  */
 @Slow
 public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
+
+  private static final Logger logger = LoggerFactory.getLogger(AliasIntegrationTest.class);
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -58,33 +61,27 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-  
+
   public AliasIntegrationTest() {
     super();
     sliceCount = 1;
-    shardCount = random().nextBoolean() ? 3 : 4;
+    fixShardCount(random().nextBoolean() ? 3 : 4);
   }
   
-  @Override
-  public void doTest() throws Exception {
-    
+  @Test
+  public void test() throws Exception {
+
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
+
     waitForThingsToLevelOut(30);
+
+    logger.info("### STARTING ACTUAL TEST");
 
     del("*:*");
     
@@ -137,60 +134,55 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query.set("collection", "testalias");
     JettySolrRunner jetty = jettys.get(random().nextInt(jettys.size()));
     int port = jetty.getLocalPort();
-    HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias");
-    res = client.query(query);
-    assertEquals(3, res.getResults().getNumFound());
-    client.shutdown();
-    client = null;
-    
+    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+      res = client.query(query);
+      assertEquals(3, res.getResults().getNumFound());
+    }
+
     // now without collections param
     query = new SolrQuery("*:*");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    client = new HttpSolrClient(buildUrl(port) + "/testalias");
-    res = client.query(query);
-    assertEquals(3, res.getResults().getNumFound());
-    client.shutdown();
-    client = null;
-    
+    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+      res = client.query(query);
+      assertEquals(3, res.getResults().getNumFound());
+    }
     // create alias, collection2 first because it's not on every node
     createAlias("testalias", "collection2,collection1");
     
     // search with new cloud client
-    CloudSolrClient cloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
-    cloudSolrClient.setParallelUpdates(random().nextBoolean());
-    query = new SolrQuery("*:*");
-    query.set("collection", "testalias");
-    res = cloudSolrClient.query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    
-    // Try with setDefaultCollection
-    query = new SolrQuery("*:*");
-    cloudSolrClient.setDefaultCollection("testalias");
-    res = cloudSolrClient.query(query);
-    cloudSolrClient.shutdown();
-    assertEquals(5, res.getResults().getNumFound());
-    
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
+      cloudSolrClient.setParallelUpdates(random().nextBoolean());
+      query = new SolrQuery("*:*");
+      query.set("collection", "testalias");
+      res = cloudSolrClient.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+
+      // Try with setDefaultCollection
+      query = new SolrQuery("*:*");
+      cloudSolrClient.setDefaultCollection("testalias");
+      res = cloudSolrClient.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+    }
+
     // search for alias with random non cloud client
     query = new SolrQuery("*:*");
     query.set("collection", "testalias");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    client = new HttpSolrClient(buildUrl(port) + "/testalias");
-    res = client.query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    
-    
+    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+      res = client.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+    }
     // now without collections param
     query = new SolrQuery("*:*");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    client = new HttpSolrClient(buildUrl(port) + "/testalias");
-    res = client.query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    client.shutdown();
-    client = null;
-    
+    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+      res = client.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+    }
+
     // update alias
     createAlias("testalias", "collection2");
     //checkForAlias("testalias", "collection2");
@@ -213,26 +205,24 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     // try a std client
     // search 1 and 2, but have no collections param
     query = new SolrQuery("*:*");
-    HttpSolrClient httpclient = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
-    res = httpclient.query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    httpclient.shutdown();
-    httpclient = null;
-    
+    try (HttpSolrClient client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
+      res = client.query(query);
+      assertEquals(5, res.getResults().getNumFound());
+    }
+
     createAlias("testalias", "collection2");
     
     // a second alias
     createAlias("testalias2", "collection2");
-    
-    httpclient = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias");
-    SolrInputDocument doc8 = getDoc(id, 11, i1, -600, tlong, 600, t1,
-        "humpty dumpy4 sat on a walls");
-    httpclient.add(doc8);
-    httpclient.commit();
-    res = httpclient.query(query);
-    assertEquals(3, res.getResults().getNumFound());
-    httpclient.shutdown();
-    httpclient = null;
+
+    try (HttpSolrClient client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
+      SolrInputDocument doc8 = getDoc(id, 11, i1, -600, tlong, 600, t1,
+          "humpty dumpy4 sat on a walls");
+      client.add(doc8);
+      client.commit();
+      res = client.query(query);
+      assertEquals(3, res.getResults().getNumFound());
+    }
     
     createAlias("testalias", "collection2,collection1");
     
@@ -251,46 +241,47 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
       sawException = true;
     }
     assertTrue(sawException);
+
+    logger.info("### FINISHED ACTUAL TEST");
   }
 
   private void createAlias(String alias, String collections)
       throws SolrServerException, IOException {
-    SolrClient client = createNewSolrClient("",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
-    if (random().nextBoolean()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("collections", collections);
-      params.set("name", alias);
-      params.set("action", CollectionAction.CREATEALIAS.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-      client.request(request);
-    } else {
-      CreateAlias request = new CreateAlias();
-      request.setAliasName(alias);
-      request.setAliasedCollections(collections);
-      request.process(client);
+
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      if (random().nextBoolean()) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set("collections", collections);
+        params.set("name", alias);
+        params.set("action", CollectionAction.CREATEALIAS.toString());
+        QueryRequest request = new QueryRequest(params);
+        request.setPath("/admin/collections");
+        client.request(request);
+      } else {
+        CreateAlias request = new CreateAlias();
+        request.setAliasName(alias);
+        request.setAliasedCollections(collections);
+        request.process(client);
+      }
     }
-    client.shutdown();
   }
   
   private void deleteAlias(String alias) throws SolrServerException,
       IOException {
-    SolrClient client = createNewSolrClient("",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
-    if (random().nextBoolean()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("name", alias);
-      params.set("action", CollectionAction.DELETEALIAS.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-      client.request(request);
-    } else {
-      DeleteAlias request = new DeleteAlias();
-      request.setAliasName(alias);
-      request.process(client);
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      if (random().nextBoolean()) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set("name", alias);
+        params.set("action", CollectionAction.DELETEALIAS.toString());
+        QueryRequest request = new QueryRequest(params);
+        request.setPath("/admin/collections");
+        client.request(request);
+      } else {
+        DeleteAlias request = new DeleteAlias();
+        request.setAliasName(alias);
+        request.process(client);
+      }
     }
-    client.shutdown();
   }
   
   protected void indexDoc(List<CloudJettyRunner> skipServers, Object... fields) throws IOException,

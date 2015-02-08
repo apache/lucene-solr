@@ -245,11 +245,7 @@ public final class SolrCellBuilder implements CommandBuilder {
 
         try {
           parser.parse(inputStream, parsingHandler, metadata, parseContext);
-        } catch (IOException e) {
-          throw new MorphlineRuntimeException("Cannot parse", e);
-        } catch (SAXException e) {
-          throw new MorphlineRuntimeException("Cannot parse", e);
-        } catch (TikaException e) {
+        } catch (IOException | TikaException | SAXException e) {
           throw new MorphlineRuntimeException("Cannot parse", e);
         }
       } finally {

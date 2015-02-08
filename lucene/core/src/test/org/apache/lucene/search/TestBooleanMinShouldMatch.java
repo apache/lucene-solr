@@ -82,7 +82,6 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     index = null;
   }
 
-
   public void verifyNrHits(Query q, int expected) throws Exception {
     // bs1
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
@@ -92,7 +91,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     assertEquals("result count", expected, h.length);
     //System.out.println("TEST: now check");
     // bs2
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
     s.search(q, collector);
     ScoreDoc[] h2 = collector.topDocs().scoreDocs;
     if (expected != h2.length) {

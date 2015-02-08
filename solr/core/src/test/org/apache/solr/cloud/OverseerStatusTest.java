@@ -17,20 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.junit.After;
-import org.junit.Before;
-
-import java.io.IOException;
+import org.junit.Test;
 
 public class OverseerStatusTest extends BasicDistributedZkTest {
 
@@ -39,33 +30,15 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
   }
 
   @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    if (VERBOSE || printLayoutOnTearDown) {
-      super.printLayout();
-    }
-    if (controlClient != null) {
-      controlClient.shutdown();
-    }
-    if (cloudClient != null) {
-      cloudClient.shutdown();
-    }
-    if (controlClientCloud != null) {
-      controlClientCloud.shutdown();
-    }
-    super.tearDown();
-  }
+  @Test
+  public void test() throws Exception {
 
-  @Override
-  public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
 
     // find existing command counts because collection may be created by base test class too

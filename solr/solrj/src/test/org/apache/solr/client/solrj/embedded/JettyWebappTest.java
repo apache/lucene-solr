@@ -28,8 +28,9 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Rule;
@@ -71,8 +72,8 @@ public class JettyWebappTest extends SolrTestCaseJ4
     server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
     new WebAppContext(server, path, context );
 
-    SocketConnector connector = new SocketConnector();
-    connector.setMaxIdleTime(1000 * 60 * 60);
+    ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
+    connector.setIdleTimeout(1000 * 60 * 60);
     connector.setSoLingerTime(-1);
     connector.setPort(0);
     server.setConnectors(new Connector[]{connector});

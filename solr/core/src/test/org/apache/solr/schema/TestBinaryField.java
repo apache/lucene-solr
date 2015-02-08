@@ -14,11 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.schema;
 
+import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
@@ -29,9 +32,14 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
 import java.io.File;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.Properties;
 
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
@@ -57,94 +65,102 @@ public class TestBinaryField extends SolrJettyTestBase {
     FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
                        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
 
+    try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), Charsets.UTF_8)) {
+      Properties coreProps = new Properties();
+      coreProps.put("name", "collection1");
+      coreProps.store(w, "");
+    }
+
     createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
 
   public void testSimple() throws Exception {
-    SolrClient client = getSolrClient();
-    byte[] buf = new byte[10];
-    for (int i = 0; i < 10; i++) {
-      buf[i] = (byte) i;
-    }
-    SolrInputDocument doc = null;
-    doc = new SolrInputDocument();
-    doc.addField("id", 1);
-    doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
-    client.add(doc);
+    try (SolrClient client = getSolrClient()) {
+      byte[] buf = new byte[10];
+      for (int i = 0; i < 10; i++) {
+        buf[i] = (byte) i;
+      }
+      SolrInputDocument doc = null;
+      doc = new SolrInputDocument();
+      doc.addField("id", 1);
+      doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
+      client.add(doc);
 
-    doc = new SolrInputDocument();
-    doc.addField("id", 2);
-    doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
-    client.add(doc);
+      doc = new SolrInputDocument();
+      doc.addField("id", 2);
+      doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
+      client.add(doc);
 
-    doc = new SolrInputDocument();
-    doc.addField("id", 3);
-    doc.addField("data", buf);
-    client.add(doc);
+      doc = new SolrInputDocument();
+      doc.addField("id", 3);
+      doc.addField("data", buf);
+      client.add(doc);
 
-    client.commit();
+      client.commit();
 
-    QueryResponse resp = client.query(new SolrQuery("*:*"));
-    SolrDocumentList res = resp.getResults();
-    List<Bean> beans = resp.getBeans(Bean.class);
-    assertEquals(3, res.size());
-    assertEquals(3, beans.size());
-    for (SolrDocument d : res) {
-      Integer id = (Integer) d.getFieldValue("id");
-      byte[] data = (byte[]) d.getFieldValue("data");
-      if (id == 1) {
-        assertEquals(5, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)(i + 2), b);
-        }
+      QueryResponse resp = client.query(new SolrQuery("*:*"));
+      SolrDocumentList res = resp.getResults();
+      List<Bean> beans = resp.getBeans(Bean.class);
+      assertEquals(3, res.size());
+      assertEquals(3, beans.size());
+      for (SolrDocument d : res) {
 
-      } else if (id == 2) {
-        assertEquals(3, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)(i + 4), b);
-        }
+        Integer id = (Integer) d.getFieldValue("id");
+        byte[] data = (byte[]) d.getFieldValue("data");
+        if (id == 1) {
+          assertEquals(5, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) (i + 2), b);
+          }
+
+        } else if (id == 2) {
+          assertEquals(3, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) (i + 4), b);
+          }
 
 
-      } else if (id == 3) {
-        assertEquals(10, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)i, b);
+        } else if (id == 3) {
+          assertEquals(10, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) i, b);
+          }
+
         }
 
       }
+      for (Bean d : beans) {
+        Integer id = d.id;
+        byte[] data = d.data;
+        if (id == 1) {
+          assertEquals(5, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) (i + 2), b);
+          }
 
-    }
-    for (Bean d : beans) {
-      Integer id = d.id;
-      byte[] data = d.data;
-      if (id == 1) {
-        assertEquals(5, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)(i + 2), b);
-        }
-
-      } else if (id == 2) {
-        assertEquals(3, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)(i + 4), b);
-        }
+        } else if (id == 2) {
+          assertEquals(3, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) (i + 4), b);
+          }
 
 
-      } else if (id == 3) {
-        assertEquals(10, data.length);
-        for (int i = 0; i < data.length; i++) {
-          byte b = data[i];
-          assertEquals((byte)i, b);
+        } else if (id == 3) {
+          assertEquals(10, data.length);
+          for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            assertEquals((byte) i, b);
+          }
+
         }
 
       }
-
     }
 
   }

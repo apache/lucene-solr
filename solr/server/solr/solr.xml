@@ -29,17 +29,23 @@
 <solr>
 
   <solrcloud>
+
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
     <str name="hostContext">${hostContext:solr}</str>
-    <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
+
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
+
+    <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
+    <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
+    <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
+
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
     class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:0}</int>
-    <int name="connTimeout">${connTimeout:0}</int>
+    <int name="socketTimeout">${socketTimeout:600000}</int>
+    <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
 </solr>

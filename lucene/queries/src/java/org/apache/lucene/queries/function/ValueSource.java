@@ -17,15 +17,16 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
-
-import java.io.IOException;
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * Instantiates {@link FunctionValues} for a particular reader.
@@ -126,7 +127,7 @@ public abstract class ValueSource {
    * off of the {@link FunctionValues} for a ValueSource
    * instead of the normal Lucene FieldComparator that works off of a FieldCache.
    */
-  class ValueSourceComparator extends FieldComparator<Double> {
+  class ValueSourceComparator extends SimpleFieldComparator<Double> {
     private final double[] values;
     private FunctionValues docVals;
     private double bottom;
@@ -154,9 +155,8 @@ public abstract class ValueSource {
     }
 
     @Override
-    public FieldComparator setNextReader(LeafReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
       docVals = getValues(fcontext, context);
-      return this;
     }
 
     @Override

@@ -47,7 +47,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  will be sorted while segments resulting from a flush will be in the order
  *  in which documents have been added.
  *  <p><b>NOTE</b>: Never use this policy if you rely on
- *  {@link IndexWriter#addDocuments(Iterable, Analyzer) IndexWriter.addDocuments}
+ *  {@link IndexWriter#addDocuments(Iterable) IndexWriter.addDocuments}
  *  to have sequentially-assigned doc IDs, this policy will scatter doc IDs.
  *  <p><b>NOTE</b>: This policy should only be used with idempotent {@code Sort}s 
  *  so that the order of segments is predictable. For example, using 
@@ -65,7 +65,7 @@ public final class SortingMergePolicy extends MergePolicy {
   
   class SortingOneMerge extends OneMerge {
 
-    List<LeafReader> unsortedReaders;
+    List<CodecReader> unsortedReaders;
     Sorter.DocMap docMap;
     LeafReader sortedView;
     final InfoStream infoStream;
@@ -76,7 +76,7 @@ public final class SortingMergePolicy extends MergePolicy {
     }
 
     @Override
-    public List<LeafReader> getMergeReaders() throws IOException {
+    public List<CodecReader> getMergeReaders() throws IOException {
       if (unsortedReaders == null) {
         unsortedReaders = super.getMergeReaders();
         if (infoStream.isEnabled("SMP")) {
@@ -117,7 +117,7 @@ public final class SortingMergePolicy extends MergePolicy {
         if (infoStream.isEnabled("SMP")) {
           infoStream.message("SMP", "sorting readers by " + sort);
         }
-        return Collections.singletonList(sortedView);
+        return Collections.singletonList(SlowCodecReaderWrapper.wrap(sortedView));
       }
     }
     
@@ -128,7 +128,7 @@ public final class SortingMergePolicy extends MergePolicy {
       super.setInfo(info);
     }
 
-    private PackedLongValues getDeletes(List<LeafReader> readers) {
+    private PackedLongValues getDeletes(List<CodecReader> readers) {
       PackedLongValues.Builder deletes = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       int deleteCount = 0;
       for (LeafReader reader : readers) {

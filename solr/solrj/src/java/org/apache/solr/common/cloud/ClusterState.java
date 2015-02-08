@@ -17,6 +17,12 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,12 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -44,18 +44,6 @@ public class ClusterState implements JSONWriter.Writable {
   
   private final Map<String, CollectionRef> collectionStates;
   private Set<String> liveNodes;
-
-
-  /**
-   * Use this constr when ClusterState is meant for publication.
-   * 
-   * hashCode and equals will only depend on liveNodes and not clusterStateVersion.
-   */
-  @Deprecated
-  public ClusterState(Set<String> liveNodes,
-      Map<String, DocCollection> collectionStates) {
-    this(null, liveNodes, collectionStates);
-  }
 
   /**
    * Use this constr when ClusterState is meant for consumption.
@@ -177,6 +165,9 @@ public class ClusterState implements JSONWriter.Writable {
     return coll;
   }
 
+  public CollectionRef getCollectionRef(String coll) {
+    return  collectionStates.get(coll);
+  }
 
   public DocCollection getCollectionOrNull(String coll) {
     CollectionRef ref = collectionStates.get(coll);
@@ -325,16 +316,6 @@ public class ClusterState implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    if (collectionStates.size() == 1) {
-      CollectionRef ref = collectionStates.values().iterator().next();
-      DocCollection docCollection = ref.get();
-      if (docCollection.getStateFormat() > 1) {
-        jsonWriter.write(Collections.singletonMap(docCollection.getName(), docCollection));
-        // serializing a single DocCollection that is persisted outside of clusterstate.json
-        return;
-      }
-    }
-
     LinkedHashMap<String , DocCollection> map = new LinkedHashMap<>();
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       // using this class check to avoid fetching from ZK in case of lazily loaded collection
@@ -408,6 +389,8 @@ public class ClusterState implements JSONWriter.Writable {
     public DocCollection get(){
       return coll;
     }
+
+    public boolean isLazilyLoaded() { return false; }
 
   }
 

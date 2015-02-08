@@ -227,7 +227,7 @@ public class RandomIndexWriter implements Closeable {
     w.addIndexes(dirs);
   }
 
-  public void addIndexes(IndexReader... readers) throws IOException {
+  public void addIndexes(CodecReader... readers) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.addIndexes(readers);
   }

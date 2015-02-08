@@ -37,11 +37,6 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
    */
   public abstract List<GC> getGroups();
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
-
   /**
    * Returned by {@link AbstractDistinctValuesCollector#getGroups()},
    * representing the value and set of distinct values for the group.

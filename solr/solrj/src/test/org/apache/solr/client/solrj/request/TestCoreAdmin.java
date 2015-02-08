@@ -95,44 +95,46 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testCustomUlogDir() throws Exception {
     
-    SolrClient client = getSolrAdmin();
-    
-    File dataDir = createTempDir("data").toFile();
-    
-    File newCoreInstanceDir = createTempDir("instance").toFile();
-    
-    File instanceDir = new File(cores.getSolrHome());
-    FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
-        "newcore"));
+    try (SolrClient client = getSolrAdmin()) {
 
-    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-    req.setCoreName("newcore");
-    req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
-    req.setDataDir(dataDir.getAbsolutePath());
-    req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
+      File dataDir = createTempDir("data").toFile();
 
-    // These should be the inverse of defaults.
-    req.setIsLoadOnStartup(false);
-    req.setIsTransient(true);
-    req.process(client);
+      File newCoreInstanceDir = createTempDir("instance").toFile();
 
-    // Show that the newly-created core has values for load on startup and transient different than defaults due to the
-    // above.
-    File logDir;
-    try (SolrCore coreProveIt = cores.getCore("collection1");
-         SolrCore core = cores.getCore("newcore")) {
+      File instanceDir = new File(cores.getSolrHome());
+      FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
+          "newcore"));
 
-      assertTrue(core.getCoreDescriptor().isTransient());
-      assertFalse(coreProveIt.getCoreDescriptor().isTransient());
+      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+      req.setCoreName("newcore");
+      req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
+      req.setDataDir(dataDir.getAbsolutePath());
+      req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
+      req.setConfigSet("shared");
 
-      assertFalse(core.getCoreDescriptor().isLoadOnStartup());
-      assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
+      // These should be the inverse of defaults.
+      req.setIsLoadOnStartup(false);
+      req.setIsTransient(true);
+      req.process(client);
 
-      logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      // Show that the newly-created core has values for load on startup and transient different than defaults due to the
+      // above.
+      File logDir;
+      try (SolrCore coreProveIt = cores.getCore("collection1");
+           SolrCore core = cores.getCore("newcore")) {
+
+        assertTrue(core.getCoreDescriptor().isTransient());
+        assertFalse(coreProveIt.getCoreDescriptor().isTransient());
+
+        assertFalse(core.getCoreDescriptor().isLoadOnStartup());
+        assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
+
+        logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      }
+
+      assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
+
     }
-
-    assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
-    client.shutdown();
     
   }
   

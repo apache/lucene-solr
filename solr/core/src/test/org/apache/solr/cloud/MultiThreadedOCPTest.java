@@ -30,7 +30,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +49,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int NUM_COLLECTIONS = 4;
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
 
     useJettyDataDir = false;
 
@@ -61,13 +60,12 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   public MultiThreadedOCPTest() {
-    fixShardCount = true;
     sliceCount = 2;
-    shardCount = 4;
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
 
     testParallelCollectionAPICalls();
     testTaskExclusivity();
@@ -76,131 +74,133 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-
-    for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-      Create createCollectionRequest = new Create();
-      createCollectionRequest.setCollectionName("ocptest" + i);
-      createCollectionRequest.setNumShards(4);
-      createCollectionRequest.setConfigName("conf1");
-      createCollectionRequest.setAsyncId(String.valueOf(i));
-      createCollectionRequest.process(client);
-    }
-
-    boolean pass = false;
-    int counter = 0;
-    while(true) {
-      int numRunningTasks = 0;
-      for (int i = 1; i <= NUM_COLLECTIONS; i++)
-        if (getRequestState(i + "", client).equals("running"))
-          numRunningTasks++;
-      if(numRunningTasks > 1) {
-        pass = true;
-        break;
-      } else if(counter++ > 100)
-        break;
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
+        Create createCollectionRequest = new Create();
+        createCollectionRequest.setCollectionName("ocptest" + i);
+        createCollectionRequest.setNumShards(4);
+        createCollectionRequest.setConfigName("conf1");
+        createCollectionRequest.setAsyncId(String.valueOf(i));
+        createCollectionRequest.process(client);
       }
-    }
-    assertTrue("More than one tasks were supposed to be running in parallel but they weren't.", pass);
-    for(int i=1;i<=NUM_COLLECTIONS;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-      assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+  
+      boolean pass = false;
+      int counter = 0;
+      while(true) {
+        int numRunningTasks = 0;
+        for (int i = 1; i <= NUM_COLLECTIONS; i++)
+          if (getRequestState(i + "", client).equals("running"))
+            numRunningTasks++;
+        if(numRunningTasks > 1) {
+          pass = true;
+          break;
+        } else if(counter++ > 100)
+          break;
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      assertTrue("More than one tasks were supposed to be running in parallel but they weren't.", pass);
+      for(int i=1;i<=NUM_COLLECTIONS;i++) {
+        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+      }
     }
   }
 
   private void testTaskExclusivity() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    Create createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName("ocptest_shardsplit");
-    createCollectionRequest.setNumShards(4);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setAsyncId("1000");
-    createCollectionRequest.process(client);
-
-    SplitShard splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("ocptest_shardsplit");
-    splitShardRequest.setShardName(SHARD1);
-    splitShardRequest.setAsyncId("1001");
-    splitShardRequest.process(client);
-
-    splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("ocptest_shardsplit");
-    splitShardRequest.setShardName(SHARD2);
-    splitShardRequest.setAsyncId("1002");
-    splitShardRequest.process(client);
-
-    int iterations = 0;
-    while(true) {
-      int runningTasks = 0;
-      int completedTasks = 0;
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      Create createCollectionRequest = new Create();
+      createCollectionRequest.setCollectionName("ocptest_shardsplit");
+      createCollectionRequest.setNumShards(4);
+      createCollectionRequest.setConfigName("conf1");
+      createCollectionRequest.setAsyncId("1000");
+      createCollectionRequest.process(client);
+  
+      SplitShard splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("ocptest_shardsplit");
+      splitShardRequest.setShardName(SHARD1);
+      splitShardRequest.setAsyncId("1001");
+      splitShardRequest.process(client);
+  
+      splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("ocptest_shardsplit");
+      splitShardRequest.setShardName(SHARD2);
+      splitShardRequest.setAsyncId("1002");
+      splitShardRequest.process(client);
+  
+      int iterations = 0;
+      while(true) {
+        int runningTasks = 0;
+        int completedTasks = 0;
+        for (int i=1001;i<=1002;i++) {
+          String state = getRequestState(i, client);
+          if (state.equals("running"))
+            runningTasks++;
+          if (state.equals("completed"))
+            completedTasks++;
+          assertTrue("We have a failed SPLITSHARD task", !state.equals("failed"));
+        }
+        // TODO: REQUESTSTATUS might come back with more than 1 running tasks over multiple calls.
+        // The only way to fix this is to support checking of multiple requestids in a single REQUESTSTATUS task.
+        
+        assertTrue("Mutual exclusion failed. Found more than one task running for the same collection", runningTasks < 2);
+  
+        if(completedTasks == 2 || iterations++ > REQUEST_STATUS_TIMEOUT)
+          break;
+  
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+      }
       for (int i=1001;i<=1002;i++) {
-        String state = getRequestState(i, client);
-        if (state.equals("running"))
-          runningTasks++;
-        if (state.equals("completed"))
-          completedTasks++;
-        assertTrue("We have a failed SPLITSHARD task", !state.equals("failed"));
+        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
       }
-      // TODO: REQUESTSTATUS might come back with more than 1 running tasks over multiple calls.
-      // The only way to fix this is to support checking of multiple requestids in a single REQUESTSTATUS task.
-      
-      assertTrue("Mutual exclusion failed. Found more than one task running for the same collection", runningTasks < 2);
-
-      if(completedTasks == 2 || iterations++ > REQUEST_STATUS_TIMEOUT)
-        break;
-
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
-    }
-    for (int i=1001;i<=1002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-      assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
-    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
-    Create createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName("ocptest_shardsplit2");
-    createCollectionRequest.setNumShards(4);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setAsyncId("3000");
-    createCollectionRequest.process(client);
-
-    SplitShard splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("ocptest_shardsplit2");
-    splitShardRequest.setShardName(SHARD1);
-    splitShardRequest.setAsyncId("3001");
-    splitShardRequest.process(client);
-
-    splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("ocptest_shardsplit2");
-    splitShardRequest.setShardName(SHARD2);
-    splitShardRequest.setAsyncId("3002");
-    splitShardRequest.process(client);
-
-    // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
-    splitShardRequest = new SplitShard();
-    splitShardRequest.setCollectionName("ocptest_shardsplit2");
-    splitShardRequest.setShardName(SHARD1);
-    splitShardRequest.setAsyncId("3002");
-    CollectionAdminResponse response = splitShardRequest.process(client);
-
-    NamedList r = response.getResponse();
-    assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
-        "Task with the same requestid already exists.", r.get("error"));
-
-    for (int i=3001;i<=3002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-      assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      Create createCollectionRequest = new Create();
+      createCollectionRequest.setCollectionName("ocptest_shardsplit2");
+      createCollectionRequest.setNumShards(4);
+      createCollectionRequest.setConfigName("conf1");
+      createCollectionRequest.setAsyncId("3000");
+      createCollectionRequest.process(client);
+  
+      SplitShard splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("ocptest_shardsplit2");
+      splitShardRequest.setShardName(SHARD1);
+      splitShardRequest.setAsyncId("3001");
+      splitShardRequest.process(client);
+  
+      splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("ocptest_shardsplit2");
+      splitShardRequest.setShardName(SHARD2);
+      splitShardRequest.setAsyncId("3002");
+      splitShardRequest.process(client);
+  
+      // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
+      splitShardRequest = new SplitShard();
+      splitShardRequest.setCollectionName("ocptest_shardsplit2");
+      splitShardRequest.setShardName(SHARD1);
+      splitShardRequest.setAsyncId("3002");
+      CollectionAdminResponse response = splitShardRequest.process(client);
+  
+      NamedList r = response.getResponse();
+      assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
+          "Task with the same requestid already exists.", r.get("error"));
+  
+      for (int i=3001;i<=3002;i++) {
+        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+      }
     }
   }
 
@@ -221,10 +221,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
     };
     indexThread.start();
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
-    try {
-
-      SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
       SplitShard splitShardRequest = new SplitShard();
       splitShardRequest.setCollectionName("collection1");
       splitShardRequest.setShardName(SHARD1);
@@ -299,10 +297,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
-    System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
     // insurance

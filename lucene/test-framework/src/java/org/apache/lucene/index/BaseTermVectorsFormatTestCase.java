@@ -503,9 +503,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
           try {
             docsAndPositionsEnum.nextPosition();
             fail();
-          } catch (Exception e) {
-            // ok
-          } catch (AssertionError e) {
+          } catch (Exception | AssertionError e) {
             // ok
           }
         }

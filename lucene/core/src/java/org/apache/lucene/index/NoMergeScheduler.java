@@ -46,5 +46,4 @@ public final class NoMergeScheduler extends MergeScheduler {
   public MergeScheduler clone() {
     return this;
   }
-
 }

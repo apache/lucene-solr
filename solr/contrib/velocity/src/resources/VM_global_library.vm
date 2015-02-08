@@ -1,0 +1,4 @@
+## legacy support, the writer will load this as a macro library as it used to
+## but best not to have your own file called VM_global_library.vm; put them in macros.vm instead.
+## This file is needed for the "builtin" resource loader as Velocity requires all macro library files exist, but
+## we don't want users to have to have a macro library file in their template directories.

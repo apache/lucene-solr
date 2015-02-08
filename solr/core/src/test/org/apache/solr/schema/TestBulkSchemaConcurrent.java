@@ -18,20 +18,10 @@ package org.apache.solr.schema;
  */
 
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestHarness;
-import org.junit.BeforeClass;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.text.MessageFormat.format;
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getCopyFields;
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -41,9 +31,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static java.text.MessageFormat.format;
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getCopyFields;
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestHarness;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestBulkSchemaConcurrent.class);
@@ -70,8 +70,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
+
   @Override
-  public void doTest() throws Exception {
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    for (RestTestHarness r : restTestHarnesses) {
+      r.close();
+    }
+  }
+
+  @Test
+  public void test() throws Exception {
 
     final int threadCount = 5;
     setupHarnesses();
@@ -88,8 +97,6 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
             ArrayList errs = new ArrayList();
             collectErrors.add(errs);
             invokeBulkCall(finalI,errs);
-          } catch (IOException e) {
-            e.printStackTrace();
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -105,8 +112,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     boolean success = true;
 
     for (List e : collectErrors) {
-      if(e== null) continue;
-      if(!e.isEmpty()){
+      if(e != null &&  !e.isEmpty()){
         success = false;
         log.error(e.toString());
       }
@@ -166,27 +172,31 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     }
 
     //get another node
-    RestTestHarness harness = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-    long startTime = System.nanoTime();
-    boolean success = false;
-    long maxTimeoutMillis = 100000;
     Set<String> errmessages = new HashSet<>();
-    while ( ! success
-        && TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
-      errmessages.clear();
-      Map m = getObj(harness, aField, "fields");
-      if(m== null) errmessages.add(format("field {0} not created", aField));
-
-      m = getObj(harness, dynamicFldName, "dynamicFields");
-      if(m== null) errmessages.add(format("dynamic field {0} not created", dynamicFldName));
-
-      List l = getCopyFields(harness, "a1");
-      if(!checkCopyField(l,aField,dynamicCopyFldDest))
-        errmessages.add(format("CopyField source={0},dest={1} not created" , aField,dynamicCopyFldDest));
-
-      m = getObj(harness, "mystr", "fieldTypes");
-      if(m == null) errmessages.add(format("new type {}  not created" , newFieldTypeName));
-      Thread.sleep(10);
+    RestTestHarness harness = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
+    try {
+      long startTime = System.nanoTime();
+      boolean success = false;
+      long maxTimeoutMillis = 100000;
+      while (!success
+          && TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
+        errmessages.clear();
+        Map m = getObj(harness, aField, "fields");
+        if (m == null) errmessages.add(format("field {0} not created", aField));
+        
+        m = getObj(harness, dynamicFldName, "dynamicFields");
+        if (m == null) errmessages.add(format("dynamic field {0} not created", dynamicFldName));
+        
+        List l = getCopyFields(harness, "a1");
+        if (!checkCopyField(l, aField, dynamicCopyFldDest)) errmessages
+            .add(format("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
+        
+        m = getObj(harness, "mystr", "fieldTypes");
+        if (m == null) errmessages.add(format("new type {}  not created", newFieldTypeName));
+        Thread.sleep(10);
+      }
+    } finally {
+      harness.close();
     }
     if(!errmessages.isEmpty()){
       errs.addAll(errmessages);

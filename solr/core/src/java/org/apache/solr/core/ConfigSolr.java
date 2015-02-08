@@ -22,24 +22,15 @@ import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 
@@ -73,10 +64,9 @@ public abstract class ConfigSolr {
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
     try {
       byte[] buf = IOUtils.toByteArray(is);
-      String originalXml = new String(buf, StandardCharsets.UTF_8);
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         Config config = new Config(loader, null, new InputSource(dup), null, false);
-        return fromConfig(config, originalXml);
+        return new ConfigSolrXml(config);
       }
     } catch (SolrException exc) {
       throw exc;
@@ -87,12 +77,6 @@ public abstract class ConfigSolr {
 
   public static ConfigSolr fromSolrHome(SolrResourceLoader loader, String solrHome) {
     return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
-  }
-
-  public static ConfigSolr fromConfig(Config config, String originalXml) {
-    boolean oldStyle = (config.getNode("solr/cores", false) != null);
-    return oldStyle ? new ConfigSolrXmlOld(config, originalXml)
-                    : new ConfigSolrXml(config);
   }
   
   public abstract CoresLocator getCoresLocator();
@@ -105,32 +89,26 @@ public abstract class ConfigSolr {
    * @return core root directory
    */
   public String getCoreRootDirectory() {
-    SolrResourceLoader loader = config.getResourceLoader();
-    String relativeDir = get(CfgProp.SOLR_COREROOTDIRECTORY, null);
+    String relativeDir = getString(CfgProp.SOLR_COREROOTDIRECTORY, null);
     if (relativeDir != null)
       return loader.resolve(relativeDir);
     return loader.getInstanceDir();
   }
 
-  public PluginInfo getShardHandlerFactoryPluginInfo() {
-    Node node = config.getNode(getShardHandlerFactoryConfigPath(), false);
-    return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
-  }
-
-  protected abstract String getShardHandlerFactoryConfigPath();
+  public abstract PluginInfo getShardHandlerFactoryPluginInfo();
 
   public String getZkHost() {
     String sysZkHost = System.getProperty("zkHost");
     if (sysZkHost != null)
       return sysZkHost;
-    return get(CfgProp.SOLR_ZKHOST, null);
+    return getString(CfgProp.SOLR_ZKHOST, null);
   }
 
   public int getZkClientTimeout() {
     String sysProp = System.getProperty("zkClientTimeout");
     if (sysProp != null)
       return Integer.parseInt(sysProp);
-    return get(CfgProp.SOLR_ZKCLIENTTIMEOUT, DEFAULT_ZK_CLIENT_TIMEOUT);
+    return getInt(CfgProp.SOLR_ZKCLIENTTIMEOUT, DEFAULT_ZK_CLIENT_TIMEOUT);
   }
 
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
@@ -142,124 +120,117 @@ public abstract class ConfigSolr {
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY = 10000;
   private static final int DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION = 60000;
+  
+  public static final int DEFAULT_DISTRIBUPDATECONNTIMEOUT = 60000;
+  public static final int DEFAULT_DISTRIBUPDATESOTIMEOUT = 600000;
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
 
   public String getSolrHostPort() {
-    return get(CfgProp.SOLR_HOSTPORT, null);
+    return getString(CfgProp.SOLR_HOSTPORT, null);
   }
 
   public String getZkHostContext() {
-    return get(CfgProp.SOLR_HOSTCONTEXT, null);
+    return getString(CfgProp.SOLR_HOSTCONTEXT, null);
   }
 
   public String getHost() {
-    return get(CfgProp.SOLR_HOST, null);
+    return getString(CfgProp.SOLR_HOST, null);
   }
 
   public int getLeaderVoteWait() {
-    return get(CfgProp.SOLR_LEADERVOTEWAIT, DEFAULT_LEADER_VOTE_WAIT);
+    return getInt(CfgProp.SOLR_LEADERVOTEWAIT, DEFAULT_LEADER_VOTE_WAIT);
   }
   
   public int getLeaderConflictResolveWait() {
-    return get(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT);
+    return getInt(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT);
   }
   
   public int getAutoReplicaFailoverWaitAfterExpiration() {
-    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION);
+    return getInt(CfgProp.SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION);
   }
   
   public int getAutoReplicaFailoverWorkLoopDelay() {
-    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY, DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY);
+    return getInt(CfgProp.SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY, DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY);
   }
   
   public int getAutoReplicaFailoverBadNodeExpiration() {
-    return get(CfgProp.SOLR_AUTOREPLICAFAILOVERBADNODEEXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION);
+    return getInt(CfgProp.SOLR_AUTOREPLICAFAILOVERBADNODEEXPIRATION, DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION);
   }
 
   public boolean getGenericCoreNodeNames() {
-    return get(CfgProp.SOLR_GENERICCORENODENAMES, false);
+    return getBoolean(CfgProp.SOLR_GENERICCORENODENAMES, false);
   }
 
   public int getDistributedConnectionTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0);
+    return getInt(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT);
   }
 
   public int getDistributedSocketTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
+    return getInt(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATESOTIMEOUT);
   }
   
   public int getMaxUpdateConnections() {
-    return get(CfgProp.SOLR_MAXUPDATECONNECTIONS, 10000);
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONS, 10000);
   }
 
   public int getMaxUpdateConnectionsPerHost() {
-    return get(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, 100);
+    return getInt(CfgProp.SOLR_MAXUPDATECONNECTIONSPERHOST, 100);
   }
 
   public int getCoreLoadThreadCount() {
-    return get(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, DEFAULT_CORE_LOAD_THREADS);
+    return getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, DEFAULT_CORE_LOAD_THREADS);
   }
 
   public String getSharedLibDirectory() {
-    return get(ConfigSolr.CfgProp.SOLR_SHAREDLIB , null);
-  }
-
-  public String getDefaultCoreName() {
-    return get(CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, null);
-  }
-
-  public abstract boolean isPersistent();
-
-  public String getAdminPath() {
-    return get(CfgProp.SOLR_ADMINPATH, DEFAULT_CORE_ADMIN_PATH);
+    return getString(ConfigSolr.CfgProp.SOLR_SHAREDLIB, null);
   }
 
   public String getCoreAdminHandlerClass() {
-    return get(CfgProp.SOLR_ADMINHANDLER, "org.apache.solr.handler.admin.CoreAdminHandler");
+    return getString(CfgProp.SOLR_ADMINHANDLER, "org.apache.solr.handler.admin.CoreAdminHandler");
   }
   
   public String getZkCredentialsProviderClass() {
-    return get(CfgProp.SOLR_ZKCREDENTIALSPROVIDER, null);
+    return getString(CfgProp.SOLR_ZKCREDENTIALSPROVIDER, null);
   }
 
   public String getZkACLProviderClass() {
-    return get(CfgProp.SOLR_ZKACLPROVIDER, null);
+    return getString(CfgProp.SOLR_ZKACLPROVIDER, null);
   }
   
   public String getCollectionsHandlerClass() {
-    return get(CfgProp.SOLR_COLLECTIONSHANDLER, "org.apache.solr.handler.admin.CollectionsHandler");
+    return getString(CfgProp.SOLR_COLLECTIONSHANDLER, "org.apache.solr.handler.admin.CollectionsHandler");
   }
 
   public String getInfoHandlerClass() {
-    return get(CfgProp.SOLR_INFOHANDLER, "org.apache.solr.handler.admin.InfoHandler");
+    return getString(CfgProp.SOLR_INFOHANDLER, "org.apache.solr.handler.admin.InfoHandler");
   }
 
   public boolean hasSchemaCache() {
-    return get(ConfigSolr.CfgProp.SOLR_SHARESCHEMA, false);
+    return getBoolean(ConfigSolr.CfgProp.SOLR_SHARESCHEMA, false);
   }
 
   public String getManagementPath() {
-    return get(CfgProp.SOLR_MANAGEMENTPATH, null);
+    return getString(CfgProp.SOLR_MANAGEMENTPATH, null);
   }
 
   public String getConfigSetBaseDirectory() {
-    return get(CfgProp.SOLR_CONFIGSETBASEDIR, "configsets");
+    return getString(CfgProp.SOLR_CONFIGSETBASEDIR, "configsets");
   }
 
   public LogWatcherConfig getLogWatcherConfig() {
-    String loggingClass = get(CfgProp.SOLR_LOGGING_CLASS, null);
-    String loggingWatcherThreshold = get(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
+    String loggingClass = getString(CfgProp.SOLR_LOGGING_CLASS, null);
+    String loggingWatcherThreshold = getString(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
     return new LogWatcherConfig(
-        get(CfgProp.SOLR_LOGGING_ENABLED, true),
+        getBoolean(CfgProp.SOLR_LOGGING_ENABLED, true),
         loggingClass,
         loggingWatcherThreshold,
-        get(CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50)
+        getInt(CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50)
     );
   }
 
   public int getTransientCacheSize() {
-    return get(CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
+    return getInt(CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
   }
 
   public ConfigSetService createCoreConfigService(SolrResourceLoader loader, ZkController zkController) {
@@ -271,7 +242,7 @@ public abstract class ConfigSolr {
   }
 
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
-  protected static enum CfgProp {
+  public static enum CfgProp {
     SOLR_ADMINHANDLER,
     SOLR_COLLECTIONSHANDLER,
     SOLR_CORELOADTHREADS,
@@ -305,59 +276,44 @@ public abstract class ConfigSolr {
     
     SOLR_ZKCREDENTIALSPROVIDER,
     SOLR_ZKACLPROVIDER,
-    
-    //TODO: Remove all of these elements for 5.0
-    SOLR_PERSISTENT,
-    SOLR_CORES_DEFAULT_CORE_NAME,
-    SOLR_ADMINPATH
-  }
-
-  protected Config config;
-  protected Map<CfgProp, Object> propMap = new HashMap<>();
-
-  public ConfigSolr(Config config) {
-    this.config = config;
-    config.substituteProperties();
-  }
-
-  // for extension & testing.
-  protected ConfigSolr() {
 
   }
-  
-  public Config getConfig() {
-    return config;
+
+  protected final SolrResourceLoader loader;
+  protected final Properties solrProperties;
+
+  public ConfigSolr(SolrResourceLoader loader, Properties solrProperties) {
+    this.loader = loader;
+    this.solrProperties = solrProperties;
   }
 
-  @SuppressWarnings("unchecked")
-  public <T> T get(CfgProp key, T defaultValue) {
-    if (propMap.containsKey(key) && propMap.get(key) != null) {
-      return (T) propMap.get(key);
-    }
-    return defaultValue;
+  public ConfigSolr(SolrResourceLoader loader) {
+    this(loader, new Properties());
   }
 
-  public Properties getSolrProperties(String path) {
-    try {
-      return readProperties(((NodeList) config.evaluate(
-          path, XPathConstants.NODESET)).item(0));
-    } catch (Exception e) {
-      SolrException.log(log, null, e);
-    }
-    return null;
+  protected abstract String getProperty(CfgProp key);
 
+  private String getString(CfgProp key, String defaultValue) {
+    String v = getProperty(key);
+    return v == null ? defaultValue : v;
   }
-  
-  protected Properties readProperties(Node node) throws XPathExpressionException {
-    XPath xpath = config.getXPath();
-    NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
-    Properties properties = new Properties();
-    for (int i = 0; i < props.getLength(); i++) {
-      Node prop = props.item(i);
-      properties.setProperty(DOMUtil.getAttr(prop, "name"),
-          PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
-    }
-    return properties;
+
+  private int getInt(CfgProp key, int defaultValue) {
+    String v = getProperty(key);
+    return v == null ? defaultValue : Integer.parseInt(v);
+  }
+
+  private boolean getBoolean(CfgProp key, boolean defaultValue) {
+    String v = getProperty(key);
+    return v == null ? defaultValue : Boolean.parseBoolean(v);
+  }
+
+  public Properties getSolrProperties() {
+    return solrProperties;
+  }
+
+  public SolrResourceLoader getSolrResourceLoader() {
+    return loader;
   }
 
 }

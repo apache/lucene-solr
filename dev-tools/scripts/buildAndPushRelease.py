@@ -280,9 +280,9 @@ def main():
     rev = open('rev.txt', encoding='UTF-8').read()
 
   if c.push_remote:
-    url = push(version, root, rev, rcNum, username)
+    url = push(c.version, c.root, rev, c.rc_num, c.push_remote)
   elif c.push_local:
-    url = pushLocal(version, root, rev, c.rc_num, c.push_local)
+    url = pushLocal(c.version, c.root, rev, c.rc_num, c.push_local)
   else:
     url = None
 

@@ -29,6 +29,8 @@ import org.apache.lucene.index.TieredMergePolicy;
  *
  * Implementations of this class must be thread-safe.
  *
+ * @see UsageTrackingFilterCachingPolicy
+ * @see LRUFilterCache
  * @lucene.experimental
  */
 // TODO: add APIs for integration with IndexWriter.IndexReaderWarmer

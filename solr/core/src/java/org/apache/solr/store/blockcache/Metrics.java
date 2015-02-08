@@ -22,17 +22,16 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.metrics.MetricsContext;
-import org.apache.hadoop.metrics.MetricsRecord;
-import org.apache.hadoop.metrics.MetricsUtil;
-import org.apache.hadoop.metrics.Updater;
-import org.apache.hadoop.metrics.jvm.JvmMetrics;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.search.SolrCacheBase;
 
 /**
+ * A {@link SolrInfoMBean} that provides metrics on block cache operations.
+ *
  * @lucene.experimental
  */
-public class Metrics implements Updater {
+public class Metrics extends SolrCacheBase {
   
   public static class MethodCall {
     public AtomicLong invokes = new AtomicLong();
@@ -60,14 +59,12 @@ public class Metrics implements Updater {
   public AtomicLong indexMemoryUsage = new AtomicLong(0);
   public AtomicLong segmentCount = new AtomicLong(0);
 
-  private MetricsRecord metricsRecord;
   private long previous = System.nanoTime();
 
   public static void main(String[] args) throws InterruptedException {
-    Configuration conf = new Configuration();
-    Metrics metrics = new Metrics(conf);
+    Metrics metrics = new Metrics();
     MethodCall methodCall = new MethodCall();
-    metrics.methodCalls.put("test",methodCall);
+    metrics.methodCalls.put("test", methodCall);
     for (int i = 0; i < 100; i++) {
       metrics.blockCacheHit.incrementAndGet();
       metrics.blockCacheMiss.incrementAndGet();
@@ -77,53 +74,50 @@ public class Metrics implements Updater {
     }
   }
 
-  public Metrics(Configuration conf) {
-    JvmMetrics.init("blockcache", Long.toString(System.currentTimeMillis()));
-    MetricsContext metricsContext = MetricsUtil.getContext("blockcache");
-    metricsRecord = MetricsUtil.createRecord(metricsContext, "metrics");
-    metricsContext.registerUpdater(this);
-  }
-
-  @Override
-  public void doUpdates(MetricsContext context) {
-    synchronized (this) {
-      long now = System.nanoTime();
-      float seconds = (now - previous) / 1000000000.0f;
-      metricsRecord.setMetric("blockcache.hit", getPerSecond(blockCacheHit.getAndSet(0), seconds));
-      metricsRecord.setMetric("blockcache.miss", getPerSecond(blockCacheMiss.getAndSet(0), seconds));
-      metricsRecord.setMetric("blockcache.eviction", getPerSecond(blockCacheEviction.getAndSet(0), seconds));
-      metricsRecord.setMetric("blockcache.size", blockCacheSize.get());
-      metricsRecord.setMetric("row.reads", getPerSecond(rowReads.getAndSet(0), seconds));
-      metricsRecord.setMetric("row.writes", getPerSecond(rowWrites.getAndSet(0), seconds));
-      metricsRecord.setMetric("record.reads", getPerSecond(recordReads.getAndSet(0), seconds));
-      metricsRecord.setMetric("record.writes", getPerSecond(recordWrites.getAndSet(0), seconds));
-      metricsRecord.setMetric("query.external", getPerSecond(queriesExternal.getAndSet(0), seconds));
-      metricsRecord.setMetric("query.internal", getPerSecond(queriesInternal.getAndSet(0), seconds));
-      metricsRecord.setMetric("buffercache.allocations", getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds));
-      metricsRecord.setMetric("buffercache.lost", getPerSecond(shardBuffercacheLost.getAndSet(0), seconds));
-      for (Entry<String,MethodCall> entry : methodCalls.entrySet()) {
-        String key = entry.getKey();
-        MethodCall value = entry.getValue();
-        long invokes = value.invokes.getAndSet(0);
-        long times = value.times.getAndSet(0);
-        
-        float avgTimes = (times / (float) invokes) / 1000000000.0f;
-        metricsRecord.setMetric("methodcalls." + key + ".count", getPerSecond(invokes, seconds));
-        metricsRecord.setMetric("methodcalls." + key + ".time", avgTimes);
-      }
-      metricsRecord.setMetric("tables", tableCount.get());
-      metricsRecord.setMetric("rows", rowCount.get());
-      metricsRecord.setMetric("records", recordCount.get());
-      metricsRecord.setMetric("index.count", indexCount.get());
-      metricsRecord.setMetric("index.memoryusage", indexMemoryUsage.get());
-      metricsRecord.setMetric("index.segments", segmentCount.get());
-      previous = now;
+  public NamedList<Number> getStatistics() {
+    NamedList<Number> stats = new NamedList<Number>();
+    
+    long now = System.nanoTime();
+    float seconds = (now - previous) / 1000000000.0f;
+    
+    long hits = blockCacheHit.getAndSet(0);
+    long lookups = hits + blockCacheMiss.getAndSet(0);
+    
+    stats.add("lookups", getPerSecond(lookups, seconds));
+    stats.add("hits", getPerSecond(hits, seconds));
+    stats.add("hitratio", calcHitRatio(lookups, hits));
+    stats.add("evictions", getPerSecond(blockCacheEviction.getAndSet(0), seconds));
+    stats.add("size", blockCacheSize.get());
+    stats.add("row.reads", getPerSecond(rowReads.getAndSet(0), seconds));
+    stats.add("row.writes", getPerSecond(rowWrites.getAndSet(0), seconds));
+    stats.add("record.reads", getPerSecond(recordReads.getAndSet(0), seconds));
+    stats.add("record.writes", getPerSecond(recordWrites.getAndSet(0), seconds));
+    stats.add("query.external", getPerSecond(queriesExternal.getAndSet(0), seconds));
+    stats.add("query.internal", getPerSecond(queriesInternal.getAndSet(0), seconds));
+    stats.add("buffercache.allocations", getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds));
+    stats.add("buffercache.lost", getPerSecond(shardBuffercacheLost.getAndSet(0), seconds));
+    for (Entry<String,MethodCall> entry : methodCalls.entrySet()) {
+      String key = entry.getKey();
+      MethodCall value = entry.getValue();
+      long invokes = value.invokes.getAndSet(0);
+      long times = value.times.getAndSet(0);
+      
+      float avgTimes = (times / (float) invokes) / 1000000000.0f;
+      stats.add("methodcalls." + key + ".count", getPerSecond(invokes, seconds));
+      stats.add("methodcalls." + key + ".time", avgTimes);
     }
-    metricsRecord.update();
+    stats.add("tables", tableCount.get());
+    stats.add("rows", rowCount.get());
+    stats.add("records", recordCount.get());
+    stats.add("index.count", indexCount.get());
+    stats.add("index.memoryusage", indexMemoryUsage.get());
+    stats.add("index.segments", segmentCount.get());
+    previous = now;
+    
+    return stats;
   }
 
   private float getPerSecond(long value, float seconds) {
     return (float) (value / seconds);
   }
-
 }

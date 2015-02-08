@@ -11,7 +11,7 @@ rebuild() {
 	rm -r -f build
 	rm -r -f server/solr/zoo_data
 	rm -f server/server.log
-	ant example dist
+	ant server dist
 }
 
 setports() {

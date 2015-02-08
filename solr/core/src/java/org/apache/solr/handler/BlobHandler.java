@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -51,6 +53,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.SimplePostTool;
@@ -58,6 +61,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitialized{
@@ -85,10 +89,12 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
       }
       String err = SolrConfigHandler.validateName(blobName);
       if(err!=null){
+        log.warn("no blob name");
         rsp.add("error", err);
         return;
       }
       if(req.getContentStreams() == null )  {
+        log.warn("no content stream");
         rsp.add("error","No stream");
         return;
       }
@@ -108,6 +114,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
               "q", "md5:" + md5,
               "fl", "id,size,version,timestamp,blobName")),
               rsp);
+          log.warn("duplicate entry for blob :"+blobName);
           return;
         }
 
@@ -122,14 +129,19 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         }
         version++;
         String id = blobName+"/"+version;
-        indexMap(req, makeMap(
+        Map<String, Object> doc = makeMap(
             "id", id,
             "md5", md5,
             "blobName", blobName,
             "version", version,
             "timestamp", new Date(),
             "size", payload.limit(),
-            "blob", payload));
+            "blob", payload);
+        verifyWithRealtimeGet(blobName, version, req, doc);
+        log.info(MessageFormat.format("New blob inserting {0} ,size {1}, md5 {2}",doc.get("id"), payload.limit(),md5));
+        indexMap(req, rsp, doc);
+        log.info(" Successfully Added and committed a blob with id {} and size {} ",id, payload.limit());
+
         break;
       }
 
@@ -187,24 +199,44 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
 
         req.forward(null,
             new MapSolrParams((Map) makeMap(
-                "q", MessageFormat.format(q,blobName,version),
-                "fl", "id,size,version,timestamp,blobName",
+                "q", MessageFormat.format(q, blobName, version),
+                "fl", "id,size,version,timestamp,blobName,md5",
                 "sort", "version desc"))
-            ,rsp);
+            , rsp);
       }
     }
   }
 
-  public static void indexMap(SolrQueryRequest req, Map<String, Object> doc) throws IOException {
+  private void verifyWithRealtimeGet(String blobName, long version, SolrQueryRequest req, Map<String, Object> doc) {
+    for(;;) {
+      SolrQueryResponse response = new SolrQueryResponse();
+      String id = blobName + "/" + version;
+      req.forward("/get", new MapSolrParams(singletonMap("id", id)), response);
+      if(response.getValues().get("doc") == null) {
+        //ensure that the version does not exist
+        return;
+      } else {
+        log.info("id {} already exists trying next ",id);
+        version++;
+        doc.put("version", version);
+        id = blobName + "/" + version;
+        doc.put("id", id);
+      }
+   }
+
+  }
+
+  public static void indexMap(SolrQueryRequest req, SolrQueryResponse rsp, Map<String, Object> doc) throws IOException {
     SolrInputDocument solrDoc = new SolrInputDocument();
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(),e.getValue());
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(req.getParams().get(UpdateParams.UPDATE_CHAIN));
-    UpdateRequestProcessor processor = processorChain.createProcessor(req,null);
+    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
-    cmd.commitWithin =1;
     cmd.solrDoc = solrDoc;
+    log.info("Adding doc "+doc);
     processor.processAdd(cmd);
-
+    log.info("committing doc"+doc);
+    processor.processCommit(new CommitUpdateCommand(req, false));
   }
 
   @Override
@@ -245,7 +277,11 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
       "<updateHandler class='solr.DirectUpdateHandler2'>\n" +
       "  <updateLog>\n" +
       "    <str name='dir'>${solr.ulog.dir:}</str>\n" +
-      "  </updateLog>\n" +
+      "  </updateLog>\n     " +
+      "  <autoCommit> \n" +
+      "       <maxDocs>1</maxDocs> \n" +
+      "       <openSearcher>true</openSearcher> \n" +
+      "  </autoCommit>" +
       "</updateHandler>\n" +
       "<requestHandler name='standard' class='solr.StandardRequestHandler' default='true' />\n" +
       "<requestHandler name='/analysis/field' startup='lazy' class='solr.FieldAnalysisRequestHandler' />\n" +

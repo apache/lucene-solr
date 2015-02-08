@@ -25,12 +25,13 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 // TODO: this doesn't use the ord; we could index BinaryDV instead for the single valued case?
-class BigIntComparator extends FieldComparator<BigInteger> {
+class BigIntComparator extends SimpleFieldComparator<BigInteger> {
   private final String field;
   private final BytesRef[] values;
   private final int byteWidth;
@@ -104,7 +105,7 @@ class BigIntComparator extends FieldComparator<BigInteger> {
   }
 
   @Override
-  public FieldComparator<BigInteger> setNextReader(LeafReaderContext context) throws IOException {
+  public void doSetNextReader(LeafReaderContext context) throws IOException {
     currentReaderValues = getDocValues(context);
     assert currentReaderValues != null;
     docsWithField = DocValues.getDocsWithField(context.reader(), field);
@@ -113,7 +114,6 @@ class BigIntComparator extends FieldComparator<BigInteger> {
     if (docsWithField instanceof Bits.MatchAllBits) {
       docsWithField = null;
     }
-    return this;
   }
 
   protected SortedDocValues getDocValues(LeafReaderContext context) throws IOException {

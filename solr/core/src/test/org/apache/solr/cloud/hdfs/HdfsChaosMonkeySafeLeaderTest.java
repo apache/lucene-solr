@@ -23,7 +23,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.ChaosMonkeySafeLeaderTest;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
@@ -47,10 +46,9 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
     dfsCluster = null;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     
     // super class may hard code directory
     useFactory("org.apache.solr.core.HdfsDirectoryFactory");

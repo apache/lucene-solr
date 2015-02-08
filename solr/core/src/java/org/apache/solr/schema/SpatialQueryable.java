@@ -31,4 +31,6 @@ import org.apache.solr.search.SpatialOptions;
 public interface SpatialQueryable {
 
   public Query createSpatialQuery(QParser parser, SpatialOptions options);
+
+  public double getSphereRadius();
 }
