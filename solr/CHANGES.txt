@@ -142,6 +142,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.2.6.v20141205
 
+NOTE: Solr 5.0 only supports creating and removing SolrCloud collections through
+      the collections API, unlike previous versions. While not using the 
+      collections API may still work in 5.0, it is unsupported, not recommended,
+      and the behavior will change in a 5.x release.
+
 Upgrading from Solr 4.x
 ----------------------
 
