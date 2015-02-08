@@ -805,7 +805,7 @@ public class SnapPuller {
       long size = (Long) file.get(SIZE);
       CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
       if (!compareResult.equal || downloadCompleteIndex
-          || filesToAlwaysDownloadIfChecksumFails(filename, size, compareResult)) {
+          || filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult)) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
@@ -818,7 +818,7 @@ public class SnapPuller {
     }
   }
   
-  private boolean filesToAlwaysDownloadIfChecksumFails(String filename,
+  private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
       long size, CompareResult compareResult) {
     // without checksums to compare, we always download .si, .liv, segments_N,
     // and any file under 100kb
