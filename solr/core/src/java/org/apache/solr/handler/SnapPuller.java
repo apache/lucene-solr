@@ -78,6 +78,7 @@ import java.util.zip.InflaterInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
@@ -86,6 +87,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -347,7 +349,6 @@ public class SnapPuller {
         }
       }
 
-
       if (latestVersion == 0L) {
         if (forceReplication && commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
@@ -404,7 +405,18 @@ public class SnapPuller {
 
       try {
         
-        if (isIndexStale(indexDir)) {
+        SegmentInfos infos = SegmentInfos.readCommit(indexDir, commit.getSegmentsFileName());
+        
+        // we treat these files as if they all the oldest version we see
+        Version oldestVersion = Version.LUCENE_CURRENT;
+        for (SegmentCommitInfo commitInfo : infos) {
+          Version version = commitInfo.info.getVersion();
+          if (oldestVersion.onOrAfter(version)) {
+            oldestVersion = version;
+          }
+        }
+        
+        if (isIndexStale(indexDir, oldestVersion)) {
           isFullCopyNeeded = true;
         }
         
@@ -451,8 +463,7 @@ public class SnapPuller {
               + isFullCopyNeeded);
           successfulInstall = false;
           
-          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir,
-              latestGeneration);
+          downloadIndexFiles(isFullCopyNeeded, indexDir, oldestVersion, tmpIndexDir, latestGeneration);
           LOG.info("Total time taken for download : "
               + ((System.currentTimeMillis() - replicationStartTime) / 1000)
               + " secs");
@@ -803,19 +814,22 @@ public class SnapPuller {
    * Download the index files. If a new index is needed, download all the files.
    *
    * @param downloadCompleteIndex is it a fresh index copy
-   * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param indexDir                 the indexDir to be merged to
+   * @param version                  Version of index
+   * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param latestGeneration         the version number
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex,
-      Directory indexDir, Directory tmpIndexDir, long latestGeneration)
+  private void downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Version version, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
     for (Map<String,Object> file : filesToDownload) {
-      if (!slowFileExists(indexDir, (String) file.get(NAME))
-          || downloadCompleteIndex) {
+      String filename = (String) file.get(NAME);
+      long size = (Long) file.get(SIZE);
+      CompareResult compareResult = compareFile(indexDir, version, filename, size, (Long) file.get(CHECKSUM));
+      if (!compareResult.equal || downloadCompleteIndex
+          || filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult)) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
@@ -825,6 +839,74 @@ public class SnapPuller {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
+    }
+  }
+
+  private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
+      long size, CompareResult compareResult) {
+    // without checksums to compare, we always download .si, .liv, segments_N,
+    // and any file under 100kb
+    return !compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
+    || filename.startsWith("segments_") || size < 100000);
+  }
+
+  static class CompareResult {
+    boolean equal = false;
+    boolean checkSummed = false;
+  }
+  
+  private CompareResult compareFile(Directory indexDir, Version version, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
+    CompareResult compareResult = new CompareResult();
+    try {
+      try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
+        long indexFileLen = indexInput.length();
+        long indexFileChecksum = 0;
+
+        if (backupIndexFileChecksum != null && version.onOrAfter(Version.LUCENE_4_8_0)) {
+          try {
+            indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
+            compareResult.checkSummed = true;
+          } catch (Exception e) {
+            LOG.warn("Could not retrieve checksum from file.", e);
+          }
+        }
+        
+        if (!compareResult.checkSummed) {
+          // we don't have checksums to compare
+          
+          if (indexFileLen == backupIndexFileLen) {
+            compareResult.equal = true;
+            return compareResult;
+          } else {
+            LOG.warn(
+                "File {} did not match. "  + "expected length is {} and actual length is {}",
+                filename, backupIndexFileChecksum, indexFileChecksum,
+                backupIndexFileLen, indexFileLen);
+            compareResult.equal = false;
+            return compareResult;
+          }
+        }
+        
+        // we have checksums to compare
+        
+        if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+          compareResult.equal = true;
+          return compareResult;
+        } else {
+          LOG.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
+              "expected length is {} and actual length is {}", filename, backupIndexFileChecksum, indexFileChecksum,
+              backupIndexFileLen, indexFileLen);
+          compareResult.equal = false;
+          return compareResult;
+        }
+      }
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      compareResult.equal = false;
+      return compareResult;
+    } catch (IOException e) {
+      LOG.error("Could not read file " + filename + ". Downloading it again", e);
+      compareResult.equal = false;
+      return compareResult;
     }
   }
 
@@ -848,15 +930,24 @@ public class SnapPuller {
    * @return true if the index stale and we need to download a fresh copy, false otherwise.
    * @throws IOException  if low level io error
    */
-  private boolean isIndexStale(Directory dir) throws IOException {
+  private boolean isIndexStale(Directory dir, Version indexVersion) throws IOException {
     for (Map<String, Object> file : filesToDownload) {
-      if (slowFileExists(dir, (String) file.get(NAME))
-              && dir.fileLength((String) file.get(NAME)) != (Long) file.get(SIZE)) {
-        LOG.warn("File " + file.get(NAME) + " expected to be " + file.get(SIZE)
-            + " while it is " + dir.fileLength((String) file.get(NAME)));
-        // file exists and size is different, therefore we must assume
-        // corrupted index
-        return true;
+      String filename = (String) file.get(NAME);
+      Long length = (Long) file.get(SIZE);
+      Long checksum = (Long) file.get(CHECKSUM);
+      if (slowFileExists(dir, filename)) {
+        if (checksum != null) {
+          if (!(compareFile(dir, indexVersion, filename, length, checksum).equal)) {
+            // file exists and size or checksum is different, therefore we must download it again
+            return true;
+          }
+        } else {
+          if (length != dir.fileLength(filename)) {
+            LOG.warn("File {} did not match. expected length is {} and actual length is {}",
+                filename, length, dir.fileLength(filename));
+            return true;
+          }
+        }
       }
     }
     return false;
