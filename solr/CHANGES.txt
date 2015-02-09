@@ -630,6 +630,9 @@ Bug Fixes
   node attempts to become the leader for a shard. 
   (Mark Miller, Maxim Novikov)
 
+* SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to 
+  parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
+
 Optimizations
 ----------------------
 
