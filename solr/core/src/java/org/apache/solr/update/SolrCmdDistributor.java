@@ -176,8 +176,9 @@ public class SolrCmdDistributor {
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
+      uReq.setCommitWithin(cmd.commitWithin);
       if (cmd.isDeleteById()) {
-        uReq.deleteById(cmd.getId(), cmd.getVersion());
+        uReq.deleteById(cmd.getId(), cmd.getRoute(), cmd.getVersion());
       } else {
         uReq.deleteByQuery(cmd.query);
       }

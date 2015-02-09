@@ -108,6 +108,8 @@ public class DeleteUpdateCommand extends UpdateCommand {
     if (indexedId!=null) sb.append(",indexedId=").append(getId());
     if (query != null) sb.append(",query=`").append(query).append('`');
     sb.append(",commitWithin=").append(commitWithin);
+    if (route != null)
+      sb.append(",_route_=").append(route);
      sb.append('}');
      return sb.toString();
   }

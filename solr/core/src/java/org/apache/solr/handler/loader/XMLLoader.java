@@ -17,7 +17,9 @@ package org.apache.solr.handler.loader;
  */
 
 import com.google.common.collect.Lists;
+
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -56,6 +58,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -327,6 +330,9 @@ public class XMLLoader extends ContentStreamLoader {
               String attrVal = parser.getAttributeValue(i);
               if (UpdateRequestHandler.VERSION.equals(attrName)) {
                 deleteCmd.setVersion(Long.parseLong(attrVal));
+              }
+              if (UpdateRequest.ROUTE.equals(attrName)) {
+                deleteCmd.setRoute(attrVal);
               }
             }
           }

@@ -116,6 +116,9 @@ Bug Fixes
 * SOLR-6775: Creating backup snapshot results in null pointer exception.
   (Ryan Hesson, Varun Thacker via shalin)
 
+* SOLR-5890: Delete silently fails if not sent to shard where document was
+  added (Ishan Chattopadhyaya, Noble Paul)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections

@@ -206,6 +206,9 @@ public class JavaBinUpdateRequestCodec {
         Map<String,Object> params = entry.getValue();
         if (params != null) {
           Long version = (Long) params.get(UpdateRequest.VER);
+          if (params.containsKey(UpdateRequest.ROUTE))
+            updateRequest.deleteById(entry.getKey(), (String) params.get(UpdateRequest.ROUTE));
+          else
           updateRequest.deleteById(entry.getKey(), version);
         } else {
           updateRequest.deleteById(entry.getKey());

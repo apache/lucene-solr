@@ -113,7 +113,7 @@ public class SolrCloudPartitioner extends Partitioner<Text, SolrInputDocumentWri
     String keyStr = key.toString();
     
     // TODO: scalability: replace linear search in HashBasedRouter.hashToSlice() with binary search on sorted hash ranges
-    Slice slice = docRouter.getTargetSlice(keyStr, doc, emptySolrParams, docCollection); 
+    Slice slice = docRouter.getTargetSlice(keyStr, doc, null, emptySolrParams, docCollection); 
     
 //    LOG.info("slice: {}", slice);
     if (slice == null) {

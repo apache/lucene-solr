@@ -139,6 +139,12 @@ public class JavabinLoader extends ContentStreamLoader {
             delcmd.setVersion(version);
           }
         }
+        if (map != null) {
+          String route = (String) map.get(UpdateRequest.ROUTE);
+          if (route != null) {
+            delcmd.setRoute(route);
+          }
+        }
         processor.processDelete(delcmd);
         delcmd.clear();
       }

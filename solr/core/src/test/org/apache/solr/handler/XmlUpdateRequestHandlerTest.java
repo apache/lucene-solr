@@ -173,15 +173,27 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
         " <delete>" +
         "   <id>150</id>" +
         " </delete>" +
+        " <delete>" +
+        "   <id version=\"42\">300</id>" +
+        " </delete>" +
+        " <delete>" +
+        "   <id _route_=\"shard1\">400</id>" +
+        " </delete>" +
+        " <delete>" +
+        "   <id _route_=\"shard1\" version=\"42\">500</id>" +
+        " </delete>" +
         "</update>";
 
       MockUpdateRequestProcessor p = new MockUpdateRequestProcessor(null);
-      p.expectDelete(null, "id:150", -1);
-      p.expectDelete("150", null, -1);
-      p.expectDelete("200", null, -1);
-      p.expectDelete(null, "id:200", -1);
-      p.expectDelete(null, "id:150", 500);
-      p.expectDelete("150", null, -1);
+      p.expectDelete(null, "id:150", -1, 0, null);
+      p.expectDelete("150", null, -1, 0, null);
+      p.expectDelete("200", null, -1, 0, null);
+      p.expectDelete(null, "id:200", -1, 0, null);
+      p.expectDelete(null, "id:150", 500, 0, null);
+      p.expectDelete("150", null, -1, 0, null);
+      p.expectDelete("300", null, -1, 42, null);
+      p.expectDelete("400", null, -1, 0, "shard1");
+      p.expectDelete("500", null, -1, 42, "shard1");
 
       XMLLoader loader = new XMLLoader().init(null);
       loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
@@ -197,11 +209,15 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
         super(next);
       }
 
-      public void expectDelete(String id, String query, int commitWithin) {
+      public void expectDelete(String id, String query, int commitWithin, long version, String route) {
         DeleteUpdateCommand cmd = new DeleteUpdateCommand(null);
         cmd.id = id;
         cmd.query = query;
         cmd.commitWithin = commitWithin;
+        if (version!=0)
+          cmd.setVersion(version);
+        if (route!=null)
+          cmd.setRoute(route);
         deleteCommands.add(cmd);
       }
 
@@ -216,7 +232,8 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
         assertTrue("Expected [" + expected + "] but found [" + cmd + "]",
             ObjectUtils.equals(expected.id, cmd.id) &&
             ObjectUtils.equals(expected.query, cmd.query) &&
-            expected.commitWithin==cmd.commitWithin);
+            expected.commitWithin==cmd.commitWithin && 
+            ObjectUtils.equals(expected.getRoute(), cmd.getRoute()));
       }
     }
 
