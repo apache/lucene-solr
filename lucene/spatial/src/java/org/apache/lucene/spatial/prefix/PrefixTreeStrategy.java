@@ -17,6 +17,7 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +28,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -85,6 +88,10 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid.getSpatialContext(), fieldName);
     this.grid = grid;
+  }
+
+  public SpatialPrefixTree getGrid() {
+    return grid;
   }
 
   /**
@@ -180,7 +187,14 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return new ShapeFieldCacheDistanceValueSource(ctx, p, queryPoint, multiplier);
   }
 
-  public SpatialPrefixTree getGrid() {
-    return grid;
+  /**
+   * Computes spatial facets in two dimensions as a grid of numbers.  The data is often visualized as a so-called
+   * "heatmap".
+   *
+   * @see org.apache.lucene.spatial.prefix.HeatmapFacetCounter#calcFacets(PrefixTreeStrategy, org.apache.lucene.index.IndexReaderContext, org.apache.lucene.search.Filter, com.spatial4j.core.shape.Shape, int, int)
+   */
+  public HeatmapFacetCounter.Heatmap calcFacets(IndexReaderContext context, Filter filter,
+                                   Shape inputShape, final int facetLevel, int maxCells) throws IOException {
+    return HeatmapFacetCounter.calcFacets(this, context, filter, inputShape, facetLevel, maxCells);
   }
 }

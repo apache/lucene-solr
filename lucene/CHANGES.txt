@@ -36,9 +36,11 @@ New Features
 * LUCENE-3922: Added JapaneseNumberFilter that normalizes Japanese numbers
   in kansuji form to regular/Arabic numbers. (Gaute Lambertsen, Christian Moen)
 
+* LUCENE-6191: New spatial 2D heatmap faceting for PrefixTreeStrategy. (David Smiley)
+
 Bug Fixes
 
-* Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to
+* LUCENE-6190: Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to
   Intersects. (David Smiley)
 
 Optimizations
