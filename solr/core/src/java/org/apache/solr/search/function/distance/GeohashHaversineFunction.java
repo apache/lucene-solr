@@ -35,9 +35,9 @@ import java.util.Map;
 /**
  *  Calculate the Haversine distance between two geo hash codes.
  *
- * <p/>
+ * <p>
  * Ex: ghhsin(ValueSource, ValueSource, radius)
- * <p/>
+ * <p>
  *
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the implementation
  *

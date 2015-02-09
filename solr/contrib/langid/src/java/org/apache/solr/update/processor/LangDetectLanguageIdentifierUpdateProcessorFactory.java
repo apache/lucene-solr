@@ -41,7 +41,7 @@ import com.cybozu.labs.langdetect.LangDetectException;
 /**
  * Identifies the language of a set of input fields using 
  * http://code.google.com/p/language-detection
- * <p/>
+ * <p>
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:

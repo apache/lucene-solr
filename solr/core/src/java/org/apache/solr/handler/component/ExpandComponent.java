@@ -92,17 +92,17 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
  * The CollapsingPostFilter collapses a result set on a field.
- * <p/>
+ * <p>
  * The ExpandComponent expands the collapsed groups for a single page.
- * <p/>
+ * <p>
  * http parameters:
- * <p/>
- * expand=true <br/>
- * expand.rows=5 <br/>
- * expand.sort=field asc|desc<br/>
- * expand.q=*:* (optional, overrides the main query)<br/>
- * expand.fq=type:child (optional, overrides the main filter queries)<br/>
- * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br/>
+ * <p>
+ * expand=true <br>
+ * expand.rows=5 <br>
+ * expand.sort=field asc|desc<br>
+ * expand.q=*:* (optional, overrides the main query)<br>
+ * expand.fq=type:child (optional, overrides the main filter queries)<br>
+ * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br>
  */
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";

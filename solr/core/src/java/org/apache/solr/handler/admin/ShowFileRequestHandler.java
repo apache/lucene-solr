@@ -57,7 +57,7 @@ import java.util.Set;
  * If you want to selectively restrict access some configuration files, you can list
  * these files in the {@link #HIDDEN} invariants.  For example to hide 
  * synonyms.txt and anotherfile.txt, you would register:
- * <p>
+ * <br>
  * <pre>
  * &lt;requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" &gt;
  *   &lt;lst name="defaults"&gt;
@@ -83,7 +83,7 @@ import java.util.Set;
  * set it directly using: {@link #USE_CONTENT_TYPE}.  For example, to get a plain text
  * version of schema.xml, try:
  * <pre>
- *   http://localhost:8983/solr/admin/file?file=schema.xml&contentType=text/plain
+ *   http://localhost:8983/solr/admin/file?file=schema.xml&amp;contentType=text/plain
  * </pre>
  *
  *

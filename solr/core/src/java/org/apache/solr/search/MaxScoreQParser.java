@@ -44,7 +44,7 @@ public class MaxScoreQParser extends LuceneQParser {
    * delegates all SHOULD clauses to DisjunctionMaxQuery with
    * meaning only the clause with the max score will contribute
    * to the overall score, unless the tie parameter is specified.
-   * <br/>
+   * <br>
    * The max() is only calculated from the SHOULD clauses.
    * Any MUST clauses will be passed through as separate
    * BooleanClauses and thus always contribute to the score.

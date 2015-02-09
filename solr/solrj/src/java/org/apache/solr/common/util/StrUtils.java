@@ -78,7 +78,7 @@ public class StrUtils {
    * <p>
    * Current backslash escaping supported:
    * <br> \n \t \r \b \f are escaped the same as a Java String
-   * <br> Other characters following a backslash are produced verbatim (\c => c)
+   * <br> Other characters following a backslash are produced verbatim (\c =&gt; c)
    *
    * @param s  the string to split
    * @param separator the separator to split on
@@ -258,7 +258,6 @@ public class StrUtils {
    * <p>
    * Characters with a numeric value less than 32 are encoded.
    * &amp;,=,%,+,space are encoded.
-   * <p>
    */
   public static void partialURLEncodeVal(Appendable dest, String val) throws IOException {
     for (int i=0; i<val.length(); i++) {

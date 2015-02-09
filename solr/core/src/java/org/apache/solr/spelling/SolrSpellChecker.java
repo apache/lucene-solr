@@ -187,7 +187,6 @@ public abstract class SolrSpellChecker {
   /**
    * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.
    * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion first.
-   * <p/>
    *
    * @param options The {@link SpellingOptions} to use
    * @return The {@link SpellingResult} suggestions

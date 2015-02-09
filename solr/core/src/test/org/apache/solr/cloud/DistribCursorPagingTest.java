@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Seed;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -30,15 +31,17 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.CursorMark;
+
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
-import org.apache.solr.search.CursorMark; //jdoc
 
+import org.apache.solr.search.CursorMark; //jdoc
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +53,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Distributed tests of deep paging using {@link CursorMark} and {@link #CURSOR_MARK_PARAM}.
+ * Distributed tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}.
  * 
  * NOTE: this class Reuses some utilities from {@link CursorPagingTest} that assume the same schema and configs.
  *
@@ -669,7 +672,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
   /**
    * Given a QueryResponse returned by SolrServer.query, asserts that the
-   * response does include {@link #CURSOR_MARK_NEXT} key and returns it
+   * response does include {@link CursorMarkParams#CURSOR_MARK_NEXT} key and returns it
    * @see org.apache.solr.client.solrj.SolrClient#query
    */
   private String assertHashNextCursorMark(QueryResponse rsp) {
@@ -686,8 +689,8 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
   /**
    * <p>
-   * Given a set of params, executes a cursor query using {@link #CURSOR_MARK_START} 
-   * and then continuously walks the results using {@link #CURSOR_MARK_START} as long 
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START} 
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long 
    * as a non-0 number of docs ar returned.  This method records the the set of all id's
    * (must be postive ints) encountered and throws an assertion failure if any id is 
    * encountered more then once, or if the set grows above maxSize

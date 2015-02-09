@@ -38,7 +38,7 @@ import java.util.Set;
 
 /**
  * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:
- * <table border="1">
+ * <table border="1" summary="table of parameters">
  * <tr>
  * <th align="left">Name</th>
  * <th align="left">Type</th>

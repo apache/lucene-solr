@@ -28,7 +28,6 @@ import org.apache.commons.io.IOUtils;
  * An {@link EntityProcessor} instance which can stream lines of text read from a 
  * datasource. Options allow lines to be explicitly skipped or included in the index.
  * </p>
- * <p/>
  * <p>
  * Attribute summary 
  * <ul>
@@ -39,17 +38,16 @@ import org.apache.commons.io.IOUtils;
  * <li>skipLineRegex is an optional attribute that is applied after any 
  *     acceptLineRegex and discards any line which matches this regExp.</li>
  * </ul>
- * </p><p>
+ * <p>
  * Although envisioned for reading lines from a file or url, LineEntityProcessor may also be useful
  * for dealing with change lists, where each line contains filenames which can be used by subsequent entities
  * to parse content from those files.
- * <p/>
  * <p>
  * Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.4

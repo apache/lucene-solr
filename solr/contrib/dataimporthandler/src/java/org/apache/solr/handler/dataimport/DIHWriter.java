@@ -36,7 +36,7 @@ public interface DIHWriter {
 
   /**
    * <p>
-   *  Release resources used by this writer.  After calling close, reads & updates will throw exceptions.
+   *  Release resources used by this writer.  After calling close, reads &amp; updates will throw exceptions.
    * </p>
    */
   public void close();

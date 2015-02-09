@@ -56,10 +56,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Return term vectors for the documents in a query result set.
- * <p/>
+ * <p>
  * Info available:
  * term, frequency, position, offset, IDF.
- * <p/>
+ * <p>
  * <b>Note</b> Returning IDF can be expensive.
  * 
  * <pre class="prettyprint">

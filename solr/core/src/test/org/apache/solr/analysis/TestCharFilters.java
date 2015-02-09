@@ -39,7 +39,7 @@ public class TestCharFilters extends SolrTestCaseJ4 {
   
   /**
    * Test query analysis: at querytime MockCharFilter will
-   * double the 'a', so ab -> aab, and aba -> aabaa
+   * double the 'a', so ab -&gt; aab, and aba -&gt; aabaa
    * 
    * We run the test twice to make sure reuse is working
    */
@@ -58,7 +58,7 @@ public class TestCharFilters extends SolrTestCaseJ4 {
   
   /**
    * Test index analysis: at indextime MockCharFilter will
-   * double the 'a', so ab -> aab, and aba -> aabaa
+   * double the 'a', so ab -&gt; aab, and aba -&gt; aabaa
    * 
    * We run the test twice to make sure reuse is working
    */

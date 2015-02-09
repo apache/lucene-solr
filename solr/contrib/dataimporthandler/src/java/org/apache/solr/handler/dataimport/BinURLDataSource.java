@@ -26,10 +26,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
 /**
- * <p> A data source implementation which can be used to read binary streams using HTTP. </p> <p/> <p> Refer to <a
+ * <p> A data source implementation which can be used to read binary streams using HTTP. </p> <p> Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
  * details. </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 3.1

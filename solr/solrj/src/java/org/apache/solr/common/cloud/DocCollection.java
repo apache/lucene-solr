@@ -130,14 +130,14 @@ public class DocCollection extends ZkNodeProps {
   }
 
   /**
-   * Get the map of all slices (sliceName->Slice) for this collection.
+   * Get the map of all slices (sliceName-&gt;Slice) for this collection.
    */
   public Map<String, Slice> getSlicesMap() {
     return slices;
   }
 
   /**
-   * Get the map of active slices (sliceName->Slice) for this collection.
+   * Get the map of active slices (sliceName-&gt;Slice) for this collection.
    */
   public Map<String, Slice> getActiveSlicesMap() {
     return activeSlices;

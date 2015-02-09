@@ -22,17 +22,19 @@ import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark; //jdoc
-
 import org.noggit.ObjectBuilder;
 
 import java.nio.ByteBuffer;
@@ -49,7 +51,7 @@ import org.junit.BeforeClass;
 import org.junit.After;
 
 /**
- * Tests of deep paging using {@link CursorMark} and {@link #CURSOR_MARK_PARAM}.
+ * Tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}.
  */
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
@@ -651,8 +653,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Given a set of params, executes a cursor query using {@link #CURSOR_MARK_START}
-   * and then continuously walks the results using {@link #CURSOR_MARK_START} as long
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
    * as a non-0 number of docs ar returned.  This method records the the set of all id's
    * (must be positive ints) encountered and throws an assertion failure if any id is
    * encountered more than once, or if the set grows above maxSize
@@ -733,8 +735,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Given a set of params, executes a cursor query using {@link #CURSOR_MARK_START}
-   * and then continuously walks the results using {@link #CURSOR_MARK_START} as long
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
    * as a non-0 number of docs ar returned.  This method records the the set of all id's
    * (must be positive ints) encountered and throws an assertion failure if any id is
    * encountered more than once, or if the set grows above maxSize.
@@ -817,7 +819,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /**
    * Asserts that the query matches the specified JSON patterns and then returns the
-   * {@link #CURSOR_MARK_NEXT} value from the response
+   * {@link CursorMarkParams#CURSOR_MARK_NEXT} value from the response
    *
    * @see #assertJQ
    */

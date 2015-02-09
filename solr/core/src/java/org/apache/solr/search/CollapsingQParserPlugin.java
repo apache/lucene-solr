@@ -74,32 +74,32 @@ import org.apache.solr.schema.TrieLongField;
  This is a high performance alternative to standard Solr
  field collapsing (with ngroups) when the number of distinct groups
  in the result set is high.
- <p/>
+ <p>
  Sample syntax:
- <p/>
+ <p>
  Collapse based on the highest scoring document:
- <p/>
+ <p>
 
  fq=(!collapse field=field_name}
 
- <p/>
+ <p>
  Collapse based on the min value of a numeric field:
- <p/>
+ <p>
  fq={!collapse field=field_name min=field_name}
- <p/>
+ <p>
  Collapse based on the max value of a numeric field:
- <p/>
+ <p>
  fq={!collapse field=field_name max=field_name}
- <p/>
+ <p>
  Collapse with a null policy:
- <p/>
+ <p>
  fq={!collapse field=field_name nullPolicy=nullPolicy}
- <p/>
- There are three null policies: <br/>
- ignore : removes docs with a null value in the collapse field (default).<br/>
- expand : treats each doc with a null value in the collapse field as a separate group.<br/>
+ <p>
+ There are three null policies: <br>
+ ignore : removes docs with a null value in the collapse field (default).<br>
+ expand : treats each doc with a null value in the collapse field as a separate group.<br>
  collapse : collapses all docs with a null value into a single group using either highest score, or min/max.
- <p/>
+ <p>
  The CollapsingQParserPlugin fully supports the QueryElevationComponent
  **/
 

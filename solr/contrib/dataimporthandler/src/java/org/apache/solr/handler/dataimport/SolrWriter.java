@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * <p> Writes documents to SOLR. </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.3

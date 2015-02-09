@@ -32,10 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p>
  * Test for ScriptTransformer
- * </p>
- * <p/>
  *
  *
  * @since solr 1.3

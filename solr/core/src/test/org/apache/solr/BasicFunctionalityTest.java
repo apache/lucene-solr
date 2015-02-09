@@ -77,7 +77,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
   // tests the performance of dynamic field creation and
   // field property testing.
-  /***
+  /*
   public void testFieldPerf() {
     IndexSchema schema = h.getCore().getSchema();
     SchemaField[] fields = schema.getDynamicFieldPrototypes();

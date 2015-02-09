@@ -234,7 +234,7 @@ public class TestDocSet extends LuceneTestCase {
     return sets;
   }
 
-  /**** needs code insertion into HashDocSet
+  /* needs code insertion into HashDocSet
   public void testCollisions() {
     loadfactor=.75f;
     rand=new Random(12345);  // make deterministic
@@ -266,7 +266,7 @@ public class TestDocSet extends LuceneTestCase {
   public static int smallSetType = 0;  // 0==sortedint, 1==hash, 2==FixedBitSet
   public static int smallSetCuttoff=3000;
 
-  /***
+  /*
   public void testIntersectionSizePerformance() {
     loadfactor=.75f; // for HashDocSet    
     rand=new Random(1);  // make deterministic
@@ -299,7 +299,7 @@ public class TestDocSet extends LuceneTestCase {
   }
    ***/
 
-  /****
+  /*
   public void testExistsPerformance() {
     loadfactor=.75f;
     rand=new Random(12345);  // make deterministic
@@ -323,7 +323,7 @@ public class TestDocSet extends LuceneTestCase {
   }
    ***/
 
-   /**** needs code insertion into HashDocSet
+   /* needs code insertion into HashDocSet
    public void testExistsCollisions() {
     loadfactor=.75f;
     rand=new Random(12345);  // make deterministic
@@ -499,7 +499,7 @@ public class TestDocSet extends LuceneTestCase {
     Filter fa = a.getTopFilter();
     Filter fb = b.getTopFilter();
 
-    /*** top level filters are no longer supported
+    /* top level filters are no longer supported
     // test top-level
     DocIdSet da = fa.getDocIdSet(topLevelContext);
     DocIdSet db = fb.getDocIdSet(topLevelContext);

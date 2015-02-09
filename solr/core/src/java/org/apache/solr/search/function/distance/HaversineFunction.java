@@ -32,9 +32,9 @@ import java.util.Map;
 /**
  * Calculate the Haversine formula (distance) between any two points on a sphere
  * Takes in four value sources: (latA, lonA); (latB, lonB).
- * <p/>
+ * <p>
  * Assumes the value sources are in radians unless
- * <p/>
+ * <p>
  * See http://en.wikipedia.org/wiki/Great-circle_distance and
  * http://en.wikipedia.org/wiki/Haversine_formula for the actual formula and
  * also http://www.movable-type.co.uk/scripts/latlong.html

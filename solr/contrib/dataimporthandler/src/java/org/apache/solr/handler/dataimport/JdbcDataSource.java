@@ -33,10 +33,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p> A DataSource implementation which can fetch data using JDBC. </p> <p/> <p> Refer to <a
+ * <p> A DataSource implementation which can fetch data using JDBC. </p> <p> Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
  * details. </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.3

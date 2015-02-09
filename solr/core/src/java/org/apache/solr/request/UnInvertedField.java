@@ -462,7 +462,7 @@ public class UnInvertedField extends DocTermOrds {
   /**
    * Collect statistics about the UninvertedField.  Code is very similar to {@link #getCounts(org.apache.solr.search.SolrIndexSearcher, org.apache.solr.search.DocSet, int, int, Integer, boolean, String, String)}
    * It can be used to calculate stats on multivalued fields.
-   * <p/>
+   * <p>
    * This method is mainly used by the {@link org.apache.solr.handler.component.StatsComponent}.
    *
    * @param searcher The Searcher to use to gather the statistics

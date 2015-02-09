@@ -214,7 +214,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   }
 
   /**
-   * Iterate of String->Object keys
+   * Iterate of String-&gt;Object keys
    */
   @Override
   public Iterator<Entry<String, Object>> iterator() {

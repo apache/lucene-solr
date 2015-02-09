@@ -178,7 +178,7 @@ public class Hash {
 
 
   /**<p>This is the 64 bit version of lookup3ycs, corresponding to Bob Jenkin's
-   * lookup3 hashlittle2 with initval biased by -(numCodePoints<<2).  It is equivalent
+   * lookup3 hashlittle2 with initval biased by -(numCodePoints&lt;&lt;2).  It is equivalent
    * to lookup3ycs in that if the high bits of initval==0, then the low bits of the
    * result will be the same as lookup3ycs.
    * </p>

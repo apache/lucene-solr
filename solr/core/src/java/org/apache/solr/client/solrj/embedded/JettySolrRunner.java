@@ -175,7 +175,7 @@ public class JettySolrRunner {
   }
 
   /**
-   * Constructor taking an ordered list of additional (servlet holder -> path spec) mappings
+   * Constructor taking an ordered list of additional (servlet holder -&gt; path spec) mappings
    * to add to the servlet context
    */
   public JettySolrRunner(String solrHome, String context, int port,
@@ -193,7 +193,7 @@ public class JettySolrRunner {
   }
 
   /**
-   * Constructor taking an ordered list of additional (filter holder -> path spec) mappings.
+   * Constructor taking an ordered list of additional (filter holder -&gt; path spec) mappings.
    * Filters are placed after the DebugFilter but before the SolrDispatchFilter.
    */
   public JettySolrRunner(String solrHome, String context, int port,

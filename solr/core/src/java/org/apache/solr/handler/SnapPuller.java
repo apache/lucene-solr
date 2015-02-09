@@ -117,7 +117,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p/> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
+ * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
  * master. </p>
  *
  *

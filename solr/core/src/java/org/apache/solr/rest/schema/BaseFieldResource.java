@@ -56,7 +56,7 @@ abstract class BaseFieldResource extends BaseSolrResource {
    * on this list.  The (Dynamic)FieldResource classes ignore this list, 
    * since the (dynamic) field is specified in the URL path, rather than
    * in a query parameter.
-   * <p/>
+   * <p>
    * Also pulls the "showDefaults" param from the request, for use by all
    * subclasses to include default values from the associated field type
    * in the response.  By default this param is off.

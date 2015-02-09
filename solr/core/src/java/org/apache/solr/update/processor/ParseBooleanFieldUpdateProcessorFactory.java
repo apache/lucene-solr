@@ -64,7 +64,7 @@ import java.util.Set;
  *   &lt;arr name="falseValue"&gt;
  *     &lt;str&gt;False&lt;/str&gt;
  *     &lt;str&gt;No&lt;/str&gt;
- *   &lt:/arr&gt;
+ *   &lt;/arr&gt;
  * &lt;/processor&gt;</pre>
  */
 public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {

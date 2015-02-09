@@ -151,7 +151,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
    * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
-   * <p>
    */
   public SolrResourceLoader( String instanceDir, ClassLoader parent )
   {
@@ -286,7 +285,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   /**
    * EXPERT
-   * <p/>
+   * <p>
    * The underlying class loader.  Most applications will not need to use this.
    * @return The {@link ClassLoader}
    */

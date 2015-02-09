@@ -564,7 +564,7 @@ public class SimplePostTool {
 
   /**
    * A very simple crawler, pulling URLs to fetch from a backlog and then
-   * recurses N levels deep if recursive>0. Links are parsed from HTML
+   * recurses N levels deep if recursive&gt;0. Links are parsed from HTML
    * through first getting an XHTML version using SolrCell with extractOnly,
    * and followed if they are local. The crawler pauses for a default delay
    * of 10 seconds between each fetch, this can be configured in the delay
@@ -744,7 +744,7 @@ public class SimplePostTool {
   /**
    * Appends a URL query parameter to a URL 
    * @param url the original URL
-   * @param param the parameter(s) to append, separated by "&"
+   * @param param the parameter(s) to append, separated by "&amp;"
    * @return the string version of the resulting URL
    */
   public static String appendParam(String url, String param) {

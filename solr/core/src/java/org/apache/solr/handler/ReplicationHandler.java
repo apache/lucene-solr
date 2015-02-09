@@ -84,16 +84,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. <p/> </p>
+ * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
  * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicable index version
  * (command=indexversion)</li> <li>Get the list of files for a given index version
  * (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li> <li>Get full or a part (chunk) of a given index or a config
  * file (command=filecontent&amp;file=&lt;FILE_NAME&gt;) You can optionally specify an offset and length to get that
  * chunk of the file. You can request a configuration file by using "cf" parameter instead of the "file" parameter.</li>
- * <li>Get status/statistics (command=details)</li> </ol> </p> <p>When running on the slave, it provides the following
+ * <li>Get status/statistics (command=details)</li> </ol> <p>When running on the slave, it provides the following
  * commands <ol> <li>Perform a snap pull now (command=snappull)</li> <li>Get status/statistics (command=details)</li>
  * <li>Abort a snap pull (command=abort)</li> <li>Enable/Disable polling the master for new versions (command=enablepoll
- * or command=disablepoll)</li> </ol> </p>
+ * or command=disablepoll)</li> </ol>
  *
  *
  * @since solr 1.4

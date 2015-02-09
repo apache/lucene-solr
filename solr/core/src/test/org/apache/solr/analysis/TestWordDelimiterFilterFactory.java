@@ -126,7 +126,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     clearIndex();
   }
 
-  /***
+  /*
   public void testPerformance() throws IOException {
     String s = "now is the time-for all good men to come to-the aid of their country.";
     Token tok = new Token();

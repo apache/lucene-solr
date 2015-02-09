@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Responsible for finding (or creating) a MBeanServer from given configuration
  * and registering all SolrInfoMBean objects with JMX.
  * </p>
- * <p/>
  * <p>
  * Please see http://wiki.apache.org/solr/SolrJmx for instructions on usage and configuration
  * </p>

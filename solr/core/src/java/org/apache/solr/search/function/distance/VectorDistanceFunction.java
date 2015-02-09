@@ -30,7 +30,7 @@ import java.util.Map;
 
 /**
  * Calculate the p-norm for a Vector.  See http://en.wikipedia.org/wiki/Lp_space
- * <p/>
+ * <p>
  * Common cases:
  * <ul>
  * <li>0 = Sparseness calculation</li>
@@ -79,7 +79,7 @@ public class VectorDistanceFunction extends ValueSource {
 
   /**
    * Calculate the p-norm (i.e. length) between two vectors.
-   * <p/>
+   * <p>
    * See <a href="http://en.wikipedia.org/wiki/Lp_space">Lp space</a>
    *
    * @param vec1  The first vector

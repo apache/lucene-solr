@@ -25,7 +25,7 @@ import java.util.Properties;
  * <p>
  * A mock DataSource implementation which can be used for testing.
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.3

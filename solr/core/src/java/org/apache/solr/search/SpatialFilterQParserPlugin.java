@@ -22,15 +22,14 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Creates a spatial Filter based on the type of spatial point used.
- * <p/>
+ * <p>
  * The field must implement {@link org.apache.solr.schema.SpatialQueryable}
- * <p/>
+ * <p>
  * All units are in Kilometers
- * <p/>
- * <p/>
+ * <p>
  * Syntax:
  * <pre>{!geofilt sfield=&lt;location_field&gt; pt=&lt;lat,lon&gt; d=&lt;distance&gt;}</pre>
- * <p/>
+ * <p>
  * Parameters:
  * <ul>
  * <li>sfield - The field to filter on. Required.</li>
@@ -38,13 +37,12 @@ import org.apache.solr.request.SolrQueryRequest;
  * <li>d - The distance in km.  Required.</li>
  * </ul>
  * The distance measure used currently depends on the FieldType.  LatLonType defaults to using haversine, PointType defaults to Euclidean (2-norm).
- *
- * <p/>
+ * <p>
  * Examples:
  * <pre>fq={!geofilt sfield=store pt=10.312,-20.556 d=3.5}</pre>
- * <pre>fq={!geofilt sfield=store}&pt=10.312,-20&d=3.5</pre>
- * <pre>fq={!geofilt}&sfield=store&pt=10.312,-20&d=3.5</pre>
- * <p/>
+ * <pre>fq={!geofilt sfield=store}&amp;pt=10.312,-20&amp;d=3.5</pre>
+ * <pre>fq={!geofilt}&amp;sfield=store&amp;pt=10.312,-20&amp;d=3.5</pre>
+ * <p>
  * Note: The geofilt for LatLonType is capable of also producing scores equal to the computed distance from the point
  * to the field, making it useful as a component of the main query or a boosting query.
  */

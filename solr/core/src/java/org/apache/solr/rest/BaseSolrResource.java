@@ -73,7 +73,7 @@ public abstract class BaseSolrResource extends ServerResource {
    * from the SolrRequestInfo thread local, then gets the SolrCore
    * and IndexSchema and sets up the response.
    * writer.
-   * <p/>
+   * <p>
    * If an error occurs during initialization, setExisting(false) is
    * called and an error status code and message is set; in this case,
    * Restlet will not continue servicing the request (by calling the

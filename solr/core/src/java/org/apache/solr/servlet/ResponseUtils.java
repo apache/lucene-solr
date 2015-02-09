@@ -31,10 +31,10 @@ public class ResponseUtils {
 
   /**
    * Adds the given Throwable's message to the given NamedList.
-   * <p/>
+   * <p>
    * If the response code is not a regular code, the Throwable's
    * stack trace is both logged and added to the given NamedList.
-   * <p/>
+   * <p>
    * Status codes less than 100 are adjusted to be 500.
    */
   public static int getErrorInfo(Throwable ex, NamedList info, Logger log) {

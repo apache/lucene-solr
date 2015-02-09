@@ -32,7 +32,7 @@ import java.util.Map;
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.3

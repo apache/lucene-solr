@@ -27,7 +27,7 @@ public interface ExtendedQuery {
   public void setCache(boolean cache);
 
   /** Returns the cost of this query, used to order checking of filters that are not cached.
-   * If getCache()==false && getCost()>=100 && this instanceof PostFilter, then
+   * If getCache()==false &amp;&amp; getCost()&gt;=100 &amp;&amp; this instanceof PostFilter, then
    * the PostFilter interface will be used for filtering.
    */
   public int getCost();

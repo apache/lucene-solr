@@ -41,7 +41,7 @@ import java.util.Map;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/dynamicfields
- * <p/>
+ * <p>
  * To restrict the set of dynamic fields in the response, specify a comma
  * and/or space separated list of dynamic field patterns in the "fl" query
  * parameter. 

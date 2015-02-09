@@ -28,13 +28,12 @@ import java.util.Properties;
  * <p>
  * A DataSource which reads from local files
  * </p>
- * <p/>
  * <p>
  * Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 3.1

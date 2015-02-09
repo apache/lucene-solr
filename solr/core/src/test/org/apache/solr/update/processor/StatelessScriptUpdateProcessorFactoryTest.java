@@ -39,7 +39,7 @@ import java.util.List;
 /**
  * Tests {@link StatelessScriptUpdateProcessorFactory}.
  *
- * TODO: This test, to run from an IDE, requires a working directory of <path-to>/solr/core/src/test-files.  Fix!
+ * TODO: This test, to run from an IDE, requires a working directory of &lt;path-to&gt;/solr/core/src/test-files.  Fix!
  */
 public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 

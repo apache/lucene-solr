@@ -35,7 +35,6 @@ import org.junit.Test;
  * <p>
  * Test for JdbcDataSource
  * </p>
- * <p/>
  * <p>
  * Note: The tests are ignored for the lack of DB support for testing
  * </p>

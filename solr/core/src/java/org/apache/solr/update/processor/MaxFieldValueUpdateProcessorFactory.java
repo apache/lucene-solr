@@ -41,7 +41,7 @@ import java.util.Iterator;
  * values (ie: <code>64, 128, 1024</code>) in the field 
  * <code>largestFileSize</code> then only the biggest value 
  * (ie: <code>1024</code>) will be kept in that field.
- * <p>
+ * <br>
  *
  * <pre class="prettyprint">
  *  &lt;processor class="solr.MaxFieldValueUpdateProcessorFactory"&gt;

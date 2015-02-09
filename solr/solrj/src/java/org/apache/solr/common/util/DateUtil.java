@@ -105,7 +105,7 @@ public class DateUtil {
 
   /**
    * Slightly modified from org.apache.commons.httpclient.util.DateUtil.parseDate
-   * <p/>
+   * <p>
    * Parses the date value using the given date formats.
    *
    * @param dateValue   the date value to parse
