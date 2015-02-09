@@ -1113,7 +1113,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       List<Weight> weights = new ArrayList<>(notCached.size());
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createNormalizedWeight(qq, true));
+        weights.add(createNormalizedWeight(qq, PostingsEnum.FLAG_FREQS));
       }
       pf.filter = new FilterImpl(answer, weights);
     } else {

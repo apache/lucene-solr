@@ -163,8 +163,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   public final Iterator<BooleanClause> iterator() { return clauses().iterator(); }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BooleanWeight(this, searcher, needsScores, disableCoord);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return new BooleanWeight(this, searcher, postingsFlags, disableCoord);
   }
 
   @Override

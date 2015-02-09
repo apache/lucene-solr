@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -83,8 +84,9 @@ public class ToChildBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher, needsScores), parentsFilter, needsScores);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    boolean needsScores = (postingsFlags & PostingsEnum.FLAG_FREQS) != 0;
+    return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher, postingsFlags), parentsFilter, needsScores);
   }
 
   /** Return our parent query. */

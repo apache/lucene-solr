@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -240,13 +241,14 @@ public class IndexSearcher {
       return collector.topDocs();
     } else {
       final TopScoreDocCollector[] collectors = new TopScoreDocCollector[leafSlices.length];
-      boolean needsScores = false;
+      int postingsFlags = PostingsEnum.FLAG_NONE;
       for (int i = 0; i < leafSlices.length; ++i) {
         collectors[i] = TopScoreDocCollector.create(numHits, after);
-        needsScores |= collectors[i].needsScores();
+        if (collectors[i].needsScores())
+          postingsFlags |= PostingsEnum.FLAG_FREQS;
       }
 
-      final Weight weight = createNormalizedWeight(query, needsScores);
+      final Weight weight = createNormalizedWeight(query, postingsFlags);
       final List<Future<TopDocs>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -338,7 +340,8 @@ public class IndexSearcher {
    */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createNormalizedWeight(query, results.needsScores()), results);
+    int postingsFlags = results.needsScores() ? PostingsEnum.FLAG_FREQS : PostingsEnum.FLAG_NONE;
+    search(leafContexts, createNormalizedWeight(query, postingsFlags), results);
   }
   
   /** Search implementation with arbitrary sorting.  Finds
@@ -462,13 +465,14 @@ public class IndexSearcher {
       return collector.topDocs();
     } else {
       final TopFieldCollector[] collectors = new TopFieldCollector[leafSlices.length];
-      boolean needsScores = false;
+      int postingsFlags = PostingsEnum.FLAG_NONE;
       for (int i = 0; i < leafSlices.length; ++i) {
         collectors[i] = TopFieldCollector.create(sort, numHits, after, fillFields, doDocScores, doMaxScore);
-        needsScores |= collectors[i].needsScores();
+        if (collectors[i].needsScores())
+          postingsFlags |= PostingsEnum.FLAG_FREQS;
       }
 
-      final Weight weight = createNormalizedWeight(query, needsScores);
+      final Weight weight = createNormalizedWeight(query, postingsFlags);
       final List<Future<TopFieldDocs>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -565,7 +569,7 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createNormalizedWeight(query, true), doc);
+    return explain(createNormalizedWeight(query, PostingsEnum.FLAG_FREQS), doc);
   }
 
   /** Expert: low-level implementation method
@@ -595,9 +599,9 @@ public class IndexSearcher {
    * can then directly be used to get a {@link Scorer}.
    * @lucene.internal
    */
-  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+  public Weight createNormalizedWeight(Query query, int postingsFlags) throws IOException {
     query = rewrite(query);
-    Weight weight = query.createWeight(this, needsScores);
+    Weight weight = query.createWeight(this, postingsFlags);
     float v = weight.getValueForNormalization();
     float norm = getSimilarity().queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm)) {

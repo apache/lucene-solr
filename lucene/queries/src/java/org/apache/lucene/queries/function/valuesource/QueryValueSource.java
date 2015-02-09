@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -72,7 +73,7 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    Weight w = searcher.createNormalizedWeight(q, true);
+    Weight w = searcher.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
     context.put(this, w);
   }
 }

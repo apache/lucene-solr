@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -63,15 +64,15 @@ public class TestNeedsScores extends LuceneTestCase {
     Query required = new TermQuery(new Term("field", "this"));
     Query prohibited = new TermQuery(new Term("field", "3"));
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new AssertNeedsScores(required, true), BooleanClause.Occur.MUST);
-    bq.add(new AssertNeedsScores(prohibited, false), BooleanClause.Occur.MUST_NOT);
+    bq.add(new AssertNeedsScores(required, PostingsEnum.FLAG_FREQS), BooleanClause.Occur.MUST);
+    bq.add(new AssertNeedsScores(prohibited, PostingsEnum.FLAG_NONE), BooleanClause.Occur.MUST_NOT);
     assertEquals(4, searcher.search(bq, 5).totalHits); // we exclude 3
   }
   
   /** nested inside constant score query */
   public void testConstantScoreQuery() throws Exception {
     Query term = new TermQuery(new Term("field", "this"));
-    Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, false));
+    Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, PostingsEnum.FLAG_NONE));
     assertEquals(5, searcher.search(constantScore, 5).totalHits);
   }
   
@@ -79,38 +80,38 @@ public class TestNeedsScores extends LuceneTestCase {
   public void testQueryWrapperFilter() throws Exception {
     Query query = new MatchAllDocsQuery();
     Query term = new TermQuery(new Term("field", "this"));
-    Filter filter = new QueryWrapperFilter(new AssertNeedsScores(term, false));
+    Filter filter = new QueryWrapperFilter(new AssertNeedsScores(term, PostingsEnum.FLAG_NONE));
     assertEquals(5, searcher.search(query, filter, 5).totalHits);
   }
   
   /** when not sorting by score */
   public void testSortByField() throws Exception {
-    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), false);
+    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), PostingsEnum.FLAG_NONE);
     assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits);
   }
   
   /** when sorting by score */
   public void testSortByScore() throws Exception {
-    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), true);
+    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), PostingsEnum.FLAG_FREQS);
     assertEquals(5, searcher.search(query, 5, Sort.RELEVANCE).totalHits);
   }
 
   /** 
-   * Wraps a query, checking that the needsScores param 
+   * Wraps a query, checking that the postingsFlags param
    * passed to Weight.scorer is the expected value.
    */
   static class AssertNeedsScores extends Query {
     final Query in;
-    final boolean value;
+    final int value;
     
-    AssertNeedsScores(Query in, boolean value) {
+    AssertNeedsScores(Query in, int value) {
       this.in = in;
       this.value = value;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      final Weight w = in.createWeight(searcher, needsScores);
+    public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+      final Weight w = in.createWeight(searcher, postingsFlags);
       return new Weight(AssertNeedsScores.this) {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
@@ -129,7 +130,7 @@ public class TestNeedsScores extends LuceneTestCase {
 
         @Override
         public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          assertEquals("query=" + in, value, needsScores);
+          assertEquals("query=" + in, value, postingsFlags);
           return w.scorer(context, acceptDocs);
         }
       };
@@ -155,7 +156,7 @@ public class TestNeedsScores extends LuceneTestCase {
       final int prime = 31;
       int result = super.hashCode();
       result = prime * result + ((in == null) ? 0 : in.hashCode());
-      result = prime * result + (value ? 1231 : 1237);
+      result = prime * result + (value * 37);
       return result;
     }
 

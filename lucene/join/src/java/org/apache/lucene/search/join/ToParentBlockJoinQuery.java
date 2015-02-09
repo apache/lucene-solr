@@ -120,8 +120,8 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores), parentsFilter, scoreMode);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return new BlockJoinWeight(this, childQuery.createWeight(searcher, postingsFlags), parentsFilter, scoreMode);
   }
   
   /** Return our child query. */

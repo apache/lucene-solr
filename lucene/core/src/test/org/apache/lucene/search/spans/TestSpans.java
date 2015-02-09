@@ -430,7 +430,7 @@ public class TestSpans extends LuceneTestCase {
                                 slop,
                                 ordered);
   
-        spanScorer = searcher.createNormalizedWeight(snq, true).scorer(ctx, ctx.reader().getLiveDocs());
+        spanScorer = searcher.createNormalizedWeight(snq, PostingsEnum.FLAG_FREQS).scorer(ctx, ctx.reader().getLiveDocs());
       } finally {
         searcher.setSimilarity(oldSim);
       }

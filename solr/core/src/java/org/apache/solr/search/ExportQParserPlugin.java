@@ -80,7 +80,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher) throws IOException {
-      return mainQuery.createWeight(searcher, true);
+      return mainQuery.createWeight(searcher, PostingsEnum.FLAG_FREQS);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {

@@ -211,13 +211,15 @@ public class PhraseQuery extends Query {
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
+    private final int postingsFlags;
     private final boolean needsScores;
     private transient TermContext states[];
 
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores)
+    public PhraseWeight(IndexSearcher searcher, int postingsFlags)
       throws IOException {
       super(PhraseQuery.this);
-      this.needsScores = needsScores;
+      this.postingsFlags = postingsFlags | PostingsEnum.FLAG_POSITIONS;
+      this.needsScores = (postingsFlags & PostingsEnum.FLAG_FREQS) != 0;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
@@ -266,7 +268,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(liveDocs, null, PostingsEnum.FLAG_POSITIONS);
+        PostingsEnum postingsEnum = te.postings(liveDocs, null, postingsFlags);
 
         // PhraseQuery on a field that did not index
         // positions.
@@ -318,8 +320,8 @@ public class PhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PhraseWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return new PhraseWeight(searcher, postingsFlags);
   }
 
   /**

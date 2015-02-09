@@ -41,7 +41,7 @@ import org.apache.lucene.util.Bits;
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, boolean)}).
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, int)}).
  * <li>The {@link #getValueForNormalization()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
  * {@link Similarity#queryNorm(float)} of the query clauses contained in the

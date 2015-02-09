@@ -64,10 +64,10 @@ final class DeleteByQueryWrapper extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
     final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
-    final Weight inner = in.createWeight(privateContext, needsScores);
+    final Weight inner = in.createWeight(privateContext, postingsFlags);
     return new Weight(DeleteByQueryWrapper.this) {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException { throw new UnsupportedOperationException(); }

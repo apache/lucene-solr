@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -67,7 +68,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
         assertEquals("Score differs from expected", expectedScore, this.scorer.score(), 0);
         count[0]++;
       }
-      
+
       @Override
       public boolean needsScores() {
         return true;

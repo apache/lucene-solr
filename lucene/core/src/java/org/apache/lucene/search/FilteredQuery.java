@@ -78,8 +78,8 @@ public class FilteredQuery extends Query {
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
   @Override
-  public Weight createWeight(final IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight weight = query.createWeight (searcher, needsScores);
+  public Weight createWeight(final IndexSearcher searcher, int postingsFlags) throws IOException {
+    final Weight weight = query.createWeight (searcher, postingsFlags);
     return new Weight(FilteredQuery.this) {
 
       @Override

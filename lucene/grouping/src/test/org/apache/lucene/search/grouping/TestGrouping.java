@@ -44,6 +44,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -1175,7 +1176,7 @@ public class TestGrouping extends LuceneTestCase {
       System.out.println("TEST: " + subSearchers.length + " shards: " + Arrays.toString(subSearchers) + " canUseIDV=" + canUseIDV);
     }
     // Run 1st pass collector to get top groups per shard
-    final Weight w = topSearcher.createNormalizedWeight(query, true);
+    final Weight w = topSearcher.createNormalizedWeight(query, PostingsEnum.FLAG_FREQS);
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<>();
     List<AbstractFirstPassGroupingCollector<?>> firstPassGroupingCollectors = new ArrayList<>();
     AbstractFirstPassGroupingCollector<?> firstPassCollector = null;

@@ -88,6 +88,10 @@ API Changes
 * LUCENE-6223: Move BooleanQuery.BooleanWeight to BooleanWeight.
   (Robert Muir)
 
+* LUCENE-6226: Query.createWeight() and IndexSearcher.createNormalizedWeight()
+  now take an integer bitmask indicating which postings values should be
+  retrieved from the index. (Alan Woodward, Adrien Grand)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.

@@ -142,11 +142,13 @@ public class MultiPhraseQuery extends Query {
     private final Similarity.SimWeight stats;
     private final Map<Term,TermContext> termContexts = new HashMap<>();
     private final boolean needsScores;
+    private final int postingsFlags;
 
-    public MultiPhraseWeight(IndexSearcher searcher, boolean needsScores)
+    public MultiPhraseWeight(IndexSearcher searcher, int postingsFlags)
       throws IOException {
       super(MultiPhraseQuery.this);
-      this.needsScores = needsScores;
+      this.needsScores = (postingsFlags & PostingsEnum.FLAG_FREQS) != 0;
+      this.postingsFlags = postingsFlags | PostingsEnum.FLAG_POSITIONS;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       
@@ -228,7 +230,7 @@ public class MultiPhraseQuery extends Query {
             return null;
           }
           termsEnum.seekExact(term.bytes(), termState);
-          postingsEnum = termsEnum.postings(liveDocs, null, PostingsEnum.FLAG_POSITIONS);
+          postingsEnum = termsEnum.postings(liveDocs, null, postingsFlags);
 
           if (postingsEnum == null) {
             // term does exist, but has no positions
@@ -296,8 +298,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new MultiPhraseWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return new MultiPhraseWeight(searcher, postingsFlags);
   }
 
   /** Prints a user-readable version of this query. */

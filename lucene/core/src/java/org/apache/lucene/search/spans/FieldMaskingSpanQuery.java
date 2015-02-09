@@ -106,8 +106,8 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   }  
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return maskedQuery.createWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return maskedQuery.createWeight(searcher, postingsFlags);
   }
 
   @Override

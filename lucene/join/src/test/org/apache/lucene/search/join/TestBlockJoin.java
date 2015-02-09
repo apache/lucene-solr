@@ -1188,7 +1188,7 @@ public class TestBlockJoin extends LuceneTestCase {
                               new TermQuery(new Term("parent", "1"))));
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
     DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(1, disi.advance(1));
     r.close();
@@ -1222,7 +1222,7 @@ public class TestBlockJoin extends LuceneTestCase {
                               new TermQuery(new Term("isparent", "yes"))));
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
-    Weight weight = s.createNormalizedWeight(q, true);
+    Weight weight = s.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
     DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(2, disi.advance(0));
     r.close();

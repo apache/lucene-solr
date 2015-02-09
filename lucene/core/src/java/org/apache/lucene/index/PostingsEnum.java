@@ -92,17 +92,16 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   }
 
   /**
-   * Returns the next position.  If there are no more
-   * positions, or the iterator does not support positions,
-   * this will return DocsEnum.NO_MORE_POSITIONS */
+   * Returns the next position, or -1 if positions are not available.
+   * Should only be called up to freq() times */
   public abstract int nextPosition() throws IOException;
 
   /** Returns start offset for the current position, or -1
-   *  if offsets were not indexed. */
+   *  if offsets are not available. */
   public abstract int startOffset() throws IOException;
 
   /** Returns end offset for the current position, or -1 if
-   *  offsets were not indexed. */
+   *  offsets are not available. */
   public abstract int endOffset() throws IOException;
 
   /** Returns the payload at this position, or null if no

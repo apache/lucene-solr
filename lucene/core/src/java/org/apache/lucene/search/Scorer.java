@@ -73,7 +73,7 @@ public abstract class Scorer extends PostingsEnum {
   public Collection<ChildScorer> getChildren() {
     return Collections.emptyList();
   }
-  
+
   /** A child Scorer and its relationship to its parent.
    * the meaning of the relationship depends upon the parent query. 
    * @lucene.experimental */

@@ -265,6 +265,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public boolean needsScores() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public TopDocs topDocs() {
         throw new UnsupportedOperationException( UNSUPPORTED_MSG );
     }
@@ -277,11 +282,6 @@ final class JustCompileSearch {
     @Override
     public TopDocs topDocs( int start, int end ) {
         throw new UnsupportedOperationException( UNSUPPORTED_MSG );
-    }
-
-    @Override
-    public boolean needsScores() {
-      throw new UnsupportedOperationException( UNSUPPORTED_MSG );
     }
   }
 

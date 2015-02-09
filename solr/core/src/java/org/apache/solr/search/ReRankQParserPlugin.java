@@ -27,6 +27,7 @@ import com.carrotsearch.hppc.IntFloatOpenHashMap;
 import com.carrotsearch.hppc.IntIntOpenHashMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -171,8 +172,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
-      return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher, needsScores);
+    @Override
+    public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException{
+      return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher, postingsFlags);
     }
   }
 
@@ -182,12 +184,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Weight mainWeight;
     private double reRankWeight;
 
-    public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher, boolean needsScores) throws IOException {
+    public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher, int postingsFlags) throws IOException {
       super(mainQuery);
       this.reRankQuery = reRankQuery;
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
-      this.mainWeight = mainQuery.createWeight(searcher, needsScores);
+      this.mainWeight = mainQuery.createWeight(searcher, postingsFlags);
     }
 
     public float getValueForNormalization() throws IOException {

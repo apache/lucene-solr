@@ -187,12 +187,12 @@ public class CustomScoreQuery extends Query {
     boolean qStrict;
     float queryWeight;
 
-    public CustomWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public CustomWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
       super(CustomScoreQuery.this);
-      this.subQueryWeight = subQuery.createWeight(searcher, needsScores);
+      this.subQueryWeight = subQuery.createWeight(searcher, postingsFlags);
       this.valSrcWeights = new Weight[scoringQueries.length];
       for(int i = 0; i < scoringQueries.length; i++) {
-        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores);
+        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, postingsFlags);
       }
       this.qStrict = strict;
     }
@@ -368,8 +368,8 @@ public class CustomScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new CustomWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    return new CustomWeight(searcher, postingsFlags);
   }
 
   /**

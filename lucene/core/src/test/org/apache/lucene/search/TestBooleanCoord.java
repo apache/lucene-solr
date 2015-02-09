@@ -28,6 +28,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -706,7 +707,7 @@ public class TestBooleanCoord extends LuceneTestCase {
   /** asserts score for our single matching good doc */
   private void assertScore(final float expected, Query query) throws Exception {
     // test in-order
-    Weight weight = searcher.createNormalizedWeight(query, true);
+    Weight weight = searcher.createNormalizedWeight(query, PostingsEnum.FLAG_FREQS);
     Scorer scorer = weight.scorer(reader.leaves().get(0), null);
     assertTrue(scorer.docID() == -1 || scorer.docID() == DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, scorer.nextDoc());

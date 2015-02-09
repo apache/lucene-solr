@@ -210,7 +210,7 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher);
   }
 

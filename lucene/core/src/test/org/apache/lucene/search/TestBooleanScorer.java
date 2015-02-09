@@ -70,7 +70,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
       return new Weight(CrazyMustUseBulkScorerQuery.this) {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) {
