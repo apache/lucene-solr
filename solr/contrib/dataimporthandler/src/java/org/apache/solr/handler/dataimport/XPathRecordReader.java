@@ -50,10 +50,8 @@ import org.slf4j.LoggerFactory;
  * This class is thread-safe for parsing xml. But adding fields is not
  * thread-safe. The recommended usage is to addField() in one thread and 
  * then share the instance across threads.
- * </p>
- * <p/>
- * <b>This API is experimental and may change in the future.</b>
  * <p>
+ * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.3
  */

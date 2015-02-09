@@ -34,7 +34,7 @@ public interface SpellingParams {
 
   /**
    * The count of suggestions to return for each query term not in the index and/or dictionary.
-   * <p/>
+   * <p>
    * If this parameter is absent in the request then only one suggestion is
    * returned. If it is more than one then a maximum of given suggestions are
    * returned for each token in the query.
@@ -43,7 +43,7 @@ public interface SpellingParams {
   
   /**
    * The count of suggestions to return for each query term existing in the index and/or dictionary.
-   * <p/>
+   * <p>
    * If this parameter is absent in the request then no suggestions are generated.  This parameter allows
    * for receiving alternative terms to use in context-sensitive spelling corrections.
    */
@@ -70,7 +70,7 @@ public interface SpellingParams {
    * When this parameter is set to true and the misspelled word exists in the
    * user field, only words that occur more frequently in the Solr field than
    * the one given will be returned. The default value is false.
-   * <p/>
+   * <p>
    * <b>This is applicable only for dictionaries built from Solr fields.</b>
    */
   public static final String SPELLCHECK_ONLY_MORE_POPULAR = SPELLCHECK_PREFIX + "onlyMorePopular";
@@ -79,14 +79,14 @@ public interface SpellingParams {
    * Whether to use the extended response format, which is more complicated but
    * richer. Returns the document frequency for each suggestion and returns one
    * suggestion block for each term in the query string. Default is false.
-   * <p/>
+   * <p>
    * <b>This is applicable only for dictionaries built from Solr fields.</b>
    */
   public static final String SPELLCHECK_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "extendedResults";
 
   /**
    * Use the value for this parameter as the query to spell check.
-   * <p/>
+   * <p>
    * This parameter is <b>optional</b>. If absent, then the q parameter is
    * used.
    */
@@ -148,7 +148,7 @@ public interface SpellingParams {
   /**
    * <p>
    * Whether to use the Extended Results Format for collations. 
-   * Includes "before>after" pairs to easily allow clients to generate messages like "no results for PORK.  did you mean POLK?"
+   * Includes "before&gt;after" pairs to easily allow clients to generate messages like "no results for PORK.  did you mean POLK?"
    * Also indicates the # of hits each collation will return on re-query.  Default=false, which retains 1.4-compatible output.
    * </p>
    * <p>

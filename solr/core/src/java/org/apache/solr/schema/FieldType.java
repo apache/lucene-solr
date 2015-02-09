@@ -231,7 +231,7 @@ public abstract class FieldType extends FieldProperties {
    * (taken from toInternal()).   Having a different representation for
    * external, internal, and indexed would present quite a few problems
    * given the current Lucene architecture.  An analyzer for adding docs
-   * would need to translate internal->indexed while an analyzer for
+   * would need to translate internal-&gt;indexed while an analyzer for
    * querying would need to translate external-&gt;indexed.
    * </p>
    * <p>
@@ -434,7 +434,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Returns a Query instance for doing prefix searches on this field type.
    * Also, other QueryParser implementations may have different semantics.
-   * <p/>
+   * <p>
    * Sub-classes should override this method to provide their own range query implementation.
    *
    * @param parser       the {@link org.apache.solr.search.QParser} calling the method
@@ -676,7 +676,7 @@ public abstract class FieldType extends FieldProperties {
    * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
    * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
    * different semantics.
-   * <p/>
+   * <p>
    * Sub-classes should override this method to provide their own range query implementation. They should strive to
    * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
@@ -792,7 +792,7 @@ public abstract class FieldType extends FieldProperties {
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
 
   /**
-   * Get a map of property name -> value for this field type. 
+   * Get a map of property name -&gt; value for this field type. 
    * @param showDefaults if true, include default properties.
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {

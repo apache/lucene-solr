@@ -28,7 +28,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * Identifies the language of a set of input fields using Tika's
  * LanguageIdentifier. The tika-core-x.y.jar must be on the classpath
- * <p/>
+ * <p>
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:

@@ -151,7 +151,7 @@ public interface CommonParams {
   public static final String STREAM_CONTENTTYPE = "stream.contentType";
   
   /**
-   * Timeout value in milliseconds.  If not set, or the value is <= 0, there is no timeout.
+   * Timeout value in milliseconds.  If not set, or the value is &gt;= 0, there is no timeout.
    */
   public static final String TIME_ALLOWED = "timeAllowed";
   
@@ -206,7 +206,7 @@ public interface CommonParams {
   public static final String CACHE = "cache";
 
   /** Used as a local param on filter queries in conjunction with cache=false.  Filters are checked in order, from
-   * smallest cost to largest. If cost>=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
+   * smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
    */
   public static final String COST = "cost";
 

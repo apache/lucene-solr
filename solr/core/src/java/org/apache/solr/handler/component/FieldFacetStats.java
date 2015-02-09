@@ -39,7 +39,6 @@ import org.apache.solr.search.SolrIndexSearcher;
  * for facet values present in another field.
  * <p>
  * 9/10/2009 - Moved out of StatsComponent to allow open access to UnInvertedField
- * <p/>
  * @see org.apache.solr.handler.component.StatsComponent
  *
  */

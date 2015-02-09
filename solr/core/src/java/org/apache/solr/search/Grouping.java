@@ -511,7 +511,7 @@ public class Grouping {
   /**
    * General group command. A group command is responsible for creating the first and second pass collectors.
    * A group command is also responsible for creating the response structure.
-   * <p/>
+   * <p>
    * Note: Maybe the creating the response structure should be done in something like a ReponseBuilder???
    * Warning NOT thread save!
    */

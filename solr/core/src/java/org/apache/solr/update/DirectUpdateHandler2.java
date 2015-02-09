@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-/**
- */
-
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;

@@ -1245,7 +1245,7 @@ public class SimpleFacets {
   }
   
   /**
-   * A simple key=>val pair whose natural order is such that 
+   * A simple key=&gt;val pair whose natural order is such that 
    * <b>higher</b> vals come before lower vals.
    * In case of tie vals, then <b>lower</b> keys come before higher keys.
    */

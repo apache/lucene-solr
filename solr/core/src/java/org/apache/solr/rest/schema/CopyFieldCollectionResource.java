@@ -43,7 +43,7 @@ import static org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/copyfields
- * <p/>
+ * <p>
  *
  * To restrict the set of copyFields in the response, specify one or both
  * of the following as query parameters, with values as space and/or comma

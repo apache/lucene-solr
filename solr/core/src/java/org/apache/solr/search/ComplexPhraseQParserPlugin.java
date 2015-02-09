@@ -29,7 +29,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Parse Solr's variant on the Lucene {@link org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser} syntax.
- * <p/>
+ * <p>
  * Modified from {@link org.apache.solr.search.LuceneQParserPlugin} and {@link org.apache.solr.search.SurroundQParserPlugin}
  */
 public class ComplexPhraseQParserPlugin extends QParserPlugin {

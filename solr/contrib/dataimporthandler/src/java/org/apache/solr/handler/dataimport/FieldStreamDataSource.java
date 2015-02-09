@@ -31,17 +31,16 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 
 /**
  * This can be useful for users who have a DB field containing BLOBs which may be Rich documents
- * <p/>
+ * <p>
  * The datasouce may be configured as follows
- * <p/>
+ * <p>
  * &lt;dataSource name="f1" type="FieldStreamDataSource" /&gt;
- * <p/>
+ * <p>
  * The entity which uses this datasource must keep and attribute dataField
- * <p/>
+ * <p>
  * The fieldname must be resolvable from {@link VariableResolver}
- * <p/>
+ * <p>
  * This may be used with any {@link EntityProcessor} which uses a {@link DataSource}&lt;{@link InputStream}&gt; eg: TikaEntityProcessor
- * <p/>
  *
  * @since 3.1
  */

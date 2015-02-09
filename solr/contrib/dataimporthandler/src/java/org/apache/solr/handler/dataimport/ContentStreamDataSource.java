@@ -25,10 +25,10 @@ import java.util.Properties;
 
 /**
  * A DataSource implementation which reads from the ContentStream of a POST request
- * <p/>
+ * <p>
  * Refer to <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
- * <p/>
+ * <p>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.4

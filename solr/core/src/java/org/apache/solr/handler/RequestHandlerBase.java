@@ -62,7 +62,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
-   * <table border="1">
+   * <table border="1" summary="table of parameters">
    * <tr><th>Name</th><th>Description</th></tr>
    * <tr><td>defaults</td><td>Contains all of the named arguments contained within the list element named "defaults".</td></tr>
    * <tr><td>appends</td><td>Contains all of the named arguments contained within the list element named "appends".</td></tr>

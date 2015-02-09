@@ -56,7 +56,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * will delegate to the context classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files found in
    * the "lib/" directory in the specified instance directory.
-   * <p>
    */
   public ZkSolrResourceLoader(String instanceDir, String configSet, ClassLoader parent,
       Properties coreProperties, ZkController zooKeeperController) {

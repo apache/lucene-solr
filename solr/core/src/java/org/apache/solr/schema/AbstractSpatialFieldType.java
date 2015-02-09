@@ -242,7 +242,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * Returns a String version of a shape to be used for the stored value. This method in Solr is only called if for some
    * reason a Shape object is passed to the field type (perhaps via a custom UpdateRequestProcessor),
    * *and* the field is marked as stored.  <em>The default implementation throws an exception.</em>
-   * <p/>
+   * <p>
    * Spatial4j 0.4 is probably the last release to support SpatialContext.toString(shape) but it's deprecated with no
    * planned replacement.  Shapes do have a toString() method but they are generally internal/diagnostic and not
    * standard WKT.
@@ -268,7 +268,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
 
   /**
-   * Implemented for compatibility with geofilt & bbox query parsers:
+   * Implemented for compatibility with geofilt &amp; bbox query parsers:
    * {@link SpatialQueryable}.
    */
   @Override

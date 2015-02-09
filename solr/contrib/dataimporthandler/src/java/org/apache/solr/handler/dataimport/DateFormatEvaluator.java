@@ -47,7 +47,6 @@ import org.apache.solr.util.DateMathParser;
  *  <li>The {@link Locale} to parse.  
  *      (optional. Defaults to the Root Locale) </li>
  * </ul>
- * </p>
  */
 public class DateFormatEvaluator extends Evaluator {
   

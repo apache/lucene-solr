@@ -51,11 +51,11 @@ import java.util.*;
  * {@link CloudSolrClient}, but this class may be used
  * for updates because the server will forward them to the appropriate leader.
  *
- * <p/>
+ * <p>
  * It offers automatic failover when a server goes down and it detects when the server comes back up.
- * <p/>
+ * <p>
  * Load balancing is done using a simple round-robin on the list of servers.
- * <p/>
+ * <p>
  * If a request to a server fails by an IOException due to a connection timeout or read timeout then the host is taken
  * off the list of live servers and moved to a 'dead server list' and the request is resent to the next live server.
  * This process is continued till it tries all the live servers. If at least one server is alive, the request succeeds,
@@ -68,8 +68,8 @@ import java.util.*;
  * </pre></blockquote>
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in a dedicated thread.
  * This interval can be set using {@link #setAliveCheckInterval} , the default is set to one minute.
- * <p/>
- * <b>When to use this?</b><br/> This can be used as a software load balancer when you do not wish to setup an external
+ * <p>
+ * <b>When to use this?</b><br> This can be used as a software load balancer when you do not wish to setup an external
  * load balancer. Alternatives to this code are to use
  * a dedicated hardware load balancer or using Apache httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>

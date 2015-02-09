@@ -28,13 +28,11 @@ import org.slf4j.LoggerFactory;
  * <p>
  * {@link Transformer} instance which creates {@link Date} instances out of {@link String}s.
  * </p>
- * <p/>
  * <p>
  * Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
- * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.3

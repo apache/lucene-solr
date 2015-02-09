@@ -28,7 +28,7 @@ public interface SuggesterParams {
 
   /**
    * The count of suggestions to return for each query term not in the index and/or dictionary.
-   * <p/>
+   * <p>
    * If this parameter is absent in the request then only one suggestion is
    * returned. If it is more than one then a maximum of given suggestions are
    * returned for each token in the query.
@@ -37,7 +37,7 @@ public interface SuggesterParams {
   
   /**
    * Use the value for this parameter as the query to spell check.
-   * <p/>
+   * <p>
    * This parameter is <b>optional</b>. If absent, then the q parameter is
    * used.
    */

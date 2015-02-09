@@ -300,7 +300,7 @@ public class IndexSchema {
   
   /**
    * Name of the default search field specified in the schema file.
-   * <br/><b>Note:</b>Avoid calling this, try to use this method so that the 'df' param is consulted as an override:
+   * <br><b>Note:</b>Avoid calling this, try to use this method so that the 'df' param is consulted as an override:
    * {@link org.apache.solr.search.QueryParsing#getDefaultField(IndexSchema, String)}
    */
   public String getDefaultSearchFieldName() {
@@ -1356,7 +1356,7 @@ public class IndexSchema {
   }
 
   /**
-   * Get a map of property name -> value for the whole schema.
+   * Get a map of property name -&gt; value for the whole schema.
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
     SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<>();

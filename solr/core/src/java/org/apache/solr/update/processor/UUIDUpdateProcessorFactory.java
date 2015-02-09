@@ -40,7 +40,7 @@ import org.apache.solr.schema.SchemaField;
  * In the example configuration below, if a document does not contain a value
  * in the <code>id</code> field, a new <code>UUID</code> will be generated
  * and added as the value of that field.
- * <p>
+ * <br>
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.UUIDUpdateProcessorFactory"&gt;
@@ -54,7 +54,6 @@ import org.apache.solr.schema.SchemaField;
  * is used as field and a new <code>UUID</code> will be generated
  * and added as the value of that field. The field type of the uniqueKeyField
  * must be anything which accepts a string or UUID value.
- * <p>
  * @see UUID
  */
 public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {

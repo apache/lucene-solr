@@ -27,10 +27,10 @@ import java.util.Map;
 
 /**
  * {@link Transformer} instance which converts a {@link Clob} to a {@link String}.
- * <p/>
+ * <p>
  * Refer to <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.4

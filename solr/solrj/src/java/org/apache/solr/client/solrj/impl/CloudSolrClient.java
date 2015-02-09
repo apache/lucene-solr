@@ -171,11 +171,11 @@ public class CloudSolrClient extends SolrClient {
    *          that starts with a forward slash. Using a chroot allows multiple
    *          applications to coexist in one ensemble. For full details, see the
    *          Zookeeper documentation. Some examples:
-   *          <p/>
+   *          <p>
    *          "host1:2181"
-   *          <p/>
+   *          <p>
    *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
-   *          <p/>
+   *          <p>
    *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
    */
   public CloudSolrClient(String zkHost) {
@@ -203,11 +203,11 @@ public class CloudSolrClient extends SolrClient {
    *          that starts with a forward slash. Using a chroot allows multiple
    *          applications to coexist in one ensemble. For full details, see the
    *          Zookeeper documentation. Some examples:
-   *          <p/>
+   *          <p>
    *          "host1:2181"
-   *          <p/>
+   *          <p>
    *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
-   *          <p/>
+   *          <p>
    *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
    * @param httpClient
    *          the {@link HttpClient} instance to be used for all requests. The

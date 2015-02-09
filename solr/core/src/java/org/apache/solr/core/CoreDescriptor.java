@@ -264,7 +264,7 @@ public class CoreDescriptor {
    * Is this property a Solr-standard property, or is it an extra property
    * defined per-core by the user?
    * @param propName the Property name
-   * @return @{code true} if this property is user-defined
+   * @return {@code true} if this property is user-defined
    */
   protected static boolean isUserDefinedProperty(String propName) {
     return !standardPropNames.contains(propName);

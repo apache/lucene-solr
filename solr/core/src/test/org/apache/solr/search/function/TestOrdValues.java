@@ -51,13 +51,13 @@ import org.junit.Test;
 
 /**
  * Test search based on OrdFieldSource and ReverseOrdFieldSource.
- * <p/>
+ * <p>
  * Tests here create an index with a few documents, each having
  * an indexed "id" field.
  * The ord values of this field are later used for scoring.
- * <p/>
+ * <p>
  * The order tests use Hits to verify that docs are ordered as expected.
- * <p/>
+ * <p>
  * The exact score tests use TopDocs top to verify the exact score.
  */
 public class TestOrdValues extends LuceneTestCase {

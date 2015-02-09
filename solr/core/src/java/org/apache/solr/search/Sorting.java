@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.*;
 
 /**
- * Extra lucene sorting utilities & convenience methods
+ * Extra lucene sorting utilities &amp; convenience methods
  *
  *
  *

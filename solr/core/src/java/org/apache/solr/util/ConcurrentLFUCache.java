@@ -31,11 +31,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A LFU cache implementation based upon ConcurrentHashMap.
- * <p/>
+ * <p>
  * This is not a terribly efficient implementation.  The tricks used in the
  * LRU version were not directly usable, perhaps it might be possible to
  * rewrite them with LFU in mind.
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.6
@@ -215,7 +215,7 @@ public class ConcurrentLFUCache<K, V> {
 
   /**
    * Returns 'n' number of least used entries present in this cache.
-   * <p/>
+   * <p>
    * This uses a TreeSet to collect the 'n' least used items ordered by ascending hitcount
    * and returns a LinkedHashMap containing 'n' or less than 'n' entries.
    *
@@ -259,7 +259,7 @@ public class ConcurrentLFUCache<K, V> {
 
   /**
    * Returns 'n' number of most used entries present in this cache.
-   * <p/>
+   * <p>
    * This uses a TreeSet to collect the 'n' most used items ordered by descending hitcount
    * and returns a LinkedHashMap containing 'n' or less than 'n' entries.
    *

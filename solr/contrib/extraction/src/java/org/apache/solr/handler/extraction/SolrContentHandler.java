@@ -38,8 +38,7 @@ import java.util.*;
 /**
  * The class responsible for handling Tika events and translating them into {@link org.apache.solr.common.SolrInputDocument}s.
  * <B>This class is not thread-safe.</B>
- * <p/>
- * <p/>
+ * <p>
  * User's may wish to override this class to provide their own functionality.
  *
  * @see org.apache.solr.handler.extraction.SolrContentHandlerFactory
@@ -313,7 +312,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   /**
    * Can be used to transform input values based on their {@link org.apache.solr.schema.SchemaField}
-   * <p/>
+   * <p>
    * This implementation only formats dates using the {@link org.apache.solr.common.util.DateUtil}.
    *
    * @param val    The value to transform

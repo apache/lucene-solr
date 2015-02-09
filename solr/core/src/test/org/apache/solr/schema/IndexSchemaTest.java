@@ -38,8 +38,8 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
 
   /**
    * This test assumes the schema includes:
-   * <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
-   * <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
+   * &lt;dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/&gt;
+   * &lt;dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/&gt;
    */
   @Test
   public void testDynamicCopy()

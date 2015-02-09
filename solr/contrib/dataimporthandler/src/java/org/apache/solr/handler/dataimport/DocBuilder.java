@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * <p> {@link DocBuilder} is responsible for creating Solr documents out of the given configuration. It also maintains
  * statistics information. It depends on the {@link EntityProcessor} implementations to fetch data. </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.3

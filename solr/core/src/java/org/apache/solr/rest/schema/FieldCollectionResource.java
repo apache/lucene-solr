@@ -48,7 +48,7 @@ import java.util.TreeSet;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/fields
- * <p/>
+ * <p>
  * Two query parameters are supported:
  * <ul>
  * <li>

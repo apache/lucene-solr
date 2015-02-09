@@ -304,7 +304,7 @@ public final class SchemaField extends FieldProperties {
   }
 
   /**
-   * Get a map of property name -> value for this field.  If showDefaults is true,
+   * Get a map of property name -&gt; value for this field.  If showDefaults is true,
    * include default properties (those inherited from the declared property type and
    * not overridden in the field declaration).
    */

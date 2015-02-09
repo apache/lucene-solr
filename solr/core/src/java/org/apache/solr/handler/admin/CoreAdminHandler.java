@@ -482,7 +482,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
   /**
    * Handle Custom Action.
-   * <p/>
+   * <p>
    * This method could be overridden by derived classes to handle custom actions. <br> By default - this method throws a
    * solr exception. Derived classes are free to write their derivation if necessary.
    */

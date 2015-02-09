@@ -62,7 +62,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <p> Stores all configuration information for pulling and indexing data. </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.3

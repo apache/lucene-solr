@@ -44,7 +44,7 @@ import org.junit.Before;
  * <p>
  * Abstract base class for DataImportHandler tests
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  *

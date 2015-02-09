@@ -33,7 +33,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
 
   /**
    * Parses the given named list and builds a list of analysis phases form it. Expects a named list of the form:
-   * <p/>
+   * <br>
    * <pre><code>
    *  &lt;lst name="index"&gt;
    *      &lt;arr name="Tokenizer"&gt;
@@ -78,7 +78,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
 
   /**
    * Parses the given named list and builds a token infoform it. Expects a named list of the form:
-   * <p/>
+   * <br>
    * <pre><code>
    *  &lt;arr name="Tokenizer"&gt;
    *      &lt;str name="text"&gt;the_text&lt;/str&gt;

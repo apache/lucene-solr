@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p/> Provides functionality equivalent to the snapshooter script </p>
+ * <p> Provides functionality equivalent to the snapshooter script </p>
  * This is no longer used in standard replication.
  *
  *

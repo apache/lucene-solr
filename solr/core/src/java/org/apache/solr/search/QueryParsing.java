@@ -569,7 +569,6 @@ public class QueryParsing {
   /**
    * Formats a Query for debugging, using the IndexSchema to make
    * complex field types readable.
-   * <p/>
    * <p>
    * The benefit of using this method instead of calling
    * <code>Query.toString</code> directly is that it knows about the data

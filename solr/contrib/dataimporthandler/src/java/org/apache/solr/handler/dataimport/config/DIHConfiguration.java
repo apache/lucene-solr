@@ -36,13 +36,12 @@ import org.w3c.dom.Element;
  * <p>
  * Mapping for data-config.xml
  * </p>
- * <p/>
  * <p>
  * Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.
  * </p>
- * <p/>
+ * <p>
  * <b>This API is experimental and subject to change</b>
  *
  * @since solr 1.3

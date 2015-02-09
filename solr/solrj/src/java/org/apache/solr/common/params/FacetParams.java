@@ -151,7 +151,7 @@ public interface FacetParams {
 
  /**
    * When faceting by enumerating the terms in a field,
-   * only use the filterCache for terms with a df >= to this parameter.
+   * only use the filterCache for terms with a df &gt;= to this parameter.
    */
   public static final String FACET_ENUM_CACHE_MINDF = FACET + ".enum.cache.minDf";
   /**
@@ -311,7 +311,7 @@ public interface FacetParams {
   
   /**
    * An enumeration of the legal values for {@link #FACET_DATE_INCLUDE} and {@link #FACET_RANGE_INCLUDE}
-   * <p>
+   * <br>
    * <ul>
    * <li>lower = all gap based ranges include their lower bound</li>
    * <li>upper = all gap based ranges include their upper bound</li>

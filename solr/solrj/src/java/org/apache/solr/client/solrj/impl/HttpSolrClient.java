@@ -98,7 +98,7 @@ public class HttpSolrClient extends SolrClient {
   
   /**
    * Default value: null / empty.
-   * <p/>
+   * <p>
    * Parameters that are added to every request regardless. This may be a place
    * to add something like an authentication token.
    */
@@ -106,7 +106,7 @@ public class HttpSolrClient extends SolrClient {
   
   /**
    * Default response parser is BinaryResponseParser
-   * <p/>
+   * <p>
    * This parser represents the default Response Parser chosen to parse the
    * response if the parser were not specified as part of the request.
    * 
@@ -665,7 +665,7 @@ public class HttpSolrClient extends SolrClient {
   }
   
   /**
-   * Allow server->client communication to be compressed. Currently gzip and
+   * Allow server-&gt;client communication to be compressed. Currently gzip and
    * deflate are supported. If the server supports compression the response will
    * be compressed. This method is only allowed if the http client is of type
    * DefatulHttpClient.

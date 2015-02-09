@@ -43,7 +43,6 @@ import java.util.Map;
 /**
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need the text to be extracted
  * first from the document.
- * <p/>
  */
 public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware {
 

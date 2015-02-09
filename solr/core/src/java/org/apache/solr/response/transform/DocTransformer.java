@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * A DocTransformer can add, remove or alter a Document before it is written out to the Response.  For instance, there are implementations
  * that can put explanations inline with a document, add constant values and mark items as being artificially boosted (see {@link org.apache.solr.handler.component.QueryElevationComponent})
  *
- * <p/>
+ * <p>
  * New instance for each request
  *
  * @see TransformerFactory

@@ -29,7 +29,6 @@ import java.net.URL;
  * in the solrconfig as defaults, and may be overriden as request parameters.
  * (TODO: complete documentation of request parameters here, rather than only
  * on the wiki).
- * </p>
  *
  * <ul>
  * <li> highlight - Set to any value not .equal() to "false" to enable highlight

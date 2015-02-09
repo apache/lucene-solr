@@ -27,10 +27,10 @@ import java.io.IOException;
 
 /**
  * Takes in a latitude and longitude ValueSource and produces a GeoHash.
- * <p/>
+ * <p>
  * Ex: geohash(lat, lon)
  *
- * <p/>
+ * <p>
  * Note, there is no reciprocal function for this.
  **/
 public class GeohashFunction extends ValueSource {

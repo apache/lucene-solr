@@ -30,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
- * <p/>
+ * <p>
  * This implementation does not use a separate cleanup thread. Instead it uses the calling thread
  * itself to do the cleanup when the size of the cache exceeds certain limits.
- * <p/>
+ * <p>
  * Also see <a href="http://wiki.apache.org/solr/SolrCaching">SolrCaching</a>
  *
  *

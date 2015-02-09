@@ -60,7 +60,7 @@ public class BitDocSet extends DocSetBase {
     this.size = size;
   }
 
-  /*** DocIterator using nextSetBit()
+  /* DocIterator using nextSetBit()
   public DocIterator iterator() {
     return new DocIterator() {
       int pos=bits.nextSetBit(0);
@@ -158,7 +158,7 @@ public class BitDocSet extends DocSetBase {
   }
 
   /**
-   * Returns true of the doc exists in the set. Should only be called when doc <
+   * Returns true of the doc exists in the set. Should only be called when doc &lt;
    * {@link FixedBitSet#length()}.
    */
   @Override

@@ -32,11 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A wrapper for an IndexDeletionPolicy instance.
- * <p/>
+ * <p>
  * Provides features for looking up IndexCommit given a version. Allows reserving index
  * commit points for certain amounts of time to support features such as index replication
  * or snapshooting directly out of a live index directory.
- * <p/>
+ * <p>
  * <b>NOTE</b>: The {@link #clone()} method returns <tt>this</tt> in order to make
  * this {@link IndexDeletionPolicy} instance trackable across {@link IndexWriter}
  * instantiations. This is correct because each core has its own
@@ -59,7 +59,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
 
   /**
    * Gets the most recent commit point
-   * <p/>
+   * <p>
    * It is recommended to reserve a commit point for the duration of usage so that
    * it is not deleted by the underlying deletion policy
    *

@@ -41,8 +41,8 @@ import java.util.List;
  * listeners in your solrconfig.xml:
  *
  * <pre>
- *   &lt;listener event="newSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/>
- *   &lt;listener event="firstSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/>
+ *   &lt;listener event="newSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/&gt;
+ *   &lt;listener event="firstSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/&gt;
  * </pre>
  *
  * The caches will be reloaded for all ExternalFileFields in your schema after

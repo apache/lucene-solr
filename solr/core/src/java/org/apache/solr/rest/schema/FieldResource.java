@@ -43,12 +43,12 @@ import java.util.Map;
 /**
  * This class responds to requests at /solr/(corename)/schema/fields/(fieldname)
  * where "fieldname" is the name of a field.
- * <p/>
+ * <p>
  * The GET method returns properties for the given fieldname.
  * The "includeDynamic" query parameter, if specified, will cause the
  * dynamic field matching the given fieldname to be returned if fieldname
  * is not explicitly declared in the schema.
- * <p/>
+ * <p>
  * The PUT method accepts field addition requests in JSON format.
  */
 public class FieldResource extends BaseFieldResource implements GETable, PUTable {

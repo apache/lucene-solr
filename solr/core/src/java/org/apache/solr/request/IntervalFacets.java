@@ -53,7 +53,7 @@ import org.apache.solr.search.SyntaxError;
 
 /**
  * Computes interval facets for docvalues field (single or multivalued).
- * <p/>
+ * <p>
  * Given a set of intervals for a field and a DocSet, it calculates the number
  * of documents that match each of the intervals provided. The final count for
  * each interval should be exactly the same as the number of results of a range
@@ -61,12 +61,12 @@ import org.apache.solr.search.SyntaxError;
  * of {@code facet.query=field:[A TO B]} should be the same as the count of
  * {@code f.field.facet.interval.set=[A,B]}, however, this method will usually
  * be faster in cases where there are a larger number of intervals per field.
- * <p/>
+ * <p>
  * To use this class, create an instance using
  * {@link #IntervalFacets(SchemaField, SolrIndexSearcher, DocSet, String[], SolrParams)}
  * and then iterate the {@link FacetInterval} using {@link #iterator()}
- * <p/>
- * Intervals Format</br>
+ * <p>
+ * Intervals Format<br>
  * Intervals must begin with either '(' or '[', be followed by the start value,
  * then a comma ',', the end value, and finally ')' or ']'. For example:
  * <ul>
@@ -89,7 +89,7 @@ import org.apache.solr.search.SyntaxError;
  * As with facet.query, the key used to display the result can be set by using local params
  * syntax, for example:<p>
  * <code>{!key='First Half'}[0,5) </code>
- * <p/>
+ * <p>
  * To use this class:
  * <pre>
  * IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs, params);

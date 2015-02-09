@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * A RequestWriter is used to write requests to Solr.
- * <p/>
+ * <p>
  * A subclass can override the methods in this class to supply a custom format in which a request can be sent.
  *
  *
