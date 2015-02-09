@@ -31,7 +31,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
@@ -125,7 +124,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq, PostingsEnum.FLAG_FREQS);
+    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq, true);
     
     switch (mode) {
     case DOC_VALUES:

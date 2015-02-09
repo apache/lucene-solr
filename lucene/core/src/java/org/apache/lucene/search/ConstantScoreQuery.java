@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -112,7 +111,7 @@ public class ConstantScoreQuery extends Query {
     
     public ConstantWeight(IndexSearcher searcher) throws IOException {
       super(ConstantScoreQuery.this);
-      this.innerWeight = (query == null) ? null : query.createWeight(searcher, PostingsEnum.FLAG_NONE);
+      this.innerWeight = (query == null) ? null : query.createWeight(searcher, false);
     }
 
     @Override
@@ -328,7 +327,7 @@ public class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 

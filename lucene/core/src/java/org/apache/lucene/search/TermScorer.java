@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRef;
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-
   private final PostingsEnum postingsEnum;
   private final Similarity.SimScorer docScorer;
 

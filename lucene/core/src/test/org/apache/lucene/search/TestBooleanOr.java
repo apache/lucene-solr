@@ -185,7 +185,7 @@ public class TestBooleanOr extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
-    Weight w = s.createNormalizedWeight(bq, PostingsEnum.FLAG_FREQS);
+    Weight w = s.createNormalizedWeight(bq, true);
 
     assertEquals(1, s.getIndexReader().leaves().size());
     BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), null);

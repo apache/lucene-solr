@@ -53,8 +53,8 @@ public class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-    return q.createWeight(searcher, postingsFlags);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return q.createWeight(searcher, needsScores);
   }
 
   @Override

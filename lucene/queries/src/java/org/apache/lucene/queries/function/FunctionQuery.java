@@ -204,7 +204,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 

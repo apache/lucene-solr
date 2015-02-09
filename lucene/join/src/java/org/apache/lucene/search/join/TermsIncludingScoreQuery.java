@@ -123,8 +123,8 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-    final Weight originalWeight = originalQuery.createWeight(searcher, postingsFlags);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
     return new Weight(TermsIncludingScoreQuery.this) {
 
       private TermsEnum segmentTermsEnum;

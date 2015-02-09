@@ -26,7 +26,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -252,7 +251,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // ... then all shards:
-      final Weight w = searcher.createNormalizedWeight(query, PostingsEnum.FLAG_FREQS);
+      final Weight w = searcher.createNormalizedWeight(query, true);
 
       final TopDocs[] shardHits;
       if (sort == null) {

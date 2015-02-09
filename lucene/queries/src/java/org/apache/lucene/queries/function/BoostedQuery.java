@@ -68,8 +68,8 @@ public class BoostedQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-    return new BoostedQuery.BoostedWeight(searcher, postingsFlags);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new BoostedQuery.BoostedWeight(searcher, needsScores);
   }
 
   private class BoostedWeight extends Weight {
@@ -77,10 +77,10 @@ public class BoostedQuery extends Query {
     Weight qWeight;
     Map fcontext;
 
-    public BoostedWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    public BoostedWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       super(BoostedQuery.this);
       this.searcher = searcher;
-      this.qWeight = q.createWeight(searcher, postingsFlags);
+      this.qWeight = q.createWeight(searcher, needsScores);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
     }

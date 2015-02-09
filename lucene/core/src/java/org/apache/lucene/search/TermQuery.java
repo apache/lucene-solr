@@ -47,12 +47,12 @@ public class TermQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
     private final TermContext termStates;
-    private final int postingsFlags;
+    private final boolean needsScores;
 
-    public TermWeight(IndexSearcher searcher, int postingsFlags, TermContext termStates)
+    public TermWeight(IndexSearcher searcher, boolean needsScores, TermContext termStates)
         throws IOException {
       super(TermQuery.this);
-      this.postingsFlags = postingsFlags;
+      this.needsScores = needsScores;
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
@@ -83,7 +83,7 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      PostingsEnum docs = termsEnum.postings(acceptDocs, null, postingsFlags);
+      PostingsEnum docs = termsEnum.postings(acceptDocs, null, needsScores ? PostingsEnum.FLAG_FREQS : PostingsEnum.FLAG_NONE);
       assert docs != null;
       return new TermScorer(this, docs, similarity.simScorer(stats, context));
     }
@@ -168,7 +168,7 @@ public class TermQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermContext termState;
     if (perReaderTermState == null
@@ -184,7 +184,7 @@ public class TermQuery extends Query {
     // we must not ignore the given docFreq - if set use the given value (lie)
     if (docFreq != -1) termState.setDocFreq(docFreq);
     
-    return new TermWeight(searcher, postingsFlags, termState);
+    return new TermWeight(searcher, needsScores, termState);
   }
   
   @Override

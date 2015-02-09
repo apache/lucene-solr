@@ -32,7 +32,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -262,7 +261,7 @@ public class QueryUtils {
             lastDoc[0] = doc;
             try {
               if (scorer == null) {
-                Weight w = s.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+                Weight w = s.createNormalizedWeight(q, true);
                 LeafReaderContext context = readerContextArray.get(leafPtr);
                 scorer = w.scorer(context, context.reader().getLiveDocs());
               }
@@ -314,7 +313,7 @@ public class QueryUtils {
               final LeafReader previousReader = lastReader[0];
               IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
               indexSearcher.setSimilarity(s.getSimilarity());
-              Weight w = indexSearcher.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+              Weight w = indexSearcher.createNormalizedWeight(q, true);
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
               Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
               if (scorer != null) {
@@ -336,7 +335,7 @@ public class QueryUtils {
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           indexSearcher.setSimilarity(s.getSimilarity());
-          Weight w = indexSearcher.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+          Weight w = indexSearcher.createNormalizedWeight(q, true);
           LeafReaderContext ctx = previousReader.getContext();
           Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
           if (scorer != null) {
@@ -368,7 +367,7 @@ public class QueryUtils {
         try {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
-            Weight w = s.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+            Weight w = s.createNormalizedWeight(q, true);
             Scorer scorer = w.scorer(context.get(leafPtr), liveDocs);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
@@ -401,7 +400,7 @@ public class QueryUtils {
           final LeafReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
           indexSearcher.setSimilarity(s.getSimilarity());
-          Weight w = indexSearcher.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+          Weight w = indexSearcher.createNormalizedWeight(q, true);
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
@@ -422,7 +421,7 @@ public class QueryUtils {
       final LeafReader previousReader = lastReader[0];
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
       indexSearcher.setSimilarity(s.getSimilarity());
-      Weight w = indexSearcher.createNormalizedWeight(q, PostingsEnum.FLAG_FREQS);
+      Weight w = indexSearcher.createNormalizedWeight(q, true);
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
@@ -433,7 +432,7 @@ public class QueryUtils {
 
   /** Check that the scorer and bulk scorer advance consistently. */
   public static void checkBulkScorerSkipTo(Random r, Query query, IndexSearcher searcher) throws IOException {
-    Weight weight = searcher.createNormalizedWeight(query, PostingsEnum.FLAG_FREQS);
+    Weight weight = searcher.createNormalizedWeight(query, true);
     for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
       final Scorer scorer = weight.scorer(context, context.reader().getLiveDocs());
       final BulkScorer bulkScorer = weight.bulkScorer(context, context.reader().getLiveDocs());

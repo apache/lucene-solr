@@ -32,7 +32,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
@@ -115,9 +114,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    @Override
-    public Weight createWeight(IndexSearcher indexSearcher, int postingsFlags) throws IOException{
-      return q.createWeight(indexSearcher, postingsFlags);
+    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores) throws IOException{
+      return q.createWeight(indexSearcher, needsScores);
     }
 
     public void setBoost(float boost) {

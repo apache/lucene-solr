@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
@@ -345,7 +344,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     MultiPhraseQuery query = new MultiPhraseQuery();
     query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
     query.add(new Term("body", "is"));
-    Weight weight = query.createWeight(searcher, PostingsEnum.FLAG_FREQS);
+    Weight weight = query.createWeight(searcher, true);
     assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
     writer.close();

@@ -150,7 +150,7 @@ public class MatchAllDocsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
     return new MatchAllDocsWeight(searcher);
   }
 

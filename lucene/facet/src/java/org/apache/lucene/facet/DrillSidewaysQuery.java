@@ -73,8 +73,8 @@ class DrillSidewaysQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-    final Weight baseWeight = baseQuery.createWeight(searcher, postingsFlags);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores);
     final Object[] drillDowns = new Object[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
       Query query = drillDownQueries[dim];
@@ -84,7 +84,7 @@ class DrillSidewaysQuery extends Query {
       } else {
         // TODO: would be nice if we could say "we will do no
         // scoring" here....
-        drillDowns[dim] = searcher.rewrite(query).createWeight(searcher, postingsFlags);
+        drillDowns[dim] = searcher.rewrite(query).createWeight(searcher, needsScores);
       }
     }
 

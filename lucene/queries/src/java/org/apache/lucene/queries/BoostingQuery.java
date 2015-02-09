@@ -54,8 +54,8 @@ public class BoostingQuery extends Query {
     public Query rewrite(IndexReader reader) throws IOException {
       BooleanQuery result = new BooleanQuery() {
         @Override
-        public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-          return new BooleanWeight(this, searcher, postingsFlags, false) {
+        public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+          return new BooleanWeight(this, searcher, needsScores, false) {
 
             @Override
             public float coord(int overlap, int max) {

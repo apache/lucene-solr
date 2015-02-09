@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -44,17 +43,17 @@ public class BooleanWeight extends Weight {
   private final boolean disableCoord;
   private final boolean needsScores;
 
-  public BooleanWeight(BooleanQuery query, IndexSearcher searcher, int postingsFlags, boolean disableCoord) throws IOException {
+  public BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, boolean disableCoord) throws IOException {
     super(query);
     this.query = query;
-    this.needsScores = (postingsFlags & PostingsEnum.FLAG_FREQS) != 0;
+    this.needsScores = needsScores;
     this.similarity = searcher.getSimilarity();
     this.disableCoord = disableCoord;
     weights = new ArrayList<>(query.clauses().size());
     for (int i = 0 ; i < query.clauses().size(); i++) {
       BooleanClause c = query.clauses().get(i);
-      final int subQueryFlags = c.getOccur() == Occur.MUST_NOT ? PostingsEnum.FLAG_NONE : postingsFlags;
-      Weight w = c.getQuery().createWeight(searcher, subQueryFlags);
+      final boolean queryNeedsScores = needsScores && c.getOccur() != Occur.MUST_NOT;
+      Weight w = c.getQuery().createWeight(searcher, queryNeedsScores);
       weights.add(w);
       if (!c.isProhibited()) {
         maxCoord++;

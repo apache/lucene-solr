@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.StoredDocument;
@@ -179,7 +178,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     QueryUtils.check(random(), dq, s);
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
-    final Weight dw = s.createNormalizedWeight(dq, PostingsEnum.FLAG_FREQS);
+    final Weight dw = s.createNormalizedWeight(dq, true);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
@@ -195,7 +194,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     QueryUtils.check(random(), dq, s);
-    final Weight dw = s.createNormalizedWeight(dq, PostingsEnum.FLAG_FREQS);
+    final Weight dw = s.createNormalizedWeight(dq, true);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
     assertTrue("firsttime skipTo found no match",

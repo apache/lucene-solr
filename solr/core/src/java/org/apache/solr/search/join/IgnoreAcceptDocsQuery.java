@@ -53,8 +53,8 @@ public class IgnoreAcceptDocsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
-    Weight inner = q.createWeight(searcher, postingsFlags);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    Weight inner = q.createWeight(searcher, needsScores);
     return new IADWeight(inner);
   }
 

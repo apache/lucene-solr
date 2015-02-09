@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 
 /** The abstract base class for queries.
@@ -75,10 +74,10 @@ public abstract class Query implements Cloneable {
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
    *
-   * @param postingsFlags   Bitmask indicating which postings features should be returned
-   *                        by this query (see {@link PostingsEnum})
+   * @param needsScores   True if document scores ({@link Scorer#score}) or match
+   *                      frequencies ({@link Scorer#freq}) are needed.
    */
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 

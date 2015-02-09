@@ -229,7 +229,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
     try {
       return new SolrConstantScoreQuery.ConstantWeight(searcher);
     } catch (IOException e) {

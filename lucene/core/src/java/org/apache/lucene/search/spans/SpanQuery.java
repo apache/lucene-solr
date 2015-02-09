@@ -42,7 +42,7 @@ public abstract class SpanQuery extends Query {
   public abstract String getField();
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new SpanWeight(this, searcher);
   }
 

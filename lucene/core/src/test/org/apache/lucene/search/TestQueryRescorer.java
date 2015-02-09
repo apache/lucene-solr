@@ -425,7 +425,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, int postingsFlags) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
