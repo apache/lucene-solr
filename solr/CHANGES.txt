@@ -132,6 +132,9 @@ Other Changes
 * SOLR-6500: Refactor FileFetcher in SnapPuller, add debug logging. 
   (Ramkumar Aiyengar via Mark Miller)
 
+* SOLR-7094: Better error reporting of JSON parse issues when indexing docs
+  (Ishan Chattopadhyaya via Timothy Potter)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
