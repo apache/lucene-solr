@@ -380,7 +380,7 @@ public class RealTimeGetComponent extends SearchComponent
 
       Map<String, List<String>> sliceToId = new HashMap<>();
       for (String id : allIds) {
-        Slice slice = coll.getRouter().getTargetSlice(id, null, params, coll);
+        Slice slice = coll.getRouter().getTargetSlice(id, null, null, params, coll);
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {

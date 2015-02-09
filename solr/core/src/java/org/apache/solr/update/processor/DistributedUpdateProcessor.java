@@ -309,8 +309,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
 
-
   private List<Node> setupRequest(String id, SolrInputDocument doc) {
+    return setupRequest(id, doc, null);
+  }
+
+  private List<Node> setupRequest(String id, SolrInputDocument doc, String route) {
     List<Node> nodes = null;
 
     // if we are in zk mode...
@@ -324,7 +327,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       ClusterState cstate = zkController.getClusterState();      
       DocCollection coll = cstate.getCollection(collection);
-      Slice slice = coll.getRouter().getTargetSlice(id, doc, req.getParams(), coll);
+      Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
 
       if (slice == null) {
         // No slice found.  Most strict routers will have already thrown an exception, so a null return is
@@ -1136,7 +1139,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled) {
       zkCheck();
-      nodes = setupRequest(cmd.getId(), null);
+      nodes = setupRequest(cmd.getId(), null, cmd.getRoute());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }

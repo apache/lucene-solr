@@ -38,9 +38,12 @@ public class ImplicitDocRouter extends DocRouter {
       .getLogger(ImplicitDocRouter.class);
 
   @Override
-  public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
+  public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
     String shard = null;
-    if (sdoc != null) {
+
+    if (route != null) // if a route is already passed in, try to use it
+      shard = route;
+    else if (sdoc != null) {
       String f = getRouteField(collection);
       if(f !=null) {
         Object o = sdoc.getFieldValue(f);

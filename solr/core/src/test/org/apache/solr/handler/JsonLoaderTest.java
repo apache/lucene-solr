@@ -589,6 +589,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         +"\n ,'delete':['30','40']"
         +"\n ,'delete':{'id':50, '_version_':12345}"
         +"\n ,'delete':[{'id':60, '_version_':67890}, {'id':70, '_version_':77777}, {'query':'id:80', '_version_':88888}]"
+        +"\n ,'delete':{'id':90, '_route_':'shard1', '_version_':88888}"
         + "\n}\n";
     str = str.replace('\'', '"');
     SolrQueryRequest req = req();
@@ -598,7 +599,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
 
     // DELETE COMMANDS
-    assertEquals( 8, p.deleteCommands.size() );
+    assertEquals( 9, p.deleteCommands.size() );
     DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
     assertEquals( delete.id, "10" );
     assertEquals( delete.query, null );
@@ -637,7 +638,13 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     delete = p.deleteCommands.get( 7 );
     assertEquals( delete.id, null );
     assertEquals( delete.query, "id:80" );
-    assertEquals( delete.getVersion(), 88888L);
+    assertEquals(delete.getVersion(), 88888L);
+
+    delete = p.deleteCommands.get(8);
+    assertEquals(delete.id, "90");
+    assertEquals(delete.query, null);
+    assertEquals(delete.getRoute(), "shard1");
+    assertEquals(delete.getVersion(), 88888L);
 
     req.close();
   }

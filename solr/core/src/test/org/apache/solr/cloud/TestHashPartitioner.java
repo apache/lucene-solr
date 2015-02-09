@@ -137,7 +137,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
   public void doIndex(DocCollection coll, String id, String expectedShard) {
     DocRouter router = coll.getRouter();
-    Slice target = router.getTargetSlice(id, null, null, coll);
+    Slice target = router.getTargetSlice(id, null, null, null, coll);
     assertEquals(expectedShard, target.getName());
   }
 
@@ -206,7 +206,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
                      "A!B/-5", "!/130!", "!!A/1000", "A//8!B///10!C////" };
     for (int i = 0 ; i < ids.length ; ++i) {
       try {
-        Slice targetSlice = coll.getRouter().getTargetSlice(ids[i], null, null, coll);
+        Slice targetSlice = coll.getRouter().getTargetSlice(ids[i], null, null, null, coll);
         assertNotNull(targetSlice);
       } catch (Exception e) {
         throw new Exception("Exception routing id '" + ids[i] + "'", e);
@@ -238,7 +238,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       }
       String id = idBuilder.toString();
       try {
-        Slice targetSlice = router.getTargetSlice(id, null, null, coll);
+        Slice targetSlice = router.getTargetSlice(id, null, null, null, coll);
         assertNotNull(targetSlice);
       } catch (Exception e) {
         throw new Exception("Exception routing id '" + id + "'", e);

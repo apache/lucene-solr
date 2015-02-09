@@ -24,8 +24,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -35,6 +37,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
@@ -44,6 +47,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -136,11 +140,267 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     // TODO: testOptimisticUpdate(results);
     
     testDeleteByQueryDistrib();
-    
+
+    testDeleteByIdImplicitRouter();
+
+    testDeleteByIdCompositeRouterWithRouterField();
+
     docId = testThatCantForwardToLeaderFails(docId);
-    
-    
+
+
     docId = testIndexingBatchPerRequestWithHttpSolrClient(docId);
+  }
+
+  private void testDeleteByIdImplicitRouter() throws Exception {
+    SolrClient server = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+    CollectionAdminResponse response;
+    Map<String, NamedList<Integer>> coresStatus;
+
+    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
+    createCollectionRequest.setCollectionName("implicit_collection_without_routerfield");
+    createCollectionRequest.setRouterName("implicit");
+    createCollectionRequest.setNumShards(2);
+    createCollectionRequest.setShards("shard1,shard2");
+    createCollectionRequest.setReplicationFactor(2);
+    createCollectionRequest.setConfigName("conf1");
+    response = createCollectionRequest.process(server);
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    coresStatus = response.getCollectionCoresStatus();
+    assertEquals(4, coresStatus.size());
+    for (int i = 0; i < 4; i++) {
+      NamedList<Integer> status = coresStatus.get("implicit_collection_without_routerfield_shard" + (i / 2 + 1) + "_replica" + (i % 2 + 1));
+      assertEquals(0, (int) status.get("status"));
+      assertTrue(status.get("QTime") > 0);
+    }
+
+    SolrClient shard1 = createNewSolrClient("implicit_collection_without_routerfield_shard1_replica1",
+        getBaseUrl((HttpSolrClient) clients.get(0)));
+    SolrClient shard2 = createNewSolrClient("implicit_collection_without_routerfield_shard2_replica1",
+        getBaseUrl((HttpSolrClient) clients.get(0)));
+
+    SolrInputDocument doc = new SolrInputDocument();
+    int docCounts1, docCounts2;
+
+    // Add three documents to shard1
+    doc.clear();
+    doc.addField("id", "1");
+    doc.addField("title", "s1 one");
+    shard1.add(doc);
+    shard1.commit();
+
+    doc.clear();
+    doc.addField("id", "2");
+    doc.addField("title", "s1 two");
+    shard1.add(doc);
+    shard1.commit();
+
+    doc.clear();
+    doc.addField("id", "3");
+    doc.addField("title", "s1 three");
+    shard1.add(doc);
+    shard1.commit();
+
+    docCounts1 = 3; // Three documents in shard1
+
+    // Add two documents to shard2
+    doc.clear();
+    doc.addField("id", "4");
+    doc.addField("title", "s2 four");
+    shard2.add(doc);
+    shard2.commit();
+
+    doc.clear();
+    doc.addField("id", "5");
+    doc.addField("title", "s2 five");
+    shard2.add(doc);
+    shard2.commit();
+
+    docCounts2 = 2; // Two documents in shard2
+
+    // Verify the documents were added to correct shards
+    ModifiableSolrParams query = new ModifiableSolrParams();
+    query.set("q", "*:*");
+    QueryResponse respAll = shard1.query(query);
+    assertEquals(docCounts1 + docCounts2, respAll.getResults().getNumFound());
+
+    query.set("shards", "shard1");
+    QueryResponse resp1 = shard1.query(query);
+    assertEquals(docCounts1, resp1.getResults().getNumFound());
+
+    query.set("shards", "shard2");
+    QueryResponse resp2 = shard2.query(query);
+    assertEquals(docCounts2, resp2.getResults().getNumFound());
+
+
+    // Delete a document in shard2 with update to shard1, with _route_ param
+    // Should delete.
+    UpdateRequest deleteRequest = new UpdateRequest();
+    deleteRequest.deleteById("4", "shard2");
+    shard1.request(deleteRequest);
+    shard1.commit();
+    query.set("shards", "shard2");
+    resp2 = shard2.query(query);
+    assertEquals(--docCounts2, resp2.getResults().getNumFound());
+
+    // Delete a document in shard2 with update to shard1, without _route_ param
+    // Shouldn't delete, since deleteById requests are not broadcast to all shard leaders.
+    deleteRequest = new UpdateRequest();
+    deleteRequest.deleteById("5");
+    shard1.request(deleteRequest);
+    shard1.commit();
+    query.set("shards", "shard2");
+    resp2 = shard2.query(query);
+    assertEquals(docCounts2, resp2.getResults().getNumFound());
+
+    // Multiple deleteById commands in a single request
+    deleteRequest.clear();
+    deleteRequest.deleteById("2", "shard1");
+    deleteRequest.deleteById("3", "shard1");
+    deleteRequest.setCommitWithin(1);
+    query.set("shards", "shard1");
+    shard2.request(deleteRequest);
+    resp1 = shard1.query(query);
+    --docCounts1;
+    --docCounts1;
+    assertEquals(docCounts1, resp1.getResults().getNumFound());
+
+    // Test commitWithin, update to shard2, document deleted in shard1
+    deleteRequest.clear();
+    deleteRequest.deleteById("1", "shard1");
+    deleteRequest.setCommitWithin(1);
+    shard2.request(deleteRequest);
+    Thread.sleep(1000);
+    query.set("shards", "shard1");
+    resp1 = shard1.query(query);
+    assertEquals(--docCounts1, resp1.getResults().getNumFound());
+  }
+
+  private void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
+    SolrClient server = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+    CollectionAdminResponse response;
+    Map<String, NamedList<Integer>> coresStatus;
+
+    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
+    createCollectionRequest.setCollectionName("compositeid_collection_with_routerfield");
+    createCollectionRequest.setRouterName("compositeId");
+    createCollectionRequest.setRouterField("routefield_s");
+    createCollectionRequest.setNumShards(2);
+    createCollectionRequest.setShards("shard1,shard2");
+    createCollectionRequest.setReplicationFactor(2);
+    createCollectionRequest.setConfigName("conf1");
+    response = createCollectionRequest.process(server);
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    coresStatus = response.getCollectionCoresStatus();
+    assertEquals(4, coresStatus.size());
+    for (int i = 0; i < 4; i++) {
+      NamedList<Integer> status = coresStatus.get("compositeid_collection_with_routerfield_shard" + (i / 2 + 1) + "_replica" + (i % 2 + 1));
+      assertEquals(0, (int) status.get("status"));
+      assertTrue(status.get("QTime") > 0);
+    }
+
+    SolrClient shard1 = createNewSolrClient("compositeid_collection_with_routerfield_shard1_replica1",
+        getBaseUrl((HttpSolrClient) clients.get(0)));
+    SolrClient shard2 = createNewSolrClient("compositeid_collection_with_routerfield_shard2_replica1",
+        getBaseUrl((HttpSolrClient) clients.get(0)));
+
+    SolrInputDocument doc = new SolrInputDocument();
+    int docCounts1 = 0, docCounts2 = 0;
+
+    // Add three documents to shard1
+    doc.clear();
+    doc.addField("id", "1");
+    doc.addField("title", "s1 one");
+    doc.addField("routefield_s", "europe");
+    shard1.add(doc);
+    shard1.commit();
+
+    doc.clear();
+    doc.addField("id", "2");
+    doc.addField("title", "s1 two");
+    doc.addField("routefield_s", "europe");
+    shard1.add(doc);
+    shard1.commit();
+
+    doc.clear();
+    doc.addField("id", "3");
+    doc.addField("title", "s1 three");
+    doc.addField("routefield_s", "europe");
+    shard1.add(doc);
+    shard1.commit();
+
+    docCounts1 = 3; // Three documents in shard1
+
+    // Add two documents to shard2
+    doc.clear();
+    doc.addField("id", "4");
+    doc.addField("title", "s2 four");
+    doc.addField("routefield_s", "africa");
+    shard2.add(doc);
+    //shard2.commit();
+
+    doc.clear();
+    doc.addField("id", "5");
+    doc.addField("title", "s2 five");
+    doc.addField("routefield_s", "africa");
+    shard2.add(doc);
+    shard2.commit();
+
+    docCounts2 = 2; // Two documents in shard2
+
+    // Verify the documents were added to correct shards
+    ModifiableSolrParams query = new ModifiableSolrParams();
+    query.set("q", "*:*");
+    QueryResponse respAll = shard1.query(query);
+    assertEquals(docCounts1 + docCounts2, respAll.getResults().getNumFound());
+
+    query.set("shards", "shard1");
+    QueryResponse resp1 = shard1.query(query);
+    assertEquals(docCounts1, resp1.getResults().getNumFound());
+
+    query.set("shards", "shard2");
+    QueryResponse resp2 = shard2.query(query);
+    assertEquals(docCounts2, resp2.getResults().getNumFound());
+
+    // Delete a document in shard2 with update to shard1, with _route_ param
+    // Should delete.
+    UpdateRequest deleteRequest = new UpdateRequest();
+    deleteRequest.deleteById("4", "africa");
+    deleteRequest.setCommitWithin(1);
+    shard1.request(deleteRequest);
+    shard1.commit();
+
+    query.set("shards", "shard2");
+    resp2 = shard2.query(query);
+    --docCounts2;
+    assertEquals(docCounts2, resp2.getResults().getNumFound());
+
+    // Multiple deleteById commands in a single request
+    deleteRequest.clear();
+    deleteRequest.deleteById("2", "europe");
+    deleteRequest.deleteById("3", "europe");
+    deleteRequest.setCommitWithin(1);
+    query.set("shards", "shard1");
+    shard1.request(deleteRequest);
+    shard1.commit();
+    Thread.sleep(1000);
+    resp1 = shard1.query(query);
+    --docCounts1;
+    --docCounts1;
+    assertEquals(docCounts1, resp1.getResults().getNumFound());
+
+    // Test commitWithin, update to shard2, document deleted in shard1
+    deleteRequest.clear();
+    deleteRequest.deleteById("1", "europe");
+    deleteRequest.setCommitWithin(1);
+    shard2.request(deleteRequest);
+    query.set("shards", "shard1");
+    resp1 = shard1.query(query);
+    --docCounts1;
+    assertEquals(docCounts1, resp1.getResults().getNumFound());
   }
 
   private long testThatCantForwardToLeaderFails(long docId) throws Exception {

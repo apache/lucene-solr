@@ -371,6 +371,8 @@ public class JsonLoader extends ContentStreamLoader {
               cmd.commitWithin = (int)parser.getLong();
             } else if( "_version_".equals(key) ) {
               cmd.setVersion(parser.getLong());
+            } else if ("_route_".equals(key)) {
+              cmd.setRoute(parser.getString());
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
             }

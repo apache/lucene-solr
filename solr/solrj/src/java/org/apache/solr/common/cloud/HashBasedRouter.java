@@ -28,9 +28,14 @@ import java.util.Collections;
 public abstract class HashBasedRouter extends DocRouter {
 
   @Override
-  public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
-    if (id == null) id = getId(sdoc, params);
-    int hash = sliceHash(id, sdoc, params,collection);
+  public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
+    int hash;
+    if (route != null) {
+      hash = sliceHash(route, sdoc, params, collection);
+    } else {
+      if (id == null) id = getId(sdoc, params);
+      hash = sliceHash(id, sdoc, params, collection);
+    }
     return hashToSlice(hash, collection);
   }
 
@@ -70,7 +75,7 @@ public abstract class HashBasedRouter extends DocRouter {
     }
 
     // use the shardKey as an id for plain hashing
-    Slice slice = getTargetSlice(shardKey, null, params, collection);
+    Slice slice = getTargetSlice(shardKey, null, null, params, collection);
     return slice == null ? Collections.<Slice>emptyList() : Collections.singletonList(slice);
   }
 }
