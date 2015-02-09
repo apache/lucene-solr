@@ -122,6 +122,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapPuller {
+  private static final int _100K = 100000;
+
   public static final String INDEX_PROPERTIES = "index.properties";
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
@@ -821,9 +823,9 @@ public class SnapPuller {
   private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
       long size, CompareResult compareResult) {
     // without checksums to compare, we always download .si, .liv, segments_N,
-    // and any file under 100kb
+    // and any very small files
     return !compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
-    || filename.startsWith("segments_") || size < 100000);
+    || filename.startsWith("segments_") || size < _100K);
   }
 
   static class CompareResult {
@@ -855,9 +857,7 @@ public class SnapPuller {
             return compareResult;
           } else {
             LOG.warn(
-                "File {} did not match. "  + "expected length is {} and actual length is {}",
-                filename, backupIndexFileChecksum, indexFileChecksum,
-                backupIndexFileLen, indexFileLen);
+                "File {} did not match. expected length is {} and actual length is {}", filename, backupIndexFileLen, indexFileLen);
             compareResult.equal = false;
             return compareResult;
           }
