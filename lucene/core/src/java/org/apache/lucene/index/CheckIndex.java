@@ -449,6 +449,7 @@ public class CheckIndex implements Closeable {
    *  time to run. */
   public Status checkIndex(List<String> onlySegments) throws IOException {
     ensureOpen();
+    long startNS = System.nanoTime();
     NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     SegmentInfos sis = null;
     Status result = new Status();
@@ -626,17 +627,20 @@ public class CheckIndex implements Closeable {
           segInfoStat.hasDeletions = true;
           segInfoStat.deletionsGen = info.getDelGen();
         }
+        
+        long startOpenReaderNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
         reader = new SegmentReader(info, IOContext.DEFAULT);
-        msg(infoStream, "OK");
+        msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;
         
+        long startIntegrityNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: check integrity.....");
         reader.checkIntegrity();
-        msg(infoStream, "OK");
+        msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startIntegrityNS)));
 
         if (reader.maxDoc() != info.info.getDocCount()) {
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
@@ -744,6 +748,8 @@ public class CheckIndex implements Closeable {
       msg(infoStream, "No problems were detected with this index.\n");
     }
 
+    msg(infoStream, String.format(Locale.ROOT, "Took %.3f sec total.", nsToSec(System.nanoTime()-startNS)));
+
     return result;
   }
   
@@ -752,6 +758,7 @@ public class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.LiveDocStatus testLiveDocs(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.LiveDocStatus status = new Status.LiveDocStatus();
     
     try {
@@ -775,7 +782,7 @@ public class CheckIndex implements Closeable {
         }
         
         status.numDeleted = reader.numDeletedDocs();
-        msg(infoStream, "OK [" + (status.numDeleted) + " deleted docs]");
+        msg(infoStream, String.format(Locale.ROOT, "OK [%d deleted docs] [took %.3f sec]", status.numDeleted, nsToSec(System.nanoTime()-startNS)));
       } else {
         Bits liveDocs = reader.getLiveDocs();
         if (liveDocs != null) {
@@ -786,7 +793,7 @@ public class CheckIndex implements Closeable {
             }
           }
         }
-        msg(infoStream, "OK");
+        msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", (nsToSec(System.nanoTime()-startNS))));
       }
       
     } catch (Throwable e) {
@@ -808,6 +815,7 @@ public class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.FieldInfoStatus testFieldInfos(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.FieldInfoStatus status = new Status.FieldInfoStatus();
     
     try {
@@ -819,7 +827,7 @@ public class CheckIndex implements Closeable {
       for (FieldInfo f : fieldInfos) {
         f.checkConsistency();
       }
-      msg(infoStream, "OK [" + fieldInfos.size() + " fields]");
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields] [took %.3f sec]", fieldInfos.size(), nsToSec(System.nanoTime()-startNS)));
       status.totFields = fieldInfos.size();
     } catch (Throwable e) {
       if (failFast) {
@@ -840,6 +848,7 @@ public class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.FieldNormStatus testFieldNorms(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
     try {
@@ -858,7 +867,7 @@ public class CheckIndex implements Closeable {
         }
       }
 
-      msg(infoStream, "OK [" + status.totFields + " fields]");
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields] [took %.3f sec]", status.totFields, nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
@@ -879,6 +888,12 @@ public class CheckIndex implements Closeable {
    */
   private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose) throws IOException {
     // TODO: we should probably return our own stats thing...?!
+    long startNS;
+    if (doPrint) {
+      startNS = System.nanoTime();
+    } else {
+      startNS = 0;
+    }
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
     int computedFieldCount = 0;
@@ -921,27 +936,33 @@ public class CheckIndex implements Closeable {
       final boolean hasPayloads = terms.hasPayloads();
       final boolean hasOffsets = terms.hasOffsets();
       
-      BytesRef bb = terms.getMin();
-      BytesRef minTerm;
-      if (bb != null) {
-        assert bb.isValid();
-        minTerm = BytesRef.deepCopyOf(bb);
-      } else {
-        minTerm = null;
-      }
-
       BytesRef maxTerm;
-      bb = terms.getMax();
-      if (bb != null) {
-        assert bb.isValid();
-        maxTerm = BytesRef.deepCopyOf(bb);
-        if (minTerm == null) {
-          throw new RuntimeException("field \"" + field + "\" has null minTerm but non-null maxTerm");
-        }
-      } else {
+      BytesRef minTerm;
+      if (isVectors) {
+        // Term vectors impls can be very slow for getMax
         maxTerm = null;
-        if (minTerm != null) {
-          throw new RuntimeException("field \"" + field + "\" has non-null minTerm but null maxTerm");
+        minTerm = null;
+      } else {
+        BytesRef bb = terms.getMin();
+        if (bb != null) {
+          assert bb.isValid();
+          minTerm = BytesRef.deepCopyOf(bb);
+        } else {
+          minTerm = null;
+        }
+
+        bb = terms.getMax();
+        if (bb != null) {
+          assert bb.isValid();
+          maxTerm = BytesRef.deepCopyOf(bb);
+          if (minTerm == null) {
+            throw new RuntimeException("field \"" + field + "\" has null minTerm but non-null maxTerm");
+          }
+        } else {
+          maxTerm = null;
+          if (minTerm != null) {
+            throw new RuntimeException("field \"" + field + "\" has non-null minTerm but null maxTerm");
+          }
         }
       }
 
@@ -976,7 +997,7 @@ public class CheckIndex implements Closeable {
       }
 
       final TermsEnum termsEnum = terms.iterator(null);
-      
+
       boolean hasOrd = true;
       final long termCountStart = status.delTermCount + status.termCount;
       
@@ -1006,19 +1027,21 @@ public class CheckIndex implements Closeable {
           }
           lastTerm.copyBytes(term);
         }
+
+        if (isVectors == false) {
+          if (minTerm == null) {
+            // We checked this above:
+            assert maxTerm == null;
+            throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
+          }
         
-        if (minTerm == null) {
-          // We checked this above:
-          assert maxTerm == null;
-          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
-        }
+          if (term.compareTo(minTerm) < 0) {
+            throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
+          }
         
-        if (term.compareTo(minTerm) < 0) {
-          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
-        }
-        
-        if (term.compareTo(maxTerm) > 0) {
-          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", maxTerm=" + maxTerm);
+          if (term.compareTo(maxTerm) > 0) {
+            throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", maxTerm=" + maxTerm);
+          }
         }
         
         final int docFreq = termsEnum.docFreq();
@@ -1244,6 +1267,11 @@ public class CheckIndex implements Closeable {
                 throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
               }
             }
+
+            if (isVectors) {
+              // Only 1 doc in the postings for term vectors, so we only test 1 advance:
+              break;
+            }
           }
         } else {
           for(int idx=0;idx<7;idx++) {
@@ -1263,6 +1291,10 @@ public class CheckIndex implements Closeable {
               if (nextDocID <= docID) {
                 throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
               }
+            }
+            if (isVectors) {
+              // Only 1 doc in the postings for term vectors, so we only test 1 advance:
+              break;
             }
           }
         }
@@ -1409,7 +1441,8 @@ public class CheckIndex implements Closeable {
     }
 
     if (doPrint) {
-      msg(infoStream, "OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d terms; %d terms/docs pairs; %d tokens] [took %.3f sec]",
+                                    status.termCount, status.totFreq, status.totPos, nsToSec(System.nanoTime()-startNS)));
     }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
@@ -1477,6 +1510,7 @@ public class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.StoredFieldStatus testStoredFields(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
     try {
@@ -1501,8 +1535,10 @@ public class CheckIndex implements Closeable {
         throw new RuntimeException("docCount=" + status.docCount + " but saw " + status.docCount + " undeleted docs");
       }
 
-      msg(infoStream, "OK [" + status.totFields + " total field count; avg " + 
-          NumberFormat.getInstance(Locale.ROOT).format((((float) status.totFields)/status.docCount)) + " fields per doc]");      
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d total field count; avg %.1f fields per doc] [took %.3f sec]",
+                                    status.totFields,
+                                    (((float) status.totFields)/status.docCount),
+                                    nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
@@ -1524,6 +1560,7 @@ public class CheckIndex implements Closeable {
   public static Status.DocValuesStatus testDocValues(LeafReader reader,
                                                      PrintStream infoStream,
                                                      boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
@@ -1544,12 +1581,15 @@ public class CheckIndex implements Closeable {
         }
       }
 
-      msg(infoStream, "OK [" + status.totalValueFields + " docvalues fields; "
-                             + status.totalBinaryFields + " BINARY; " 
-                             + status.totalNumericFields + " NUMERIC; "
-                             + status.totalSortedFields + " SORTED; "
-                             + status.totalSortedNumericFields + " SORTED_NUMERIC; "
-                             + status.totalSortedSetFields + " SORTED_SET]");
+      msg(infoStream, String.format(Locale.ROOT,
+                                    "OK [%d docvalues fields; %d BINARY; %d NUMERIC; %d SORTED; %d SORTED_NUMERIC; %d SORTED_SET] [took %.3f sec]",
+                                    status.totalValueFields,
+                                    status.totalBinaryFields,
+                                    status.totalNumericFields,
+                                    status.totalSortedFields,
+                                    status.totalSortedNumericFields,
+                                    status.totalSortedSetFields,
+                                    nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
@@ -1798,6 +1838,7 @@ public class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.TermVectorStatus testTermVectors(LeafReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
+    long startNS = System.nanoTime();
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
     final Bits onlyDocIsDeleted = new FixedBitSet(1);
@@ -1840,8 +1881,11 @@ public class CheckIndex implements Closeable {
           // First run with no deletions:
           checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
 
-          // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
+          if (j == 0) {
+            // Also test with the 1 doc deleted; we only do this for first doc because this really is just looking for a [slightly] buggy
+            // TermVectors impl that fails to respect the incoming live docs:
+            checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
+          }
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -2006,8 +2050,8 @@ public class CheckIndex implements Closeable {
         }
       }
       float vectorAvg = status.docCount == 0 ? 0 : status.totVectors / (float)status.docCount;
-      msg(infoStream, "OK [" + status.totVectors + " total vector count; avg " + 
-          NumberFormat.getInstance(Locale.ROOT).format(vectorAvg) + " term/freq vector fields per doc]");
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d total term vector count; avg %.1f term/freq vector fields per doc] [took %.3f sec]",
+                                    status.totVectors, vectorAvg, nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
@@ -2221,5 +2265,9 @@ public class CheckIndex implements Closeable {
         return 1;
       }
     }
+  }
+
+  private static double nsToSec(long ns) {
+    return ns/1000000000.0;
   }
 }
