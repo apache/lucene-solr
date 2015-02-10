@@ -17,15 +17,41 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.text.ParseException;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 import org.apache.solr.common.SolrException;
 
 /** Utility methods pertaining to spatial. */
 public class SpatialUtils {
 
   private SpatialUtils() {}
+
+  /**
+   * Parses a 'geom' parameter (might also be used to parse shapes for indexing). {@code geomStr} can either be WKT or
+   * a rectangle-range syntax (see {@link #parseRectangle(String, com.spatial4j.core.context.SpatialContext)}.
+   */
+  public static Shape parseGeomSolrException(String geomStr, SpatialContext ctx) {
+    if (geomStr.length() == 0) {
+      throw new IllegalArgumentException("0-length geometry string");
+    }
+    char c = geomStr.charAt(0);
+    if (c == '[' || c == '{') {
+      return parseRectangeSolrException(geomStr, ctx);
+    }
+    //TODO parse a raw point?
+    try {
+      return ctx.readShapeFromWkt(geomStr);
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expecting WKT or '[minPoint TO maxPoint]': " + e, e);
+    }
+
+  }
 
   /** Parses either "lat, lon" (spaces optional on either comma side) or "x y" style formats. Spaces can be basically
    * anywhere.  And not any whitespace, just the space char.
@@ -37,8 +63,6 @@ public class SpatialUtils {
    */
   public static Point parsePoint(String str, SpatialContext ctx) throws InvalidShapeException {
     //note we don't do generic whitespace, just a literal space char detection
-    //TODO: decide on if we should pick one format decided by ctx.isGeo()
-    //          Perhaps 5x use isGeo; 4x use either?
     try {
       double x, y;
       str = str.trim();//TODO use findIndexNotSpace instead?
@@ -89,4 +113,53 @@ public class SpatialUtils {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
     }
   }
+
+  /**
+   * Parses {@code str} in the format of '[minPoint TO maxPoint]' where {@code minPoint} is the lower left corner
+   * and maxPoint is the upper-right corner of the bounding box.  Both corners may optionally be wrapped with a quote
+   * and then it's parsed via {@link #parsePoint(String, com.spatial4j.core.context.SpatialContext)}.
+   * @param str Non-null; may *not* have leading or trailing spaces
+   * @param ctx Non-null
+   * @return the Rectangle
+   * @throws InvalidShapeException If for any reason there was a problem parsing the string or creating the rectangle.
+   */
+  public static Rectangle parseRectangle(String str, SpatialContext ctx) throws InvalidShapeException {
+    //note we don't do generic whitespace, just a literal space char detection
+    try {
+      int toIdx = str.indexOf(" TO ");
+      if (toIdx == -1 || str.charAt(0) != '[' || str.charAt(str.length() - 1) != ']') {
+        throw new InvalidShapeException("expecting '[bottomLeft TO topRight]'");
+      }
+      String leftPart = unwrapQuotes(str.substring(1, toIdx).trim());
+      String rightPart = unwrapQuotes(str.substring(toIdx + " TO ".length(), str.length() - 1).trim());
+      return ctx.makeRectangle(parsePoint(leftPart, ctx), parsePoint(rightPart, ctx));
+    } catch (InvalidShapeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new InvalidShapeException(e.toString(), e);
+    }
+  }
+
+  /**
+   * Calls {@link #parseRectangle(String, com.spatial4j.core.context.SpatialContext)} and wraps the exception with
+   * {@link org.apache.solr.common.SolrException} with a helpful message.
+   */
+  public static Rectangle parseRectangeSolrException(String externalVal, SpatialContext ctx) throws SolrException {
+    try {
+      return parseRectangle(externalVal, ctx);
+    } catch (InvalidShapeException e) {
+      String message = e.getMessage();
+      if (!message.contains(externalVal))
+        message = "Can't parse rectangle '" + externalVal + "' because: " + message;
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, e);
+    }
+  }
+
+  private static String unwrapQuotes(String str) {
+    if (str.length() >= 2 && str.charAt(0) == '\"' && str.charAt(str.length()-1) == '\"') {
+      return str.substring(1, str.length()-1);
+    }
+    return str;
+  }
+
 }

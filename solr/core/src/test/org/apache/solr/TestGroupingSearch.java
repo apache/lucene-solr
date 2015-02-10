@@ -17,22 +17,6 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.GroupParams;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.ResultContext;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -46,11 +30,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
+
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   public static final String FOO_STRING_FIELD = "foo_s1";
   public static final String SMALL_STRING_FIELD = "small_s1";
   public static final String SMALL_INT_FIELD = "small_i";
+  static final String EMPTY_FACETS = "'facet_dates':{},'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -317,7 +318,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]}," + EMPTY_FACETS + "}"
     );
 
     // Facet counts based on groups
@@ -326,7 +327,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
     // Facet counts based on groups and with group.func. This should trigger FunctionAllGroupHeadsCollector
@@ -335,7 +336,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'strdist(1,value1_s1,edit)':{'matches':5,'groups':[{'groupValue':1.0,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
     // Facet counts based on groups without sort on an int field.
@@ -344,7 +345,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':5,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
     // Multi select facets AND group.truncate=true
@@ -353,7 +354,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
     // Multi select facets AND group.truncate=false
@@ -362,7 +363,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]}," + EMPTY_FACETS + "}"
     );
 
     // Multi select facets AND group.truncate=true
@@ -371,7 +372,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'sub(value4_i,1)':{'matches':2,'groups':[{'groupValue':1.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
-        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
   }
 
@@ -394,7 +395,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(
         req,
         "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
-        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{},'facet_dates':{},'facet_ranges':{},'facet_intervals':{}}"
+        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{}," + EMPTY_FACETS + "}"
     );
   }
 
