@@ -49,6 +49,19 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   "  </document>" +
   "</dataConfig>";
 
+  private String skipOnErrConf =
+      "<dataConfig>" +
+          "  <dataSource type=\"BinFileDataSource\"/>" +
+          "  <document>" +
+          "    <entity name=\"Tika\" onError=\"skip\"  processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/bad.doc").getAbsolutePath() + "\" >" +
+          "<field column=\"content\" name=\"text\"/>" +
+          " </entity>" +
+          " <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
+          "      <field column=\"text\"/>" +
+          "</entity>" +
+          "  </document>" +
+          "</dataConfig>";
+
   private String[] tests = {
       "//*[@numFound='1']"
       ,"//str[@name='author'][.='Grant Ingersoll']"
@@ -83,6 +96,12 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   public void testIndexingWithTikaEntityProcessor() throws Exception {
     runFullImport(conf);
     assertQ(req("*:*"), tests );
+  }
+
+  @Test
+  public void testSkip() throws Exception {
+    runFullImport(skipOnErrConf);
+    assertQ(req("*:*"), "//*[@numFound='1']");
   }
 
   @Test
