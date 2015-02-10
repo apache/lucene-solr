@@ -140,6 +140,10 @@ public class TikaEntityProcessor extends EntityProcessorBase {
         }
         tikaParser.parse(is, contentHandler, metadata , context);
     } catch (Exception e) {
+      if(SKIP.equals(onError)) {
+        throw new DataImportHandlerException(DataImportHandlerException.SKIP_ROW,
+            "Document skipped :" + e.getMessage());
+      }
       wrapAndThrow(SEVERE, e, "Unable to read content");
     }
     IOUtils.closeQuietly(is);
