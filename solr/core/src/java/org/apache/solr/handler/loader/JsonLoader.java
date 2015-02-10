@@ -164,7 +164,7 @@ public class JsonLoader extends ContentStreamLoader {
               processor.processRollback( parseRollback() );
             }
             else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: "+v+" ["+parser.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command '"+v+"' at ["+parser.getPosition()+"]" );
             }
             break;
           }
@@ -175,8 +175,8 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.BIGNUMBER:
         case JSONParser.BOOLEAN:
         case JSONParser.NULL:
-          log.info( "can't have a value here! "
-              +JSONParser.getEventString(ev)+" "+parser.getPosition() );
+          log.info( "Can't have a value here. Unexpected "
+              +JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"]" );
 
         case JSONParser.OBJECT_START:
         case JSONParser.OBJECT_END:
@@ -184,7 +184,7 @@ public class JsonLoader extends ContentStreamLoader {
           break;
 
         default:
-          log.info("Noggit UNKNOWN_EVENT_ID:"+ev);
+          log.info("Noggit UNKNOWN_EVENT_ID: "+ev);
           break;
         }
         // read the next event
@@ -232,7 +232,7 @@ public class JsonLoader extends ContentStreamLoader {
             try {
               processor.processAdd(cmd);
             } catch (IOException e) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error inserting doc",e);
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error inserting document: ", e);
             }
           }
         }
@@ -374,7 +374,7 @@ public class JsonLoader extends ContentStreamLoader {
             } else if ("_route_".equals(key)) {
               cmd.setRoute(parser.getString());
             } else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '"+key+"' at ["+parser.getPosition()+"]" );
             }
           }
           else {
@@ -385,7 +385,7 @@ public class JsonLoader extends ContentStreamLoader {
         }
         else if( ev == JSONParser.OBJECT_END ) {
           if( cmd.getId() == null && cmd.getQuery() == null ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete ["+parser.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete at ["+parser.getPosition()+"]" );
           }
 
           processor.processDelete(cmd);
@@ -452,7 +452,8 @@ public class JsonLoader extends ContentStreamLoader {
             String key = parser.getString();
             if( "doc".equals( key ) ) {
               if( cmd.solrDoc != null ) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "multiple docs in same add command" );
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Multiple documents in same"
+                    + " add command at ["+parser.getPosition()+"]" );
               }
               ev = assertNextEvent( JSONParser.OBJECT_START );
               cmd.solrDoc = parseDoc( ev );
@@ -467,7 +468,7 @@ public class JsonLoader extends ContentStreamLoader {
               boost = Float.parseFloat( parser.getNumberChars().toString() );
             }
             else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '"+key+"' at ["+parser.getPosition()+"]" );
             }
           }
           else {
@@ -478,7 +479,7 @@ public class JsonLoader extends ContentStreamLoader {
         }
         else if( ev == JSONParser.OBJECT_END ) {
           if( cmd.solrDoc == null ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"missing solr document. "+parser.getPosition() );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing solr document at ["+parser.getPosition()+"]" );
           }
           cmd.solrDoc.setDocumentBoost( boost );
           return cmd;
@@ -563,7 +564,7 @@ public class JsonLoader extends ContentStreamLoader {
       if (ev == JSONParser.OBJECT_START) {
         parseExtendedFieldValue(sif, ev);
       } else {
-        Object val = parseNormalFieldValue(ev);
+        Object val = parseNormalFieldValue(ev, sif.getName());
         sif.setValue(val, 1.0f);
       }
     }
@@ -585,12 +586,13 @@ public class JsonLoader extends ContentStreamLoader {
               if( ev != JSONParser.NUMBER &&
                   ev != JSONParser.LONG &&
                   ev != JSONParser.BIGNUMBER ) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boost should have number! "+JSONParser.getEventString(ev) );
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Boost should have number. "
+                    + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+sif.getName() );
               }
 
               boost = (float)parser.getDouble();
             } else if ("value".equals(label)) {
-              normalFieldValue = parseNormalFieldValue(parser.nextEvent());
+              normalFieldValue = parseNormalFieldValue(parser.nextEvent(), sif.getName());
             } else {
               // If we encounter other unknown map keys, then use a map
               if (extendedInfo == null) {
@@ -598,7 +600,7 @@ public class JsonLoader extends ContentStreamLoader {
               }
               // for now, the only extended info will be field values
               // we could either store this as an Object or a SolrInputField
-              Object val = parseNormalFieldValue(parser.nextEvent());
+              Object val = parseNormalFieldValue(parser.nextEvent(), sif.getName());
               extendedInfo.put(label, val);
             }
             break;
@@ -615,24 +617,25 @@ public class JsonLoader extends ContentStreamLoader {
             return;
 
           default:
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON extended field value. Unexpected "+JSONParser.getEventString(ev) );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON extended field value. "
+                + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+sif.getName() );
         }
       }
     }
 
 
-    private Object parseNormalFieldValue(int ev) throws IOException {
+    private Object parseNormalFieldValue(int ev, String fieldName) throws IOException {
       if (ev == JSONParser.ARRAY_START) {
-        List<Object> val = parseArrayFieldValue(ev);
+        List<Object> val = parseArrayFieldValue(ev, fieldName);
         return val;
       } else {
-        Object val = parseSingleFieldValue(ev);
+        Object val = parseSingleFieldValue(ev, fieldName);
         return val;
       }
     }
 
 
-    private Object parseSingleFieldValue(int ev) throws IOException {
+    private Object parseSingleFieldValue(int ev, String fieldName) throws IOException {
       switch (ev) {
         case JSONParser.STRING:
           return parser.getString();
@@ -648,14 +651,15 @@ public class JsonLoader extends ContentStreamLoader {
           parser.getNull();
           return null;
         case JSONParser.ARRAY_START:
-          return parseArrayFieldValue(ev);
+          return parseArrayFieldValue(ev, fieldName);
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. Unexpected "+JSONParser.getEventString(ev) );
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. "
+              + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+fieldName );
       }
     }
 
 
-    private List<Object> parseArrayFieldValue(int ev) throws IOException {
+    private List<Object> parseArrayFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.ARRAY_START;
 
       ArrayList lst = new ArrayList(2);
@@ -664,7 +668,7 @@ public class JsonLoader extends ContentStreamLoader {
         if (ev == JSONParser.ARRAY_END) {
           return lst;
         }
-        Object val = parseSingleFieldValue(ev);
+        Object val = parseSingleFieldValue(ev, fieldName);
         lst.add(val);
       }
     }
