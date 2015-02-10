@@ -51,8 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO!
- *
+ * Computes facets -- aggregations with counts of terms or ranges over the whole search results.
  *
  * @since solr 1.3
  */
@@ -66,9 +65,9 @@ public class FacetComponent extends SearchComponent {
   private static final String PIVOT_REFINE_PREFIX = "{!"+PivotFacet.REFINE_PARAM+"=";
 
   /**
-   * incrememented counter used to track the values being refined in a given request.  
+   * Incremented counter used to track the values being refined in a given request.
    * This counter is used in conjunction with {@link PivotFacet#REFINE_PARAM} to identify
-   * which refinement values are associated with which pivots
+   * which refinement values are associated with which pivots.
    */
   int pivotRefinementCounter = 0;
 
@@ -214,6 +213,7 @@ public class FacetComponent extends SearchComponent {
           shardsRefineRequest.params.set(FacetParams.FACET, "true");
           shardsRefineRequest.params.remove(FacetParams.FACET_FIELD);
           shardsRefineRequest.params.remove(FacetParams.FACET_QUERY);
+          //TODO remove interval faceting, and ranges and heatmap too?
 
           for (int i = 0; i < distribFieldFacetRefinements.size();) {
             String facetCommand = distribFieldFacetRefinements.get(i++);
@@ -318,6 +318,8 @@ public class FacetComponent extends SearchComponent {
       modifyRequestForRangeFacets(sreq, fi);
       
       modifyRequestForPivotFacets(rb, sreq, fi.pivotFacets);
+
+      SpatialHeatmapFacets.distribModifyRequest(sreq, fi.heatmapFacets);
       
       sreq.params.remove(FacetParams.FACET_MINCOUNT);
       sreq.params.remove(FacetParams.FACET_OFFSET);
@@ -332,17 +334,11 @@ public class FacetComponent extends SearchComponent {
   // we must get all the range buckets back in order to have coherent lists at the end, see SOLR-6154
   private void modifyRequestForRangeFacets(ShardRequest sreq, FacetInfo fi) {
     // Collect all the range fields.
-    if (sreq.params.getParams(FacetParams.FACET_RANGE) == null) {
-      return;
-    }
-    List<String> rangeFields = new ArrayList<>();
-    for (String field : sreq.params.getParams(FacetParams.FACET_RANGE)) {
-      rangeFields.add(field);
-    }
-
-    for (String field : rangeFields) {
-      sreq.params.remove("f." + field + ".facet.mincount");
-      sreq.params.add("f." + field + ".facet.mincount", "0");
+    final String[] fields = sreq.params.getParams(FacetParams.FACET_RANGE);
+    if (fields != null) {
+      for (String field : fields) {
+        sreq.params.set("f." + field + ".facet.mincount", "0");
+      }
     }
   }
 
@@ -549,6 +545,9 @@ public class FacetComponent extends SearchComponent {
       // Distributed facet_pivots - this is just the per shard collection,
       // refinement reqs still needed (below) once we've considered every shard
       doDistribPivots(rb, shardNum, facet_counts);
+
+      // Distributed facet_heatmaps
+      SpatialHeatmapFacets.distribHandleResponse(fi.heatmapFacets, facet_counts);
 
     } // end for-each-response-in-shard-request...
     
@@ -1046,6 +1045,8 @@ public class FacetComponent extends SearchComponent {
     facet_counts.add("facet_dates", fi.dateFacets);
     facet_counts.add("facet_ranges", fi.rangeFacets);
     facet_counts.add("facet_intervals", fi.intervalFacets);
+    facet_counts.add(SpatialHeatmapFacets.RESPONSE_KEY,
+        SpatialHeatmapFacets.distribFinish(fi.heatmapFacets, rb));
 
     if (fi.pivotFacets != null && fi.pivotFacets.size() > 0) {
       facet_counts.add(PIVOT_KEY, createPivotFacetOutput(rb));
@@ -1112,6 +1113,7 @@ public class FacetComponent extends SearchComponent {
       = new SimpleOrderedMap<>();
     public SimpleOrderedMap<PivotFacet> pivotFacets
       = new SimpleOrderedMap<>();
+    public LinkedHashMap<String,SpatialHeatmapFacets.HeatmapFacet> heatmapFacets;
 
     void parse(SolrParams params, ResponseBuilder rb) {
       queryFacets = new LinkedHashMap<>();
@@ -1142,6 +1144,8 @@ public class FacetComponent extends SearchComponent {
           pivotFacets.add(pf.getKey(), pf);
         }
       }
+
+      heatmapFacets = SpatialHeatmapFacets.distribParse(params, rb);
     }
   }
   

@@ -72,6 +72,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.SpatialHeatmapFacets;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.DateRangeField;
@@ -259,7 +260,7 @@ public class SimpleFacets {
       facetResponse.add("facet_dates", getFacetDateCounts());
       facetResponse.add("facet_ranges", getFacetRangeCounts());
       facetResponse.add("facet_intervals", getFacetIntervalCounts());
-
+      facetResponse.add(SpatialHeatmapFacets.RESPONSE_KEY, getHeatmapCounts());
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (SyntaxError e) {
@@ -1519,5 +1520,22 @@ public class SimpleFacets {
     return res;
   }
 
+  private NamedList getHeatmapCounts() throws IOException, SyntaxError {
+    final NamedList<Object> resOuter = new SimpleOrderedMap<>();
+    String[] unparsedFields = rb.req.getParams().getParams(FacetParams.FACET_HEATMAP);
+    if (unparsedFields == null || unparsedFields.length == 0) {
+      return resOuter;
+    }
+    if (params.getBool(GroupParams.GROUP_FACET, false)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Heatmaps can't be used with " + GroupParams.GROUP_FACET);
+    }
+    for (String unparsedField : unparsedFields) {
+      parseParams(FacetParams.FACET_HEATMAP, unparsedField); // populates facetValue, rb, params, docs
+
+      resOuter.add(key, SpatialHeatmapFacets.getHeatmapForField(key, facetValue, rb, params, docs));
+    }
+    return resOuter;
+  }
 }
 

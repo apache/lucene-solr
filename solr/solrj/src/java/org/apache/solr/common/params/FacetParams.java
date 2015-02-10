@@ -17,10 +17,10 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.SolrException;
-
 import java.util.EnumSet;
 import java.util.Locale;
+
+import org.apache.solr.common.SolrException;
 
 /**
  * Facet parameters
@@ -281,6 +281,41 @@ public interface FacetParams {
    * Set of terms for a single interval to facet on.
    */
   public static final String FACET_INTERVAL_SET = FACET_INTERVAL + ".set";
+
+  /** A spatial RPT field to generate a 2D "heatmap" (grid of facet counts) on. Just like the other faceting types,
+   * this may include a 'key' or local-params to facet multiple times.  All parameters with this suffix can be
+   * overridden on a per-field basis. */
+  public static final String FACET_HEATMAP = "facet.heatmap";
+
+  /** The format of the heatmap: either png or ints2D (default). */
+  public static final String FACET_HEATMAP_FORMAT = FACET_HEATMAP + ".format";
+
+  /** The region the heatmap should minimally enclose.  It defaults to the world if not set.  The format can either be
+   * a minimum to maximum point range format: <pre>["-150 10" TO "-100 30"]</pre> (the first is bottom-left and second
+   * is bottom-right, both of which are parsed as points are parsed).  OR, any WKT can be provided and it's bounding
+   * box will be taken. */
+  public static final String FACET_HEATMAP_GEOM = FACET_HEATMAP + ".geom";
+
+  /** Specify the heatmap grid level explicitly, instead of deriving it via distErr or distErrPct. */
+  public static final String FACET_HEATMAP_LEVEL = FACET_HEATMAP + ".gridLevel";
+
+  /** Used to determine the heatmap grid level to compute, defaulting to 0.15.  It has the same interpretation of
+   * distErrPct when searching on RPT, but relative to the shape in 'bbox'.  It's a fraction (not a %) of the radius of
+   * the shape that grid squares must fit into without exceeding. &gt; 0 and &lt;= 0.5.
+   * Mutually exclusive with distErr &amp; gridLevel. */
+  public static final String FACET_HEATMAP_DIST_ERR_PCT = FACET_HEATMAP + ".distErrPct";
+
+  /** Used to determine the heatmap grid level to compute (optional). It has the same interpretation of maxDistErr or
+   * distErr with RPT.  It's an absolute distance (in units of what's specified on the field type) that a grid square
+   * must maximally fit into (width &amp; height).  It can be used to to more explicitly specify the maximum grid square
+   * size without knowledge of what particular grid levels translate to.  This can in turn be used with
+   * knowledge of the size of 'bbox' to get a target minimum number of grid cells.
+   * Mutually exclusive with distErrPct &amp; gridLevel. */
+  public static final String FACET_HEATMAP_DIST_ERR = FACET_HEATMAP + ".distErr";
+
+  /** The maximum number of cells (grid squares) the client is willing to handle. If this limit would be exceeded, we
+   * throw an error instead.  Defaults to 100k. */
+  public static final String FACET_HEATMAP_MAX_CELLS = FACET_HEATMAP + ".maxCells";
 
   /**
    * An enumeration of the legal values for {@link #FACET_RANGE_OTHER} and {@link #FACET_DATE_OTHER} ...

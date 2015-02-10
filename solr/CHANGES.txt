@@ -101,9 +101,12 @@ New Features
   for setting 'highlight' and 'allTermsRequired' in the suggester configuration.
   (Boon Low, Varun Thacker via Tomás Fernández Löbbe)
 
-* SOLR-7083:Support managing all named components in solrconfig such as
+* SOLR-7083: Support managing all named components in solrconfig such as
   requestHandler, queryParser, queryResponseWriter, valueSourceParser,
   transformer, queryConverter (Noble Paul)
+
+* SOLR-7005: Spatial 2D heatmap faceting on RPT fields via new facet.heatmap with PNG and
+  2D int array formats. (David Smiley)
 
 Bug Fixes
 ----------------------
