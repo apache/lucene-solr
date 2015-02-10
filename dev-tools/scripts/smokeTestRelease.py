@@ -114,30 +114,37 @@ def download(name, urlString, tmpDir, quiet=False):
       print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
   try:
-    fIn = urllib.request.urlopen(urlString)
-    fOut = open(fileName, 'wb')
-    success = False
-    try:
-      while True:
-        s = fIn.read(65536)
-        if s == b'':
-          break
-        fOut.write(s)
-      fOut.close()
-      fIn.close()
-      success = True
-    finally:
-      fIn.close()
-      fOut.close()
-      if not success:
-        os.remove(fileName)
-    if not quiet and fileName.find('.asc') == -1:
-      t = time.time()-startTime
-      sizeMB = os.path.getsize(fileName)/1024./1024.
-      print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
+    attemptDownload(urlString, fileName)
   except Exception as e:
-    raise RuntimeError('failed to download url "%s"' % urlString) from e
+    print('Retrying download of url %s after exception: %s' % (urlString, e))
+    try:
+      attemptDownload(urlString, fileName)
+    except Exception as e:
+      raise RuntimeError('failed to download url "%s"' % urlString) from e
+  if not quiet and fileName.find('.asc') == -1:
+    t = time.time()-startTime
+    sizeMB = os.path.getsize(fileName)/1024./1024.
+    print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
   
+def attemptDownload(urlString, fileName):
+  fIn = urllib.request.urlopen(urlString)
+  fOut = open(fileName, 'wb')
+  success = False
+  try:
+    while True:
+      s = fIn.read(65536)
+      if s == b'':
+        break
+      fOut.write(s)
+    fOut.close()
+    fIn.close()
+    success = True
+  finally:
+    fIn.close()
+    fOut.close()
+    if not success:
+      os.remove(fileName)
+
 def load(urlString):
   return urllib.request.urlopen(urlString).read().decode('utf-8')
 
