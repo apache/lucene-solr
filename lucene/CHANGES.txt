@@ -38,6 +38,9 @@ New Features
 
 * LUCENE-6191: New spatial 2D heatmap faceting for PrefixTreeStrategy. (David Smiley)
 
+* LUCENE-6227: Added BooleanClause.Occur.FILTER to filter documents without
+  participating in scoring (on the contrary to MUST). (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6190: Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to

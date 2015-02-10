@@ -17,12 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -33,9 +36,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -45,7 +50,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanQuery extends LuceneTestCase {
-  
+
   public void testEquality() throws Exception {
     BooleanQuery bq1 = new BooleanQuery();
     bq1.add(new TermQuery(new Term("field", "value1")), BooleanClause.Occur.SHOULD);
@@ -116,7 +121,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(subQuery, BooleanClause.Occur.MUST);
     score2 = s.search(q, 10).getMaxScore();
     assertEquals(score*(2/3F), score2, 1e-6);
- 
+
     // PhraseQuery w/ no terms added returns a null scorer
     PhraseQuery pq = new PhraseQuery();
     q.add(pq, BooleanClause.Occur.SHOULD);
@@ -134,7 +139,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     dmq.add(new TermQuery(new Term("field", "a")));
     dmq.add(pq);
     assertEquals(1, s.search(dmq, 10).totalHits);
-    
+
     r.close();
     w.close();
     dir.close();
@@ -148,7 +153,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
     iw1.close();
-    
+
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
     Document doc2 = new Document();
@@ -162,11 +167,11 @@ public class TestBooleanQuery extends LuceneTestCase {
     WildcardQuery wildcardQuery = new WildcardQuery(new Term("field", "ba*"));
     wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query.add(wildcardQuery, BooleanClause.Occur.MUST_NOT);
-    
+
     MultiReader multireader = new MultiReader(reader1, reader2);
     IndexSearcher searcher = newSearcher(multireader);
     assertEquals(0, searcher.search(query, 10).totalHits);
-    
+
     final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
     searcher = new IndexSearcher(multireader, es);
     if (VERBOSE)
@@ -284,7 +289,7 @@ public class TestBooleanQuery extends LuceneTestCase {
         }
       }
     }
-    
+
     r.close();
     d.close();
   }
@@ -328,7 +333,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final float BOOST = 3.5F;
     final String FIELD = "content";
     final String VALUE = "foo";
-      
+
     Directory dir = newDirectory();
     (new RandomIndexWriter(random(), dir)).close();
     IndexReader r = DirectoryReader.open(dir);
@@ -347,7 +352,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       }
 
       BooleanQuery bq = new BooleanQuery();
-      bq.add(actual, random().nextBoolean() 
+      bq.add(actual, random().nextBoolean()
              ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
       actual = bq;
     }
@@ -378,6 +383,210 @@ public class TestBooleanQuery extends LuceneTestCase {
     bq.setMinimumNumberShouldMatch(4);
     assertEquals(0, s.search(bq, 1).totalHits);
     r.close();
+    w.close();
+    dir.close();
+  }
+
+  private static BitSet getMatches(IndexSearcher searcher, Query query) throws IOException {
+    BitSet set = new BitSet();
+    searcher.search(query, new SimpleCollector() {
+      int docBase = 0;
+      @Override
+      public boolean needsScores() {
+        return random().nextBoolean();
+      }
+      @Override
+      protected void doSetNextReader(LeafReaderContext context)
+          throws IOException {
+        super.doSetNextReader(context);
+        docBase = context.docBase;
+      }
+      @Override
+      public void collect(int doc) throws IOException {
+        set.set(docBase + doc);
+      }
+    });
+    return set;
+  }
+
+  public void testFILTERClauseBehavesLikeMUST() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c d", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    f.setStringValue("b d");
+    w.addDocument(doc);
+    f.setStringValue("d");
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    for (List<String> requiredTerms : Arrays.<List<String>>asList(
+        Arrays.asList("a", "d"),
+        Arrays.asList("a", "b", "d"),
+        Arrays.asList("d"),
+        Arrays.asList("e"),
+        Arrays.asList())) {
+      final BooleanQuery bq1 = new BooleanQuery();
+      final BooleanQuery bq2 = new BooleanQuery();
+      for (String term : requiredTerms) {
+        final Query q = new TermQuery(new Term("field", term));
+        bq1.add(q, Occur.MUST);
+        bq2.add(q, Occur.FILTER);
+      }
+
+      final BitSet matches1 = getMatches(searcher, bq1);
+      final BitSet matches2 = getMatches(searcher, bq2);
+      assertEquals(matches1, matches2);
+    }
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  private void assertSameScoresWithoutFilters(IndexSearcher searcher, BooleanQuery bq) throws IOException {
+    final BooleanQuery bq2 = new BooleanQuery();
+    for (BooleanClause c : bq.getClauses()) {
+      if (c.getOccur() != Occur.FILTER) {
+        bq2.add(c);
+      }
+    }
+    bq2.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
+    bq2.setBoost(bq.getBoost());
+
+    final AtomicBoolean matched = new AtomicBoolean();
+    searcher.search(bq, new SimpleCollector() {
+      int docBase;
+      Scorer scorer;
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context)
+          throws IOException {
+        super.doSetNextReader(context);
+        docBase = context.docBase;
+      }
+
+      @Override
+      public boolean needsScores() {
+        return true;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        final float actualScore = scorer.score();
+        final float expectedScore = searcher.explain(bq2, docBase + doc).getValue();
+        assertEquals(expectedScore, actualScore, 10e-5);
+        matched.set(true);
+      }
+    });
+    assertTrue(matched.get());
+  }
+
+  public void testFilterClauseDoesNotImpactScore() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c d", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    f.setStringValue("b d");
+    w.addDocument(doc);
+    f.setStringValue("a d");
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    BooleanQuery q = new BooleanQuery();
+    q.setBoost(random().nextFloat());
+    q.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
+
+    // With a single clause, we will rewrite to the underlying
+    // query. Make sure that it returns null scores
+    assertSameScoresWithoutFilters(searcher, q);
+
+    // Now with two clauses, we will get a conjunction scorer
+    // Make sure it returns null scores
+    q.add(new TermQuery(new Term("field", "b")), Occur.FILTER);
+    assertSameScoresWithoutFilters(searcher, q);
+
+    // Now with a scoring clause, we need to make sure that
+    // the boolean scores are the same as those from the term
+    // query
+    q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
+    assertSameScoresWithoutFilters(searcher, q);
+
+    // FILTER and empty SHOULD
+    q = new BooleanQuery();
+    q.setBoost(random().nextFloat());
+    q.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
+    q.add(new TermQuery(new Term("field", "e")), Occur.SHOULD);
+    assertSameScoresWithoutFilters(searcher, q);
+
+    // mix of FILTER and MUST
+    q = new BooleanQuery();
+    q.setBoost(random().nextFloat());
+    q.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
+    q.add(new TermQuery(new Term("field", "d")), Occur.MUST);
+    assertSameScoresWithoutFilters(searcher, q);
+
+    // FILTER + minShouldMatch
+    q = new BooleanQuery();
+    q.setBoost(random().nextFloat());
+    q.add(new TermQuery(new Term("field", "b")), Occur.FILTER);
+    q.add(new TermQuery(new Term("field", "a")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
+    q.setMinimumNumberShouldMatch(1);
+    assertSameScoresWithoutFilters(searcher, q);
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testSingleFilterClause() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    BooleanQuery query1 = new BooleanQuery();
+    query1.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
+
+    // Single clauses rewrite to a term query
+    final Query rewritten1 = query1.rewrite(reader);
+    assertTrue(rewritten1 instanceof TermQuery);
+    assertEquals(0f, rewritten1.getBoost(), 0f);
+
+    // When there are two clauses, we cannot rewrite, but if one of them creates
+    // a null scorer we will end up with a single filter scorer and will need to
+    // make sure to set score=0
+    BooleanQuery query2 = new BooleanQuery();
+    query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
+    query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
+    final Weight weight = searcher.createNormalizedWeight(query2, true);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer.getClass().getName(), scorer instanceof BooleanTopLevelScorers.BoostedScorer);
+    assertEquals(0, ((BooleanTopLevelScorers.BoostedScorer) scorer).boost, 0f);
+
+    reader.close();
     w.close();
     dir.close();
   }

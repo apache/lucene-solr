@@ -26,6 +26,9 @@ public class BooleanClause {
     /** Use this operator for clauses that <i>must</i> appear in the matching documents. */
     MUST     { @Override public String toString() { return "+"; } },
 
+    /** Like {@link #MUST} except that these clauses do not participate in scoring. */
+    FILTER   { @Override public String toString() { return "#"; } },
+
     /** Use this operator for clauses that <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with no <code>MUST</code> 
      * clauses one or more <code>SHOULD</code> clauses must match a document 
@@ -36,7 +39,8 @@ public class BooleanClause {
 
     /** Use this operator for clauses that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
-     * of a <code>MUST_NOT</code> clause. */
+     * of a <code>MUST_NOT</code> clause. These clauses do not contribute to the
+     * score of documents. */
     MUST_NOT { @Override public String toString() { return "-"; } };
 
   }
@@ -78,10 +82,12 @@ public class BooleanClause {
   }
 
   public boolean isRequired() {
-    return Occur.MUST == occur;
+    return occur == Occur.MUST || occur == Occur.FILTER;
   }
 
-
+  public boolean isScoring() {
+    return occur == Occur.MUST || occur == Occur.SHOULD;
+  }
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
@@ -96,7 +102,7 @@ public class BooleanClause {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return query.hashCode() ^ (Occur.MUST == occur?1:0) ^ (Occur.MUST_NOT == occur?2:0);
+    return 31 * query.hashCode() + occur.hashCode();
   }
 
 

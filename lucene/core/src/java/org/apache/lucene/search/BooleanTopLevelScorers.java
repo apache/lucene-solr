@@ -18,10 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.apache.lucene.search.Scorer.ChildScorer;
 
 /** Internal document-at-a-time scorers used to deal with stupid coord() computation */
 class BooleanTopLevelScorers {
@@ -32,7 +31,7 @@ class BooleanTopLevelScorers {
    * to factor in coord().
    */
   static class BoostedScorer extends FilterScorer {
-    private final float boost;
+    final float boost;
     
     BoostedScorer(Scorer in, float boost) {
       super(in);
@@ -62,7 +61,7 @@ class BooleanTopLevelScorers {
     private final Scorer opt;
     
     CoordinatingConjunctionScorer(Weight weight, float coords[], Scorer req, int reqCount, Scorer opt) {
-      super(weight, new Scorer[] { req, opt });
+      super(weight, Arrays.asList(req, opt), Arrays.asList(req, opt));
       this.coords = coords;
       this.req = req;
       this.reqCount = reqCount;
