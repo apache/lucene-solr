@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -31,18 +32,21 @@ class ConjunctionScorer extends Scorer {
   protected int lastDoc = -1;
   protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
+  private final Scorer[] scorers;
   private final float coord;
 
-  ConjunctionScorer(Weight weight, Scorer[] scorers) {
-    this(weight, scorers, 1f);
+  ConjunctionScorer(Weight weight, List<? extends DocIdSetIterator> required, List<Scorer> scorers) {
+    this(weight, required, scorers, 1f);
   }
 
-  ConjunctionScorer(Weight weight, Scorer[] scorers, float coord) {
+  /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
+  ConjunctionScorer(Weight weight, List<? extends DocIdSetIterator> required, List<Scorer> scorers, float coord) {
     super(weight);
+    assert required.containsAll(scorers);
     this.coord = coord;
-    this.docsAndFreqs = new DocsAndFreqs[scorers.length];
-    for (int i = 0; i < scorers.length; i++) {
-      docsAndFreqs[i] = new DocsAndFreqs(scorers[i]);
+    this.docsAndFreqs = new DocsAndFreqs[required.size()];
+    for (int i = 0; i < required.size(); ++i) {
+      docsAndFreqs[i] = new DocsAndFreqs(required.get(i));
     }
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
@@ -54,6 +58,8 @@ class ConjunctionScorer extends Scorer {
     });
 
     lead = docsAndFreqs[0]; // least frequent DocsEnum leads the intersection
+
+    this.scorers = scorers.toArray(new Scorer[scorers.size()]);
   }
 
   private int doNext(int doc) throws IOException {
@@ -68,7 +74,7 @@ class ConjunctionScorer extends Scorer {
           // docsAndFreqs[i].doc may already be equal to doc if we "broke advanceHead"
           // on the previous iteration and the advance on the lead scorer exactly matched.
           if (docsAndFreqs[i].doc < doc) {
-            docsAndFreqs[i].doc = docsAndFreqs[i].scorer.advance(doc);
+            docsAndFreqs[i].doc = docsAndFreqs[i].iterator.advance(doc);
 
             if (docsAndFreqs[i].doc > doc) {
               // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
@@ -81,13 +87,13 @@ class ConjunctionScorer extends Scorer {
         return doc;
       }
       // advance head for next iteration
-      doc = lead.doc = lead.scorer.advance(doc);
+      doc = lead.doc = lead.iterator.advance(doc);
     }
   }
 
   @Override
   public int advance(int target) throws IOException {
-    lead.doc = lead.scorer.advance(target);
+    lead.doc = lead.iterator.advance(target);
     return lastDoc = doNext(lead.doc);
   }
 
@@ -98,7 +104,7 @@ class ConjunctionScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
-    lead.doc = lead.scorer.nextDoc();
+    lead.doc = lead.iterator.nextDoc();
     return lastDoc = doNext(lead.doc);
   }
 
@@ -106,8 +112,8 @@ class ConjunctionScorer extends Scorer {
   public float score() throws IOException {
     // TODO: sum into a double and cast to float if we ever send required clauses to BS1
     float sum = 0.0f;
-    for (DocsAndFreqs docs : docsAndFreqs) {
-      sum += docs.scorer.score();
+    for (Scorer scorer : scorers) {
+      sum += scorer.score();
     }
     return sum * coord;
   }
@@ -139,26 +145,26 @@ class ConjunctionScorer extends Scorer {
 
   @Override
   public long cost() {
-    return lead.scorer.cost();
+    return lead.iterator.cost();
   }
 
   @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>(docsAndFreqs.length);
-    for (DocsAndFreqs docs : docsAndFreqs) {
-      children.add(new ChildScorer(docs.scorer, "MUST"));
+    for (Scorer scorer : scorers) {
+      children.add(new ChildScorer(scorer, "MUST"));
     }
     return children;
   }
 
   static final class DocsAndFreqs {
     final long cost;
-    final Scorer scorer;
+    final DocIdSetIterator iterator;
     int doc = -1;
 
-    DocsAndFreqs(Scorer scorer) {
-      this.scorer = scorer;
-      this.cost = scorer.cost();
+    DocsAndFreqs(DocIdSetIterator iterator) {
+      this.iterator = iterator;
+      this.cost = iterator.cost();
     }
   }
 }

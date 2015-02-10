@@ -19,17 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
@@ -175,14 +171,22 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
         Query query = c.getQuery().rewrite(reader);    // rewrite first
 
-        if (getBoost() != 1.0f) {                 // incorporate boost
-          if (query == c.getQuery()) {                   // if rewrite was no-op
-            query = query.clone();         // then clone before boost
+        if (c.isScoring()) {
+          if (getBoost() != 1.0f) {                 // incorporate boost
+            if (query == c.getQuery()) {                   // if rewrite was no-op
+              query = query.clone();         // then clone before boost
+            }
+            // Since the BooleanQuery only has 1 clause, the BooleanQuery will be
+            // written out. Therefore the rewritten Query's boost must incorporate both
+            // the clause's boost, and the boost of the BooleanQuery itself
+            query.setBoost(getBoost() * query.getBoost());
           }
-          // Since the BooleanQuery only has 1 clause, the BooleanQuery will be
-          // written out. Therefore the rewritten Query's boost must incorporate both
-          // the clause's boost, and the boost of the BooleanQuery itself
-          query.setBoost(getBoost() * query.getBoost());
+        } else {
+          // our single clause is a filter
+          if (query.getBoost() != 0f) {
+            query = query.clone();
+            query.setBoost(0);
+          }
         }
 
         return query;
@@ -214,7 +218,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public void extractTerms(Set<Term> terms) {
     for (BooleanClause clause : clauses) {
-      if (clause.getOccur() != Occur.MUST_NOT) {
+      if (clause.isProhibited() == false) {
         clause.getQuery().extractTerms(terms);
       }
     }
@@ -223,7 +227,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override @SuppressWarnings("unchecked")
   public BooleanQuery clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();
-    clone.clauses = (ArrayList<BooleanClause>) this.clauses.clone();
+    clone.clauses = new ArrayList<>(clauses);
     return clone;
   }
 

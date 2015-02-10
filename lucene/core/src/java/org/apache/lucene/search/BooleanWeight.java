@@ -52,10 +52,9 @@ public class BooleanWeight extends Weight {
     weights = new ArrayList<>(query.clauses().size());
     for (int i = 0 ; i < query.clauses().size(); i++) {
       BooleanClause c = query.clauses().get(i);
-      final boolean queryNeedsScores = needsScores && c.getOccur() != Occur.MUST_NOT;
-      Weight w = c.getQuery().createWeight(searcher, queryNeedsScores);
+      Weight w = c.getQuery().createWeight(searcher, needsScores && c.isScoring());
       weights.add(w);
-      if (!c.isProhibited()) {
+      if (c.isScoring()) {
         maxCoord++;
       }
     }
@@ -67,8 +66,8 @@ public class BooleanWeight extends Weight {
     for (int i = 0 ; i < weights.size(); i++) {
       // call sumOfSquaredWeights for all clauses in case of side effects
       float s = weights.get(i).getValueForNormalization();         // sum sub weights
-      if (!query.clauses().get(i).isProhibited()) {
-        // only add to sum for non-prohibited clauses
+      if (query.clauses().get(i).isScoring()) {
+        // only add to sum for scoring clauses
         sum += s;
       }
     }
@@ -79,18 +78,26 @@ public class BooleanWeight extends Weight {
   }
 
   public float coord(int overlap, int maxOverlap) {
-    // LUCENE-4300: in most cases of maxOverlap=1, BQ rewrites itself away,
-    // so coord() is not applied. But when BQ cannot optimize itself away
-    // for a single clause (minNrShouldMatch, prohibited clauses, etc), it's
-    // important not to apply coord(1,1) for consistency, it might not be 1.0F
-    return maxOverlap == 1 ? 1F : similarity.coord(overlap, maxOverlap);
+    if (overlap == 0) {
+      // special case that there are only non-scoring clauses
+      return 0F;
+    } else if (maxOverlap == 1) {
+      // LUCENE-4300: in most cases of maxOverlap=1, BQ rewrites itself away,
+      // so coord() is not applied. But when BQ cannot optimize itself away
+      // for a single clause (minNrShouldMatch, prohibited clauses, etc), it's
+      // important not to apply coord(1,1) for consistency, it might not be 1.0F
+      return 1F;
+    } else {
+      // common case: use the similarity to compute the coord
+      return similarity.coord(overlap, maxOverlap);
+    }
   }
 
   @Override
   public void normalize(float norm, float topLevelBoost) {
     topLevelBoost *= query.getBoost();                  // incorporate boost
     for (Weight w : weights) {
-      // normalize all clauses, (even if prohibited in case of side affects)
+      // normalize all clauses, (even if non-scoring in case of side affects)
       w.normalize(norm, topLevelBoost);
     }
   }
@@ -118,11 +125,16 @@ public class BooleanWeight extends Weight {
       }
       Explanation e = w.explain(context, doc);
       if (e.isMatch()) {
-        if (!c.isProhibited()) {
+        if (c.isScoring()) {
           sumExpl.addDetail(e);
           sum += e.getValue();
           coord++;
-        } else {
+        } else if (c.isRequired()) {
+          Explanation r =
+              new Explanation(0.0f, "match on required clause (" + c.getQuery().toString() + ")");
+            r.addDetail(e);
+            sumExpl.addDetail(r);
+        } else if (c.isProhibited()) {
           Explanation r =
             new Explanation(0.0f, "match on prohibited clause (" + c.getQuery().toString() + ")");
           r.addDetail(e);
@@ -243,6 +255,8 @@ public class BooleanWeight extends Weight {
     int minShouldMatch = query.minNrShouldMatch;
 
     List<Scorer> required = new ArrayList<>();
+    // clauses that are required AND participate in scoring, subset of 'required'
+    List<Scorer> requiredScoring = new ArrayList<>();
     List<Scorer> prohibited = new ArrayList<>();
     List<Scorer> optional = new ArrayList<>();
     Iterator<BooleanClause> cIter = query.clauses().iterator();
@@ -255,6 +269,9 @@ public class BooleanWeight extends Weight {
         }
       } else if (c.isRequired()) {
         required.add(subScorer);
+        if (c.isScoring()) {
+          requiredScoring.add(subScorer);
+        }
       } else if (c.isProhibited()) {
         prohibited.add(subScorer);
       } else {
@@ -267,6 +284,7 @@ public class BooleanWeight extends Weight {
     if (optional.size() == minShouldMatch) {
       // any optional clauses are in fact required
       required.addAll(optional);
+      requiredScoring.addAll(optional);
       optional.clear();
       minShouldMatch = 0;
     }
@@ -280,7 +298,7 @@ public class BooleanWeight extends Weight {
       // no documents will be matched by the query
       return null;
     }
-    
+
     // we don't need scores, so if we have required clauses, drop optional clauses completely
     if (!needsScores && minShouldMatch == 0 && required.size() > 0) {
       optional.clear();
@@ -290,7 +308,7 @@ public class BooleanWeight extends Weight {
     
     // pure conjunction
     if (optional.isEmpty()) {
-      return excl(req(required, disableCoord), prohibited);
+      return excl(req(required, requiredScoring, disableCoord), prohibited);
     }
     
     // pure disjunction
@@ -304,45 +322,49 @@ public class BooleanWeight extends Weight {
     // optional side must match. otherwise it's required + optional, factoring the
     // number of optional terms into the coord calculation
     
-    Scorer req = excl(req(required, true), prohibited);
+    Scorer req = excl(req(required, requiredScoring, true), prohibited);
     Scorer opt = opt(optional, minShouldMatch, true);
 
     // TODO: clean this up: it's horrible
     if (disableCoord) {
       if (minShouldMatch > 0) {
-        return new ConjunctionScorer(this, new Scorer[] { req, opt }, 1F);
+        return new ConjunctionScorer(this, Arrays.asList(req, opt), Arrays.asList(req, opt), 1F);
       } else {
         return new ReqOptSumScorer(req, opt);          
       }
     } else if (optional.size() == 1) {
       if (minShouldMatch > 0) {
-        return new ConjunctionScorer(this, new Scorer[] { req, opt }, coord(required.size()+1, maxCoord));
+        return new ConjunctionScorer(this, Arrays.asList(req, opt), Arrays.asList(req, opt), coord(requiredScoring.size()+1, maxCoord));
       } else {
-        float coordReq = coord(required.size(), maxCoord);
-        float coordBoth = coord(required.size() + 1, maxCoord);
+        float coordReq = coord(requiredScoring.size(), maxCoord);
+        float coordBoth = coord(requiredScoring.size() + 1, maxCoord);
         return new BooleanTopLevelScorers.ReqSingleOptScorer(req, opt, coordReq, coordBoth);
       }
     } else {
       if (minShouldMatch > 0) {
-        return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords(), req, required.size(), opt);
+        return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords(), req, requiredScoring.size(), opt);
       } else {
-        return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, required.size(), coords()); 
+        return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, requiredScoring.size(), coords()); 
       }
     }
   }
-  
-  private Scorer req(List<Scorer> required, boolean disableCoord) {
+
+  /** Create a new scorer for the given required clauses. Note that
+   *  {@code requiredScoring} is a subset of {@code required} containing
+   *  required clauses that should participate in scoring. */
+  private Scorer req(List<Scorer> required, List<Scorer> requiredScoring, boolean disableCoord) {
     if (required.size() == 1) {
       Scorer req = required.get(0);
-      if (!disableCoord && maxCoord > 1) {
-        return new BooleanTopLevelScorers.BoostedScorer(req, coord(1, maxCoord));
-      } else {
+
+      if (needsScores == false ||
+          (requiredScoring.size() == 1 && (disableCoord || maxCoord == 1))) {
         return req;
+      } else {
+        return new BooleanTopLevelScorers.BoostedScorer(req, coord(requiredScoring.size(), maxCoord));
       }
     } else {
-      return new ConjunctionScorer(this, 
-                                   required.toArray(new Scorer[required.size()]),
-                                   disableCoord ? 1.0F : coord(required.size(), maxCoord));
+      return new ConjunctionScorer(this, required, requiredScoring,
+                                   disableCoord ? 1.0F : coord(requiredScoring.size(), maxCoord));
     }
   }
   
