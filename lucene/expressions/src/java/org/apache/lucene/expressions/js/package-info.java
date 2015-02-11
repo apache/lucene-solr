@@ -24,7 +24,7 @@
  * <li>Bitwise operators: <code>| &amp; ^ ~ &lt;&lt; &gt;&gt; &gt;&gt;&gt;</code></li>
  * <li>Boolean operators (including the ternary operator): <code>&amp;&amp; || ! ?:</code></li>
  * <li>Comparison operators: <code>&lt; &lt;= == &gt;= &gt;</code></li>
- * <li>Common mathematic functions: <code>abs ceil exp floor ln log2 log10 logn max min sqrt pow</code></li>
+ * <li>Common mathematic functions: <code>abs ceil exp floor ln log10 logn max min sqrt pow</code></li>
  * <li>Trigonometric library functions: <code>acosh acos asinh asin atanh atan atan2 cosh cos sinh sin tanh tan</code></li>
  * <li>Distance functions: <code>haversin</code></li>
  * <li>Miscellaneous functions: <code>min, max</code></li>
