@@ -22,6 +22,10 @@ import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -840,6 +844,95 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
     assertIntervalQueriesString("test_s_dv");
   }
+  
+  @Test
+  public void testChangeFieldKey() {
+    assertU(adoc("id", "1", "test_s_dv", "dog", "test_l_dv", "1"));
+    assertU(adoc("id", "2", "test_s_dv", "cat", "test_l_dv", "2"));
+    assertU(commit());
+
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "{!key=foo}test_s_dv",
+            "facet.interval", "{!key=bar}test_l_dv", "f.test_s_dv.facet.interval.set", "[cat,dog]",
+            "f.test_l_dv.facet.interval.set", "[0,1]",
+            "f.test_l_dv.facet.interval.set", "[2,*]"),
+        "//lst[@name='facet_intervals']/lst[@name='foo']/int[@name='[cat,dog]'][.=2]",
+        "//lst[@name='facet_intervals']/lst[@name='bar']/int[@name='[0,1]'][.=1]",
+        "//lst[@name='facet_intervals']/lst[@name='bar']/int[@name='[2,*]'][.=1]");
+  }
+  
+  
+  @Test
+  public void testFilterExclusion() {
+    assertU(adoc("id", "1", "test_s_dv", "dog"));
+    assertU(adoc("id", "2", "test_s_dv", "cat"));
+    assertU(adoc("id", "3", "test_s_dv", "bird"));
+    assertU(adoc("id", "4", "test_s_dv", "cat"));
+    assertU(adoc("id", "5", "test_s_dv", "turtle"));
+    assertU(adoc("id", "6", "test_s_dv", "dog"));
+    assertU(adoc("id", "7", "test_s_dv", "dog"));
+    assertU(adoc("id", "8", "test_s_dv", "dog"));
+    assertU(adoc("id", "9", "test_s_dv", "cat"));
+    assertU(adoc("id", "10"));
+    assertU(commit());
+
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", "rows", "0",
+            "f.test_s_dv.facet.interval.set", "[a,d]",
+            "f.test_s_dv.facet.interval.set", "[d,z]"),
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[a,d]'][.=4]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[d,z]'][.=5]");
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "test_s_dv", "rows", "0",
+            "f.test_s_dv.facet.interval.set", "[a,d]",
+            "f.test_s_dv.facet.interval.set", "[d,z]",
+            "fq", "test_s_dv:dog"),
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[a,d]'][.=0]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[d,z]'][.=4]");
+    
+    assertQ(req("q", "*:*", "facet", "true", "facet.interval", "{!ex=dogs}test_s_dv", "rows", "0",
+            "f.test_s_dv.facet.interval.set", "[a,d]",
+            "f.test_s_dv.facet.interval.set", "[d,z]",
+            "fq", "{!tag='dogs'}test_s_dv:dog"),
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[a,d]'][.=4]",
+        "//lst[@name='facet_intervals']/lst[@name='test_s_dv']/int[@name='[d,z]'][.=5]");
+  }
+  
+  @Test
+  public void testSolrJ() throws Exception  {
+    assertU(adoc("id", "1", "test_i_dv", "0"));
+    assertU(adoc("id", "2", "test_i_dv", "1"));
+    assertU(adoc("id", "3", "test_i_dv", "2"));
+    assertU(commit());
+    
+    // Don't close this client, it would shutdown the CoreContainer
+    @SuppressWarnings("resource")
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    
+    SolrQuery q = new SolrQuery();
+    q.setQuery("*:*");
+    q.addIntervalFacets("test_i_dv", new String[]{"[0,1]","[2,*]"});
+    QueryResponse response = client.query(q);
+    assertEquals(1, response.getIntervalFacets().size());
+    assertEquals("test_i_dv", response.getIntervalFacets().get(0).getField());
+    assertEquals(2, response.getIntervalFacets().get(0).getIntervals().size());
+    assertEquals("[0,1]", response.getIntervalFacets().get(0).getIntervals().get(0).getKey());
+    assertEquals("[2,*]", response.getIntervalFacets().get(0).getIntervals().get(1).getKey());
+    
+    q = new SolrQuery();
+    q.setQuery("*:*");
+    q.setFacet(true);
+    q.add("facet.interval", "{!key=foo}test_i_dv");
+    q.add("f.test_i_dv.facet.interval.set", "{!key=first}[0,1]");
+    q.add("f.test_i_dv.facet.interval.set", "{!key=second}[2,*]");
+    response = client.query(q);
+    assertEquals(1, response.getIntervalFacets().size());
+    assertEquals("foo", response.getIntervalFacets().get(0).getField());
+    assertEquals(2, response.getIntervalFacets().get(0).getIntervals().size());
+    assertEquals("first", response.getIntervalFacets().get(0).getIntervals().get(0).getKey());
+    assertEquals("second", response.getIntervalFacets().get(0).getIntervals().get(1).getKey());
+    
+  }
+  
+  
 
   private void assertIntervalQueriesNumeric(String field) {
     assertIntervalQuery(field, "[0,1]", "2");

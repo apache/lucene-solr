@@ -277,9 +277,14 @@ public class SolrQuery extends ModifiableSolrParams
   /**
    * Add Interval Faceting on a field. All intervals for the same field should be included
    * in the same call to this method.
-   * For syntax documentation see <a href="https://wiki.apache.org/solr/SimpleFacetParameters#Interval_Faceting">Solr wiki</a>
+   * For syntax documentation see <a href="https://wiki.apache.org/solr/SimpleFacetParameters#Interval_Faceting">Solr wiki</a>.
+   * <br>
+   * Key substitution, filter exclusions or other local params on the field are not supported when using this method, 
+   * if this is needed, use the lower level {@link #add} method.<br> 
+   * Key substitution IS supported on intervals when using this method.
    * 
-   * @param field the field to add facet intervals
+   * 
+   * @param field the field to add facet intervals. Must be an existing field and can't be null
    * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't 
    * be <code>null</code>
    * @return this
@@ -287,6 +292,9 @@ public class SolrQuery extends ModifiableSolrParams
   public SolrQuery addIntervalFacets(String field, String[] intervals) {
     if (intervals == null) {
       throw new IllegalArgumentException("Can't add null intervals");
+    }
+    if (field == null) {
+      throw new IllegalArgumentException("Field can't be null");
     }
     set(FacetParams.FACET, true);
     add(FacetParams.FACET_INTERVAL, field);

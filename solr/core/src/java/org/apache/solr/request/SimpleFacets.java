@@ -1500,8 +1500,8 @@ public class SimpleFacets {
 
     for (String field : fields) {
       parseParams(FacetParams.FACET_INTERVAL, field);
-      String[] intervalStrs = required.getFieldParams(field, FacetParams.FACET_INTERVAL_SET);
-      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(field);
+      String[] intervalStrs = required.getFieldParams(facetValue, FacetParams.FACET_INTERVAL_SET);
+      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(facetValue);
       if (!schemaField.hasDocValues()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting only on fields with doc values");
       }
@@ -1510,7 +1510,7 @@ public class SimpleFacets {
       }
       
       SimpleOrderedMap<Integer> fieldResults = new SimpleOrderedMap<Integer>();
-      res.add(field, fieldResults);
+      res.add(key, fieldResults);
       IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs, params);
       for (FacetInterval interval : intervalFacets) {
         fieldResults.add(interval.getKey(), interval.getCount());

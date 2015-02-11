@@ -108,6 +108,9 @@ New Features
 * SOLR-7005: Spatial 2D heatmap faceting on RPT fields via new facet.heatmap with PNG and
   2D int array formats. (David Smiley)
 
+* SOLR-7019: Support changing field key when using interval faceting. 
+  (Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
