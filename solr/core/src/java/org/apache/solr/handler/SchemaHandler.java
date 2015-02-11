@@ -41,11 +41,12 @@ import org.slf4j.LoggerFactory;
 
 public class SchemaHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(SchemaHandler.class);
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrConfigHandler.setWt(req, "json");
     String httpMethod = (String) req.getContext().get("httpMethod");
-    if("POST".equals(httpMethod)){
+    if ("POST".equals(httpMethod)) {
       if (req.getContentStreams() == null) {
         rsp.add("errors", "no stream");
         return;
@@ -54,7 +55,7 @@ public class SchemaHandler extends RequestHandlerBase {
       for (ContentStream stream : req.getContentStreams()) {
         try {
           List errs = new SchemaManager(req).performOperations(stream.getReader());
-          if(!errs.isEmpty()) rsp.add("errors", errs);
+          if (!errs.isEmpty()) rsp.add("errors", errs);
         } catch (IOException e) {
           rsp.add("errors", Collections.singletonList("Error reading input String " + e.getMessage()));
           rsp.setException(e);
@@ -71,20 +72,20 @@ public class SchemaHandler extends RequestHandlerBase {
   private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
       String path = (String) req.getContext().get("path");
-      switch (path){
+      switch (path) {
         case "/schema":
           rsp.add(IndexSchema.SCHEMA, req.getSchema().getNamedPropertyValues());
           break;
-        case "/schema/version" :
+        case "/schema/version":
           rsp.add(IndexSchema.VERSION, req.getSchema().getVersion());
           break;
-        case "/schema/uniquekey" :
+        case "/schema/uniquekey":
           rsp.add(IndexSchema.UNIQUE_KEY, req.getSchema().getUniqueKeyField().getName());
           break;
-        case "/schema/similarity" :
+        case "/schema/similarity":
           rsp.add(IndexSchema.SIMILARITY, req.getSchema().getSimilarityFactory().getNamedPropertyValues());
           break;
-        case "/schema/name" : {
+        case "/schema/name": {
           final String schemaName = req.getSchema().getSchemaName();
           if (null == schemaName) {
             String message = "Schema has no name";
@@ -93,7 +94,7 @@ public class SchemaHandler extends RequestHandlerBase {
           rsp.add(IndexSchema.NAME, schemaName);
           break;
         }
-        case "/schema/defaultsearchfield" : {
+        case "/schema/defaultsearchfield": {
           final String defaultSearchFieldName = req.getSchema().getDefaultSearchFieldName();
           if (null == defaultSearchFieldName) {
             final String message = "undefined " + IndexSchema.DEFAULT_SEARCH_FIELD;
@@ -102,27 +103,27 @@ public class SchemaHandler extends RequestHandlerBase {
           rsp.add(IndexSchema.DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
           break;
         }
-        case "/schema/solrqueryparser":{
+        case "/schema/solrqueryparser": {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
           props.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
           rsp.add(IndexSchema.SOLR_QUERY_PARSER, props);
           break;
         }
-        case "/schema/zkversion" : {
+        case "/schema/zkversion": {
           int refreshIfBelowVersion = -1;
           Object refreshParam = req.getParams().get("refreshIfBelowVersion");
           if (refreshParam != null)
-            refreshIfBelowVersion = (refreshParam instanceof Number) ? ((Number)refreshParam).intValue()
+            refreshIfBelowVersion = (refreshParam instanceof Number) ? ((Number) refreshParam).intValue()
                 : Integer.parseInt(refreshParam.toString());
           int zkVersion = -1;
           IndexSchema schema = req.getSchema();
           if (schema instanceof ManagedIndexSchema) {
-            ManagedIndexSchema managed = (ManagedIndexSchema)schema;
+            ManagedIndexSchema managed = (ManagedIndexSchema) schema;
             zkVersion = managed.getSchemaZkVersion();
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-              log.info("REFRESHING SCHEMA (refreshIfBelowVersion="+refreshIfBelowVersion+
-                  ", currentVersion="+zkVersion+") before returning version!");
-              ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader)req.getCore().getResourceLoader();
+              log.info("REFRESHING SCHEMA (refreshIfBelowVersion=" + refreshIfBelowVersion +
+                  ", currentVersion=" + zkVersion + ") before returning version!");
+              ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
               ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
               managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
               zkVersion = managed.getSchemaZkVersion();
@@ -131,12 +132,12 @@ public class SchemaHandler extends RequestHandlerBase {
           rsp.add("zkversion", zkVersion);
           break;
         }
-        case "/schema/solrqueryparser/defaultoperator" : {
+        case "/schema/solrqueryparser/defaultoperator": {
           rsp.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
           break;
         }
-        default : {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND,"No such path "+path);
+        default: {
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
         }
       }
 
@@ -145,20 +146,20 @@ public class SchemaHandler extends RequestHandlerBase {
     }
   }
 
-  private static Set<String> subPaths =  new HashSet<>(Arrays.asList(
+  private static Set<String> subPaths = new HashSet<>(Arrays.asList(
       "/version",
       "/uniquekey",
       "/name",
-      "/similarity" ,
+      "/similarity",
       "/defaultsearchfield",
       "/solrqueryparser",
       "/zkversion",
       "/solrqueryparser/defaultoperator"
-      ));
+  ));
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
-    if(subPaths.contains(subPath)) return this;
+    if (subPaths.contains(subPath)) return this;
     return null;
   }
 
