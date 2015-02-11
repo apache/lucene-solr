@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,14 +27,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
-public  class CommandOperation {
+public class CommandOperation {
   public final String name;
   private Object commandData;//this is most often a map
   private List<String> errors = new ArrayList<>();
@@ -43,16 +47,16 @@ public  class CommandOperation {
     this.name = operationName;
   }
 
-  public String getStr(String key, String def){
-    if(ROOT_OBJ.equals(key)){
+  public String getStr(String key, String def) {
+    if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();
-      return obj == def ? null: String.valueOf(obj);
+      return obj == def ? null : String.valueOf(obj);
     }
     String s = (String) getMapVal(key);
     return s == null ? def : s;
   }
 
-  public Map<String,Object> getDataMap(){
+  public Map<String, Object> getDataMap() {
     if (commandData instanceof Map) {
       return (Map) commandData;
     }
@@ -60,16 +64,16 @@ public  class CommandOperation {
     return Collections.EMPTY_MAP;
   }
 
-  private Object getRootPrimitive(){
+  private Object getRootPrimitive() {
     if (commandData instanceof Map) {
-      errors.add(MessageFormat.format("The value has to be a string for command : ''{0}'' ",name));
+      errors.add(MessageFormat.format("The value has to be a string for command : ''{0}'' ", name));
       return null;
     }
     return commandData;
 
   }
 
-  public Object getVal(String key){
+  public Object getVal(String key) {
     return getMapVal(key);
   }
 
@@ -78,43 +82,45 @@ public  class CommandOperation {
       Map metaData = (Map) commandData;
       return metaData.get(key);
     } else {
-      String msg= " value has to be an object for operation :"+name;
-      if(!errors.contains(msg)) errors.add(msg);
+      String msg = " value has to be an object for operation :" + name;
+      if (!errors.contains(msg)) errors.add(msg);
       return null;
     }
   }
 
-  public List<String> getStrs(String key){
+  public List<String> getStrs(String key) {
     List<String> val = getStrs(key, null);
-    if(val == null) {
+    if (val == null) {
       errors.add(MessageFormat.format(REQD, key));
     }
     return val;
 
   }
+
   static final String REQD = "''{0}'' is a required field";
 
 
-  /**Get collection of values for a key. If only one val is present a
+  /**
+   * Get collection of values for a key. If only one val is present a
    * single value collection is returned
    */
-  public List<String> getStrs(String key, List<String> def){
+  public List<String> getStrs(String key, List<String> def) {
     Object v = null;
-    if(ROOT_OBJ.equals(key)) {
+    if (ROOT_OBJ.equals(key)) {
       v = getRootPrimitive();
     } else {
       v = getMapVal(key);
     }
-    if(v == null){
+    if (v == null) {
       return def;
     } else {
       if (v instanceof List) {
-        ArrayList<String> l =  new ArrayList<>();
-        for (Object o : (List)v) {
+        ArrayList<String> l = new ArrayList<>();
+        for (Object o : (List) v) {
           l.add(String.valueOf(o));
         }
-        if(l.isEmpty()) return def;
-        return  l;
+        if (l.isEmpty()) return def;
+        return l;
       } else {
         return singletonList(String.valueOf(v));
       }
@@ -122,23 +128,24 @@ public  class CommandOperation {
 
   }
 
-  /**Get a required field. If missing it adds to the errors
+  /**
+   * Get a required field. If missing it adds to the errors
    */
-  public String getStr(String key){
-    if(ROOT_OBJ.equals(key)){
+  public String getStr(String key) {
+    if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();
-      if(obj == null) {
-        errors.add(MessageFormat.format(REQD,name));
+      if (obj == null) {
+        errors.add(MessageFormat.format(REQD, name));
       }
-      return obj == null ? null: String.valueOf(obj);
+      return obj == null ? null : String.valueOf(obj);
     }
 
-    String s = getStr(key,null);
-    if(s==null) errors.add(MessageFormat.format(REQD, key));
+    String s = getStr(key, null);
+    if (s == null) errors.add(MessageFormat.format(REQD, key));
     return s;
   }
 
-  private Map errorDetails(){
+  private Map errorDetails() {
     return makeMap(name, commandData, ERR_MSGS, errors);
   }
 
@@ -147,18 +154,19 @@ public  class CommandOperation {
   }
 
   public void addError(String s) {
-    if(errors.contains(s)) return;
+    if (errors.contains(s)) return;
     errors.add(s);
   }
 
-  /**Get all the values from the metadata for the command
+  /**
+   * Get all the values from the metadata for the command
    * without the specified keys
    */
   public Map getValuesExcluding(String... keys) {
     getMapVal(null);
-    if(hasError()) return emptyMap();//just to verify the type is Map
-    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String,?>) commandData);
-    if(keys == null) return cp;
+    if (hasError()) return emptyMap();//just to verify the type is Map
+    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, ?>) commandData);
+    if (keys == null) return cp;
     for (String key : keys) {
       cp.remove(key);
     }
@@ -169,12 +177,14 @@ public  class CommandOperation {
   public List<String> getErrors() {
     return errors;
   }
+
   public static final String ERR_MSGS = "errorMessages";
   public static final String ROOT_OBJ = "";
-  public static List<Map> captureErrors(List<CommandOperation> ops){
+
+  public static List<Map> captureErrors(List<CommandOperation> ops) {
     List<Map> errors = new ArrayList<>();
     for (CommandOperation op : ops) {
-      if(op.hasError()) {
+      if (op.hasError()) {
         errors.add(op.errorDetails());
       }
     }
@@ -182,21 +192,22 @@ public  class CommandOperation {
   }
 
 
-  /**Parse the command operations into command objects
+  /**
+   * Parse the command operations into command objects
    */
-  public static List<CommandOperation> parse(Reader rdr ) throws IOException {
+  public static List<CommandOperation> parse(Reader rdr) throws IOException {
     JSONParser parser = new JSONParser(rdr);
 
     ObjectBuilder ob = new ObjectBuilder(parser);
 
-    if(parser.lastEvent() != JSONParser.OBJECT_START) {
+    if (parser.lastEvent() != JSONParser.OBJECT_START) {
       throw new RuntimeException("The JSON must be an Object of the form {\"command\": {...},...");
     }
     List<CommandOperation> operations = new ArrayList<>();
-    for(;;) {
+    for (; ; ) {
       int ev = parser.nextEvent();
-      if (ev==JSONParser.OBJECT_END) return operations;
-      Object key =  ob.getKey();
+      if (ev == JSONParser.OBJECT_END) return operations;
+      Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();
       if (val instanceof List) {
@@ -210,19 +221,30 @@ public  class CommandOperation {
     }
 
   }
-  public CommandOperation getCopy(){
-    return new CommandOperation(name,commandData);
+
+  public CommandOperation getCopy() {
+    return new CommandOperation(name, commandData);
   }
 
   public Map getMap(String key, Map def) {
-    Object o =getMapVal(key);
-    if(o==null) return def;
-    if ( !(o instanceof Map)) {
+    Object o = getMapVal(key);
+    if (o == null) return def;
+    if (!(o instanceof Map)) {
       addError(MessageFormat.format("''{0}'' must be a map", key));
       return def;
     } else {
       return (Map) o;
 
+    }
+  }
+
+  @Override
+  public String toString() {
+    try {
+      return new String(ZkStateReader.toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
+    } catch (UnsupportedEncodingException e) {
+      //should not happen
+      return "";
     }
   }
 }

@@ -2647,9 +2647,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    * to 'touch' the /conf directory by setting some data  so that events are triggered.
    */
   private void registerConfListener() {
-    if( ! (resourceLoader instanceof ZkSolrResourceLoader)) return;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
     final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
-    if(zkSolrResourceLoader != null)
+    if (zkSolrResourceLoader != null)
       zkSolrResourceLoader.getZkController().registerConfListenerForCore(
           zkSolrResourceLoader.getConfigSetZkPath(),
           this,
@@ -2687,7 +2687,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
         }
         if (cfg != null) {
-          cfg.refreshRequestParams() ;
+          cfg.refreshRequestParams();
         }
         if (checkStale(zkClient, overlayPath, solrConfigversion) ||
             checkStale(zkClient, solrConfigPath, overlayVersion) ||
