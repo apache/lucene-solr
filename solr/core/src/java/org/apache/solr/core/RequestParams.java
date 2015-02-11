@@ -39,29 +39,29 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**The class encapsulates the request time parameters . This is immutable and any changes performed
+/**
+ * The class encapsulates the request time parameters . This is immutable and any changes performed
  * returns a copy of the Object with the changed values
- *
  */
-public class RequestParams implements MapSerializable{
+public class RequestParams implements MapSerializable {
   public static final Logger log = LoggerFactory.getLogger(RequestParams.class);
 
   private final Map data;
-  private final Map<String , VersionedParams> paramsets =  new LinkedHashMap<>();
-  private final int znodeVersion ;
+  private final Map<String, VersionedParams> paramsets = new LinkedHashMap<>();
+  private final int znodeVersion;
 
   public RequestParams(Map data, int znodeVersion) {
-    if(data == null) data = Collections.EMPTY_MAP;
+    if (data == null) data = Collections.EMPTY_MAP;
     this.data = data;
     Map paramsets = (Map) data.get(NAME);
-    if(paramsets != null) {
+    if (paramsets != null) {
       for (Object o : paramsets.entrySet()) {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof Map) {
           Map value = (Map) e.getValue();
           Map copy = getMapCopy(value);
           Map meta = (Map) copy.remove("");
-          this.paramsets.put((String) e.getKey(), new VersionedParams(Collections.unmodifiableMap(copy) ,meta));
+          this.paramsets.put((String) e.getKey(), new VersionedParams(Collections.unmodifiableMap(copy), meta));
         }
       }
     }
@@ -72,8 +72,8 @@ public class RequestParams implements MapSerializable{
     Map copy = new LinkedHashMap<>();
     for (Object o1 : value.entrySet()) {
       Map.Entry entry = (Map.Entry) o1;
-      if("".equals( entry.getKey())){
-        copy.put(entry.getKey(),entry.getValue());
+      if ("".equals(entry.getKey())) {
+        copy.put(entry.getKey(), entry.getValue());
         continue;
       }
       if (entry.getValue() != null) {
@@ -81,7 +81,7 @@ public class RequestParams implements MapSerializable{
           List l = (List) entry.getValue();
           String[] sarr = new String[l.size()];
           for (int i = 0; i < l.size(); i++) {
-            if( l.get(i) != null)  sarr[i]= String.valueOf(l.get(i));
+            if (l.get(i) != null) sarr[i] = String.valueOf(l.get(i));
           }
           copy.put(entry.getKey(), sarr);
         } else {
@@ -94,11 +94,11 @@ public class RequestParams implements MapSerializable{
     return copy;
   }
 
-  public VersionedParams getParams(String name){
+  public VersionedParams getParams(String name) {
     return paramsets.get(name);
   }
 
-  public int getZnodeVersion(){
+  public int getZnodeVersion() {
     return znodeVersion;
   }
 
@@ -114,46 +114,46 @@ public class RequestParams implements MapSerializable{
     return result;
   }
 
-  public RequestParams setParams(String name , Map values){
+  public RequestParams setParams(String name, Map values) {
     Map deepCopy = getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
-    if(p == null) deepCopy.put(NAME, p= new LinkedHashMap());
-    if(values == null){
+    if (p == null) deepCopy.put(NAME, p = new LinkedHashMap());
+    if (values == null) {
       p.remove(name);
     } else {
       Map old = (Map) p.get(name);
       long version = 0;
       Map meta = null;
-      if(old != null){
+      if (old != null) {
         meta = (Map) old.get("");
-        if(meta!=null) {
+        if (meta != null) {
           Long oldVersion = (Long) old.get("v");
-          if(oldVersion != null) version = oldVersion.longValue()+1;
+          if (oldVersion != null) version = oldVersion.longValue() + 1;
         }
         meta = new LinkedHashMap<>(meta);
       } else {
         meta = new LinkedHashMap<>();
       }
 
-      meta.put("v",version);
+      meta.put("v", version);
       values = new LinkedHashMap<>(values);
-      values.put("",meta);
-      p.put(name,values);
+      values.put("", meta);
+      p.put(name, values);
     }
     return new RequestParams(deepCopy, znodeVersion);
   }
 
-  public static RequestParams getFreshRequestParams(SolrResourceLoader loader, RequestParams requestParams){
+  public static RequestParams getFreshRequestParams(SolrResourceLoader loader, RequestParams requestParams) {
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
-        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath()+"/"+ RequestParams.RESOURCE,null,true);
-        if(stat == null) {
-          requestParams = new RequestParams(Collections.EMPTY_MAP,-1);
-        } else if(requestParams == null ||  stat.getVersion() > requestParams.getZnodeVersion()) {
+        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
+        if (stat == null) {
+          requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
+        } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-          requestParams = new RequestParams((Map) o[0],(Integer)o[1]);
-          log.info("request params refreshed to version {}",requestParams.getZnodeVersion());
+          requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+          log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
         }
       } catch (KeeperException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -162,7 +162,7 @@ public class RequestParams implements MapSerializable{
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
-    } else  {
+    } else {
       Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
       requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
     }
@@ -172,7 +172,7 @@ public class RequestParams implements MapSerializable{
   }
 
 
-  private static  Object[] getMapAndVersion(SolrResourceLoader loader, String name) {
+  private static Object[] getMapAndVersion(SolrResourceLoader loader, String name) {
     InputStream in = null;
     try {
       in = loader.openResource(name);
@@ -181,31 +181,31 @@ public class RequestParams implements MapSerializable{
       return new Object[]{Collections.EMPTY_MAP, -1};
     }
 
-      int version = 0; //will be always 0 for file based resourceloader
-      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-        version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.info( "conf resource {} loaded . version : {} ", name,version);
-      }
+    int version = 0; //will be always 0 for file based resourceloader
+    if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+      version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+      log.info("conf resource {} loaded . version : {} ", name, version);
+    }
 
     try {
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
-      return new Object[]{m,version};
+      return new Object[]{m, version};
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error parsing conf resource "+name,e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
     }
 
   }
 
 
-  public static Map getDeepCopy(Map map, int maxDepth){
+  public static Map getDeepCopy(Map map, int maxDepth) {
     Map copy = new LinkedHashMap<>();
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       Object v = e.getValue();
       if (v instanceof Map && maxDepth > 0) {
-        v = getDeepCopy ( (Map) v, maxDepth -1);
+        v = getDeepCopy((Map) v, maxDepth - 1);
       }
-      copy.put(e.getKey(),v);
+      copy.put(e.getKey(), v);
     }
     return copy;
   }
@@ -213,24 +213,26 @@ public class RequestParams implements MapSerializable{
   public byte[] toByteArray() {
     return ZkStateReader.toJSON(data);
   }
+
   public static final String USEPARAM = "useParams";
   public static final String NAME = "params";
   public static final String RESOURCE = "params.json";
 
-  public static class VersionedParams extends MapSolrParams{
+  public static class VersionedParams extends MapSolrParams {
     Map meta;
 
     public VersionedParams(Map<String, String> map, Map meta) {
       super(map);
       this.meta = meta;
     }
-    public Map getRawMap(){
+
+    public Map getRawMap() {
       return meta;
     }
 
 
     public Long getVersion() {
-      return meta == null? 0l : (Long)meta.get("v");
+      return meta == null ? 0l : (Long) meta.get("v");
     }
   }
 }
