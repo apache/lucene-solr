@@ -245,15 +245,15 @@ public final class RequestHandlers {
    * Rather then instantiate and initialize the handler on startup, this wrapper waits
    * until it is actually called.  This should only be used for handlers that are
    * unlikely to be used in the normal lifecycle.
-   * <p>
+   *
    * You can enable lazy loading in solrconfig.xml using:
-   * <p>
+   *
    * <pre>
    *  &lt;requestHandler name="..." class="..." startup="lazy"&gt;
    *    ...
    *  &lt;/requestHandler&gt;
    * </pre>
-   * <p>
+   *
    * This is a private class - if there is a real need for it to be public, it could
    * move
    *
