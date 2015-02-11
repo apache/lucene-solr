@@ -20,3 +20,5 @@ java.util.Random#<init>() @ Use RandomizedRunner's random instead
 # TODO: fix tests that do this!
 #java.lang.System#currentTimeMillis() @ Don't depend on wall clock times
 #java.lang.System#nanoTime() @ Don't depend on wall clock times
+
+com.carrotsearch.randomizedtesting.annotations.Seed @ Don't commit hardcoded seeds
