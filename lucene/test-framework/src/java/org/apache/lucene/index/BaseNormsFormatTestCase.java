@@ -44,7 +44,6 @@ import org.apache.lucene.util.TestUtil;
  * test passes, then all Lucene/Solr tests should also pass.  Ie,
  * if there is some bug in a given NormsFormat that this
  * test fails to catch then this test needs to be improved! */
-@Seed(value = "AD2222476BCB8800")
 public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCase {
   
   public void testByteRange() throws Exception {
