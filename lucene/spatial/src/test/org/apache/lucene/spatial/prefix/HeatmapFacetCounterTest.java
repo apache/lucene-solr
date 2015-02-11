@@ -78,6 +78,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
 
     validateHeatmapResultLoop(ctx.makeRectangle(+170, +180, -90, -85), 1, 100);
     validateHeatmapResultLoop(ctx.makeRectangle(-180, -160, -89, -50), 1, 100);
+    validateHeatmapResultLoop(ctx.makeRectangle(179, 179, -89, -50), 1, 100);//line
     // We could test anything and everything at this point... I prefer we leave that to random testing and then
     // add specific tests if we find a bug.
   }
@@ -179,6 +180,11 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
 
   /** Build heatmap, validate results, then descend recursively to another facet level. */
   private boolean queryHeatmapRecursive(Rectangle inputRange, int facetLevel) throws IOException {
+    if (!inputRange.hasArea()) {
+      // Don't test line inputs. It's not that we don't support it but it is more challenging to test if per-chance it
+      // coincides with a grid line due due to edge overlap issue for some grid implementations (geo & quad).
+      return false;
+    }
     Filter filter = null; //FYI testing filtering of underlying PrefixTreeFacetCounter is done in another test
     //Calculate facets
     final int maxCells = 10_000;
