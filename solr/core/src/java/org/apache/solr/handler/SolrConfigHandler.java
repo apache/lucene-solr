@@ -90,16 +90,17 @@ public class SolrConfigHandler extends RequestHandlerBase {
     setWt(req, "json");
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
-    if("POST".equals(httpMethod)){
-      if(configEditing_disabled) throw new SolrException(SolrException.ErrorCode.FORBIDDEN," solrconfig editing is not enabled");
+    if ("POST".equals(httpMethod)) {
+      if (configEditing_disabled)
+        throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled");
       command.handlePOST();
-    }  else {
+    } else {
       command.handleGET();
     }
   }
 
 
-  private static class Command{
+  private static class Command {
     private final SolrQueryRequest req;
     private final SolrQueryResponse resp;
     private final String method;
@@ -111,9 +112,9 @@ public class SolrConfigHandler extends RequestHandlerBase {
       this.resp = resp;
       this.method = httpMethod;
       path = (String) req.getContext().get("path");
-      if(path == null) path= getDefaultPath();
-      parts =StrUtils.splitSmart(path, '/');
-      if(parts.get(0).isEmpty()) parts.remove(0);
+      if (path == null) path = getDefaultPath();
+      parts = StrUtils.splitSmart(path, '/');
+      if (parts.get(0).isEmpty()) parts.remove(0);
     }
 
     private String getDefaultPath() {
@@ -121,28 +122,28 @@ public class SolrConfigHandler extends RequestHandlerBase {
     }
 
     private void handleGET() {
-      if(parts.size() == 1) {
+      if (parts.size() == 1) {
         resp.add("config", getConfigDetails());
       } else {
-        if(ConfigOverlay.NAME.equals(parts.get(1))){
+        if (ConfigOverlay.NAME.equals(parts.get(1))) {
           resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().toMap());
-        }else if(RequestParams.NAME.equals(parts.get(1))) {
-          if(parts.size() == 3){
+        } else if (RequestParams.NAME.equals(parts.get(1))) {
+          if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
             MapSolrParams p = params.getParams(parts.get(2));
-            Map m =new LinkedHashMap<>();
+            Map m = new LinkedHashMap<>();
             m.put(ConfigOverlay.ZNODEVER, params.getZnodeVersion());
-            if(p!=null){
-              m.put(RequestParams.NAME,ZkNodeProps.makeMap(parts.get(2), p.getMap()));
+            if (p != null) {
+              m.put(RequestParams.NAME, ZkNodeProps.makeMap(parts.get(2), p.getMap()));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
-            resp.add(SolrQueryResponse.NAME,req.getCore().getSolrConfig().getRequestParams().toMap());
+            resp.add(SolrQueryResponse.NAME, req.getCore().getSolrConfig().getRequestParams().toMap());
           }
 
         } else {
           Map<String, Object> m = getConfigDetails();
-          resp.add("config", ZkNodeProps.makeMap(parts.get(1),m.get(parts.get(1))));
+          resp.add("config", ZkNodeProps.makeMap(parts.get(1), m.get(parts.get(1))));
         }
       }
     }
@@ -150,12 +151,12 @@ public class SolrConfigHandler extends RequestHandlerBase {
     private Map<String, Object> getConfigDetails() {
       Map<String, Object> map = req.getCore().getSolrConfig().toMap();
       Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
-      if(reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers =  new LinkedHashMap<>());
+      if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
       List<PluginInfo> plugins = PluginsRegistry.getHandlers(req.getCore());
       for (PluginInfo plugin : plugins) {
-        if(SolrRequestHandler.TYPE.equals( plugin.type)){
-          if(!reqHandlers.containsKey(plugin.name)){
-            reqHandlers.put(plugin.name,plugin.toMap());
+        if (SolrRequestHandler.TYPE.equals(plugin.type)) {
+          if (!reqHandlers.containsKey(plugin.name)) {
+            reqHandlers.put(plugin.name, plugin.toMap());
           }
         }
       }
@@ -173,18 +174,18 @@ public class SolrConfigHandler extends RequestHandlerBase {
       for (ContentStream stream : streams)
         ops.addAll(CommandOperation.parse(stream.getReader()));
       List<Map> errList = CommandOperation.captureErrors(ops);
-      if(!errList.isEmpty()) {
-        resp.add(CommandOperation.ERR_MSGS,errList);
+      if (!errList.isEmpty()) {
+        resp.add(CommandOperation.ERR_MSGS, errList);
         return;
       }
 
       try {
-        for (;;) {
+        for (; ; ) {
           ArrayList<CommandOperation> opsCopy = new ArrayList<>(ops.size());
           for (CommandOperation op : ops) opsCopy.add(op.getCopy());
           try {
-            if(parts.size()>1 && RequestParams.NAME.equals(parts.get(1))){
-              RequestParams params = RequestParams.getFreshRequestParams(req.getCore().getResourceLoader(),req.getCore().getSolrConfig().getRequestParams());
+            if (parts.size() > 1 && RequestParams.NAME.equals(parts.get(1))) {
+              RequestParams params = RequestParams.getFreshRequestParams(req.getCore().getResourceLoader(), req.getCore().getSolrConfig().getRequestParams());
               handleParams(opsCopy, params);
             } else {
               ConfigOverlay overlay = SolrConfig.getConfigOverlay(req.getCore().getResourceLoader());
@@ -193,7 +194,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
             break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
-            log.info("Race condition, the node is modified in ZK by someone else " +e.getMessage());
+            log.info("Race condition, the node is modified in ZK by someone else " + e.getMessage());
           }
         }
       } catch (Exception e) {
@@ -202,7 +203,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
       }
 
     }
-
 
 
     private void handleParams(ArrayList<CommandOperation> ops, RequestParams params) {
@@ -215,7 +215,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
             for (Map.Entry<String, Object> entry : map.entrySet()) {
 
-              Map val =null;
+              Map val = null;
               String key = entry.getKey();
               if (key == null || key.trim().isEmpty()) {
                 op.addError("null key ");
@@ -223,7 +223,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
               }
               key = key.trim();
               String err = validateName(key);
-              if (err !=null) {
+              if (err != null) {
                 op.addError(err);
                 continue;
               }
@@ -268,16 +268,16 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        resp.add(CommandOperation.ERR_MSGS,errs);
+        resp.add(CommandOperation.ERR_MSGS, errs);
         return;
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-        if(ops.isEmpty()) {
+        if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
-        }else {
+        } else {
           ZkController.persistConfigResourceToZooKeeper(zkLoader, params.getZnodeVersion(),
               RequestParams.RESOURCE, params.toByteArray(), true);
         }
@@ -289,59 +289,63 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     }
 
-    private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay ) throws IOException {
-    for (CommandOperation op : ops) {
-      switch (op.name) {
-        case SET_PROPERTY:
-          overlay = applySetProp(op, overlay);
-          break;
-        case UNSET_PROPERTY:
-          overlay = applyUnset(op, overlay);
-          break;
-        case SET_USER_PROPERTY:
-          overlay = applySetUserProp(op, overlay);
-          break;
-        case UNSET_USER_PROPERTY:
-          overlay = applyUnsetUserProp(op, overlay);
-          break;
-        default: {
-          List<String> pcs = StrUtils.splitSmart(op.name.toLowerCase(Locale.ROOT), '-');
-          if (pcs.size() != 2) {
-            op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
-          } else {
-            String prefix = pcs.get(0);
-            String name = pcs.get(1);
-            if (cmdPrefixes.contains(prefix) && namedPlugins.containsKey(name)) {
-              SolrConfig.SolrPluginInfo info = namedPlugins.get(name);
-              if ("delete".equals(prefix)) {
-                overlay = deleteNamedComponent(op, overlay, info.tag);
-              } else {
-                overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create"));
-              }
-            } else {
+    private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay) throws IOException {
+      for (CommandOperation op : ops) {
+        switch (op.name) {
+          case SET_PROPERTY:
+            overlay = applySetProp(op, overlay);
+            break;
+          case UNSET_PROPERTY:
+            overlay = applyUnset(op, overlay);
+            break;
+          case SET_USER_PROPERTY:
+            overlay = applySetUserProp(op, overlay);
+            break;
+          case UNSET_USER_PROPERTY:
+            overlay = applyUnsetUserProp(op, overlay);
+            break;
+          default: {
+            List<String> pcs = StrUtils.splitSmart(op.name.toLowerCase(Locale.ROOT), '-');
+            if (pcs.size() != 2) {
               op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+            } else {
+              String prefix = pcs.get(0);
+              String name = pcs.get(1);
+              if (cmdPrefixes.contains(prefix) && namedPlugins.containsKey(name)) {
+                SolrConfig.SolrPluginInfo info = namedPlugins.get(name);
+                if ("delete".equals(prefix)) {
+                  overlay = deleteNamedComponent(op, overlay, info.tag);
+                } else {
+                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create"));
+                }
+              } else {
+                op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+              }
             }
           }
         }
       }
-    }
-    List errs = CommandOperation.captureErrors(ops);
-    if (!errs.isEmpty()) {
-      resp.add(CommandOperation.ERR_MSGS,errs);
-      return;
+      List errs = CommandOperation.captureErrors(ops);
+      if (!errs.isEmpty()) {
+        log.info("Failed to run commands errors are {}", StrUtils.join(errs, ','));
+        resp.add(CommandOperation.ERR_MSGS, errs);
+        return;
+      }
+
+      SolrResourceLoader loader = req.getCore().getResourceLoader();
+      if (loader instanceof ZkSolrResourceLoader) {
+        ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
+            ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
+
+        log.info("Executed config commands successfully and persited to ZK {}", ops);
+      } else {
+        SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
+        req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
+        log.info("Executed config commands successfully and persited to File System {}", ops);
+      }
+
     }
 
-    SolrResourceLoader loader = req.getCore().getResourceLoader();
-    if (loader instanceof ZkSolrResourceLoader) {
-      ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader,overlay.getZnodeVersion(),
-          ConfigOverlay.RESOURCE_NAME,overlay.toByteArray(),true);
-
-    } else {
-      SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-      req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
-    }
-
-  }
     private ConfigOverlay deleteNamedComponent(CommandOperation op, ConfigOverlay overlay, String typ) {
       String name = op.getStr(CommandOperation.ROOT_OBJ);
       if (op.hasError()) return overlay;
@@ -353,7 +357,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       }
     }
 
-    private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info , CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
+    private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info, CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
       String name = op.getStr(NAME);
       String clz = op.getStr(CLASS_NAME);
       op.getMap(PluginInfo.DEFAULTS, null);
@@ -394,7 +398,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private ConfigOverlay applySetUserProp(CommandOperation op, ConfigOverlay overlay) {
       Map<String, Object> m = op.getDataMap();
-      if(op.hasError()) return overlay;
+      if (op.hasError()) return overlay;
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
@@ -405,9 +409,9 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private ConfigOverlay applyUnsetUserProp(CommandOperation op, ConfigOverlay overlay) {
       List<String> name = op.getStrs(CommandOperation.ROOT_OBJ);
-      if(op.hasError()) return overlay;
+      if (op.hasError()) return overlay;
       for (String o : name) {
-        if(!overlay.getUserProps().containsKey(o)) {
+        if (!overlay.getUserProps().containsKey(o)) {
           op.addError(format("No such property ''{0}''", name));
         } else {
           overlay = overlay.unsetUserProperty(o);
@@ -417,13 +421,12 @@ public class SolrConfigHandler extends RequestHandlerBase {
     }
 
 
-
     private ConfigOverlay applyUnset(CommandOperation op, ConfigOverlay overlay) {
       List<String> name = op.getStrs(CommandOperation.ROOT_OBJ);
-      if(op.hasError()) return overlay;
+      if (op.hasError()) return overlay;
 
       for (String o : name) {
-        if(!ConfigOverlay.isEditableProp(o, false, null)) {
+        if (!ConfigOverlay.isEditableProp(o, false, null)) {
           op.addError(format(NOT_EDITABLE, name));
         } else {
           overlay = overlay.unsetProperty(o);
@@ -434,11 +437,11 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private ConfigOverlay applySetProp(CommandOperation op, ConfigOverlay overlay) {
       Map<String, Object> m = op.getDataMap();
-      if(op.hasError()) return overlay;
+      if (op.hasError()) return overlay;
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
-        if(!ConfigOverlay.isEditableProp(name, false, null)) {
+        if (!ConfigOverlay.isEditableProp(name, false, null)) {
           op.addError(format(NOT_EDITABLE, name));
           continue;
         }
@@ -450,26 +453,26 @@ public class SolrConfigHandler extends RequestHandlerBase {
   }
 
   public static String validateName(String s) {
-    for(int i=0;i<s.length();i++) {
+    for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
-      if((c >= 'A' && c<='Z') ||
-          (c >='a' && c<='z') ||
-          (c >='0' && c<='9') ||
-           c == '_'||
-           c == '-'||
-           c == '.'
+      if ((c >= 'A' && c <= 'Z') ||
+          (c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') ||
+          c == '_' ||
+          c == '-' ||
+          c == '.'
           ) continue;
       else {
-        return MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ",s);
+        return MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
       }
     }
     return null;
   }
 
-  static void setWt(SolrQueryRequest req, String wt){
+  static void setWt(SolrQueryRequest req, String wt) {
     SolrParams params = req.getParams();
-    if( params.get(CommonParams.WT) != null ) return;//wt is set by user
-    Map<String,String> map = new HashMap<>(1);
+    if (params.get(CommonParams.WT) != null) return;//wt is set by user
+    Map<String, String> map = new HashMap<>(1);
     map.put(CommonParams.WT, wt);
     map.put("indent", "true");
     req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
@@ -477,16 +480,18 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
   @Override
   public SolrRequestHandler getSubHandler(String path) {
-    if(subPaths.contains(path)) return this;
-    if(path.startsWith("/params/")) return this;
+    if (subPaths.contains(path)) return this;
+    if (path.startsWith("/params/")) return this;
     return null;
   }
 
 
-  private static Set<String> subPaths =  new HashSet<>(Arrays.asList("/overlay", "/params",
-      "/query","/jmx","/requestDispatcher"));
+  private static Set<String> subPaths = new HashSet<>(Arrays.asList("/overlay", "/params",
+      "/query", "/jmx", "/requestDispatcher"));
+
   static {
-    for (SolrConfig.SolrPluginInfo solrPluginInfo : SolrConfig.plugins) subPaths.add("/"+solrPluginInfo.tag.replaceAll("/",""));
+    for (SolrConfig.SolrPluginInfo solrPluginInfo : SolrConfig.plugins)
+      subPaths.add("/" + solrPluginInfo.tag.replaceAll("/", ""));
 
   }
 
@@ -510,7 +515,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
   }
 
 
-
   public static final String SET_PROPERTY = "set-property";
   public static final String UNSET_PROPERTY = "unset-property";
   public static final String SET_USER_PROPERTY = "set-user-property";
@@ -518,6 +522,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
   public static final String SET = "set";
   public static final String UPDATE = "update";
   public static final String CREATE = "create";
-  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE , UPDATE, "delete");
+  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete");
 
 }

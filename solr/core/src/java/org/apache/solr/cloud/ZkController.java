@@ -2138,37 +2138,38 @@ public final class ZkController {
    *
    * @return true on success
    */
-  public static boolean persistConfigResourceToZooKeeper( ZkSolrResourceLoader zkLoader, int znodeVersion ,
-                                                          String resourceName, byte[] content,
-                                                          boolean createIfNotExists) {
+  public static boolean persistConfigResourceToZooKeeper(ZkSolrResourceLoader zkLoader, int znodeVersion,
+                                                         String resourceName, byte[] content,
+                                                         boolean createIfNotExists) {
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
     String errMsg = "Failed to persist resource at {0} - old {1}";
     try {
       try {
-        zkClient.setData(resourceLocation , content,znodeVersion, true);
+        zkClient.setData(resourceLocation, content, znodeVersion, true);
+        log.info("Persisted config data to node {} ", resourceLocation);
         touchConfDir(zkLoader);
       } catch (NoNodeException e) {
-        if(createIfNotExists){
+        if (createIfNotExists) {
           try {
-            zkClient.create(resourceLocation,content, CreateMode.PERSISTENT,true);
+            zkClient.create(resourceLocation, content, CreateMode.PERSISTENT, true);
             touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
-              log.info("failed to set data version in zk is {0} and expected version is {1} ", stat.getVersion(),znodeVersion);
+              log.info("failed to set data version in zk is {0} and expected version is {1} ", stat.getVersion(), znodeVersion);
             } catch (Exception e1) {
               log.warn("could not get stat");
             }
 
-            log.info(MessageFormat.format(errMsg,resourceLocation,znodeVersion));
-            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
+            log.info(MessageFormat.format(errMsg, resourceLocation, znodeVersion));
+            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg, resourceLocation, znodeVersion) + ", retry.");
           }
         }
       }
 
-    } catch (KeeperException.BadVersionException bve){
+    } catch (KeeperException.BadVersionException bve) {
       int v = -1;
       try {
         Stat stat = zkClient.exists(resourceLocation, null, true);
@@ -2177,9 +2178,9 @@ public final class ZkController {
         log.error(e.getMessage());
 
       }
-      log.info(MessageFormat.format(errMsg+ " zkVersion= "+v,resourceLocation,znodeVersion));
-      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
-    }catch (ResourceModifiedInZkException e){
+      log.info(MessageFormat.format(errMsg + " zkVersion= " + v, resourceLocation, znodeVersion));
+      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg, resourceLocation, znodeVersion) + ", retry.");
+    } catch (ResourceModifiedInZkException e) {
       throw e;
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
@@ -2192,10 +2193,10 @@ public final class ZkController {
     return true;
   }
 
-  public static void touchConfDir(ZkSolrResourceLoader zkLoader)  {
+  public static void touchConfDir(ZkSolrResourceLoader zkLoader) {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
     try {
-      zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
+      zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
