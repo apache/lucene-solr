@@ -184,7 +184,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
       newBitArray[o] = 1L << i;
       System.arraycopy(bitArray, o, newBitArray, o + 1, bitArray.length - o);
       bits[i4096] = newBitArray;
-      ramBytesUsed += (newSize - bitArray.length) * RamUsageEstimator.NUM_BYTES_LONG;
+      ramBytesUsed += RamUsageEstimator.sizeOf(newBitArray) - RamUsageEstimator.sizeOf(bitArray);
     }
     ++nonZeroLongCount;
   }

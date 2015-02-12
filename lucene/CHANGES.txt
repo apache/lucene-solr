@@ -50,6 +50,9 @@ Bug Fixes
 * LUCENE-6190: Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to
   Intersects. (David Smiley)
 
+* LUCENE-6242: Ram usage estimation was incorrect for SparseFixedBitSet when
+  object alignment was different from 8. (Uwe Schindler, Adrien Grand)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
