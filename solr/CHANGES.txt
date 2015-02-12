@@ -147,6 +147,8 @@ Other Changes
 * SOLR-7076: In DIH, TikaEntityProcessor should have support for onError=skip
   (Noble Paul)
 
+* SOLR-7103: Remove unused method params in faceting code. (shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
