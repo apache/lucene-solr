@@ -7,6 +7,10 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-6066: Added DiversifiedTopDocsCollector to misc for collecting no more 
+  than a given number of results under a choice of key. Introduces new remove 
+  method to core's PriorityQueue. (Mark Harwood)
+
 * LUCENE-6191: New spatial 2D heatmap faceting for PrefixTreeStrategy. (David Smiley)
 
 * LUCENE-6227: Added BooleanClause.Occur.FILTER to filter documents without
