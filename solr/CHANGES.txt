@@ -131,6 +131,9 @@ Bug Fixes
 * SOLR-6214: Snapshots numberToKeep param only keeps n-1 backups.
   (Mathias H., Ramana, Varun Thacker via shalin)
 
+* SOLR-7084: FreeTextSuggester: Better error message when doing a lookup
+  during dictionary build. Used to be nullpointer (janhoy)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections

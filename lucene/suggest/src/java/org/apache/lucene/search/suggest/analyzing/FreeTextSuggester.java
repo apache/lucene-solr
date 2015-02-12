@@ -470,6 +470,9 @@ public class FreeTextSuggester extends Lookup implements Accountable {
     if (contexts != null) {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
+    if (fst == null) {
+      throw new IllegalStateException("Lookup not supported at this time");
+    }
 
     try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
       TermToBytesRefAttribute termBytesAtt = ts.addAttribute(TermToBytesRefAttribute.class);
