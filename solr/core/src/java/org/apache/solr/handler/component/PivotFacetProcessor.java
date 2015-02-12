@@ -61,7 +61,7 @@ public class PivotFacetProcessor extends SimpleFacets
   
   /**
    * Processes all of the specified {@link FacetParams#FACET_PIVOT} strings, generating 
-   * a completel response tree for each pivot.  The values in this response will either 
+   * a complete response tree for each pivot.  The values in this response will either
    * be the complete tree of fields and values for the specified pivot in the local index, 
    * or the requested refinements if the pivot params include the {@link PivotFacet#REFINE_PARAM}
    */
@@ -96,7 +96,7 @@ public class PivotFacetProcessor extends SimpleFacets
         }
       } 
 
-      // start by assuing no local params...
+      // start by assuming no local params...
 
       String refineKey = null; // no local => no refinement
       List<StatsField> statsFields = Collections.emptyList(); // no local => no stats
@@ -135,7 +135,7 @@ public class PivotFacetProcessor extends SimpleFacets
   /**
    * Process a single branch of refinement values for a specific pivot
    * @param pivotFields the ordered list of fields in this pivot
-   * @param refinements the comma seperate list of refinement values corrisponding to each field in the pivot, or null if there are no refinements
+   * @param refinements the comma separate list of refinement values corresponding to each field in the pivot, or null if there are no refinements
    * @param statsFields List of {@link StatsField} instances to compute for each pivot value
    */
   private SimpleOrderedMap<List<NamedList<Object>>> processSingle
@@ -190,7 +190,7 @@ public class PivotFacetProcessor extends SimpleFacets
    * returns the {@link StatsField} instances that should be computed for a pivot
    * based on the 'stats' local params used.
    *
-   * @return A list of StatsFields to comput for this pivot, or the empty list if none
+   * @return A list of StatsFields to compute for this pivot, or the empty list if none
    */
   private static List<StatsField> getTaggedStatsFields(StatsInfo statsInfo, 
                                                        String statsLocalParam) {
@@ -202,7 +202,7 @@ public class PivotFacetProcessor extends SimpleFacets
     List<String> statsAr = StrUtils.splitSmart(statsLocalParam, ',');
 
     // TODO: for now, we only support a single tag name - we reserve using 
-    // ',' as a possible delimeter for logic related to only computing stats
+    // ',' as a possible delimiter for logic related to only computing stats
     // at certain levels -- see SOLR-6663
     if (1 < statsAr.size()) {
       String msg = StatsParams.STATS + " local param of " + FacetParams.FACET_PIVOT + 
@@ -218,7 +218,7 @@ public class PivotFacetProcessor extends SimpleFacets
   }
 
   /**
-   * Recursive function to compute all the pivot counts for the values under teh specified field
+   * Recursive function to compute all the pivot counts for the values under the specified field
    */
   protected List<NamedList<Object>> doPivots(NamedList<Integer> superFacets,
                                              String field, String subField, 
@@ -235,7 +235,7 @@ public class PivotFacetProcessor extends SimpleFacets
 
     String nextField = fnames.poll();
 
-    // re-useable BytesRefBuilder for conversion of term values to Objects
+    // re-usable BytesRefBuilder for conversion of term values to Objects
     BytesRefBuilder termval = new BytesRefBuilder(); 
 
     List<NamedList<Object>> values = new ArrayList<>( superFacets.size() );
@@ -291,7 +291,7 @@ public class PivotFacetProcessor extends SimpleFacets
   }
   
   /**
-   * Given a base docset, computes the size of the subset of documents corrisponding to the specified pivotValue
+   * Given a base docset, computes the size of the subset of documents corresponding to the specified pivotValue
    *
    * @param base the set of documents to evalute relative to
    * @param field the field type used by the pivotValue
@@ -310,9 +310,9 @@ public class PivotFacetProcessor extends SimpleFacets
   }
 
   /**
-   * Given a base docset, computes the subset of documents corrisponding to the specified pivotValue
+   * Given a base docset, computes the subset of documents corresponding to the specified pivotValue
    *
-   * @param base the set of documents to evalute relative to
+   * @param base the set of documents to evaluate relative to
    * @param field the field type used by the pivotValue
    * @param pivotValue String representation of the value, may be null (ie: "missing")
    */
