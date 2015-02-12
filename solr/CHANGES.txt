@@ -128,6 +128,9 @@ Bug Fixes
 * SOLR-7101: JmxMonitoredMap can throw an exception in clear when queryNames fails.
   (Mark Miller, Wolfgang Hoschek)
 
+* SOLR-6214: Snapshots numberToKeep param only keeps n-1 backups.
+  (Mathias H., Ramana, Varun Thacker via shalin)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections

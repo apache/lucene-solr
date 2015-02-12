@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -164,15 +165,17 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     int nDocs = indexDocs();
 
-    Path[] snapDir = new Path[2];
+    Path[] snapDir = new Path[5]; //One extra for the backup on commit
+    //First snapshot location
+    snapDir[0] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
     boolean namedBackup = random().nextBoolean();
     String firstBackupTimestamp = null;
 
     String[] backupNames = null;
     if (namedBackup) {
-      backupNames = new String[2];
+      backupNames = new String[4];
     }
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 4; i++) {
       BackupCommand backupCommand;
       final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
       if (!namedBackup) {
@@ -196,21 +199,43 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       }
 
       if (!namedBackup) {
-        snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
+        snapDir[i+1] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
       } else {
-        snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName).iterator().next();
+        snapDir[i+1] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName).iterator().next();
       }
-      verify(snapDir[i], nDocs);
+      verify(snapDir[i+1], nDocs);
 
-    }
-
-    if (!namedBackup && Files.exists(snapDir[0])) {
-      fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
     }
 
     //Test Deletion of named backup
-    if(namedBackup) {
+    if (namedBackup) {
       testDeleteNamedBackup(backupNames);
+    } else {
+      //5 backups got created. 4 explicitly and one because a commit was called.
+      // Only the last two should still exist.
+      int count =0;
+      Iterator<Path> iter = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator();
+      while (iter.hasNext()) {
+        iter.next();
+        count ++;
+      }
+
+      //There will be 2 backups, otherwise 1
+      if (backupKeepParamName.equals(ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM)) {
+        assertEquals(2, count);
+
+        if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])) {
+          fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 2.");
+        }
+      } else {
+        assertEquals(1, count);
+
+        if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])
+            || Files.exists(snapDir[3])) {
+          fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 2.");
+        }
+      }
+
     }
   }
 
@@ -263,7 +288,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             "&name=" +  backupName;
       } else {
         masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + cmd +
-            (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
+            (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=2" : "");
       }
 
       InputStream stream = null;
