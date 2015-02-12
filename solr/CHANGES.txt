@@ -125,6 +125,9 @@ Bug Fixes
 * SOLR-5890: Delete silently fails if not sent to shard where document was
   added (Ishan Chattopadhyaya, Noble Paul)
 
+* SOLR-7101: JmxMonitoredMap can throw an exception in clear when queryNames fails.
+  (Mark Miller, Wolfgang Hoschek)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections
