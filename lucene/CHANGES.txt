@@ -10,6 +10,9 @@ System Requirements
 * LUCENE-5950: Move to Java 8 as minimum Java version.
   (Ryan Ernst, Uwe Schindler)
 
+* LUCENE-6069: Lucene Core now gets compiled with Java 8 "compact1" profile,
+  all other modules with "compact2".  (Robert Muir, Uwe Schindler)
+
 New Features
 
 * LUCENE-5735: NumberRangePrefixTreeStrategy now includes interval/range faceting

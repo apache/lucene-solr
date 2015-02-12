@@ -17,17 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
-
-import org.junit.Ignore;
 
 /**
  * Estimates how {@link RamUsageEstimator} estimates physical memory consumption
@@ -47,45 +37,19 @@ public class StressRamUsageEstimator extends LuceneTestCase {
     }
   }
 
-  // This shows an easy stack overflow because we're counting recursively.
-  @Ignore
-  public void testChainedEstimation() {
-    MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-
-    Random rnd = random();
-    Entry first = new Entry();
-    try {
-      while (true) {
-        // Check the current memory consumption and provide the estimate.
-        long jvmUsed = memoryMXBean.getHeapMemoryUsage().getUsed(); 
-        long estimated = RamUsageTester.sizeOf(first);
-        System.out.println(String.format(Locale.ROOT, "%10d, %10d",
-            jvmUsed, estimated));
-
-        // Make a batch of objects.
-        for (int i = 0; i < 5000; i++) {
-          first.createNext(new byte[rnd.nextInt(1024)]);
-        }
-      }
-    } catch (OutOfMemoryError e) {
-      // Release and quit.
-    }
-  }
-
   volatile Object guard;
   
   // This shows an easy stack overflow because we're counting recursively.
   public void testLargeSetOfByteArrays() {
-    MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
 
-    causeGc();
-    long before = memoryMXBean.getHeapMemoryUsage().getUsed(); 
+    System.gc();
+    long before = Runtime.getRuntime().totalMemory();
     Object [] all = new Object [1000000]; 
     for (int i = 0; i < all.length; i++) {
       all[i] = new byte[random().nextInt(3)];
     }
-    causeGc();
-    long after = memoryMXBean.getHeapMemoryUsage().getUsed();
+    System.gc();
+    long after = Runtime.getRuntime().totalMemory();
     System.out.println("mx:  " + RamUsageEstimator.humanReadableUnits(after - before));
     System.out.println("rue: " + RamUsageEstimator.humanReadableUnits(shallowSizeOf(all)));
 
@@ -112,23 +76,15 @@ public class StressRamUsageEstimator extends LuceneTestCase {
   }
 
   public void testSimpleByteArrays() {
-    MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-
     Object [][] all = new Object [0][];
     try {
       while (true) {
         // Check the current memory consumption and provide the estimate.
-        causeGc();
-        MemoryUsage mu = memoryMXBean.getHeapMemoryUsage();
+        System.gc();
         long estimated = shallowSizeOf(all);
         if (estimated > 50 * RamUsageEstimator.ONE_MB) {
           break;
         }
-
-        System.out.println(String.format(Locale.ROOT, "%10s\t%10s\t%10s", 
-            RamUsageEstimator.humanReadableUnits(mu.getUsed()),
-            RamUsageEstimator.humanReadableUnits(mu.getMax()), 
-            RamUsageEstimator.humanReadableUnits(estimated)));
 
         // Make another batch of objects.
         Object[] seg =  new Object[10000];
@@ -142,24 +98,4 @@ public class StressRamUsageEstimator extends LuceneTestCase {
       // Release and quit.
     }
   }
-
-  /**
-   * Very hacky, very crude, but (sometimes) works. 
-   * Don't look, it will burn your eyes out. 
-   */
-  private void causeGc() {
-    List<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
-    List<Long> ccounts = new ArrayList<>();
-    for (GarbageCollectorMXBean g : garbageCollectorMXBeans) {
-      ccounts.add(g.getCollectionCount());
-    }
-    List<Long> ccounts2 = new ArrayList<>();
-    do {
-      System.gc();
-      ccounts.clear();
-      for (GarbageCollectorMXBean g : garbageCollectorMXBeans) {
-        ccounts2.add(g.getCollectionCount());
-      }
-    } while (ccounts2.equals(ccounts));
-  }  
 }

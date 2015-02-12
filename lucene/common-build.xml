@@ -165,6 +165,7 @@
   <property name="javac.source" value="1.8"/>
   <property name="javac.target" value="1.8"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
+  <property name="javac.profile.args" value="-profile compact2"/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/8/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
@@ -1861,8 +1862,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <nested/>
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
-        <!-- for generics in Java 1.5: -->
         <compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.profile.args}"/>
         <compilerarg line="${javac.doclint.args}"/>
       </javac>
     </sequential>
