@@ -168,7 +168,7 @@ public class PivotFacetProcessor extends SimpleFacets
 
       String firstFieldsValues = refinementValuesByField.get(0);
 
-      facetCounts = new NamedList<Integer>();
+      facetCounts = new NamedList<>();
       facetCounts.add(firstFieldsValues,
                       getSubsetSize(this.docs, sfield, firstFieldsValues));
     } else {
@@ -261,7 +261,7 @@ public class PivotFacetProcessor extends SimpleFacets
           NamedList<Integer> facetCounts;
           if(!vnames.isEmpty()){
             String val = vnames.pop();
-            facetCounts = new NamedList<Integer>();
+            facetCounts = new NamedList<>();
             facetCounts.add(val, getSubsetSize(subset,
                                                searcher.getSchema().getField(subField),
                                                val));
@@ -293,7 +293,7 @@ public class PivotFacetProcessor extends SimpleFacets
   /**
    * Given a base docset, computes the size of the subset of documents corresponding to the specified pivotValue
    *
-   * @param base the set of documents to evalute relative to
+   * @param base the set of documents to evaluate relative to
    * @param field the field type used by the pivotValue
    * @param pivotValue String representation of the value, may be null (ie: "missing")
    */

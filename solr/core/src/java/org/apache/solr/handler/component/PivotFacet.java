@@ -38,8 +38,8 @@ import org.apache.solr.handler.component.FacetComponent.FacetBase;
 public class PivotFacet extends FacetBase {
 
   /** 
-   * Local param used to indicate that refinements are requried on a pivot. Should 
-   * also be used as the prefix for contatenanting with the value to determine the 
+   * Local param used to indicate that refinements are required on a pivot. Should
+   * also be used as the prefix for concatenating with the value to determine the
    * name of the multi-valued param that will contain all of the values needed for 
    * refinement.
    */
@@ -89,7 +89,7 @@ public class PivotFacet extends FacetBase {
     if (null == raw) {
       raw = Collections.<PivotFacetValue>emptyList();
     }
-    return Collections.<PivotFacetValue>unmodifiableList(raw);
+    return Collections.unmodifiableList(raw);
   }
 
   /**
