@@ -106,6 +106,9 @@ Other
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
   (shalin)
 
+* LUCENE-6239: Removed RAMUsageEstimator's sun.misc.Unsafe calls.
+  (Robert Muir, Dawid Weiss, Uwe Schindler)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features

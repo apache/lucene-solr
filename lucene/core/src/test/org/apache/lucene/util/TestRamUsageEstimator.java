@@ -88,25 +88,44 @@ public class TestRamUsageEstimator extends LuceneTestCase {
   }
   
   public void testReferenceSize() {
-    if (!isSupportedJVM()) {
-      System.err.println("WARN: Your JVM does not support certain Oracle/Sun extensions.");
-      System.err.println(" Memory estimates may be inaccurate.");
-      System.err.println(" Please report this to the Lucene mailing list.");
-      System.err.println("JVM version: " + RamUsageEstimator.JVM_INFO_STRING);
-      System.err.println("UnsupportedFeatures:");
-      for (JvmFeature f : RamUsageEstimator.getUnsupportedFeatures()) {
-        System.err.print(" - " + f.toString());
-        if (f == RamUsageEstimator.JvmFeature.OBJECT_ALIGNMENT) {
-          System.err.print("; Please note: 32bit Oracle/Sun VMs don't allow exact OBJECT_ALIGNMENT retrieval, this is a known issue.");
-        }
-        System.err.println();
-      }
-    }
-
     assertTrue(NUM_BYTES_OBJECT_REF == 4 || NUM_BYTES_OBJECT_REF == 8);
-    if (!Constants.JRE_IS_64BIT) {
-      assertEquals("For 32bit JVMs, reference size must always be 4?", 4, NUM_BYTES_OBJECT_REF);
+    if (Constants.JRE_IS_64BIT) {
+      assertEquals("For 64 bit JVMs, reference size must be 8, unless compressed references are enabled",
+          COMPRESSED_REFS_ENABLED ? 4 : 8, NUM_BYTES_OBJECT_REF);
+    } else {
+      assertEquals("For 32bit JVMs, reference size must always be 4", 4, NUM_BYTES_OBJECT_REF);
+      assertFalse("For 32bit JVMs, compressed references can never be enabled", COMPRESSED_REFS_ENABLED);
     }
+  }
+  
+  public void testHotspotBean() {
+    assumeTrue("testHotspotBean only works on 64bit JVMs.", Constants.JRE_IS_64BIT);
+    try {
+      Class.forName(MANAGEMENT_FACTORY_CLASS);
+    } catch (ClassNotFoundException e) {
+      assumeNoException("testHotspotBean does not work on Java 8+ compact profile.", e);
+    }
+    try {
+      Class.forName(HOTSPOT_BEAN_CLASS);
+    } catch (ClassNotFoundException e) {
+      assumeNoException("testHotspotBean only works on Hotspot (OpenJDK, Oracle) virtual machines.", e);
+    }
+    
+    assertTrue("We should have been able to detect Hotspot's internal settings from the management bean.", JVM_IS_HOTSPOT_64BIT);
+  }
+  
+  /** Helper to print out current settings for debugging {@code -Dtests.verbose=true} */
+  public void testPrintValues() {
+    assumeTrue("Specify -Dtests.verbose=true to print constants of RamUsageEstimator.", VERBOSE);
+    System.out.println("JVM_IS_HOTSPOT_64BIT = " + JVM_IS_HOTSPOT_64BIT);
+    System.out.println("COMPRESSED_REFS_ENABLED = " + COMPRESSED_REFS_ENABLED);
+    System.out.println("NUM_BYTES_OBJECT_ALIGNMENT = " + NUM_BYTES_OBJECT_ALIGNMENT);
+    System.out.println("NUM_BYTES_OBJECT_REF = " + NUM_BYTES_OBJECT_REF);
+    System.out.println("NUM_BYTES_OBJECT_HEADER = " + NUM_BYTES_OBJECT_HEADER);
+    System.out.println("NUM_BYTES_ARRAY_HEADER = " + NUM_BYTES_ARRAY_HEADER);
+    System.out.println("LONG_SIZE = " + LONG_SIZE);
+    System.out.println("LONG_CACHE_MIN_VALUE = " + LONG_CACHE_MIN_VALUE);
+    System.out.println("LONG_CACHE_MAX_VALUE = " + LONG_CACHE_MAX_VALUE);
   }
 
   @SuppressWarnings("unused")

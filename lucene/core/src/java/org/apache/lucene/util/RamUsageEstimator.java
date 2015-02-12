@@ -17,15 +17,22 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.PlatformManagedObject;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.*;
+import java.util.IdentityHashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Estimates the size (memory representation) of Java objects.
+ * <p>
+ * This class uses assumptions that were discovered for the Hotspot
+ * virtual machine. If you use a non-OpenJDK/Oracle-based JVM,
+ * the measurements may be slightly wrong.
  * 
  * @see #shallowSizeOf(Object)
  * @see #shallowSizeOfInstance(Class)
@@ -33,29 +40,6 @@ import java.util.*;
  * @lucene.internal
  */
 public final class RamUsageEstimator {
-  /**
-   * JVM diagnostic features.
-   */
-  public static enum JvmFeature {
-    OBJECT_REFERENCE_SIZE("Object reference size estimated using array index scale"),
-    ARRAY_HEADER_SIZE("Array header size estimated using array based offset"),
-    FIELD_OFFSETS("Shallow instance size based on field offsets"),
-    OBJECT_ALIGNMENT("Object alignment retrieved from HotSpotDiagnostic MX bean");
-
-    public final String description;
-
-    private JvmFeature(String description) {
-      this.description = description;
-    }
-    
-    @Override
-    public String toString() {
-      return super.name() + " (" + description + ")";
-    }
-  }
-
-  /** JVM info string for debugging and reports. */
-  public final static String JVM_INFO_STRING;
 
   /** One kilobyte bytes. */
   public static final long ONE_KB = 1024;
@@ -79,7 +63,12 @@ public final class RamUsageEstimator {
   public final static int NUM_BYTES_DOUBLE = 8;
 
   /** 
-   * Number of bytes this jvm uses to represent an object reference. 
+   * True, iff compressed references (oops) are enabled by this JVM 
+   */
+  public final static boolean COMPRESSED_REFS_ENABLED;
+
+  /** 
+   * Number of bytes this JVM uses to represent an object reference. 
    */
   public final static int NUM_BYTES_OBJECT_REF;
 
@@ -102,9 +91,8 @@ public final class RamUsageEstimator {
   /**
    * Sizes of primitive classes.
    */
-  private static final Map<Class<?>,Integer> primitiveSizes;
+  private static final Map<Class<?>,Integer> primitiveSizes = new IdentityHashMap<>();
   static {
-    primitiveSizes = new IdentityHashMap<>();
     primitiveSizes.put(boolean.class, Integer.valueOf(NUM_BYTES_BOOLEAN));
     primitiveSizes.put(byte.class, Integer.valueOf(NUM_BYTES_BYTE));
     primitiveSizes.put(char.class, Integer.valueOf(NUM_BYTES_CHAR));
@@ -116,129 +104,77 @@ public final class RamUsageEstimator {
   }
 
   /**
-   * A handle to <code>sun.misc.Unsafe</code>.
-   */
-  private final static Object theUnsafe;
-  
-  /**
-   * A handle to <code>sun.misc.Unsafe#fieldOffset(Field)</code>.
-   */
-  private final static Method objectFieldOffsetMethod;
-
-  /**
-   * All the supported "internal" JVM features detected at clinit. 
-   */
-  private final static EnumSet<JvmFeature> supportedFeatures;
-
-  /**
    * JVMs typically cache small longs. This tries to find out what the range is.
    */
-  private static final long LONG_CACHE_MIN_VALUE, LONG_CACHE_MAX_VALUE;
-  private static final int LONG_SIZE;
+  static final long LONG_CACHE_MIN_VALUE, LONG_CACHE_MAX_VALUE;
+  static final int LONG_SIZE;
+  
+  /** For testing only */
+  static final boolean JVM_IS_HOTSPOT_64BIT;
+  
+  static final String MANAGEMENT_FACTORY_CLASS = "java.lang.management.ManagementFactory";
+  static final String HOTSPOT_BEAN_CLASS = "com.sun.management.HotSpotDiagnosticMXBean";
 
   /**
    * Initialize constants and try to collect information about the JVM internals. 
    */
-  static {
-    // Initialize empirically measured defaults. We'll modify them to the current
-    // JVM settings later on if possible.
-    int referenceSize = Constants.JRE_IS_64BIT ? 8 : 4;
-    int objectHeader = Constants.JRE_IS_64BIT ? 16 : 8;
-    // The following is objectHeader + NUM_BYTES_INT, but aligned (object alignment)
-    // so on 64 bit JVMs it'll be align(16 + 4, @8) = 24.
-    int arrayHeader = Constants.JRE_IS_64BIT ? 24 : 12;
-
-    supportedFeatures = EnumSet.noneOf(JvmFeature.class);
-
-    Class<?> unsafeClass = null;
-    Object tempTheUnsafe = null;
-    try {
-      unsafeClass = Class.forName("sun.misc.Unsafe");
-      final Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
-      unsafeField.setAccessible(true);
-      tempTheUnsafe = unsafeField.get(null);
-    } catch (Exception e) {
-      // Ignore.
-    }
-    theUnsafe = tempTheUnsafe;
-
-    // get object reference size by getting scale factor of Object[] arrays:
-    try {
-      final Method arrayIndexScaleM = unsafeClass.getMethod("arrayIndexScale", Class.class);
-      referenceSize = ((Number) arrayIndexScaleM.invoke(theUnsafe, Object[].class)).intValue();
-      supportedFeatures.add(JvmFeature.OBJECT_REFERENCE_SIZE);
-    } catch (Exception e) {
-      // ignore.
-    }
-
-    // "best guess" based on reference size. We will attempt to modify
-    // these to exact values if there is supported infrastructure.
-    objectHeader = Constants.JRE_IS_64BIT ? (8 + referenceSize) : 8;
-    arrayHeader =  Constants.JRE_IS_64BIT ? (8 + 2 * referenceSize) : 12;
-
-    // get the object header size:
-    // - first try out if the field offsets are not scaled (see warning in Unsafe docs)
-    // - get the object header size by getting the field offset of the first field of a dummy object
-    // If the scaling is byte-wise and unsafe is available, enable dynamic size measurement for
-    // estimateRamUsage().
-    Method tempObjectFieldOffsetMethod = null;
-    try {
-      final Method objectFieldOffsetM = unsafeClass.getMethod("objectFieldOffset", Field.class);
-      final Field dummy1Field = DummyTwoLongObject.class.getDeclaredField("dummy1");
-      final int ofs1 = ((Number) objectFieldOffsetM.invoke(theUnsafe, dummy1Field)).intValue();
-      final Field dummy2Field = DummyTwoLongObject.class.getDeclaredField("dummy2");
-      final int ofs2 = ((Number) objectFieldOffsetM.invoke(theUnsafe, dummy2Field)).intValue();
-      if (Math.abs(ofs2 - ofs1) == NUM_BYTES_LONG) {
-        final Field baseField = DummyOneFieldObject.class.getDeclaredField("base");
-        objectHeader = ((Number) objectFieldOffsetM.invoke(theUnsafe, baseField)).intValue();
-        supportedFeatures.add(JvmFeature.FIELD_OFFSETS);
-        tempObjectFieldOffsetMethod = objectFieldOffsetM;
+  static {    
+    if (Constants.JRE_IS_64BIT) {
+      // Try to get compressed oops and object alignment (the default seems to be 8 on Hotspot);
+      // (this only works on 64 bit, on 32 bits the alignment and reference size is fixed):
+      boolean compressedOops = false;
+      int objectAlignment = 8;
+      boolean isHotspot = false;
+      try {
+        final Class<?> beanClazz = Class.forName(HOTSPOT_BEAN_CLASS);
+        // we use reflection for this, because the management factory is not part
+        // of Java 8's compact profile:
+        final Object hotSpotBean = Class.forName(MANAGEMENT_FACTORY_CLASS)
+          .getMethod("getPlatformMXBean", Class.class)
+          .invoke(null, beanClazz);
+        if (hotSpotBean != null) {
+          isHotspot = true;
+          final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
+          try {
+            final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "UseCompressedOops");
+            compressedOops = Boolean.parseBoolean(
+                vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+            );
+          } catch (ReflectiveOperationException | RuntimeException e) {
+            isHotspot = false;
+          }
+          try {
+            final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
+            objectAlignment = Integer.parseInt(
+                vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+            );
+          } catch (ReflectiveOperationException | RuntimeException e) {
+            isHotspot = false;
+          }
+        }
+      } catch (ReflectiveOperationException | RuntimeException e) {
+        isHotspot = false;
       }
-    } catch (Exception e) {
-      // Ignore.
-    }
-    objectFieldOffsetMethod = tempObjectFieldOffsetMethod;
-
-    // Get the array header size by retrieving the array base offset
-    // (offset of the first element of an array).
-    try {
-      final Method arrayBaseOffsetM = unsafeClass.getMethod("arrayBaseOffset", Class.class);
-      // we calculate that only for byte[] arrays, it's actually the same for all types:
-      arrayHeader = ((Number) arrayBaseOffsetM.invoke(theUnsafe, byte[].class)).intValue();
-      supportedFeatures.add(JvmFeature.ARRAY_HEADER_SIZE);
-    } catch (Exception e) {
-      // Ignore.
-    }
-
-    NUM_BYTES_OBJECT_REF = referenceSize;
-    NUM_BYTES_OBJECT_HEADER = objectHeader;
-    NUM_BYTES_ARRAY_HEADER = arrayHeader;
-    
-    // Try to get the object alignment (the default seems to be 8 on Hotspot, 
-    // regardless of the architecture).
-    int objectAlignment = 8;
-    try {
-      final Class<? extends PlatformManagedObject> beanClazz =
-        Class.forName("com.sun.management.HotSpotDiagnosticMXBean").asSubclass(PlatformManagedObject.class);
-      final Object hotSpotBean = ManagementFactory.getPlatformMXBean(beanClazz);
-      if (hotSpotBean != null) {
-        final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
-        final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
-        objectAlignment = Integer.parseInt(
-            vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
-        );
-        supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
-      }
-    } catch (Exception e) {
-      // Ignore.
+      JVM_IS_HOTSPOT_64BIT = isHotspot;
+      COMPRESSED_REFS_ENABLED = compressedOops;
+      NUM_BYTES_OBJECT_ALIGNMENT = objectAlignment;
+      // reference size is 4, if we have compressed oops:
+      NUM_BYTES_OBJECT_REF = COMPRESSED_REFS_ENABLED ? 4 : 8;
+      // "best guess" based on reference size:
+      NUM_BYTES_OBJECT_HEADER = 8 + NUM_BYTES_OBJECT_REF;
+      // array header is NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT, but aligned (object alignment):
+      NUM_BYTES_ARRAY_HEADER = (int) alignObjectSize(NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT);
+    } else {
+      JVM_IS_HOTSPOT_64BIT = false;
+      COMPRESSED_REFS_ENABLED = false;
+      NUM_BYTES_OBJECT_ALIGNMENT = 8;
+      NUM_BYTES_OBJECT_REF = 4;
+      NUM_BYTES_OBJECT_HEADER = 8;
+      // For 32 bit JVMs, no extra alignment of array header:
+      NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT;
     }
 
-    NUM_BYTES_OBJECT_ALIGNMENT = objectAlignment;
-
-    JVM_INFO_STRING = "[JVM: " +
-        Constants.JVM_NAME + ", " + Constants.JVM_VERSION + ", " + Constants.JVM_VENDOR + ", " + 
-        Constants.JAVA_VENDOR + ", " + Constants.JAVA_VERSION + "]";
-
+    // get min/max value of cached Long class instances:
     long longCacheMinValue = 0;
     while (longCacheMinValue > Long.MIN_VALUE
         && Long.valueOf(longCacheMinValue - 1) == Long.valueOf(longCacheMinValue - 1)) {
@@ -253,32 +189,7 @@ public final class RamUsageEstimator {
     LONG_CACHE_MAX_VALUE = longCacheMaxValue;
     LONG_SIZE = (int) shallowSizeOfInstance(Long.class);
   }
-
-
-  // Object with just one field to determine the object header size by getting the offset of the dummy field:
-  @SuppressWarnings("unused")
-  private static final class DummyOneFieldObject {
-    public byte base;
-  }
-
-  // Another test object for checking, if the difference in offsets of dummy1 and dummy2 is 8 bytes.
-  // Only then we can be sure that those are real, unscaled offsets:
-  @SuppressWarnings("unused")
-  private static final class DummyTwoLongObject {
-    public long dummy1, dummy2;
-  }
   
-  /** 
-   * Returns true, if the current JVM is fully supported by {@code RamUsageEstimator}.
-   * If this method returns {@code false} you are maybe using a 3rd party Java VM
-   * that is not supporting Oracle/Sun private APIs. The memory estimates can be 
-   * imprecise then (no way of detecting compressed references, alignments, etc.). 
-   * Lucene still tries to use sensible defaults.
-   */
-  public static boolean isSupportedJVM() {
-    return supportedFeatures.size() == JvmFeature.values().length;
-  }
-
   /** 
    * Aligns an object size to be the next multiple of {@link #NUM_BYTES_OBJECT_ALIGNMENT}. 
    */
@@ -416,41 +327,8 @@ public final class RamUsageEstimator {
   static long adjustForField(long sizeSoFar, final Field f) {
     final Class<?> type = f.getType();
     final int fsize = type.isPrimitive() ? primitiveSizes.get(type) : NUM_BYTES_OBJECT_REF;
-    if (objectFieldOffsetMethod != null) {
-      try {
-        final long offsetPlusSize =
-          ((Number) objectFieldOffsetMethod.invoke(theUnsafe, f)).longValue() + fsize;
-        return Math.max(sizeSoFar, offsetPlusSize);
-      } catch (IllegalAccessException ex) {
-        throw new RuntimeException("Access problem with sun.misc.Unsafe", ex);
-      } catch (InvocationTargetException ite) {
-        final Throwable cause = ite.getCause();
-        if (cause instanceof RuntimeException)
-          throw (RuntimeException) cause;
-        if (cause instanceof Error)
-          throw (Error) cause;
-        // this should never happen (Unsafe does not declare
-        // checked Exceptions for this method), but who knows?
-        throw new RuntimeException("Call to Unsafe's objectFieldOffset() throwed "+
-          "checked Exception when accessing field " +
-          f.getDeclaringClass().getName() + "#" + f.getName(), cause);
-      }
-    } else {
-      // TODO: No alignments based on field type/ subclass fields alignments?
-      return sizeSoFar + fsize;
-    }
-  }
-
-  /** Return the set of unsupported JVM features that improve the estimation. */
-  public static EnumSet<JvmFeature> getUnsupportedFeatures() {
-    EnumSet<JvmFeature> unsupported = EnumSet.allOf(JvmFeature.class);
-    unsupported.removeAll(supportedFeatures);
-    return unsupported;
-  }
-
-  /** Return the set of supported JVM features that improve the estimation. */
-  public static EnumSet<JvmFeature> getSupportedFeatures() {
-    return EnumSet.copyOf(supportedFeatures);
+    // TODO: No alignments based on field type/ subclass fields alignments?
+    return sizeSoFar + fsize;
   }
 
   /**
