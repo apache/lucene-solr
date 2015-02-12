@@ -17,17 +17,19 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-/** A PriorityQueue maintains a partial ordering of its elements such that the
- * least element can always be found in constant time.  Put()'s and pop()'s
- * require log(size) time.
+/**
+ * A PriorityQueue maintains a partial ordering of its elements such that the
+ * least element can always be found in constant time. Put()'s and pop()'s
+ * require log(size) time but the remove() cost implemented here is linear.
  *
- * <p><b>NOTE</b>: This class will pre-allocate a full array of
- * length <code>maxSize+1</code> if instantiated via the
- * {@link #PriorityQueue(int,boolean)} constructor with
- * <code>prepopulate</code> set to <code>true</code>.
+ * <p>
+ * <b>NOTE</b>: This class will pre-allocate a full array of length
+ * <code>maxSize+1</code> if instantiated via the
+ * {@link #PriorityQueue(int,boolean)} constructor with <code>prepopulate</code>
+ * set to <code>true</code>.
  * 
  * @lucene.internal
-*/
+ */
 public abstract class PriorityQueue<T> {
   private int size = 0;
   private final int maxSize;
@@ -130,7 +132,7 @@ public abstract class PriorityQueue<T> {
   public final T add(T element) {
     size++;
     heap[size] = element;
-    upHeap();
+    upHeap(size);
     return heap[1];
   }
 
@@ -174,7 +176,7 @@ public abstract class PriorityQueue<T> {
       heap[1] = heap[size];     // move last to first
       heap[size] = null;        // permit GC of objects
       size--;
-      downHeap();               // adjust heap
+      downHeap(1);              // adjust heap
       return result;
     } else {
       return null;
@@ -201,7 +203,7 @@ public abstract class PriorityQueue<T> {
    * @return the new 'top' element.
    */
   public final T updateTop() {
-    downHeap();
+    downHeap(1);
     return heap[1];
   }
 
@@ -226,8 +228,31 @@ public abstract class PriorityQueue<T> {
     size = 0;
   }
 
-  private final void upHeap() {
-    int i = size;
+  /**
+   * Removes an existing element currently stored in the PriorityQueue. Cost is
+   * linear with the size of the queue. (A specialization of PriorityQueue which
+   * tracks element positions would provide a constant remove time but the
+   * trade-off would be extra cost to all additions/insertions)
+   */
+  public final boolean remove(T element) {
+    for (int i = 1; i <= size; i++) {
+      if (heap[i] == element) {
+        heap[i] = heap[size];
+        heap[size] = null; // permit GC of objects
+        size--;
+        if (i <= size) {
+          if (!upHeap(i)) {
+            downHeap(i);
+          }
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private final boolean upHeap(int origPos) {
+    int i = origPos;
     T node = heap[i];          // save bottom node
     int j = i >>> 1;
     while (j > 0 && lessThan(node, heap[j])) {
@@ -236,10 +261,10 @@ public abstract class PriorityQueue<T> {
       j = j >>> 1;
     }
     heap[i] = node;            // install saved node
+    return i != origPos;
   }
-
-  private final void downHeap() {
-    int i = 1;
+  
+  private final void downHeap(int i) {
     T node = heap[i];          // save top node
     int j = i << 1;            // find smaller child
     int k = j + 1;
@@ -257,7 +282,7 @@ public abstract class PriorityQueue<T> {
     }
     heap[i] = node;            // install saved node
   }
-  
+
   /** This method returns the internal heap array as Object[].
    * @lucene.internal
    */

@@ -33,6 +33,10 @@ API Changes
 
 New Features
 
+* LUCENE-6066: Added DiversifiedTopDocsCollector to misc for collecting no more 
+  than a given number of results under a choice of key. Introduces new remove 
+  method to core's PriorityQueue. (Mark Harwood)
+
 * LUCENE-3922: Added JapaneseNumberFilter that normalizes Japanese numbers
   in kansuji form to regular/Arabic numbers. (Gaute Lambertsen, Christian Moen)
 
