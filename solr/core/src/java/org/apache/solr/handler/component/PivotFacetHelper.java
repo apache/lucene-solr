@@ -65,7 +65,7 @@ public class PivotFacetHelper {
       }
       out.append(',');
     }
-    out.deleteCharAt(out.length()-1);  // prune the last seperator
+    out.deleteCharAt(out.length()-1);  // prune the last separator
     return out.toString();
     // return StrUtils.join(values, ',');
   }
@@ -80,7 +80,7 @@ public class PivotFacetHelper {
     // special case: empty list => empty string
     if (rawvals.isEmpty()) return rawvals;
 
-    List<String> out = new ArrayList<String>(rawvals.size());
+    List<String> out = new ArrayList<>(rawvals.size());
     for (String raw : rawvals) {
       assert 0 < raw.length();
       if ('^' == raw.charAt(0)) {
@@ -124,7 +124,7 @@ public class PivotFacetHelper {
    * Given a mapping of keys to {@link StatsValues} representing the currently 
    * known "merged" stats (which may be null if none exist yet), and a 
    * {@link NamedList} containing the "stats" response block returned by an individual 
-   * shard, this method accumulates the stasts for each {@link StatsField} found in 
+   * shard, this method accumulates the stats for each {@link StatsField} found in
    * the shard response with the existing mergeStats
    *
    * @return the original <code>merged</code> Map after modifying, or a new Map if the <code>merged</code> param was originally null.
@@ -137,18 +137,18 @@ public class PivotFacetHelper {
      NamedList<NamedList<NamedList<?>>> remoteWrapper, 
      StatsInfo statsInfo) {
 
-    if (null == merged) merged = new LinkedHashMap<String,StatsValues>();
+    if (null == merged) merged = new LinkedHashMap<>();
 
     NamedList<NamedList<?>> remoteStats = StatsComponent.unwrapStats(remoteWrapper);
 
     for (Entry<String,NamedList<?>> entry : remoteStats) {
       StatsValues receivingStatsValues = merged.get(entry.getKey());
       if (receivingStatsValues == null) {
-        StatsField recievingStatsField = statsInfo.getStatsField(entry.getKey());
-        if (null == recievingStatsField) {
-          throw new SolrException(ErrorCode.SERVER_ERROR , "No stats.field found corrisponding to pivot stats recieved from shard: "+entry.getKey());
+        StatsField receivingStatsField = statsInfo.getStatsField(entry.getKey());
+        if (null == receivingStatsField) {
+          throw new SolrException(ErrorCode.SERVER_ERROR , "No stats.field found corresponding to pivot stats received from shard: "+entry.getKey());
         }
-        receivingStatsValues = StatsValuesFactory.createStatsValues(recievingStatsField);
+        receivingStatsValues = StatsValuesFactory.createStatsValues(receivingStatsField);
         merged.put(entry.getKey(), receivingStatsValues);
       }
       receivingStatsValues.accumulate(entry.getValue());
