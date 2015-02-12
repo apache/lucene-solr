@@ -232,7 +232,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
         if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])
             || Files.exists(snapDir[3])) {
-          fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 2.");
+          fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
         }
       }
 
