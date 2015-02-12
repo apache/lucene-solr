@@ -112,7 +112,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     masterClient.close();
     masterClient  = null;
     masterJetty.stop();
-    master.tearDown();
     masterJetty = null;
     master = null;
   }
@@ -167,60 +166,51 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     Path[] snapDir = new Path[2];
     boolean namedBackup = random().nextBoolean();
-    try {
-      String firstBackupTimestamp = null;
+    String firstBackupTimestamp = null;
 
-      String[] backupNames = null;
-      if (namedBackup) {
-        backupNames = new String[2];
+    String[] backupNames = null;
+    if (namedBackup) {
+      backupNames = new String[2];
+    }
+    for (int i = 0; i < 2; i++) {
+      BackupCommand backupCommand;
+      final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
+      if (!namedBackup) {
+        backupCommand = new BackupCommand(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
+      } else {
+        backupCommand = new BackupCommand(backupName, ReplicationHandler.CMD_BACKUP);
+        backupNames[i] = backupName;
       }
-      for (int i = 0; i < 2; i++) {
-        BackupCommand backupCommand;
-        final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
-        if (!namedBackup) {
-          backupCommand = new BackupCommand(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
-        } else {
-          backupCommand = new BackupCommand(backupName, ReplicationHandler.CMD_BACKUP);
-          backupNames[i] = backupName;
-        }
-        backupCommand.runCommand();
-        if (backupCommand.fail != null) {
-          fail(backupCommand.fail);
-        }
-
-        CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, firstBackupTimestamp);
-        while (!checkBackupStatus.success) {
-          checkBackupStatus.fetchStatus();
-          Thread.sleep(1000);
-        }
-        if (i == 0) {
-          firstBackupTimestamp = checkBackupStatus.backupTimestamp;
-        }
-
-        if (!namedBackup) {
-          snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
-        } else {
-          snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName).iterator().next();
-        }
-        verify(snapDir[i], nDocs);
-
+      backupCommand.runCommand();
+      if (backupCommand.fail != null) {
+        fail(backupCommand.fail);
       }
 
-      if (!namedBackup && Files.exists(snapDir[0])) {
-        fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+      CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, firstBackupTimestamp);
+      while (!checkBackupStatus.success) {
+        checkBackupStatus.fetchStatus();
+        Thread.sleep(1000);
+      }
+      if (i == 0) {
+        firstBackupTimestamp = checkBackupStatus.backupTimestamp;
       }
 
-      //Test Deletion of named backup
-      if(namedBackup) {
-        testDeleteNamedBackup(backupNames);
+      if (!namedBackup) {
+        snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
+      } else {
+        snapDir[i] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName).iterator().next();
       }
+      verify(snapDir[i], nDocs);
 
-    } finally {
-      if(!namedBackup) {
-        for (int i = 0; i < snapDir.length; i++) {
-          org.apache.lucene.util.IOUtils.rm(snapDir[i]);
-        }
-      }
+    }
+
+    if (!namedBackup && Files.exists(snapDir[0])) {
+      fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+    }
+
+    //Test Deletion of named backup
+    if(namedBackup) {
+      testDeleteNamedBackup(backupNames);
     }
   }
 
