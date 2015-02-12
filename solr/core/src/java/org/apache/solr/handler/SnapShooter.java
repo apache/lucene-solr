@@ -62,8 +62,6 @@ public class SnapShooter {
     else  {
       File base = new File(core.getCoreDescriptor().getInstanceDir());
       snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
-      File dir = new File(snapDir);
-      if (!dir.exists())  dir.mkdirs();
     }
     this.snapshotName = snapshotName;
 
@@ -84,8 +82,8 @@ public class SnapShooter {
         if(snapshotName != null) {
           createSnapshot(indexCommit, replicationHandler);
         } else {
-          deleteOldBackups(numberToKeep);
           createSnapshot(indexCommit, replicationHandler);
+          deleteOldBackups(numberToKeep);
         }
       }
     }.start();
@@ -158,23 +156,23 @@ public class SnapShooter {
   private void deleteOldBackups(int numberToKeep) {
     File[] files = new File(snapDir).listFiles();
     List<OldBackupDirectory> dirs = new ArrayList<>();
-    for(File f : files) {
+    for (File f : files) {
       OldBackupDirectory obd = new OldBackupDirectory(f);
       if(obd.dir != null) {
         dirs.add(obd);
       }
     }
-    if(numberToKeep > dirs.size()) {
+    if (numberToKeep > dirs.size() -1) {
       return;
     }
 
     Collections.sort(dirs);
     int i=1;
-    for(OldBackupDirectory dir : dirs) {
-      if( i++ > numberToKeep-1 ) {
+    for (OldBackupDirectory dir : dirs) {
+      if (i++ > numberToKeep) {
         SnapPuller.delTree(dir.dir);
       }
-    }   
+    }
   }
 
   protected void deleteNamedSnapshot(ReplicationHandler replicationHandler) {
@@ -199,7 +197,7 @@ public class SnapShooter {
     File dir;
     Date timestamp;
     final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
-    
+
     OldBackupDirectory(File dir) {
       if(dir.isDirectory()) {
         Matcher m = dirNamePattern.matcher(dir.getName());
@@ -221,7 +219,7 @@ public class SnapShooter {
   }
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
-  
+
 
   private static void copyFiles(Directory sourceDir, Collection<String> files, File destDir) throws IOException {
     try (FSDirectory dir = new SimpleFSDirectory(destDir.toPath(), NoLockFactory.INSTANCE)) {
@@ -230,5 +228,5 @@ public class SnapShooter {
       }
     }
   }
-    
+
 }
