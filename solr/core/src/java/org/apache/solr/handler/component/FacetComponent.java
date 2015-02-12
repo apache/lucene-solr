@@ -237,7 +237,7 @@ public class FacetComponent extends SearchComponent {
             shardsRefineRequest.params.remove(FacetParams.FACET_PIVOT_MINCOUNT);
           }
           
-          enqueuePivotFacetShardRequests(null, rb, shardNum);
+          enqueuePivotFacetShardRequests(rb, shardNum);
         }
       }
     }
@@ -245,9 +245,7 @@ public class FacetComponent extends SearchComponent {
     return ResponseBuilder.STAGE_DONE;
   }
   
-  private void enqueuePivotFacetShardRequests
-    (HashMap<String,List<String>> pivotFacetRefinements, 
-     ResponseBuilder rb, int shardNum) {
+  private void enqueuePivotFacetShardRequests(ResponseBuilder rb, int shardNum) {
     
     FacetInfo fi = rb._facetInfo;
     
@@ -315,7 +313,7 @@ public class FacetComponent extends SearchComponent {
       
       modifyRequestForFieldFacets(rb, sreq, fi);
 
-      modifyRequestForRangeFacets(sreq, fi);
+      modifyRequestForRangeFacets(sreq);
       
       modifyRequestForPivotFacets(rb, sreq, fi.pivotFacets);
 
@@ -332,7 +330,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   // we must get all the range buckets back in order to have coherent lists at the end, see SOLR-6154
-  private void modifyRequestForRangeFacets(ShardRequest sreq, FacetInfo fi) {
+  private void modifyRequestForRangeFacets(ShardRequest sreq) {
     // Collect all the range fields.
     final String[] fields = sreq.params.getParams(FacetParams.FACET_RANGE);
     if (fields != null) {
@@ -596,7 +594,7 @@ public class FacetComponent extends SearchComponent {
             // fbs can be null if a shard request failed
             if (fbs != null && (sfc.termNum >= fbs.length() || !fbs.get(sfc.termNum))) {
               // if missing from this shard, add the max it could be
-              maxCount += dff.maxPossible(sfc, shardNum);
+              maxCount += dff.maxPossible(shardNum);
             }
           }
           if (maxCount >= smallestCount) {
@@ -612,7 +610,7 @@ public class FacetComponent extends SearchComponent {
             // fbs can be null if a shard request failed
             if (fbs != null &&
                 (sfc.termNum >= fbs.length() || !fbs.get(sfc.termNum)) &&
-                dff.maxPossible(sfc, shardNum) > 0) {
+                dff.maxPossible(shardNum) > 0) {
 
               dff.needRefinements = true;
               List<String> lst = dff._toRefine[shardNum];
@@ -965,7 +963,7 @@ public class FacetComponent extends SearchComponent {
   private void reQueuePivotFacetShardRequests(ResponseBuilder rb) {
     for (int shardNum = 0; shardNum < rb.shards.length; shardNum++) {
       if (doAnyPivotFacetRefinementRequestsExistForShard(rb._facetInfo, shardNum)) {
-        enqueuePivotFacetShardRequests(null, rb, shardNum);
+        enqueuePivotFacetShardRequests(rb, shardNum);
       }
     }
   }
@@ -1063,7 +1061,7 @@ public class FacetComponent extends SearchComponent {
     for (Entry<String,PivotFacet> entry : rb._facetInfo.pivotFacets) {
       String key = entry.getKey();
       PivotFacet pivot = entry.getValue();
-      List<NamedList<Object>> trimmedPivots = pivot.getTrimmedPivotsAsListOfNamedLists(rb);
+      List<NamedList<Object>> trimmedPivots = pivot.getTrimmedPivotsAsListOfNamedLists();
       if (null == trimmedPivots) {
         trimmedPivots = Collections.<NamedList<Object>>emptyList();
       }
@@ -1360,7 +1358,7 @@ public class FacetComponent extends SearchComponent {
     
     // returns the max possible value this ShardFacetCount could have for this shard
     // (assumes the shard did not report a count for this value)
-    long maxPossible(ShardFacetCount sfc, int shardNum) {
+    long maxPossible(int shardNum) {
       return missingMax[shardNum];
       // TODO: could store the last term in the shard to tell if this term
       // comes before or after it. If it comes before, we could subtract 1

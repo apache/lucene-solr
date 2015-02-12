@@ -119,7 +119,7 @@ public class PivotFacet extends FacetBase {
    * @see PivotFacetField#trim
    * @see PivotFacetField#convertToListOfNamedLists
    */
-  public List<NamedList<Object>> getTrimmedPivotsAsListOfNamedLists(ResponseBuilder rb) {
+  public List<NamedList<Object>> getTrimmedPivotsAsListOfNamedLists() {
     if (null == pivotFacetField) {
       // no values in any shard for the top field of this pivot
       return Collections.<NamedList<Object>>emptyList();

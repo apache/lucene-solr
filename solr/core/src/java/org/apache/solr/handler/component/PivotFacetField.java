@@ -259,7 +259,7 @@ public class PivotFacetField {
              // (mincount may have excluded from a shard)
             FacetParams.FACET_SORT_INDEX.equals(facetFieldSort)
              // if we are doing count order, we need to refine if the limit was hit
-             // (if it not, the shard doesn't have the value or it would have returned already)
+             // (if not, the shard doesn't have the value or it would have returned already)
              || numberOfValuesContributedByShardWasLimitedByFacetFieldLimit(shard) ) {
 
           pf.addRefinement(shard, value);

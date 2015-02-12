@@ -99,6 +99,8 @@ Other Changes
 * SOLR-7094: Better error reporting of JSON parse issues when indexing docs
   (Ishan Chattopadhyaya via Timothy Potter)
 
+* SOLR-7103: Remove unused method params in faceting code. (shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
