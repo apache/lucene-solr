@@ -17,7 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.lang.reflect.Field;
 import java.util.StringTokenizer;
 
 
@@ -69,25 +68,14 @@ public final class Constants {
       JVM_MINOR_VERSION = 0;
     }
     boolean is64Bit = false;
-    try {
-      final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-      final Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
-      unsafeField.setAccessible(true);
-      final Object unsafe = unsafeField.get(null);
-      final int addressSize = ((Number) unsafeClass.getMethod("addressSize")
-        .invoke(unsafe)).intValue();
-      //System.out.println("Address size: " + addressSize);
-      is64Bit = addressSize >= 8;
-    } catch (Exception e) {
-      final String x = System.getProperty("sun.arch.data.model");
-      if (x != null) {
-        is64Bit = x.indexOf("64") != -1;
+    final String x = System.getProperty("sun.arch.data.model");
+    if (x != null) {
+      is64Bit = x.contains("64");
+    } else {
+      if (OS_ARCH != null && OS_ARCH.contains("64")) {
+        is64Bit = true;
       } else {
-        if (OS_ARCH != null && OS_ARCH.indexOf("64") != -1) {
-          is64Bit = true;
-        } else {
-          is64Bit = false;
-        }
+        is64Bit = false;
       }
     }
     JRE_IS_64BIT = is64Bit;
