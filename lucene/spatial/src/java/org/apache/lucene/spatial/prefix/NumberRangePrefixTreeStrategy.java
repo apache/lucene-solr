@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial;
+package org.apache.lucene.spatial.prefix;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,8 +30,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.prefix.PrefixTreeFacetCounter;
-import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 
