@@ -18,9 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
@@ -49,10 +51,11 @@ final class ExactPhraseScorer extends Scorer {
     }
   }
 
+  private final ConjunctionDISI conjunction;
+
   private final ChunkState[] chunkStates;
   private final PostingsEnum lead;
 
-  private int docID = -1;
   private int freq;
 
   private final Similarity.SimScorer docScorer;
@@ -72,49 +75,46 @@ final class ExactPhraseScorer extends Scorer {
     // min(cost)
     cost = lead.cost();
 
+    List<DocIdSetIterator> iterators = new ArrayList<>();
     for(int i=0;i<postings.length;i++) {
       chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position);
+      iterators.add(postings[i].postings);
     }
+    conjunction = ConjunctionDISI.intersect(iterators);
   }
-  
-  private int doNext(int doc) throws IOException {
-    for(;;) {
-      // TODO: don't dup this logic from conjunctionscorer :)
-      advanceHead: for(;;) {
-        for (int i = 1; i < chunkStates.length; i++) {
-          final PostingsEnum de = chunkStates[i].posEnum;
-          if (de.docID() < doc) {
-            int d = de.advance(doc);
 
-            if (d > doc) {
-              // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
-              doc = d;
-              break advanceHead;
-            }
-          }
-        }
-        // all DocsEnums are on the same doc
-        if (doc == NO_MORE_DOCS) {
-          return doc;
-        } else if (phraseFreq() > 0) {
-          return doc;            // success: matches phrase
-        } else {
-          doc = lead.nextDoc();  // doesn't match phrase
-        }
+  @Override
+  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    return new TwoPhaseDocIdSetIterator() {
+
+      @Override
+      public boolean matches() throws IOException {
+        return phraseFreq() > 0;
       }
-      // advance head for next iteration
-      doc = lead.advance(doc);
+
+      @Override
+      public DocIdSetIterator approximation() {
+        return conjunction;
+      }
+    };
+  }
+
+  private int doNext(int doc) throws IOException {
+    for (;; doc = conjunction.nextDoc()) {
+      if (doc == NO_MORE_DOCS || phraseFreq() > 0) {
+        return doc;
+      }
     }
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return docID = doNext(lead.nextDoc());
+    return doNext(conjunction.nextDoc());
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return docID = doNext(lead.advance(target));
+    return doNext(conjunction.advance(target));
   }
 
   @Override
@@ -149,12 +149,12 @@ final class ExactPhraseScorer extends Scorer {
 
   @Override
   public int docID() {
-    return docID;
+    return conjunction.docID();
   }
 
   @Override
   public float score() {
-    return docScorer.score(docID, freq);
+    return docScorer.score(docID(), freq);
   }
 
   private int phraseFreq() throws IOException {

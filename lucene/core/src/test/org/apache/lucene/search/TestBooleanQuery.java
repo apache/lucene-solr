@@ -590,4 +590,33 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  public void testConjunctionSupportsApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+
+    BooleanQuery q = new BooleanQuery();
+    q.add(pq, Occur.MUST);
+    q.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
+
+    final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertNotNull(scorer.asTwoPhaseIterator());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
 }
