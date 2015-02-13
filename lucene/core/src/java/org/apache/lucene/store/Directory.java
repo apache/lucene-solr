@@ -43,7 +43,7 @@ import org.apache.lucene.util.IOUtils;
 public abstract class Directory implements Closeable {
 
   /**
-   * Returns an array of strings, one for each file in the directory.
+   * Returns an array of strings, one for each entry in the directory.
    * 
    * @throws IOException in case of IO error
    */

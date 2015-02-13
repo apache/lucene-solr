@@ -48,6 +48,7 @@ import java.util.zip.ZipInputStream;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -100,7 +101,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
 
@@ -1233,6 +1236,15 @@ public final class TestUtil {
         return false;
       }
     }
+  }
+  
+  /** Returns a copy of directory, entirely in RAM */
+  public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
+    RAMDirectory ram = new RAMDirectory();
+    for (String file : dir.listAll()) {
+      ram.copyFrom(dir, file, file, IOContext.DEFAULT);
+    }
+    return ram;
   }
   
   /** List of characters that match {@link Character#isWhitespace} */

@@ -166,19 +166,14 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  /** Lists all files (not subdirectories) in the
+  /** Lists all files (including subdirectories) in the
    *  directory.
    *
    *  @throws IOException if there was an I/O error during listing */
   public static String[] listAll(Path dir) throws IOException {
     List<String> entries = new ArrayList<>();
     
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, new DirectoryStream.Filter<Path>() {
-      @Override
-      public boolean accept(Path entry) throws IOException {
-        return !Files.isDirectory(entry); // filter out entries that are definitely directories.
-      }
-    })) {
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
       for (Path path : stream) {
         entries.add(path.getFileName().toString());
       }
@@ -187,9 +182,6 @@ public abstract class FSDirectory extends BaseDirectory {
     return entries.toArray(new String[entries.size()]);
   }
 
-  /** Lists all files (not subdirectories) in the
-   * directory.
-   * @see #listAll(Path) */
   @Override
   public String[] listAll() throws IOException {
     ensureOpen();

@@ -142,7 +142,7 @@ public class TestDirectory extends BaseDirectoryTestCase {
     Path path = createTempDir("testsubdir");
     try {
       Files.createDirectory(path.resolve("subdir"));
-      Directory fsDir = new SimpleFSDirectory(path);
+      FSDirectory fsDir = new SimpleFSDirectory(path);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
       IOUtils.rm(path);

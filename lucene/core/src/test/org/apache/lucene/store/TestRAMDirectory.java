@@ -71,10 +71,10 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
   // LUCENE-1468
   public void testCopySubdir() throws Throwable {
     Path path = createTempDir("testsubdir");
-    Directory fsDir = null;
+    FSDirectory fsDir = null;
     try {
       Files.createDirectory(path.resolve("subdir"));
-      fsDir = newFSDirectory(path);
+      fsDir = new SimpleFSDirectory(path);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
       IOUtils.close(fsDir);
@@ -85,7 +85,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
   public void testRAMDirectory () throws IOException {
     Path indexDir = buildIndex();
     
-    Directory dir = newFSDirectory(indexDir);
+    FSDirectory dir = new SimpleFSDirectory(indexDir);
     MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())));
     
     // close the underlaying directory
@@ -118,7 +118,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
 
     Path indexDir = buildIndex();
       
-    Directory dir = newFSDirectory(indexDir);
+    FSDirectory dir = new SimpleFSDirectory(indexDir);
     final MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())));
     dir.close();
     
