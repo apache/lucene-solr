@@ -81,6 +81,11 @@ Optimizations
 * LUCENE-6233 Speed up CheckIndex when the index has term vectors
   (Robert Muir, Mike McCandless)
 
+* LUCENE-6198: Added the TwoPhaseDocIdSetIterator API, exposed on scorers which
+  is for now only used on phrase queries and conjunctions in order to check
+  positions lazily if the phrase query is in a conjunction with other queries.
+  (Robert Muir, Adrien Grand)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
