@@ -155,6 +155,10 @@ Other Changes
 
 * SOLR-7103: Remove unused method params in faceting code. (shalin)
 
+* SOLR-6311: When performing distributed queries, SearchHandler should use path
+  when no qt or shard.qt parameter is specified; fix also resolves SOLR-4479.
+  (Steve Molloy, Timothy Potter)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
