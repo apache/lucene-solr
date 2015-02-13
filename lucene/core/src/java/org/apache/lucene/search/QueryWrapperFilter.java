@@ -68,8 +68,8 @@ public class QueryWrapperFilter extends Filter {
   }
 
   @Override
-  public String toString() {
-    return "QueryWrapperFilter(" + query + ")";
+  public String toString(String field) {
+    return "QueryWrapperFilter(" + query.toString(field) + ")";
   }
 
   @Override

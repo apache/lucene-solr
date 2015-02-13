@@ -126,8 +126,8 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   }
   
   @Override
-  public String toString() {
-    return getClass().getSimpleName() + "("+filter+")";
+  public String toString(String field) {
+    return getClass().getSimpleName() + "("+filter.toString(field)+")";
   }
 
   @Override

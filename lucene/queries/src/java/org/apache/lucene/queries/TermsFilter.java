@@ -250,7 +250,7 @@ public final class TermsFilter extends Filter implements Accountable {
   }
   
   @Override
-  public String toString() {
+  public String toString(String defaultField) {
     StringBuilder builder = new StringBuilder();
     BytesRef spare = new BytesRef(termsBytes);
     boolean first = true;
