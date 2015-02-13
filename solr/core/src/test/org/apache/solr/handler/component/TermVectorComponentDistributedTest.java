@@ -123,19 +123,16 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
     final String tv = "tvrh";
 
     for (String q : new String[] {"id:0", "id:7", "id:[3 TO 6]", "*:*"}) {
-
       query("sort","id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             TermVectorComponent.COMPONENT_NAME, "true", 
             TermVectorParams.TF, "true");
 
       // tv.fl diff from fl
       query("sort", "id asc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             "fl", "*,score",
             "tv.fl", "test_basictv,test_offtv",
             TermVectorComponent.COMPONENT_NAME, "true", 
@@ -144,8 +141,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
       // multi-valued tv.fl 
       query("sort", "id asc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             "fl", "*,score",
             "tv.fl", "test_basictv",
             "tv.fl","test_offtv",
@@ -154,16 +150,14 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
       // re-use fl glob
       query("sort", "id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             "fl", "*,score",
             TermVectorComponent.COMPONENT_NAME, "true", 
             TermVectorParams.TF, "true");
       // re-use fl, ignore things we can't handle
       query("sort", "id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             "fl", "score,test_basictv,[docid],test_postv,val:sum(3,4)",
             TermVectorComponent.COMPONENT_NAME, "true", 
             TermVectorParams.TF, "true");
@@ -171,8 +165,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
       // re-use (multi-valued) fl, ignore things we can't handle
       query("sort", "id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             "fl", "score,test_basictv",
             "fl", "[docid],test_postv,val:sum(3,4)",
             TermVectorComponent.COMPONENT_NAME, "true", 
@@ -182,8 +175,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
     
       query("sort", "id asc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             TermVectorComponent.COMPONENT_NAME, "true",
             TermVectorParams.TF, "true", 
             TermVectorParams.DF, "true", 
@@ -193,8 +185,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
     
       query("sort", "id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             TermVectorComponent.COMPONENT_NAME, "true",
             TermVectorParams.ALL, "true");
     
@@ -202,8 +193,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
 
       query("sort", "id desc",
             "qt",tv, 
-            "shards.qt",tv,
-            "q", q, 
+            "q", q,
             TermVectorComponent.COMPONENT_NAME, "true",
             TermVectorParams.TF, "true", 
             TermVectorParams.DF, "true", 
