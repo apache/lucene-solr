@@ -586,6 +586,11 @@ public class LRUFilterCache implements FilterCache, Accountable {
     public int hashCode() {
       return in.hashCode() ^ getClass().hashCode();
     }
+
+    @Override
+    public String toString(String field) {
+      return "CachingWrapperFilter(" + in.toString(field) + ")";
+    }
   }
 
 }

@@ -138,7 +138,7 @@ public class FieldValueFilter extends Filter {
   }
 
   @Override
-  public String toString() {
+  public String toString(String defaultField) {
     return "FieldValueFilter [field=" + field + ", negate=" + negate + "]";
   }
 

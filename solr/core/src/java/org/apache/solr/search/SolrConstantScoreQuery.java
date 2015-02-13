@@ -46,15 +46,16 @@ import org.apache.solr.common.SolrException;
  * Experimental and subject to change.
  */
 public class SolrConstantScoreQuery extends ConstantScoreQuery implements ExtendedQuery {
+  private final Filter filter;
   boolean cache = true;  // cache by default
   int cost;
 
   public SolrConstantScoreQuery(Filter filter) {
     super(filter);
+    this.filter = filter;
   }
 
   /** Returns the encapsulated filter */
-  @Override
   public Filter getFilter() {
     return filter;
   }

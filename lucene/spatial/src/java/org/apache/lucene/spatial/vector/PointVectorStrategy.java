@@ -132,11 +132,11 @@ public class PointVectorStrategy extends SpatialStrategy {
   public Filter makeFilter(SpatialArgs args) {
     //unwrap the CSQ from makeQuery
     ConstantScoreQuery csq = makeQuery(args);
-    Filter filter = csq.getFilter();
-    if (filter != null)
-      return filter;
+    Query sub = csq.getQuery();
+    if (sub instanceof Filter)
+      return (Filter) sub;
     else
-      return new QueryWrapperFilter(csq.getQuery());
+      return new QueryWrapperFilter(sub);
   }
 
   @Override

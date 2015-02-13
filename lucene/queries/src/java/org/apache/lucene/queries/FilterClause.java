@@ -74,9 +74,13 @@ public final class FilterClause {
     return filter.hashCode() ^ occur.hashCode();
   }
 
+  public String toString(String field) {
+    return occur.toString() + filter.toString(field);
+  }
+
   @Override
   public String toString() {
-    return occur.toString() + filter.toString();
+    return toString("");
   }
 
 }

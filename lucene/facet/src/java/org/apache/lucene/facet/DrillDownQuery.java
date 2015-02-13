@@ -194,11 +194,11 @@ public final class DrillDownQuery extends Query {
   static Filter getFilter(Query query) {
     if (query instanceof ConstantScoreQuery) {
       ConstantScoreQuery csq = (ConstantScoreQuery) query;
-      Filter filter = csq.getFilter();
-      if (filter != null) {
-        return filter;
+      Query sub = csq.getQuery();
+      if (sub instanceof Filter) {
+        return (Filter) sub;
       } else {
-        return getFilter(csq.getQuery());
+        return getFilter(sub);
       }
     } else {
       return null;

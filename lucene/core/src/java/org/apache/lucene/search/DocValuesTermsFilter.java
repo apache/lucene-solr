@@ -119,4 +119,17 @@ public class DocValuesTermsFilter extends Filter {
       }
     };
   }
+
+  @Override
+  public String toString(String defaultField) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(field).append(": [");
+    for (BytesRef term : terms) {
+      sb.append(term).append(", ");
+    }
+    if (terms.length > 0) {
+      sb.setLength(sb.length() - 2);
+    }
+    return sb.append(']').toString();
+  }
 }

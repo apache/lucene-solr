@@ -104,6 +104,9 @@ API Changes
 * LUCENE-6223: Move BooleanQuery.BooleanWeight to BooleanWeight.
   (Robert Muir)
 
+* LUCENE-1518: Make Filter extend Query and return 0 as score.
+  (Uwe Schindler, Adrien Grand)
+
 Other
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.

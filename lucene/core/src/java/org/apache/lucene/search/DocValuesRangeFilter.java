@@ -373,7 +373,7 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
   
   @Override
-  public final String toString() {
+  public final String toString(String defaultField) {
     final StringBuilder sb = new StringBuilder(field).append(":");
     return sb.append(includeLower ? '[' : '{')
       .append((lowerVal == null) ? "*" : lowerVal.toString())
