@@ -34,9 +34,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** tests for writing term vectors */
 public class TestTermVectorsWriter extends LuceneTestCase {
@@ -413,7 +413,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
           .setMergeScheduler(new SerialMergeScheduler())
           .setMergePolicy(new LogDocMergePolicy()));
 
-      Directory[] indexDirs = {new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())))};
+      Directory[] indexDirs = {new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(dir))};
       writer.addIndexes(indexDirs);
       writer.forceMerge(1);
       writer.close();

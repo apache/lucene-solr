@@ -168,13 +168,11 @@ public class HdfsDirectory extends BaseDirectory {
       return new String[] {};
     }
     for (FileStatus status : listStatus) {
-      if (!status.isDirectory()) {
-        files.add(status.getPath().getName());
-      }
+      files.add(status.getPath().getName());
     }
     return getNormalNames(files);
   }
-  
+
   public Path getHdfsDirPath() {
     return hdfsDirPath;
   }

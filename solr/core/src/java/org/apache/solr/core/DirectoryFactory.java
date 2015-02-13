@@ -221,7 +221,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public static long sizeOf(Directory directory, String file) throws IOException {
     try {
       return directory.fileLength(file);
-    } catch (FileNotFoundException | NoSuchFileException e) {
+    } catch (IOException e) {
+      // could be a race, file no longer exists, access denied, is a directory, etc.
       return 0;
     }
   }

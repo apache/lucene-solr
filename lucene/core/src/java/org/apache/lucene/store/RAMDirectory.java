@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -87,14 +88,16 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
    * @param dir a <code>Directory</code> value
    * @exception IOException if an error occurs
    */
-  public RAMDirectory(Directory dir, IOContext context) throws IOException {
+  public RAMDirectory(FSDirectory dir, IOContext context) throws IOException {
     this(dir, false, context);
   }
   
-  private RAMDirectory(Directory dir, boolean closeDir, IOContext context) throws IOException {
+  private RAMDirectory(FSDirectory dir, boolean closeDir, IOContext context) throws IOException {
     this();
     for (String file : dir.listAll()) {
-      copyFrom(dir, file, file, context);
+      if (!Files.isDirectory(dir.getDirectory().resolve(file))) {
+        copyFrom(dir, file, file, context);
+      }
     }
     if (closeDir) {
       dir.close();
