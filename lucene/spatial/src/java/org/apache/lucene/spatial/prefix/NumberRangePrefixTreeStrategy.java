@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial;
+package org.apache.lucene.spatial.prefix;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +22,6 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 
 /** A PrefixTree based on Number/Date ranges. This isn't very "spatial" on the surface (to the user) but
