@@ -92,7 +92,7 @@ function print_usage() {
   echo "* XML files: $THIS_SCRIPT -c records article*.xml"
   echo "* CSV file: $THIS_SCRIPT -c signals LATEST-signals.csv"
   echo "* Directory of files: $THIS_SCRIPT -c myfiles ~/Documents"
-  echo "* Web crawl: $THIS_SCRIPT -c gettingstarted http://lucidworks.com -recursive 1 -delay 1"
+  echo "* Web crawl: $THIS_SCRIPT -c gettingstarted http://lucene.apache.org/solr -recursive 1 -delay 1"
   echo "* Standard input (stdin): echo '{"commit": {}}' | $THIS_SCRIPT -c my_collection -type application/json -out yes -d"
   echo "* Data as string: $THIS_SCRIPT -c signals -type text/csv -out yes -d $'id,value\n1,0.47'"
   echo ""
