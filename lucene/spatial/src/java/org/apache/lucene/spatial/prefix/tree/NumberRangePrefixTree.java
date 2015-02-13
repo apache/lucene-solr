@@ -50,7 +50,7 @@ import org.apache.lucene.util.StringHelper;
  * Unlike "normal" spatial components in this module, this special-purpose one only works with {@link Shape}s
  * created by the methods on this class, not from any {@link com.spatial4j.core.context.SpatialContext}.
  *
- * @see org.apache.lucene.spatial.NumberRangePrefixTreeStrategy
+ * @see org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy
  * @see <a href="https://issues.apache.org/jira/browse/LUCENE-5648">LUCENE-5648</a>
  * @lucene.experimental
  */
