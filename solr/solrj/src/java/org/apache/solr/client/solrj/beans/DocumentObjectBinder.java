@@ -301,11 +301,7 @@ public class DocumentObjectBinder {
       if (typ.getClass() == Class.class) {//of type class
         type = (Class) typ;
       } else if (typ instanceof ParameterizedType) {
-        try {
-          type = Class.forName(((ParameterizedType) typ).getActualTypeArguments()[0].getTypeName());
-        } catch (ClassNotFoundException e) {
-          throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
-        }
+        type = (Class) ((ParameterizedType) typ).getActualTypeArguments()[0];
       } else {
         throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
 
