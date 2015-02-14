@@ -83,11 +83,16 @@ public class ClientUtils
    * @param d SolrInputDocument to convert
    * @return a SolrDocument with the same fields and values as the SolrInputDocument
    */
-  public static SolrDocument toSolrDocument( SolrInputDocument d )
-  {
+  public static SolrDocument toSolrDocument(SolrInputDocument d) {
     SolrDocument doc = new SolrDocument();
-    for( SolrInputField field : d ) {
-      doc.setField( field.getName(), field.getValue() );
+    for (SolrInputField field : d) {
+      doc.setField(field.getName(), field.getValue());
+    }
+    if (d.getChildDocuments() != null) {
+      for (SolrInputDocument in : d.getChildDocuments()) {
+        doc.addChildDocument(toSolrDocument(in));
+      }
+
     }
     return doc;
   }
