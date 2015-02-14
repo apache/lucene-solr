@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -36,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
 
 public class TestDocumentObjectBinder extends LuceneTestCase {
 
@@ -164,6 +162,52 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     assertEquals(supB, out1.supplier.get("supplier_supB"));
   }
 
+  public void testChild() throws Exception {
+    SingleValueChild in = new SingleValueChild();
+    in.id = "1";
+    in.child = new Child();
+    in.child.id = "1.0";
+    in.child.name = "Name One";
+    DocumentObjectBinder binder = new DocumentObjectBinder();
+    SolrInputDocument doc = binder.toSolrInputDocument(in);
+    assertEquals(1, doc.getChildDocuments().size());
+    assertEquals(1, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
+    SingleValueChild out = binder.getBean(SingleValueChild.class, ClientUtils.toSolrDocument(doc));
+    assertEquals(in.id, out.id);
+    assertEquals(in.child.id, out.child.id);
+    assertEquals(in.child.name, out.child.name);
+
+    ListChild listIn = new ListChild();
+    listIn.id = "2";
+    Child child = new Child();
+    child.id = "1.1";
+    child.name = "Name Two";
+    listIn.child = Arrays.asList(in.child, child);
+    doc = binder.toSolrInputDocument(listIn);
+    assertEquals(2, doc.getChildDocuments().size());
+    assertEquals(2, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
+    ListChild listOut = binder.getBean(ListChild.class, ClientUtils.toSolrDocument(doc));
+    assertEquals(listIn.id, listOut.id);
+    assertEquals(listIn.child.get(0).id, listOut.child.get(0).id);
+    assertEquals(listIn.child.get(0).name, listOut.child.get(0).name);
+    assertEquals(listIn.child.get(1).id, listOut.child.get(1).id);
+    assertEquals(listIn.child.get(1).name, listOut.child.get(1).name);
+
+    ArrayChild arrIn = new ArrayChild();
+    arrIn.id = "3";
+    arrIn.child = new Child[]{in.child, child};
+    doc = binder.toSolrInputDocument(arrIn);
+    assertEquals(2, doc.getChildDocuments().size());
+    assertEquals(2, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
+    ArrayChild arrOut = binder.getBean(ArrayChild.class, ClientUtils.toSolrDocument(doc));
+    assertEquals(arrIn.id, arrOut.id);
+    assertEquals(arrIn.child[0].id, arrOut.child[0].id);
+    assertEquals(arrIn.child[0].name, arrOut.child[0].name);
+    assertEquals(arrIn.child[1].id, arrOut.child[1].id);
+    assertEquals(arrIn.child[1].name, arrOut.child[1].name);
+
+  }
+
   public static class Item {
     @Field
     String id;
@@ -184,7 +228,7 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
 
     @Field("supplier_*")
     Map<String, List<String>> supplier;
-    
+
     @Field("sup_simple_*")
     Map<String, String> supplier_simple;
 
@@ -192,7 +236,7 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
 
     @Field("supplier_*")
     public void setAllSuppliers(String[] allSuppliers) {
-      this.allSuppliers = allSuppliers;  
+      this.allSuppliers = allSuppliers;
     }
 
     public String[] getAllSuppliers() {
@@ -203,11 +247,46 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     public void setInStock(Boolean b) {
       inStock = b;
     }
-    
+
     // required if you want to fill SolrDocuments with the same annotaion...
     public boolean isInStock() {
       return inStock;
     }
+  }
+
+  public static class Child {
+    @Field
+    String id;
+
+    @Field
+    String name;
+
+  }
+
+  public static class SingleValueChild {
+    @Field
+    String id;
+
+    @Field(child = true)
+    Child child;
+  }
+
+  public static class ListChild {
+    @Field
+    String id;
+
+    @Field(child = true)
+    List<Child> child;
+
+  }
+
+  public static class ArrayChild {
+
+    @Field
+    String id;
+
+    @Field(child = true)
+    Child[] child;
   }
   
 

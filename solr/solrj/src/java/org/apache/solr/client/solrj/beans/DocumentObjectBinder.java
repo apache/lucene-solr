@@ -28,12 +28,12 @@ import java.nio.ByteBuffer;
 
 /**
  * A class to map objects to and from solr documents.
- * 
+ *
  *
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
-  
+
   private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {
@@ -52,7 +52,7 @@ public class DocumentObjectBinder {
   public <T> T getBean(Class<T> clazz, SolrDocument solrDoc) {
     return getBean(clazz, null, solrDoc);
   }
-  
+
   private <T> T getBean(Class<T> clazz, List<DocField> fields, SolrDocument solrDoc) {
     if (fields == null) {
       fields = getDocFields(clazz);
@@ -68,7 +68,7 @@ public class DocumentObjectBinder {
       throw new BindingException("Could not instantiate object of " + clazz, e);
     }
   }
-  
+
   public SolrInputDocument toSolrInputDocument(Object obj) {
     List<DocField> fields = getDocFields(obj.getClass());
     if (fields.isEmpty()) {
@@ -86,12 +86,33 @@ public class DocumentObjectBinder {
           doc.setField(e.getKey(), e.getValue(), 1.0f);
         }
       } else {
-        doc.setField(field.name, field.get(obj), 1.0f);
+        if (field.child != null) {
+          addChild(obj, field, doc);
+        } else {
+          doc.setField(field.name, field.get(obj), 1.0f);
+        }
       }
     }
     return doc;
   }
-  
+
+  private void addChild(Object obj, DocField field, SolrInputDocument doc) {
+    Object val = field.get(obj);
+    if (val == null) return;
+    if (val instanceof Collection) {
+      Collection collection = (Collection) val;
+      for (Object o : collection) {
+        SolrInputDocument child = toSolrInputDocument(o);
+        doc.addChildDocument(child);
+      }
+    } else if (val.getClass().isArray()) {
+      Object[] objs = (Object[]) val;
+      for (Object o : objs) doc.addChildDocument(toSolrInputDocument(o));
+    } else {
+      doc.addChildDocument(toSolrInputDocument(val));
+    }
+  }
+
   private List<DocField> getDocFields(Class clazz) {
     List<DocField> fields = infocache.get(clazz);
     if (fields == null) {
@@ -112,17 +133,24 @@ public class DocumentObjectBinder {
       members.addAll(Arrays.asList(superClazz.getDeclaredMethods()));
       superClazz = superClazz.getSuperclass();
     }
-
+    boolean childFieldFound = false;
     for (AccessibleObject member : members) {
       if (member.isAnnotationPresent(Field.class)) {
         member.setAccessible(true);
-        fields.add(new DocField(member));
+        DocField df = new DocField(member);
+        if (df.child != null) {
+          if (childFieldFound)
+            throw new BindingException(clazz.getName() + " cannot have more than one Field with child=true");
+          childFieldFound = true;
+        }
+        fields.add(df);
       }
     }
     return fields;
   }
 
-  private static class DocField {
+  private class DocField {
+    private Field annotation;
     private String name;
     private java.lang.reflect.Field field;
     private Method setter;
@@ -130,6 +158,7 @@ public class DocumentObjectBinder {
     private Class type;
     private boolean isArray;
     private boolean isList;
+    private List<DocField> child;
 
     /*
      * dynamic fields may use a Map based data structure to bind a given field.
@@ -145,10 +174,10 @@ public class DocumentObjectBinder {
       } else {
         setter = (Method) member;
       }
-      Field annotation = member.getAnnotation(Field.class);
+      annotation = member.getAnnotation(Field.class);
       storeName(annotation);
       storeType();
-      
+
       // Look for a matching getter
       if (setter != null) {
         String gname = setter.getName();
@@ -172,7 +201,7 @@ public class DocumentObjectBinder {
     }
 
     private void storeName(Field annotation) {
-      if (annotation.value().equals(Field.DEFAULT)) {
+      if (annotation.value().equals(DEFAULT)) {
         if (field != null) {
           name = field.getName();
         } else {
@@ -204,15 +233,24 @@ public class DocumentObjectBinder {
         type = params[0];
       }
 
-      if(type == Collection.class || type == List.class || type == ArrayList.class) {
-        type = Object.class;
+      if (type == Collection.class || type == List.class || type == ArrayList.class) {
         isList = true;
+        if (annotation.child()) {
+          populateChild(field.getGenericType());
+        } else {
+          type = Object.class;
+        }
       } else if (type == byte[].class) {
         //no op
       } else if (type.isArray()) {
         isArray = true;
-        type = type.getComponentType();
+        if (annotation.child()) {
+          populateChild(type.getComponentType());
+        } else {
+          type = type.getComponentType();
+        }
       } else if (type == Map.class || type == HashMap.class) { //corresponding to the support for dynamicFields
+        if (annotation.child()) throw new BindingException("Map should is not a valid type for a child document");
         isContainedInMap = true;
         //assigned a default type
         type = Object.class;
@@ -226,7 +264,7 @@ public class DocumentObjectBinder {
               //Raw and primitive types
               if (types[1] instanceof Class) {
                 //the value could be multivalued then it is a List, Collection, ArrayList
-                if (types[1]== Collection.class || types[1] == List.class || types[1] == ArrayList.class) {
+                if (types[1] == Collection.class || types[1] == List.class || types[1] == ArrayList.class) {
                   type = Object.class;
                   isList = true;
                 } else {
@@ -234,8 +272,8 @@ public class DocumentObjectBinder {
                   type = (Class) types[1];
                 }
               } else if (types[1] instanceof ParameterizedType) { //Of all the Parameterized types, only List is supported
-                Type rawType = ((ParameterizedType)types[1]).getRawType();
-                if(rawType== Collection.class || rawType == List.class || rawType == ArrayList.class){
+                Type rawType = ((ParameterizedType) types[1]).getRawType();
+                if (rawType == Collection.class || rawType == List.class || rawType == ArrayList.class) {
                   type = Object.class;
                   isList = true;
                 }
@@ -249,7 +287,30 @@ public class DocumentObjectBinder {
             }
           }
         }
+      } else {
+        if (annotation.child()) {
+          populateChild(type);
+        }
       }
+    }
+
+    private void populateChild(Type typ) {
+      if (typ == null) {
+        throw new RuntimeException("no type information available for" + (field == null ? setter : field));
+      }
+      if (typ.getClass() == Class.class) {//of type class
+        type = (Class) typ;
+      } else if (typ instanceof ParameterizedType) {
+        try {
+          type = Class.forName(((ParameterizedType) typ).getActualTypeArguments()[0].getTypeName());
+        } catch (ClassNotFoundException e) {
+          throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
+        }
+      } else {
+        throw new BindingException("Invalid type information available for" + (field == null ? setter : field));
+
+      }
+      child = getDocFields(type);
     }
 
     /**
@@ -261,6 +322,26 @@ public class DocumentObjectBinder {
      */
     @SuppressWarnings("unchecked")
     private Object getFieldValue(SolrDocument solrDocument) {
+      if (child != null) {
+        List<SolrDocument> children = solrDocument.getChildDocuments();
+        if (children == null || children.isEmpty()) return null;
+        if (isList) {
+          ArrayList list = new ArrayList(children.size());
+          for (SolrDocument c : children) {
+            list.add(getBean(type, child, c));
+          }
+          return list;
+        } else if (isArray) {
+          Object[] arr = (Object[]) Array.newInstance(type, children.size());
+          for (int i = 0; i < children.size(); i++) {
+            arr[i] = getBean(type, child, children.get(i));
+          }
+          return arr;
+
+        } else {
+          return getBean(type, child, children.get(0));
+        }
+      }
       Object fieldValue = solrDocument.getFieldValue(name);
       if (fieldValue != null) {
         //this is not a dynamic field. so return the value
@@ -365,7 +446,7 @@ public class DocumentObjectBinder {
         } else if (setter != null) {
           setter.invoke(obj, v);
         }
-      } 
+      }
       catch (Exception e) {
         throw new BindingException("Exception while setting value : " + v + " on " + (field != null ? field : setter), e);
       }
@@ -389,4 +470,5 @@ public class DocumentObjectBinder {
       }
     }
   }
+  public static final String DEFAULT = "#default";
 }
