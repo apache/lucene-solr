@@ -805,6 +805,21 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
+       <!-- Controls the distribution of a query to shards other than itself.
+            Consider making 'preferLocalShards' true when:
+              1) maxShardsPerNode > 1
+              2) Number of shards > 1
+              3) CloudSolrClient or LbHttpSolrServer is used by clients.
+            Without this option, every core broadcasts the distributed query to
+            a replica of each shard where the replicas are chosen randomly.
+            This option directs the cores to prefer cores hosted locally, thus
+            preventing network delays between machines.
+            This behavior also immunizes a bad/slow machine from slowing down all
+            the good machines (if those good machines were querying this bad one).
+
+            Specify this option=false for clients connecting through HttpSolrServer
+       -->
+       <bool name="preferLocalShards">false</bool>
      </lst>
     <!-- In addition to defaults, "appends" params can be specified
          to identify values which should be appended to the list of

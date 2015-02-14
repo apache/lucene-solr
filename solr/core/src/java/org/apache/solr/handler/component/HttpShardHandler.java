@@ -40,13 +40,18 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -63,6 +68,7 @@ public class HttpShardHandler extends ShardHandler {
   private Map<String,List<String>> shardToURLs;
   private HttpClient httpClient;
 
+  protected static Logger log = LoggerFactory.getLogger(HttpShardHandler.class);
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
     this.httpClient = httpClient;
@@ -101,20 +107,69 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(String shard) {
+  private List<String> getURLs(ShardRequest sreq, String shard) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.makeURLList(shard);
+      preferCurrentHostForDistributedReq(sreq, urls);
       shardToURLs.put(shard, urls);
     }
     return urls;
   }
 
+  /**
+   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
+   * This means it is just as likely to choose current host as any of the other hosts.
+   * This function makes sure that the cores of current host are always put first in the URL list.
+   * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
+   * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
+   */
+  private void preferCurrentHostForDistributedReq(final ShardRequest sreq, final List<String> urls) {
+    if (sreq == null || sreq.rb == null || sreq.rb.req == null || urls == null || urls.size() <= 1)
+      return;
+
+    SolrQueryRequest req = sreq.rb.req;
+
+    // determine if we should apply the local preference
+    if (!req.getOriginalParams().getBool(CommonParams.PREFER_LOCAL_SHARDS, false))
+      return;
+
+    // Get this node's base URL from ZK
+    SolrCore core = req.getCore();
+    ZkController zkController = (core != null) ? core.getCoreDescriptor().getCoreContainer().getZkController() : null;
+    String currentHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
+    if (currentHostAddress == null) {
+      log.debug("Couldn't determine current host address to prefer local shards " +
+                "because either core is null? {} or there is no ZkController? {}",
+                Boolean.valueOf(core == null), Boolean.valueOf(zkController == null));
+      return;
+    }
+
+    if (log.isDebugEnabled())
+      log.debug("Trying to prefer local shard on {} among the urls: {}",
+          currentHostAddress, Arrays.toString(urls.toArray()));
+
+    ListIterator<String> itr = urls.listIterator();
+    while (itr.hasNext()) {
+      String url = itr.next();
+      if (url.startsWith(currentHostAddress)) {
+        // move current URL to the fore-front
+        itr.remove();
+        urls.add(0, url);
+
+        if (log.isDebugEnabled())
+          log.debug("Applied local shard preference for urls: {}",
+              Arrays.toString(urls.toArray()));
+
+        break;
+      }
+    }
+  }
 
   @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard);
+    final List<String> urls = getURLs(sreq, shard);
 
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       @Override

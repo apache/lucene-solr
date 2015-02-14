@@ -220,5 +220,9 @@ public interface CommonParams {
    */
   public static final String REQUEST_PURPOSE = "requestPurpose";
 
+  /**
+   * When querying a node, prefer local node's cores for distributed queries.
+   */
+  public static final String PREFER_LOCAL_SHARDS = "preferLocalShards";
 }
 

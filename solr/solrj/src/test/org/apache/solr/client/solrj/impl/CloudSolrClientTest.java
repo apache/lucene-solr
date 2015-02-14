@@ -17,6 +17,12 @@ package org.apache.solr.client.solrj.impl;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -44,6 +50,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -53,7 +60,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -115,6 +126,7 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     stateVersionParamTest();
     customHttpClientTest();
     testOverwriteOption();
+    preferLocalShardsTest();
   }
 
   private void testOverwriteOption() throws Exception, SolrServerException,
@@ -347,6 +359,117 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     controlClient.commit();
     cloudClient.commit();
     cloudClient.close();
+  }
+
+  /**
+   * Tests if the specification of 'preferLocalShards' in the query-params
+   * limits the distributed query to locally hosted shards only
+   */
+  private void preferLocalShardsTest() throws Exception {
+
+    String collectionName = "localShardsTestColl";
+
+    int liveNodes = getCommonCloudSolrClient()
+        .getZkStateReader().getClusterState().getLiveNodes().size();
+
+    // For preferLocalShards to succeed in a test, every shard should have
+    // all its cores on the same node.
+    // Hence the below configuration for our collection
+    Map<String, Object> props = makeMap(
+        REPLICATION_FACTOR, liveNodes,
+        MAX_SHARDS_PER_NODE, liveNodes,
+        NUM_SLICES, liveNodes);
+    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    createCollection(collectionInfos, collectionName, props, controlClientCloud);
+    waitForRecoveriesToFinish(collectionName, false);
+
+    CloudSolrClient cloudClient = createCloudClient(collectionName);
+    assertNotNull(cloudClient);
+    handle.clear();
+    handle.put("timestamp", SKIPVAL);
+    waitForThingsToLevelOut(30);
+
+    // Remove any documents from previous test (if any)
+    controlClient.deleteByQuery("*:*");
+    cloudClient.deleteByQuery("*:*");
+    controlClient.commit();
+    cloudClient.commit();
+
+    // Add some new documents
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField(id, "0");
+    doc1.addField("a_t", "hello1");
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.addField(id, "2");
+    doc2.addField("a_t", "hello2");
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField(id, "3");
+    doc3.addField("a_t", "hello2");
+
+    UpdateRequest request = new UpdateRequest();
+    request.add(doc1);
+    request.add(doc2);
+    request.add(doc3);
+    request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+
+    // Run the actual test for 'preferLocalShards'
+    queryWithPreferLocalShards(cloudClient, true, collectionName);
+
+    // Cleanup
+    controlClient.deleteByQuery("*:*");
+    cloudClient.deleteByQuery("*:*");
+    controlClient.commit();
+    cloudClient.commit();
+    cloudClient.close();
+  }
+
+  private void queryWithPreferLocalShards(CloudSolrClient cloudClient,
+                                          boolean preferLocalShards,
+                                          String collectionName)
+      throws Exception
+  {
+    SolrQuery qRequest = new SolrQuery();
+    qRequest.setQuery("*:*");
+
+    ModifiableSolrParams qParams = new ModifiableSolrParams();
+    qParams.add("preferLocalShards", Boolean.toString(preferLocalShards));
+    qParams.add("shards.info", "true");
+    qRequest.add(qParams);
+
+    // CloudSolrClient sends the request to some node.
+    // And since all the nodes are hosting cores from all shards, the
+    // distributed query formed by this node will select cores from the
+    // local shards only
+    QueryResponse qResponse = cloudClient.query (qRequest);
+
+    Object shardsInfo = qResponse.getResponse().get("shards.info");
+    assertNotNull("Unable to obtain shards.info", shardsInfo);
+
+    // Iterate over shards-info and check what cores responded
+    SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
+    List<String> shardAddresses = new ArrayList<String>();
+    while (itr.hasNext()) {
+      Map.Entry<String, ?> e = itr.next();
+      assertTrue("Did not find map-type value in shards.info", e.getValue() instanceof Map);
+      String shardAddress = (String)((Map)e.getValue()).get("shardAddress");
+      assertNotNull("shards.info did not return 'shardAddress' parameter", shardAddress);
+      shardAddresses.add(shardAddress);
+    }
+    log.info("Shards giving the response: " + Arrays.toString(shardAddresses.toArray()));
+
+    // Make sure the distributed queries were directed to a single node only
+    if (preferLocalShards) {
+      Set<Integer> ports = new HashSet<Integer>();
+      for (String shardAddr: shardAddresses) {
+        URL url = new URL (shardAddr);
+        ports.add(url.getPort());
+      }
+
+      // This assertion would hold true as long as every shard has a core on each node
+      assertTrue ("Response was not received from shards on a single node",
+          shardAddresses.size() > 1 && ports.size()==1);
+    }
   }
 
   private Long getNumRequests(String baseUrl, String collectionName) throws

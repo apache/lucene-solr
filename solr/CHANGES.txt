@@ -111,6 +111,9 @@ New Features
 * SOLR-7019: Support changing field key when using interval faceting. 
   (Tomás Fernández Löbbe)
 
+* SOLR-6832: Queries be served locally rather than being forwarded to another replica.
+  (Sachin Goyal, Timothy Potter)
+
 Bug Fixes
 ----------------------
 

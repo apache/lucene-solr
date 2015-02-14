@@ -147,6 +147,7 @@ public class ResponseBuilder
 
   public void addRequest(SearchComponent me, ShardRequest sreq) {
     outgoing.add(sreq);
+    sreq.rb = this;
     if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE) == 0) {
       // if this isn't a private request, let other components modify it.
       for (SearchComponent component : components) {
