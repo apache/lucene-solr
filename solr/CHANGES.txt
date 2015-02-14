@@ -164,6 +164,9 @@ Other Changes
   when no qt or shard.qt parameter is specified; fix also resolves SOLR-4479.
   (Steve Molloy, Timothy Potter)
 
+* SOLR-7112: Fix DeleteInactiveReplicaTest.deleteLiveReplicaTest test failures.
+  (shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

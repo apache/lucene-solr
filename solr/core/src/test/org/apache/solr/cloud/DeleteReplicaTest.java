@@ -50,11 +50,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   private CloudSolrClient client;
   
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-
-  }
-
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
@@ -146,7 +141,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     client.request(request);
   }
 
-  protected void removeAndWaitForReplicaGone(String COLL_NAME,
+  static void removeAndWaitForReplicaGone(String COLL_NAME,
       CloudSolrClient client, Replica replica, String shard)
       throws SolrServerException, IOException, InterruptedException {
     Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
@@ -159,7 +154,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     boolean success = false;
     DocCollection testcoll = null;
     while (System.currentTimeMillis() < endAt) {
-      testcoll = getCommonCloudSolrClient().getZkStateReader()
+      testcoll = client.getZkStateReader()
           .getClusterState().getCollection(COLL_NAME);
       success = testcoll.getSlice(shard).getReplica(replica.getName()) == null;
       if (success) {

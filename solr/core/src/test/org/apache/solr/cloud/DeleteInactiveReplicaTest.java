@@ -32,13 +32,16 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.setClusterProp;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
-//@Ignore("Not currently valid see SOLR-5580")
-public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
+public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
@@ -48,7 +51,13 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
 
       setClusterProp(client, ZkStateReader.LEGACY_CLOUD, "false");
 
-      createCollection(collectionName, client);
+      int replicationFactor = 2;
+      int numShards = 2;
+      int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
+          .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+      Map<String,List<Integer>> collectionInfos = new HashMap<>();
+      createCollection(collectionInfos, collectionName, numShards, replicationFactor, maxShardsPerNode, client, null);
 
       waitForRecoveriesToFinish(collectionName, false);
 
@@ -109,7 +118,7 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
       }
 
       log.info("removed_replicas {}/{} ", shard1.getName(), replica1.getName());
-      removeAndWaitForReplicaGone(collectionName, client, replica1,
+      DeleteReplicaTest.removeAndWaitForReplicaGone(collectionName, client, replica1,
           shard1.getName());
       ChaosMonkey.start(stoppedJetty);
       log.info("restarted jetty");
