@@ -10,10 +10,6 @@ servlet container such as Jetty.
 See http://lucene.apache.org/solr for more information.
 
 
-* SOLR-6902: Use JUnit rules instead of inheritance with distributed Solr 
-  tests to allow for multiple tests without the same class.
-  (Ramkumar Aiyengar, Erick Erickson, Mike McCandless)
-
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -118,6 +114,10 @@ Other Changes
 
 * SOLR-7112: Fix DeleteInactiveReplicaTest.deleteLiveReplicaTest test failures.
   (shalin)
+
+* SOLR-6902: Use JUnit rules instead of inheritance with distributed Solr
+  tests to allow for multiple tests without the same class.
+  (Ramkumar Aiyengar, Erick Erickson, Mike McCandless)
 
 ==================  5.0.0 ==================
 
