@@ -27,6 +27,7 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,11 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
       restTestHarnesses.add(harness);
     }
   }
+  @BeforeClass
+  public static void enableRuntimeLib() throws Exception {
+    System.setProperty("enable.runtime.lib", "true");
+  }
+
 
   @After
   public void testDown() throws Exception {
@@ -86,7 +92,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
     Map map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
-    assertNotNull(map = (Map) map.get("error"));
+    assertNotNull(TestBlobHandler.getAsString(map) ,  map = (Map) map.get("error"));
     assertEquals(".system collection not available", map.get("msg"));
 
     HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));

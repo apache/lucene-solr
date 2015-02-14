@@ -67,7 +67,6 @@ public final class RequestHandlers {
       new ConcurrentHashMap<>() ;
   private final Map<String, SolrRequestHandler> immutableHandlers = Collections.unmodifiableMap(handlers) ;
 
-  public static final boolean disableExternalLib = Boolean.parseBoolean(System.getProperty("disable.external.lib", "false"));
 
   /**
    * Trim the trailing '/' if it's there, and convert null to empty string.
@@ -342,7 +341,7 @@ public final class RequestHandlers {
     @Override
     public String getDescription()
     {
-      if( _handler == null ) {
+      if (_handler == null || _handler instanceof LazyRequestHandlerWrapper) {
         return getName();
       }
       return _handler.getDescription();
@@ -350,7 +349,7 @@ public final class RequestHandlers {
     
     @Override
     public String getVersion() {
-      if( _handler != null ) {
+      if (_handler != null && !(_handler instanceof LazyRequestHandlerWrapper)) {
         return _handler.getVersion();
       }
       return null;
@@ -377,7 +376,7 @@ public final class RequestHandlers {
 
     @Override
     public NamedList getStatistics() {
-      if( _handler != null ) {
+      if (_handler != null && !(_handler instanceof LazyRequestHandlerWrapper)) {
         return _handler.getStatistics();
       }
       NamedList<String> lst = new SimpleOrderedMap<>();
@@ -425,7 +424,7 @@ public final class RequestHandlers {
       super.init(info);
       this.lib = _pluginInfo.attributes.get("lib");
 
-      if(disableExternalLib){
+      if (!Boolean.parseBoolean(System.getProperty("enable.runtime.lib", "false"))) {
         errMsg = "ERROR external library loading is disabled";
         unrecoverable = true;
         _handler = this;
