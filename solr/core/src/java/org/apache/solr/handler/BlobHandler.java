@@ -138,7 +138,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(MessageFormat.format("New blob inserting {0} ,size {1}, md5 {2}",doc.get("id"), payload.limit(),md5));
+        log.info(MessageFormat.format("inserting new blob {0} ,size {1}, md5 {2}",doc.get("id"), String.valueOf(payload.limit()),md5));
         indexMap(req, rsp, doc);
         log.info(" Successfully Added and committed a blob with id {} and size {} ",id, payload.limit());
 
@@ -184,7 +184,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
 
           } else {
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-                MessageFormat.format("Invalid combination of blobName {0} and version {1}", blobName,version));
+                MessageFormat.format("Invalid combination of blobName {0} and version {1}", blobName,String.valueOf(version)));
           }
 
         }
