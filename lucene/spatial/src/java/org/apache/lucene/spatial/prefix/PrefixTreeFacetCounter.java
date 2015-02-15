@@ -116,6 +116,11 @@ public class PrefixTreeFacetCounter {
     // traversal code.  TODO consider refactoring if/when it makes sense (more use cases than this)
     new AbstractVisitingPrefixTreeFilter(queryShape, strategy.getFieldName(), tree, facetLevel, scanLevel,
         !strategy.isPointsOnly()) {
+      
+      @Override
+      public String toString(String field) {
+        return "anonPrefixTreeFilter";
+      }
 
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {

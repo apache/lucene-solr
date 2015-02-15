@@ -643,5 +643,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
       return new BitDocIdSet(bits);
     }
+
+    @Override
+    public String toString(String field) {
+      return "RandomFilter(seed=" + seed + ",density=" + density + ")";
+    }
   }
 }

@@ -263,5 +263,10 @@ public class TestSortRandom extends LuceneTestCase {
 
       return new BitDocIdSet(bits);
     }
+
+    @Override
+    public String toString(String field) {
+      return "RandomFilter(density=" + density + ")";
+    }
   }
 }

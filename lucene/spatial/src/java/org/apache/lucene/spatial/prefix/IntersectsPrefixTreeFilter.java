@@ -84,4 +84,15 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
     }.getDocIdSet();
   }
 
+  @Override
+  public String toString(String field) {
+    return "IntersectsPrefixTreeFilter(" +
+        // TODO: print something about the shape?
+        "fieldName=" + fieldName + "," +
+        "detailLevel=" + detailLevel + "," +
+        "prefixGridScanLevel=" + prefixGridScanLevel + "," +
+        "hasIndexedLeaves=" + hasIndexedLeaves +
+        ")";
+  }
+
 }

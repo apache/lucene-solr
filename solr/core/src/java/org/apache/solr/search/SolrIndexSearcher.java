@@ -2456,6 +2456,11 @@ class FilterImpl extends Filter {
     return new FilterSet(sub, context);
   }
 
+  @Override
+  public String toString(String field) {
+    return "SolrFilter";
+  }
+
   private class FilterSet extends DocIdSet {
     DocIdSet docIdSet;
     LeafReaderContext context;

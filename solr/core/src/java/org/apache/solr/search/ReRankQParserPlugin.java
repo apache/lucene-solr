@@ -150,15 +150,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return new ReRankCollector(reRankDocs, length, reRankQuery, reRankWeight, cmd, searcher, boostedPriority);
     }
 
+    @Override
     public String toString(String s) {
       return "{!rerank mainQuery='"+mainQuery.toString()+
              "' reRankQuery='"+reRankQuery.toString()+
              "' reRankDocs="+reRankDocs+
              " reRankWeigh="+reRankWeight+"}";
-    }
-
-    public String toString() {
-      return toString(null);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {

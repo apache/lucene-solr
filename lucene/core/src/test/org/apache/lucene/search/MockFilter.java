@@ -32,6 +32,11 @@ public class MockFilter extends Filter {
     return new BitDocIdSet(bits);
   }
 
+  @Override
+  public String toString(String field) {
+    return "MockFilter";
+  }
+
   public void clear() {
     wasCalled = false;
   }

@@ -105,7 +105,7 @@ public final class DoubleRange extends Range {
     return new Filter() {
 
       @Override
-      public String toString() {
+      public String toString(String field) {
         return "Filter(" + DoubleRange.this.toString() + ")";
       }
 

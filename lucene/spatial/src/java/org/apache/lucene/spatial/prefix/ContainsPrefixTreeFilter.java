@@ -75,6 +75,16 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
   }
 
   @Override
+  public String toString(String field) {
+    return "ContainsPrefixTreeFilter(" +
+        // TODO: print something about the shape?
+        "fieldName=" + fieldName + "," +
+        "detailLevel=" + detailLevel + "," +
+        "multiOverlappingIndexedShapes=" + multiOverlappingIndexedShapes +
+        ")";
+  }
+
+  @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     return new ContainsVisitor(context, acceptDocs).visit(grid.getWorldCell(), acceptDocs);
   }

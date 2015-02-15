@@ -90,6 +90,17 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
     result = 31 * result + (bufferedQueryShape != null ? bufferedQueryShape.hashCode() : 0);
     return result;
   }
+  
+  @Override
+  public String toString(String field) {
+    return "WithinPrefixTreeFilter(" +
+             // TODO: print something about the shape?
+             "fieldName=" + fieldName + "," +
+             "detailLevel=" + detailLevel + "," +
+             "prefixGridScanLevel=" + prefixGridScanLevel + "," +
+             "hasIndexedLeaves=" + hasIndexedLeaves +
+           ")";
+  }
 
   /** Returns a new shape that is larger than shape by at distErr.
    */

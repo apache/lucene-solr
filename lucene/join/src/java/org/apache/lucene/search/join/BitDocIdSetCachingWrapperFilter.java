@@ -81,7 +81,7 @@ public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter implement
   }
 
   @Override
-  public String toString() {
+  public String toString(String field) {
     return filter.toString();
   }
 

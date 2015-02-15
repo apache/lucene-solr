@@ -358,6 +358,10 @@ public class BitDocSet extends DocSetBase {
 
         }, acceptDocs2);
       }
+      @Override
+      public String toString(String field) {
+        return "BitSetDocTopFilter";
+      }
     };
   }
 }

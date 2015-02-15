@@ -62,4 +62,14 @@ public class ValueSourceFilter extends Filter {
       }
     };
   }
+
+  @Override
+  public String toString(String field) {
+    return "ValueSourceFilter(" +
+             "startingFilter=" + startingFilter.toString(field) + "," +
+             "source=" + source.toString() + "," +
+             "min=" + min + "," +
+             "max=" + max +
+           ")";
+  }
 }

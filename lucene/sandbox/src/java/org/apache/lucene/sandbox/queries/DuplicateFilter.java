@@ -206,6 +206,15 @@ public class DuplicateFilter extends Filter {
   }
 
   @Override
+  public String toString(String field) {
+    return "DuplicateFilter(" +
+              "fieldName=" + fieldName +"," +
+              "keepMode=" + (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE ? "first" : "last") + "," +
+              "processingMode=" + (processingMode == ProcessingMode.PM_FAST_INVALIDATION ? "fast" : "full") +
+           ")";
+  }
+
+  @Override
   public int hashCode() {
     int hash = 217;
     hash = 31 * hash + keepMode.hashCode();

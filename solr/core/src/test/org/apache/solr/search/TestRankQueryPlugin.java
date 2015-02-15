@@ -126,10 +126,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return q.getBoost();
     }
 
-    public String toString() {
-      return q.toString();
-    }
-
+    @Override
     public String toString(String field) {
       return q.toString(field);
     }

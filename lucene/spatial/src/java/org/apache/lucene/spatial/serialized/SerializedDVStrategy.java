@@ -196,6 +196,13 @@ public class SerializedDVStrategy extends SpatialStrategy {
     public int hashCode() {
       return predicateValueSource.hashCode();
     }
+    
+    @Override
+    public String toString(String field) {
+      return "PredicateValueSourceFilter(" +
+               predicateValueSource.toString() +
+             ")";
+    }
   }//PredicateValueSourceFilter
 
   /**

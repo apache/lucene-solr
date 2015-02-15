@@ -38,4 +38,9 @@ public class SingleDocTestFilter extends Filter {
     if (acceptDocs != null && !acceptDocs.get(doc)) bits.clear(doc);
     return new BitDocIdSet(bits);
   }
+
+  @Override
+  public String toString(String field) {
+    return "SingleDocTestFilter(" + doc + ")";
+  }
 }

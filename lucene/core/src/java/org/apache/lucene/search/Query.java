@@ -65,7 +65,7 @@ public abstract class Query implements Cloneable {
 
   /** Prints a query to a string. */
   @Override
-  public String toString() {
+  public final String toString() {
     return toString("");
   }
 
