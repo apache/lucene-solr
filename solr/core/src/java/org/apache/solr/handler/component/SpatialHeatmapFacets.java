@@ -287,11 +287,9 @@ public class SpatialHeatmapFacets {
           sreq.params.set("f." + key + "." + pname, pval);
         }
       }
-      // Remove existing format specifier
-      sreq.params.remove("f." + key + "." + FacetParams.FACET_HEATMAP_FORMAT);
+      // Set format to PNG; it's the only one we parse
+      sreq.params.set("f." + key + "." + FacetParams.FACET_HEATMAP_FORMAT, FORMAT_PNG);
     }
-    // Set format to PNG (applies to all heatmaps)
-    sreq.params.set(FacetParams.FACET_HEATMAP_FORMAT, FORMAT_PNG);
   }
 
   /** Called by FacetComponent.countFacets which is in turn called by FC's impl of
