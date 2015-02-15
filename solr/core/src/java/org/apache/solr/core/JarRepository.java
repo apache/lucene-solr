@@ -24,8 +24,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -41,6 +43,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.util.SimplePostTool;
 import org.slf4j.Logger;
@@ -81,16 +85,28 @@ public class JarRepository {
     JarContent jar = jars.get(key);
     if (jar == null) {
       if (this.coreContainer.isZooKeeperAware()) {
-        ClusterState cs = this.coreContainer.getZkController().getZkStateReader().getClusterState();
+        ZkStateReader zkStateReader = this.coreContainer.getZkController().getZkStateReader();
+        ClusterState cs = zkStateReader.getClusterState();
         DocCollection coll = cs.getCollectionOrNull(CollectionsHandler.SYSTEM_COLL);
         if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
         ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
-        if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, ".no active slices for .system collection");
+        if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for .system collection");
         Collections.shuffle(slices, RANDOM); //do load balancing
-        Slice slice = slices.get(0);
-        Replica replica = slice.getReplicas().iterator().next();
-        if (replica == null)
+
+        Replica replica = null;
+        for (Slice slice : slices)  {
+          List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
+          Collections.shuffle(replicas, RANDOM);
+          for (Replica r : replicas) {
+            if (ZkStateReader.ACTIVE.equals(r.getStr(ZkStateReader.STATE_PROP))) {
+              replica = r;
+              break;
+            }
+          }
+        }
+        if (replica == null) {
           throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
+        }
         String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
 
         HttpClient httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
@@ -108,10 +124,8 @@ public class JarRepository {
         }
         jars.put(key, jar = new JarContent(key, b));
       } else {
-
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Jar loading is not supported in non-cloud mode");
         // todo
-
       }
 
     }

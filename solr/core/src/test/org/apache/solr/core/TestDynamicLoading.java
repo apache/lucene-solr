@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -88,7 +87,9 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
-    TestBlobHandler.createSysColl(new HttpSolrClient(baseURL,randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(new HttpSolrClient(baseURL, randomClient.getHttpClient()));
+    waitForRecoveriesToFinish(".system", true);
+
     map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
     assertNotNull(map = (Map) map.get("error"));

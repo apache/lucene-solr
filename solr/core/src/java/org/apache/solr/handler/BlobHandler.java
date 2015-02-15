@@ -233,10 +233,11 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = solrDoc;
-    log.info("Adding doc "+doc);
+    log.info("Adding doc: "+doc);
     processor.processAdd(cmd);
-    log.info("committing doc"+doc);
+    log.info("committing doc: "+doc);
     processor.processCommit(new CommitUpdateCommand(req, false));
+    processor.finish();
   }
 
   @Override
