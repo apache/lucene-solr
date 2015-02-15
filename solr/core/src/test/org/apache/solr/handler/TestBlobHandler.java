@@ -102,7 +102,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     }
   }
 
-  public static  void createSysColl(SolrClient client) throws SolrServerException, IOException {
+  public static void createSystemCollection(SolrClient client) throws SolrServerException, IOException {
     CollectionAdminResponse response1;
     CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
     createCollectionRequest.setCollectionName(".system");
@@ -131,7 +131,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     List l;
     long start = System.currentTimeMillis();
     int i=0;
-    for(;i<150;i++) {//10secs
+    for(;i<150;i++) {//15 secs
       url = baseUrl + "/.system/blob/test";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
