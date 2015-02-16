@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
 import org.apache.lucene.util.BytesRef;
@@ -29,27 +30,199 @@ import org.apache.lucene.util.BytesRef;
  */
 abstract class DisjunctionScorer extends Scorer {
 
+  private final boolean needsScores;
   private final ScorerPriorityQueue subScorers;
+  private final long cost;
 
-  /** The document number of the current match. */
-  protected int doc = -1;
-  protected int numScorers;
-  /** Number of matching scorers for the current match. */
-  private int freq = -1;
   /** Linked list of scorers which are on the current doc */
   private ScorerWrapper topScorers;
 
-  protected DisjunctionScorer(Weight weight, Scorer subScorers[]) {
+  protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) {
     super(weight);
-    if (subScorers.length <= 1) {
+    if (subScorers.size() <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
     }
-    this.subScorers = new ScorerPriorityQueue(subScorers.length);
+    this.subScorers = new ScorerPriorityQueue(subScorers.size());
+    long cost = 0;
     for (Scorer scorer : subScorers) {
-      this.subScorers.add(new ScorerWrapper(scorer));
+      final ScorerWrapper w = new ScorerWrapper(scorer);
+      cost += w.cost;
+      this.subScorers.add(w);
+    }
+    this.cost = cost;
+    this.needsScores = needsScores;
+  }
+
+  /**
+   * A {@link DocIdSetIterator} which is a disjunction of the approximations of
+   * the provided iterators.
+   */
+  private static class DisjunctionDISIApproximation extends DocIdSetIterator {
+
+    final ScorerPriorityQueue subScorers;
+    final long cost;
+
+    DisjunctionDISIApproximation(ScorerPriorityQueue subScorers) {
+      this.subScorers = subScorers;
+      long cost = 0;
+      for (ScorerWrapper w : subScorers) {
+        cost += w.cost;
+      }
+      this.cost = cost;
+    }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
+
+    @Override
+    public int docID() {
+     return subScorers.top().doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      ScorerWrapper top = subScorers.top();
+      final int doc = top.doc;
+      do {
+        top.doc = top.approximation.nextDoc();
+        top = subScorers.updateTop();
+      } while (top.doc == doc);
+
+      return top.doc;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      ScorerWrapper top = subScorers.top();
+      do {
+        top.doc = top.approximation.advance(target);
+        top = subScorers.updateTop();
+      } while (top.doc < target);
+
+      return top.doc;
     }
   }
-  
+
+  @Override
+  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    boolean hasApproximation = false;
+    for (ScorerWrapper w : subScorers) {
+      if (w.twoPhaseView != null) {
+        hasApproximation = true;
+        break;
+      }
+    }
+
+    if (hasApproximation == false) {
+      // none of the sub scorers supports approximations
+      return null;
+    }
+
+    return new TwoPhaseDocIdSetIterator() {
+
+      @Override
+      public DocIdSetIterator approximation() {
+        // note it is important to share the same pq as this scorer so that
+        // rebalancing the pq through the approximation will also rebalance
+        // the pq in this scorer.
+        return new DisjunctionDISIApproximation(subScorers);
+      }
+
+      @Override
+      public boolean matches() throws IOException {
+        ScorerWrapper topScorers = subScorers.topList();
+        // remove the head of the list as long as it does not match
+        while (topScorers.twoPhaseView != null && topScorers.twoPhaseView.matches() == false) {
+          topScorers = topScorers.next;
+          if (topScorers == null) {
+            return false;
+          }
+        }
+        // now we know we have at least one match since the first element of 'matchList' matches
+        if (needsScores) {
+          // if scores or freqs are needed, we also need to remove scorers
+          // from the top list that do not actually match
+          ScorerWrapper previous = topScorers;
+          for (ScorerWrapper w = topScorers.next; w != null; w = w.next) {
+            if (w.twoPhaseView != null && w.twoPhaseView.matches() == false) {
+              // w does not match, remove it
+              previous.next = w.next;
+            } else {
+              previous = w;
+            }
+          }
+
+          // We need to explicitely set the list of top scorers to avoid the
+          // laziness of DisjunctionScorer.score() that would take all scorers
+          // positioned on the same doc as the top of the pq, including
+          // non-matching scorers
+          DisjunctionScorer.this.topScorers = topScorers;
+        }
+        return true;
+      }
+    };
+  }
+
+  @Override
+  public final long cost() {
+    return cost;
+  }
+
+  @Override
+  public final int docID() {
+   return subScorers.top().doc;
+  }
+
+  @Override
+  public final int nextDoc() throws IOException {
+    topScorers = null;
+    ScorerWrapper top = subScorers.top();
+    final int doc = top.doc;
+    do {
+      top.doc = top.scorer.nextDoc();
+      top = subScorers.updateTop();
+    } while (top.doc == doc);
+
+    return top.doc;
+  }
+
+  @Override
+  public final int advance(int target) throws IOException {
+    topScorers = null;
+    ScorerWrapper top = subScorers.top();
+    do {
+      top.doc = top.scorer.advance(target);
+      top = subScorers.updateTop();
+    } while (top.doc < target);
+
+    return top.doc;
+  }
+
+  @Override
+  public final int freq() throws IOException {
+    if (topScorers == null) {
+      topScorers = subScorers.topList();
+    }
+    int freq = 1;
+    for (ScorerWrapper w = topScorers.next; w != null; w = w.next) {
+      freq += 1;
+    }
+    return freq;
+  }
+
+  @Override
+  public final float score() throws IOException {
+    if (topScorers == null) {
+      topScorers = subScorers.topList();
+    }
+    return score(topScorers);
+  }
+
+  /** Compute the score for the given linked list of scorers. */
+  protected abstract float score(ScorerWrapper topList) throws IOException;
+
   @Override
   public final Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>();
@@ -78,86 +251,4 @@ abstract class DisjunctionScorer extends Scorer {
   public BytesRef getPayload() throws IOException {
     return null;
   }
-
-  @Override
-  public final long cost() {
-    long sum = 0;
-    for (ScorerWrapper scorer : subScorers) {
-      sum += scorer.cost;
-    }
-    return sum;
-  } 
-  
-  @Override
-  public final int docID() {
-   return doc;
-  }
- 
-  @Override
-  public final int nextDoc() throws IOException {
-    assert doc != NO_MORE_DOCS;
-
-    ScorerWrapper top = subScorers.top();
-    final int doc = this.doc;
-    while (top.doc == doc) {
-      top.doc = top.scorer.nextDoc();
-      if (top.doc == NO_MORE_DOCS) {
-        subScorers.pop();
-        if (subScorers.size() == 0) {
-          return this.doc = NO_MORE_DOCS;
-        }
-        top = subScorers.top();
-      } else {
-        top = subScorers.updateTop();
-      }
-    }
-
-    freq = -1;
-    return this.doc = top.doc;
-  }
-  
-  @Override
-  public final int advance(int target) throws IOException {
-    assert doc != NO_MORE_DOCS;
-
-    ScorerWrapper top = subScorers.top();
-    while (top.doc < target) {
-      top.doc = top.scorer.advance(target);
-      if (top.doc == NO_MORE_DOCS) {
-        subScorers.pop();
-        if (subScorers.size() == 0) {
-          return this.doc = NO_MORE_DOCS;
-        }
-        top = subScorers.top();
-      } else {
-        top = subScorers.updateTop();
-      }
-    }
-
-    freq = -1;
-    return this.doc = top.doc;
-  }
-
-  @Override
-  public final int freq() throws IOException {
-    if (freq < 0) {
-      topScorers = subScorers.topList();
-      int freq = 1;
-      for (ScorerWrapper w = topScorers.next; w != null; w = w.next) {
-        freq += 1;
-      }
-      this.freq = freq;
-    }
-    return freq;
-  }
-
-  @Override
-  public final float score() throws IOException {
-    final int freq = freq(); // compute the top scorers if necessary
-    return score(topScorers, freq);
-  }
-
-  /** Compute the score for the given linked list of scorers. */
-  protected abstract float score(ScorerWrapper topList, int freq) throws IOException;
-
 }

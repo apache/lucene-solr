@@ -35,10 +35,23 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
     int doc; // the current doc, used for comparison
     ScorerWrapper next; // reference to a next element, see #topList
 
+    // An approximation of the scorer, or the scorer itself if it does not
+    // support two-phase iteration
+    final DocIdSetIterator approximation;
+    // A two-phase view of the scorer, or null if the scorer does not support
+    // two-phase iteration
+    final TwoPhaseDocIdSetIterator twoPhaseView;
+
     ScorerWrapper(Scorer scorer) {
       this.scorer = scorer;
       this.cost = scorer.cost();
       this.doc = -1;
+      this.twoPhaseView = scorer.asTwoPhaseIterator();
+      if (twoPhaseView != null) {
+        approximation = twoPhaseView.approximation();
+      } else {
+        approximation = scorer;
+      }
     }
   }
 

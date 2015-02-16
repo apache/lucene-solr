@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -191,6 +192,34 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     // check in the subset, that every bit was set by the super
     for (int i = 0; i < td1.scoreDocs.length; i++) {
       assertTrue(bitset.get(td1.scoreDocs[i].doc));
+    }
+  }
+
+  /**
+   * Assert that two queries return the same documents and with the same scores.
+   */
+  protected void assertSameScores(Query q1, Query q2) throws Exception {
+    assertSameSet(q1, q2);
+
+    assertSameScores(q1, q2, null);
+    // also test with a filter to test advancing
+    assertSameScores(q1, q2, randomFilter());
+  }
+
+  protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
+    if (filter != null && random().nextBoolean()) {
+      q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
+      q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
+      filter = null;
+    }
+    
+    // not efficient, but simple!
+    TopDocs td1 = s1.search(q1, filter, reader.maxDoc());
+    TopDocs td2 = s2.search(q2, filter, reader.maxDoc());
+    assertEquals(td1.totalHits, td2.totalHits);
+    for (int i = 0; i < td1.scoreDocs.length; ++i) {
+      assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
+      assertEquals(td1.scoreDocs[i].score, td2.scoreDocs[i].score, 10e-5);
     }
   }
 }

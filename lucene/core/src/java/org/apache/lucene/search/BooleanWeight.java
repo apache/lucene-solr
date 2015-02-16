@@ -376,10 +376,7 @@ public class BooleanWeight extends Weight {
     } else {
       float coords[] = new float[prohibited.size()+1];
       Arrays.fill(coords, 1F);
-      return new ReqExclScorer(main, 
-                               new DisjunctionSumScorer(this, 
-                                                        prohibited.toArray(new Scorer[prohibited.size()]), 
-                                                        coords));
+      return new ReqExclScorer(main, new DisjunctionSumScorer(this, prohibited, coords, false));
     }
   }
   
@@ -402,9 +399,7 @@ public class BooleanWeight extends Weight {
       if (minShouldMatch > 1) {
         return new MinShouldMatchSumScorer(this, optional, minShouldMatch, coords);
       } else {
-        return new DisjunctionSumScorer(this, 
-                                        optional.toArray(new Scorer[optional.size()]), 
-                                        coords);
+        return new DisjunctionSumScorer(this, optional, coords, needsScores);
       }
     }
   }
