@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
 
@@ -32,16 +33,18 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
    * @param subScorers Array of at least two subscorers.
    * @param coord Table of coordination factors
    */
-  DisjunctionSumScorer(Weight weight, Scorer[] subScorers, float[] coord) {
-    super(weight, subScorers);
+  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, float[] coord, boolean needsScores) {
+    super(weight, subScorers, needsScores);
     this.coord = coord;
   }
 
   @Override
-  protected float score(ScorerWrapper topList, int freq) throws IOException {
+  protected float score(ScorerWrapper topList) throws IOException {
     double score = 0;
+    int freq = 0;
     for (ScorerWrapper w = topList; w != null; w = w.next) {
       score += w.scorer.score();
+      freq += 1;
     }
     return (float)score * coord[freq];
   }

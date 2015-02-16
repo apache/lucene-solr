@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
 
@@ -41,13 +42,13 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
    * @param subScorers
    *          The sub scorers this Scorer should iterate on
    */
-  DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, Scorer[] subScorers) {
-    super(weight, subScorers);
+  DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, List<Scorer> subScorers, boolean needsScores) {
+    super(weight, subScorers, needsScores);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
   }
 
   @Override
-  protected float score(ScorerWrapper topList, int freq) throws IOException {
+  protected float score(ScorerWrapper topList) throws IOException {
     float scoreSum = 0;
     float scoreMax = 0;
     for (ScorerWrapper w = topList; w != null; w = w.next) {

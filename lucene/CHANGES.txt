@@ -86,6 +86,9 @@ Optimizations
   positions lazily if the phrase query is in a conjunction with other queries.
   (Robert Muir, Adrien Grand)
 
+* LUCENE-6244: Pure disjunctions now propagate two-phase iterators of the
+  wrapped scorers (see LUCENE-6198). (Adrien Grand, Robert Muir)
+
 * LUCENE-6241: FSDirectory.listAll() doesnt filter out subdirectories anymore,
   for faster performance. Subdirectories don't matter to Lucene. If you need to
   filter out non-index files with some custom usage, you may want to look at 
