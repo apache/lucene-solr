@@ -841,8 +841,8 @@ public class ZkStateReader implements Closeable {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change: {}, has occurred - updating... ",
-              (event), ZkStateReader.this.clusterState == null ? 0
+          log.info("A cluster state change: {} for collection {} has occurred - updating... (live nodes size: {})",
+              (event), coll, ZkStateReader.this.clusterState == null ? 0
                   : ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
