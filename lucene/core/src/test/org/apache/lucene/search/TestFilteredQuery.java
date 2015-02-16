@@ -113,6 +113,10 @@ public class TestFilteredQuery extends LuceneTestCase {
         if (acceptDocs.get(3)) bitset.set(3);
         return new BitDocIdSet(bitset);
       }
+      @Override
+      public String toString(String field) {
+        return "staticFilterB";
+      }
     };
   }
 
@@ -193,6 +197,10 @@ public class TestFilteredQuery extends LuceneTestCase {
         FixedBitSet bitset = new FixedBitSet(context.reader().maxDoc());
         bitset.set(0, Math.min(5, bitset.length()));
         return new BitDocIdSet(bitset);
+      }
+      @Override
+      public String toString(String field) {
+        return "staticFilterA";
       }
     };
   }
@@ -480,6 +488,10 @@ public class TestFilteredQuery extends LuceneTestCase {
               
             };
           }
+          @Override
+          public String toString(String field) {
+            return "filterField0";
+          }
         }, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
     
     TopDocs search = searcher.search(query, 10);
@@ -559,7 +571,13 @@ public class TestFilteredQuery extends LuceneTestCase {
             };
           }
           
+          
         };
+        
+      }
+      @Override
+      public String toString(String field) {
+        return "filterField0";
       }
         }, queryFirst ? FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY : random()
             .nextBoolean() ? FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY

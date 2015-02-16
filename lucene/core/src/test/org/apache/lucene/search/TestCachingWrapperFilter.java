@@ -181,6 +181,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return null;
       }
+      @Override
+      public String toString(String field) {
+        return "nullDocIdSetFilter";
+      }
     };
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter, MAYBE_CACHE_POLICY);
 
@@ -213,6 +217,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
             return 0L;
           }
         };
+      }
+      @Override
+      public String toString(String field) {
+        return "nullDocIdSetIteratorFilter";
       }
     };
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE);
@@ -266,6 +274,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return new BitDocIdSet(new FixedBitSet(context.reader().maxDoc()));
+      }
+      @Override
+      public String toString(String field) {
+        return "cacheableFilter";
       }
     }, true);
 

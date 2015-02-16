@@ -149,6 +149,10 @@ public class TestScorerPerf extends LuceneTestCase {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         return new BitDocIdSet(rnd);
       }
+      @Override
+      public String toString(String field) {
+        return "randomBitSetFilter";
+      }
     });
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {

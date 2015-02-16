@@ -943,6 +943,10 @@ public class FieldQueryTest extends AbstractTestCase {
           throws IOException {
         return null;
       }
+      @Override
+      public String toString(String field) {
+        return "filterToBeFlattened";
+      }
     });
     query.setBoost(boost);
     FieldQuery fq = new FieldQuery( query, true, true );

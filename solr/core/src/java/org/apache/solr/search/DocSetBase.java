@@ -229,6 +229,10 @@ abstract class DocSetBase implements DocSet {
 
         }, acceptDocs2);
       }
+      @Override
+      public String toString(String field) {
+        return "DocSetTopFilter";
+      }
     };
   }
 

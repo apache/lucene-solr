@@ -127,6 +127,10 @@ public class TestDocIdSet extends LuceneTestCase {
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return null;
       }
+      @Override
+      public String toString(String field) {
+        return "nullDocIdSetFilter";
+      }
     };
     
     Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
@@ -168,6 +172,10 @@ public class TestDocIdSet extends LuceneTestCase {
             return true;
           }
         };
+      }
+      @Override
+      public String toString(String field) {
+        return "nullDocIdSetFilter";
       }
     };
     

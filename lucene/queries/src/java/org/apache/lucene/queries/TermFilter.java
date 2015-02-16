@@ -37,7 +37,7 @@ public class TermFilter extends QueryWrapperFilter {
   }
 
   @Override
-  public String toString() {
+  public String toString(String field) {
     return getQuery().toString();
   }
 }

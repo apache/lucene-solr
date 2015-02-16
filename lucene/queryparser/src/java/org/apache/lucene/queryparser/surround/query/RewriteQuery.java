@@ -38,14 +38,9 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
   abstract public Query rewrite(IndexReader reader) throws IOException;
 
   @Override
-  public String toString() {
-    return toString(null);
-  }
-
-  @Override
   public String toString(String field) {
     return getClass().getName()
-    + (field == null ? "" : "(unused: " + field + ")")
+    + (field.isEmpty() ? "" : "(unused: " + field + ")")
     + "(" + fieldName
     + ", " + srndQuery.toString()
     + ", " + qf.toString()

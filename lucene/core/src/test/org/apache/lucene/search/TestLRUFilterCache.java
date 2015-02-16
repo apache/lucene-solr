@@ -350,6 +350,11 @@ public class TestLRUFilterCache extends LuceneTestCase {
       return null;
     }
 
+    @Override
+    public String toString(String field) {
+      return "DummyFilter";
+    }
+
   }
 
   // Test what happens when the cache contains only filters and doc id sets

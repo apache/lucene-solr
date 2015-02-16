@@ -97,7 +97,7 @@ public final class LongRange extends Range {
     return new Filter() {
 
       @Override
-      public String toString() {
+      public String toString(String field) {
         return "Filter(" + LongRange.this.toString() + ")";
       }
 

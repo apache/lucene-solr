@@ -137,6 +137,11 @@ final class JustCompileSearch {
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
       return null;
     }
+
+    @Override
+    public String toString(String field) {
+      return "JustCompileFilter";
+    }
   }
 
   static final class JustCompileFilteredDocIdSet extends FilteredDocIdSet {

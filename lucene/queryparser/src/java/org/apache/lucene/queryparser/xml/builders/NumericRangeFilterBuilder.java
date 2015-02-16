@@ -159,5 +159,10 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
       return null;
     }
 
+
+    @Override
+    public String toString(String field) {
+      return "NoMatchFilter()";
+    }
   }
 }

@@ -101,6 +101,11 @@ public class TestFilteredSearch extends LuceneTestCase {
       }
       return set.cardinality() == 0 ? null : new BitDocIdSet(set);
     }
+
+    @Override
+    public String toString(String field) {
+      return "SimpleDocIdSetFilter";
+    }
   }
 
 }

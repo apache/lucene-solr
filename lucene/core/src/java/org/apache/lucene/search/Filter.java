@@ -76,11 +76,6 @@ public abstract class Filter extends Query {
   }
 
   @Override
-  public String toString(String field) {
-    return getClass().getSimpleName();
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new Weight(this) {
 

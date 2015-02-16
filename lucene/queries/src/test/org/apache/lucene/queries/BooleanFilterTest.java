@@ -96,6 +96,10 @@ public class BooleanFilterTest extends LuceneTestCase {
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return new BitDocIdSet(new FixedBitSet(context.reader().maxDoc()));
       }
+      @Override
+      public String toString(String field) {
+        return "emptyFilter";
+      }
     };
   }
 
@@ -105,6 +109,10 @@ public class BooleanFilterTest extends LuceneTestCase {
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return null;
       }
+      @Override
+      public String toString(String field) {
+        return "nullDISFilter";
+      }
     };
   }
 
@@ -113,6 +121,10 @@ public class BooleanFilterTest extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
         return DocIdSet.EMPTY;
+      }
+      @Override
+      public String toString(String field) {
+        return "nullDISIFilter";
       }
     };
   }

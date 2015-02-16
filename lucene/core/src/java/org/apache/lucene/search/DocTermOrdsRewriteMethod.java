@@ -55,9 +55,9 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
     }
     
     @Override
-    public String toString() {
+    public String toString(String field) {
       // query.toString should be ok for the filter, too, if the query boost is 1.0f
-      return query.toString();
+      return query.toString(field);
     }
     
     @Override

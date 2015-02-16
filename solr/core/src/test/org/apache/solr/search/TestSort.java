@@ -239,6 +239,10 @@ public class TestSort extends SolrTestCaseJ4 {
           public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
             return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
           }
+          @Override
+          public String toString(String field) {
+            return "TestSortFilter";
+          }
         };
 
         int top = r.nextInt((ndocs>>3)+1)+1;

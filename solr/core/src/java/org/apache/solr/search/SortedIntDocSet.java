@@ -779,6 +779,10 @@ public class SortedIntDocSet extends DocSetBase {
 
         }, acceptDocs2);
       }
+      @Override
+      public String toString(String field) {
+        return "SortedIntDocSetTopFilter";
+      }
     };
   }
 

@@ -660,6 +660,10 @@ public class TestDrillSideways extends FacetTestCase {
               }
               return new BitDocIdSet(bits);
             }
+            @Override
+            public String toString(String field) {
+              return "drillSidewaysTestFilter";
+            }
           };
       } else {
         filter = null;
