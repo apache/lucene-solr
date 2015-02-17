@@ -21,9 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -179,4 +181,30 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     d.close();
   }
 
+  public void testPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+
+    ConstantScoreQuery q = new ConstantScoreQuery(pq);
+
+    final Weight weight = searcher.createNormalizedWeight(q, true);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertNotNull(scorer.asTwoPhaseIterator());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
 }

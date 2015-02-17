@@ -39,6 +39,11 @@ class BooleanTopLevelScorers {
     }
 
     @Override
+    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+      return in.asTwoPhaseIterator();
+    }
+
+    @Override
     public float score() throws IOException {
       return in.score() * boost;
     }

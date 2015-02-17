@@ -22,77 +22,88 @@ import java.util.Collection;
 import java.util.Collections;
 
 /** A Scorer for queries with a required subscorer
- * and an excluding (prohibited) sub DocIdSetIterator.
+ * and an excluding (prohibited) sub {@link Scorer}.
  * <br>
  * This <code>Scorer</code> implements {@link Scorer#advance(int)},
- * and it uses the skipTo() on the given scorers.
+ * and it uses the advance() on the given scorers.
  */
 class ReqExclScorer extends FilterScorer {
-  private Scorer reqScorer;
-  private DocIdSetIterator exclDisi;
-  private int doc = -1;
+
+  private final Scorer reqScorer;
+  // approximations of the scorers, or the scorers themselves if they don't support approximations
+  private final DocIdSetIterator reqApproximation;
+  private final DocIdSetIterator exclApproximation;
+  // two-phase views of the scorers, or null if they do not support approximations
+  private final TwoPhaseDocIdSetIterator reqTwoPhaseIterator;
+  private final TwoPhaseDocIdSetIterator exclTwoPhaseIterator;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
-   * @param exclDisi indicates exclusion.
+   * @param exclScorer indicates exclusion.
    */
-  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
+  public ReqExclScorer(Scorer reqScorer, Scorer exclScorer) {
     super(reqScorer);
     this.reqScorer = reqScorer;
-    this.exclDisi = exclDisi;
+    reqTwoPhaseIterator = reqScorer.asTwoPhaseIterator();
+    if (reqTwoPhaseIterator == null) {
+      reqApproximation = reqScorer;
+    } else {
+      reqApproximation = reqTwoPhaseIterator.approximation();
+    }
+    exclTwoPhaseIterator = exclScorer.asTwoPhaseIterator();
+    if (exclTwoPhaseIterator == null) {
+      exclApproximation = exclScorer;
+    } else {
+      exclApproximation = exclTwoPhaseIterator.approximation();
+    }
   }
 
   @Override
   public int nextDoc() throws IOException {
-    if (reqScorer == null) {
-      return doc;
-    }
-    doc = reqScorer.nextDoc();
-    if (doc == NO_MORE_DOCS) {
-      reqScorer = null; // exhausted, nothing left
-      return doc;
-    }
-    if (exclDisi == null) {
-      return doc;
-    }
-    return doc = toNonExcluded();
+    return toNonExcluded(reqApproximation.nextDoc());
   }
-  
-  /** Advance to non excluded doc.
-   * <br>On entry:
-   * <ul>
-   * <li>reqScorer != null,
-   * <li>exclScorer != null,
-   * <li>reqScorer was advanced once via next() or skipTo()
-   *      and reqScorer.doc() may still be excluded.
-   * </ul>
-   * Advances reqScorer a non excluded required doc, if any.
-   * @return true iff there is a non excluded required doc.
-   */
-  private int toNonExcluded() throws IOException {
-    int exclDoc = exclDisi.docID();
-    int reqDoc = reqScorer.docID(); // may be excluded
-    do {  
-      if (reqDoc < exclDoc) {
-        return reqDoc; // reqScorer advanced to before exclScorer, ie. not excluded
-      } else if (reqDoc > exclDoc) {
-        exclDoc = exclDisi.advance(reqDoc);
-        if (exclDoc == NO_MORE_DOCS) {
-          exclDisi = null; // exhausted, no more exclusions
-          return reqDoc;
-        }
-        if (exclDoc > reqDoc) {
-          return reqDoc; // not excluded
-        }
+
+  /** Confirms whether or not the given {@link TwoPhaseDocIdSetIterator}
+   *  matches on the current document. */
+  private static boolean matches(TwoPhaseDocIdSetIterator it) throws IOException {
+    return it == null || it.matches();
+  }
+
+  /** Confirm whether there is a match given the current positions of the
+   *  req and excl approximations. This method has 2 important properties:
+   *   - it only calls matches() on excl if the excl approximation is on
+   *     the same doc ID as the req approximation
+   *   - it does NOT call matches() on req if the excl approximation is exact
+   *     and is on the same doc ID as the req approximation */
+  private static boolean matches(int doc, int exclDoc,
+      TwoPhaseDocIdSetIterator reqTwoPhaseIterator,
+      TwoPhaseDocIdSetIterator exclTwoPhaseIterator) throws IOException {
+    assert exclDoc >= doc;
+    if (doc == exclDoc && matches(exclTwoPhaseIterator)) {
+      return false;
+    }
+    return matches(reqTwoPhaseIterator);
+  }
+
+  /** Advance to the next non-excluded doc. */
+  private int toNonExcluded(int doc) throws IOException {
+    int exclDoc = exclApproximation.docID();
+    for (;; doc = reqApproximation.nextDoc()) {
+      if (doc == NO_MORE_DOCS) {
+        return NO_MORE_DOCS;
       }
-    } while ((reqDoc = reqScorer.nextDoc()) != NO_MORE_DOCS);
-    reqScorer = null; // exhausted, nothing left
-    return NO_MORE_DOCS;
+      if (exclDoc < doc) {
+        exclDoc = exclApproximation.advance(doc);
+      }
+      if (matches(doc, exclDoc, reqTwoPhaseIterator, exclTwoPhaseIterator)) {
+        return doc;
+      }
+    }
   }
 
   @Override
   public int docID() {
-    return doc;
+    return reqScorer.docID();
   }
 
   /** Returns the score of the current document matching the query.
@@ -111,17 +122,32 @@ class ReqExclScorer extends FilterScorer {
 
   @Override
   public int advance(int target) throws IOException {
-    if (reqScorer == null) {
-      return doc = NO_MORE_DOCS;
-    }
-    if (exclDisi == null) {
-      return doc = reqScorer.advance(target);
-    }
-    if (reqScorer.advance(target) == NO_MORE_DOCS) {
-      reqScorer = null;
-      return doc = NO_MORE_DOCS;
-    }
-    return doc = toNonExcluded();
+    return toNonExcluded(reqApproximation.advance(target));
   }
 
+  @Override
+  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    if (reqTwoPhaseIterator == null) {
+      return null;
+    }
+    return new TwoPhaseDocIdSetIterator() {
+
+      @Override
+      public DocIdSetIterator approximation() {
+        return reqApproximation;
+      }
+
+      @Override
+      public boolean matches() throws IOException {
+        final int doc = reqApproximation.docID();
+        // check if the doc is not excluded
+        int exclDoc = exclApproximation.docID();
+        if (exclDoc < doc) {
+          exclDoc = exclApproximation.advance(doc);
+        }
+        return ReqExclScorer.matches(doc, exclDoc, reqTwoPhaseIterator, exclTwoPhaseIterator);
+      }
+
+    };
+  }
 }
