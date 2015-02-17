@@ -50,6 +50,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
+  (Dawid Weiss)
+  
 * LUCENE-6190: Spatial pointsOnly flag on PrefixTreeStrategy shouldn't switch all predicates to
   Intersects. (David Smiley)
 
@@ -124,6 +127,9 @@ API Changes
   (Ryan Ernst)
 
 Other
+
+* LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
+  (Dawid Weiss)
 
 * LUCENE-6193: Collapse identical catch branches in try-catch statements.
   (shalin)
