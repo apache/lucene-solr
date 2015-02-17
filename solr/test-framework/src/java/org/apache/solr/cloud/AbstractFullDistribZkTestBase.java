@@ -1428,7 +1428,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
 
-      System.err.println("num searches done:" + numSearches + " with " + queryFails + " fails");
+      log.info("num searches done:" + numSearches + " with " + queryFails + " fails");
     }
 
     @Override

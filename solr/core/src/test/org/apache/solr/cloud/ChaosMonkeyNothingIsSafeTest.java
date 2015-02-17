@@ -110,7 +110,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
     int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
     if (numShards == -1) {
-      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2);
+      // we make sure that there's at least one shard with more than one replica
+      // so that the ChaosMonkey has something to kill
+      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
     }
     fixShardCount(numShards);
   }
@@ -358,8 +360,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         }
         
       }
-      
-      System.err.println("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+
+      log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
     }
 
     private void changeUrlOnError(Exception e) {
