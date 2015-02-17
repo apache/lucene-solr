@@ -297,4 +297,40 @@ public abstract class LeafReader extends IndexReader {
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** Returns {@link DocsEnum} for the specified term.
+   *  This will return null if either the field or
+   *  term does not exist.
+   *  @deprecated use {@link #postings(Term)} instead */
+  @Deprecated
+  public final DocsEnum termDocsEnum(Term term) throws IOException {
+    assert term.field() != null;
+    assert term.bytes() != null;
+    final Terms terms = terms(term.field());
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term.bytes())) {
+        return termsEnum.docs(getLiveDocs(), null);
+      }
+    }
+    return null;
+  }
+
+  /** Returns {@link DocsAndPositionsEnum} for the specified
+   *  term.  This will return null if the
+   *  field or term does not exist or positions weren't indexed.
+   *  @deprecated use {@link #postings(Term, int)} instead */
+  @Deprecated
+  public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
+    assert term.field() != null;
+    assert term.bytes() != null;
+    final Terms terms = terms(term.field());
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term.bytes())) {
+        return termsEnum.docsAndPositions(getLiveDocs(), null);
+      }
+    }
+    return null;
+  }
 }
