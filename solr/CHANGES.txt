@@ -135,6 +135,10 @@ Bug Fixes
 * SOLR-7084: FreeTextSuggester: Better error message when doing a lookup
   during dictionary build. Used to be nullpointer (janhoy)
 
+* SOLR-6956: OverseerCollectionProcessor and replicas on the overseer node can sometimes
+  operate on stale cluster state due to overseer holding the state update lock for a
+  long time. (Mark Miller, shalin)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections
