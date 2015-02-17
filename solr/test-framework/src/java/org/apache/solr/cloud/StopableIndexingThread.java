@@ -29,8 +29,8 @@ import org.apache.solr.common.SolrInputDocument;
  */
 
 public class StopableIndexingThread extends AbstractFullDistribZkTestBase.StopableThread {
-  private static String t1 = "a_t";
-  private static String i1 = "a_i";
+  static String t1 = "a_t";
+  static String i1 = "a_i";
   private volatile boolean stop = false;
   protected final String id;
   protected final List<String> deletes = new ArrayList<>();
