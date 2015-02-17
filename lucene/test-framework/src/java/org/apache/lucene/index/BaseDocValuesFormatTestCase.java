@@ -1156,7 +1156,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
     for (Entry<String, String> entry : entrySet) {
       // pk lookup
-      PostingsEnum termPostingsEnum = slowR.termDocsEnum(new Term("id", entry.getKey()));
+      PostingsEnum termPostingsEnum = slowR.postings(new Term("id", entry.getKey()));
       int docId = termPostingsEnum.nextDoc();
       expected = new BytesRef(entry.getValue());
       final BytesRef actual = docValues.get(docId);

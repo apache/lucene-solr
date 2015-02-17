@@ -26,10 +26,10 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsEnum;  // javadocs
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum; // javadocs
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -47,7 +47,7 @@ final class Lucene40PostingsWriter extends PushPostingsWriterBase {
   final IndexOutput proxOut;
   final Lucene40SkipListWriter skipListWriter;
   /** Expert: The fraction of TermDocs entries stored in skip tables,
-   * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
+   * used to accelerate {@link PostingsEnum#advance(int)}.  Larger values result in
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */

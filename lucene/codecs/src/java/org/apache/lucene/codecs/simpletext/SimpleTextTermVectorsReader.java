@@ -26,7 +26,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
@@ -405,14 +404,14 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
       // TODO: reuse
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, (flags & PostingsEnum.FLAG_FREQS) == 0 ? 1 : current.getValue().freq);
+      e.reset(liveDocs, (flags & PostingsEnum.FREQS) == 0 ? 1 : current.getValue().freq);
       return e;
     }
 
   }
 
   // note: these two enum classes are exactly like the Default impl...
-  private static class SimpleTVDocsEnum extends DocsEnum {
+  private static class SimpleTVDocsEnum extends PostingsEnum {
     private boolean didNext;
     private int doc = -1;
     private int freq;
@@ -428,6 +427,21 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     public int nextPosition() throws IOException {
       assert false;
       return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

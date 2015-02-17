@@ -195,7 +195,7 @@ public class SolrIndexSplitter {
         hash = hashRouter.sliceHash(idString, null, null, null);
       }
 
-      postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.NONE);
       for (;;) {
         int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) break;

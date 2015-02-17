@@ -341,7 +341,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         termInfo.add("tf", freq);
       }
 
-      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_ALL);
+      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
       boolean useOffsets = false;
       boolean usePositions = false;
       if (dpEnum != null) {

@@ -173,7 +173,7 @@ public class PrefixTreeFacetCounter {
               return termsEnum.docFreq();
             }
             int count = 0;
-            postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+            postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
             while (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
               count++;
             }
@@ -184,7 +184,7 @@ public class PrefixTreeFacetCounter {
             if (acceptDocs == null) {
               return true;
             }
-            postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+            postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
             return (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
           }
 

@@ -33,29 +33,29 @@ public abstract class PostingsEnum extends DocIdSetIterator {
    * Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)} if you don't
    * require per-document postings in the returned enum.
    */
-  public static final int FLAG_NONE = 0x0;
+  public static final int NONE = 0x0;
 
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require term frequencies in the returned enum. */
-  public static final int FLAG_FREQS = 0x1;
+  public static final int FREQS = 0x1;
 
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    * if you require term positions in the returned enum. */
-  public static final int FLAG_POSITIONS = 0x3;
+  public static final int POSITIONS = 0x3;
   
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require offsets in the returned enum. */
-  public static final int FLAG_OFFSETS = 0x7;
+  public static final int OFFSETS = 0x7;
 
   /** Flag to pass to  {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require payloads in the returned enum. */
-  public static final int FLAG_PAYLOADS = 0xB;
+  public static final int PAYLOADS = 0xB;
 
   /**
    * Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    * to get positions, payloads and offsets in the returned enum
    */
-  public static final int FLAG_ALL = FLAG_POSITIONS | FLAG_PAYLOADS;
+  public static final int ALL = POSITIONS | PAYLOADS;
 
   /**
    * Returns true if the passed in flags require positions to be indexed
@@ -63,7 +63,7 @@ public abstract class PostingsEnum extends DocIdSetIterator {
    * @return true if the passed in flags require positions to be indexed
    */
   public static boolean requiresPositions(int flags) {
-    return ((flags & FLAG_POSITIONS) >= FLAG_POSITIONS);
+    return ((flags & POSITIONS) >= POSITIONS);
   }
 
   private AttributeSource atts = null;
@@ -80,7 +80,7 @@ public abstract class PostingsEnum extends DocIdSetIterator {
    * {@link DocIdSetIterator#NO_MORE_DOCS}.
    * 
    * <p>
-   * <b>NOTE:</b> if the {@link PostingsEnum} was obtain with {@link #FLAG_NONE},
+   * <b>NOTE:</b> if the {@link PostingsEnum} was obtain with {@link #NONE},
    * the result of this method is undefined.
    */
   public abstract int freq() throws IOException;

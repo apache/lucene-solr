@@ -94,7 +94,7 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
 
     protected void collectDocs(BitSet bitSet) throws IOException {
       assert termsEnum != null;
-      postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
       bitSet.or(postingsEnum);
     }
 

@@ -131,7 +131,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
     // apparent gain.
     PostingsEnum positions = MultiFields.getTermPositionsEnum(reader, null,
         Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
-        PostingsEnum.FLAG_PAYLOADS);
+        PostingsEnum.PAYLOADS);
 
     // shouldn't really happen, if it does, something's wrong
     if (positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) {

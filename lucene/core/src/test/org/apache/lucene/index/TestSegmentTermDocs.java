@@ -58,7 +58,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
-    PostingsEnum termDocs = TestUtil.docs(random(), terms, reader.getLiveDocs(), null, PostingsEnum.FLAG_FREQS);
+    PostingsEnum termDocs = TestUtil.docs(random(), terms, reader.getLiveDocs(), null, PostingsEnum.FREQS);
     if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
@@ -126,7 +126,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
         new BytesRef(ta.text()),
         MultiFields.getLiveDocs(reader),
         null,
-        PostingsEnum.FLAG_FREQS);
+        PostingsEnum.FREQS);
     
     // without optimization (assumption skipInterval == 16)
     
@@ -169,7 +169,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
         new BytesRef(tb.text()),
         MultiFields.getLiveDocs(reader),
         null,
-        PostingsEnum.FLAG_FREQS);
+        PostingsEnum.FREQS);
 
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
@@ -193,7 +193,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
         new BytesRef(tb.text()),
         MultiFields.getLiveDocs(reader),
         null,
-        PostingsEnum.FLAG_FREQS);
+        PostingsEnum.FREQS);
     
     assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
@@ -213,7 +213,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
         new BytesRef(tc.text()),
         MultiFields.getLiveDocs(reader),
         null,
-        PostingsEnum.FLAG_FREQS);
+        PostingsEnum.FREQS);
 
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(26, tdocs.docID());

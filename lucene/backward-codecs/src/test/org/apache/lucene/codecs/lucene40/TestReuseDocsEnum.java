@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -60,7 +59,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       IdentityHashMap<PostingsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(indexReader.maxDoc());
       while ((iterator.next()) != null) {
-        PostingsEnum docs = iterator.postings(random().nextBoolean() ? bits : new Bits.MatchNoBits(indexReader.maxDoc()), null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        PostingsEnum docs = iterator.postings(random().nextBoolean() ? bits : new Bits.MatchNoBits(indexReader.maxDoc()), null, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       
@@ -88,7 +87,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
       PostingsEnum docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.postings(bits, docs, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        docs = iterator.postings(bits, docs, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       
@@ -97,7 +96,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       iterator = terms.iterator(null);
       docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.postings(new Bits.MatchNoBits(open.maxDoc()), docs, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        docs = iterator.postings(new Bits.MatchNoBits(open.maxDoc()), docs, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -106,7 +105,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       iterator = terms.iterator(null);
       docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.postings(null, docs, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        docs = iterator.postings(null, docs, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       assertEquals(1, enums.size());  
@@ -142,7 +141,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       PostingsEnum docs = null;
       BytesRef term = null;
       while ((term = iterator.next()) != null) {
-        docs = iterator.postings(null, randomDocsEnum("body", term, leaves2, bits), random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        docs = iterator.postings(null, randomDocsEnum("body", term, leaves2, bits), random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -151,7 +150,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       enums.clear();
       docs = null;
       while ((term = iterator.next()) != null) {
-        docs = iterator.postings(bits, randomDocsEnum("body", term, leaves2, bits), random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+        docs = iterator.postings(bits, randomDocsEnum("body", term, leaves2, bits), random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -171,7 +170,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     }
     TermsEnum iterator = terms.iterator(null);
     if (iterator.seekExact(term)) {
-      return iterator.postings(bits, null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
+      return iterator.postings(bits, null, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
     }
     return null;
   }

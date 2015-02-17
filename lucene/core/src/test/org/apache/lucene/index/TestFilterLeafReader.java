@@ -151,7 +151,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    PostingsEnum positions = terms.postings(MultiFields.getLiveDocs(reader), null, PostingsEnum.FLAG_ALL);
+    PostingsEnum positions = terms.postings(MultiFields.getLiveDocs(reader), null, PostingsEnum.ALL);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }

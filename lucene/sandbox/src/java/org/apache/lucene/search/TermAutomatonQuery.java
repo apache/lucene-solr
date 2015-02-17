@@ -395,7 +395,7 @@ public class TermAutomatonQuery extends Query {
 
           TermsEnum termsEnum = context.reader().terms(field).iterator(null);
           termsEnum.seekExact(term, state);
-          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(acceptDocs, null, PostingsEnum.FLAG_POSITIONS));
+          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(acceptDocs, null, PostingsEnum.POSITIONS));
         }
       }
 

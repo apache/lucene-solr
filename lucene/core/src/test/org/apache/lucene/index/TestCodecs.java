@@ -244,7 +244,7 @@ public class TestCodecs extends LuceneTestCase {
       // make sure it properly fully resets (rewinds) its
       // internal state:
       for(int iter=0;iter<2;iter++) {
-        postingsEnum = TestUtil.docs(random(), termsEnum, null, postingsEnum, PostingsEnum.FLAG_NONE);
+        postingsEnum = TestUtil.docs(random(), termsEnum, null, postingsEnum, PostingsEnum.NONE);
         assertEquals(terms[i].docs[0], postingsEnum.nextDoc());
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, postingsEnum.nextDoc());
       }
@@ -392,9 +392,9 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FLAG_NONE), false);
+          this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.NONE), false);
         } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.FLAG_ALL), true);
+          this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.ALL), true);
         }
 
         // Test random seek by ord:
@@ -412,9 +412,9 @@ public class TestCodecs extends LuceneTestCase {
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
           if (field.omitTF) {
-            this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FLAG_NONE), false);
+            this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.NONE), false);
           } else {
-            this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.FLAG_ALL), true);
+            this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.ALL), true);
           }
         }
 
@@ -465,15 +465,15 @@ public class TestCodecs extends LuceneTestCase {
             final PostingsEnum docs;
             final PostingsEnum postings;
             if (!field.omitTF) {
-              postings = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
+              postings = termsEnum.postings(null, null, PostingsEnum.ALL);
               if (postings != null) {
                 docs = postings;
               } else {
-                docs = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FLAG_FREQS);
+                docs = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FREQS);
               }
             } else {
               postings = null;
-              docs = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FLAG_NONE);
+              docs = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.NONE);
             }
             assertNotNull(docs);
             int upto2 = -1;
@@ -804,7 +804,7 @@ public class TestCodecs extends LuceneTestCase {
     Term term = new Term("f", new BytesRef("doc"));
     DirectoryReader reader = DirectoryReader.open(dir);
     for (LeafReaderContext ctx : reader.leaves()) {
-      PostingsEnum de = ctx.reader().termDocsEnum(term);
+      PostingsEnum de = ctx.reader().postings(term);
       while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         assertEquals("wrong freq for doc " + de.docID(), 1, de.freq());
       }

@@ -1018,17 +1018,17 @@ public final class TestUtil {
       if (random.nextBoolean()) {
         final int posFlags;
         switch (random.nextInt(4)) {
-          case 0: posFlags = PostingsEnum.FLAG_POSITIONS; break;
-          case 1: posFlags = PostingsEnum.FLAG_OFFSETS; break;
-          case 2: posFlags = PostingsEnum.FLAG_PAYLOADS; break;
-          default: posFlags = PostingsEnum.FLAG_OFFSETS | PostingsEnum.FLAG_PAYLOADS; break;
+          case 0: posFlags = PostingsEnum.POSITIONS; break;
+          case 1: posFlags = PostingsEnum.OFFSETS; break;
+          case 2: posFlags = PostingsEnum.PAYLOADS; break;
+          default: posFlags = PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS; break;
         }
         PostingsEnum docsAndPositions = termsEnum.postings(liveDocs, null, posFlags);
         if (docsAndPositions != null) {
           return docsAndPositions;
         }
       }
-      flags |= PostingsEnum.FLAG_FREQS;
+      flags |= PostingsEnum.FREQS;
     }
     return termsEnum.postings(liveDocs, reuse, flags);
   }

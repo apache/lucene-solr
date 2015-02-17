@@ -235,7 +235,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   public void testDocsAndPositionsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator(null);
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
-    PostingsEnum sortedPositions = termsEnum.postings(null, null, PostingsEnum.FLAG_ALL);
+    PostingsEnum sortedPositions = termsEnum.postings(null, null, PostingsEnum.ALL);
     int doc;
     
     // test nextDoc()
@@ -252,7 +252,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     
     // test advance()
     final PostingsEnum reuse = sortedPositions;
-    sortedPositions = termsEnum.postings(null, reuse, PostingsEnum.FLAG_ALL);
+    sortedPositions = termsEnum.postings(null, reuse, PostingsEnum.ALL);
     if (sortedPositions instanceof SortingDocsEnum) {
       assertTrue(((SortingDocsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }

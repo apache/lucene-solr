@@ -78,16 +78,16 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
       int flags = 0;
       if (hasPositions) {
-        flags = PostingsEnum.FLAG_POSITIONS;
+        flags = PostingsEnum.POSITIONS;
         if (hasPayloads) {
-          flags = flags | PostingsEnum.FLAG_PAYLOADS;
+          flags = flags | PostingsEnum.PAYLOADS;
         }
         if (hasOffsets) {
-          flags = flags | PostingsEnum.FLAG_OFFSETS;
+          flags = flags | PostingsEnum.OFFSETS;
         }
       } else {
         if (hasFreqs) {
-          flags = flags | PostingsEnum.FLAG_FREQS;
+          flags = flags | PostingsEnum.FREQS;
         }
       }
 

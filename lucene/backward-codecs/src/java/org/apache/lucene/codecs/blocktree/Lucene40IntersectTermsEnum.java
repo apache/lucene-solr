@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;

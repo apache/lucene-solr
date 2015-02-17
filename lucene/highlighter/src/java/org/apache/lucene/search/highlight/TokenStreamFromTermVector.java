@@ -131,7 +131,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
       final char[] termChars = new char[termBytesRef.length];
       final int termCharsLen = UnicodeUtil.UTF8toUTF16(termBytesRef, termChars);
 
-      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_POSITIONS);
+      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
       assert dpEnum != null; // presumably checked by TokenSources.hasPositions earlier
       dpEnum.nextDoc();
       final int freq = dpEnum.freq();

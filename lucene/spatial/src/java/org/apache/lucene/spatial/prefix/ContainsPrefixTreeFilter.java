@@ -186,7 +186,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     private SmallDocSet collectDocs(Bits acceptContains) throws IOException {
       SmallDocSet set = null;
 
-      postingsEnum = termsEnum.postings(acceptContains, postingsEnum, PostingsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(acceptContains, postingsEnum, PostingsEnum.NONE);
       int docid;
       while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (set == null) {

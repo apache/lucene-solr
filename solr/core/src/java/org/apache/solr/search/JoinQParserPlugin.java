@@ -424,7 +424,7 @@ class JoinQuery extends Query {
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
           // OK to skip liveDocs, since we check for intersection with docs matching query
-          fromDeState.postingsEnum = fromDeState.termsEnum.postings(null, fromDeState.postingsEnum, PostingsEnum.FLAG_NONE);
+          fromDeState.postingsEnum = fromDeState.termsEnum.postings(null, fromDeState.postingsEnum, PostingsEnum.NONE);
           PostingsEnum postingsEnum = fromDeState.postingsEnum;
 
           if (postingsEnum instanceof MultiPostingsEnum) {
@@ -489,7 +489,7 @@ class JoinQuery extends Query {
               toTermDirectCount++;
 
               // need to use liveDocs here so we don't map to any deleted ones
-              toDeState.postingsEnum = toDeState.termsEnum.postings(toDeState.liveDocs, toDeState.postingsEnum, PostingsEnum.FLAG_NONE);
+              toDeState.postingsEnum = toDeState.termsEnum.postings(toDeState.liveDocs, toDeState.postingsEnum, PostingsEnum.NONE);
               PostingsEnum postingsEnum = toDeState.postingsEnum;
 
               if (postingsEnum instanceof MultiPostingsEnum) {

@@ -138,7 +138,7 @@ class TermsIncludingScoreQuery extends Query {
           PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
             if (segmentTermsEnum.seekExact(TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
-              postingsEnum = segmentTermsEnum.postings(null, postingsEnum, PostingsEnum.FLAG_NONE);
+              postingsEnum = segmentTermsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
               if (postingsEnum.advance(doc) == doc) {
                 final float score = TermsIncludingScoreQuery.this.scores[ords[i]];
                 return new ComplexExplanation(true, score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
@@ -202,7 +202,7 @@ class TermsIncludingScoreQuery extends Query {
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             matchingDocs.set(doc);
@@ -278,7 +278,7 @@ class TermsIncludingScoreQuery extends Query {
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             // I prefer this:

@@ -185,16 +185,16 @@ public final class AssertingPostingsFormat extends PostingsFormat {
           int flags = 0;
           if (hasPositions == false) {
             if (hasFreqs) {
-              flags = flags | PostingsEnum.FLAG_FREQS;
+              flags = flags | PostingsEnum.FREQS;
             }
             postingsEnum = termsEnum.postings(null, postingsEnum, flags);
           } else {
-            flags = PostingsEnum.FLAG_POSITIONS;
+            flags = PostingsEnum.POSITIONS;
             if (hasPayloads) {
-              flags |= PostingsEnum.FLAG_PAYLOADS;
+              flags |= PostingsEnum.PAYLOADS;
             }
             if (hasOffsets) {
-              flags = flags | PostingsEnum.FLAG_OFFSETS;
+              flags = flags | PostingsEnum.OFFSETS;
             }
             postingsEnum = termsEnum.postings(null, postingsEnum, flags);
           }

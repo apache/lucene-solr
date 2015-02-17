@@ -29,7 +29,6 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -521,7 +520,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
 
   // NOTE: sort of a silly class, since you can get the
   // freq() already by TermsEnum.totalTermFreq
-  private static class TVDocsEnum extends DocsEnum {
+  private static class TVDocsEnum extends PostingsEnum {
     private boolean didNext;
     private int doc = -1;
     private int freq;
@@ -562,6 +561,26 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     @Override
     public long cost() {
       return 1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+    
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
     }
   }
 

@@ -305,7 +305,7 @@ public class FileFloatSource extends ValueSource {
           continue;
         }
 
-        postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.FLAG_NONE);
+        postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
         int doc;
         while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           vals[doc] = fval;

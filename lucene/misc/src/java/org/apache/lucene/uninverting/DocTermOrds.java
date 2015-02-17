@@ -372,7 +372,7 @@ public class DocTermOrds implements Accountable {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        postingsEnum = te.postings(liveDocs, postingsEnum, PostingsEnum.FLAG_NONE);
+        postingsEnum = te.postings(liveDocs, postingsEnum, PostingsEnum.NONE);
 
         // dF, but takes deletions into account
         int actualDF = 0;

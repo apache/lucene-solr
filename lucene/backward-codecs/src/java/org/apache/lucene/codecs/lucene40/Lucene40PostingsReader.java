@@ -25,7 +25,6 @@ import java.util.Collections;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -224,7 +223,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     return false;
   }
   
-  private DocsEnum newDocsEnum(Bits liveDocs, FieldInfo fieldInfo, StandardTermState termState) throws IOException {
+  private PostingsEnum newDocsEnum(Bits liveDocs, FieldInfo fieldInfo, StandardTermState termState) throws IOException {
     if (liveDocs == null) {
       return new AllDocsSegmentDocsEnum(freqIn).reset(fieldInfo, termState);
     } else {
@@ -275,7 +274,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
 
   static final int BUFFERSIZE = 64;
   
-  private abstract class SegmentDocsEnumBase extends DocsEnum {
+  private abstract class SegmentDocsEnumBase extends PostingsEnum {
     
     protected final int[] docs = new int[BUFFERSIZE];
     protected final int[] freqs = new int[BUFFERSIZE];
@@ -313,7 +312,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     }
     
     
-    DocsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
+    PostingsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
       indexOmitsTF = fieldInfo.getIndexOptions() == IndexOptions.DOCS;
       storePayloads = fieldInfo.hasPayloads();
       storeOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -488,6 +487,26 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     @Override
     public long cost() {
       return limit;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
   }
   

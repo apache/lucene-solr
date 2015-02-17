@@ -489,7 +489,7 @@ public class TestPayloads extends LuceneTestCase {
     PostingsEnum tp = null;
     while (terms.next() != null) {
       String termText = terms.term().utf8ToString();
-      tp = terms.postings(liveDocs, tp, PostingsEnum.FLAG_PAYLOADS);
+      tp = terms.postings(liveDocs, tp, PostingsEnum.PAYLOADS);
       while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         int freq = tp.freq();
         for (int i = 0; i < freq; i++) {
@@ -609,7 +609,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    PostingsEnum de = sr.termDocsEnum(new Term("field", "withPayload"), PostingsEnum.FLAG_POSITIONS);
+    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.POSITIONS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -643,7 +643,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    PostingsEnum de = sr.termDocsEnum(new Term("field", "withPayload"), PostingsEnum.FLAG_POSITIONS);
+    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.POSITIONS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

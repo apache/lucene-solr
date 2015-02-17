@@ -209,7 +209,7 @@ public abstract class LeafReader extends IndexReader {
    *  This will return null if either the field or
    *  term does not exist.
    *  @see TermsEnum#postings(Bits, PostingsEnum) */
-  public final PostingsEnum termDocsEnum(Term term, int flags) throws IOException {
+  public final PostingsEnum postings(Term term, int flags) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
     final Terms terms = terms(term.field());
@@ -223,9 +223,9 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /** Returns {@link PostingsEnum} for the specified term
-   *  with {@link PostingsEnum#FLAG_FREQS}. */
-  public final PostingsEnum termDocsEnum(Term term) throws IOException {
-    return termDocsEnum(term, PostingsEnum.FLAG_FREQS);
+   *  with {@link PostingsEnum#FREQS}. */
+  public final PostingsEnum postings(Term term) throws IOException {
+    return postings(term, PostingsEnum.FREQS);
   }
 
   /** Returns {@link NumericDocValues} for this field, or
