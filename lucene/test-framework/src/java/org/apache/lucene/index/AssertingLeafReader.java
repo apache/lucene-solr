@@ -114,14 +114,22 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      // TODO: should we give this thing a random to be super-evil,
-      // and randomly *not* unwrap?
+      // reuse, if the codec reused
+      final TermsEnum actualReuse;
       if (reuse instanceof AssertingTermsEnum) {
-        reuse = ((AssertingTermsEnum) reuse).in;
+        actualReuse = ((AssertingTermsEnum) reuse).in;
+      } else {
+        actualReuse = null;
       }
-      TermsEnum termsEnum = super.iterator(reuse);
+      TermsEnum termsEnum = super.iterator(actualReuse);
       assert termsEnum != null;
-      return new AssertingTermsEnum(termsEnum);
+      if (termsEnum == actualReuse) {
+        // codec reused, reset asserting state
+        ((AssertingTermsEnum)reuse).reset();
+        return reuse;
+      } else {
+        return new AssertingTermsEnum(termsEnum);
+      }
     }
   }
   
@@ -143,13 +151,23 @@ public class AssertingLeafReader extends FilterLeafReader {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
-      // TODO: should we give this thing a random to be super-evil,
-      // and randomly *not* unwrap?
+      // reuse if the codec reused
+      final PostingsEnum actualReuse;
       if (reuse instanceof AssertingPostingsEnum) {
-        reuse = ((AssertingPostingsEnum) reuse).in;
+        actualReuse = ((AssertingPostingsEnum) reuse).in;
+      } else {
+        actualReuse = null;
       }
-      PostingsEnum docs = super.postings(liveDocs, reuse, flags);
-      return docs == null ? null : new AssertingPostingsEnum(docs);
+      PostingsEnum docs = super.postings(liveDocs, actualReuse, flags);
+      if (docs == null) {
+        return null;
+      } else if (docs == actualReuse) {
+        // codec reused, reset asserting state
+        ((AssertingPostingsEnum)reuse).reset();
+        return reuse;
+      } else {
+        return new AssertingPostingsEnum(docs);
+      }
     }
 
     // TODO: we should separately track if we are 'at the end' ?
@@ -254,6 +272,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public String toString() {
       return "AssertingTermsEnum(" + in + ")";
+    }
+    
+    void reset() {
+      state = State.INITIAL;
     }
   }
   
@@ -361,6 +383,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       BytesRef payload = super.getPayload();
       assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
       return payload;
+    }
+    
+    void reset() {
+      state = DocsEnumState.START;
+      doc = in.docID();
+      positionCount = positionMax = 0;
     }
   }
 
