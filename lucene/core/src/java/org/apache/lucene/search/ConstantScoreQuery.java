@@ -184,6 +184,11 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
+    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+      return in.asTwoPhaseIterator();
+    }
+
+    @Override
     public int freq() throws IOException {
       return 1;
     }

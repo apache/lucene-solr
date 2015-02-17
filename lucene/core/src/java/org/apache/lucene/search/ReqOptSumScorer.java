@@ -31,7 +31,7 @@ class ReqOptSumScorer extends Scorer {
   /** The scorers passed from the constructor.
    * These are set to null as soon as their next() or skipTo() returns false.
    */
-  protected Scorer reqScorer;
+  protected final Scorer reqScorer;
   protected Scorer optScorer;
 
   /** Construct a <code>ReqOptScorer</code>.
@@ -47,6 +47,11 @@ class ReqOptSumScorer extends Scorer {
     assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
+  }
+
+  @Override
+  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    return reqScorer.asTwoPhaseIterator();
   }
 
   @Override

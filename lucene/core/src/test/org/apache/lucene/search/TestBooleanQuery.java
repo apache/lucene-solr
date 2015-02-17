@@ -41,6 +41,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanTopLevelScorers.BoostedScorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -613,6 +614,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer instanceof ConjunctionScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
     reader.close();
@@ -642,6 +644,97 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer instanceof DisjunctionScorer);
+    assertNotNull(scorer.asTwoPhaseIterator());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testBoostedScorerPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+
+    BooleanQuery q = new BooleanQuery();
+    q.add(pq, Occur.SHOULD);
+    q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
+
+    final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer instanceof BoostedScorer);
+    assertNotNull(scorer.asTwoPhaseIterator());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testExclusionPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+
+    BooleanQuery q = new BooleanQuery();
+    q.add(pq, Occur.SHOULD);
+    q.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
+
+    final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer instanceof ReqExclScorer);
+    assertNotNull(scorer.asTwoPhaseIterator());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testReqOptPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a b c", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+
+    BooleanQuery q = new BooleanQuery();
+    q.add(pq, Occur.MUST);
+    q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
+
+    final Weight weight = searcher.createNormalizedWeight(q, true);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertTrue(scorer instanceof ReqOptSumScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
     reader.close();

@@ -166,4 +166,116 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
 
     assertSameScores(bq2, bq4);
   }
+
+  public void testConstantScore() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    TermQuery q1 = new TermQuery(t1);
+    TermQuery q2 = new TermQuery(t2);
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(new ConstantScoreQuery(q1), Occur.MUST);
+    bq1.add(new ConstantScoreQuery(q2), Occur.MUST);
+
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(new ConstantScoreQuery(new RandomApproximationQuery(q1, random())), Occur.MUST);
+    bq2.add(new ConstantScoreQuery(new RandomApproximationQuery(q2, random())), Occur.MUST);
+
+    assertSameScores(bq1, bq2);
+  }
+
+  public void testExclusion() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    TermQuery q1 = new TermQuery(t1);
+    TermQuery q2 = new TermQuery(t2);
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(q1, Occur.MUST);
+    bq1.add(q2, Occur.MUST_NOT);
+
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
+    bq2.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
+
+    assertSameScores(bq1, bq2);
+  }
+
+  public void testNestedExclusion() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    TermQuery q1 = new TermQuery(t1);
+    TermQuery q2 = new TermQuery(t2);
+    TermQuery q3 = new TermQuery(t3);
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(q1, Occur.MUST);
+    bq1.add(q2, Occur.MUST_NOT);
+
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(bq1, Occur.MUST);
+    bq2.add(q3, Occur.MUST);
+
+    // Both req and excl have approximations
+    BooleanQuery bq3 = new BooleanQuery();
+    bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
+    bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
+
+    BooleanQuery bq4 = new BooleanQuery();
+    bq4.add(bq3, Occur.MUST);
+    bq4.add(q3, Occur.MUST);
+
+    assertSameScores(bq2, bq4);
+
+    // Only req has an approximation
+    bq3 = new BooleanQuery();
+    bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
+    bq3.add(q2, Occur.MUST_NOT);
+
+    bq4 = new BooleanQuery();
+    bq4.add(bq3, Occur.MUST);
+    bq4.add(q3, Occur.MUST);
+
+    assertSameScores(bq2, bq4);
+
+    // Only excl has an approximation
+    bq3 = new BooleanQuery();
+    bq3.add(q1, Occur.MUST);
+    bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
+
+    bq4 = new BooleanQuery();
+    bq4.add(bq3, Occur.MUST);
+    bq4.add(q3, Occur.MUST);
+
+    assertSameScores(bq2, bq4);
+  }
+
+  public void testReqOpt() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    TermQuery q1 = new TermQuery(t1);
+    TermQuery q2 = new TermQuery(t2);
+    TermQuery q3 = new TermQuery(t3);
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(q1, Occur.MUST);
+    bq1.add(q2, Occur.SHOULD);
+
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(bq1, Occur.MUST);
+    bq2.add(q3, Occur.MUST);
+    
+    BooleanQuery bq3 = new BooleanQuery();
+    bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
+    bq3.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
+
+    BooleanQuery bq4 = new BooleanQuery();
+    bq4.add(bq3, Occur.MUST);
+    bq4.add(q3, Occur.MUST);
+
+    assertSameScores(bq2, bq4);
+  }
+
 }

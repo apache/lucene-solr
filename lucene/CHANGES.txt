@@ -89,8 +89,9 @@ Optimizations
   positions lazily if the phrase query is in a conjunction with other queries.
   (Robert Muir, Adrien Grand)
 
-* LUCENE-6244: Pure disjunctions now propagate two-phase iterators of the
-  wrapped scorers (see LUCENE-6198). (Adrien Grand, Robert Muir)
+* LUCENE-6244, LUCENE-6251: All boolean queries but those that have a
+  minShouldMatch > 1 now either propagate or take advantage of the two-phase
+  iteration capabilities added in LUCENE-6198. (Adrien Grand, Robert Muir)
 
 * LUCENE-6241: FSDirectory.listAll() doesnt filter out subdirectories anymore,
   for faster performance. Subdirectories don't matter to Lucene. If you need to
