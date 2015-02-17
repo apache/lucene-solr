@@ -499,7 +499,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       TermsEnum termsEnum = terms.iterator(null);
       PostingsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, PostingsEnum.FLAG_FREQS);
+        docs = TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, PostingsEnum.FREQS);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

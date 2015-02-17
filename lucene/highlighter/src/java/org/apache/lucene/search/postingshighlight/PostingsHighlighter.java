@@ -552,7 +552,7 @@ public class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
-        de = postings[i] = termsEnum.postings(null, null, PostingsEnum.FLAG_OFFSETS);
+        de = postings[i] = termsEnum.postings(null, null, PostingsEnum.OFFSETS);
         if (de == null) {
           // no positions available
           throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");

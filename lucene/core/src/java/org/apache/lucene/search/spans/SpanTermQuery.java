@@ -114,7 +114,7 @@ public class SpanTermQuery extends SpanQuery {
     final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
     termsEnum.seekExact(term.bytes(), state);
     
-    final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.FLAG_PAYLOADS);
+    final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
 
     if (postings != null) {
       return new TermSpans(postings, term);

@@ -740,7 +740,7 @@ public class TestJoinUtil extends LuceneTestCase {
           for (BytesRef joinValue : joinValues) {
             termsEnum = terms.iterator(termsEnum);
             if (termsEnum.seekExact(joinValue)) {
-              postingsEnum = termsEnum.postings(slowCompositeReader.getLiveDocs(), postingsEnum, PostingsEnum.FLAG_NONE);
+              postingsEnum = termsEnum.postings(slowCompositeReader.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
               JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
               for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {

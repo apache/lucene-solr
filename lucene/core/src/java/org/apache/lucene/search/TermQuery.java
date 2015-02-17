@@ -83,7 +83,7 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      PostingsEnum docs = termsEnum.postings(acceptDocs, null, needsScores ? PostingsEnum.FLAG_FREQS : PostingsEnum.FLAG_NONE);
+      PostingsEnum docs = termsEnum.postings(acceptDocs, null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
       assert docs != null;
       return new TermScorer(this, docs, similarity.simScorer(stats, context));
     }

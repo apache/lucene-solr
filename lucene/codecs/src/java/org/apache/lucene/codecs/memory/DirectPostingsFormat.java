@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
@@ -358,7 +357,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         termOffsets[count+1] = termOffset;
 
         if (hasPos) {
-          docsAndPositionsEnum = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.FLAG_ALL);
+          docsAndPositionsEnum = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
         } else {
           postingsEnum = termsEnum.postings(null, postingsEnum);
         }
@@ -861,7 +860,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         // TODO: implement reuse
         // it's hairy!
 
-        if ((flags & PostingsEnum.FLAG_POSITIONS) >= PostingsEnum.FLAG_POSITIONS) {
+        if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
           if (!hasPos) {
             return null;
           }
@@ -1455,7 +1454,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
         // TODO: implement reuse
         // it's hairy!
-        if ((flags & PostingsEnum.FLAG_POSITIONS) >= PostingsEnum.FLAG_POSITIONS) {
+        if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
           if (!hasPos) {
             return null;
           }
@@ -1510,7 +1509,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs only:
-  private final static class LowFreqDocsEnumNoTF extends DocsEnum {
+  private final static class LowFreqDocsEnumNoTF extends PostingsEnum {
     private int[] postings;
     private final Bits liveDocs;
     private int upto;
@@ -1572,6 +1571,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
@@ -1585,7 +1599,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs:
-  private final static class LowFreqDocsEnumNoPos extends DocsEnum {
+  private final static class LowFreqDocsEnumNoPos extends PostingsEnum {
     private int[] postings;
     private final Bits liveDocs;
     private int upto;
@@ -1646,6 +1660,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
@@ -1659,7 +1688,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs + positions/offets:
-  private final static class LowFreqDocsEnum extends DocsEnum {
+  private final static class LowFreqDocsEnum extends PostingsEnum {
     private int[] postings;
     private final Bits liveDocs;
     private final int posMult;
@@ -1733,6 +1762,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
     public int nextPosition() throws IOException {
       assert false : "should be using LowFreqDocsAndPositionsEnum";
       return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override
@@ -1907,7 +1951,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs:
-  private final static class HighFreqDocsEnum extends DocsEnum {
+  private final static class HighFreqDocsEnum extends PostingsEnum {
     private int[] docIDs;
     private int[] freqs;
     private final Bits liveDocs;
@@ -2081,6 +2125,26 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public long cost() {
       return docIDs.length;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
   }
 

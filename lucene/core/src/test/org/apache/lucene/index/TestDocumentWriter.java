@@ -239,18 +239,18 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
-    PostingsEnum termPositions = reader.termDocsEnum(new Term("preanalyzed", "term1"), PostingsEnum.FLAG_ALL);
+    PostingsEnum termPositions = reader.postings(new Term("preanalyzed", "term1"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
-    termPositions = reader.termDocsEnum(new Term("preanalyzed", "term2"), PostingsEnum.FLAG_ALL);
+    termPositions = reader.postings(new Term("preanalyzed", "term2"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
     
-    termPositions = reader.termDocsEnum(new Term("preanalyzed", "term3"), PostingsEnum.FLAG_ALL);
+    termPositions = reader.postings(new Term("preanalyzed", "term3"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());

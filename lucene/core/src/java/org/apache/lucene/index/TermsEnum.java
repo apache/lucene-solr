@@ -146,7 +146,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * be returned
    * @param reuse pass a prior PostingsEnum for possible reuse */
   public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse) throws IOException {
-    return postings(liveDocs, reuse, PostingsEnum.FLAG_FREQS);
+    return postings(liveDocs, reuse, PostingsEnum.FREQS);
   }
 
   /** Get {@link PostingsEnum} for the current term, with
@@ -159,7 +159,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * be returned
    * @param reuse pass a prior PostingsEnum for possible reuse
    * @param flags specifies which optional per-document values
-   *        you require; see {@link PostingsEnum#FLAG_FREQS}
+   *        you require; see {@link PostingsEnum#FREQS}
    * @see #postings(Bits, PostingsEnum, int) */
   public abstract PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException;
 

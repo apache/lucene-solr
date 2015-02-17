@@ -92,9 +92,9 @@
  *   // get the document frequency
  *   System.out.println(termsEnum.docFreq());
  *   // enumerate through documents
- *   DocsEnum docs = termsEnum.docs(null, null);
+ *   PostingsEnum docs = termsEnum.postings(null, null);
  *   // enumerate through documents and positions
- *   DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(null, null);
+ *   PostingsEnum docsAndPositions = termsEnum.postings(null, null, PostingsEnum.FLAG_POSITIONS);
  * }
  * </pre>
  * <a name="documents"></a>

@@ -449,7 +449,7 @@
  *                 {@link org.apache.lucene.search.Scorer#freq freq()} &mdash; Returns the number of matches
  *                 for the current document. This value can be determined in any appropriate way for an application. For instance, the
  *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the term frequency from the inverted index:
- *                 {@link org.apache.lucene.index.DocsEnum#freq DocsEnum.freq()}.
+ *                 {@link org.apache.lucene.index.PostingsEnum#freq PostingsEnum.freq()}.
  *             </li>
  *             <li>
  *                 {@link org.apache.lucene.search.Scorer#advance advance()} &mdash; Skip ahead in

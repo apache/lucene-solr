@@ -394,7 +394,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (text == null) { // Ran off the end of the terms enum without finding any live docs with that field in them.
         return null;
       }
-      postingsEnum = termsEnum.postings(reader.getLiveDocs(), postingsEnum, PostingsEnum.FLAG_NONE);
+      postingsEnum = termsEnum.postings(reader.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
       if (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         return reader.document(postingsEnum.docID());
       }

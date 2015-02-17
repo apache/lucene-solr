@@ -263,7 +263,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
       if (matchedTokens.contains(docTerm) || (prefixToken != null && docTerm.startsWith(prefixToken))) {
  
-        PostingsEnum docPosEnum = it.postings(null, null, PostingsEnum.FLAG_OFFSETS);
+        PostingsEnum docPosEnum = it.postings(null, null, PostingsEnum.OFFSETS);
         docPosEnum.nextDoc();
 
         // use the first occurrence of the term

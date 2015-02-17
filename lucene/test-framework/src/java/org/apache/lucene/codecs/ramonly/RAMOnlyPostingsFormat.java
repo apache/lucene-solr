@@ -263,18 +263,18 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         if (writeFreqs == false) {
           enumFlags = 0;
         } else if (writePositions == false) {
-          enumFlags = PostingsEnum.FLAG_FREQS;
+          enumFlags = PostingsEnum.FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = PostingsEnum.FLAG_PAYLOADS;
+            enumFlags = PostingsEnum.PAYLOADS;
           } else {
             enumFlags = 0;
           }
         } else {
           if (writePayloads) {
-            enumFlags = PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.PAYLOADS | PostingsEnum.OFFSETS;
           } else {
-            enumFlags = PostingsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.OFFSETS;
           }
         }
 

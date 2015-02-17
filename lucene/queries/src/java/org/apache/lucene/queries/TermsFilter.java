@@ -207,7 +207,7 @@ public final class TermsFilter extends Filter implements Accountable {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
-            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.FLAG_NONE); // no freq since we don't need them
+            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE); // no freq since we don't need them
             builder.or(docs);
           }
         }

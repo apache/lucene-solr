@@ -440,7 +440,7 @@ public class TestFilteredQuery extends LuceneTestCase {
               Bits acceptDocs) throws IOException {
             final boolean nullBitset = random().nextInt(10) == 5;
             final LeafReader reader = context.reader();
-            PostingsEnum termPostingsEnum = reader.termDocsEnum(new Term("field", "0"));
+            PostingsEnum termPostingsEnum = reader.postings(new Term("field", "0"));
             if (termPostingsEnum == null) {
               return null; // no docs -- return null
             }
@@ -483,7 +483,7 @@ public class TestFilteredQuery extends LuceneTestCase {
                 assertTrue(
                     "iterator should not be called if bitset is present",
                     nullBitset);
-                return reader.termDocsEnum(new Term("field", "0"));
+                return reader.postings(new Term("field", "0"));
               }
               
             };
@@ -538,7 +538,7 @@ public class TestFilteredQuery extends LuceneTestCase {
           }
           @Override
           public DocIdSetIterator iterator() throws IOException {
-            final PostingsEnum termPostingsEnum = context.reader().termDocsEnum(new Term("field", "0"));
+            final PostingsEnum termPostingsEnum = context.reader().postings(new Term("field", "0"));
             if (termPostingsEnum == null) {
               return null;
             }

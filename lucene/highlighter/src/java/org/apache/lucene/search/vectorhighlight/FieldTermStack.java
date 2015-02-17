@@ -104,7 +104,7 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
-      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.FLAG_POSITIONS);
+      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
       if (dpEnum == null) {
         // null snippet
         return;

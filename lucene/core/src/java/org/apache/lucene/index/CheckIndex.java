@@ -1050,7 +1050,7 @@ public class CheckIndex implements Closeable {
         sumDocFreq += docFreq;
         
         docs = termsEnum.postings(liveDocs, docs);
-        postings = termsEnum.postings(liveDocs, postings, PostingsEnum.FLAG_ALL);
+        postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
           if (termsEnum.totalTermFreq() != -1) {
@@ -1184,7 +1184,7 @@ public class CheckIndex implements Closeable {
               totalTermFreq += docsNoDel.freq();
             }
           } else {
-            final PostingsEnum docsNoDel = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
+            final PostingsEnum docsNoDel = termsEnum.postings(null, docs, PostingsEnum.NONE);
             docCount = 0;
             totalTermFreq = -1;
             while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -1211,7 +1211,7 @@ public class CheckIndex implements Closeable {
         if (hasPositions) {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.postings(liveDocs, postings, PostingsEnum.FLAG_ALL);
+            postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1275,7 +1275,7 @@ public class CheckIndex implements Closeable {
         } else {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            docs = termsEnum.postings(liveDocs, docs, PostingsEnum.FLAG_NONE);
+            docs = termsEnum.postings(liveDocs, docs, PostingsEnum.NONE);
             final int docID = docs.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1347,7 +1347,7 @@ public class CheckIndex implements Closeable {
           }
           
           int expectedDocFreq = termsEnum.docFreq();
-          PostingsEnum d = termsEnum.postings(null, null, PostingsEnum.FLAG_NONE);
+          PostingsEnum d = termsEnum.postings(null, null, PostingsEnum.NONE);
           int docFreq = 0;
           while (d.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             docFreq++;
@@ -1388,7 +1388,7 @@ public class CheckIndex implements Closeable {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              docs = termsEnum.postings(liveDocs, docs, PostingsEnum.FLAG_NONE);
+              docs = termsEnum.postings(liveDocs, docs, PostingsEnum.NONE);
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -1406,7 +1406,7 @@ public class CheckIndex implements Closeable {
               }
               
               totDocFreq += termsEnum.docFreq();
-              docs = termsEnum.postings(null, docs, PostingsEnum.FLAG_NONE);
+              docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -1922,7 +1922,7 @@ public class CheckIndex implements Closeable {
               while ((term = termsEnum.next()) != null) {
 
                 if (hasProx) {
-                  postings = termsEnum.postings(null, postings, PostingsEnum.FLAG_ALL);
+                  postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
                   assert postings != null;
                   docs = null;
                 } else {
@@ -1944,7 +1944,7 @@ public class CheckIndex implements Closeable {
                 if (!postingsTermsEnum.seekExact(term)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
-                postingsPostings = postingsTermsEnum.postings(null, postingsPostings, PostingsEnum.FLAG_ALL);
+                postingsPostings = postingsTermsEnum.postings(null, postingsPostings, PostingsEnum.ALL);
                 if (postingsPostings == null) {
                   // Term vectors were indexed w/ pos but postings were not
                   postingsDocs = postingsTermsEnum.postings(null, postingsDocs);

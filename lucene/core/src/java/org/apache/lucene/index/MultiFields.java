@@ -124,7 +124,7 @@ public final class MultiFields extends Fields {
    *  term.  This will return null if the field or term does
    *  not exist. */
   public static PostingsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
-    return getTermDocsEnum(r, liveDocs, field, term, PostingsEnum.FLAG_FREQS);
+    return getTermDocsEnum(r, liveDocs, field, term, PostingsEnum.FREQS);
   }
   
   /** Returns {@link PostingsEnum} for the specified field and
@@ -151,7 +151,7 @@ public final class MultiFields extends Fields {
    *  term does not exist or positions were not indexed. 
    *  @see #getTermPositionsEnum(IndexReader, Bits, String, BytesRef, int) */
   public static PostingsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
-    return getTermPositionsEnum(r, liveDocs, field, term, PostingsEnum.FLAG_OFFSETS | PostingsEnum.FLAG_PAYLOADS);
+    return getTermPositionsEnum(r, liveDocs, field, term, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
   }
 
   /** Returns {@link PostingsEnum} for the specified

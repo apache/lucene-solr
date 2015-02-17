@@ -212,7 +212,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     final IndexReader readerFromWriter = writer.getReader();
     LeafReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
 
-    PostingsEnum tp = r.termDocsEnum(new Term("content", "a"), PostingsEnum.FLAG_ALL);
+    PostingsEnum tp = r.postings(new Term("content", "a"), PostingsEnum.ALL);
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

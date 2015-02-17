@@ -171,7 +171,7 @@ public class SortingLeafReader extends FilterLeafReader {
       }
 
       final PostingsEnum inDocs = in.postings(newToOld(liveDocs), inReuse, flags);
-      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & PostingsEnum.FLAG_FREQS) != 0;
+      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & PostingsEnum.FREQS) != 0;
       return new SortingDocsEnum(docMap.size(), wrapReuse, inDocs, withFreqs, docMap);
     }
 

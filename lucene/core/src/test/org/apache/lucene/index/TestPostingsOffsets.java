@@ -313,7 +313,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           }
 
           // explicitly exclude offsets here
-          docsAndPositions = termsEnum.postings(null, docsAndPositions, PostingsEnum.FLAG_ALL);
+          docsAndPositions = termsEnum.postings(null, docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositions);
           //System.out.println("    doc/freq/pos");
           while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -328,7 +328,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
             }
           }
 
-          docsAndPositionsAndOffsets = termsEnum.postings(null, docsAndPositions, PostingsEnum.FLAG_ALL);
+          docsAndPositionsAndOffsets = termsEnum.postings(null, docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
           while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {

@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -330,19 +329,19 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         if (writeFreqs == false) {
           enumFlags = 0;
         } else if (writePositions == false) {
-          enumFlags = PostingsEnum.FLAG_FREQS;
+          enumFlags = PostingsEnum.FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = PostingsEnum.FLAG_PAYLOADS;
+            enumFlags = PostingsEnum.PAYLOADS;
           }
           else {
-            enumFlags = PostingsEnum.FLAG_POSITIONS;
+            enumFlags = PostingsEnum.POSITIONS;
           }
         } else {
           if (writePayloads) {
-            enumFlags = PostingsEnum.FLAG_PAYLOADS | PostingsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.PAYLOADS | PostingsEnum.OFFSETS;
           } else {
-            enumFlags = PostingsEnum.FLAG_OFFSETS;
+            enumFlags = PostingsEnum.OFFSETS;
           }
         }
 
@@ -428,7 +427,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     return new MemoryFieldsConsumer(state);
   }
 
-  private final static class FSTDocsEnum extends DocsEnum {
+  private final static class FSTDocsEnum extends PostingsEnum {
     private final IndexOptions indexOptions;
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
@@ -550,6 +549,26 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public long cost() {
       return numDocs;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
   }
 
@@ -810,7 +829,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
 
-      if ((flags & PostingsEnum.FLAG_POSITIONS) >= PostingsEnum.FLAG_POSITIONS) {
+      if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
         if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           return null;
         }

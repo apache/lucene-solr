@@ -633,8 +633,8 @@ public void testFilesOpenClose() throws IOException {
 
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
-        PostingsEnum tp1 = enum1.postings(liveDocs, null, PostingsEnum.FLAG_ALL);
-        PostingsEnum tp2 = enum2.postings(liveDocs, null, PostingsEnum.FLAG_ALL);
+        PostingsEnum tp1 = enum1.postings(liveDocs, null, PostingsEnum.ALL);
+        PostingsEnum tp2 = enum2.postings(liveDocs, null, PostingsEnum.ALL);
 
         while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
