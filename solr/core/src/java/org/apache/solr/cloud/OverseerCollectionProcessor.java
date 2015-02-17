@@ -579,6 +579,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     NamedList results = new NamedList();
     try {
+      // force update the cluster state
+      zkStateReader.updateClusterState(true);
       CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
       if (action == null) {
         // back-compat because we used strings different than enum values before SOLR-6115
