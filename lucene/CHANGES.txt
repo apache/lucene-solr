@@ -22,6 +22,10 @@ Bug fixes
   sorted (set) doc values instance at the same time.
   (Tom Shally, Robert Muir, Adrien Grand)
 
+* LUCENE-6093: Don't throw NullPointerException from
+  BlendedInfixSuggester for lookups that do not end in a prefix
+  token.  (jane chang via Mike McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.
