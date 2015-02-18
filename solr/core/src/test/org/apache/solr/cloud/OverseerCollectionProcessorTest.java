@@ -252,6 +252,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
 
+    zkStateReaderMock.updateClusterState(anyBoolean());
 
     clusterStateMock.getCollections();
     expectLastCall().andAnswer(new IAnswer<Object>() {
