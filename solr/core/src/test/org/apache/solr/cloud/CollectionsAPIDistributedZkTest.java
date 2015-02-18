@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -80,6 +81,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -197,6 +199,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     clusterPropTest();
     // last
     deleteCollectionWithDownNodes();
+    addReplicaTest();
 
     if (DEBUG) {
       super.printLayout();
@@ -1115,6 +1118,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       addReplica = new CollectionAdminRequest.AddReplica();
       addReplica.setCollectionName(collectionName);
       addReplica.setShardName("shard2");
+      Properties props = new Properties();
+      String instancePathStr = createTempDir().toString();
+      props.put(CoreAdminParams.INSTANCE_DIR, instancePathStr); //Use name via the property.instanceDir method
+      addReplica.setProperties(props);
       client.request(addReplica);
 
       timeout = System.currentTimeMillis() + 3000;
@@ -1127,6 +1134,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
       assertNotNull(newReplica);
 
+      HttpSolrClient coreclient = new HttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP));
+      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
+      NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
+      String instanceDirStr = (String) coreStatus.get("instanceDir");
+      assertEquals(Paths.get(instanceDirStr).toString(), instancePathStr);
     }
 
   }

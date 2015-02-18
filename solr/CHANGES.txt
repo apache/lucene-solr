@@ -139,6 +139,9 @@ Bug Fixes
   operate on stale cluster state due to overseer holding the state update lock for a
   long time. (Mark Miller, shalin)
 
+* SOLR-7104: Propagate property prefix parameters for ADDREPLICA Collections API call.
+  (Varun Thacker via Anshum Gupta)
+
 Optimizations
 ----------------------
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections
