@@ -188,6 +188,7 @@ public class RandomApproximationQuery extends Query {
 
     private final DocIdSetIterator disi;
     private final RandomApproximation approximation;
+    private int lastDoc = -1;
 
     RandomTwoPhaseView(Random random, DocIdSetIterator disi) {
       this.disi = disi;
@@ -201,7 +202,14 @@ public class RandomApproximationQuery extends Query {
 
     @Override
     public boolean matches() throws IOException {
-      return approximation.doc == disi.docID();
+      if (approximation.docID() == -1 || approximation.docID() == DocIdSetIterator.NO_MORE_DOCS) {
+        throw new AssertionError("matches() should not be called on doc ID " + approximation.doc);
+      }
+      if (lastDoc == approximation.docID()) {
+        throw new AssertionError("matches() has been called twice on doc ID " + approximation.doc);
+      }
+      lastDoc = approximation.docID();
+      return approximation.docID() == disi.docID();
     }
 
   }
