@@ -25,6 +25,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
@@ -109,7 +110,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     ZkCLI.main(args);
     
-    assertTrue(zkClient.exists(chroot + ZkController.CONFIGS_ZKNODE
+    assertTrue(zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE
         + "/collection1", true));
   }
 
@@ -201,7 +202,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         ExternalPaths.TECHPRODUCTS_CONFIGSET, "-confname", confsetname};
     ZkCLI.main(args);
     
-    assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/" + confsetname, true));
+    assertTrue(zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, true));
 
     // print help
     // ZkCLI.main(new String[0]);
@@ -225,7 +226,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     
     File[] files = confDir.listFiles();
-    List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+    List<String> zkFiles = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);

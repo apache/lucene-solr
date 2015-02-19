@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -167,7 +168,8 @@ public class MiniSolrCloudCluster {
   public void uploadConfigDir(File configDir, String configName) throws IOException, KeeperException, InterruptedException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, 45000, null)) {
-      ZkController.uploadConfigDir(zkClient, configDir, configName);
+      ZkConfigManager manager = new ZkConfigManager(zkClient);
+      manager.uploadConfigDir(configDir.toPath(), configName);
     }
   }
   

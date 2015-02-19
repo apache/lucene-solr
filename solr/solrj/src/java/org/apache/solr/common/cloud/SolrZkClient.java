@@ -17,23 +17,6 @@ package org.apache.solr.common.cloud;
  * the License.
  */
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -53,6 +36,22 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 
@@ -721,6 +720,17 @@ public class SolrZkClient implements Closeable {
    */
   public static boolean containsChroot(String zkHost) {
     return zkHost.contains("/");
+  }
+
+  /**
+   * Check to see if a Throwable is an InterruptedException, and if it is, set the thread interrupt flag
+   * @param e the Throwable
+   * @return the Throwable
+   */
+  public static Throwable checkInterrupted(Throwable e) {
+    if (e instanceof InterruptedException)
+      Thread.interrupted();
+    return e;
   }
 
 }

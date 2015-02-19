@@ -1,13 +1,5 @@
 package org.apache.solr.cloud;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
@@ -27,6 +19,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

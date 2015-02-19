@@ -17,28 +17,9 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.management.JMException;
-
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.AtomicLongMap;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -56,6 +37,25 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.management.JMException;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ZkTestServer {
   public static final int TICK_TIME = 1000;
@@ -396,7 +396,31 @@ public class ZkTestServer {
   }
 
   public String getZkAddress() {
-    return "127.0.0.1:" + zkServer.getLocalPort() + "/solr";
+    return getZkAddress("/solr");
+  }
+
+  /**
+   * Get a connection string for this server with a given chroot
+   * @param chroot the chroot
+   * @return the connection string
+   */
+  public String getZkAddress(String chroot) {
+    if (!chroot.startsWith("/"))
+      chroot = "/" + chroot;
+    return "127.0.0.1:" + zkServer.getLocalPort() + chroot;
+  }
+
+  /**
+   * Check that a path exists in this server
+   * @param path the path to check
+   * @throws IOException if an IO exception occurs
+   */
+  public void ensurePathExists(String path) throws IOException {
+    try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
+      client.makePath(path, false);
+    } catch (InterruptedException | KeeperException e) {
+      throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
+    }
   }
 
   public int getPort() {

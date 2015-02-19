@@ -35,11 +35,11 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -94,7 +94,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   private void reloadTest() throws Exception {
     SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
     log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
-    String confPath = ZkController.CONFIGS_ZKNODE+"/conf1/";
+    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
     checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 
