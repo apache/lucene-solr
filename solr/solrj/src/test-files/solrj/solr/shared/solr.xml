@@ -40,35 +40,3 @@
   </solrcloud>
 
 </solr>
-
-<!--
- All (relative) paths are relative to the installation path
-  
-  persistent: Save changes made via the API to this file
-  sharedLib: path to a lib directory that will be shared across all cores
-
-<solr persistent="false">
-  <property name="version" value="1.3"/>
-  <property name="lang" value="english, french"/>
-
-
-  adminPath: RequestHandler path to manage cores.  
-    If 'null' (or absent), cores will not be manageable via REST
-
-  <cores adminPath="/admin/cores" defaultCoreName="core0" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="${hostContext:solr}" zkClientTimeout="8000" genericCoreNodeNames="${genericCoreNodeNames:true}" configSetBaseDir="${configSetBase:configsets}">
-    <core name="collection1" instanceDir="." />
-    <core name="core0" instanceDir="${theInstanceDir:./}" dataDir="${dataDir1}" collection="${collection:acollection}">
-      <property name="version" value="3.5"/>
-      <property name="l10n" value="EN"/>
-      <property name="ctlField" value="core0"/>
-      <property name="comment" value="This is a sample with a sys prop ${sysprop:default}"/>
-    </core>
-    <core name="core1" instanceDir="./" dataDir="${dataDir2}">
-      <property name="version" value="2.4"/>
-      <property name="l10n" value="FR"/>
-      <property name="ctlField" value="core1"/>
-      <property name="comment" value="Ceci est un exemple"/>
-    </core>
-  </cores>
-</solr>
--->
