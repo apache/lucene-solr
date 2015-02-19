@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -2619,7 +2620,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       // if there is only one conf, use that
       List<String> configNames = null;
       try {
-        configNames = zkStateReader.getZkClient().getChildren(ZkController.CONFIGS_ZKNODE, null, true);
+        configNames = zkStateReader.getZkClient().getChildren(ZkConfigManager.CONFIGS_ZKNODE, null, true);
         if (configNames != null && configNames.size() == 1) {
           configName = configNames.get(0);
           // no config set named, but there is only 1 - use it
@@ -2635,7 +2636,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
   
   private boolean validateConfig(String configName) throws KeeperException, InterruptedException {
-    return zkStateReader.getZkClient().exists(ZkController.CONFIGS_ZKNODE + "/" + configName, true);
+    return zkStateReader.getZkClient().exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
   }
 
   /**

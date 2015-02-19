@@ -110,7 +110,10 @@ New Features
 * SOLR-6832: Queries be served locally rather than being forwarded to another replica.
   (Sachin Goyal, Timothy Potter)
 
-* SOLR-1945 : Add support for child docs in DocumentObjectBinder (Noble Paul, Mark Miller)
+* SOLR-1945: Add support for child docs in DocumentObjectBinder (Noble Paul, Mark Miller)
+
+* SOLR-7125: You can upload and download configurations via CloudSolrClient
+  (Alan Woodward)
 
 Bug Fixes
 ----------------------

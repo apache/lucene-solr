@@ -47,7 +47,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -1234,7 +1233,7 @@ public class SolrCLI {
         // test to see if that config exists in ZK
         System.out.println("Uploading "+confDir.getAbsolutePath()+
             " for config "+confname+" to ZooKeeper at "+cloudSolrClient.getZkHost());
-        ZkController.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confDir, confname);
+        cloudSolrClient.uploadConfig(confDir.toPath(), confname);
       }
 
       String baseUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);

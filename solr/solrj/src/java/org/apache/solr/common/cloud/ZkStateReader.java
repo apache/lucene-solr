@@ -50,7 +50,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class ZkStateReader implements Closeable {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
@@ -115,6 +114,8 @@ public class ZkStateReader implements Closeable {
    *
    */
   private Map<String , DocCollection> watchedCollectionStates = new ConcurrentHashMap<String, DocCollection>();
+
+  private final ZkConfigManager configManager;
 
 
   //
@@ -206,11 +207,11 @@ public class ZkStateReader implements Closeable {
 
   private boolean clusterStateUpdateScheduled;
 
-  private SolrZkClient zkClient;
+  private final SolrZkClient zkClient;
   
-  private boolean closeClient = false;
+  private final boolean closeClient;
 
-  private ZkCmdExecutor cmdExecutor;
+  private final ZkCmdExecutor cmdExecutor;
 
   private volatile Aliases aliases = new Aliases();
 
@@ -218,16 +219,15 @@ public class ZkStateReader implements Closeable {
 
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    initZkCmdExecutor(zkClient.getZkClientTimeout());
+    this.cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+    this.configManager = new ZkConfigManager(zkClient);
+    this.closeClient = false;
   }
 
-  public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
-    closeClient = true;
-    initZkCmdExecutor(zkClientTimeout);
-    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
+  public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
+    this.zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
-
           @Override
           public void command() {
             try {
@@ -242,15 +242,16 @@ public class ZkStateReader implements Closeable {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                   "", e);
-            } 
-
+            }
           }
         });
+    this.cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
+    this.configManager = new ZkConfigManager(zkClient);
+    this.closeClient = true;
   }
-  
-  private void initZkCmdExecutor(int zkClientTimeout) {
-    // we must retry at least as long as the session timeout
-    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
+
+  public ZkConfigManager getConfigManager() {
+    return configManager;
   }
   
   // load and publish a new CollectionInfo

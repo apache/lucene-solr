@@ -21,6 +21,7 @@ import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -29,8 +30,10 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -156,12 +159,13 @@ public class ZkContainer {
         }
         
         if(confDir != null) {
-          File dir = new File(confDir);
-          if(!dir.isDirectory()) {
+          Path configPath = Paths.get(confDir);
+          if (!Files.isDirectory(configPath))
             throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
-          }
+
           String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
-          zkController.uploadConfigDir(dir, confName);
+          ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
+          configManager.uploadConfigDir(configPath, confName);
         }
 
 

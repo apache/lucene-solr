@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -38,6 +37,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -64,7 +64,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
@@ -72,6 +71,8 @@ import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -88,6 +89,14 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -118,8 +127,6 @@ public final class ZkController {
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
   private final DistributedMap overseerFailureMap;
-  
-  public static final String CONFIGS_ZKNODE = "/configs";
 
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
@@ -504,7 +511,7 @@ public final class ZkController {
    */
   public boolean configFileExists(String collection, String fileName)
       throws KeeperException, InterruptedException {
-    Stat stat = zkClient.exists(CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null, true);
+    Stat stat = zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null, true);
     return stat != null;
   }
 
@@ -520,7 +527,7 @@ public final class ZkController {
    */
   public byte[] getConfigFileData(String zkConfigName, String fileName)
       throws KeeperException, InterruptedException {
-    String zkPath = CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
+    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
     byte[] bytes = zkClient.getData(zkPath, null, null, true);
     if (bytes == null) {
       log.error("Config file contains no data:" + zkPath);
@@ -1239,14 +1246,6 @@ public final class ZkController {
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
-  public void uploadToZK(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
-    uploadToZK(zkClient, dir, zkPath);
-  }
-  
-  public void uploadConfigDir(File dir, String configName) throws IOException, KeeperException, InterruptedException {
-    uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
-  }
-
   // convenience for testing
   void printLayoutToStdOut() throws KeeperException, InterruptedException {
     zkClient.printLayoutToStdOut();
@@ -1356,7 +1355,7 @@ public final class ZkController {
      
       // if there is only one conf, use that
       try {
-        configNames = zkClient.getChildren(CONFIGS_ZKNODE, null,
+        configNames = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null,
             true);
       } catch (NoNodeException e) {
         // just keep trying
@@ -1454,41 +1453,8 @@ public final class ZkController {
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Could not get shard id for core: " + cd.getName());
   }
-  
-  public static void uploadToZK(SolrZkClient zkClient, File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
-    File[] files = dir.listFiles();
-    if (files == null) {
-      throw new IllegalArgumentException("Illegal directory: " + dir);
-    }
-    for(File file : files) {
-      if (!file.getName().startsWith(".")) {
-        if (!file.isDirectory()) {
-          zkClient.makePath(zkPath + "/" + file.getName(), file, false, true);
-        } else {
-          uploadToZK(zkClient, file, zkPath + "/" + file.getName());
-        }
-      }
-    }
-  }
-  
-  public static void downloadFromZK(SolrZkClient zkClient, String zkPath,
-      File dir) throws IOException, KeeperException, InterruptedException {
-    List<String> files = zkClient.getChildren(zkPath, null, true);
-    
-    for (String file : files) {
-      List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
-      if (children.size() == 0) {
-        byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
-        dir.mkdirs(); 
-        log.info("Write file " + new File(dir, file));
-        FileUtils.writeByteArrayToFile(new File(dir, file), data);
-      } else {
-        downloadFromZK(zkClient, zkPath + "/" + file, new File(dir, file));
-      }
-    }
-  }
-  
-  
+
+
   public String getCoreNodeName(CoreDescriptor descriptor){
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
     if (coreNodeName == null && !genericCoreNodeNames) {
@@ -1497,14 +1463,6 @@ public final class ZkController {
     }
     
     return coreNodeName;
-  }
-  
-  public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
-    uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
-  }
-  
-  public static void downloadConfigDir(SolrZkClient zkClient, String configName, File dir) throws IOException, KeeperException, InterruptedException {
-    downloadFromZK(zkClient, ZkController.CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   public void preRegister(CoreDescriptor cd ) {
@@ -1735,8 +1693,9 @@ public final class ZkController {
   /**
    * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
    */
-  public static void bootstrapConf(SolrZkClient zkClient, CoreContainer cc, String solrHome) throws IOException,
-      KeeperException, InterruptedException {
+  public static void bootstrapConf(SolrZkClient zkClient, CoreContainer cc, String solrHome) throws IOException {
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
 
     //List<String> allCoreNames = cfg.getAllCoreNames();
     List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
@@ -1749,9 +1708,9 @@ public final class ZkController {
       if (StringUtils.isEmpty(confName))
         confName = coreName;
       String instanceDir = cd.getInstanceDir();
-      File udir = new File(instanceDir, "conf");
+      Path udir = Paths.get(instanceDir).resolve("conf");
       log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + coreName);
-      ZkController.uploadConfigDir(zkClient, udir, confName);
+      configManager.uploadConfigDir(udir, confName);
     }
   }
 
@@ -2335,4 +2294,5 @@ public final class ZkController {
       }
     };
   }
+
 }

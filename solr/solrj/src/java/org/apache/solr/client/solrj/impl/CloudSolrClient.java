@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -73,7 +74,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -451,19 +451,16 @@ public class CloudSolrClient extends SolrClient {
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout,
-                zkConnectTimeout);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
             zk.createClusterStateWatchersAndUpdate();
             zkStateReader = zk;
           } catch (InterruptedException e) {
-            if (zk != null) zk.close();
+            zk.close();
             Thread.currentThread().interrupt();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (KeeperException | TimeoutException | IOException e) {
-            if (zk != null) zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+          } catch (KeeperException e) {
+            zk.close();
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
           } catch (Exception e) {
             if (zk != null) zk.close();
             // do not wrap because clients may be relying on the underlying exception being thrown
@@ -476,6 +473,26 @@ public class CloudSolrClient extends SolrClient {
 
   public void setParallelUpdates(boolean parallelUpdates) {
     this.parallelUpdates = parallelUpdates;
+  }
+
+  /**
+   * Upload a set of config files to Zookeeper and give it a name
+   * @param configPath {@link java.nio.file.Path} to the config files
+   * @param configName the name of the config
+   * @throws IOException if an IO error occurs
+   */
+  public void uploadConfig(Path configPath, String configName) throws IOException {
+    zkStateReader.getConfigManager().uploadConfigDir(configPath, configName);
+  }
+
+  /**
+   * Download a named config from Zookeeper to a location on the filesystem
+   * @param configName    the name of the config
+   * @param downloadPath  the path to write config files to
+   * @throws IOException  if an I/O exception occurs
+   */
+  public void downloadConfig(String configName, Path downloadPath) throws IOException {
+    zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, ClusterState clusterState) throws SolrServerException {
