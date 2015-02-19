@@ -43,8 +43,12 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
+    // Core discovery will default to the name of the dir the core.properties file is in. So if everything else is
+    // OK as defaults, just the _presence_ of this file is sufficient.
+    FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
+    FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
 
-    FileUtils.copyFile(getFile("solr/solr-multicore.xml"), new File(tmpSolrHome, "solr.xml"));
+    FileUtils.copyFile(getFile("solr/solr.xml"), new File(tmpSolrHome, "solr.xml"));
 
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }

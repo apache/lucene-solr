@@ -24,21 +24,23 @@
 -->
 <solr persistent="${solr.xml.persist:false}">
 
-  <!--
-  adminPath: RequestHandler path to manage cores.  
-    If 'null' (or absent), cores will not be manageable via request handler
-  -->
-  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="127.0.0.1" hostPort="${hostPort:8983}" 
-         hostContext="${hostContext:solr}" zkClientTimeout="${solr.zkclienttimeout:30000}" numShards="${numShards:3}" shareSchema="${shareSchema:false}" 
-         genericCoreNodeNames="${genericCoreNodeNames:true}" leaderVoteWait="0"
-         distribUpdateConnTimeout="${distribUpdateConnTimeout:15000}" distribUpdateSoTimeout="${distribUpdateSoTimeout:120000}">
-    <core name="collection1" instanceDir="." shard="${shard:}" collection="${collection:collection1}" config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"
-          coreNodeName="${coreNodeName:}"/>
-    <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
+  <str name="shareSchema">${shareSchema:false}</str>
+
+  <solrcloud>
+  <str name="host">127.0.0.1</str>
+  <int name="hostPort">${hostPort:8983}</int>
+  <str name="hostContext">${hostContext:solr}</str>
+  <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
+  <int name="leaderVoteWait">0</int>
+  <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:120000}</int>
+  <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:15000}</int>
+  <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
+
+
+  <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
       <str name="urlScheme">${urlScheme:}</str>
       <int name="socketTimeout">${socketTimeout:120000}</int>
       <int name="connTimeout">${connTimeout:15000}</int>
     </shardHandlerFactory>
-  </cores>
-  
+
 </solr>
