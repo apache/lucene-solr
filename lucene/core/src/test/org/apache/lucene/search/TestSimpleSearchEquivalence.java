@@ -188,4 +188,32 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     q2.add(new TermQuery(t2), Occur.MUST);
     assertSameSet(q1, q2);
   }
+
+  /** Phrase positions are relative. */
+  public void testPhraseRelativePositions() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    PhraseQuery q1 = new PhraseQuery();
+    q1.add(t1);
+    q1.add(t2);
+    PhraseQuery q2 = new PhraseQuery();
+    q2.add(t1, 10000);
+    q2.add(t2, 10001);
+    assertSameScores(q1, q2);
+  }
+
+  /** Sloppy-phrase positions are relative. */
+  public void testSloppyPhraseRelativePositions() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    PhraseQuery q1 = new PhraseQuery();
+    q1.add(t1);
+    q1.add(t2);
+    q1.setSlop(2);
+    PhraseQuery q2 = new PhraseQuery();
+    q2.add(t1, 10000);
+    q2.add(t2, 10001);
+    q2.setSlop(2);
+    assertSameScores(q1, q2);
+  }
 }

@@ -375,13 +375,29 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    PhraseQuery q = new PhraseQuery(); // Query "this hi this is a test is"
+    PhraseQuery q = new PhraseQuery();
+    assertEquals("\"\"", q.toString());
+
+    q.add(new Term("field", "hi"), 1);
+    assertEquals("field:\"? hi\"", q.toString());
+
+    q = new PhraseQuery(); // Query "this hi this is a test is"
     q.add(new Term("field", "hi"), 1);
     q.add(new Term("field", "test"), 5);
     
     assertEquals("field:\"? hi ? ? ? test\"", q.toString());
+
+    q = new PhraseQuery();
+    q.add(new Term("field", "hi"), 1);
     q.add(new Term("field", "hello"), 1);
+    q.add(new Term("field", "test"), 5);
     assertEquals("field:\"? hi|hello ? ? ? test\"", q.toString());
+
+    q.setSlop(5);
+    assertEquals("field:\"? hi|hello ? ? ? test\"~5", q.toString());
+
+    q.setBoost(2);
+    assertEquals("field:\"? hi|hello ? ? ? test\"~5^2.0", q.toString());
   }
 
   public void testWrappedPhrase() throws IOException {
@@ -693,6 +709,28 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     try {
       query.setSlop(-2);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
+  }
+
+  public void testNegativePosition() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    try {
+      query.add(new Term("field", "two"), -42);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
+  }
+
+  public void testBackwardPositions() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "one"), 1);
+    query.add(new Term("field", "two"), 5);
+    try {
+      query.add(new Term("field", "three"), 4);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected exception

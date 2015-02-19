@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
 
-  private final static int CHUNK = 4096;
+  private final static int CHUNK = 16;
 
   private int gen;
   private final int[] counts = new int[CHUNK];

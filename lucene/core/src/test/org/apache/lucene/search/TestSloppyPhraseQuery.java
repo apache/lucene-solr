@@ -248,7 +248,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     pq.add(new Term("lyrics", "drug"), 1);
     pq.add(new Term("lyrics", "drug"), 4);
     pq.setSlop(0);
-    assertEquals(0, is.search(pq, 4).totalHits);
+    assertEquals(1, is.search(pq, 4).totalHits);
     pq.setSlop(1);
     assertEquals(3, is.search(pq, 4).totalHits);
     pq.setSlop(2);
