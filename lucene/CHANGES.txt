@@ -138,6 +138,11 @@ Other
 * LUCENE-6239: Removed RAMUsageEstimator's sun.misc.Unsafe calls.
   (Robert Muir, Dawid Weiss, Uwe Schindler)
 
+Changes in Runtime Behavior
+
+* LUCENE-6255: PhraseQuery now ignores leading holes and requires that
+  positions are positive and added in order. (Adrien Grand)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features

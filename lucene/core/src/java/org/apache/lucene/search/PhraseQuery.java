@@ -42,12 +42,25 @@ import org.apache.lucene.util.ToStringUtils;
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
  * 
  * <p>This query may be combined with other terms or queries with a {@link BooleanQuery}.
+ *
+ * <b>NOTE</b>: Leading holes don't have any particular meaning for this query
+ * and will be ignored. For instance this query:
+ * <pre class="prettyprint">
+ * PhraseQuery pq = new PhraseQuery();
+ * pq.add(new Term("body", "one"), 4);
+ * pq.add(new Term("body", "two"), 5);
+ * </pre>
+ * is equivalent to the below query:
+ * <pre class="prettyprint">
+ * PhraseQuery pq = new PhraseQuery();
+ * pq.add(new Term("body", "one"), 0);
+ * pq.add(new Term("body", "two"), 1);
+ * </pre>
  */
 public class PhraseQuery extends Query {
   private String field;
   private ArrayList<Term> terms = new ArrayList<>(4);
   private ArrayList<Integer> positions = new ArrayList<>(4);
-  private int maxPosition = 0;
   private int slop = 0;
 
   /** Constructs an empty phrase query. */
@@ -82,8 +95,9 @@ public class PhraseQuery extends Query {
    */
   public void add(Term term) {
     int position = 0;
-    if(positions.size() > 0)
-        position = positions.get(positions.size()-1).intValue() + 1;
+    if (positions.size() > 0) {
+      position = positions.get(positions.size()-1) + 1;
+    }
 
     add(term, position);
   }
@@ -96,6 +110,16 @@ public class PhraseQuery extends Query {
    * 
    */
   public void add(Term term, int position) {
+    if (positions.size() > 0) {
+      final int previousPosition = positions.get(positions.size()-1);
+      if (position < previousPosition) {
+        throw new IllegalArgumentException("Positions must be added in order. Got position="
+            + position + " while previous position was " + previousPosition);
+      }
+    } else if (position < 0) {
+      throw new IllegalArgumentException("Positions must be positive, got " + position);
+    }
+
     if (terms.size() == 0) {
       field = term.field();
     } else if (!term.field().equals(field)) {
@@ -104,7 +128,6 @@ public class PhraseQuery extends Query {
 
     terms.add(term);
     positions.add(Integer.valueOf(position));
-    if (position > maxPosition) maxPosition = position;
   }
 
   /** Returns the set of terms in this phrase. */
@@ -132,8 +155,21 @@ public class PhraseQuery extends Query {
       TermQuery tq = new TermQuery(terms.get(0));
       tq.setBoost(getBoost());
       return tq;
-    } else
+    } else if (positions.get(0).intValue() != 0) {
+      // PhraseWeight requires that positions start at 0 so we need to rebase
+      // positions
+      final Term[] terms = getTerms();
+      final int[] positions = getPositions();
+      PhraseQuery rewritten = new PhraseQuery();
+      for (int i = 0; i < terms.length; ++i) {
+        rewritten.add(terms[i], positions[i] - positions[0]);
+      }
+      rewritten.setBoost(getBoost());
+      rewritten.setSlop(getSlop());
+      return rewritten;
+    } else {
       return super.rewrite(reader);
+    }
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
@@ -217,6 +253,12 @@ public class PhraseQuery extends Query {
     public PhraseWeight(IndexSearcher searcher, boolean needsScores)
       throws IOException {
       super(PhraseQuery.this);
+      final int[] positions = PhraseQuery.this.getPositions();
+      if (positions.length < 2) {
+        throw new IllegalStateException("PhraseWeight does not support less than 2 terms, call rewrite first");
+      } else if (positions[0] != 0) {
+        throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
+      }
       this.needsScores = needsScores;
       this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
@@ -340,6 +382,12 @@ public class PhraseQuery extends Query {
     }
 
     buffer.append("\"");
+    final int maxPosition;
+    if (positions.isEmpty()) {
+      maxPosition = -1;
+    } else {
+      maxPosition = positions.get(positions.size() - 1);
+    }
     String[] pieces = new String[maxPosition + 1];
     for (int i = 0; i < terms.size(); i++) {
       int pos = positions.get(i).intValue();
