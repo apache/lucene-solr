@@ -92,9 +92,9 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   }
 
   /**
-   * Returns the next position.  If there are no more
-   * positions, or the iterator does not support positions,
-   * this will return DocsEnum.NO_MORE_POSITIONS */
+   * Returns the next position, or -1 if positions were not indexed.
+   * Calling this more than {@link #freq()} times is undefined.
+   */
   public abstract int nextPosition() throws IOException;
 
   /** Returns start offset for the current position, or -1

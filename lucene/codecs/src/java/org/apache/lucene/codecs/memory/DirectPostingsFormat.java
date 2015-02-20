@@ -1581,7 +1581,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false : "Shouldn't be calling nextPosition() if you haven't asked for positions";
       return -1;
     }
 
@@ -1670,7 +1669,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false : "Shouldn't be calling nextPosition() if you haven't asked for positions";
       return -1;
     }
 
@@ -1775,7 +1773,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false : "should be using LowFreqDocsAndPositionsEnum";
       return -1;
     }
 

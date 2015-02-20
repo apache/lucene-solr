@@ -231,7 +231,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     public int nextPosition() {
       if (!doPositions) {
         posUpto = freq;
-        return 0;
+        return -1;
       }
       assert posUpto < freq;
       

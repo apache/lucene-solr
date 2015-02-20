@@ -339,7 +339,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false;   // shouldn't be calling nextPosition() on this
       return -1;
     }
 
