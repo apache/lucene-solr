@@ -241,7 +241,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     @Override
     public void close() throws IOException {
       w.close();
-      if (DEBUG) System.out.println("TEST: after close writer index=" + SegmentInfos.readLatestCommit(indexDir).toString(indexDir));
+      if (DEBUG) System.out.println("TEST: after close writer index=" + SegmentInfos.readLatestCommit(indexDir));
 
       /*
       DirectoryReader r = mgr.acquire();

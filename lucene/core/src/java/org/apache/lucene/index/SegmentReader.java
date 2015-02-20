@@ -232,7 +232,7 @@ public final class SegmentReader extends CodecReader {
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(si.info.dir, si.info.getDocCount() - numDocs - si.getDelCount());
+    return si.toString(si.info.getDocCount() - numDocs - si.getDelCount());
   }
   
   /**

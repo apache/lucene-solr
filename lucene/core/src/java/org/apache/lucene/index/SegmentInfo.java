@@ -169,7 +169,18 @@ public final class SegmentInfo {
 
   @Override
   public String toString() {
-    return toString(dir, 0);
+    return toString(0);
+  }
+  
+  
+  /**
+   * Used for debugging.
+   * 
+   * @deprecated Use {@link #toString(int)} instead.
+   */
+  @Deprecated
+  public String toString(Directory dir, int delCount) {
+    return toString(delCount);
   }
 
   /** Used for debugging.  Format may suddenly change.
@@ -182,15 +193,12 @@ public final class SegmentInfo {
    *  has 45 documents; it has 4 deletions (this part is
    *  left off when there are no deletions).</p>
    */
-  public String toString(Directory dir, int delCount) {
+  public String toString(int delCount) {
     StringBuilder s = new StringBuilder();
     s.append(name).append('(').append(version == null ? "?" : version).append(')').append(':');
     char cfs = getUseCompoundFile() ? 'c' : 'C';
     s.append(cfs);
 
-    if (this.dir != dir) {
-      s.append('x');
-    }
     s.append(docCount);
 
     if (delCount != 0) {

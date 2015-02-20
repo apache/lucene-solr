@@ -621,13 +621,20 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
     write(dir);
   }
+  
+  /**
+   * Returns all file names referenced by SegmentInfo.
+   * @deprecated Use {@link #files(boolean)} instead.
+   */
+  @Deprecated
+  public final Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
+    return files(includeSegmentsFile);
+  }
 
-  /** Returns all file names referenced by SegmentInfo
-   *  instances matching the provided Directory (ie files
-   *  associated with any "external" segments are skipped).
+  /** Returns all file names referenced by SegmentInfo.
    *  The returned collection is recomputed on each
    *  invocation.  */
-  public Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
+  public Collection<String> files(boolean includeSegmentsFile) throws IOException {
     HashSet<String> files = new HashSet<>();
     if (includeSegmentsFile) {
       final String segmentFileName = getSegmentsFileName();
@@ -638,10 +645,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     final int size = size();
     for(int i=0;i<size;i++) {
       final SegmentCommitInfo info = info(i);
-      assert info.info.dir == dir;
-      if (info.info.dir == dir) {
-        files.addAll(info.files());
-      }
+      files.addAll(info.files());
     }
     
     return files;
@@ -682,9 +686,19 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     prepareCommit(dir);
     finishCommit(dir);
   }
+  
+  /** 
+   * Returns readable description of this segment. 
+   * @deprecated Use {@link #toString()} instead.
+   */
+  @Deprecated
+  public String toString(Directory dir) {
+    return toString();
+  }
 
   /** Returns readable description of this segment. */
-  public String toString(Directory directory) {
+  @Override
+  public String toString() {
     StringBuilder buffer = new StringBuilder();
     buffer.append(getSegmentsFileName()).append(": ");
     final int count = size();
@@ -693,7 +707,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         buffer.append(' ');
       }
       final SegmentCommitInfo info = info(i);
-      buffer.append(info.toString(directory, 0));
+      buffer.append(info.toString(0));
     }
     return buffer.toString();
   }

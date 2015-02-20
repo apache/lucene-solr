@@ -1484,7 +1484,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   // for test purpose
   final synchronized Collection<String> getIndexFileNames() throws IOException {
-    return segmentInfos.files(directory, true);
+    return segmentInfos.files(true);
   }
 
   // for test purpose
@@ -2689,7 +2689,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // we are trying to sync all referenced files, a
               // merge completes which would otherwise have
               // removed the files we are now syncing.    
-              filesToCommit = toCommit.files(directory, false);
+              filesToCommit = toCommit.files(false);
               deleter.incRef(filesToCommit);
             }
             success = true;
@@ -4137,7 +4137,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.internal */
   public synchronized String segString(SegmentCommitInfo info) {
-    return info.toString(info.info.dir, numDeletedDocs(info) - info.getDelCount());
+    return info.toString(numDeletedDocs(info) - info.getDelCount());
   }
 
   private synchronized void doWait() {
@@ -4170,7 +4170,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // called only from assert
   private boolean filesExist(SegmentInfos toSync) throws IOException {
     
-    Collection<String> files = toSync.files(directory, false);
+    Collection<String> files = toSync.files(false);
     for(final String fileName: files) {
       assert slowFileExists(directory, fileName): "file " + fileName + " does not exist; files=" + Arrays.toString(directory.listAll());
       // If this trips it means we are missing a call to
@@ -4275,7 +4275,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         boolean success = false;
         final Collection<String> filesToSync;
         try {
-          filesToSync = toSync.files(directory, false);
+          filesToSync = toSync.files(false);
           directory.sync(filesToSync);
           success = true;
         } finally {

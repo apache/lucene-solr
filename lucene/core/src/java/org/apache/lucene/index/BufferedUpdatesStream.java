@@ -334,7 +334,7 @@ class BufferedUpdatesStream implements Accountable {
       } else {
         dir = null;
       }
-      infoStream.message("BD", "prune sis=" + segmentInfos.toString(dir) + " minGen=" + minGen + " packetCount=" + updates.size());
+      infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + updates.size());
     }
     final int limit = updates.size();
     for(int delIDX=0;delIDX<limit;delIDX++) {

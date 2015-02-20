@@ -317,10 +317,19 @@ public class SegmentCommitInfo {
     }
     this.delCount = delCount;
   }
+  
+  /** 
+   * Returns a description of this segment. 
+   * @deprecated Use {@link #toString(int)} instead.
+   */
+  @Deprecated
+  public String toString(Directory dir, int pendingDelCount) {
+    return toString(pendingDelCount);
+  }
 
   /** Returns a description of this segment. */
-  public String toString(Directory dir, int pendingDelCount) {
-    String s = info.toString(dir, delCount + pendingDelCount);
+  public String toString(int pendingDelCount) {
+    String s = info.toString(delCount + pendingDelCount);
     if (delGen != -1) {
       s += ":delGen=" + delGen;
     }
@@ -335,7 +344,7 @@ public class SegmentCommitInfo {
 
   @Override
   public String toString() {
-    return toString(info.dir, 0);
+    return toString(0);
   }
 
   @Override
