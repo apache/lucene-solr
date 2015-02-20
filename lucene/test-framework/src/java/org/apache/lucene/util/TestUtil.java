@@ -26,7 +26,6 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -91,16 +90,12 @@ import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.mockfile.FilterFileSystem;
-import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
@@ -1206,35 +1201,6 @@ public final class TestUtil {
       return mixedUp;
     } else {
       return sb.toString();
-    }
-  }
-
-  /** Returns true if this is an FSDirectory backed by {@link WindowsFS}. */
-  public static boolean isWindowsFS(Directory dir) {
-    // First unwrap directory to see if there is an FSDir:
-    while (true) {
-      if (dir instanceof FSDirectory) {
-        return isWindowsFS(((FSDirectory) dir).getDirectory());
-      } else if (dir instanceof FilterDirectory) {
-        dir = ((FilterDirectory) dir).getDelegate();
-      } else {
-        return false;
-      }
-    }
-  }
-
-  /** Returns true if this Path is backed by {@link WindowsFS}. */
-  public static boolean isWindowsFS(Path path) {
-    FileSystem fs = path.getFileSystem();
-    while (true) {
-      if (fs instanceof FilterFileSystem) {
-        if (((FilterFileSystem) fs).getParent() instanceof WindowsFS) {
-          return true;
-        }
-        fs = ((FilterFileSystem) fs).getDelegate();
-      } else {
-        return false;
-      }
     }
   }
   

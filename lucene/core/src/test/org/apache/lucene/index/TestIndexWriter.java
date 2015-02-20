@@ -2589,56 +2589,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  // LUCENE-5574
-  public void testClosingNRTReaderDoesNotCorruptYourIndex() throws IOException {
-
-    // Windows disallows deleting & overwriting files still
-    // open for reading:
-    assumeFalse("this test can't run on Windows", Constants.WINDOWS);
-
-    MockDirectoryWrapper dir = newMockDirectory();
-    if (TestUtil.isWindowsFS(dir)) {
-      dir.close();
-      assumeFalse("this test can't run on simulated windows (WindowsFS)", true);
-    }
-    
-    // don't act like windows either, or the test won't simulate the condition
-    dir.setEnableVirusScanner(false);
-
-    // Allow deletion of still open files:
-    dir.setNoDeleteOpenFile(false);
-
-    // Allow writing to same file more than once:
-    dir.setPreventDoubleWrite(false);
-
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    LogMergePolicy lmp = new LogDocMergePolicy();
-    lmp.setMergeFactor(2);
-    iwc.setMergePolicy(lmp);
-
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(new TextField("a", "foo", Field.Store.NO));
-    w.addDocument(doc);
-    w.commit();
-    w.addDocument(doc);
-
-    // Get a new reader, but this also sets off a merge:
-    IndexReader r = w.getReader();
-    w.close();
-
-    // Blow away index and make a new writer:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
-    }
-
-    w = new RandomIndexWriter(random(), dir);
-    w.addDocument(doc);
-    w.close();
-    r.close();
-    dir.close();
-  }
-
   /** Make sure that close waits for any still-running commits. */
   public void testCloseDuringCommit() throws Exception {
 

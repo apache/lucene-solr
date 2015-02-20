@@ -296,6 +296,21 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /**
+   * Annotation for test classes that should avoid mock filesystem types
+   * (because they test a bug that only happens on linux, for example).
+   * <p>
+   * You can avoid specific names {@link Class#getSimpleName()} or use
+   * the special value {@code *} to disable all mock filesystems.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressFileSystems {
+    String[] value();
+  }
+  
+  /**
    * Marks any suites which are known not to close all the temporary
    * files. This may prevent temp. files and folders from being cleaned
    * up after the suite is completed.

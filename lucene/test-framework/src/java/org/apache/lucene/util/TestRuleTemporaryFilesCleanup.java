@@ -6,17 +6,22 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.mockfile.DisableFsyncFS;
 import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.VerboseFS;
 import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -111,21 +116,42 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   // TODO: can we make this lower?
   private static final int MAX_OPEN_FILES = 2048;
   
+  private boolean allowed(Set<String> avoid, Class<? extends FileSystemProvider> clazz) {
+    if (avoid.contains("*") || avoid.contains(clazz.getSimpleName())) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
   private FileSystem initializeFileSystem() {
+    Class<?> targetClass = RandomizedContext.current().getTargetClass();
+    Set<String> avoid = new HashSet<>();
+    if (targetClass.isAnnotationPresent(SuppressFileSystems.class)) {
+      SuppressFileSystems a = targetClass.getAnnotation(SuppressFileSystems.class);
+      avoid.addAll(Arrays.asList(a.value()));
+    }
     FileSystem fs = FileSystems.getDefault();
-    if (LuceneTestCase.VERBOSE) {
+    if (LuceneTestCase.VERBOSE && allowed(avoid, VerboseFS.class)) {
       fs = new VerboseFS(fs, new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out)).getFileSystem(null);
     }
+    
     Random random = RandomizedContext.current().getRandom();
     // sometimes just use a bare filesystem
     if (random.nextInt(10) > 0) {
-      fs = new DisableFsyncFS(fs).getFileSystem(null);
-      fs = new LeakFS(fs).getFileSystem(null);
-      fs = new HandleLimitFS(fs, MAX_OPEN_FILES).getFileSystem(null);
+      if (allowed(avoid, DisableFsyncFS.class)) {
+        fs = new DisableFsyncFS(fs).getFileSystem(null);
+      }
+      if (allowed(avoid, LeakFS.class)) {
+        fs = new LeakFS(fs).getFileSystem(null);
+      }
+      if (allowed(avoid, HandleLimitFS.class)) {
+        fs = new HandleLimitFS(fs, MAX_OPEN_FILES).getFileSystem(null);
+      }
       // windows is currently slow
       if (random.nextInt(10) == 0) {
         // don't try to emulate windows on windows: they don't get along
-        if (!Constants.WINDOWS) {
+        if (!Constants.WINDOWS && allowed(avoid, WindowsFS.class)) {
           fs = new WindowsFS(fs).getFileSystem(null);
         }
       }
