@@ -584,7 +584,7 @@ public class SnapPuller {
   private boolean hasUnusedFiles(Directory indexDir, IndexCommit commit) throws IOException {
     String segmentsFileName = commit.getSegmentsFileName();
     SegmentInfos infos = SegmentInfos.readCommit(indexDir, segmentsFileName);
-    Set<String> currentFiles = new HashSet<>(infos.files(indexDir, true));
+    Set<String> currentFiles = new HashSet<>(infos.files(true));
     String[] allFiles = indexDir.listAll();
     for (String file : allFiles) {
       if (!file.equals(segmentsFileName) && !currentFiles.contains(file) && !file.endsWith(".lock")) {

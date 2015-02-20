@@ -824,7 +824,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
                 }
                 
                 try {
-                  Set<String> ghosts = new HashSet<>(sis.files(in, false));
+                  Set<String> ghosts = new HashSet<>(sis.files(false));
                   for (String s : ghosts) {
                     if (endSet.contains(s) && !startSet.contains(s)) {
                       assert pendingDeletions.contains(s);
