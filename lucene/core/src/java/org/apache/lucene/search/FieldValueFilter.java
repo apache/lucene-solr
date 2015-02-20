@@ -30,7 +30,9 @@ import org.apache.lucene.util.Bits.MatchNoBits;
  * A {@link Filter} that accepts all documents that have one or more values in a
  * given field. This {@link Filter} request {@link Bits} from
  * {@link org.apache.lucene.index.LeafReader#getDocsWithField}
+ * @deprecated Use {@link FieldValueQuery} instead
  */
+@Deprecated
 public class FieldValueFilter extends Filter {
   private final String field;
   private final boolean negate;

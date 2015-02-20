@@ -27,9 +27,6 @@ import org.apache.lucene.util.BytesRef;
  * supplied range according to {@link
  * Byte#compareTo(Byte)},  It is not intended
  * for numerical ranges; use {@link NumericRangeFilter} instead.
- *
- * <p>If you construct a large number of range filters with different ranges but on the 
- * same field, {@link DocValuesRangeFilter} may have significantly better performance. 
  * @since 2.9
  */
 public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {

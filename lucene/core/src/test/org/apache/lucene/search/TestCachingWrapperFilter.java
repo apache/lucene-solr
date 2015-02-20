@@ -268,7 +268,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // returns default empty docidset, always cacheable:
     assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
     // is cacheable:
-    assertDocIdSetCacheable(reader, DocValuesRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), false);
+    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", 10, 20, true, true), false);
     // a fixedbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       @Override

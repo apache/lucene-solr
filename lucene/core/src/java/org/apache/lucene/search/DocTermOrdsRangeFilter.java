@@ -30,8 +30,9 @@ import org.apache.lucene.util.BytesRef;
  * <p>Like {@link DocValuesRangeFilter}, this is just a specialized range query versus
  *    using a TermRangeQuery with {@link DocTermOrdsRewriteMethod}: it will only do
  *    two ordinal to term lookups.</p>
+ * @deprecated Use {@link DocValuesRangeQuery} instead
  */
-
+@Deprecated
 public abstract class DocTermOrdsRangeFilter extends Filter {
   final String field;
   final BytesRef lowerVal;

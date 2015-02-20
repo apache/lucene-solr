@@ -28,20 +28,18 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocTermOrdsRangeFilter;
-import org.apache.lucene.search.DocValuesRangeFilter;
+import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -277,11 +275,11 @@ public class ICUCollationField extends FieldType {
     BytesRef high = part2 == null ? null : getCollationKey(f, part2);
     if (!field.indexed() && field.hasDocValues()) {
       if (field.multiValued()) {
-          return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
-              field.getName(), low, high, minInclusive, maxInclusive));
+          return DocValuesRangeQuery.newBytesRefRange(
+              field.getName(), low, high, minInclusive, maxInclusive);
         } else {
-          return new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange(
-              field.getName(), low, high, minInclusive, maxInclusive));
+          return DocValuesRangeQuery.newBytesRefRange(
+              field.getName(), low, high, minInclusive, maxInclusive);
         } 
     } else {
       return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);

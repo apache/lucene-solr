@@ -17,6 +17,17 @@
 
 package org.apache.solr.schema;
 
+import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -29,10 +40,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocTermOrdsRangeFilter;
 import org.apache.lucene.search.DocTermOrdsRewriteMethod;
-import org.apache.lucene.search.DocValuesRangeFilter;
+import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -46,7 +55,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -59,17 +67,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -692,19 +689,11 @@ public abstract class FieldType extends FieldProperties {
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // TODO: change these all to use readableToIndexed/bytes instead (e.g. for unicode collation)
     if (field.hasDocValues() && !field.indexed()) {
-      if (field.multiValued()) {
-        return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
-            field.getName(),
-            part1 == null ? null : new BytesRef(toInternal(part1)),
-            part2 == null ? null : new BytesRef(toInternal(part2)),
-            minInclusive, maxInclusive));
-      } else {
-        return new ConstantScoreQuery(DocValuesRangeFilter.newStringRange(
-            field.getName(), 
-            part1 == null ? null : toInternal(part1),
-            part2 == null ? null : toInternal(part2),
-            minInclusive, maxInclusive));
-      }
+      return DocValuesRangeQuery.newBytesRefRange(
+          field.getName(),
+          part1 == null ? null : new BytesRef(toInternal(part1)),
+          part2 == null ? null : new BytesRef(toInternal(part2)),
+          minInclusive, maxInclusive);
     } else {
       MultiTermQuery rangeQuery = TermRangeQuery.newStringRange(
             field.getName(),
