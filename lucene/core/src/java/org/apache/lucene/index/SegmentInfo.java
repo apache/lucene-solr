@@ -171,17 +171,6 @@ public final class SegmentInfo {
   public String toString() {
     return toString(0);
   }
-  
-  
-  /**
-   * Used for debugging.
-   * 
-   * @deprecated Use {@link #toString(int)} instead.
-   */
-  @Deprecated
-  public String toString(Directory dir, int delCount) {
-    return toString(delCount);
-  }
 
   /** Used for debugging.  Format may suddenly change.
    *

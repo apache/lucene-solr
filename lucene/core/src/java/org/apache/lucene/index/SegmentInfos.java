@@ -621,15 +621,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
     write(dir);
   }
-  
-  /**
-   * Returns all file names referenced by SegmentInfo.
-   * @deprecated Use {@link #files(boolean)} instead.
-   */
-  @Deprecated
-  public final Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
-    return files(includeSegmentsFile);
-  }
 
   /** Returns all file names referenced by SegmentInfo.
    *  The returned collection is recomputed on each
@@ -685,15 +676,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   final void commit(Directory dir) throws IOException {
     prepareCommit(dir);
     finishCommit(dir);
-  }
-  
-  /** 
-   * Returns readable description of this segment. 
-   * @deprecated Use {@link #toString()} instead.
-   */
-  @Deprecated
-  public String toString(Directory dir) {
-    return toString();
   }
 
   /** Returns readable description of this segment. */
