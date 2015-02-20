@@ -237,9 +237,9 @@ public class EnumField extends PrimitiveFieldType {
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
     if (matchOnly) {
-      query = new ConstantScoreQuery(DocValuesRangeFilter.newIntRange(field.getName(),
-              min == null ? null : minValue,
-              max == null ? null : maxValue,
+      query = new ConstantScoreQuery(DocValuesRangeQuery.newLongRange(field.getName(),
+              min == null ? null : minValue.longValue(),
+              max == null ? null : maxValue.longValue(),
               minInclusive, maxInclusive));
     } else {
       query = NumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,

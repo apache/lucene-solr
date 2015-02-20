@@ -131,6 +131,9 @@ API Changes
   positions are not available.
   (Ryan Ernst)
 
+* LUCENE-6268: Replace FieldValueFilter and DocValuesRangeFilter with equivalent
+  queries that support approximations. (Adrien Grand)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
