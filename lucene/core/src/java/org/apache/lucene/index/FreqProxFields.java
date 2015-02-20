@@ -345,7 +345,6 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false : "Shouldn't be calling nextPositions on DocsEnum";
       return -1;
     }
 

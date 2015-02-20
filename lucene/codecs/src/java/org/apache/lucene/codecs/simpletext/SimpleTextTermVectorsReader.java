@@ -423,7 +423,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false;
       return -1;
     }
 

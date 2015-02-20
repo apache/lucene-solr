@@ -278,7 +278,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false : "Shouldn't be calling nextPosition() if you haven't asked for positions";
       return -1;
     }
 

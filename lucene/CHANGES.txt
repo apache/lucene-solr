@@ -127,6 +127,10 @@ API Changes
 * LUCENE-6245: Force Filter subclasses to implement toString API from Query.
   (Ryan Ernst)
 
+* LUCENE-6256: Change PostingsEnum.nextPosition() to consistently return -1 when
+  positions are not available.
+  (Ryan Ernst)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
