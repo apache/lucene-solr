@@ -135,8 +135,10 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         dirCopy = newMockFSDirectory(createTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
         Set<String> files = new HashSet<>();
         for (String file : dir.listAll()) {
-          dirCopy.copyFrom(dir, file, file, IOContext.DEFAULT);
-          files.add(file);
+          if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+            dirCopy.copyFrom(dir, file, file, IOContext.DEFAULT);
+            files.add(file);
+          }
         }
         dirCopy.sync(files);
         // Have IW kiss the dir so we remove any leftover
