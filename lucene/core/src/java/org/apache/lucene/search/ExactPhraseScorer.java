@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 
 final class ExactPhraseScorer extends Scorer {
 
@@ -104,26 +103,6 @@ final class ExactPhraseScorer extends Scorer {
   @Override
   public int freq() {
     return freq;
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return null;
   }
 
   @Override

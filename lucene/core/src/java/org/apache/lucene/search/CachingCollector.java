@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -73,26 +72,6 @@ public abstract class CachingCollector extends FilterCollector {
 
     @Override
     public final int freq() { throw new UnsupportedOperationException(); }
-
-    @Override
-    public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      throw new UnsupportedOperationException();
-    }
 
     @Override
     public final int nextDoc() { throw new UnsupportedOperationException(); }

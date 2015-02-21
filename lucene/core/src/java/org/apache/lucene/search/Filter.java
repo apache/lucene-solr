@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 
 /**
  *  Convenient base class for building queries that only perform matching, but
@@ -121,26 +120,6 @@ public abstract class Filter extends Query {
           @Override
           public int freq() throws IOException {
             return 1;
-          }
-
-          @Override
-          public int nextPosition() throws IOException {
-            return -1;
-          }
-
-          @Override
-          public int startOffset() throws IOException {
-            return -1;
-          }
-
-          @Override
-          public int endOffset() throws IOException {
-            return -1;
-          }
-
-          @Override
-          public BytesRef getPayload() throws IOException {
-            return null;
           }
 
           @Override

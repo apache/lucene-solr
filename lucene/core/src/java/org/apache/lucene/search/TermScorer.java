@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
@@ -54,26 +53,6 @@ final class TermScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     return postingsEnum.freq();
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return postingsEnum.nextPosition();
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return postingsEnum.startOffset();
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return postingsEnum.endOffset();
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return postingsEnum.getPayload();
   }
 
   /**

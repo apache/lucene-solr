@@ -35,9 +35,9 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -45,7 +45,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -475,26 +474,6 @@ public class TestRankQueryPlugin extends QParserPlugin {
       @Override
       public int freq() throws IOException {
         throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int nextPosition() throws IOException {
-        return -1;
-      }
-
-      @Override
-      public int startOffset() throws IOException {
-        return -1;
-      }
-
-      @Override
-      public int endOffset() throws IOException {
-        return -1;
-      }
-
-      @Override
-      public BytesRef getPayload() throws IOException {
-        return null;
       }
 
       @Override

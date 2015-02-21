@@ -1350,26 +1350,6 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int nextDoc() throws IOException {
       throw new UnsupportedOperationException();
     }

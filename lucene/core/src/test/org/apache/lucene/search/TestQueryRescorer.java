@@ -36,7 +36,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -452,26 +451,6 @@ public class TestQueryRescorer extends LuceneTestCase {
             @Override
             public int freq() {
               return 1;
-            }
-
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
             }
 
             @Override

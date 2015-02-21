@@ -146,6 +146,9 @@ API Changes
 * LUCENE-6266: Remove unnecessary Directory params from SegmentInfo.toString, 
   SegmentInfos.files/toString, and SegmentCommitInfo.toString. (Robert Muir)
 
+* LUCENE-6272: Scorer extends DocSetIdIterator rather than DocsEnum (Alan
+  Woodward)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj

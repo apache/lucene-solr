@@ -623,26 +623,6 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public int nextPosition() throws IOException {
-      return -1;
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      return -1;
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      return -1;
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      return null;
-    }
-
-    @Override
     public int advance(int target) throws IOException {
       return iter.advance(target);
     }

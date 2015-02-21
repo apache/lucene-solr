@@ -1,6 +1,13 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Random;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.Bits;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,14 +24,6 @@ import java.io.IOException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.Random;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 /**
  * A {@link Query} that adds random approximations to its scorers.
@@ -140,26 +139,6 @@ public class RandomApproximationQuery extends Query {
     @Override
     public int freq() throws IOException {
       return scorer.freq();
-    }
-
-    @Override
-    public int nextPosition() throws IOException {
-      return scorer.nextPosition();
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      return scorer.startOffset();
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      return scorer.endOffset();
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      return scorer.getPayload();
     }
 
     @Override
