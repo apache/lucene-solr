@@ -37,10 +37,10 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
@@ -335,12 +335,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
        p1 == null ? null : p1.getAmount() + "", 
        p2 == null ? null : p2.getAmount() + "",
        minInclusive, maxInclusive);
-    final BooleanFilter docsInRange = new BooleanFilter();
-    docsInRange.add(docsWithValues, Occur.MUST);
-    docsInRange.add(vsRangeFilter, Occur.MUST);
+    final BooleanQuery docsInRange = new BooleanQuery();
+    docsInRange.add(docsWithValues, Occur.FILTER);
+    docsInRange.add(vsRangeFilter, Occur.FILTER);
 
-    return new SolrConstantScoreQuery(docsInRange);
-    
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(docsInRange));
   }
 
   @Override

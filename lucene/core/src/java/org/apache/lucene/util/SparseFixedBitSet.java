@@ -485,31 +485,6 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     }
   }
 
-  // AND and AND_NOT do not need much specialization here since this sparse set
-  // is supposed to be used on sparse data and the default AND/AND_NOT impl
-  // (leap frog) is efficient when at least one of the sets contains sparse data
-
-  @Override
-  public void and(DocIdSetIterator it) throws IOException {
-    final SparseFixedBitSet other = BitSetIterator.getSparseFixedBitSetOrNull(it);
-    if (other != null) {
-      // if we are merging with another SparseFixedBitSet, a quick win is
-      // to clear up some blocks by only looking at their index. Then the set
-      // is sparser and the leap-frog approach of the parent class is more
-      // efficient. Since SparseFixedBitSet is supposed to be used for sparse
-      // sets, the intersection of two SparseFixedBitSet is likely very sparse
-      final int numCommonBlocks = Math.min(indices.length, other.indices.length);
-      for (int i = 0; i < numCommonBlocks; ++i) {
-        if ((indices[i] & other.indices[i]) == 0) {
-          this.nonZeroLongCount -= Long.bitCount(this.indices[i]);
-          this.indices[i] = 0;
-          this.bits[i] = null;
-        }
-      }
-    }
-    super.and(it);
-  }
-
   @Override
   public long ramBytesUsed() {
     return ramBytesUsed;

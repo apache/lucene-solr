@@ -146,28 +146,6 @@ public class BitDocIdSet extends DocIdSet {
     }
 
     /**
-     * Removes from this builder documents that are not contained in <code>it</code>.
-     */
-    public void and(DocIdSetIterator it) throws IOException {
-      if (denseSet != null) {
-        denseSet.and(it);
-      } else if (sparseSet != null) {
-        sparseSet.and(it);
-      }
-    }
-
-    /**
-     * Removes from this builder documents that are contained in <code>it</code>.
-     */
-    public void andNot(DocIdSetIterator it) throws IOException {
-      if (denseSet != null) {
-        denseSet.andNot(it);
-      } else if (sparseSet != null) {
-        sparseSet.andNot(it);
-      }
-    }
-
-    /**
      * Build a {@link DocIdSet} that contains all doc ids that have been added.
      * This method may return <tt>null</tt> if no documents were addded to this
      * builder.

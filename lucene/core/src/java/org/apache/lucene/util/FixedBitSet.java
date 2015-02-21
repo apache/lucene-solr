@@ -277,17 +277,6 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     }
   }
 
-  @Override
-  public void and(DocIdSetIterator iter) throws IOException {
-    if (BitSetIterator.getFixedBitSetOrNull(iter) != null) {
-      assertUnpositioned(iter);
-      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
-      and(bits);
-    } else {
-      super.and(iter);
-    }
-  }
-
   /** returns true if the sets have any elements in common */
   public boolean intersects(FixedBitSet other) {
     int pos = Math.min(numWords, other.numWords);
@@ -310,17 +299,6 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     }
     if (this.numWords > otherNumWords) {
       Arrays.fill(thisArr, otherNumWords, this.numWords, 0L);
-    }
-  }
-
-  @Override
-  public void andNot(DocIdSetIterator iter) throws IOException {
-    if (BitSetIterator.getFixedBitSetOrNull(iter) != null) {
-      assertUnpositioned(iter);
-      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
-      andNot(bits);
-    } else {
-      super.andNot(iter);
     }
   }
 

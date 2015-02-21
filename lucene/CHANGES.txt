@@ -118,6 +118,9 @@ API Changes
   instead. This will be as efficient now that queries can opt out from
   scoring. (Adrien Grand)
 
+* LUCENE-6269: Removed BooleanFilter, use a QueryWrapperFilter(BooleanQuery)
+  instead. (Adrien Grand)
+
 * LUCENE-6223: Move BooleanQuery.BooleanWeight to BooleanWeight.
   (Robert Muir)
 
