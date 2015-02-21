@@ -20,7 +20,6 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.BytesRef;
 
 class FakeScorer extends Scorer {
 
@@ -55,26 +54,6 @@ class FakeScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     return freq;
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    throw new UnsupportedOperationException();
   }
 
   @Override

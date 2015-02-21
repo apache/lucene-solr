@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.util.BytesRef;
-
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
 
@@ -77,26 +75,6 @@ class ConjunctionScorer extends Scorer {
   @Override
   public int freq() {
     return scorers.length;
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return null;
   }
 
   @Override

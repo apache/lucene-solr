@@ -25,11 +25,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.AssertingLeafReader;
-import org.apache.lucene.util.BytesRef;
-
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
+
+  static enum IteratorState { START, ITERATING, FINISHED };
 
   // we need to track scorers using a weak hash map because otherwise we
   // could loose references because of eg.
@@ -64,13 +63,14 @@ public class AssertingScorer extends Scorer {
 
   final Random random;
   final Scorer in;
-  final AssertingLeafReader.AssertingPostingsEnum docsEnumIn;
+
+  IteratorState state = IteratorState.START;
+  int doc = -1;
 
   private AssertingScorer(Random random, Scorer in) {
     super(in.weight);
     this.random = random;
     this.in = in;
-    this.docsEnumIn = new AssertingLeafReader.AssertingPostingsEnum(in);
   }
 
   public Scorer getIn() {
@@ -112,42 +112,37 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public int nextPosition() throws IOException {
-    assert iterating();
-    return in.nextPosition();
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    assert iterating();
-    return in.startOffset();
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    assert iterating();
-    return in.endOffset();
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    assert iterating();
-    return in.getPayload();
-  }
-
-  @Override
   public int docID() {
     return in.docID();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return docsEnumIn.nextDoc();
+    assert state != IteratorState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
+    int nextDoc = in.nextDoc();
+    assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
+    if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
+      state = IteratorState.FINISHED;
+    } else {
+      state = IteratorState.ITERATING;
+    }
+    assert in.docID() == nextDoc;
+    return doc = nextDoc;
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return docsEnumIn.advance(target);
+    assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
+    assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
+    int advanced = in.advance(target);
+    assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
+    if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
+      state = IteratorState.FINISHED;
+    } else {
+      state = IteratorState.ITERATING;
+    }
+    assert in.docID() == advanced;
+    return doc = advanced;
   }
 
   @Override

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 import static org.apache.lucene.search.ScorerPriorityQueue.leftNode;
@@ -228,26 +227,6 @@ final class MinShouldMatchSumScorer extends Scorer {
     while (head.size() > 0 && head.top().doc == doc) {
       addLead(head.pop());
     }
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return null;
   }
 
   /** Advance tail to the lead until there is a match. */

@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 final class SloppyPhraseScorer extends Scorer {
@@ -527,26 +526,6 @@ final class SloppyPhraseScorer extends Scorer {
   @Override
   public int freq() {
     return numMatches;
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return -1;
-  }
-
-  @Override
-  public BytesRef getPayload() throws IOException {
-    return null;
   }
 
   float sloppyFreq() {

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -103,26 +102,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
       @Override
       public int freq() throws IOException {
         return 0;
-      }
-
-      @Override
-      public int nextPosition() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public int startOffset() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public int endOffset() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public BytesRef getPayload() throws IOException {
-        return null;
       }
 
     };
