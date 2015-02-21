@@ -127,6 +127,9 @@ API Changes
 * LUCENE-6269: Removed BooleanFilter, use a QueryWrapperFilter(BooleanQuery)
   instead. (Adrien Grand)
 
+* LUCENE-6270: Replaced TermsFilter with TermsQuery, use a
+  QueryWrapperFilter(TermsQuery) instead. (Adrien Grand)
+
 * LUCENE-6223: Move BooleanQuery.BooleanWeight to BooleanWeight.
   (Robert Muir)
 

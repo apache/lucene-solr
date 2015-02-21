@@ -68,24 +68,16 @@ public class BooleanQueryBuilder implements QueryBuilder {
 
   static BooleanClause.Occur getOccursValue(Element clauseElem) throws ParserException {
     String occs = clauseElem.getAttribute("occurs");
-    BooleanClause.Occur occurs = BooleanClause.Occur.SHOULD;
-    if ("must".equalsIgnoreCase(occs)) {
-      occurs = BooleanClause.Occur.MUST;
-    } else {
-      if ("mustNot".equalsIgnoreCase(occs)) {
-        occurs = BooleanClause.Occur.MUST_NOT;
-      } else {
-        if (("should".equalsIgnoreCase(occs)) || ("".equals(occs))) {
-          occurs = BooleanClause.Occur.SHOULD;
-        } else {
-          if (occs != null) {
-            throw new ParserException("Invalid value for \"occurs\" attribute of clause:" + occs);
-          }
-        }
-      }
+    if (occs == null || "should".equalsIgnoreCase(occs)) {
+      return BooleanClause.Occur.SHOULD;
+    } else if ("must".equalsIgnoreCase(occs)) {
+      return BooleanClause.Occur.MUST;
+    } else if ("mustNot".equalsIgnoreCase(occs)) {
+      return BooleanClause.Occur.MUST_NOT;
+    } else if ("filter".equals(occs)) {
+      return BooleanClause.Occur.FILTER;
     }
-    return occurs;
-
+    throw new ParserException("Invalid value for \"occurs\" attribute of clause:" + occs);
   }
 
 }

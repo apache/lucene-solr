@@ -156,11 +156,6 @@ public class TestParser extends LuceneTestCase {
     dumpResults("FuzzyLikeThis", q, 5);
   }
 
-  public void testTermsFilterXML() throws Exception {
-    Query q = parse("TermsFilterQuery.xml");
-    dumpResults("Terms Filter", q, 5);
-  }
-
   public void testBoostingTermQueryXML() throws Exception {
     Query q = parse("BoostingTermQuery.xml");
     dumpResults("BoostingTermQuery", q, 5);
