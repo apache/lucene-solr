@@ -353,18 +353,23 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     createRandomFile(dir, segment + ".big6", 3 * chunk + 1);
     createRandomFile(dir, segment + ".big7", 1000 * chunk);
     
-    String files[] = dir.listAll();
+    List<String> files = new ArrayList<>();
+    for (String file : dir.listAll()) {
+      if (file.startsWith(segment)) {
+        files.add(file);
+      }
+    }
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.setFiles(Arrays.asList(files));
+    si.setFiles(files);
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     
-    for (int i = 0; i < files.length; i++) {
-      IndexInput check = dir.openInput(files[i], newIOContext(random()));
-      IndexInput test = cfs.openInput(files[i], newIOContext(random()));
-      assertSameStreams(files[i], check, test);
-      assertSameSeekBehavior(files[i], check, test);
+    for (String file : files) {
+      IndexInput check = dir.openInput(file, newIOContext(random()));
+      IndexInput test = cfs.openInput(file, newIOContext(random()));
+      assertSameStreams(file, check, test);
+      assertSameSeekBehavior(file, check, test);
       test.close();
       check.close();
     }
@@ -379,8 +384,11 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     
     final int FILE_COUNT = atLeast(500);
     
+    List<String> files = new ArrayList<>();
     for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
-      IndexOutput out = dir.createOutput("_123." + fileIdx, newIOContext(random()));
+      String file = "_123." + fileIdx;
+      files.add(file);
+      IndexOutput out = dir.createOutput(file, newIOContext(random()));
       out.writeByte((byte) fileIdx);
       out.close();
     }
@@ -388,7 +396,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(0, dir.getFileHandleCount());
     
     SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.setFiles(Arrays.asList(dir.listAll()));
+    si.setFiles(files);
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     

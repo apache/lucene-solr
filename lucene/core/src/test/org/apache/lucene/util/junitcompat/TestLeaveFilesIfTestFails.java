@@ -51,7 +51,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
     Result r = JUnitCore.runClasses(Nested1.class);
     Assert.assertEquals(1, r.getFailureCount());
     Assert.assertTrue(Nested1.file != null && Files.exists(Nested1.file));
-    Files.delete(Nested1.file);
+    IOUtils.rm(Nested1.file);
   }
   
   public static class Nested2 extends WithNestedTests.AbstractNestedTest {

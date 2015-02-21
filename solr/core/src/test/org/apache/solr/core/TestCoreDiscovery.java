@@ -341,7 +341,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testSolrHomeDoesntExist() throws Exception {
     File homeDir = solrHomeDirectory;
-    Files.delete(homeDir.toPath());
+    IOUtils.rm(homeDir.toPath());
     CoreContainer cc = null;
     try {
       cc = init();

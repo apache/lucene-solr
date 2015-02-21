@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.mockfile.DisableFsyncFS;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.VerboseFS;
@@ -154,6 +155,9 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
         if (!Constants.WINDOWS && allowed(avoid, WindowsFS.class)) {
           fs = new WindowsFS(fs).getFileSystem(null);
         }
+      }
+      if (allowed(avoid, ExtrasFS.class)) {
+        fs = new ExtrasFS(fs, new Random(random.nextLong())).getFileSystem(null);
       }
     }
     if (LuceneTestCase.VERBOSE) {

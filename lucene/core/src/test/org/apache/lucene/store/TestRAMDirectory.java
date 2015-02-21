@@ -20,6 +20,9 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -74,7 +77,9 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     try {
       Files.createDirectory(path.resolve("subdir"));
       fsDir = new SimpleFSDirectory(path);
-      assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
+      RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
+      List<String> files = Arrays.asList(ramDir.listAll());
+      assertFalse(files.contains("subdir"));
     } finally {
       IOUtils.close(fsDir);
       IOUtils.rm(path);

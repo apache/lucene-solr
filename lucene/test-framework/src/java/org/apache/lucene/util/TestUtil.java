@@ -73,6 +73,7 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
@@ -1208,7 +1209,9 @@ public final class TestUtil {
   public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
     RAMDirectory ram = new RAMDirectory();
     for (String file : dir.listAll()) {
-      ram.copyFrom(dir, file, file, IOContext.DEFAULT);
+      if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+        ram.copyFrom(dir, file, file, IOContext.DEFAULT);
+      }
     }
     return ram;
   }

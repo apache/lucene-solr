@@ -285,8 +285,13 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     else {
       // hack
       long size = 0;
-      for (String file : in.listAll())
-        size += in.fileLength(file);
+      for (String file : in.listAll()) {
+        // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
+        // size for extras it creates, even though the size of non-regular files is not defined)
+        if (!file.startsWith("extra")) {
+          size += in.fileLength(file);
+        }
+      }
       return size;
     }
   }

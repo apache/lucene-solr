@@ -1302,11 +1302,9 @@ public class TestIndexWriter extends LuceneTestCase {
       if (iter == 1) {
         // we run a full commit so there should be a segments file etc.
         assertTrue(files.contains("segments_1"));
-        assertEquals(files.toString(), files.size(), 4);
       } else {
         // this is an NRT reopen - no segments files yet
-
-        assertEquals(files.toString(), files.size(), 3);
+        assertFalse(files.contains("segments_1"));
       }
       w.addDocument(doc);
       w.forceMerge(1);
@@ -1415,6 +1413,8 @@ public class TestIndexWriter extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
+    
+    String[] origFiles = dir.listAll();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2)
                                                 .setMergePolicy(newLogMergePolicy())
@@ -1423,13 +1423,13 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Creating over empty dir should not create any files,
     // or, at most the write.lock file
-    final int extraFileCount;
-    if (files.length == 1) {
-      assertTrue(files[0].endsWith("write.lock"));
-      extraFileCount = 1;
+    final int extraFileCount = files.length - origFiles.length;
+    if (extraFileCount == 1) {
+      assertTrue(Arrays.asList(files).contains(IndexWriter.WRITE_LOCK_NAME));
     } else {
-      assertEquals(0, files.length);
-      extraFileCount = 0;
+      Arrays.sort(origFiles);
+      Arrays.sort(files);
+      assertArrayEquals(origFiles, files);
     }
 
     Document doc = new Document();
@@ -1443,10 +1443,14 @@ public class TestIndexWriter extends LuceneTestCase {
     // Adding just one document does not call flush yet.
     int computedExtraFileCount = 0;
     for (String file : dir.listAll()) {
-      if (file.lastIndexOf('.') < 0
-          // don't count stored fields and term vectors in
-          || !Arrays.asList("fdx", "fdt", "tvx", "tvd", "tvf").contains(file.substring(file.lastIndexOf('.') + 1))) {
-        ++computedExtraFileCount;
+      if (IndexWriter.WRITE_LOCK_NAME.equals(file) || 
+          file.startsWith(IndexFileNames.SEGMENTS) || 
+          IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+        if (file.lastIndexOf('.') < 0
+            // don't count stored fields and term vectors in
+            || !Arrays.asList("fdx", "fdt", "tvx", "tvd", "tvf").contains(file.substring(file.lastIndexOf('.') + 1))) {
+          ++computedExtraFileCount;
+        }
       }
     }
     assertEquals("only the stored and term vector files should exist in the directory", extraFileCount, computedExtraFileCount);
@@ -1461,12 +1465,12 @@ public class TestIndexWriter extends LuceneTestCase {
     // After rollback, IW should remove all files
     writer.rollback();
     String allFiles[] = dir.listAll();
-    assertTrue("no files should exist in the directory after rollback", allFiles.length == 0 || Arrays.equals(allFiles, new String[] { IndexWriter.WRITE_LOCK_NAME }));
+    assertEquals("no files should exist in the directory after rollback", origFiles.length + extraFileCount, allFiles.length);
 
     // Since we rolled-back above, that close should be a no-op
     writer.close();
     allFiles = dir.listAll();
-    assertTrue("expected a no-op close after IW.rollback()", allFiles.length == 0 || Arrays.equals(allFiles, new String[] { IndexWriter.WRITE_LOCK_NAME }));
+    assertEquals("expected a no-op close after IW.rollback()", origFiles.length + extraFileCount, allFiles.length);
     dir.close();
   }
 

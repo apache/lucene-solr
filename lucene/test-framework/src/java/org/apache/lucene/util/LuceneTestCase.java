@@ -1305,7 +1305,9 @@ public abstract class LuceneTestCase extends Assert {
   public static BaseDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-     impl.copyFrom(d, file, file, newIOContext(r));
+      if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+        impl.copyFrom(d, file, file, newIOContext(r));
+      }
     }
     return wrapDirectory(r, impl, rarely(r));
   }
