@@ -31,6 +31,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -171,11 +172,29 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * Both queries will be filtered by <code>filter</code>
    */
   protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
-    // TRUNK ONLY: test both filter code paths
-    if (filter != null && random().nextBoolean()) {
-      q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
-      q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
-      filter = null;
+    // TODO: remove this randomness and just explicitly test the query N times always?
+    if (filter != null) {
+      int res = random().nextInt(3);
+      if (res == 0) {
+        // use FilteredQuery explicitly
+        q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
+        q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
+        filter = null;
+      } else if (res == 1) {
+        // use BooleanQuery FILTER clause
+        BooleanQuery bq1 = new BooleanQuery();
+        bq1.add(q1, Occur.MUST);
+        bq1.add(filter, Occur.FILTER);
+        q1 = bq1;
+        
+        BooleanQuery bq2 = new BooleanQuery();
+        bq2.add(q2, Occur.MUST);
+        bq2.add(filter, Occur.FILTER);
+        q2 = bq2;
+        filter = null;
+      } else {
+        // do nothing, we use search(q, filter, int, ...) in this case.
+      }
     }
     
     // not efficient, but simple!
@@ -207,10 +226,28 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   }
 
   protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
-    if (filter != null && random().nextBoolean()) {
-      q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
-      q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
-      filter = null;
+    if (filter != null) {
+      int res = random().nextInt(3);
+      if (res == 0) {
+        // use FilteredQuery explicitly
+        q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
+        q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
+        filter = null;
+      } else if (res == 1) {
+        // use BooleanQuery FILTER clause
+        BooleanQuery bq1 = new BooleanQuery();
+        bq1.add(q1, Occur.MUST);
+        bq1.add(filter, Occur.FILTER);
+        q1 = bq1;
+        
+        BooleanQuery bq2 = new BooleanQuery();
+        bq2.add(q2, Occur.MUST);
+        bq2.add(filter, Occur.FILTER);
+        q2 = bq2;
+        filter = null;
+      } else {
+        // do nothing, we use search(q, filter, int) in this case.
+      }
     }
     
     // not efficient, but simple!
