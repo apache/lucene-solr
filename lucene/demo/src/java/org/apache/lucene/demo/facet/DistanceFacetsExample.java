@@ -42,13 +42,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -179,28 +181,28 @@ public class DistanceFacetsExample implements Closeable {
       maxLng = Math.toRadians(180);
     }
 
-    BooleanFilter f = new BooleanFilter();
+    BooleanQuery f = new BooleanQuery();
 
     // Add latitude range filter:
     f.add(NumericRangeFilter.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
-          BooleanClause.Occur.MUST);
+          BooleanClause.Occur.FILTER);
 
     // Add longitude range filter:
     if (minLng > maxLng) {
       // The bounding box crosses the international date
       // line:
-      BooleanFilter lonF = new BooleanFilter();
-      lonF.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
+      BooleanQuery lonF = new BooleanQuery();
+      lonF.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
                BooleanClause.Occur.SHOULD);
-      lonF.add(NumericRangeFilter.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
+      lonF.add(NumericRangeQuery.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
                BooleanClause.Occur.SHOULD);
       f.add(lonF, BooleanClause.Occur.MUST);
     } else {
       f.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
-            BooleanClause.Occur.MUST);
+            BooleanClause.Occur.FILTER);
     }
 
-    return f;
+    return new QueryWrapperFilter(f);
   }
 
   /** User runs a query and counts facets. */

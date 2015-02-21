@@ -96,28 +96,31 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
       FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
       
       totCount += hits.totalHits;
-      Bits bits;
+      final DocIdSetIterator fastMatchDocs;
       if (fastMatchFilter != null) {
         DocIdSet dis = fastMatchFilter.getDocIdSet(hits.context, null);
         if (dis == null) {
           // No documents match
           continue;
         }
-        bits = dis.bits();
-        if (bits == null) {
-          throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
-        }
+        fastMatchDocs = dis.iterator();
       } else {
-        bits = null;
+        fastMatchDocs = null;
       }
 
       DocIdSetIterator docs = hits.bits.iterator();
-      
-      int doc;
-      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        if (bits != null && bits.get(doc) == false) {
-          doc++;
-          continue;
+
+      for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; ) {
+        if (fastMatchDocs != null) {
+          int fastMatchDoc = fastMatchDocs.docID();
+          if (fastMatchDoc < doc) {
+            fastMatchDoc = fastMatchDocs.advance(doc);
+          }
+
+          if (doc != fastMatchDoc) {
+            doc = docs.advance(fastMatchDoc);
+            continue;
+          }
         }
         // Skip missing docs:
         if (fv.exists(doc)) {
@@ -125,6 +128,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         } else {
           missingCount++;
         }
+
+        doc = docs.nextDoc();
       }
     }
 

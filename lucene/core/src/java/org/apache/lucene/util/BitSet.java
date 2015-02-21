@@ -112,6 +112,7 @@ public abstract class BitSet implements MutableBits, Accountable {
 
   /** Does in-place AND of the bits provided by the iterator. The state of the
    *  iterator after this operation terminates is undefined. */
+  @Deprecated
   public void and(DocIdSetIterator iter) throws IOException {
     assertUnpositioned(iter);
     leapFrog(iter, new LeapFrogCallBack() {
@@ -135,6 +136,7 @@ public abstract class BitSet implements MutableBits, Accountable {
 
   /** this = this AND NOT other. The state of the iterator after this operation
    *  terminates is undefined. */
+  @Deprecated
   public void andNot(DocIdSetIterator iter) throws IOException {
     assertUnpositioned(iter);
     leapFrog(iter, new LeapFrogCallBack() {

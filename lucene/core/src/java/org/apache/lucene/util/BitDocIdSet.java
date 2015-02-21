@@ -148,6 +148,7 @@ public class BitDocIdSet extends DocIdSet {
     /**
      * Removes from this builder documents that are not contained in <code>it</code>.
      */
+    @Deprecated
     public void and(DocIdSetIterator it) throws IOException {
       if (denseSet != null) {
         denseSet.and(it);
@@ -159,6 +160,7 @@ public class BitDocIdSet extends DocIdSet {
     /**
      * Removes from this builder documents that are contained in <code>it</code>.
      */
+    @Deprecated
     public void andNot(DocIdSetIterator it) throws IOException {
       if (denseSet != null) {
         denseSet.andNot(it);

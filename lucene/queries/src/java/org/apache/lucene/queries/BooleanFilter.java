@@ -26,9 +26,11 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 
@@ -40,7 +42,9 @@ import org.apache.lucene.util.Bits;
  * SHOULD Filters are OR'd together
  * The resulting Filter is NOT'd with the NOT Filters
  * The resulting Filter is AND'd with the MUST Filters
+ * @deprecated Use a {@link QueryWrapperFilter} on a {@link BooleanQuery} instead
  */
+@Deprecated
 public class BooleanFilter extends Filter implements Iterable<FilterClause> {
 
   private final List<FilterClause> clauses = new ArrayList<>();
