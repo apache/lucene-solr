@@ -101,6 +101,9 @@ Optimizations
 * LUCENE-6262: ConstantScoreQuery does not wrap the inner weight anymore when
   scores are not required. (Adrien Grand)
 
+* LUCENE-6263: MultiCollector automatically caches scores when several
+  collectors need them. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()

@@ -19,7 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -69,7 +73,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     final LeafCollector ac = c.getLeafCollector(null);
     ac.collect(1);
     c.getLeafCollector(null);
-    c.getLeafCollector(null).setScorer(null);
+    c.getLeafCollector(null).setScorer(new FakeScorer());
   }
 
   @Test
@@ -91,7 +95,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     LeafCollector ac = c.getLeafCollector(null);
     ac.collect(1);
     ac = c.getLeafCollector(null);
-    ac.setScorer(null);
+    ac.setScorer(new FakeScorer());
 
     for (DummyCollector dc : dcs) {
       assertTrue(dc.collectCalled);
@@ -101,4 +105,65 @@ public class MultiCollectorTest extends LuceneTestCase {
 
   }
 
+  private static Collector collector(boolean needsScores, Class<?> expectedScorer) {
+    return new Collector() {
+
+      @Override
+      public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+        return new LeafCollector() {
+
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+            assertEquals(expectedScorer, scorer.getClass());
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {}
+          
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return needsScores;
+      }
+      
+    };
+  }
+
+  public void testCacheScoresIfNecessary() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    iw.addDocument(new Document());
+    iw.commit();
+    DirectoryReader reader = iw.getReader();
+    iw.close();
+    
+    final LeafReaderContext ctx = reader.leaves().get(0);
+
+    try {
+      collector(false, ScoreCachingWrappingScorer.class).getLeafCollector(ctx).setScorer(new FakeScorer());
+      fail("The collector was configured to expect a ScoreCachingWrappingScorer and did not fail when pass in a FakeScorer");
+    } catch (AssertionError e) {
+      // expected
+    }
+
+    // no collector needs scores => no caching
+    Collector c1 = collector(false, FakeScorer.class);
+    Collector c2 = collector(false, FakeScorer.class);
+    MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
+
+    // only one collector needs scores => no caching
+    c1 = collector(true, FakeScorer.class);
+    c2 = collector(false, FakeScorer.class);
+    MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
+
+    // several collectors need scores => caching
+    c1 = collector(true, ScoreCachingWrappingScorer.class);
+    c2 = collector(true, ScoreCachingWrappingScorer.class);
+    MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new FakeScorer());
+
+    reader.close();
+    dir.close();
+  }
 }
