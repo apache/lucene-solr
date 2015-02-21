@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,8 +46,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -271,15 +272,13 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       boolean fail = false;
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
-          for (Path path : stream) {
-            SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
-            if (liveIDs.contains(segIDGen.segID) == false) {
-              if (DEBUG) System.out.println("TEST: fail seg=" + path.getFileName() + " is not live but still has a parallel index");
-              fail = true;
-            }
-          }
+      for(Path path : segSubDirs(segsPath)) {
+        SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
+        if (liveIDs.contains(segIDGen.segID) == false) {
+          if (DEBUG) System.out.println("TEST: fail seg=" + path.getFileName() + " is not live but still has a parallel index");
+          fail = true;
         }
+      }
       assertFalse(fail);
     }
 
@@ -486,24 +485,22 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       long currentSchemaGen = getCurrentSchemaGen();
 
       if (Files.exists(segsPath)) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
-            for (Path path : stream) {
-              if (Files.isDirectory(path)) {
-                SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
-                assert segIDGen.schemaGen <= currentSchemaGen;
-                if (liveIDs.contains(segIDGen.segID) == false && (closedSegments.contains(segIDGen) || (removeOldGens && segIDGen.schemaGen < currentSchemaGen))) {
-                  if (DEBUG) System.out.println("TEST: remove " + segIDGen);
-                  try {
-                    IOUtils.rm(path);
-                    closedSegments.remove(segIDGen);
-                  } catch (IOException ioe) {
-                    // OK, we'll retry later
-                    if (DEBUG) System.out.println("TEST: ignore ioe during delete " + path + ":" + ioe);
-                  }
-                }
+        for (Path path : segSubDirs(segsPath)) {
+          if (Files.isDirectory(path)) {
+            SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
+            assert segIDGen.schemaGen <= currentSchemaGen;
+            if (liveIDs.contains(segIDGen.segID) == false && (closedSegments.contains(segIDGen) || (removeOldGens && segIDGen.schemaGen < currentSchemaGen))) {
+              if (DEBUG) System.out.println("TEST: remove " + segIDGen);
+              try {
+                IOUtils.rm(path);
+                closedSegments.remove(segIDGen);
+              } catch (IOException ioe) {
+                // OK, we'll retry later
+                if (DEBUG) System.out.println("TEST: ignore ioe during delete " + path + ":" + ioe);
               }
             }
           }
+        }
       }
     }
 
@@ -1363,6 +1360,23 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         assertEquals(value, numbers.get(scoreDoc.doc));
       }
     }
+  }
+
+  // TODO: maybe the leading id could be further restricted?  It's from StringHelper.idToString:
+  static final Pattern SEG_GEN_SUB_DIR_PATTERN = Pattern.compile("^[a-z0-9]+_([0-9]+)$");
+
+  private static List<Path> segSubDirs(Path segsPath) throws IOException {
+    List<Path> result = new ArrayList<>();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
+      for (Path path : stream) {
+        // Must be form <segIDString>_<longGen>
+        if (Files.isDirectory(path) && SEG_GEN_SUB_DIR_PATTERN.matcher(path.getFileName().toString()).matches()) {
+          result.add(path);
+        }
+      }
+    }
+
+    return result;
   }
 
   // TODO: test exceptions

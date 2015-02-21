@@ -157,9 +157,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
   public void testDeleteFile() throws Exception {
     Directory dir = getDirectory(createTempDir("testDeleteFile"));
+    int count = dir.listAll().length;
     dir.createOutput("foo.txt", IOContext.DEFAULT).close();
+    assertEquals(count+1, dir.listAll().length);
     dir.deleteFile("foo.txt");
-    assertEquals(0, dir.listAll().length);
+    assertEquals(count, dir.listAll().length);
     dir.close();
   }
   
@@ -434,6 +436,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           try {
             String[] files = dir.listAll();
             for (String file : files) {
+              if (!file.startsWith(name)) {
+                continue;
+              }
               //System.out.println("file:" + file);
              try {
               IndexInput input = dir.openInput(file, newIOContext(random()));
@@ -749,8 +754,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     // delete it
     Files.delete(path.resolve("afile"));
     
-    // directory is empty
-    assertEquals(0, fsdir.listAll().length);
+    int fileCount = fsdir.listAll().length;
     
     // fsync it
     try {
@@ -760,8 +764,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       // ok
     }
     
-    // directory is still empty
-    assertEquals(0, fsdir.listAll().length);
+    // no new files created
+    assertEquals(fileCount, fsdir.listAll().length);
     
     fsdir.close();
   }

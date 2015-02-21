@@ -264,7 +264,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     assertEquals(1, sis.getGeneration());
     
     // no inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(1, sis.getGeneration());
 
     dir.close();
@@ -284,12 +284,12 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput(IndexFileNames.SEGMENTS + "_2", IOContext.DEFAULT).close();
     
     // ensure inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(2, sis.getGeneration());
     
     // add another trash commit
     dir.createOutput(IndexFileNames.SEGMENTS + "_4", IOContext.DEFAULT).close();
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(4, sis.getGeneration());
 
     dir.close();
@@ -305,19 +305,19 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     assertEquals(0, sis.counter);
     
     // no inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(0, sis.counter);
     
     // add trash per-segment file
     dir.createOutput(IndexFileNames.segmentFileName("_0", "", "foo"), IOContext.DEFAULT).close();
     
     // ensure inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(1, sis.counter);
     
     // add trash per-segment file
     dir.createOutput(IndexFileNames.segmentFileName("_3", "", "foo"), IOContext.DEFAULT).close();
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(4, sis.counter);
     
     // ensure we write _4 segment next
@@ -346,14 +346,14 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     assertEquals(1, sis.info(0).getNextDelGen());
     
     // no inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(1, sis.info(0).getNextDelGen());
     
     // add trash per-segment deletes file
     dir.createOutput(IndexFileNames.fileNameFromGeneration("_0", "del", 2), IOContext.DEFAULT).close();
     
     // ensure inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(3, sis.info(0).getNextDelGen());
     
     dir.close();
@@ -373,7 +373,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput(IndexFileNames.SEGMENTS + "_", IOContext.DEFAULT).close();
     
     // no inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(1, sis.getGeneration());
 
     dir.close();
@@ -396,10 +396,24 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput("_1_A", IOContext.DEFAULT).close();
     
     // no inflation
-    IndexFileDeleter.inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
+    inflateGens(sis, Arrays.asList(dir.listAll()), InfoStream.getDefault());
     assertEquals(1, sis.info(0).getNextDelGen());
 
     dir.close();
+  }
+  
+  // IFD's inflater is "raw" and expects to only see codec files, 
+  // and rightfully so, it filters them out.
+  static void inflateGens(SegmentInfos sis, Collection<String> files, InfoStream stream) {
+    List<String> filtered = new ArrayList<>();
+    for (String file : files) {
+      if (IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches() ||
+          file.startsWith(IndexFileNames.SEGMENTS) ||
+          file.startsWith(IndexFileNames.PENDING_SEGMENTS)) {
+        filtered.add(file);
+      }
+    }
+    IndexFileDeleter.inflateGens(sis, filtered, stream);
   }
 
   // LUCENE-5919

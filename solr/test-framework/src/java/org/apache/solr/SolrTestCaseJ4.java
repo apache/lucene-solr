@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
@@ -125,6 +126,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
     QuickPatchThreadsFilter.class
 })
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
+@SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static final String DEFAULT_TEST_CORENAME = "collection1";

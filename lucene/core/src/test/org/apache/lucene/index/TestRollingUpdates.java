@@ -155,8 +155,9 @@ public class TestRollingUpdates extends LuceneTestCase {
       totalBytes += sipc.sizeInBytes();
     }
     long totalBytes2 = 0;
+    
     for(String fileName : dir.listAll()) {
-      if (!fileName.startsWith(IndexFileNames.SEGMENTS)) {
+      if (IndexFileNames.CODEC_FILE_PATTERN.matcher(fileName).matches()) {
         totalBytes2 += dir.fileLength(fileName);
       }
     }

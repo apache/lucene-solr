@@ -161,9 +161,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   private Map<String, Long> bytesUsedByExtension(Directory d) throws IOException {
     Map<String, Long> bytesUsedByExtension = new HashMap<>();
     for (String file : d.listAll()) {
-      final String ext = IndexFileNames.getExtension(file);
-      final long previousLength = bytesUsedByExtension.containsKey(ext) ? bytesUsedByExtension.get(ext) : 0;
-      bytesUsedByExtension.put(ext, previousLength + d.fileLength(file));
+      if (IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+        final String ext = IndexFileNames.getExtension(file);
+        final long previousLength = bytesUsedByExtension.containsKey(ext) ? bytesUsedByExtension.get(ext) : 0;
+        bytesUsedByExtension.put(ext, previousLength + d.fileLength(file));
+      }
     }
     bytesUsedByExtension.keySet().removeAll(excludedExtensionsFromByteCounts());
 

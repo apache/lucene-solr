@@ -482,7 +482,7 @@ public void testFilesOpenClose() throws IOException {
       // expected
     }
 
-    Files.delete(dirFile);
+    IOUtils.rm(dirFile);
 
     // Make sure we still get a CorruptIndexException (not NPE):
     try {
@@ -1056,7 +1056,7 @@ public void testFilesOpenClose() throws IOException {
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
     Path tempDir = createTempDir("testIndexExistsOnNonExistentDirectory");
-    Files.delete(tempDir);
+    IOUtils.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));
     dir.close();
