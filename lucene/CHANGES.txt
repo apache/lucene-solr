@@ -98,6 +98,9 @@ Optimizations
   filter out non-index files with some custom usage, you may want to look at 
   the IndexFileNames class. (Robert Muir)
 
+* LUCENE-6262: ConstantScoreQuery does not wrap the inner weight anymore when
+  scores are not required. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()

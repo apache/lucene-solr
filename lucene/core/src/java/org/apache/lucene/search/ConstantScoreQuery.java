@@ -78,9 +78,9 @@ public class ConstantScoreQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     
-    public ConstantWeight(IndexSearcher searcher) throws IOException {
+    public ConstantWeight(Weight innerWeight) throws IOException {
       super(ConstantScoreQuery.this);
-      this.innerWeight = query.createWeight(searcher, false);
+      this.innerWeight = innerWeight;
     }
 
     @Override
@@ -277,7 +277,12 @@ public class ConstantScoreQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreQuery.ConstantWeight(searcher);
+    final Weight innerWeight = query.createWeight(searcher, false);
+    if (needsScores) {
+      return new ConstantScoreQuery.ConstantWeight(innerWeight);
+    } else {
+      return innerWeight;
+    }
   }
 
   @Override
