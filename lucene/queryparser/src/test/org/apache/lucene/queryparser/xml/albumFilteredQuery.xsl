@@ -21,8 +21,6 @@
 	Other query fields are fed directly through an analyzer and so do not need to adhere to  
 	traditional Lucene query syntax. Terms within a field are ORed while different fields are ANDed
  -->	
-<FilteredQuery>
-	<Query>
 		<BooleanQuery>
 			<xsl:if test="count(artist)>0">
 			    <Clause occurs="must">
@@ -39,16 +37,11 @@
 			      <TermsQuery fieldName="releaseDate"><xsl:value-of select="releaseDate"/></TermsQuery>
 			   </Clause>
 		   </xsl:if>
+			<Clause occurs="filter">
+				<TermsQuery fieldName="genre">
+					<xsl:value-of select="genre"/>
+				</TermsQuery>
+			</Clause>
 	</BooleanQuery>
-	</Query>
-	<Filter>
-		<CachedFilter>
-			<!-- Example filter to be cached for fast, repeated use -->
-			<TermsFilter fieldName="genre">			
-				<xsl:value-of select="genre"/>
-			</TermsFilter>
-		</CachedFilter>		
-	</Filter>	
-</FilteredQuery>
 </xsl:template>
 </xsl:stylesheet>
