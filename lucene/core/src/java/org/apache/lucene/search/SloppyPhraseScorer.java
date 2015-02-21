@@ -606,4 +606,49 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+
+  @Override
+  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    return new TwoPhaseDocIdSetIterator() {
+      @Override
+      public DocIdSetIterator approximation() {
+        return new DocIdSetIterator() {
+          @Override
+          public int docID() {
+            return SloppyPhraseScorer.this.docID();
+          }
+
+          @Override
+          public int nextDoc() throws IOException {
+            return advance(max.doc + 1);
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            assert target > docID();
+            if (!advanceMin(target)) {
+              return NO_MORE_DOCS;
+            }
+            while (min.doc < max.doc) {
+              if (!advanceMin(max.doc)) {
+                return NO_MORE_DOCS;
+              }
+            }
+            return max.doc;
+          }
+
+          @Override
+          public long cost() {
+            return SloppyPhraseScorer.this.cost();
+          }
+        };
+      }
+
+      @Override
+      public boolean matches() throws IOException {
+        sloppyFreq = phraseFreq(); // check for phrase
+        return sloppyFreq != 0F;
+      }
+    };
+  }
 }
