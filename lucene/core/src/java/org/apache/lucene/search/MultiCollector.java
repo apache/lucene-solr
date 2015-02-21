@@ -86,10 +86,18 @@ public class MultiCollector implements Collector {
     }
   }
   
+  private final boolean cacheScores;
   private final Collector[] collectors;
 
   private MultiCollector(Collector... collectors) {
     this.collectors = collectors;
+    int numNeedsScores = 0;
+    for (Collector collector : collectors) {
+      if (collector.needsScores()) {
+        numNeedsScores += 1;
+      }
+    }
+    this.cacheScores = numNeedsScores >= 2;
   }
 
   @Override
@@ -108,19 +116,24 @@ public class MultiCollector implements Collector {
     for (int i = 0; i < collectors.length; ++i) {
       leafCollectors[i] = collectors[i].getLeafCollector(context);
     }
-    return new MultiLeafCollector(leafCollectors);
+    return new MultiLeafCollector(leafCollectors, cacheScores);
   }
 
   private static class MultiLeafCollector implements LeafCollector {
 
+    private final boolean cacheScores;
     private final LeafCollector[] collectors;
 
-    private MultiLeafCollector(LeafCollector[] collectors) {
+    private MultiLeafCollector(LeafCollector[] collectors, boolean cacheScores) {
       this.collectors = collectors;
+      this.cacheScores = cacheScores;
     }
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
+      if (cacheScores) {
+        scorer = new ScoreCachingWrappingScorer(scorer);
+      }
       for (LeafCollector c : collectors) {
         c.setScorer(scorer);
       }
