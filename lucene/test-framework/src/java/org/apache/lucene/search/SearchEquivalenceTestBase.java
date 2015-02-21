@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -161,8 +160,17 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     // test without a filter
     assertSubsetOf(q1, q2, null);
     
-    // test with a filter (this will sometimes cause advance'ing enough to test it)
-    assertSubsetOf(q1, q2, randomFilter());
+    // test with some filters (this will sometimes cause advance'ing enough to test it)
+    int numFilters = atLeast(10);
+    for (int i = 0; i < numFilters; i++) {
+      Filter filter = randomFilter();
+      // incorporate the filter in different ways.
+      assertSubsetOf(q1, q2, filter);
+      assertSubsetOf(filteredQuery(q1, filter), filteredQuery(q2, filter), null);
+      assertSubsetOf(filteredQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
+      assertSubsetOf(filteredBooleanQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
+      assertSubsetOf(filteredBooleanQuery(q1, filter), filteredQuery(q2, filter), null);
+    }
   }
   
   /**
@@ -172,45 +180,23 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * Both queries will be filtered by <code>filter</code>
    */
   protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
-    // TODO: remove this randomness and just explicitly test the query N times always?
-    if (filter != null) {
-      int res = random().nextInt(3);
-      if (res == 0) {
-        // use FilteredQuery explicitly
-        q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
-        q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
-        filter = null;
-      } else if (res == 1) {
-        // use BooleanQuery FILTER clause
-        BooleanQuery bq1 = new BooleanQuery();
-        bq1.add(q1, Occur.MUST);
-        bq1.add(filter, Occur.FILTER);
-        q1 = bq1;
-        
-        BooleanQuery bq2 = new BooleanQuery();
-        bq2.add(q2, Occur.MUST);
-        bq2.add(filter, Occur.FILTER);
-        q2 = bq2;
-        filter = null;
-      } else {
-        // do nothing, we use search(q, filter, int, ...) in this case.
+    // we test both INDEXORDER and RELEVANCE because we want to test needsScores=true/false
+    for (Sort sort : new Sort[] { Sort.INDEXORDER, Sort.RELEVANCE }) {
+      // not efficient, but simple!
+      TopDocs td1 = s1.search(q1, filter, reader.maxDoc(), sort);
+      TopDocs td2 = s2.search(q2, filter, reader.maxDoc(), sort);
+      assertTrue(td1.totalHits <= td2.totalHits);
+      
+      // fill the superset into a bitset
+      BitSet bitset = new BitSet();
+      for (int i = 0; i < td2.scoreDocs.length; i++) {
+        bitset.set(td2.scoreDocs[i].doc);
       }
-    }
-    
-    // not efficient, but simple!
-    TopDocs td1 = s1.search(q1, filter, reader.maxDoc(), random().nextBoolean() ? Sort.INDEXORDER : Sort.RELEVANCE);
-    TopDocs td2 = s2.search(q2, filter, reader.maxDoc(), random().nextBoolean() ? Sort.INDEXORDER : Sort.RELEVANCE);
-    assertTrue(td1.totalHits <= td2.totalHits);
-    
-    // fill the superset into a bitset
-    BitSet bitset = new BitSet();
-    for (int i = 0; i < td2.scoreDocs.length; i++) {
-      bitset.set(td2.scoreDocs[i].doc);
-    }
-    
-    // check in the subset, that every bit was set by the super
-    for (int i = 0; i < td1.scoreDocs.length; i++) {
-      assertTrue(bitset.get(td1.scoreDocs[i].doc));
+      
+      // check in the subset, that every bit was set by the super
+      for (int i = 0; i < td1.scoreDocs.length; i++) {
+        assertTrue(bitset.get(td1.scoreDocs[i].doc));
+      }
     }
   }
 
@@ -221,35 +207,20 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     assertSameSet(q1, q2);
 
     assertSameScores(q1, q2, null);
-    // also test with a filter to test advancing
-    assertSameScores(q1, q2, randomFilter());
+    // also test with some filters to test advancing
+    int numFilters = atLeast(10);
+    for (int i = 0; i < numFilters; i++) {
+      Filter filter = randomFilter();
+      // incorporate the filter in different ways.
+      assertSameScores(q1, q2, filter);
+      assertSameScores(filteredQuery(q1, filter), filteredQuery(q2, filter), null);
+      assertSameScores(filteredQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
+      assertSameScores(filteredBooleanQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
+      assertSameScores(filteredBooleanQuery(q1, filter), filteredQuery(q2, filter), null);
+    }
   }
 
   protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
-    if (filter != null) {
-      int res = random().nextInt(3);
-      if (res == 0) {
-        // use FilteredQuery explicitly
-        q1 = new FilteredQuery(q1, filter, TestUtil.randomFilterStrategy(random()));
-        q2 = new FilteredQuery(q2, filter,  TestUtil.randomFilterStrategy(random()));
-        filter = null;
-      } else if (res == 1) {
-        // use BooleanQuery FILTER clause
-        BooleanQuery bq1 = new BooleanQuery();
-        bq1.add(q1, Occur.MUST);
-        bq1.add(filter, Occur.FILTER);
-        q1 = bq1;
-        
-        BooleanQuery bq2 = new BooleanQuery();
-        bq2.add(q2, Occur.MUST);
-        bq2.add(filter, Occur.FILTER);
-        q2 = bq2;
-        filter = null;
-      } else {
-        // do nothing, we use search(q, filter, int) in this case.
-      }
-    }
-    
     // not efficient, but simple!
     TopDocs td1 = s1.search(q1, filter, reader.maxDoc());
     TopDocs td2 = s2.search(q2, filter, reader.maxDoc());
@@ -258,5 +229,16 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
       assertEquals(td1.scoreDocs[i].score, td2.scoreDocs[i].score, 10e-5);
     }
+  }
+  
+  protected Query filteredQuery(Query query, Filter filter) {
+    return new FilteredQuery(query, filter, TestUtil.randomFilterStrategy(random()));
+  }
+  
+  protected Query filteredBooleanQuery(Query query, Filter filter) {
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(query, Occur.MUST);
+    bq.add(filter, Occur.FILTER);
+    return bq;
   }
 }
