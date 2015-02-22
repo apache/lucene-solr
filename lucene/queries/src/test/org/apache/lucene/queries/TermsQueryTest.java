@@ -69,13 +69,18 @@ public class TermsQueryTest extends LuceneTestCase {
         doc.add(new StringField(term.field(), term.text(), Store.NO));
         iw.addDocument(doc);
       }
-      if (random().nextBoolean()) {
+      if (numTerms > 1 && random().nextBoolean()) {
         iw.deleteDocuments(new TermQuery(allTerms.get(0)));
       }
       iw.commit();
       final IndexReader reader = iw.getReader();
       final IndexSearcher searcher = newSearcher(reader);
       iw.close();
+
+      if (reader.numDocs() == 0) {
+        // may occasionally happen if all documents got the same term
+        continue;
+      }
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
