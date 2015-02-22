@@ -42,7 +42,7 @@
        and rename jetty-start-xxxxxxxxxxxxx.jar -> start.jar (not in lib/) ! 
 
        there is probably a cleaner way: but this ensure we have no garbage if jetty is upgraded -->
-  <target name="sync-hack">
+  <target name="sync-hack" unless="solr.skip.sync-hack">
     <delete failonerror="false">
       <fileset dir="lib" includes="*.jar"/>
     </delete>
