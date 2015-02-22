@@ -58,6 +58,9 @@ public class ZkConfigManager {
     Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>(){
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        String filename = file.getFileName().toString();
+        if (filename.startsWith("."))
+          return FileVisitResult.CONTINUE;
         String zkNode = zkPath + "/" + rootPath.relativize(file).toString();
         try {
           zkClient.makePath(zkNode, file.toFile(), false, true);
@@ -66,6 +69,11 @@ public class ZkConfigManager {
               SolrZkClient.checkInterrupted(e));
         }
         return FileVisitResult.CONTINUE;
+      }
+
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        return (dir.getFileName().toString().startsWith(".")) ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
       }
     });
   }
