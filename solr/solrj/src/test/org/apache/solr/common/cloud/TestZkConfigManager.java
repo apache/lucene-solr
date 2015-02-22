@@ -71,6 +71,9 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       Files.createFile(tempConfig.resolve("file2"));
       Files.createDirectory(tempConfig.resolve("subdir"));
       Files.createFile(tempConfig.resolve("subdir").resolve("file3"));
+      Files.createFile(tempConfig.resolve(".ignored"));
+      Files.createDirectory(tempConfig.resolve(".ignoreddir"));
+      Files.createFile(tempConfig.resolve(".ignoreddir").resolve("ignored"));
 
       configManager.uploadConfigDir(tempConfig, "testconfig");
 
@@ -86,6 +89,9 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       assertTrue(Files.exists(downloadPath.resolve("file2")));
       assertTrue(Files.isDirectory(downloadPath.resolve("subdir")));
       assertTrue(Files.exists(downloadPath.resolve("subdir/file3")));
+      // dotfiles should be ignored
+      assertFalse(Files.exists(downloadPath.resolve(".ignored")));
+      assertFalse(Files.exists(downloadPath.resolve(".ignoreddir/ignored")));
       byte[] checkdata = Files.readAllBytes(downloadPath.resolve("file1"));
       assertArrayEquals(testdata, checkdata);
 
