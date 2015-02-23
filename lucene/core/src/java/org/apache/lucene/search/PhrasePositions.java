@@ -24,7 +24,6 @@ import org.apache.lucene.index.*;
  * Position of a term in a document that takes into account the term offset within the phrase. 
  */
 final class PhrasePositions {
-  int doc;              // current doc
   int position;         // position in doc
   int count;            // remaining pos in this doc
   int offset;           // position in phrase
@@ -40,22 +39,6 @@ final class PhrasePositions {
     offset = o;
     this.ord = ord;
     this.terms = terms;
-  }
-
-  final boolean next() throws IOException {  // increments to next doc
-    doc = postings.nextDoc();
-    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-      return false;
-    }
-    return true;
-  }
-
-  final boolean skipTo(int target) throws IOException {
-    doc = postings.advance(target);
-    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-      return false;
-    }
-    return true;
   }
 
   final void firstPosition() throws IOException {
@@ -80,7 +63,7 @@ final class PhrasePositions {
   /** for debug purposes */
   @Override
   public String toString() {
-    String s = "d:"+doc+" o:"+offset+" p:"+position+" c:"+count;
+    String s = "o:"+offset+" p:"+position+" c:"+count;
     if (rptGroup >=0 ) {
       s += " rpt:"+rptGroup+",i"+rptInd;
     }
