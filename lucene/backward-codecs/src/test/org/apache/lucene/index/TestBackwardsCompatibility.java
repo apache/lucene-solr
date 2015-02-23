@@ -83,7 +83,7 @@ import org.junit.BeforeClass;
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // To generate backcompat indexes with the current default codec, run the following ant command:
-  //  ant test -Dtestcase=TestBackwardsCompatibility -Dbwc.indexdir=/path/to/store/indexes
+  //  ant test -Dtestcase=TestBackwardsCompatibility -Dtests.bwcdir=/path/to/store/indexes
   //           -Dtests.codec=default -Dtests.useSecurityManager=false
   // Also add testmethod with one of the index creation methods below, for example:
   //    -Dtestmethod=testCreateCFS
@@ -313,6 +313,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   final static String[] oldSingleSegmentNames = {"4.0.0-optimized-cfs",
                                                  "4.0.0-optimized-nocfs",
+    "5.0.0.singlesegment-cfs",
+    "5.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
