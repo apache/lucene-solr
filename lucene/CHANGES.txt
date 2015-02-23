@@ -152,6 +152,10 @@ API Changes
 * LUCENE-6272: Scorer extends DocSetIdIterator rather than DocsEnum (Alan
   Woodward)
 
+* LUCENE-6281: Removed support for slow collations from lucene/sandbox. Better
+  performance would be achieved through CollationKeyAnalyzer or
+  ICUCollationKeyAnalyzer. (Adrien Grand)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
