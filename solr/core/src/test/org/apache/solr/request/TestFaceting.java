@@ -160,7 +160,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ("check many tokens",
-            req("q", "id:1","indent","true"
+            req("q", "*:*","indent","true"
                 ,"facet", "true", "facet.method","fc"
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
@@ -183,34 +183,25 @@ public class TestFaceting extends SolrTestCaseJ4 {
             ,"//lst[@name='many_ws']/int[@name='" + t(4999) + "'][.='1']"
             );
 
-    // test gaps that take more than one byte
+    // add second document, check facets for items with count =2
     sb = new StringBuilder();
     sb.append(t(0)).append(' ');
     sb.append(t(150)).append(' ');
-    sb.append(t(301)).append(' ');
-    sb.append(t(453)).append(' ');
-    sb.append(t(606)).append(' ');
-    sb.append(t(1000)).append(' ');
-    sb.append(t(2010)).append(' ');
-    sb.append(t(3050)).append(' ');
     sb.append(t(4999)).append(' ');
     assertU(adoc("id", "2", "many_ws", sb.toString()));
+    assertU(commit());
     assertQ("check many tokens",
-            req("q", "id:1","indent","true"
+            req("q", "*:*","indent","true"
                 ,"facet", "true", "facet.method","fc"
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
                 )
             ,"*[count(//lst[@name='many_ws']/int)=5000]"
-            ,"//lst[@name='many_ws']/int[@name='" + t(0) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(150) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(301) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(453) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(606) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(1000) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(2010) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(3050) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(4999) + "'][.='1']"
+            ,"//lst[@name='many_ws']/int[@name='" + t(0) + "'][.='2']"
+            ,"//lst[@name='many_ws']/int[@name='" + t(1) + "'][.='1']"
+            ,"//lst[@name='many_ws']/int[@name='" + t(150) + "'][.='2']"
+            ,"//lst[@name='many_ws']/int[@name='" + t(4998) + "'][.='1']"
+            ,"//lst[@name='many_ws']/int[@name='" + t(4999) + "'][.='2']"
               );
   }
 
