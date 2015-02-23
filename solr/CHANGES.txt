@@ -115,6 +115,9 @@ New Features
 * SOLR-7125: You can upload and download configurations via CloudSolrClient
   (Alan Woodward)
 
+* SOLR-5507: Admin UI - Refactoring using AngularJS, first part (Upayavira via 
+  Erick Erickson)
+
 Bug Fixes
 ----------------------
 
