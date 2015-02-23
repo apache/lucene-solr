@@ -34,8 +34,8 @@ def create_and_add_index(source, indextype, version, temp_dir):
     'nocfs': 'index.%s-nocfs.zip'
   }[indextype] % version
   print('  creating %s...' % filename, end='', flush=True)
-  module = 'lucene/backward-codecs'
-  index_dir = os.path.join(module, 'src/test/org/apache/lucene/index')
+  module = 'backward-codecs'
+  index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/index')
   test_file = os.path.join(index_dir, filename)
   if os.path.exists(os.path.join(index_dir, filename)):
     print('uptodate')
