@@ -75,7 +75,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /*
   Verify we can read the pre-5.0 file format, do searches
@@ -84,7 +83,7 @@ import org.junit.Ignore;
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // To generate backcompat indexes with the current default codec, run the following ant command:
-  //  ant test -Dtestcase=TestBackwardsCompatibility -Dbwc.indexdir=/path/to/store/indexes
+  //  ant test -Dtestcase=TestBackwardsCompatibility -Dtests.bwcdir=/path/to/store/indexes
   //           -Dtests.codec=default -Dtests.useSecurityManager=false
   // Also add testmethod with one of the index creation methods below, for example:
   //    -Dtestmethod=testCreateCFS
@@ -312,6 +311,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   final static String[] oldSingleSegmentNames = {
+    "5.0.0.singlesegment-cfs",
+    "5.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -1228,7 +1229,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public static final String moreTermsIndex = "moreterms.5.0.0.zip";
 
-  @Ignore("needs a 5.0 index once released")
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
@@ -1269,7 +1269,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
   }
   
-  @Ignore("needs a 5.0 index once released")
   public void testDocValuesUpdates() throws Exception {
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
