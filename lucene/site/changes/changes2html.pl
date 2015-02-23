@@ -545,6 +545,7 @@ for my $rel (@releases) {
                                         }se;
                                   $bulleted_list;
                                 }ge;
+                    $uncode = markup_trailing_attribution($uncode);
                     $uncode;
                   }
                 }sge;
@@ -626,13 +627,18 @@ print "</body>\n</html>\n";
 sub markup_trailing_attribution {
   my $item = shift;
 
-  # Put attributions on their own lines.
+  # Put attributions on their own lines - this already happens if there is a preceding </ul>
+  my $extra_newline = ($item =~ m:</ul>:) ? '' : '<br />';
   # Check for trailing parenthesized attribution with no following period.
   # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)"
-  unless ($item =~ s{\s*(\((?![Ss]ee )
+  unless ($item =~ s{\s+(\((?![Ss]ee )
                            (?!spans\b)
                            (?!mainly\ )
                            (?!LUCENE-\d+\))
+                           (?!SOLR-\d+\))
+                           (?!user's)
+                           (?!like\ )
+                           (?!r\d{6})     # subversion revision 
                            (?!and\ )
                            (?!backported\ )
                            (?!in\ )
@@ -640,7 +646,7 @@ sub markup_trailing_attribution {
                            (?![Tt]he\ )
                            (?!use\ the\ bug\ number)
                      [^()"]+?\))\s*$}
-                    {\n<br /><span class="attrib">$1</span>}x) {
+                    {\n${extra_newline}<span class="attrib">$1</span>}x) {
     # If attribution is not found, then look for attribution with a
     # trailing period, but try not to include trailing parenthesized things
     # that are not attributions.
@@ -650,10 +656,14 @@ sub markup_trailing_attribution {
     # fewer words or it includes the word "via" or the phrase "updates from",
 	  # then it is considered to be an attribution.
 
-    $item =~ s{(\s*(\((?![Ss]ee\ )
+    $item =~ s{(\s+(\((?![Ss]ee\ )
                       (?!spans\b)
                       (?!mainly\ )
                       (?!LUCENE-\d+\))
+                      (?!SOLR-\d+\))
+                      (?!user's)
+                      (?!like\ )
+                      (?!r\d{6})     # subversion revision 
                       (?!and\ )
                       (?!backported\ )
                       (?!in\ )
@@ -669,8 +679,10 @@ sub markup_trailing_attribution {
                 if ($parenthetical !~ /LUCENE-\d+/) {
                   my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
                   my @words = grep {/\S/} split /\s+/, $no_parens;
-                  if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= 4) {
-                    $subst = "\n<br /><span class=\"attrib\">$parenthetical</span>";
+                  my $commas = $no_parens =~ s/,/,/g; # count commas
+                  my $max_words = 4 + $commas;
+                  if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= $max_words) {
+                    $subst = "\n${extra_newline}<span class=\"attrib\">$parenthetical</span>";
                   }
                 }
                 $subst . $trailing_period_and_or_issue;

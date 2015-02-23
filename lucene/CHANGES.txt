@@ -3247,7 +3247,7 @@ Changes in backwards compatibility policy
     not necessary to specify for example that all of your binary values have
     the same length. Instead it's easy for the Codec API to optimize encoding
     based on any properties of the content.
-   (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
+  (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
 * LUCENE-4757: Cleanup and refactoring of FacetsAccumulator, FacetRequest,
   FacetsAggregator and FacetResultsHandler API. If your application did 
@@ -3528,7 +3528,7 @@ Changes in backwards compatibility policy
     methods such as close() and reference counting management pulled from
     DirectoryTaxonomyReader, and made final. The rest of the methods, remained
     abstract.
-    (Shai Erera, Gilad Barkai)
+  (Shai Erera, Gilad Barkai)
 
 * LUCENE-4576: Remove CachingWrapperFilter(Filter, boolean). This recacheDeletes
   option gave less than 1% speedup at the expense of cache churn (filters were
@@ -6222,8 +6222,8 @@ Optimizations
 
 Test Cases
 
-* LUCENE-3327: Fix AIOOBE when TestFSTs is run with
-  -Dtests.verbose=true (James Dyer via Mike McCandless)
+* LUCENE-3327: Fix AIOOBE when TestFSTs is run with -Dtests.verbose=true
+ (James Dyer via Mike McCandless)
 
 Build
 
@@ -7730,7 +7730,7 @@ API Changes
   - MapOfSets
   - o.a.l.util.cache package
   - lot's of internal APIs of IndexWriter
- (Uwe Schindler, Michael Busch, Kay Kay, Robert Muir, Adriano Crestani)
+  (Uwe Schindler, Michael Busch, Kay Kay, Robert Muir, Adriano Crestani)
   
 * LUCENE-1944, LUCENE-1856, LUCENE-1957, LUCENE-1960, LUCENE-1961,
   LUCENE-1968, LUCENE-1970, LUCENE-1946, LUCENE-1971, LUCENE-1975,

@@ -188,6 +188,11 @@ Other Changes
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+NOTE: Solr 5.0 only supports creating and removing SolrCloud collections through
+      the collections API, unlike previous versions. While not using the 
+      collections API may still work in 5.0, it is unsupported, not recommended,
+      and the behavior will change in a 5.x release.
+
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
@@ -196,11 +201,6 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.2.6.v20141205
-
-NOTE: Solr 5.0 only supports creating and removing SolrCloud collections through
-      the collections API, unlike previous versions. While not using the 
-      collections API may still work in 5.0, it is unsupported, not recommended,
-      and the behavior will change in a 5.x release.
 
 Upgrading from Solr 4.x
 ----------------------
@@ -670,10 +670,10 @@ Bug Fixes
   of all "keys" found in the request parameters, resulting in some key=value param pairs 
   being duplicated.  This was noticeably affecting some areas of the code where iteration 
   was done over the set of all params: 
-    * literal.* in ExtractingRequestHandler
-    * facet.* in FacetComponent
-    * spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
-    * olap.* in AnalyticsComponent
+    - literal.* in ExtractingRequestHandler
+    - facet.* in FacetComponent
+    - spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
+    - olap.* in AnalyticsComponent
   (Alexandre Rafalovitch & hossman)
 
 * SOLR-6920: A replicated index can end up corrupted when small files end up with the same 
@@ -821,7 +821,7 @@ Other Changes
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
 
-* SOLR-6792 : deprecate AdminHandlers, Clean up solrconfig.xml of
+* SOLR-6792: deprecate AdminHandlers, Clean up solrconfig.xml of
   unnecessary plugin definitions, implicit registration of /replication,
   /get and /admin/* handlers (Noble Paul)
 
@@ -3207,18 +3207,18 @@ Bug Fixes
 
 * SOLR-4910: persisting solr.xml is broken. More stringent testing of persistence fixed
   up a number of issues and several bugs with persistence. Among them are
-  > don't persisting implicit properties
-  > should persist zkHost in the <solr> tag (user's list)
-  > reloading a core that has transient="true" returned an error. reload should load
+  - don't persisting implicit properties
+  - should persist zkHost in the <solr> tag (user's list)
+  - reloading a core that has transient="true" returned an error. reload should load
     a transient core if it's not yet loaded.
-  > No longer persisting loadOnStartup or transient core properties if they were not
+  - No longer persisting loadOnStartup or transient core properties if they were not
     specified in the original solr.xml
-  > Testing flushed out the fact that you couldn't swap a core marked transient=true
+  - Testing flushed out the fact that you couldn't swap a core marked transient=true
     loadOnStartup=false because it hadn't been loaded yet.
-  > SOLR-4862, CREATE fails to persist schema, config, and dataDir
-  > SOLR-4363, not persisting coreLoadThreads in <solr> tag
-  > SOLR-3900, logWatcher properties not persisted
-  > SOLR-4850, cores defined as loadOnStartup=true, transient=false can't be searched
+  - SOLR-4862, CREATE fails to persist schema, config, and dataDir
+  - SOLR-4363, not persisting coreLoadThreads in <solr> tag
+  - SOLR-3900, logWatcher properties not persisted
+  - SOLR-4850, cores defined as loadOnStartup=true, transient=false can't be searched
   (Erick Erickson)
 
 * SOLR-4923: Commits to non leaders as part of a request that also contain updates
@@ -3541,11 +3541,11 @@ New Features
   support for the old style. (Erick Erickson, Mark Miller)
   Additional Work:
   - SOLR-4347: Ensure that newly-created cores via Admin handler are persisted in solr.xml
-  (Erick Erickson)
+    (Erick Erickson)
   - SOLR-1905: Cores created by the admin request handler should be persisted to solr.xml.
-  Also fixed a problem whereby properties like solr.solr.datadir would be persisted
-  to solr.xml. Also, cores that didn't happen to be loaded were not persisted. 
-  (Erick Erickson)
+    Also fixed a problem whereby properties like solr.solr.datadir would be persisted
+    to solr.xml. Also, cores that didn't happen to be loaded were not persisted. 
+    (Erick Erickson)
 
 * SOLR-4717/SOLR-1351: SimpleFacets now work with localParams allowing faceting on the 
   same field multiple ways (ryan, Uri Boness)
