@@ -182,6 +182,8 @@ Other Changes
 
 * SOLR-7032: Clean up test remnants of old-style solr.xml (Erick Erickson)
 
+* SOLR-7142: Fix TestFaceting.testFacets. (Michal Kroliczek via shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
