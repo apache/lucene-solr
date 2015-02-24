@@ -77,7 +77,6 @@
   <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
   <property name="ivy.sync" value="true"/>
-  <property name="ivy.resolution-cache" value="${common.build.dir}/ivy-resolution-cache"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
