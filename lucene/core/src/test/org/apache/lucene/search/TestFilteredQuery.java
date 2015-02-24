@@ -136,33 +136,33 @@ public class TestFilteredQuery extends LuceneTestCase {
 
   private void tFilteredQuery(final boolean useRandomAccess) throws Exception {
     Query filteredquery = new FilteredQuery(query, filter, randomFilterStrategy(random(), useRandomAccess));
-    ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search (filteredquery, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
     QueryUtils.check(random(), filteredquery,searcher);
 
-    hits = searcher.search (filteredquery, null, 1000, new Sort(new SortField("sorter", SortField.Type.STRING))).scoreDocs;
+    hits = searcher.search (filteredquery, 1000, new Sort(new SortField("sorter", SortField.Type.STRING))).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
 
     filteredquery = new FilteredQuery(new TermQuery (new Term ("field", "one")), filter, randomFilterStrategy(random(), useRandomAccess));
-    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    hits = searcher.search (filteredquery, 1000).scoreDocs;
     assertEquals (2, hits.length);
     QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQuery(new MatchAllDocsQuery(), filter, randomFilterStrategy(random(), useRandomAccess));
-    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    hits = searcher.search (filteredquery, 1000).scoreDocs;
     assertEquals (2, hits.length);
     QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQuery(new TermQuery (new Term ("field", "x")), filter, randomFilterStrategy(random(), useRandomAccess));
-    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    hits = searcher.search (filteredquery, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (3, hits[0].doc);
     QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQuery(new TermQuery (new Term ("field", "y")), filter, randomFilterStrategy(random(), useRandomAccess));
-    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    hits = searcher.search (filteredquery, 1000).scoreDocs;
     assertEquals (0, hits.length);
     QueryUtils.check(random(), filteredquery,searcher);
     
@@ -209,8 +209,8 @@ public class TestFilteredQuery extends LuceneTestCase {
    * Tests whether the scores of the two queries are the same.
    */
   public void assertScoreEquals(Query q1, Query q2) throws Exception {
-    ScoreDoc[] hits1 = searcher.search (q1, null, 1000).scoreDocs;
-    ScoreDoc[] hits2 = searcher.search (q2, null, 1000).scoreDocs;
+    ScoreDoc[] hits1 = searcher.search (q1, 1000).scoreDocs;
+    ScoreDoc[] hits2 = searcher.search (q2, 1000).scoreDocs;
       
     assertEquals(hits1.length, hits2.length);
     
@@ -233,7 +233,7 @@ public class TestFilteredQuery extends LuceneTestCase {
         "sorter", "b", "d", true, true);
 
     Query filteredquery = new FilteredQuery(rq, filter, randomFilterStrategy(random(), useRandomAccess));
-    ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(filteredquery, 1000).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), filteredquery,searcher);
   }
@@ -251,7 +251,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(query, BooleanClause.Occur.MUST);
     query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.MUST);
-    ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(bq, 1000).scoreDocs;
     assertEquals(0, hits.length);
     QueryUtils.check(random(), query,searcher);    
   }
@@ -269,7 +269,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(query, BooleanClause.Occur.SHOULD);
     query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.SHOULD);
-    ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(bq, 1000).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), query,searcher);    
   }

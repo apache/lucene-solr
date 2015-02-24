@@ -156,6 +156,9 @@ API Changes
   performance would be achieved through CollationKeyAnalyzer or
   ICUCollationKeyAnalyzer. (Adrien Grand)
 
+* LUCENE-6286: Removed IndexSearcher methods that take a Filter object.
+  A BooleanQuery with a filter clause must be used instead. (Adrien Grand)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj

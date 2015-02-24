@@ -298,7 +298,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     Query q = mfqp.parse("the footest");
     IndexReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = newSearcher(ir);
-    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = is.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
     ir.close();
     ramDir.close();

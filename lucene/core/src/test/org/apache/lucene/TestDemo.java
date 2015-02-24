@@ -61,7 +61,7 @@ public class TestDemo extends LuceneTestCase {
 
     assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
     Query query = new TermQuery(new Term("fieldname", "text"));
-    TopDocs hits = isearcher.search(query, null, 1);
+    TopDocs hits = isearcher.search(query, 1);
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -73,7 +73,7 @@ public class TestDemo extends LuceneTestCase {
     PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term("fieldname", "to"));
     phraseQuery.add(new Term("fieldname", "be"));
-    assertEquals(1, isearcher.search(phraseQuery, null, 1).totalHits);
+    assertEquals(1, isearcher.search(phraseQuery, 1).totalHits);
 
     ireader.close();
     directory.close();

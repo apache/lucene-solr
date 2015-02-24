@@ -280,7 +280,7 @@ public class TestLockFactory extends LuceneTestCase {
                     break;
                 }
                 try {
-                  searcher.search(query, null, 1000);
+                  searcher.search(query, 1000);
                 } catch (IOException e) {
                   hitException = true;
                   System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());

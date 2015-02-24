@@ -75,7 +75,7 @@ public class TestFilteredSearch extends LuceneTestCase {
      
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher indexSearcher = newSearcher(reader);
-    ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
+    ScoreDoc[] hits = indexSearcher.search(new FilteredQuery(booleanQuery, filter), 1000).scoreDocs;
     assertEquals("Number of matched documents", 1, hits.length);
     reader.close();
   }

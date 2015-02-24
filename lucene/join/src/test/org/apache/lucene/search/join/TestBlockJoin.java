@@ -51,6 +51,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
@@ -246,8 +247,8 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals("Lisa", getParentDoc(r, parentsFilter, hits.scoreDocs[0].doc).get("name"));
 
     // Test with filter on child docs:
-    assertEquals(0, s.search(fullChildQuery,
-                             new QueryWrapperFilter(new TermQuery(new Term("skill", "foosball"))),
+    assertEquals(0, s.search(new FilteredQuery(fullChildQuery,
+                             new QueryWrapperFilter(new TermQuery(new Term("skill", "foosball")))),
                              1).totalHits);
     
     r.close();
@@ -354,20 +355,20 @@ public class TestBlockJoin extends LuceneTestCase {
       
     assertEquals("no filter - both passed", 2, s.search(childJoinQuery, 10).totalHits);
 
-    assertEquals("dummy filter passes everyone ", 2, s.search(childJoinQuery, parentsFilter, 10).totalHits);
-    assertEquals("dummy filter passes everyone ", 2, s.search(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))), 10).totalHits);
+    assertEquals("dummy filter passes everyone ", 2, s.search(new FilteredQuery(childJoinQuery, parentsFilter), 10).totalHits);
+    assertEquals("dummy filter passes everyone ", 2, s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))), 10).totalHits);
       
     // not found test
-    assertEquals("noone live there", 0, s.search(childJoinQuery, new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), 1).totalHits);
-    assertEquals("noone live there", 0, s.search(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("country", "Oz"))), 1).totalHits);
+    assertEquals("noone live there", 0, s.search(new FilteredQuery(childJoinQuery, new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz"))))), 1).totalHits);
+    assertEquals("noone live there", 0, s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), 1).totalHits);
       
     // apply the UK filter by the searcher
-    TopDocs ukOnly = s.search(childJoinQuery, new QueryWrapperFilter(parentQuery), 1);
+    TopDocs ukOnly = s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(parentQuery)), 1);
     assertEquals("has filter - single passed", 1, ukOnly.totalHits);
     assertEquals( "Lisa", r.document(ukOnly.scoreDocs[0].doc).get("name"));
 
     // looking for US candidates
-    TopDocs usThen = s.search(childJoinQuery , new QueryWrapperFilter(new TermQuery(new Term("country", "United States"))), 1);
+    TopDocs usThen = s.search(new FilteredQuery(childJoinQuery , new QueryWrapperFilter(new TermQuery(new Term("country", "United States")))), 1);
     assertEquals("has filter - single passed", 1, usThen.totalHits);
     assertEquals("Frank", r.document(usThen.scoreDocs[0].doc).get("name"));
     
@@ -377,14 +378,14 @@ public class TestBlockJoin extends LuceneTestCase {
         s.search(new ToChildBlockJoinQuery(us, 
                           parentsFilter), 10).totalHits );
 
-    assertEquals("java skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter),
-        skill("java"), 10).totalHits );
+    assertEquals("java skills in US", 1, s.search(new FilteredQuery(new ToChildBlockJoinQuery(us, parentsFilter),
+        skill("java")), 10).totalHits );
 
     BooleanQuery rubyPython = new BooleanQuery();
     rubyPython.add(new TermQuery(new Term("skill", "ruby")), Occur.SHOULD);
     rubyPython.add(new TermQuery(new Term("skill", "python")), Occur.SHOULD);
-    assertEquals("ruby skills in US", 1, s.search(new ToChildBlockJoinQuery(us, parentsFilter),
-                                          new QueryWrapperFilter(rubyPython), 10).totalHits );
+    assertEquals("ruby skills in US", 1, s.search(new FilteredQuery(new ToChildBlockJoinQuery(us, parentsFilter),
+                                          new QueryWrapperFilter(rubyPython)), 10).totalHits );
 
     r.close();
     dir.close();
@@ -786,7 +787,7 @@ public class TestBlockJoin extends LuceneTestCase {
       sortFields.addAll(Arrays.asList(childSort.getSort()));
       final Sort parentAndChildSort = new Sort(sortFields.toArray(new SortField[sortFields.size()]));
 
-      final TopDocs results = s.search(parentQuery, null, r.numDocs(),
+      final TopDocs results = s.search(parentQuery, r.numDocs(),
                                        parentAndChildSort);
 
       if (VERBOSE) {
@@ -922,30 +923,24 @@ public class TestBlockJoin extends LuceneTestCase {
       final ToChildBlockJoinQuery parentJoinQuery2 = new ToChildBlockJoinQuery(parentQuery2, parentsFilter);
 
       // To run against the block-join index:
-      final Query childJoinQuery2;
+      Query childJoinQuery2;
 
       // Same query as parentJoinQuery, but to run against
       // the fully denormalized index (so we can compare
       // results):
-      final Query childQuery2;
-      
-      // apply a filter to children
-      final Filter childFilter2, childJoinFilter2;
+      Query childQuery2;
 
       if (random().nextBoolean()) {
         childQuery2 = parentQuery2;
         childJoinQuery2 = parentJoinQuery2;
-        childFilter2 = null;
-        childJoinFilter2 = null;
       } else {
         final Term childTerm = randomChildTerm(childFields[0]);
         if (random().nextBoolean()) { // filtered case
           childJoinQuery2 = parentJoinQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
-          childJoinFilter2 = random().nextBoolean()
-                  ? new BitDocIdSetCachingWrapperFilter(f): f;
+          childJoinQuery2 = new FilteredQuery(childJoinQuery2, random().nextBoolean()
+                  ? new BitDocIdSetCachingWrapperFilter(f): f);
         } else {
-          childJoinFilter2 = null;
           // AND child field w/ parent query:
           final BooleanQuery bq = new BooleanQuery();
           childJoinQuery2 = bq;
@@ -963,10 +958,9 @@ public class TestBlockJoin extends LuceneTestCase {
         if (random().nextBoolean()) { // filtered case
           childQuery2 = parentQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
-          childFilter2 = random().nextBoolean()
-                  ? new BitDocIdSetCachingWrapperFilter(f): f;
+          childQuery2 = new FilteredQuery(childQuery2, random().nextBoolean()
+                  ? new BitDocIdSetCachingWrapperFilter(f): f);
         } else {
-          childFilter2 = null;
           final BooleanQuery bq2 = new BooleanQuery();
           childQuery2 = bq2;
           if (random().nextBoolean()) {
@@ -985,11 +979,9 @@ public class TestBlockJoin extends LuceneTestCase {
               
       // Search denormalized index:
       if (VERBOSE) {
-        System.out.println("TEST: run top down query=" + childQuery2 +
-            " filter=" + childFilter2 +
-            " sort=" + childSort2);
+        System.out.println("TEST: run top down query=" + childQuery2 + " sort=" + childSort2);
       }
-      final TopDocs results2 = s.search(childQuery2, childFilter2, r.numDocs(),
+      final TopDocs results2 = s.search(childQuery2, r.numDocs(),
                                         childSort2);
       if (VERBOSE) {
         System.out.println("  " + results2.totalHits + " totalHits:");
@@ -1001,10 +993,9 @@ public class TestBlockJoin extends LuceneTestCase {
 
       // Search join index:
       if (VERBOSE) {
-        System.out.println("TEST: run top down join query=" + childJoinQuery2 + 
-            " filter=" + childJoinFilter2 + " sort=" + childSort2);
+        System.out.println("TEST: run top down join query=" + childJoinQuery2 + " sort=" + childSort2);
       }
-      TopDocs joinResults2 = joinS.search(childJoinQuery2, childJoinFilter2, joinR.numDocs(), childSort2);
+      TopDocs joinResults2 = joinS.search(childJoinQuery2, joinR.numDocs(), childSort2);
       if (VERBOSE) {
         System.out.println("  " + joinResults2.totalHits + " totalHits:");
         for(ScoreDoc sd : joinResults2.scoreDocs) {

@@ -424,18 +424,17 @@ public class CheckHits {
       super(r);
     }
     protected void checkExplanations(Query q) throws IOException {
-      super.search(q, null,
+      super.search(q,
                    new ExplanationAsserter
                    (q, null, this));
     }
     @Override
     public TopFieldDocs search(Query query,
-                               Filter filter,
                                int n,
                                Sort sort) throws IOException {
       
       checkExplanations(query);
-      return super.search(query,filter,n,sort);
+      return super.search(query,n,sort);
     }
     @Override
     public void search(Query query, Collector results) throws IOException {
@@ -443,16 +442,10 @@ public class CheckHits {
       super.search(query, results);
     }
     @Override
-    public void search(Query query, Filter filter, Collector results) throws IOException {
-      checkExplanations(query);
-      super.search(query, filter, results);
-    }
-    @Override
-    public TopDocs search(Query query, Filter filter,
-                          int n) throws IOException {
+    public TopDocs search(Query query, int n) throws IOException {
 
       checkExplanations(query);
-      return super.search(query,filter, n);
+      return super.search(query, n);
     }
   }
     

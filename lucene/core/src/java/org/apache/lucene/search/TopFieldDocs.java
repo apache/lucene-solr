@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 
 /** Represents hits returned by {@link
- * IndexSearcher#search(Query,Filter,int,Sort)}.
+ * IndexSearcher#search(Query,int,Sort)}.
  */
 public class TopFieldDocs extends TopDocs {
 

@@ -73,7 +73,7 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
     // true);
-    int numHits = searcher.search(sfq, null, 1000).totalHits;
+    int numHits = searcher.search(sfq, 1000).totalHits;
     assertEquals(1, numHits);
     reader.close();
     directory.close();

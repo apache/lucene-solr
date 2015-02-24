@@ -131,7 +131,7 @@ public class SimpleFacetsExample {
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
-    searcher.search(new MatchAllDocsQuery(), null /*Filter */, fc);
+    searcher.search(new MatchAllDocsQuery(), fc);
 
     // Retrieve results
     List<FacetResult> results = new ArrayList<>();

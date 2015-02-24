@@ -46,6 +46,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -752,7 +753,11 @@ public class TestDrillSideways extends FacetTestCase {
       verifyEquals(dimValues, s, expected, actual, scores, doUseDV);
 
       // Make sure drill down doesn't change score:
-      TopDocs ddqHits = s.search(ddq, filter, numDocs);
+      Query q = ddq;
+      if (filter != null) {
+        q = new FilteredQuery(q, filter);
+      }
+      TopDocs ddqHits = s.search(q, numDocs);
       assertEquals(expected.hits.size(), ddqHits.totalHits);
       for(int i=0;i<expected.hits.size();i++) {
         // Score should be IDENTICAL:

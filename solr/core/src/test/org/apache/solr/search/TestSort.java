@@ -40,6 +40,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -52,8 +53,8 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.uninverting.UninvertingReader;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -295,7 +296,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
         };
 
-        searcher.search(new MatchAllDocsQuery(), filt, myCollector);
+        searcher.search(new FilteredQuery(new MatchAllDocsQuery(), filt), myCollector);
 
         Collections.sort(collectedDocs, new Comparator<MyDoc>() {
           @Override

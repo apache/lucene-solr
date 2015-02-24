@@ -124,34 +124,19 @@ public class GroupingSearch {
    * @return the grouped result as a {@link TopGroups} instance
    * @throws IOException If any I/O related errors occur
    */
-  public <T> TopGroups<T> search(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
-    return search(searcher, null, query, groupOffset, groupLimit);
-  }
-
-  /**
-   * Executes a grouped search. Both the first pass and second pass are executed on the specified searcher.
-   *
-   * @param searcher    The {@link org.apache.lucene.search.IndexSearcher} instance to execute the grouped search on.
-   * @param filter      The filter to execute with the grouping
-   * @param query       The query to execute with the grouping
-   * @param groupOffset The group offset
-   * @param groupLimit  The number of groups to return from the specified group offset
-   * @return the grouped result as a {@link TopGroups} instance
-   * @throws IOException If any I/O related errors occur
-   */
   @SuppressWarnings("unchecked")
-  public <T> TopGroups<T> search(IndexSearcher searcher, Filter filter, Query query, int groupOffset, int groupLimit) throws IOException {
+  public <T> TopGroups<T> search(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
     if (groupField != null || groupFunction != null) {
-      return groupByFieldOrFunction(searcher, filter, query, groupOffset, groupLimit);
+      return groupByFieldOrFunction(searcher, query, groupOffset, groupLimit);
     } else if (groupEndDocs != null) {
-      return (TopGroups<T>) groupByDocBlock(searcher, filter, query, groupOffset, groupLimit);
+      return (TopGroups<T>) groupByDocBlock(searcher, query, groupOffset, groupLimit);
     } else {
       throw new IllegalStateException("Either groupField, groupFunction or groupEndDocs must be set."); // This can't happen...
     }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected TopGroups groupByFieldOrFunction(IndexSearcher searcher, Filter filter, Query query, int groupOffset, int groupLimit) throws IOException {
+  protected TopGroups groupByFieldOrFunction(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
     int topN = groupOffset + groupLimit;
     final AbstractFirstPassGroupingCollector firstPassCollector;
     final AbstractAllGroupsCollector allGroupsCollector;
@@ -204,9 +189,9 @@ public class GroupingSearch {
       } else {
         cachedCollector = CachingCollector.create(firstRound, cacheScores, maxDocsToCache);
       }
-      searcher.search(query, filter, cachedCollector);
+      searcher.search(query, cachedCollector);
     } else {
-      searcher.search(query, filter, firstRound);
+      searcher.search(query, firstRound);
     }
 
     if (allGroups) {
@@ -236,7 +221,7 @@ public class GroupingSearch {
     if (cachedCollector != null && cachedCollector.isCached()) {
       cachedCollector.replay(secondPassCollector);
     } else {
-      searcher.search(query, filter, secondPassCollector);
+      searcher.search(query, secondPassCollector);
     }
 
     if (allGroups) {
@@ -246,10 +231,10 @@ public class GroupingSearch {
     }
   }
 
-  protected TopGroups<?> groupByDocBlock(IndexSearcher searcher, Filter filter, Query query, int groupOffset, int groupLimit) throws IOException {
+  protected TopGroups<?> groupByDocBlock(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
     int topN = groupOffset + groupLimit;
     BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, includeScores, groupEndDocs);
-    searcher.search(query, filter, c);
+    searcher.search(query, c);
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;
     return c.getTopGroups(sortWithinGroup, groupOffset, groupDocsOffset, topNInsideGroup, fillSortFields);
   }

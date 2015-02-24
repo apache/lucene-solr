@@ -87,7 +87,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
     public void verifyNrHits(Query q, int expected) throws Exception {
         // bs1
-        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+        ScoreDoc[] h = s.search(q, 1000).scoreDocs;
         if (expected != h.length) {
             printHits(getTestName(), h, s);
         }
@@ -349,8 +349,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         // Can't use Hits because normalized scores will mess things
         // up.  The non-sorting version of search() that returns TopDocs
         // will not normalize scores.
-        TopDocs top1 = s.search(q1,null,100);
-        TopDocs top2 = s.search(q2,null,100);
+        TopDocs top1 = s.search(q1,100);
+        TopDocs top2 = s.search(q2,100);
         if (i < 100) {
           QueryUtils.check(random(), q1,s);
           QueryUtils.check(random(), q2,s);
@@ -410,8 +410,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         BooleanQuery q2 = new BooleanQuery();
         q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
         q2.setMinimumNumberShouldMatch(1);
-        TopDocs top1 = s.search(q1,null,100);
-        TopDocs top2 = s.search(q2,null,100);
+        TopDocs top1 = s.search(q1,100);
+        TopDocs top2 = s.search(q2,100);
         assertSubsetOfSameScores(q2, top1, top2);
       } finally {
         s.setSimilarity(oldSimilarity);
@@ -432,8 +432,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         BooleanQuery q2 = new BooleanQuery();
         q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
         q2.add(new TermQuery(new Term("data", "Z")), BooleanClause.Occur.MUST_NOT);
-        TopDocs top1 = s.search(q1,null,100);
-        TopDocs top2 = s.search(q2,null,100);
+        TopDocs top1 = s.search(q1,100);
+        TopDocs top2 = s.search(q2,100);
         assertSubsetOfSameScores(q2, top1, top2);
       } finally {
         s.setSimilarity(oldSimilarity);

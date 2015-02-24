@@ -48,7 +48,7 @@ public class TestNot extends LuceneTestCase {
     query.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("field", "b")), BooleanClause.Occur.MUST_NOT);
 
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     writer.close();
     reader.close();

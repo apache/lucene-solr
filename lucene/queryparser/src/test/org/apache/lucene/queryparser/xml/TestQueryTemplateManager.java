@@ -98,7 +98,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
       Query q = builder.getQuery(doc.getDocumentElement());
 
       //Run the query
-      int h = searcher.search(q, null, 1000).totalHits;
+      int h = searcher.search(q, 1000).totalHits;
 
       //Check we have the expected number of results
       int expectedHits = Integer.parseInt(queryFormProperties.getProperty("expectedMatches"));

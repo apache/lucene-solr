@@ -33,6 +33,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.accumulator.facet.FacetValueAccumulator;
 import org.apache.solr.analytics.accumulator.facet.FieldFacetAccumulator;
@@ -611,7 +612,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         }
         // The searcher sends docIds to the QueryFacetAccumulator which forwards
         // them to <code>collectQuery()</code> in this class for collection.
-        searcher.search(q, filter, qAcc);
+        searcher.search(new FilteredQuery(q, filter), qAcc);
         computeQueryFacet(qfr.getName());
         queryCount++;
       }
@@ -715,7 +716,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         RangeFacetAccumulator rAcc = new RangeFacetAccumulator(this,rfr.getName(),facetValue);
         // The searcher sends docIds to the RangeFacetAccumulator which forwards
         // them to <code>collectRange()</code> in this class for collection.
-        searcher.search(q, filter, rAcc);
+        searcher.search(new FilteredQuery(q, filter), rAcc);
         computeRangeFacet(sf.getName());
       }
     }

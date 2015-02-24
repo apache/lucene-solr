@@ -105,7 +105,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     query = booleanQuery;
     
     // warm the searcher
-    searcher.search(query, null, 1000);
+    searcher.search(query, 1000);
   }
 
   @Override

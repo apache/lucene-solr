@@ -180,11 +180,8 @@ public class TestSearchAfter extends LuceneTestCase {
     // pages.
     int n = atLeast(20);
     for (int i = 0; i < n; i++) {
-      Filter odd = new QueryWrapperFilter(new TermQuery(new Term("oddeven", "odd")));
       assertQuery(new MatchAllDocsQuery(), null);
       assertQuery(new TermQuery(new Term("english", "one")), null);
-      assertQuery(new MatchAllDocsQuery(), odd);
-      assertQuery(new TermQuery(new Term("english", "four")), odd);
       BooleanQuery bq = new BooleanQuery();
       bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
       bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
@@ -192,15 +189,15 @@ public class TestSearchAfter extends LuceneTestCase {
     }
   }
 
-  void assertQuery(Query query, Filter filter) throws Exception {
-    assertQuery(query, filter, null);
-    assertQuery(query, filter, Sort.RELEVANCE);
-    assertQuery(query, filter, Sort.INDEXORDER);
+  void assertQuery(Query query) throws Exception {
+    assertQuery(query, null);
+    assertQuery(query, Sort.RELEVANCE);
+    assertQuery(query, Sort.INDEXORDER);
     for(SortField sortField : allSortFields) {
-      assertQuery(query, filter, new Sort(new SortField[] {sortField}));
+      assertQuery(query, new Sort(new SortField[] {sortField}));
     }
     for(int i=0;i<20;i++) {
-      assertQuery(query, filter, getRandomSort());
+      assertQuery(query, getRandomSort());
     }
   }
 
@@ -212,21 +209,21 @@ public class TestSearchAfter extends LuceneTestCase {
     return new Sort(sortFields);
   }
 
-  void assertQuery(Query query, Filter filter, Sort sort) throws Exception {
+  void assertQuery(Query query, Sort sort) throws Exception {
     int maxDoc = searcher.getIndexReader().maxDoc();
     TopDocs all;
     int pageSize = TestUtil.nextInt(random(), 1, maxDoc * 2);
     if (VERBOSE) {
-      System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " filter=" + filter + " sort=" + sort + " pageSize=" + pageSize);
+      System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
     }
     final boolean doMaxScore = random().nextBoolean();
     final boolean doScores = random().nextBoolean();
     if (sort == null) {
-      all = searcher.search(query, filter, maxDoc);
+      all = searcher.search(query, maxDoc);
     } else if (sort == Sort.RELEVANCE) {
-      all = searcher.search(query, filter, maxDoc, sort, true, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, true, doMaxScore);
     } else {
-      all = searcher.search(query, filter, maxDoc, sort, doScores, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, doScores, doMaxScore);
     }
     if (VERBOSE) {
       System.out.println("  all.totalHits=" + all.totalHits);
@@ -243,15 +240,15 @@ public class TestSearchAfter extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
-        paged = searcher.searchAfter(lastBottom, query, filter, pageSize);
+        paged = searcher.searchAfter(lastBottom, query, pageSize);
       } else {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          paged = searcher.searchAfter(lastBottom, query, filter, pageSize, sort, true, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true, doMaxScore);
         } else {
-          paged = searcher.searchAfter(lastBottom, query, filter, pageSize, sort, doScores, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores, doMaxScore);
         }
       }
       if (VERBOSE) {

@@ -123,7 +123,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     Sort groupSort = Sort.RELEVANCE;
     GroupingSearch groupingSearch = createRandomGroupingSearch(groupField, groupSort, 5, canUseIDV);
 
-    TopGroups<?> groups = groupingSearch.search(indexSearcher, null, new TermQuery(new Term("content", "random")), 0, 10);
+    TopGroups<?> groups = groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
 
     assertEquals(7, groups.totalHitCount);
     assertEquals(7, groups.totalGroupedHitCount);
@@ -161,7 +161,7 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
     groupingSearch = new GroupingSearch(lastDocInBlock);
-    groups = groupingSearch.search(indexSearcher, null, new TermQuery(new Term("content", "random")), 0, 10);
+    groups = groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
 
     assertEquals(7, groups.totalHitCount);
     assertEquals(7, groups.totalGroupedHitCount);
@@ -237,7 +237,7 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     GroupingSearch gs = new GroupingSearch("group");
     gs.setAllGroups(true);
-    TopGroups<?> groups = gs.search(indexSearcher, null, new TermQuery(new Term("group", "foo")), 0, 10);
+    TopGroups<?> groups = gs.search(indexSearcher, new TermQuery(new Term("group", "foo")), 0, 10);
     assertEquals(1, groups.totalHitCount);
     //assertEquals(1, groups.totalGroupCount.intValue());
     assertEquals(1, groups.totalGroupedHitCount);

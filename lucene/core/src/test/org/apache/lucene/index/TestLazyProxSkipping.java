@@ -114,7 +114,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         PhraseQuery pq = new PhraseQuery();
         pq.add(new Term(this.field, this.term1));
         pq.add(new Term(this.field, this.term2));
-        return this.searcher.search(pq, null, 1000).scoreDocs;        
+        return this.searcher.search(pq, 1000).scoreDocs;        
     }
     
     private void performTest(int numHits) throws IOException {

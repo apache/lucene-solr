@@ -76,7 +76,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "highlighting"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
@@ -145,7 +145,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     Query query = new TermQuery(new Term("body", "test"));
     
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     
     PostingsHighlighter highlighter = new PostingsHighlighter(maxLength);
@@ -179,7 +179,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(1, snippets.length);
@@ -214,7 +214,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
@@ -251,7 +251,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(40);
     Query query = new TermQuery(new Term("body", "field"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(1, snippets.length);
@@ -291,7 +291,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("title", "best")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     Map<String,String[]> snippets = highlighter.highlightFields(new String [] { "body", "title" }, query, searcher, topDocs);
     assertEquals(2, snippets.size());
@@ -329,7 +329,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "just")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "first")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
@@ -363,7 +363,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(2, snippets.length);
@@ -401,7 +401,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     try {
       highlighter.highlight("body", query, searcher, topDocs, 2);
@@ -539,7 +539,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
@@ -603,7 +603,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
       }
     };
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
@@ -636,7 +636,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "highlighting"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     ScoreDoc[] hits = topDocs.scoreDocs;
     int[] docIDs = new int[2];
@@ -688,7 +688,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
       };
 
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
@@ -1015,7 +1015,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
       }
     };
     Query query = new TermQuery(new Term("body", "highlighting"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(1, snippets.length);
@@ -1059,7 +1059,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
       }
     };
     Query query = new TermQuery(new Term("body", "field"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(1, snippets.length);
@@ -1106,7 +1106,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     };
 
     Query query = new TermQuery(new Term("body", "highlighting"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     int[] docIDs = new int[1];
     docIDs[0] = topDocs.scoreDocs[0].doc;

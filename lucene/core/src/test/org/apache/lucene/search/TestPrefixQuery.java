@@ -48,17 +48,17 @@ public class TestPrefixQuery extends LuceneTestCase {
 
     PrefixQuery query = new PrefixQuery(new Term("category", "/Computers"));
     IndexSearcher searcher = newSearcher(reader);
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("All documents in /Computers category and below", 3, hits.length);
 
     query = new PrefixQuery(new Term("category", "/Computers/Mac"));
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("One in /Computers/Mac", 1, hits.length);
 
     query = new PrefixQuery(new Term("category", ""));
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "category");
     assertFalse(query.getTermsEnum(terms) instanceof PrefixTermsEnum);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
     writer.close();
     reader.close();

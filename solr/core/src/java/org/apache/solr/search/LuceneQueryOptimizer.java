@@ -110,7 +110,7 @@ if (c.query instanceof TermQuery) {
       queryOut[0] = query; filterOut[0] = filter;
       return null;
     } else {
-      return searcher.search(query, filter, numHits);
+      return searcher.search(new FilteredQuery(query, filter), numHits);
     }
 
   }

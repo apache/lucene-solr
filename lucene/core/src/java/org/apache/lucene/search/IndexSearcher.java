@@ -47,8 +47,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 /** Implements search over a single IndexReader.
  *
  * <p>Applications usually need only call the inherited
- * {@link #search(Query,int)}
- * or {@link #search(Query,Filter,int)} methods. For
+ * {@link #search(Query,int)} method. For
  * performance reasons, if your index is unchanging, you
  * should share a single IndexSearcher instance across
  * multiple searches instead of creating a new one
@@ -209,11 +208,6 @@ public class IndexSearcher {
   public Similarity getSimilarity() {
     return similarity;
   }
-  
-  /** @lucene.internal */
-  protected Query wrapFilter(Query query, Filter filter) {
-    return (filter == null) ? query : new FilteredQuery(query, filter);
-  }
 
   /** Finds the top <code>n</code>
    * hits for <code>query</code> where all results are after a previous 
@@ -276,21 +270,6 @@ public class IndexSearcher {
   }
   
   /** Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null,
-   * where all results are after a previous result (<code>after</code>).
-   * <p>
-   * By passing the bottom result from a previous page as <code>after</code>,
-   * this method can be used for efficient 'deep-paging' across potentially
-   * large result sets.
-   *
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
-   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
-   */
-  public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n) throws IOException {
-    return searchAfter(after, wrapFilter(query, filter), n);
-  }
-  
-  /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
@@ -299,34 +278,6 @@ public class IndexSearcher {
   public TopDocs search(Query query, int n)
     throws IOException {
     return searchAfter(null, query, n);
-  }
-
-
-  /** Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
-   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
-   */
-  public TopDocs search(Query query, Filter filter, int n)
-    throws IOException {
-    return search(wrapFilter(query, filter), n);
-  }
-
-  /** Lower-level search API.
-   *
-   * <p>{@link LeafCollector#collect(int)} is called for every matching
-   * document.
-   *
-   * @param query to match documents
-   * @param filter if non-null, used to permit documents to be collected.
-   * @param results to receive hits
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
-   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
-   */
-  public void search(Query query, Filter filter, Collector results)
-    throws IOException {
-    search(wrapFilter(query, filter), results);
   }
 
   /** Lower-level search API.
@@ -340,30 +291,13 @@ public class IndexSearcher {
     throws IOException {
     search(leafContexts, createNormalizedWeight(query, results.needsScores()), results);
   }
-  
-  /** Search implementation with arbitrary sorting.  Finds
-   * the top <code>n</code> hits for <code>query</code>, applying
-   * <code>filter</code> if non-null, and sorting the hits by the criteria in
-   * <code>sort</code>.
-   * 
-   * <p>NOTE: this does not compute scores by default; use
-   * {@link IndexSearcher#search(Query,Filter,int,Sort,boolean,boolean)} to
-   * control scoring.
-   *
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
-   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
-   */
-  public TopFieldDocs search(Query query, Filter filter, int n,
-                             Sort sort) throws IOException {
-    return search(query, filter, n, sort, false, false);
-  }
 
   /** Search implementation with arbitrary sorting, plus
    * control over whether hit scores and max score
    * should be computed.  Finds
-   * the top <code>n</code> hits for <code>query</code>, applying
-   * <code>filter</code> if non-null, and sorting the hits by the criteria in
-   * <code>sort</code>.  If <code>doDocScores</code> is <code>true</code>
+   * the top <code>n</code> hits for <code>query</code>, and sorting
+   * the hits by the criteria in <code>sort</code>.
+   * If <code>doDocScores</code> is <code>true</code>
    * then the score of each hit will be computed and
    * returned.  If <code>doMaxScore</code> is
    * <code>true</code> then the maximum score over all
@@ -372,37 +306,21 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
-  public TopFieldDocs search(Query query, Filter filter, int n,
-                             Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
-    return searchAfter(null, query, filter, n, sort, doDocScores, doMaxScore);
-  }
-
-  /** Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null,
-   * where all results are after a previous result (<code>after</code>).
-   * <p>
-   * By passing the bottom result from a previous page as <code>after</code>,
-   * this method can be used for efficient 'deep-paging' across potentially
-   * large result sets.
-   *
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
-   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
-   */
-  public TopFieldDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n, Sort sort) throws IOException {
-    return searchAfter(after, query, filter, n, sort, false, false);
+  public TopFieldDocs search(Query query, int n,
+      Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
+    return searchAfter(null, query, n, sort, doDocScores, doMaxScore);
   }
 
   /**
-   * Search implementation with arbitrary sorting and no filter.
+   * Search implementation with arbitrary sorting.
    * @param query The query to search for
    * @param n Return only the top n results
    * @param sort The {@link org.apache.lucene.search.Sort} object
    * @return The top docs, sorted according to the supplied {@link org.apache.lucene.search.Sort} instance
    * @throws IOException if there is a low-level I/O error
    */
-  public TopFieldDocs search(Query query, int n,
-                             Sort sort) throws IOException {
-    return search(query, null, n, sort, false, false);
+  public TopFieldDocs search(Query query, int n, Sort sort) throws IOException {
+    return searchAfter(null, query, n, sort, false, false);
   }
 
   /** Finds the top <code>n</code>
@@ -417,7 +335,7 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
-    return searchAfter(after, query, null, n, sort, false, false);
+    return searchAfter(after, query, n, sort, false, false);
   }
 
   /** Finds the top <code>n</code>
@@ -436,14 +354,14 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
-  public TopFieldDocs searchAfter(ScoreDoc after, Query query, Filter filter, int numHits, Sort sort,
+  public TopFieldDocs searchAfter(ScoreDoc after, Query query, int numHits, Sort sort,
       boolean doDocScores, boolean doMaxScore) throws IOException {
     if (after != null && !(after instanceof FieldDoc)) {
       // TODO: if we fix type safety of TopFieldDocs we can
       // remove this
       throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
     }
-    return searchAfter((FieldDoc) after, wrapFilter(query, filter), numHits, sort, doDocScores, doMaxScore);
+    return searchAfter((FieldDoc) after, query, numHits, sort, doDocScores, doMaxScore);
   }
 
   private TopFieldDocs searchAfter(FieldDoc after, Query query, int numHits, Sort sort,

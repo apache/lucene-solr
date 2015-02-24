@@ -119,7 +119,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         }
 
         TopFieldDocs docs = req.getSearcher().search(new TermQuery(new Term("blobName", blobName)),
-            null, 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
+            1, new Sort(new SortField("version", SortField.Type.LONG, true)));
 
         long version = 0;
         if(docs.totalHits >0){

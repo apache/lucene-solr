@@ -148,7 +148,7 @@ public class TestSortRandom extends LuceneTestCase {
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
-      int queryType = random.nextInt(3);
+      int queryType = random.nextInt(2);
       if (queryType == 0) {
         // force out of order
         BooleanQuery bq = new BooleanQuery();
@@ -158,13 +158,10 @@ public class TestSortRandom extends LuceneTestCase {
         // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
         // the clause instead of BQ.
         bq.setMinimumNumberShouldMatch(1);
-        hits = s.search(bq, f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
-      } else if (queryType == 1) {
-        hits = s.search(new ConstantScoreQuery(f),
-                        null, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(new FilteredQuery(bq, f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else {
-        hits = s.search(new MatchAllDocsQuery(),
-                        f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(new ConstantScoreQuery(f),
+                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
       }
 
       if (VERBOSE) {

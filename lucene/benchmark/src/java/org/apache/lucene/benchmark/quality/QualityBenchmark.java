@@ -94,7 +94,7 @@ public class QualityBenchmark {
       Query q = qqParser.parse(qq);
       // search with this query 
       long t1 = System.currentTimeMillis();
-      TopDocs td = searcher.search(q,null,maxResults);
+      TopDocs td = searcher.search(q,maxResults);
       long searchTime = System.currentTimeMillis()-t1;
       //most likely we either submit or judge, but check both 
       if (judge!=null) {

@@ -60,32 +60,32 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     writer.close();
 
     SlowFuzzyQuery query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     
     // same with prefix
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 3);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 4);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(2, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 5);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 6);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
     // test scoring
     query = new SlowFuzzyQuery(new Term("field", "bbbbb"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("3 documents should match", 3, hits.length);
     List<String> order = Arrays.asList("bbbbb","abbbb","aabbb");
     for (int i = 0; i < hits.length; i++) {
@@ -97,7 +97,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     // test pq size by supplying maxExpansions=2
     // This query would normally return 3 documents, because 3 terms match (see above):
     query = new SlowFuzzyQuery(new Term("field", "bbbbb"), SlowFuzzyQuery.defaultMinSimilarity, 0, 2); 
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("only 2 documents should match", 2, hits.length);
     order = Arrays.asList("bbbbb","abbbb");
     for (int i = 0; i < hits.length; i++) {
@@ -108,15 +108,15 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     // not similar enough:
     query = new SlowFuzzyQuery(new Term("field", "xxxxx"), SlowFuzzyQuery.defaultMinSimilarity, 0);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaccc"), SlowFuzzyQuery.defaultMinSimilarity, 0);   // edit distance to "aaaaa" = 3
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // query identical to a word in the index:
     query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     // default allows for up to two edits:
@@ -125,7 +125,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     // query similar to a word in the index:
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
@@ -133,63 +133,63 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     
     // now with prefix
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
     assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
     assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 3);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
     assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 4);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(2, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
     assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
     query = new SlowFuzzyQuery(new Term("field", "aaaac"), SlowFuzzyQuery.defaultMinSimilarity, 5);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
 
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
     
     // now with prefix
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 3);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 4);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
     query = new SlowFuzzyQuery(new Term("field", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 5);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
 
     // different field = no match:
     query = new SlowFuzzyQuery(new Term("anotherfield", "ddddX"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     reader.close();
@@ -210,11 +210,11 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
      SlowFuzzyQuery query;
      
      query = new SlowFuzzyQuery(new Term("field", "abcxxxx"), 3f, 0);   
-     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
      assertEquals(0, hits.length);
      
      query = new SlowFuzzyQuery(new Term("field", "abcxxxx"), 4f, 0);   
-     hits = searcher.search(query, null, 1000).scoreDocs;
+     hits = searcher.search(query, 1000).scoreDocs;
      assertEquals(1, hits.length);
      reader.close();
      directory.close();
@@ -233,63 +233,63 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     SlowFuzzyQuery query;
     // not similar enough:
     query = new SlowFuzzyQuery(new Term("field", "xxxxx"), 0.5f, 0);   
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     // edit distance to "aaaaaaa" = 3, this matches because the string is longer than
     // in testDefaultFuzziness so a bigger difference is allowed:
     query = new SlowFuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
     
     // now with prefix
     query = new SlowFuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
     query = new SlowFuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 4);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
     query = new SlowFuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 5);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // no match, more than half of the characters is wrong:
     query = new SlowFuzzyQuery(new Term("field", "aaacccc"), 0.5f, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     // now with prefix
     query = new SlowFuzzyQuery(new Term("field", "aaacccc"), 0.5f, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // "student" and "stellent" are indeed similar to "segment" by default:
     query = new SlowFuzzyQuery(new Term("field", "student"), 0.5f, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "stellent"), 0.5f, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
     // now with prefix
     query = new SlowFuzzyQuery(new Term("field", "student"), 0.5f, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "stellent"), 0.5f, 1);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "student"), 0.5f, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "stellent"), 0.5f, 2);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     // "student" doesn't match anymore thanks to increased minimum similarity:
     query = new SlowFuzzyQuery(new Term("field", "student"), 0.6f, 0);   
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     try {
@@ -363,22 +363,22 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     Query query;
     // term not over 10 chars, so optimization shortcuts
     query = new SlowFuzzyQuery(new Term("field", "1234569"), 0.9f);
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // 10 chars, so no optimization
     query = new SlowFuzzyQuery(new Term("field", "1234567891"), 0.9f);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     // over 10 chars, so no optimization
     query = new SlowFuzzyQuery(new Term("field", "12345678911"), 0.9f);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     // over 10 chars, no match
     query = new SlowFuzzyQuery(new Term("field", "sdfsdfsdfsdf"), 0.9f);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     reader.close();
@@ -399,7 +399,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     
     SlowFuzzyQuery query = new SlowFuzzyQuery(new Term("field", "lucene"));
     query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(50));
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     // normally, 'Lucenne' would be the first result as IDF will skew the score.
     assertEquals("Lucene", reader.document(hits[0].doc).get("field"));

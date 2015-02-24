@@ -209,7 +209,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     q.add(tq("hed", "elephant"));
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("all docs should match " + q.toString(), 4, h.length);
@@ -233,7 +233,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     q.add(tq("dek", "elephant"));
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("3 docs should match " + q.toString(), 3, h.length);
@@ -258,7 +258,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     q.add(tq("dek", "elephant"));
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("all docs should match " + q.toString(), 4, h.length);
@@ -281,7 +281,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     q.add(tq("dek", "elephant"));
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("3 docs should match " + q.toString(), 3, h.length);
@@ -320,7 +320,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("3 docs should match " + q.toString(), 3, h.length);
@@ -352,7 +352,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       assertEquals("4 docs should match " + q.toString(), 4, h.length);
@@ -388,7 +388,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       
@@ -442,7 +442,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     QueryUtils.check(random(), q, s);
     
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     
     try {
       

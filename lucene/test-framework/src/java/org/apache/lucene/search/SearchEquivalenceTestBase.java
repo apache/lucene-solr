@@ -180,11 +180,15 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * Both queries will be filtered by <code>filter</code>
    */
   protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
+    if (filter != null) {
+      q1 = new FilteredQuery(q1, filter);
+      q2 = new FilteredQuery(q2, filter);
+    }
     // we test both INDEXORDER and RELEVANCE because we want to test needsScores=true/false
     for (Sort sort : new Sort[] { Sort.INDEXORDER, Sort.RELEVANCE }) {
       // not efficient, but simple!
-      TopDocs td1 = s1.search(q1, filter, reader.maxDoc(), sort);
-      TopDocs td2 = s2.search(q2, filter, reader.maxDoc(), sort);
+      TopDocs td1 = s1.search(q1, reader.maxDoc(), sort);
+      TopDocs td2 = s2.search(q2, reader.maxDoc(), sort);
       assertTrue(td1.totalHits <= td2.totalHits);
       
       // fill the superset into a bitset
@@ -222,8 +226,12 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
 
   protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
     // not efficient, but simple!
-    TopDocs td1 = s1.search(q1, filter, reader.maxDoc());
-    TopDocs td2 = s2.search(q2, filter, reader.maxDoc());
+    if (filter != null) {
+      q1 = new FilteredQuery(q1, filter);
+      q2 = new FilteredQuery(q2, filter);
+    }
+    TopDocs td1 = s1.search(q1, reader.maxDoc());
+    TopDocs td2 = s2.search(q2, reader.maxDoc());
     assertEquals(td1.totalHits, td2.totalHits);
     for (int i = 0; i < td1.scoreDocs.length; ++i) {
       assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);

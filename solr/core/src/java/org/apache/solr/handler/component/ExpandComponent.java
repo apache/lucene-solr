@@ -40,6 +40,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -377,7 +378,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    searcher.search(query, pfilter.filter, collector);
+    if (pfilter.filter == null) {
+      searcher.search(query, collector);
+    } else {
+      searcher.search(new FilteredQuery(query, pfilter.filter), collector);
+    }
     LongObjectMap groups = ((GroupCollector)groupExpandCollector).getGroups();
     Map<String, DocSlice> outMap = new HashMap<>();
     CharsRefBuilder charsRef = new CharsRefBuilder();

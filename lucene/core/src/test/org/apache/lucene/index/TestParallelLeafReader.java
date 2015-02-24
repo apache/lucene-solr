@@ -244,8 +244,8 @@ public class TestParallelLeafReader extends LuceneTestCase {
   }
 
   private void queryTest(Query query) throws IOException {
-    ScoreDoc[] parallelHits = parallel.search(query, null, 1000).scoreDocs;
-    ScoreDoc[] singleHits = single.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] parallelHits = parallel.search(query, 1000).scoreDocs;
+    ScoreDoc[] singleHits = single.search(query, 1000).scoreDocs;
     assertEquals(parallelHits.length, singleHits.length);
     for(int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);

@@ -43,6 +43,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -173,13 +174,13 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
         // the clause instead of BQ.
         bq.setMinimumNumberShouldMatch(1);
-        hits = s.search(bq, f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(new FilteredQuery(bq, f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else if (queryType == 1) {
         hits = s.search(new ConstantScoreQuery(f),
-                        null, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else {
-        hits = s.search(new MatchAllDocsQuery(),
-                        f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(new FilteredQuery(new MatchAllDocsQuery(),
+                        f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
       }
 
       if (VERBOSE) {

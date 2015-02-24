@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -77,11 +78,11 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // Collator (or an Arabic one for the case when Farsi searcher not
     // supported).
     ScoreDoc[] result = searcher.search
-      (query, new TermRangeFilter("content", firstBeg, firstEnd, true, true), 1).scoreDocs;
+      (new FilteredQuery(query, new TermRangeFilter("content", firstBeg, firstEnd, true, true)), 1).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
     result = searcher.search
-      (query, new TermRangeFilter("content", secondBeg, secondEnd, true, true), 1).scoreDocs;
+      (new FilteredQuery(query, new TermRangeFilter("content", secondBeg, secondEnd, true, true)), 1).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
 
     reader.close();
@@ -106,11 +107,11 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, hits.length);
 
     query = new TermRangeQuery("content", secondBeg, secondEnd, true, true);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, hits.length);
     reader.close();
     dir.close();
@@ -137,12 +138,12 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // not supported).
     Query csrq 
       = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
-    ScoreDoc[] result = search.search(csrq, null, 1000).scoreDocs;
+    ScoreDoc[] result = search.search(csrq, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
     csrq = new TermRangeQuery
       ("content", secondBeg, secondEnd, true, true);
-    result = search.search(csrq, null, 1000).scoreDocs;
+    result = search.search(csrq, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
     reader.close();
     farsiIndex.close();
@@ -152,7 +153,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
   // Copied from TestSort.java
   private void assertMatches(IndexSearcher searcher, Query query, Sort sort, 
                              String expectedResult) throws IOException {
-    ScoreDoc[] result = searcher.search(query, null, 1000, sort).scoreDocs;
+    ScoreDoc[] result = searcher.search(query, 1000, sort).scoreDocs;
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {

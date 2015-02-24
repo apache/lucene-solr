@@ -569,7 +569,7 @@ public class TestValueSources extends LuceneTestCase {
       expectedDocs[i] = i;
       expected[i] = new ScoreDoc(i, scores[i]);
     }
-    TopDocs docs = searcher.search(q, null, documents.size(),
+    TopDocs docs = searcher.search(q, documents.size(),
         new Sort(new SortField("id", SortField.Type.STRING)), true, false);
     CheckHits.checkHits(random(), q, "", searcher, expectedDocs);
     CheckHits.checkHitsQuery(q, expected, docs.scoreDocs, expectedDocs);

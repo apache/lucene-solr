@@ -1257,7 +1257,7 @@ public class TestQPHelper extends LuceneTestCase {
     qp.setLocale(Locale.ENGLISH);
 
     Query q = qp.parse(query, "date");
-    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = is.search(q, 1000).scoreDocs;
     assertEquals(expected, hits.length);
   }
 

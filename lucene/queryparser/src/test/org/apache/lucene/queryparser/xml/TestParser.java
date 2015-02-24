@@ -133,7 +133,7 @@ public class TestParser extends LuceneTestCase {
 
   public void testCustomFieldUserQueryXML() throws ParserException, IOException {
     Query q = parse("UserInputQueryCustomField.xml");
-    int h = searcher.search(q, null, 1000).totalHits;
+    int h = searcher.search(q, 1000).totalHits;
     assertEquals("UserInputQueryCustomField should produce 0 result ", 0, h);
   }
 
@@ -190,7 +190,7 @@ public class TestParser extends LuceneTestCase {
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     Assume.assumeTrue(leaves.size() == 1);
     Query q = parse("DuplicateFilterQuery.xml");
-    int h = searcher.search(q, null, 1000).totalHits;
+    int h = searcher.search(q, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
   }
 
@@ -217,7 +217,7 @@ public class TestParser extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: query=" + q);
     }
-    TopDocs hits = searcher.search(q, null, numDocs);
+    TopDocs hits = searcher.search(q, numDocs);
     assertTrue(qType + " should produce results ", hits.totalHits > 0);
     if (VERBOSE) {
       System.out.println("=========" + qType + "============");

@@ -21,7 +21,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -57,18 +56,18 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
 
     List<String> terms = new ArrayList<>();
     terms.add("5");
-    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(new FilteredQuery(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0]))), numDocs).scoreDocs;
     assertEquals("Must match nothing", 0, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
-    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(new FilteredQuery(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0]))), numDocs).scoreDocs;
     assertEquals("Must match 1", 1, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
     terms.add("20");
-    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(new FilteredQuery(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0]))), numDocs).scoreDocs;
     assertEquals("Must match 2", 2, results.length);
 
     reader.close();

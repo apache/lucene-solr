@@ -46,7 +46,7 @@ public class FieldDoc extends ScoreDoc {
    * the <code>value</code> method corresponding
    * FieldComparator used to sort this field.
    * @see Sort
-   * @see IndexSearcher#search(Query,Filter,int,Sort)
+   * @see IndexSearcher#search(Query,int,Sort)
    */
   public Object[] fields;
 

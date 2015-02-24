@@ -81,10 +81,6 @@ public class TestIndexSearcher extends LuceneTestCase {
         null,
         new Sort(new SortField("field2", SortField.Type.STRING))
     };
-    Filter filters[] = new Filter[] {
-        null,
-        new QueryWrapperFilter(new TermQuery(new Term("field2", "true")))
-    };
     ScoreDoc afters[] = new ScoreDoc[] {
         null,
         new FieldDoc(0, 0f, new Object[] { new BytesRef("boo!") })
@@ -94,24 +90,19 @@ public class TestIndexSearcher extends LuceneTestCase {
       for (ScoreDoc after : afters) {
         for (Query query : queries) {
           for (Sort sort : sorts) {
-            for (Filter filter : filters) {
-              searcher.search(query, Integer.MAX_VALUE);
-              searcher.searchAfter(after, query, Integer.MAX_VALUE);
-              searcher.search(query, filter, Integer.MAX_VALUE);
-              searcher.searchAfter(after, query, filter, Integer.MAX_VALUE);
-              if (sort != null) {
-                searcher.search(query, Integer.MAX_VALUE, sort);
-                searcher.search(query, filter, Integer.MAX_VALUE, sort);
-                searcher.search(query, filter, Integer.MAX_VALUE, sort, true, true);
-                searcher.search(query, filter, Integer.MAX_VALUE, sort, true, false);
-                searcher.search(query, filter, Integer.MAX_VALUE, sort, false, true);
-                searcher.search(query, filter, Integer.MAX_VALUE, sort, false, false);
-                searcher.searchAfter(after, query, filter, Integer.MAX_VALUE, sort);
-                searcher.searchAfter(after, query, filter, Integer.MAX_VALUE, sort, true, true);
-                searcher.searchAfter(after, query, filter, Integer.MAX_VALUE, sort, true, false);
-                searcher.searchAfter(after, query, filter, Integer.MAX_VALUE, sort, false, true);
-                searcher.searchAfter(after, query, filter, Integer.MAX_VALUE, sort, false, false);
-              }
+            searcher.search(query, Integer.MAX_VALUE);
+            searcher.searchAfter(after, query, Integer.MAX_VALUE);
+            if (sort != null) {
+              searcher.search(query, Integer.MAX_VALUE, sort);
+              searcher.search(query, Integer.MAX_VALUE, sort, true, true);
+              searcher.search(query, Integer.MAX_VALUE, sort, true, false);
+              searcher.search(query, Integer.MAX_VALUE, sort, false, true);
+              searcher.search(query, Integer.MAX_VALUE, sort, false, false);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true, true);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true, false);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false, true);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false, false);
             }
           }
         }

@@ -132,11 +132,11 @@ public class TestBoolean2 extends LuceneTestCase {
     // sometimes return a default impl around the scorer so that we can
     // compare BS1 and BS2
     TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
-    searcher.search(query, null, collector);
+    searcher.search(query, collector);
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
 
     collector = TopScoreDocCollector.create(1000);
-    searcher.search(query, null, collector);
+    searcher.search(query, collector);
     ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
 
     assertEquals(mulFactor * collector.totalHits,
@@ -285,13 +285,13 @@ public class TestBoolean2 extends LuceneTestCase {
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
             false, true, true);
 
-        searcher.search(q1, null, collector);
+        searcher.search(q1, collector);
         ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
 
         collector = TopFieldCollector.create(sort, 1000,
             false, true, true);
         
-        searcher.search(q1, null, collector);
+        searcher.search(q1, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
         tot+=hits2.length;
         CheckHits.checkEqual(q1, hits1, hits2);

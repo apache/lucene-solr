@@ -83,7 +83,7 @@ public class TestDateSort extends LuceneTestCase {
 
     // Execute the search and process the search results.
     String[] actualOrder = new String[5];
-    ScoreDoc[] hits = searcher.search(query, null, 1000, sort).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000, sort).scoreDocs;
     for (int i = 0; i < hits.length; i++) {
       StoredDocument document = searcher.doc(hits[i].doc);
       String text = document.get(TEXT_FIELD);

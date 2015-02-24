@@ -122,40 +122,40 @@ public class TestPositionIncrement extends LuceneTestCase {
     q = new PhraseQuery();
     q.add(new Term("field", "1"));
     q.add(new Term("field", "2"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // same as previous, just specify positions explicitely.
     q = new PhraseQuery(); 
     q.add(new Term("field", "1"),0);
     q.add(new Term("field", "2"),1);
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // specifying correct positions should find the phrase.
     q = new PhraseQuery();
     q.add(new Term("field", "1"),0);
     q.add(new Term("field", "2"),2);
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "3"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "3"));
     q.add(new Term("field", "4"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // phrase query would find it when correct positions are specified. 
     q = new PhraseQuery();
     q.add(new Term("field", "3"),0);
     q.add(new Term("field", "4"),0);
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     // phrase query should fail for non existing searched term 
@@ -163,38 +163,38 @@ public class TestPositionIncrement extends LuceneTestCase {
     q = new PhraseQuery();
     q.add(new Term("field", "3"),0);
     q.add(new Term("field", "9"),0);
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // multi-phrase query should succed for non existing searched term
     // because there exist another searched terms in the same searched position. 
     MultiPhraseQuery mq = new MultiPhraseQuery();
     mq.add(new Term[]{new Term("field", "3"),new Term("field", "9")},0);
-    hits = searcher.search(mq, null, 1000).scoreDocs;
+    hits = searcher.search(mq, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "4"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "3"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "4"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q, null, 1000).scoreDocs;
+    hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     reader.close();
