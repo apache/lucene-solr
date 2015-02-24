@@ -566,6 +566,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   private static boolean segmentWasUpgraded(Directory directory, SegmentInfo si) {
     // Check marker file:
     String markerFileName = IndexFileNames.segmentFileName(si.name, "upgraded", Lucene3xSegmentInfoFormat.UPGRADED_SI_EXTENSION);
+
+    // LUCENE-6279: don't rely solely on existence of the marker file; also require that we see the marker
+    // file in our si.files(), which means we did previously at least attempt to write it:
+    if (si.files().contains(markerFileName) == false) {
+      return false;
+    }
+
+    // Also verify the marker file exists and has the proper header:
     IndexInput in = null;
     try {
       in = directory.openInput(markerFileName, IOContext.READONCE);
@@ -580,6 +588,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         IOUtils.closeWhileHandlingException(in);
       }
     }
+
     return false;
   }
 

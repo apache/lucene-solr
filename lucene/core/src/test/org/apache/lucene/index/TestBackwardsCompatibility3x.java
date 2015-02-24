@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -53,6 +54,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1014,5 +1018,26 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       writer.close();
       dir.close();
     }
+  }
+
+  // LUCENE-6279
+  public void testLeftoverUpgradedFile() throws Exception {
+    Directory dir = newDirectory(random(), oldIndexDirs.get("362.cfs"));
+    if (dir instanceof MockDirectoryWrapper) {
+      // We intentionally double-write the upgrade marker file:
+      ((MockDirectoryWrapper) dir).setPreventDoubleWrite(false);
+    }
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    // Create errant leftover file, after opening IW but before closing IW:
+    IndexOutput out = dir.createOutput("_0_upgraded.si", IOContext.DEFAULT);
+    CodecUtil.writeHeader(out, "SegmentInfo3xUpgrade", 0);
+    out.close();
+
+    writer.addDocument(new Document());
+    writer.close();
+
+    // Causes FNFE on _0.si during check index before the fix:
+    dir.close();
   }
 }

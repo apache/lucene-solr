@@ -26,6 +26,10 @@ Bug fixes
   BlendedInfixSuggester for lookups that do not end in a prefix
   token.  (jane chang via Mike McCandless)
 
+* LUCENE-6279: Don't let an abusive leftover _N_upgraded.si in the
+  index directory cause index corruption on upgrade (Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.
