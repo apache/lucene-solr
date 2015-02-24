@@ -1017,7 +1017,7 @@ public final class TestUtil {
           case 0: posFlags = PostingsEnum.POSITIONS; break;
           case 1: posFlags = PostingsEnum.OFFSETS; break;
           case 2: posFlags = PostingsEnum.PAYLOADS; break;
-          default: posFlags = PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS; break;
+          default: posFlags = PostingsEnum.ALL; break;
         }
         PostingsEnum docsAndPositions = termsEnum.postings(liveDocs, null, posFlags);
         if (docsAndPositions != null) {

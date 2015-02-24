@@ -389,7 +389,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
-      if (PostingsEnum.requiresPositions(flags)) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         SimpleTVPostings postings = current.getValue();
         if (postings.positions == null && postings.startOffsets == null) {
           return null;
@@ -402,7 +402,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
       // TODO: reuse
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, (flags & PostingsEnum.FREQS) == 0 ? 1 : current.getValue().freq);
+      e.reset(liveDocs, PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) == false ? 1 : current.getValue().freq);
       return e;
     }
 

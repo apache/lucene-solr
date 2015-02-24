@@ -33,37 +33,35 @@ public abstract class PostingsEnum extends DocIdSetIterator {
    * Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)} if you don't
    * require per-document postings in the returned enum.
    */
-  public static final int NONE = 0x0;
+  public static final short NONE = 0;
 
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require term frequencies in the returned enum. */
-  public static final int FREQS = 0x1;
+  public static final short FREQS = 1 << 3;
 
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    * if you require term positions in the returned enum. */
-  public static final int POSITIONS = 0x3;
+  public static final short POSITIONS = FREQS | 1 << 4;
   
   /** Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require offsets in the returned enum. */
-  public static final int OFFSETS = 0x7;
+  public static final short OFFSETS = POSITIONS | 1 << 5;
 
   /** Flag to pass to  {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    *  if you require payloads in the returned enum. */
-  public static final int PAYLOADS = 0xB;
+  public static final short PAYLOADS = POSITIONS | 1 << 6;
 
   /**
    * Flag to pass to {@link TermsEnum#postings(Bits, PostingsEnum, int)}
    * to get positions, payloads and offsets in the returned enum
    */
-  public static final int ALL = POSITIONS | PAYLOADS;
+  public static final short ALL = OFFSETS | PAYLOADS;
 
   /**
-   * Returns true if the passed in flags require positions to be indexed
-   * @param flags the postings flags
-   * @return true if the passed in flags require positions to be indexed
+   * Returns true if the given feature is requested in the flags, false otherwise.
    */
-  public static boolean requiresPositions(int flags) {
-    return ((flags & POSITIONS) >= POSITIONS);
+  public static boolean featureRequested(int flags, short feature) {
+    return (flags & feature) == feature;
   }
 
   private AttributeSource atts = null;

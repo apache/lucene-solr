@@ -609,7 +609,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.POSITIONS);
+    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.PAYLOADS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -643,7 +643,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.POSITIONS);
+    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.PAYLOADS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

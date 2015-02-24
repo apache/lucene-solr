@@ -653,7 +653,7 @@ public class BlockTermsReader extends FieldsProducer {
       @Override
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
-        if (PostingsEnum.requiresPositions(flags)) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
           if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
             // Positions were not indexed:
             return null;

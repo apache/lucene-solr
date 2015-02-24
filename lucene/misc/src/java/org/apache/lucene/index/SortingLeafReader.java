@@ -132,7 +132,7 @@ public class SortingLeafReader extends FilterLeafReader {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, final int flags) throws IOException {
 
-      if (PostingsEnum.requiresPositions(flags)) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         final PostingsEnum inReuse;
         final SortingPostingsEnum wrapReuse;
         if (reuse != null && reuse instanceof SortingPostingsEnum) {
@@ -171,7 +171,7 @@ public class SortingLeafReader extends FilterLeafReader {
       }
 
       final PostingsEnum inDocs = in.postings(newToOld(liveDocs), inReuse, flags);
-      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & PostingsEnum.FREQS) != 0;
+      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
       return new SortingDocsEnum(docMap.size(), wrapReuse, inDocs, withFreqs, docMap);
     }
 

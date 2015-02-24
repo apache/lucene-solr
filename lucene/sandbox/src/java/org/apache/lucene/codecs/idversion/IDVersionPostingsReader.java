@@ -66,7 +66,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
     SingleDocsEnum docsEnum;
 
-    if (PostingsEnum.requiresPositions(flags)) {
+    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
       SinglePostingsEnum posEnum;
 
       if (reuse instanceof SinglePostingsEnum) {
