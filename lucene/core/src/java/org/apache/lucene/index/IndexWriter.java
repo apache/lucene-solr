@@ -4529,6 +4529,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           toSync.prepareCommit(directory);
           //System.out.println("DONE prepareCommit");
 
+          // prepareCommit may have created new _N.si and _N_upgraded.si
+          // (marker) files if the segments file was 3.x, so we must now
+          // (while still under IW's monitor lock) incRef these files in
+          // IFD to protect them until the commit is done:
+          final Collection<String> newFiles = toSync.files(directory, false);
+          deleter.incRef(newFiles);
+          deleter.decRef(filesToCommit);
+          filesToCommit = newFiles;
+
           pendingCommitSet = true;
           pendingCommit = toSync;
         }
@@ -4536,10 +4545,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // This call can take a long time -- 10s of seconds
         // or more.  We do it without syncing on this:
         boolean success = false;
-        final Collection<String> filesToSync;
         try {
-          filesToSync = toSync.files(directory, false);
-          directory.sync(filesToSync);
+          directory.sync(filesToCommit);
           success = true;
         } finally {
           if (!success) {
@@ -4550,7 +4557,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "done all syncs: " + filesToSync);
+          infoStream.message("IW", "done all syncs: " + filesToCommit);
         }
 
         assert testPoint("midStartCommitSuccess");

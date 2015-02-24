@@ -30,6 +30,11 @@ Bug fixes
   index directory cause index corruption on upgrade (Robert Muir, Mike
   McCandless)
 
+* LUCENE-6287: Fix concurrency bug in IndexWriter that could cause
+  index corruption (missing _N.si files) the first time 4.x kisses a
+  3.x index if merges are also running.  (Simon Willnauer, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.

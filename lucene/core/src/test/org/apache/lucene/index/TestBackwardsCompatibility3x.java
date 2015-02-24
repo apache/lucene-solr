@@ -1040,4 +1040,50 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     // Causes FNFE on _0.si during check index before the fix:
     dir.close();
   }
+
+  // LUCENE-6287: copy this back to a 3.6.x checkout, run it, then cd to
+  // the index dir and run "zip manysegments.362.zip *" and copy to this dir:
+  /*
+  public void testCreateManySegmentsIndex() throws Exception {
+    // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
+    File indexDir = new File(LuceneTestCase.TEMP_DIR, "manysegments");
+    System.out.println("TEST: indexDir " + indexDir);
+    _TestUtil.rmDir(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+      .setMaxBufferedDocs(2);
+    TieredMergePolicy tmp = (TieredMergePolicy) conf.getMergePolicy();
+    tmp.setSegmentsPerTier(1000);
+    tmp.setFloorSegmentMB(.0000001);
+    IndexWriter writer = new IndexWriter(dir, conf);
+    //writer.setInfoStream(System.out);
+    
+    for(int i=0;i<200;i++) {
+      Document doc = new Document();
+      doc.add(new Field("content", "doc " + i, Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      writer.addDocument(doc);
+    }
+    assertEquals("wrong doc count", 200, writer.maxDoc());
+    writer.close();
+    dir.close();
+  }
+  */
+
+  static final String manySegments3xIndex = "manysegments.362.zip";
+
+  // LUCENE-6287
+  public void testMergeDuringUpgrade() throws Exception {
+    // NOTE: this fails only rarely
+    for(int i=0;i<10;i++) {
+      File indexPath = createTempDir("manysegments.362");
+      TestUtil.unzip(getDataFile(manySegments3xIndex), indexPath);
+      Directory dir = newFSDirectory(indexPath);
+      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      IndexWriter writer = new IndexWriter(dir, conf);
+      writer.addDocument(new Document());
+      writer.commit();
+      writer.rollback();
+      dir.close();
+    }
+  }
 }
