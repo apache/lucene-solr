@@ -937,7 +937,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     @Override
     public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
-      if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (positions == null && startOffsets == null)
           return null;
       }
