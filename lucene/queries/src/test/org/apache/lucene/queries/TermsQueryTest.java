@@ -42,6 +42,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
@@ -79,6 +80,7 @@ public class TermsQueryTest extends LuceneTestCase {
 
       if (reader.numDocs() == 0) {
         // may occasionally happen if all documents got the same term
+        IOUtils.close(reader, dir);
         continue;
       }
 
