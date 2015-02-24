@@ -217,8 +217,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     if (!indexHasPositions)
       return null;
 
-    if ((!indexHasOffsets || (flags & PostingsEnum.OFFSETS) == 0) &&
-        (!indexHasPayloads || (flags & PostingsEnum.PAYLOADS) == 0)) {
+    if ((!indexHasOffsets || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
+        (!indexHasPayloads || PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) == false)) {
       BlockPostingsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockPostingsEnum) {
         docsAndPositionsEnum = (BlockPostingsEnum) reuse;
@@ -320,7 +320,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       }
 
       doc = -1;
-      this.needsFreq = (flags & PostingsEnum.FREQS) != 0;
+      this.needsFreq = PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
       if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
@@ -984,8 +984,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
       }
 
-      this.needsOffsets = (flags & PostingsEnum.OFFSETS) != 0;
-      this.needsPayloads = (flags & PostingsEnum.PAYLOADS) != 0;
+      this.needsOffsets = PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS);
+      this.needsPayloads = PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS);
 
       doc = -1;
       accum = 0;

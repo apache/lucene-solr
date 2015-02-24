@@ -198,7 +198,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   @Override
   public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
-    if (PostingsEnum.requiresPositions(flags)) {
+    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
       return fullPostings(fieldInfo, termState, liveDocs, reuse, flags);
     }
 

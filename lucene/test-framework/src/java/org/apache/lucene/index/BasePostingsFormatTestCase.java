@@ -643,18 +643,18 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       if (liveDocs != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
-      if (PostingsEnum.requiresPositions(flags)) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           return null;
         }
-        if ((flags & PostingsEnum.OFFSETS) == PostingsEnum.OFFSETS && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
           return null;
         }
-        if ((flags & PostingsEnum.PAYLOADS) == PostingsEnum.PAYLOADS && allowPayloads == false) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) && allowPayloads == false) {
           return null;
         }
       }
-      if ((flags & PostingsEnum.FREQS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
         return null;
       }
       return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, maxAllowed, allowPayloads);

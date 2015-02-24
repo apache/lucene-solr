@@ -885,7 +885,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
     @Override
     public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
-      if (PostingsEnum.requiresPositions(flags)) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (positions == null && startOffsets == null) {
           return null;
         }

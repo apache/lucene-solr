@@ -244,7 +244,7 @@ class FreqProxFields extends Fields {
           throw new IllegalArgumentException("did not index positions");
         }
 
-        if (!terms.hasOffsets && (flags & PostingsEnum.OFFSETS) == PostingsEnum.OFFSETS) {
+        if (!terms.hasOffsets && PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS)) {
           // Caller wants offsets but we didn't index them;
           // don't lie:
           throw new IllegalArgumentException("did not index offsets");
@@ -264,7 +264,7 @@ class FreqProxFields extends Fields {
 
       FreqProxDocsEnum docsEnum;
 
-      if (!terms.hasFreq && (flags & PostingsEnum.FREQS) != 0) {
+      if (!terms.hasFreq && PostingsEnum.featureRequested(flags, PostingsEnum.FREQS)) {
         // Caller wants freqs but we didn't index them;
         // don't lie:
         throw new IllegalArgumentException("did not index freq");

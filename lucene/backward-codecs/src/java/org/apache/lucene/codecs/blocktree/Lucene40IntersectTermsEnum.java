@@ -208,7 +208,7 @@ final class Lucene40IntersectTermsEnum extends TermsEnum {
 
   @Override
   public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
-    if (PostingsEnum.requiresPositions(flags) && fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) && fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       // Positions were not indexed:
       return null;
     }
