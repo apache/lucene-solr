@@ -829,7 +829,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
 
-      if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           return null;
         }

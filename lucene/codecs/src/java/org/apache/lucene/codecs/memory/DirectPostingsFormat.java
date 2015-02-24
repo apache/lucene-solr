@@ -875,7 +875,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         // TODO: implement reuse
         // it's hairy!
 
-        if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
           if (!hasPos) {
             return null;
           }
@@ -1469,7 +1469,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
         // TODO: implement reuse
         // it's hairy!
-        if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
           if (!hasPos) {
             return null;
           }

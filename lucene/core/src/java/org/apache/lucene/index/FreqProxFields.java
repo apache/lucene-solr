@@ -235,7 +235,7 @@ class FreqProxFields extends Fields {
         throw new IllegalArgumentException("liveDocs must be null");
       }
 
-      if ((flags & PostingsEnum.POSITIONS) >= PostingsEnum.POSITIONS) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         FreqProxPostingsEnum posEnum;
 
         if (!terms.hasProx) {
