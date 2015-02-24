@@ -22,7 +22,6 @@ import org.apache.lucene.util.PriorityQueue;
 import java.io.IOException;
 
 /** Represents hits returned by {@link
- * IndexSearcher#search(Query,Filter,int)} and {@link
  * IndexSearcher#search(Query,int)}. */
 public class TopDocs {
 

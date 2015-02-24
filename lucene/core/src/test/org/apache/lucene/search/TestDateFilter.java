@@ -76,23 +76,23 @@ public class TestDateFilter extends LuceneTestCase {
     ScoreDoc[] result;
     
     // ensure that queries return expected results without DateFilter first
-    result = searcher.search(query1, null, 1000).scoreDocs;
+    result = searcher.search(query1, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query2, null, 1000).scoreDocs;
+    result = searcher.search(query2, 1000).scoreDocs;
     assertEquals(1, result.length);
     
     // run queries with DateFilter
-    result = searcher.search(query1, df1, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query1, df1), 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query1, df2, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query1, df2), 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query2, df1, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query2, df1), 1000).scoreDocs;
     assertEquals(1, result.length);
     
-    result = searcher.search(query2, df2, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query2, df2), 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();
     indexStore.close();
@@ -140,23 +140,23 @@ public class TestDateFilter extends LuceneTestCase {
     ScoreDoc[] result;
     
     // ensure that queries return expected results without DateFilter first
-    result = searcher.search(query1, null, 1000).scoreDocs;
+    result = searcher.search(query1, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query2, null, 1000).scoreDocs;
+    result = searcher.search(query2, 1000).scoreDocs;
     assertEquals(1, result.length);
     
     // run queries with DateFilter
-    result = searcher.search(query1, df1, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query1, df1), 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query1, df2, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query1, df2), 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(query2, df1, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query2, df1), 1000).scoreDocs;
     assertEquals(1, result.length);
     
-    result = searcher.search(query2, df2, 1000).scoreDocs;
+    result = searcher.search(new FilteredQuery(query2, df2), 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();
     indexStore.close();

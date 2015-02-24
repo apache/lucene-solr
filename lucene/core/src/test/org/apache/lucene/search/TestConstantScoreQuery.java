@@ -144,12 +144,12 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     Query query = new ConstantScoreQuery(filterB);
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(query, filterB, 1).totalHits); // Query for field:b, Filter field:b
+    assertEquals(1, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query for field:b, Filter field:b
 
     Filter filterA = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))));
     query = new ConstantScoreQuery(filterA);
 
-    assertEquals(0, s.search(query, filterB, 1).totalHits); // Query field:b, Filter field:a
+    assertEquals(0, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query field:b, Filter field:a
 
     r.close();
     d.close();

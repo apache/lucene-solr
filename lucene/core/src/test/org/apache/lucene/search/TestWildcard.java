@@ -254,7 +254,7 @@ public class TestWildcard
 
   private void assertMatches(IndexSearcher searcher, Query q, int expectedMatches)
       throws IOException {
-    ScoreDoc[] result = searcher.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] result = searcher.search(q, 1000).scoreDocs;
     assertEquals(expectedMatches, result.length);
   }
 
@@ -354,14 +354,14 @@ public class TestWildcard
     // test queries that must find all
     for (Query q : matchAll) {
       if (VERBOSE) System.out.println("matchAll: q=" + q + " " + q.getClass().getName());
-      ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+      ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
       assertEquals(docs.length, hits.length);
     }
     
     // test queries that must find none
     for (Query q : matchNone) {
       if (VERBOSE) System.out.println("matchNone: q=" + q + " " + q.getClass().getName());
-      ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+      ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
       assertEquals(0, hits.length);
     }
 
@@ -370,7 +370,7 @@ public class TestWildcard
       for (int j = 0; j < matchOneDocPrefix[i].length; j++) {
         Query q = matchOneDocPrefix[i][j];
         if (VERBOSE) System.out.println("match 1 prefix: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
-        ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+        ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
         assertEquals(1,hits.length);
         assertEquals(i,hits[0].doc);
       }
@@ -381,7 +381,7 @@ public class TestWildcard
       for (int j = 0; j < matchOneDocWild[i].length; j++) {
         Query q = matchOneDocWild[i][j];
         if (VERBOSE) System.out.println("match 1 wild: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
-        ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+        ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
         assertEquals(1,hits.length);
         assertEquals(i,hits[0].doc);
       }

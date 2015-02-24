@@ -364,7 +364,7 @@ public class SpellChecker implements java.io.Closeable {
       int maxHits = 10 * numSug;
 
   //    System.out.println("Q: " + query);
-      ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
+      ScoreDoc[] hits = indexSearcher.search(query, maxHits).scoreDocs;
   //    System.out.println("HITS: " + hits.length());
       SuggestWordQueue sugQueue = new SuggestWordQueue(numSug, comparator);
 

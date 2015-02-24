@@ -105,7 +105,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     // create a sort field and sort by it (reverse order)
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    searcher.search(query, null, 3, sort);
+    searcher.search(query, 3, sort);
   }
   
   /** tests the returned sort values are correct */
@@ -117,7 +117,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = (float) Math.sqrt(d.score);
@@ -135,7 +135,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -154,7 +154,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -174,7 +174,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr2.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -206,7 +206,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile(sb.toString());
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, null, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = n*d.score;
@@ -221,7 +221,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
     bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
     Sort sort = new Sort(distance.getSortField(bindings, false));
-    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
     assertEquals(0.4619D, (Double)d.fields[0], 1E-4);
@@ -238,7 +238,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("doc['popularity'].value", new IntFieldSource("popularity"));
     Sort sort = new Sort(popularity.getSortField(bindings, true));
-    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
 
     FieldDoc d = (FieldDoc)td.scoreDocs[0];
     assertEquals(20D, (Double)d.fields[0], 1E-4);
@@ -288,7 +288,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
       }
     };
     Sort sort = new Sort(popularity.getSortField(bindings, false));
-    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), null, 3, sort);
+    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
 
     FieldDoc d = (FieldDoc)td.scoreDocs[0];
     assertEquals(2092D, (Double)d.fields[0], 1E-4);

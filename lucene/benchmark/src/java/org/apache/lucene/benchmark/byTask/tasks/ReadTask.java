@@ -122,14 +122,14 @@ public abstract class ReadTask extends PerfTask {
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
                                                                    true, withScore(),
                                                                    withMaxScore());
-            searcher.search(q, null, collector);
+            searcher.search(q, collector);
             hits = collector.topDocs();
           } else {
             hits = searcher.search(q, numHits);
           }
         } else {
           Collector collector = createCollector();
-          searcher.search(q, null, collector);
+          searcher.search(q, collector);
           //hits = collector.topDocs();
         }
 

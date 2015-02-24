@@ -443,7 +443,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       IndexReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
       assertEquals(10, hits.length);
       reader.close();
 
@@ -465,7 +465,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
       reader = DirectoryReader.open(dir);
       searcher = newSearcher(reader);
-      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
       assertEquals(27, hits.length);
       reader.close();
 

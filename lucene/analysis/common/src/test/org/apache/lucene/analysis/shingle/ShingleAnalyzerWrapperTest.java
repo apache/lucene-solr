@@ -114,7 +114,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
       ts.end();
     }
 
-    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
     int[] ranks = new int[] { 0 };
     compareRanks(hits, ranks);
   }
@@ -139,7 +139,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
       ts.end();
     }
 
-    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
   }

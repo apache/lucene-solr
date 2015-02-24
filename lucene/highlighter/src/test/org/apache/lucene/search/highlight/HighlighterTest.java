@@ -1013,7 +1013,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // it rewrites to ConstantScoreQuery which cannot be highlighted
     // query = unReWrittenQuery.rewrite(reader);
     if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
-    hits = searcher.search(query, null, 1000);
+    hits = searcher.search(query, 1000);
 
     for (int i = 0; i < hits.totalHits; i++) {
       final Document doc = searcher.doc(hits.scoreDocs[i].doc);
@@ -1035,7 +1035,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     // try null field
     
-    hits = searcher.search(query, null, 1000);
+    hits = searcher.search(query, 1000);
     
     numHighlights = 0;
 
@@ -1060,7 +1060,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     
     // try default field
     
-    hits = searcher.search(query, null, 1000);
+    hits = searcher.search(query, 1000);
     
     numHighlights = 0;
 
@@ -1540,7 +1540,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         if (VERBOSE) System.out.println("Searching with primitive query");
         // forget to set this and...
         // query=query.rewrite(reader);
-        TopDocs hits = searcher.search(query, null, 1000);
+        TopDocs hits = searcher.search(query, 1000);
 
         // create an instance of the highlighter with the tags used to surround
         // highlighted text
@@ -1912,7 +1912,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     //Scorer scorer = new QueryTermScorer( query, "t_text1" );
     Highlighter h = new Highlighter( scorer );
 
-    TopDocs hits = searcher.search(query, null, 10);
+    TopDocs hits = searcher.search(query, 10);
     for( int i = 0; i < hits.totalHits; i++ ){
       Document doc = searcher.doc( hits.scoreDocs[i].doc );
       String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
@@ -1943,7 +1943,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       scorer.setUsePayloads(true);
       Highlighter h = new Highlighter(scorer);
 
-      TopDocs hits = searcher.search(query, null, 10);
+      TopDocs hits = searcher.search(query, 10);
       assertEquals(1, hits.scoreDocs.length);
       TokenStream stream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), 0, FIELD_NAME, analyzer);
       if (random().nextBoolean()) {
@@ -1995,7 +1995,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // you must use a rewritten query!
     query = unReWrittenQuery.rewrite(reader);
     if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
-    hits = searcher.search(query, null, 1000);
+    hits = searcher.search(query, 1000);
   }
 
   public void assertExpectedHighlightCount(final int maxNumFragmentsRequired,

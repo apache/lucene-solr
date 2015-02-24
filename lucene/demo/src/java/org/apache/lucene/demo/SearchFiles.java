@@ -120,7 +120,7 @@ public class SearchFiles {
       if (repeat > 0) {                           // repeat & time as benchmark
         Date start = new Date();
         for (int i = 0; i < repeat; i++) {
-          searcher.search(query, null, 100);
+          searcher.search(query, 100);
         }
         Date end = new Date();
         System.out.println("Time: "+(end.getTime()-start.getTime())+"ms");

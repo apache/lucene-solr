@@ -1006,7 +1006,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
                     Collections.singletonMap("f", Type.SORTED));
     w.close();
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.Type.STRING)));
+    TopDocs hits = s.search(new TermQuery(new Term("t", "1")), 10, new Sort(new SortField("f", SortField.Type.STRING)));
     assertEquals(2, hits.totalHits);
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
@@ -1035,7 +1035,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
                          Collections.singletonMap("string", Type.SORTED));
     IndexSearcher searcher = new IndexSearcher(reader);
     try {
-      searcher.search(new MatchAllDocsQuery(), null, 500, sort);
+      searcher.search(new MatchAllDocsQuery(), 500, sort);
       fail("didn't get expected exception");
     } catch (IllegalStateException expected) {}
     reader.close();
@@ -1069,10 +1069,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Query q = new TermQuery(new Term("body", "text"));
     IndexSearcher s = newSearcher(r);
     float maxScore = s.search(q , 10).getMaxScore();
-    assertEquals(maxScore, s.search(q, null, 3, Sort.INDEXORDER, random().nextBoolean(), true).getMaxScore(), 0.0);
-    assertEquals(maxScore, s.search(q, null, 3, Sort.RELEVANCE, random().nextBoolean(), true).getMaxScore(), 0.0);
-    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, false)}), random().nextBoolean(), true).getMaxScore(), 0.0);
-    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, 3, Sort.INDEXORDER, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, 3, Sort.RELEVANCE, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, false)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
     TestUtil.checkReader(r);
     r.close();
     d.close();
@@ -1084,27 +1084,27 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Query query = new TermQuery(new Term("contents", "foo"));
   
     Sort sort = new Sort();
-    TopDocs td = empty.search(query, null, 10, sort, true, true);
+    TopDocs td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
 
     sort.setSort(SortField.FIELD_DOC);
-    td = empty.search(query, null, 10, sort, true, true);
+    td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
 
     sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
-    td = empty.search(query, null, 10, sort, true, true);
+    td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
     
     sort.setSort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
-    td = empty.search(query, null, 10, sort, true, true);
+    td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
     
     sort.setSort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
-    td = empty.search(query, null, 10, sort, true, true);
+    td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
 
     sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
-    td = empty.search(query, null, 10, sort, true, true);
+    td = empty.search(query, 10, sort, true, true);
     assertEquals(0, td.totalHits);
   }
   
@@ -1146,7 +1146,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
     assertEquals(1, expected.totalHits);
-    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), null, 10, sort, true, true);
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort, true, true);
     
     assertEquals(expected.totalHits, actual.totalHits);
     assertEquals(expected.scoreDocs[0].score, actual.scoreDocs[0].score, 0F);

@@ -192,7 +192,7 @@ public class TestDocument extends LuceneTestCase {
     Query query = new TermQuery(new Term("keyword", "test1"));
     
     // ensure that queries return expected results without DateFilter first
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
     doAssert(searcher.doc(hits[0].doc), true);
@@ -224,7 +224,7 @@ public class TestDocument extends LuceneTestCase {
     query.add(new Term("indexed_not_tokenized", "test1"));
     query.add(new Term("indexed_not_tokenized", "test2"));
     
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
     doAssert(searcher.doc(hits[0].doc), true);
@@ -303,7 +303,7 @@ public class TestDocument extends LuceneTestCase {
     Query query = new TermQuery(new Term("keyword", "test"));
     
     // ensure that queries return expected results without DateFilter first
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     int result = 0;
     for (int i = 0; i < 3; i++) {

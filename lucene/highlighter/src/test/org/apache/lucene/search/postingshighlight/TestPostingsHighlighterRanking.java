@@ -272,7 +272,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         }
       };
     Query query = new TermQuery(new Term("body", "test"));
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 1);
     assertEquals(1, snippets.length);
@@ -313,7 +313,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 1);
     assertEquals(1, snippets.length);

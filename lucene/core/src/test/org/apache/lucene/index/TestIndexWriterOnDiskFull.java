@@ -202,7 +202,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     assertEquals("first docFreq", 57, reader.docFreq(searchTerm));
     
     IndexSearcher searcher = newSearcher(reader);
-    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
     assertEquals("first number of hits", 57, hits.length);
     reader.close();
     
@@ -396,7 +396,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           
           searcher = newSearcher(reader);
           try {
-            hits = searcher.search(new TermQuery(searchTerm), null, END_COUNT).scoreDocs;
+            hits = searcher.search(new TermQuery(searchTerm), END_COUNT).scoreDocs;
           } catch (IOException e) {
             e.printStackTrace(System.out);
             fail(testName + ": exception when searching: " + e);

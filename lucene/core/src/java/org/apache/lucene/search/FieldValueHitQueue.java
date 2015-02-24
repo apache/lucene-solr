@@ -27,7 +27,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * @lucene.experimental
  * @since 2.9
- * @see IndexSearcher#search(Query,Filter,int,Sort)
+ * @see IndexSearcher#search(Query,int,Sort)
  */
 public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends PriorityQueue<T> {
 
@@ -202,7 +202,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    * 
    * @param entry The Entry used to create a FieldDoc
    * @return The newly created FieldDoc
-   * @see IndexSearcher#search(Query,Filter,int,Sort)
+   * @see IndexSearcher#search(Query,int,Sort)
    */
   FieldDoc fillFields(final Entry entry) {
     final int n = comparators.length;

@@ -97,7 +97,7 @@ public class TestOrdValues extends LuceneTestCase {
     Query q = new FunctionQuery(vs);
     log("test: " + q);
     QueryUtils.check(random(), q, s);
-    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
     assertEquals("All docs should be matched!", N_DOCS, h.length);
     String prevID = inOrder
             ? "IE"   // greater than all ids of docs in this test ("ID0001", etc.)
@@ -145,7 +145,7 @@ public class TestOrdValues extends LuceneTestCase {
       vs = new ReverseOrdFieldSource(field);
     }
     Query q = new FunctionQuery(vs);
-    TopDocs td = s.search(q, null, 1000);
+    TopDocs td = s.search(q, 1000);
     assertEquals("All docs should be matched!", N_DOCS, td.totalHits);
     ScoreDoc sd[] = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {

@@ -52,7 +52,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       Term searchTerm = new Term("content", "aaa");
       DirectoryReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
       assertEquals("first number of hits", 14, hits.length);
       reader.close();
 
@@ -65,7 +65,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
         }
         IndexReader r = DirectoryReader.open(dir);
         searcher = newSearcher(r);
-        hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
         assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
         r.close();
         assertTrue("reader should have still been current", reader.isCurrent());
@@ -77,7 +77,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
       IndexReader r = DirectoryReader.open(dir);
       searcher = newSearcher(r);
-      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
       assertEquals("reader did not see changes after writer was closed", 47, hits.length);
       r.close();
       reader.close();
@@ -108,7 +108,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Term searchTerm = new Term("content", "aaa");
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
     assertEquals("first number of hits", 14, hits.length);
     reader.close();
 
@@ -123,7 +123,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
-    hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
     assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
     reader.close();
 
@@ -134,7 +134,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
-    hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
     assertEquals("saw changes after writer.abort", 14, hits.length);
     reader.close();
 
@@ -156,7 +156,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       }
       IndexReader r = DirectoryReader.open(dir);
       searcher = newSearcher(r);
-      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
       assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
       r.close();
     }
@@ -164,7 +164,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
     searcher = newSearcher(r);
-    hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
     assertEquals("didn't see changes after close", 218, hits.length);
     r.close();
 

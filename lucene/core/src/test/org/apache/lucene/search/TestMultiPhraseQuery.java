@@ -90,9 +90,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         .toString());
     
     ScoreDoc[] result;
-    result = searcher.search(query1, null, 1000).scoreDocs;
+    result = searcher.search(query1, 1000).scoreDocs;
     assertEquals(2, result.length);
-    result = searcher.search(query2, null, 1000).scoreDocs;
+    result = searcher.search(query2, 1000).scoreDocs;
     assertEquals(0, result.length);
     
     // search for "blue* pizza":
@@ -110,13 +110,13 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     query3.add(termsWithPrefix.toArray(new Term[0]));
     query3.add(new Term("body", "pizza"));
     
-    result = searcher.search(query3, null, 1000).scoreDocs;
+    result = searcher.search(query3, 1000).scoreDocs;
     assertEquals(2, result.length); // blueberry pizza, bluebird pizza
     assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
     
     // test slop:
     query3.setSlop(1);
-    result = searcher.search(query3, null, 1000).scoreDocs;
+    result = searcher.search(query3, 1000).scoreDocs;
     
     // just make sure no exc:
     searcher.explain(query3, 0);
@@ -224,7 +224,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     q.add(trouble, BooleanClause.Occur.MUST);
     
     // exception will be thrown here without fix
-    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
     
     assertEquals("Wrong number of hits", 2, hits.length);
     
@@ -256,7 +256,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     q.add(trouble, BooleanClause.Occur.MUST);
     
     // exception will be thrown here without fix for #35626:
-    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
     assertEquals("Wrong number of hits", 0, hits.length);
     writer.close();
     reader.close();
@@ -275,7 +275,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     q.add(new Term("body", "a"));
     q.add(new Term[] {new Term("body", "nope"), new Term("body", "nope")});
     assertEquals("Wrong number of hits", 0,
-        searcher.search(q, null, 1).totalHits);
+        searcher.search(q, 1).totalHits);
     
     // just make sure no exc:
     searcher.explain(q, 0);

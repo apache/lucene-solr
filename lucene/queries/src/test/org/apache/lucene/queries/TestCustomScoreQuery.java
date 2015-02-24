@@ -263,11 +263,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q5CustomMulAdd);
 
     // do al the searches 
-    TopDocs td1 = s.search(q1, null, 1000);
-    TopDocs td2CustomNeutral = s.search(q2CustomNeutral, null, 1000);
-    TopDocs td3CustomMul = s.search(q3CustomMul, null, 1000);
-    TopDocs td4CustomAdd = s.search(q4CustomAdd, null, 1000);
-    TopDocs td5CustomMulAdd = s.search(q5CustomMulAdd, null, 1000);
+    TopDocs td1 = s.search(q1, 1000);
+    TopDocs td2CustomNeutral = s.search(q2CustomNeutral, 1000);
+    TopDocs td3CustomMul = s.search(q3CustomMul, 1000);
+    TopDocs td4CustomAdd = s.search(q4CustomAdd, 1000);
+    TopDocs td5CustomMulAdd = s.search(q5CustomMulAdd, 1000);
 
     // put results in map so we can verify the scores although they have changed
     Map<Integer,Float> h1               = topDocsToMap(td1);

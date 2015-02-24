@@ -49,55 +49,55 @@ public class TestPrefixFilter extends LuceneTestCase {
     PrefixFilter filter = new PrefixFilter(new Term("category", "/Computers"));
     Query query = new ConstantScoreQuery(filter);
     IndexSearcher searcher = newSearcher(reader);
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(4, hits.length);
 
     // test middle of values
     filter = new PrefixFilter(new Term("category", "/Computers/Mac"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(2, hits.length);
 
     // test start of values
     filter = new PrefixFilter(new Term("category", "/Computers/Linux"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     // test end of values
     filter = new PrefixFilter(new Term("category", "/Computers/Windows"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     // test non-existant
     filter = new PrefixFilter(new Term("category", "/Computers/ObsoleteOS"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // test non-existant, before values
     filter = new PrefixFilter(new Term("category", "/Computers/AAA"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // test non-existant, after values
     filter = new PrefixFilter(new Term("category", "/Computers/ZZZ"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // test zero length prefix
     filter = new PrefixFilter(new Term("category", ""));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(4, hits.length);
 
     // test non existent field
     filter = new PrefixFilter(new Term("nonexistantfield", "/Computers"));
     query = new ConstantScoreQuery(filter);
-    hits = searcher.search(query, null, 1000).scoreDocs;
+    hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     writer.close();

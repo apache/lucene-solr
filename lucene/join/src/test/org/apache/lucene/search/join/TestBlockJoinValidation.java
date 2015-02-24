@@ -31,6 +31,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -121,7 +122,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     Filter childFilter = new QueryWrapperFilter(new TermQuery(new Term("common_field", "1")));
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.ILLEGAL_ADVANCE_ON_PARENT);
-    indexSearcher.search(blockJoinQuery, childFilter, 1);
+    indexSearcher.search(new FilteredQuery(blockJoinQuery, childFilter), 1);
   }
 
   @Test

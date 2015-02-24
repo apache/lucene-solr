@@ -1072,7 +1072,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     qp.setLocale(Locale.ENGLISH);
     Query q = getQuery(query,qp);
-    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
+    ScoreDoc[] hits = is.search(q, 1000).scoreDocs;
     assertEquals(expected, hits.length);
     setDefaultField( oldDefaultField );
   }

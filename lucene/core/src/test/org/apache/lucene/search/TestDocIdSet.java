@@ -133,7 +133,7 @@ public class TestDocIdSet extends LuceneTestCase {
       }
     };
     
-    Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(new FilteredQuery(new MatchAllDocsQuery(), f), 10).totalHits);
     reader.close();
     dir.close();
   }
@@ -179,7 +179,7 @@ public class TestDocIdSet extends LuceneTestCase {
       }
     };
     
-    Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(new FilteredQuery(new MatchAllDocsQuery(), f), 10).totalHits);
     reader.close();
     dir.close();
   }

@@ -116,7 +116,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       final Sort sort = new Sort(SortField.FIELD_SCORE,
                                  new SortField(ID_FIELD, SortField.Type.INT));
 
-      ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
+      ScoreDoc[] hits = searcher.search(query, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 
@@ -129,7 +129,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, MED_PRIORITY)), BooleanClause.Occur.SHOULD);
       out.println("Query: " + booleanQuery.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(booleanQuery, null, MAX_DOCS, sort).scoreDocs;
+      hits = searcher.search(booleanQuery, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 

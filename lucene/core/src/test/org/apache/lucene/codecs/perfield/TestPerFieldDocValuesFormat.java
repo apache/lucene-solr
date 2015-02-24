@@ -106,7 +106,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
 
     assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
     Query query = new TermQuery(new Term("fieldname", "text"));
-    TopDocs hits = isearcher.search(query, null, 1);
+    TopDocs hits = isearcher.search(query, 1);
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {

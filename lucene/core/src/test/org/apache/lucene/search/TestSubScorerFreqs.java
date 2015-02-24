@@ -124,7 +124,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   public void testTermQuery() throws Exception {
     TermQuery q = new TermQuery(new Term("f", "d"));
     CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10));
-    s.search(q, null, c);
+    s.search(q, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
     for (int i = 0; i < maxDocs; i++) {
@@ -164,7 +164,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     for (final Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
           10), occur);
-      s.search(query, null, c);
+      s.search(query, c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
       boolean includeOptional = occur.contains("SHOULD");
@@ -196,7 +196,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     q.add(new Term("f", "b"));
     q.add(new Term("f", "c"));
     CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10));
-    s.search(q, null, c);
+    s.search(q, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
     for (int i = 0; i < maxDocs; i++) {

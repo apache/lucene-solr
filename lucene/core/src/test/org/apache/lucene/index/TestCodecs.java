@@ -304,17 +304,6 @@ public class TestCodecs extends LuceneTestCase {
     dir.close();
   }
 
-  private ScoreDoc[] search(final IndexWriter writer, final Query q, final int n) throws IOException {
-    final IndexReader reader = writer.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
-    try {
-      return searcher.search(q, null, n).scoreDocs;
-    }
-    finally {
-      reader.close();
-    }
-  }
-
   private class Verify extends Thread {
     final Fields termsDict;
     final FieldData[] fields;

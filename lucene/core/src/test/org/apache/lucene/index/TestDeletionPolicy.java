@@ -672,7 +672,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
         IndexReader reader = DirectoryReader.open(dir);
         IndexSearcher searcher = newSearcher(reader);
-        ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+        ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
         assertEquals(16, hits.length);
         reader.close();
 
@@ -690,7 +690,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       IndexReader rwReader = DirectoryReader.open(dir);
       IndexSearcher searcher = newSearcher(rwReader);
-      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
       assertEquals(0, hits.length);
 
       // Simplistic check: just verify only the past N segments_N's still
@@ -708,7 +708,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           // Work backwards in commits on what the expected
           // count should be.
           searcher = newSearcher(reader);
-          hits = searcher.search(query, null, 1000).scoreDocs;
+          hits = searcher.search(query, 1000).scoreDocs;
           assertEquals(expectedCount, hits.length);
           if (expectedCount == 0) {
             expectedCount = 16;

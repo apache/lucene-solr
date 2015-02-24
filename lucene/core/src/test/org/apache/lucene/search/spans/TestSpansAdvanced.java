@@ -135,7 +135,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     
     // Hits hits = searcher.search(query);
     // hits normalizes and throws things off if one score is greater than 1.0
-    TopDocs topdocs = s.search(query, null, 10000);
+    TopDocs topdocs = s.search(query, 10000);
     
     /*****
      * // display the hits System.out.println(hits.length() +

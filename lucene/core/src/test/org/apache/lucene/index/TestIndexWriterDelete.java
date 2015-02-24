@@ -473,7 +473,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private int getHitCount(Directory dir, Term term) throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    int hitCount = searcher.search(new TermQuery(term), null, 1000).totalHits;
+    int hitCount = searcher.search(new TermQuery(term), 1000).totalHits;
     reader.close();
     return hitCount;
   }
@@ -656,7 +656,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         IndexSearcher searcher = newSearcher(newReader);
         ScoreDoc[] hits = null;
         try {
-          hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+          hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
         }
         catch (IOException e) {
           e.printStackTrace();

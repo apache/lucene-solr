@@ -40,8 +40,7 @@
  * on implementing your own Query class, see <a href="#customQueriesExpert">Custom Queries -- Expert Level</a> below.
  * <p>
  * To perform a search, applications usually call {@link
- * org.apache.lucene.search.IndexSearcher#search(Query,int)} or {@link
- * org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
+ * org.apache.lucene.search.IndexSearcher#search(Query,int)}.
  * <p>
  * Once a Query has been created and submitted to the {@link org.apache.lucene.search.IndexSearcher IndexSearcher}, the scoring
  * process begins. After some infrastructure setup, control finally passes to the {@link org.apache.lucene.search.Weight Weight}

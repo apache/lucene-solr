@@ -141,7 +141,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
     // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
     // and all the similarity factors are set to 1
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("should be 10 hits", hits.totalHits == 10);
     for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -155,7 +155,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       }
       // all should have score = 3 because adjacent terms have payloads of 2,4
       // and all the similarity factors are set to 1
-      hits = searcher.search(query, null, 100);
+      hits = searcher.search(query, 100);
       assertTrue("hits is null and it shouldn't be", hits != null);
       assertEquals("should be 100 hits", 100, hits.totalHits);
       for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -179,7 +179,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     clauses[1] = q2;
     query = new PayloadNearQuery(clauses, 10, false); 
     //System.out.println(query.toString());
-    assertEquals(12, searcher.search(query, null, 100).totalHits);
+    assertEquals(12, searcher.search(query, 100).totalHits);
     /*
     System.out.println(hits.totalHits);
     for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -197,7 +197,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     QueryUtils.check(query);
     // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
     // and all the similarity factors are set to 1
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("should be 10 hits", hits.totalHits == 10);
     for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -216,7 +216,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     query = newPhraseQuery("field", "twenty two", true, new MaxPayloadFunction());
     QueryUtils.check(query);
     // all 10 hits should have score = 4 (max payload value)
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("should be 10 hits", hits.totalHits == 10);
     for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -235,7 +235,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     query = newPhraseQuery("field", "twenty two", true, new MinPayloadFunction());
     QueryUtils.check(query);
     // all 10 hits should have score = 2 (min payload value)
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("should be 10 hits", hits.totalHits == 10);
     for (int j = 0; j < hits.scoreDocs.length; j++) {
@@ -269,7 +269,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     PayloadNearQuery query;
     TopDocs hits;
     query = newPhraseQuery("field", "nine hundred ninety nine", true, new AveragePayloadFunction());
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     ScoreDoc doc = hits.scoreDocs[0];
     //    System.out.println("Doc: " + doc.toString());
@@ -291,7 +291,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     SpanQuery q4 = newPhraseQuery("field", "hundred nine", false, new AveragePayloadFunction());
     SpanQuery[]clauses = new SpanQuery[] {new PayloadNearQuery(new SpanQuery[] {q1,q2}, 0, true), new PayloadNearQuery(new SpanQuery[] {q3,q4}, 0, false)};
     query = new PayloadNearQuery(clauses, 0, false);
-    hits = searcher.search(query, null, 100);
+    hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     // should be only 1 hit - doc 999
     assertTrue("should only be one hit", hits.scoreDocs.length == 1);
