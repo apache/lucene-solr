@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompoundFormatTestCase;
@@ -60,6 +61,7 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
     if (newDir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)newDir).setEnableVirusScanner(false);
     }
+    int size = newDir.listAll().length;
     Lucene40CompoundReader csw = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), true);
     Lucene40CompoundReader nested = new Lucene40CompoundReader(newDir, "b.cfs", newIOContext(random()), true);
     IndexOutput out = nested.createOutput("b.xyz", newIOContext(random()));
@@ -75,7 +77,7 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
     newDir.deleteFile("b.cfe");
     csw.close();
     
-    assertEquals(2, newDir.listAll().length);
+    assertEquals(size+2, newDir.listAll().length);
     csw = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), false);
     
     assertEquals(2, csw.listAll().length);
@@ -104,15 +106,11 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
         os.writeInt(i*j);
       }
       os.close();
-      String[] listAll = newDir.listAll();
-      assertEquals(1, listAll.length);
-      assertEquals("d.cfs", listAll[0]);
+      assertTrue(Arrays.asList(newDir.listAll()).contains("d.cfs"));
     }
     createSequenceFile(dir, "d1", (byte) 0, 15);
     csw.copyFrom(dir, "d1", "d1", newIOContext(random()));
-    String[] listAll = newDir.listAll();
-    assertEquals(1, listAll.length);
-    assertEquals("d.cfs", listAll[0]);
+    assertTrue(Arrays.asList(newDir.listAll()).contains("d.cfs"));
     csw.close();
     
     Directory csr = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), false);
