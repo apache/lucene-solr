@@ -62,6 +62,8 @@ grant {
   // analyzers/uima: needed by UIMA message localization... (?)
   permission java.lang.RuntimePermission "createSecurityManager";
   permission java.lang.RuntimePermission "createClassLoader";
+  // expressions TestCustomFunctions (only on older java8?)
+  permission java.lang.RuntimePermission "getClassLoader";
   // needed to test unmap hack on platforms that support it
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
   
