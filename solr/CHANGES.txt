@@ -197,6 +197,9 @@ Other Changes
 * SOLR-7147: Introduce new TrackingShardHandlerFactory for monitoring what requests
   are sent to shards during tests. (hossman, shalin)
 
+* SOLR-7160: Rename ConfigSolr to NodeConfig, and decouple it from xml
+  representation (Alan Woodward)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
