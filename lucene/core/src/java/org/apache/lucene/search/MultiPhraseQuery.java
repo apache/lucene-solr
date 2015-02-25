@@ -230,6 +230,7 @@ public class MultiPhraseQuery extends Query {
           termsEnum.seekExact(term.bytes(), termState);
           postingsEnum = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
 
+          // nocommit: check
           if (postingsEnum == null) {
             // term does exist, but has no positions
             assert termsEnum.postings(liveDocs, null, PostingsEnum.NONE) != null: "termstate found but no term exists in reader";
@@ -483,6 +484,7 @@ class UnionPostingsEnum extends PostingsEnum {
       }
       termsEnum.seekExact(term.bytes(), termState);
       PostingsEnum postings = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
+      // nocommit: check
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");

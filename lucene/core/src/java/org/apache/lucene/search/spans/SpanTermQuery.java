@@ -119,6 +119,7 @@ public class SpanTermQuery extends SpanQuery {
     if (postings != null) {
       return new TermSpans(postings, term);
     } else {
+      // nocommit: check
       // term does exist, but has no positions
       throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
     }

@@ -458,6 +458,7 @@ public class TestCodecs extends LuceneTestCase {
               if (postings != null) {
                 docs = postings;
               } else {
+                // nocommit: check
                 docs = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FREQS);
               }
             } else {

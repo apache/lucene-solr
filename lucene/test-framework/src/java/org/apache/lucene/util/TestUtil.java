@@ -1020,6 +1020,7 @@ public final class TestUtil {
           default: posFlags = PostingsEnum.ALL; break;
         }
         PostingsEnum docsAndPositions = termsEnum.postings(liveDocs, null, posFlags);
+        // nocommit: check
         if (docsAndPositions != null) {
           return docsAndPositions;
         }

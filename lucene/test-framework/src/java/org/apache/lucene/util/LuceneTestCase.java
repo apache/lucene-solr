@@ -1968,6 +1968,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   public void assertDocsAndPositionsEnumEquals(String info, PostingsEnum leftDocs, PostingsEnum rightDocs) throws IOException {
     if (leftDocs == null || rightDocs == null) {
+      // nocommit: this should now only be for term or field not existing, is this assert used in that way?
       assertNull(leftDocs);
       assertNull(rightDocs);
       return;

@@ -159,9 +159,8 @@ public class AssertingLeafReader extends FilterLeafReader {
         actualReuse = null;
       }
       PostingsEnum docs = super.postings(liveDocs, actualReuse, flags);
-      if (docs == null) {
-        return null;
-      } else if (docs == actualReuse) {
+      assert docs != null;
+      if (docs == actualReuse) {
         // codec reused, reset asserting state
         ((AssertingPostingsEnum)reuse).reset();
         return reuse;

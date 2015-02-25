@@ -552,6 +552,7 @@ public class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
+        // nocommit: check
         de = postings[i] = termsEnum.postings(null, null, PostingsEnum.OFFSETS);
         if (de == null) {
           // no positions available

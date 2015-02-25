@@ -312,6 +312,7 @@ public class PhraseQuery extends Query {
 
         // PhraseQuery on a field that did not index
         // positions.
+        // nocommit: check
         if (postingsEnum == null) {
           assert te.seekExact(t.bytes()) : "termstate found but no term exists in reader";
           // term does exist, but has no positions

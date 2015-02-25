@@ -104,6 +104,7 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
+      // nocommit: check
       dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
       if (dpEnum == null) {
         // null snippet

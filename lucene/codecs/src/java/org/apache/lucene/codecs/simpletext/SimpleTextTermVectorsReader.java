@@ -388,16 +388,15 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-
+      
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         SimpleTVPostings postings = current.getValue();
-        if (postings.positions == null && postings.startOffsets == null) {
-          return null;
+        if (postings.positions != null || postings.startOffsets != null) {
+          // TODO: reuse
+          SimpleTVPostingsEnum e = new SimpleTVPostingsEnum();
+          e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
+          return e;
         }
-        // TODO: reuse
-        SimpleTVPostingsEnum e = new SimpleTVPostingsEnum();
-        e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
-        return e;
       }
 
       // TODO: reuse

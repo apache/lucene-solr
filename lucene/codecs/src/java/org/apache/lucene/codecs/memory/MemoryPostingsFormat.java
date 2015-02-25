@@ -829,10 +829,9 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
 
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-        if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-          return null;
-        }
+      // TODO: the logic of which enum impl to choose should be refactored to be simpler...
+      boolean hasPositions = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      if (hasPositions && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
         decodeMetaData();
         FSTPostingsEnum docsAndPositionsEnum;

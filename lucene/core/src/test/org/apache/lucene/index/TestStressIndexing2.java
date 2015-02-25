@@ -397,6 +397,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
               dpEnum = termsEnum3.postings(null, dpEnum, PostingsEnum.ALL);
+              // nocommit: check
               if (dpEnum != null) {
                 assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
                 final int freq = dpEnum.freq();
@@ -620,6 +621,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         
         dpEnum1 = termsEnum1.postings(null, dpEnum1, PostingsEnum.ALL);
         dpEnum2 = termsEnum2.postings(null, dpEnum2, PostingsEnum.ALL);
+        // nocommit: check
         if (dpEnum1 != null) {
           assertNotNull(dpEnum2);
           int docID1 = dpEnum1.nextDoc();

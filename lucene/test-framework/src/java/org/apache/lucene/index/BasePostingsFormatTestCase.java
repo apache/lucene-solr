@@ -1626,6 +1626,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                       } else {
                         docs = termsEnum.postings(null, null, PostingsEnum.POSITIONS);
                       }
+                      // nocommit: can we remove the noPositions and always ask for positions here?
                       int docFreq = 0;
                       long totalTermFreq = 0;
                       while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {

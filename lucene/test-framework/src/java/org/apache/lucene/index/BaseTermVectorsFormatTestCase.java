@@ -454,6 +454,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       bits.clear(0);
       PostingsEnum docsAndPositionsEnum = termsEnum.postings(bits, random().nextBoolean() ? null : this.docsEnum.get(), PostingsEnum.POSITIONS);
       assertEquals(ft.storeTermVectorOffsets() || ft.storeTermVectorPositions(), docsAndPositionsEnum != null);
+      // nocommit: check
       if (docsAndPositionsEnum != null) {
         assertEquals(PostingsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
       }

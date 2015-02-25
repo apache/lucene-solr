@@ -1050,6 +1050,7 @@ public class CheckIndex implements Closeable {
         sumDocFreq += docFreq;
         
         docs = termsEnum.postings(liveDocs, docs);
+        // nocommit: check null
         postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
@@ -1389,6 +1390,7 @@ public class CheckIndex implements Closeable {
               }
               
               docs = termsEnum.postings(liveDocs, docs, PostingsEnum.NONE);
+              // nocommit: null check still needed? how to replace?
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -1407,6 +1409,7 @@ public class CheckIndex implements Closeable {
               
               totDocFreq += termsEnum.docFreq();
               docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+              // nocommit: null check still needed? how to replace?
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
