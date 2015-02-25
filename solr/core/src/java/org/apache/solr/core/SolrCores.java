@@ -126,7 +126,7 @@ class SolrCores {
   }
 
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
-  protected SolrCore putTransientCore(ConfigSolr cfg, String name, SolrCore core, SolrResourceLoader loader) {
+  protected SolrCore putTransientCore(NodeConfig cfg, String name, SolrCore core, SolrResourceLoader loader) {
     SolrCore retCore;
     CoreContainer.log.info("Opening transient core {}", name);
     synchronized (modifyLock) {

@@ -17,6 +17,37 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.update.UpdateShardHandler;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.Snapshot;
+import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.TimerContext;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,37 +62,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.MockConfigSolr;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.xml.sax.SAXException;
 
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
@@ -1129,12 +1129,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseers.get(overseers.size() -1).close();
       overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
     }
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(null);
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
-    Overseer overseer = new Overseer(
-        httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null, new MockConfigSolr());
+    Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null,
+        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));

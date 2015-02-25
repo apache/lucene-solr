@@ -47,6 +47,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -177,12 +178,12 @@ public final class ZkController {
   
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
-  private final String localHostPort;      // example: 54065
-  private final String localHostContext;   // example: solr
+  private final int localHostPort;      // example: 54065
   private final String hostName;           // example: 127.0.0.1
   private final String nodeName;           // example: 127.0.0.1:54065_solr
   private final String baseURL;            // example: http://127.0.0.1:54065/solr
 
+  private final CloudConfig cloudConfig;
 
   private LeaderElector overseerElector;
   
@@ -214,33 +215,33 @@ public final class ZkController {
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after expiration occurred
   private List<OnReconnect> reconnectListeners = new ArrayList<OnReconnect>();
 
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-                      String localHostContext, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames, final CurrentCoreDescriptorProvider registerOnReconnect)
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
-    this.genericCoreNodeNames = genericCoreNodeNames;
+
+    this.cloudConfig = cloudConfig;
+
+    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
+
     // be forgiving and strip this off leading/trailing slashes
     // this allows us to support users specifying hostContext="/" in 
     // solr.xml to indicate the root context, instead of hostContext="" 
     // which means the default of "solr"
-    localHostContext = trimLeadingAndTrailingSlashes(localHostContext);
+    String localHostContext = trimLeadingAndTrailingSlashes(cloudConfig.getSolrHostContext());
 
     this.zkServerAddress = zkServerAddress;
-    this.localHostPort = locaHostPort;
-    this.localHostContext = localHostContext;
-    this.hostName = normalizeHostName(localHost);
-    this.nodeName = generateNodeName(this.hostName,
-        this.localHostPort,
-        this.localHostContext);
+    this.localHostPort = cloudConfig.getSolrHostPort();
+    this.hostName = normalizeHostName(cloudConfig.getHost());
+    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
 
-    this.leaderVoteWait = leaderVoteWait;
-    this.leaderConflictResolveWait = leaderConflictResolveWait;
+    this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
+    this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
-    this.clientTimeout = zkClientTimeout;
+    this.clientTimeout = cloudConfig.getZkClientTimeout();
     DefaultConnectionStrategy strat = new DefaultConnectionStrategy();
-    String zkACLProviderClass = cc.getConfig().getZkACLProviderClass();
+    String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
       zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
@@ -248,7 +249,7 @@ public final class ZkController {
       zkACLProvider = new DefaultZkACLProvider();
     }
 
-    String zkCredentialsProviderClass = cc.getConfig().getZkCredentialsProviderClass();
+    String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
       strat.setZkCredentialsToAddAutomatically(cc.getResourceLoader().newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
     } else {
@@ -256,8 +257,7 @@ public final class ZkController {
     }
     addOnReconnectListener(getConfigDirListener());
 
-    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout,
-        zkClientConnectTimeout, strat,
+    zkClient = new SolrZkClient(zkServerAddress, clientTimeout, zkClientConnectTimeout, strat,
         // on reconnect, reload cloud info
         new OnReconnect() {
 
@@ -362,7 +362,7 @@ public final class ZkController {
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
-    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
+    cmdExecutor = new ZkCmdExecutor(clientTimeout);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
 
@@ -584,7 +584,7 @@ public final class ZkController {
     return hostName;
   }
   
-  public String getHostPort() {
+  public int getHostPort() {
     return localHostPort;
   }
 
@@ -624,7 +624,7 @@ public final class ZkController {
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer(shardHandler, updateShardHandler,
-            CoreContainer.CORES_HANDLER_PATH, zkStateReader, this, cc.getConfig());
+            CoreContainer.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
         overseerElector.setup(context);

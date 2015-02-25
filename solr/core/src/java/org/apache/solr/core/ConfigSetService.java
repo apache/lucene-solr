@@ -19,6 +19,8 @@ package org.apache.solr.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.solr.cloud.CloudConfigSetService;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -37,6 +39,16 @@ import java.util.concurrent.ExecutionException;
  * creation.
  */
 public abstract class ConfigSetService {
+
+  public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
+    if (zkController != null)
+      return new CloudConfigSetService(loader, zkController);
+
+    if (nodeConfig.hasSchemaCache())
+      return new SchemaCaching(loader, nodeConfig.getConfigSetBaseDirectory());
+
+    return new Default(loader, nodeConfig.getConfigSetBaseDirectory());
+  }
 
   protected final SolrResourceLoader parentLoader;
 

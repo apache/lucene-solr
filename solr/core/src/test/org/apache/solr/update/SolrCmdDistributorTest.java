@@ -33,10 +33,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoresLocator;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -73,23 +70,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private UpdateShardHandler updateShardHandler;
   
   public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
-    updateShardHandler = new UpdateShardHandler(new ConfigSolr(null, null) {
-
-      @Override
-      public CoresLocator getCoresLocator() {
-        return null;
-      }
-
-      @Override
-      public PluginInfo getShardHandlerFactoryPluginInfo() {
-        return null;
-      }
-
-      @Override
-      protected String getProperty(CfgProp key) {
-        return null;
-      }
-    });
+    updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     
     stress = 0;
   }

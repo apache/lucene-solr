@@ -16,17 +16,13 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
@@ -36,7 +32,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
@@ -51,7 +50,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private ZkStateReader reader;
 
-  private ConfigSolr cfg;
+  private NodeConfig cfg;
 
   private SolrDispatchFilter solrDispatchFilter;
 
@@ -109,7 +108,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     if (solrDispatchFilter != null) solrDispatchFilter.destroy();
     solrDispatchFilter = new SolrDispatchFilter();
     Object obj = method.invoke(solrDispatchFilter, new SolrResourceLoader(null));
-    cfg = (ConfigSolr) obj;
+    cfg = (NodeConfig) obj;
 
     log.info("####SETUP_END " + getTestName());
   }
@@ -130,7 +129,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       setUpZkAndDiskXml(true, true);
       assertEquals("Should have gotten a new port the xml file sent to ZK, overrides the copy on disk",
-          cfg.getSolrHostPort(), "9045");
+          cfg.getCloudConfig().getSolrHostPort(), 9045);
     } finally {
       closeZK();
     }
@@ -141,7 +140,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       setUpZkAndDiskXml(true, false);
       assertEquals("Should have gotten a new port the xml file sent to ZK",
-          cfg.getSolrHostPort(), "9045");
+          cfg.getCloudConfig().getSolrHostPort(), 9045);
     } finally {
       closeZK();
     }
@@ -180,7 +179,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       System.clearProperty("solr.solrxml.location");
       setUpZkAndDiskXml(false, true);
-      assertEquals("Should have gotten the default port", cfg.getSolrHostPort(), "8983");
+      assertEquals("Should have gotten the default port", cfg.getCloudConfig().getSolrHostPort(), 8983);
     } finally {
       closeZK();
     }

@@ -74,7 +74,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(Path homeDirectory, String xml) throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(homeDirectory.toString());
-    CoreContainer ret = new CoreContainer(ConfigSolr.fromString(loader, xml));
+    CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(loader, xml));
     ret.load();
     return ret;
   }
@@ -203,7 +203,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(ConfigSolr.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
     CoreDescriptor badcore = new CoreDescriptor(cc, "badcore", "badcore", "configSet", "nosuchconfigset");
     cl.add(badcore);
 
@@ -452,7 +452,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(ConfigSolr.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
     cl.add(new CoreDescriptor(cc, "col_ok", "col_ok", "configSet", "minimal"));
     cl.add(new CoreDescriptor(cc, "col_bad", "col_bad", "configSet", "bad-mergepolicy"));
     cc.load();
