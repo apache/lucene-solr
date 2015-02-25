@@ -25,6 +25,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.util.Locale;
@@ -158,19 +159,17 @@ public class MMapDirectory extends FSDirectory {
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
-  public static final boolean UNMAP_SUPPORTED;
-  static {
-    boolean v;
-    try {
-      Class.forName("sun.misc.Cleaner");
-      Class.forName("java.nio.DirectByteBuffer")
-        .getMethod("cleaner");
-      v = true;
-    } catch (Exception e) {
-      v = false;
+  public static final boolean UNMAP_SUPPORTED = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+    @Override
+    public Boolean run() {
+      try {
+        Class.forName("java.nio.DirectByteBuffer").getMethod("cleaner");
+        return true;
+      } catch (Exception e) {
+        return false;
+      }
     }
-    UNMAP_SUPPORTED = v;
-  }
+  });
   
   /**
    * This method enables the workaround for unmapping the buffers
