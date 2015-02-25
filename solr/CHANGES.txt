@@ -112,8 +112,8 @@ New Features
 
 * SOLR-1945: Add support for child docs in DocumentObjectBinder (Noble Paul, Mark Miller)
 
-* SOLR-7125: You can upload and download configurations via CloudSolrClient
-  (Alan Woodward)
+* SOLR-7125, SOLR-7158: You can upload and download configurations via CloudSolrClient
+  (Alan Woodward, Ishan Chattopadhyaya)
 
 * SOLR-5507: Admin UI - Refactoring using AngularJS, first part (Upayavira via 
   Erick Erickson)
