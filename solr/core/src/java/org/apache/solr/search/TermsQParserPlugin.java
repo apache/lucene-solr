@@ -25,7 +25,7 @@ import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesTermsFilter;
+import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MultiTermQueryWrapperFilter;
 import org.apache.lucene.search.Query;
@@ -93,7 +93,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       //note: limited to one val per doc
       @Override
       Filter makeFilter(String fname, BytesRef[] byteRefs) {
-        return new DocValuesTermsFilter(fname, byteRefs);
+        return new QueryWrapperFilter(new DocValuesTermsQuery(fname, byteRefs));
       }
     };
 

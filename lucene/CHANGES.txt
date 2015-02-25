@@ -150,6 +150,9 @@ API Changes
 * LUCENE-6268: Replace FieldValueFilter and DocValuesRangeFilter with equivalent
   queries that support approximations. (Adrien Grand)
 
+* LUCENE-6289: Replace DocValuesRangeFilter with DocValuesRangeQuery which
+  supports approximations. (Adrien Grand)
+
 * LUCENE-6266: Remove unnecessary Directory params from SegmentInfo.toString, 
   SegmentInfos.files/toString, and SegmentCommitInfo.toString. (Robert Muir)
 

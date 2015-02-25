@@ -123,45 +123,10 @@ public final class DocValuesRangeQuery extends Query {
     if (lowerVal == null && upperVal == null) {
       throw new IllegalStateException("Both min and max values cannot be null, call rewrite first");
     }
-    return new Weight(DocValuesRangeQuery.this) {
-
-      private float queryNorm;
-      private float queryWeight;
+    return new ConstantScoreWeight(DocValuesRangeQuery.this) {
 
       @Override
-      public float getValueForNormalization() throws IOException {
-        queryWeight = getBoost();
-        return queryWeight * queryWeight;
-      }
-
-      @Override
-      public void normalize(float norm, float topLevelBoost) {
-        queryNorm = norm * topLevelBoost;
-        queryWeight *= queryNorm;
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context, context.reader().getLiveDocs());
-        final boolean exists = (s != null && s.advance(doc) == doc);
-
-        final ComplexExplanation result = new ComplexExplanation();
-        if (exists) {
-          result.setDescription(DocValuesRangeQuery.this.toString() + ", product of:");
-          result.setValue(queryWeight);
-          result.setMatch(Boolean.TRUE);
-          result.addDetail(new Explanation(getBoost(), "boost"));
-          result.addDetail(new Explanation(queryNorm, "queryNorm"));
-        } else {
-          result.setDescription(DocValuesRangeQuery.this.toString() + " doesn't match id " + doc);
-          result.setValue(0);
-          result.setMatch(Boolean.FALSE);
-        }
-        return result;
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
 
         final Bits docsWithField = context.reader().getDocsWithField(field);
         if (docsWithField == null || docsWithField instanceof MatchNoBits) {
@@ -240,7 +205,7 @@ public final class DocValuesRangeQuery extends Query {
           throw new AssertionError();
         }
 
-        return new RangeScorer(this, twoPhaseRange, queryWeight);
+        return new RangeScorer(this, twoPhaseRange, score);
       }
 
     };
