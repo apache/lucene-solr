@@ -126,7 +126,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     try(SolrZkClient zkClient = new SolrZkClient
         (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
       ZkStateReader zkStateReader = new ZkStateReader(zkClient);
-      waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
       
       // modify/query collection
       CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
@@ -168,54 +168,4 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     }
   }
 
-  protected void waitForRecoveriesToFinish(String collection,
-      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, int timeoutSeconds)
-      throws Exception {
-    log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
-    boolean cont = true;
-    int cnt = 0;
-    
-    while (cont) {
-      if (verbose) System.out.println("-");
-      boolean sawLiveRecovering = false;
-      zkStateReader.updateClusterState(true);
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Map<String,Slice> slices = clusterState.getSlicesMap(collection);
-      assertNotNull("Could not find collection:" + collection, slices);
-      for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-        Map<String,Replica> shards = entry.getValue().getReplicasMap();
-        for (Map.Entry<String,Replica> shard : shards.entrySet()) {
-          if (verbose) System.out.println("rstate:"
-              + shard.getValue().getStr(ZkStateReader.STATE_PROP)
-              + " live:"
-              + clusterState.liveNodesContain(shard.getValue().getNodeName()));
-          String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-          if ((state.equals(ZkStateReader.RECOVERING) || state
-              .equals(ZkStateReader.SYNC) || state.equals(ZkStateReader.DOWN))
-              && clusterState.liveNodesContain(shard.getValue().getStr(
-              ZkStateReader.NODE_NAME_PROP))) {
-            sawLiveRecovering = true;
-          }
-        }
-      }
-      if (!sawLiveRecovering || cnt == timeoutSeconds) {
-        if (!sawLiveRecovering) {
-          if (verbose) System.out.println("no one is recoverying");
-        } else {
-          if (verbose) System.out.println("Gave up waiting for recovery to finish..");
-          if (failOnTimeout) {
-            fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
-            // won't get here
-            return;
-          }
-        }
-        cont = false;
-      } else {
-        Thread.sleep(1000);
-      }
-      cnt++;
-    }
-
-    log.info("Recoveries finished - collection: " + collection);
-  }
 }

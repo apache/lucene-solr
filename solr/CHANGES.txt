@@ -194,6 +194,9 @@ Other Changes
 * SOLR-7156: Fix test failures due to resource leaks on windows.
   (Ishan Chattopadhyaya via shalin)
 
+* SOLR-7147: Introduce new TrackingShardHandlerFactory for monitoring what requests
+  are sent to shards during tests. (hossman, shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
