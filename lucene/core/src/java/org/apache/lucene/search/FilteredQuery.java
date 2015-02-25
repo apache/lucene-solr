@@ -65,10 +65,15 @@ public class FilteredQuery extends Query {
    * @see FilterStrategy
    */
   public FilteredQuery(Query query, Filter filter, FilterStrategy strategy) {
-    if (query == null || filter == null)
-      throw new IllegalArgumentException("Query and filter cannot be null.");
-    if (strategy == null)
-      throw new IllegalArgumentException("FilterStrategy can not be null");
+    if (query == null) {
+      throw new IllegalArgumentException("Query must not be be null.");
+    }
+    if (filter == null) {
+      throw new IllegalArgumentException("Filter must not be be null.");
+    }
+    if (strategy == null) {
+      throw new IllegalArgumentException("FilterStrategy must not be null");
+    }
     this.strategy = strategy;
     this.query = query;
     this.filter = filter;
