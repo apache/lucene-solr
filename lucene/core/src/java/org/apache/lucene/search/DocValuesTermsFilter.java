@@ -78,8 +78,9 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * <p>
  * Which filter is best is very application dependent.
+ * @deprecated Use {@link DocValuesTermsQuery} and boolean {@link BooleanClause.Occur#FILTER} clauses instead
  */
-
+@Deprecated
 public class DocValuesTermsFilter extends Filter {
   private String field;
   private BytesRef[] terms;

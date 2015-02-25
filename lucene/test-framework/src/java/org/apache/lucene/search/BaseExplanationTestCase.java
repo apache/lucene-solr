@@ -112,7 +112,7 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   /** 
    * Convenience subclass of FieldCacheTermsFilter
    */
-  public static class ItemizedFilter extends DocValuesTermsFilter {
+  public static class ItemizedQuery extends DocValuesTermsQuery {
     private static String[] int2str(int [] terms) {
       String [] out = new String[terms.length];
       for (int i = 0; i < terms.length; i++) {
@@ -120,7 +120,7 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
       }
       return out;
     }
-    public ItemizedFilter(int [] keys) {
+    public ItemizedQuery(int [] keys) {
       super(KEY, int2str(keys));
     }
   }
