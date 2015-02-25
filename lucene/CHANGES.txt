@@ -170,6 +170,8 @@ Other
 * LUCENE-6239: Removed RAMUsageEstimator's sun.misc.Unsafe calls.
   (Robert Muir, Dawid Weiss, Uwe Schindler)
 
+* LUCENE-6292: Seed StringHelper better. (Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-6255: PhraseQuery now ignores leading holes and requires that
