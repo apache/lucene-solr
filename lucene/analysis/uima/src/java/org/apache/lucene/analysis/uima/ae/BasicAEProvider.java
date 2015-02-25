@@ -80,7 +80,7 @@ public class BasicAEProvider implements AEProvider {
   private XMLInputSource getInputSource() throws IOException {
     try {
       return new XMLInputSource(aePath);
-    } catch (IOException e) {
+    } catch (Exception e) {
       return new XMLInputSource(getClass().getResource(aePath));
     }
   }

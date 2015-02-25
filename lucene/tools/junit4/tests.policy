@@ -15,76 +15,71 @@
  * limitations under the License.
  */
 
-// Policy file to prevent tests from writing outside the test sandbox directory
-// (must be given as a sysprop: tests.sandbox.dir)
-// This policy also disallows stuff like listening on network ports of interfaces
-// different than 127.0.0.1.
-
-// PLEASE NOTE: You may need to enable other permissions when new tests are added,
-// everything not allowed here is forbidden!
+// Policy file for lucene tests. Please keep minimal and avoid wildcards.
 
 grant {
-  // permissions for file access, write access only to sandbox:
-  permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
-  permission java.io.FilePermission "${junit4.childvm.cwd}", "read,execute";
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,execute,write,delete";
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,execute,write,delete";
-  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
-  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
+  // contain read access to only what we need:
+  // 3rd party jar resources (where symlinks are not supported), test-files/ resources
+  permission java.io.FilePermission "${common.dir}${/}-", "read";
+  // 3rd party jar resources (where symlinks are supported)
+  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+  // system jar resources, and let TestIndexWriterOnJRECrash fork its jvm
+  permission java.io.FilePermission "${java.home}${/}-", "read,execute";
+  // should be enclosed within common.dir, but just in case:
+  permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
+
+  // write only to sandbox
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,write,delete";
+  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
+
+  // needed by gson serialization of junit4 runner: TODO clean that up
+  permission java.lang.RuntimePermission "accessDeclaredMembers";
+  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  // needed by junit4 runner to capture sysout/syserr:
+  permission java.lang.RuntimePermission "setIO";
+  // needed by randomized runner to catch failures from other threads:
+  permission java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler";
+  // needed by randomized runner getTopThreadGroup:
+  permission java.lang.RuntimePermission "modifyThreadGroup";
+  // needed by tests e.g. shutting down executors:
+  permission java.lang.RuntimePermission "modifyThread";
+  // needed for tons of test hacks etc
+  permission java.lang.RuntimePermission "getStackTrace";
+  // needed for mock filesystems in tests
+  permission java.lang.RuntimePermission "fileSystemProvider";
+  // needed for mock filesystems in tests (to capture implCloseChannel) 
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.ch";
+  // needed by junit nested compat tests (due to static fields reflection), TODO clean these up:
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.util.calendar";
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.util.locale";
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  // needed for test of IOUtils.spins (maybe it can be avoided)
+  permission java.lang.RuntimePermission "getFileStoreAttributes";
+  // analyzers/morfologik: needed for a horrible context classloader hack for solr in morfologikfilter: nuke this
+  permission java.lang.RuntimePermission "setContextClassLoader";
+  // analyzers/uima: needed by UIMA message localization... (?)
+  permission java.lang.RuntimePermission "createSecurityManager";
+  permission java.lang.RuntimePermission "createClassLoader";
+  // needed to test unmap hack on platforms that support it
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
   
-  // all possibilities of accepting/binding connections on localhost with ports >=1024:
-  permission java.net.SocketPermission "localhost:1024-", "accept,listen";
-  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
-  permission java.net.SocketPermission "[::1]:1024-", "accept,listen";
+  // read access to all system properties:
+  // needed by junit4 BootstrapEvent (it calls System.getProperties, used by ant xml reporting?)
+  permission java.util.PropertyPermission "*", "read,write";
+
+  // replicator: jetty tests require some network permissions:
+  // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
   
   // This is a special case, because the network config of the ASF Jenkins server is broken,
   // see: http://freebsd.1045724.n5.nabble.com/jail-external-and-localhost-distinction-td3967320.html
-  permission java.net.SocketPermission "lucene.zones.apache.org:1024-", "accept,listen";
-  
-  // Allow connecting to the internet anywhere
-  permission java.net.SocketPermission "*", "connect,resolve";
-  
-  // Basic permissions needed for Lucene to work:
-  permission java.util.PropertyPermission "*", "read,write";
-  permission java.lang.reflect.ReflectPermission "*";
-  permission java.lang.RuntimePermission "*";
+  permission java.net.SocketPermission "lucene.zones.apache.org:1024-", "accept,listen,connect,resolve";
 
-  // These two *have* to be spelled out a separate
-  permission java.lang.management.ManagementPermission "control";
-  permission java.lang.management.ManagementPermission "monitor";
-
-  // Solr needs those:
-  permission java.net.NetPermission "*";
-  permission java.sql.SQLPermission "*";
-  permission java.util.logging.LoggingPermission "control";
-  permission javax.management.MBeanPermission "*", "*";
-  permission javax.management.MBeanServerPermission "*";
-  permission javax.management.MBeanTrustPermission "*";
-  permission javax.security.auth.AuthPermission "*";
-  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
-  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  permission java.security.SecurityPermission "insertProvider.SaslPlainServer";
-  permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
-  
-  // TIKA uses BouncyCastle and that registers new provider for PDF parsing + MSOffice parsing. Maybe report as bug!
-  permission java.security.SecurityPermission "putProviderProperty.BC";
-  permission java.security.SecurityPermission "insertProvider.BC";
-
-  // Needed for some things in DNS caching in the JVM
-  permission java.security.SecurityPermission "getProperty.networkaddress.cache.ttl";
-  permission java.security.SecurityPermission "getProperty.networkaddress.cache.negative.ttl";
-
-  // SSL related properties for Solr tests
-  permission java.security.SecurityPermission "getProperty.ssl.*";
-
-  // SASL/Kerberos related properties for Solr tests
-  permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
-  
-  // may only be necessary with Java 7?
-  permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
-  permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
-  
-  permission javax.security.auth.kerberos.ServicePermission "krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate";
-  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "initiate";
-  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "accept";
+  // SSL related properties for jetty
+  permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
+  permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
 };
