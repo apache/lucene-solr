@@ -110,6 +110,7 @@ public class BooleanWeight extends Weight {
     int coord = 0;
     float sum = 0.0f;
     boolean fail = false;
+    int matchCount = 0;
     int shouldMatchCount = 0;
     Iterator<BooleanClause> cIter = query.clauses().iterator();
     for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
@@ -130,16 +131,19 @@ public class BooleanWeight extends Weight {
           sum += e.getValue();
           coord++;
         } else if (c.isRequired()) {
-          Explanation r =
-              new Explanation(0.0f, "match on required clause (" + c.getQuery().toString() + ")");
-            r.addDetail(e);
-            sumExpl.addDetail(r);
+          Explanation r = new Explanation(0f, "match on required clause, product of:");
+          r.addDetail(new Explanation(0f, Occur.FILTER + " clause"));
+          r.addDetail(e);
+          sumExpl.addDetail(r);
         } else if (c.isProhibited()) {
           Explanation r =
             new Explanation(0.0f, "match on prohibited clause (" + c.getQuery().toString() + ")");
           r.addDetail(e);
           sumExpl.addDetail(r);
           fail = true;
+        }
+        if (!c.isProhibited()) {
+          matchCount++;
         }
         if (c.getOccur() == Occur.SHOULD) {
           shouldMatchCount++;
@@ -165,7 +169,7 @@ public class BooleanWeight extends Weight {
       return sumExpl;
     }
     
-    sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
+    sumExpl.setMatch(0 < matchCount);
     sumExpl.setValue(sum);
     
     final float coordFactor = disableCoord ? 1.0f : coord(coord, maxCoord);
