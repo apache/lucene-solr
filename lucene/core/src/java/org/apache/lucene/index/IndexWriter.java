@@ -4153,7 +4153,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // fix the reader's live docs and del count
           assert delCount > reader.numDeletedDocs(); // beware of zombies
 
-          SegmentReader newReader = new SegmentReader(info, reader, liveDocs, info.info.getDocCount() - delCount);
+          SegmentReader newReader;
+
+          synchronized (this) {
+            // We must also sync on IW here, because another thread could be writing
+            // new DV updates / remove old gen field infos files causing FNFE:
+            newReader = new SegmentReader(info, reader, liveDocs, info.info.getDocCount() - delCount);
+          }
+
           boolean released = false;
           try {
             rld.release(reader);

@@ -35,6 +35,10 @@ Bug fixes
   3.x index if merges are also running.  (Simon Willnauer, Mike
   McCandless)
 
+* LUCENE-6205: Fixed intermittent concurrency issue that could cause
+  FileNotFoundException when writing doc values updates at the same
+  time that a merge kicks off.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.
