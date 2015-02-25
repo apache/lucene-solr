@@ -85,7 +85,9 @@ public class HttpShardHandler extends ShardHandler {
 
 
   private static class SimpleSolrResponse extends SolrResponse {
+
     long elapsedTime;
+
     NamedList<Object> nl;
 
     @Override
@@ -101,6 +103,11 @@ public class HttpShardHandler extends ShardHandler {
     @Override
     public void setResponse(NamedList<Object> rsp) {
       nl = rsp;
+    }
+
+    @Override
+    public void setElapsedTime(long elapsedTime) {
+      this.elapsedTime = elapsedTime;
     }
   }
 

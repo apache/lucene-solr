@@ -17,6 +17,13 @@
 
 package org.apache.solr.client.solrj.response;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,13 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * 
@@ -96,6 +96,10 @@ public class QueryResponse extends SolrResponseBase
    */
   public QueryResponse( NamedList<Object> res , SolrClient solrClient){
     this.setResponse( res );
+    this.solrClient = solrClient;
+  }
+
+  public QueryResponse(SolrClient solrClient) {
     this.solrClient = solrClient;
   }
 
