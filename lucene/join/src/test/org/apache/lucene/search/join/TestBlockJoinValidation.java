@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -119,7 +120,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     Query parentQueryWithRandomChild = createParentQuery();
 
     ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter);
-    Filter childFilter = new QueryWrapperFilter(new TermQuery(new Term("common_field", "1")));
+    Filter childFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("common_field", "1"))));
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.ILLEGAL_ADVANCE_ON_PARENT);
     indexSearcher.search(new FilteredQuery(blockJoinQuery, childFilter), 1);

@@ -16,11 +16,14 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -145,6 +148,42 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
       assertEquals(1, td.totalHits);
     }
     
+    reader.close();
+    dir.close();
+  }
+
+  public void testScore() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Query query = new QueryWrapperFilter(new TermQuery(new Term("foo", "bar")));
+    final TopDocs topDocs = searcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(0f, topDocs.scoreDocs[0].score, 0f);
+    reader.close();
+    dir.close();
+  }
+
+  public void testQueryWrapperFilterPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Query query = new QueryWrapperFilter(new RandomApproximationQuery(new TermQuery(new Term("foo", "bar")), random()));
+    final Weight weight = searcher.createNormalizedWeight(query, random().nextBoolean());
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertNotNull(scorer.asTwoPhaseIterator());
     reader.close();
     dir.close();
   }

@@ -25,6 +25,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -586,6 +588,51 @@ public class TestFilteredQuery extends LuceneTestCase {
     TopDocs search = searcher.search(query, 10);
     assertEquals(totalDocsWithZero, search.totalHits);
     IOUtils.close(reader, directory);
+  }
+
+  public void testPreservesScores() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Query query = new TermQuery(new Term("foo", "bar"));
+    query.setBoost(random().nextFloat());
+    FilteredQuery fq = new FilteredQuery(query, new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs)
+          throws IOException {
+        return new DocIdSet() {
+          
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
+          
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            return DocIdSetIterator.all(context.reader().maxDoc());
+          }
+        };
+      }
+      @Override
+      public String toString(String field) {
+        return "dummy";
+      }
+    });
+    assertEquals(searcher.search(query, 1).scoreDocs[0].score, searcher.search(fq, 1).scoreDocs[0].score, 0f);
+    fq.setBoost(random().nextFloat());
+    // QueryWrapperFilter has special rewrite rules
+    FilteredQuery fq2 = new FilteredQuery(query, new QueryWrapperFilter(new MatchAllDocsQuery()));
+    fq2.setBoost(fq.getBoost());
+    fq2.setBoost(42);
+    assertEquals(searcher.search(fq, 1).scoreDocs[0].score, searcher.search(fq2, 1).scoreDocs[0].score, 10e-5);
+    reader.close();
+    dir.close();
   }
 }
 
