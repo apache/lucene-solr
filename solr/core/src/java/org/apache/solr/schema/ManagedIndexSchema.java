@@ -26,7 +26,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -363,9 +362,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     @Override
-    public SolrResponse process(SolrClient server) throws SolrServerException, IOException {
+    protected SolrResponse createResponse(SolrClient client) {
       return null;
     }
+
   }
 
 

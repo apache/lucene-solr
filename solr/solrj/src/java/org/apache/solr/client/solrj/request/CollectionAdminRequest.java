@@ -17,9 +17,8 @@
 
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -36,14 +35,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
  *
  * @since solr 4.5
  */
-public class CollectionAdminRequest extends SolrRequest {
+public class CollectionAdminRequest extends SolrRequest<CollectionAdminResponse> {
+
   protected CollectionAction action = null;
 
   private static String PROPERTY_PREFIX = "property.";
@@ -78,14 +77,8 @@ public class CollectionAdminRequest extends SolrRequest {
   }
 
   @Override
-  public CollectionAdminResponse process(SolrClient server) throws SolrServerException, IOException
-  {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    CollectionAdminResponse res = new CollectionAdminResponse();
-    res.setResponse( server.request( this ) );
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
-    return res;
+  protected CollectionAdminResponse createResponse(SolrClient client) {
+    return new CollectionAdminResponse();
   }
   
   protected void addProperties(ModifiableSolrParams params, Properties props) {

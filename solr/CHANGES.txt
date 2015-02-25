@@ -186,6 +186,9 @@ Other Changes
 
 * SOLR-7032: Clean up test remnants of old-style solr.xml (Erick Erickson)
 
+* SOLR-7145: SolrRequest is now parametrized by its response type (Alan
+  Woodward)
+
 * SOLR-7142: Fix TestFaceting.testFacets. (Michal Kroliczek via shalin)
 
 * SOLR-7156: Fix test failures due to resource leaks on windows.
