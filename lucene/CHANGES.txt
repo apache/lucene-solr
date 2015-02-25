@@ -39,6 +39,11 @@ Bug fixes
   FileNotFoundException when writing doc values updates at the same
   time that a merge kicks off.  (Mike McCandless)
 
+* LUCENE-6214: Fixed IndexWriter deadlock when one thread is
+  committing while another opens a near-real-time reader and an
+  unrecoverable (tragic) exception is hit.  (Simon Willnauer, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.

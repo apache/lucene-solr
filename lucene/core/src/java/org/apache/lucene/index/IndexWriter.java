@@ -404,8 +404,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     boolean success2 = false;
     try {
+      boolean success = false;
       synchronized (fullFlushLock) {
-        boolean success = false;
         try {
           anySegmentFlushed = docWriter.flushAllThreads(this);
           if (!anySegmentFlushed) {
@@ -413,7 +413,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // if we flushed anything.
             flushCount.incrementAndGet();
           }
-          success = true;
           // Prevent segmentInfos from changing while opening the
           // reader; in theory we could instead do similar retry logic,
           // just like we do when loading segments_N
@@ -424,21 +423,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
           }
-        } catch (OutOfMemoryError oom) {
-          tragicEvent(oom, "getReader");
-          // never reached but javac disagrees:
-          return null;
+          success = true;
         } finally {
-          if (!success) {
+          // Done: finish the full flush!
+          docWriter.finishFullFlush(this, success);
+          if (success) {
+            processEvents(false, true);
+            doAfterFlush();
+          } else {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception during NRT reader");
             }
-          }
-          if (tragedy == null) {
-            // Done: finish the full flush! (unless we hit OOM or something)
-            docWriter.finishFullFlush(success);
-            processEvents(false, true);
-            doAfterFlush();
           }
         }
       }
@@ -449,6 +444,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
       }
       success2 = true;
+    } catch (OutOfMemoryError tragedy) {
+      tragicEvent(tragedy, "getReader");
+      // never reached but javac disagrees:
+      return null;
     } finally {
       if (!success2) {
         IOUtils.closeWhileHandlingException(r);
@@ -629,6 +628,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      * {@link #release(ReadersAndUpdates)}.
      */
     public synchronized ReadersAndUpdates get(SegmentCommitInfo info, boolean create) {
+
+      // Make sure no new readers can be opened if another thread just closed us:
+      ensureOpen(false);
 
       assert info.info.dir == directory: "info.dir=" + info.info.dir + " vs " + directory;
 
@@ -2228,17 +2230,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     /* hold the full flush lock to prevent concurrency commits / NRT reopens to
      * get in our way and do unnecessary work. -- if we don't lock this here we might
      * get in trouble if */
-    synchronized (fullFlushLock) { 
-      /*
-       * We first abort and trash everything we have in-memory
-       * and keep the thread-states locked, the lockAndAbortAll operation
-       * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
-       * of logical happens-before relationship in the DW. So we do
-       * abort all in memory structures 
-       * We also drop global field numbering before during abort to make
-       * sure it's just like a fresh index.
-       */
-      try {
+    /*
+     * We first abort and trash everything we have in-memory
+     * and keep the thread-states locked, the lockAndAbortAll operation
+     * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
+     * of logical happens-before relationship in the DW. So we do
+     * abort all in memory structures 
+     * We also drop global field numbering before during abort to make
+     * sure it's just like a fresh index.
+     */
+    try {
+      synchronized (fullFlushLock) { 
         docWriter.lockAndAbortAll(this);
         processEvents(false, true);
         synchronized (this) {
@@ -2263,6 +2265,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             globalFieldNumberMap.clear();
             success = true;
           } finally {
+            docWriter.unlockAllAfterAbortAll(this);
             if (!success) {
               if (infoStream.isEnabled("IW")) {
                 infoStream.message("IW", "hit exception during deleteAll");
@@ -2270,11 +2273,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
           }
         }
-      } catch (OutOfMemoryError oom) {
-        tragicEvent(oom, "deleteAll");
-      } finally {
-        docWriter.unlockAllAfterAbortAll(this);
       }
+    } catch (OutOfMemoryError oom) {
+      tragicEvent(oom, "deleteAll");
     }
   }
 
@@ -2997,7 +2998,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               }
             }
             // Done: finish the full flush!
-            docWriter.finishFullFlush(flushSuccess);
+            docWriter.finishFullFlush(this, flushSuccess);
             doAfterFlush();
           }
         }
@@ -3238,27 +3239,31 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "  start flush: applyAllDeletes=" + applyAllDeletes);
         infoStream.message("IW", "  index before flush " + segString());
       }
-      final boolean anySegmentFlushed;
+      final boolean anyChanges;
       
       synchronized (fullFlushLock) {
-      boolean flushSuccess = false;
+        boolean flushSuccess = false;
         try {
-          anySegmentFlushed = docWriter.flushAllThreads(this);
+          anyChanges = docWriter.flushAllThreads(this);
+          if (!anyChanges) {
+            // flushCount is incremented in flushAllThreads
+            flushCount.incrementAndGet();
+          }
           flushSuccess = true;
         } finally {
-          docWriter.finishFullFlush(flushSuccess);
+          docWriter.finishFullFlush(this, flushSuccess);
           processEvents(false, true);
         }
       }
       synchronized(this) {
         maybeApplyDeletes(applyAllDeletes);
         doAfterFlush();
-        if (!anySegmentFlushed) {
+        if (!anyChanges) {
           // flushCount is incremented in flushAllThreads
           flushCount.incrementAndGet();
         }
         success = true;
-        return anySegmentFlushed;
+        return anyChanges;
       }
     } catch (OutOfMemoryError oom) {
       tragicEvent(oom, "doFlush");
