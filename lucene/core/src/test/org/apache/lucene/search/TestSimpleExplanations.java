@@ -483,6 +483,34 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     
   }
 
+  public void testBQ23() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.FILTER);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ24() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ25() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ26() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
+    qtest(query, new int[] { 0,1 });
+  }
+
   /* BQ of TQ: using alt so some fields have zero boost and some don't */
   
   public void testMultiFieldBQ1() throws Exception {
