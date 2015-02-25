@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -301,6 +302,16 @@ public class FilteredQuery extends Query {
    * it returns a new {@code FilteredQuery} wrapping the rewritten query. */
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (filter instanceof QueryWrapperFilter) {
+      // In that case the filter does not implement random-access anyway so
+      // we want to take advantage of approximations
+      BooleanQuery rewritten = new BooleanQuery();
+      rewritten.add(query, Occur.MUST);
+      rewritten.add(((QueryWrapperFilter) filter).getQuery(), Occur.FILTER);
+      rewritten.setBoost(getBoost());
+      return rewritten;
+    }
+
     final Query queryRewritten = query.rewrite(reader);
     
     if (queryRewritten != query) {

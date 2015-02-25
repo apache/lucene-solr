@@ -108,6 +108,10 @@ Optimizations
   in order to advance doc IDs, which takes advantage of the cost() API.
   (Adrien Grand)
 
+* LUCENE-6290: QueryWrapperFilter propagates approximations and FilteredQuery
+  rewrites to a BooleanQuery when the filter is a QueryWrapperFilter in order
+  to leverage approximations. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
