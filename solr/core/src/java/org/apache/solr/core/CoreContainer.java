@@ -93,7 +93,7 @@ public class CoreContainer {
   protected LogWatcher logging = null;
 
   private CloserThread backgroundCloser = null;
-  protected final ConfigSolr cfg;
+  protected final NodeConfig cfg;
   protected final SolrResourceLoader loader;
 
   protected final String solrHome;
@@ -140,7 +140,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(ConfigSolr.fromSolrHome(loader, loader.getInstanceDir()));
+    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir()));
   }
 
   /**
@@ -160,11 +160,11 @@ public class CoreContainer {
    * @param config a ConfigSolr representation of this container's configuration
    * @see #load()
    */
-  public CoreContainer(ConfigSolr config) {
-    this(config, config.getCoresLocator());
+  public CoreContainer(NodeConfig config) {
+    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
 
-  public CoreContainer(ConfigSolr config, CoresLocator locator) {
+  public CoreContainer(NodeConfig config, CoresLocator locator) {
     this.loader = config.getSolrResourceLoader();
     this.solrHome = loader.getInstanceDir();
     this.cfg = checkNotNull(config);
@@ -193,7 +193,7 @@ public class CoreContainer {
    */
   public static CoreContainer createAndLoad(String solrHome, File configFile) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    CoreContainer cc = new CoreContainer(ConfigSolr.fromFile(loader, configFile));
+    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(loader, configFile));
     try {
       cc.load();
     } catch (Exception e) {
@@ -230,16 +230,16 @@ public class CoreContainer {
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
 
-    updateShardHandler = new UpdateShardHandler(cfg);
+    updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
-    hostName = cfg.getHost();
-    log.info("Host Name: " + hostName);
+    hostName = cfg.getNodeName();
+    log.info("Node Name: " + hostName);
 
-    zkSys.initZooKeeper(this, solrHome, cfg);
+    zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
 
     collectionsHandler = createHandler(cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
@@ -248,7 +248,7 @@ public class CoreContainer {
     coreAdminHandler   = createHandler(cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     containerHandlers.put(CORES_HANDLER_PATH, coreAdminHandler);
 
-    coreConfigService = cfg.createCoreConfigService(loader, zkSys.getZkController());
+    coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 
     containerProperties = cfg.getSolrProperties();
 
@@ -860,7 +860,7 @@ public class CoreContainer {
     return zkSys.getZkController();
   }
   
-  public ConfigSolr getConfig() {
+  public NodeConfig getConfig() {
     return cfg;
   }
 
@@ -881,10 +881,10 @@ public class CoreContainer {
 class CloserThread extends Thread {
   CoreContainer container;
   SolrCores solrCores;
-  ConfigSolr cfg;
+  NodeConfig cfg;
 
 
-  CloserThread(CoreContainer container, SolrCores solrCores, ConfigSolr cfg) {
+  CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
     this.container = container;
     this.solrCores = solrCores;
     this.cfg = cfg;

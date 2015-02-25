@@ -46,7 +46,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     System.setProperty("configsets", configSetsBaseDir);
 
     SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
-    CoreContainer container = new CoreContainer(ConfigSolr.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(loader, solrxml));
     container.load();
 
     return container;
@@ -115,7 +115,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     System.setProperty("configsets", csd);
 
     SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
-    CoreContainer container = new CoreContainer(ConfigSolr.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(loader, solrxml));
     container.load();
 
     // We initially don't have a /get handler defined

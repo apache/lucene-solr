@@ -17,30 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
@@ -77,11 +53,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -95,6 +72,29 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -141,12 +141,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     log.info("SolrDispatchFilter.init() done");
   }
 
-  private ConfigSolr loadConfigSolr(SolrResourceLoader loader) {
+  private NodeConfig loadConfigSolr(SolrResourceLoader loader) {
 
     String solrxmlLocation = System.getProperty("solr.solrxml.location", "solrhome");
 
     if (solrxmlLocation == null || "solrhome".equalsIgnoreCase(solrxmlLocation))
-      return ConfigSolr.fromSolrHome(loader, loader.getInstanceDir());
+      return SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir());
 
     if ("zookeeper".equalsIgnoreCase(solrxmlLocation)) {
       String zkHost = System.getProperty("zkHost");
@@ -159,7 +159,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (!zkClient.exists("/solr.xml", true))
           throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper: node not found");
         byte[] data = zkClient.getData("/solr.xml", null, null, true);
-        return ConfigSolr.fromInputStream(loader, new ByteArrayInputStream(data));
+        return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper", e);
       } finally {
@@ -177,7 +177,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer() {
     SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-    ConfigSolr config = loadConfigSolr(loader);
+    NodeConfig config = loadConfigSolr(loader);
     CoreContainer cores = new CoreContainer(config);
     cores.load();
     return cores;

@@ -46,9 +46,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -309,14 +311,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static void setupNoCoreTest(File solrHome, String xmlStr) throws Exception {
 
-    File tmpFile = new File(solrHome, ConfigSolr.SOLR_XML_FILE);
+    File tmpFile = new File(solrHome, SolrXmlConfig.SOLR_XML_FILE);
     if (xmlStr == null) {
       xmlStr = "<solr></solr>";
     }
     FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
-    h = new TestHarness(ConfigSolr.fromFile(loader, new File(solrHome, "solr.xml")));
+    h = new TestHarness(SolrXmlConfig.fromFile(loader, new File(solrHome, "solr.xml")));
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
   }
   
@@ -598,15 +600,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return h.getCoreContainer();
   }
 
-  public static CoreContainer createCoreContainer(ConfigSolr config) {
+  public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
     testSolrHome = config.getSolrResourceLoader().getInstanceDir();
-    h = new TestHarness(config);
+    h = new TestHarness(config, locator);
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(String coreName, String dataDir, String solrConfig, String schema) {
-    CoreContainer cc = createCoreContainer(new TestHarness.TestConfigSolr(coreName, dataDir, solrConfig, schema));
+    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
+    CoresLocator locator = new TestHarness.TestCoresLocator(coreName, dataDir, solrConfig, schema);
+    CoreContainer cc = createCoreContainer(nodeConfig, locator);
     h.coreName = coreName;
     return cc;
   }

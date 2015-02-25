@@ -49,6 +49,30 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory;
 
+  private static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String instanceDir, String isTransient, String loadOnStartup) {
+    return new CoreDescriptor(cc, coreName, instanceDir,
+        CoreDescriptor.CORE_TRANSIENT, isTransient,
+        CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
+  }
+
+  private static CoresLocator testCores = new ReadOnlyCoresLocator() {
+    @Override
+    public List<CoreDescriptor> discover(CoreContainer cc) {
+      return ImmutableList.of(
+          new CoreDescriptor(cc, "collection1", "collection1"),
+          makeCoreDescriptor(cc, "collectionLazy2", "collection2", "true", "true"),
+          makeCoreDescriptor(cc, "collectionLazy3", "collection3", "on", "false"),
+          makeCoreDescriptor(cc, "collectionLazy4", "collection4", "false", "false"),
+          makeCoreDescriptor(cc, "collectionLazy5", "collection5", "false", "true"),
+          makeCoreDescriptor(cc, "collectionLazy6", "collection6", "true", "false"),
+          makeCoreDescriptor(cc, "collectionLazy7", "collection7", "true", "false"),
+          makeCoreDescriptor(cc, "collectionLazy8", "collection8", "true", "false"),
+          makeCoreDescriptor(cc, "collectionLazy9", "collection9", "true", "false")
+      );
+    }
+  };
+
+
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
     
@@ -57,7 +81,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
-    return createCoreContainer(new LazyCoreTestConfig(loader));
+    NodeConfig config = new NodeConfig.NodeConfigBuilder("testNode", loader).setTransientCacheSize(4).build();
+    return createCoreContainer(config, testCores);
   }
   
   @Test
@@ -539,10 +564,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     FileUtils.write(solrXml, "<solr/>", Charsets.UTF_8.toString());
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
-    ConfigSolrXml config = (ConfigSolrXml) ConfigSolr.fromFile(loader, solrXml);
+    NodeConfig config = SolrXmlConfig.fromFile(loader, solrXml);
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config);
+    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the directory.
@@ -617,53 +642,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private static final String makePath(String... args) {
     return StringUtils.join(args, File.separator);
-  }
-
-  public static class LazyCoreTestConfig extends ConfigSolr {
-
-    public LazyCoreTestConfig(SolrResourceLoader loader) {
-      super(loader, null);
-    }
-
-    static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String instanceDir, String isTransient, String loadOnStartup) {
-      return new CoreDescriptor(cc, coreName, instanceDir,
-          CoreDescriptor.CORE_TRANSIENT, isTransient,
-          CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
-    }
-
-    @Override
-    public CoresLocator getCoresLocator() {
-      return new ReadOnlyCoresLocator() {
-        @Override
-        public List<CoreDescriptor> discover(CoreContainer cc) {
-          return ImmutableList.of(
-              new CoreDescriptor(cc, "collection1", "collection1"),
-              makeCoreDescriptor(cc, "collectionLazy2", "collection2", "true", "true"),
-              makeCoreDescriptor(cc, "collectionLazy3", "collection3", "on", "false"),
-              makeCoreDescriptor(cc, "collectionLazy4", "collection4", "false", "false"),
-              makeCoreDescriptor(cc, "collectionLazy5", "collection5", "false", "true"),
-              makeCoreDescriptor(cc, "collectionLazy6", "collection6", "true", "false"),
-              makeCoreDescriptor(cc, "collectionLazy7", "collection7", "true", "false"),
-              makeCoreDescriptor(cc, "collectionLazy8", "collection8", "true", "false"),
-              makeCoreDescriptor(cc, "collectionLazy9", "collection9", "true", "false")
-          );
-        }
-      };
-    }
-
-    @Override
-    public PluginInfo getShardHandlerFactoryPluginInfo() {
-      return null;
-    }
-
-    @Override
-    protected String getProperty(CfgProp key) {
-      switch (key) {
-        case SOLR_TRANSIENTCACHESIZE:
-          return "4";
-      }
-      return null;
-    }
   }
 
 }
