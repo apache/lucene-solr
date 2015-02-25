@@ -384,6 +384,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
    * Pass in an implementation of this interface to cleanup ByteBuffers.
    * MMapDirectory implements this to allow unmapping of bytebuffers with private Java APIs.
    */
+  @FunctionalInterface
   static interface BufferCleaner {
     void freeBuffer(ByteBufferIndexInput parent, ByteBuffer b) throws IOException;
   }
