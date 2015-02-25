@@ -188,6 +188,9 @@ Other Changes
 
 * SOLR-7142: Fix TestFaceting.testFacets. (Michal Kroliczek via shalin)
 
+* SOLR-7156: Fix test failures due to resource leaks on windows.
+  (Ishan Chattopadhyaya via shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
