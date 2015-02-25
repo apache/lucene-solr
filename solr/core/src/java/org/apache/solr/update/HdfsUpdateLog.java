@@ -44,7 +44,8 @@ import org.apache.solr.util.HdfsUtil;
 /** @lucene.experimental */
 public class HdfsUpdateLog extends UpdateLog {
   
-  private volatile FileSystem fs;
+  private final Object fsLock = new Object();
+  private FileSystem fs;
   private volatile Path tlogDir;
   private final String confDir;
   
@@ -101,51 +102,42 @@ public class HdfsUpdateLog extends UpdateLog {
     // ulogDir from CoreDescriptor overrides
     String ulogDir = core.getCoreDescriptor().getUlogDir();
 
-    if (ulogDir != null) {
-      dataDir = ulogDir;
-    }
-    if (dataDir == null || dataDir.length()==0) {
-      dataDir = core.getDataDir();
-    }
-    
-    if (!core.getDirectoryFactory().isAbsolute(dataDir)) {
-      try {
-        dataDir = core.getDirectoryFactory().getDataHome(core.getCoreDescriptor());
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
-    
-    FileSystem oldFs = fs;
-    
-    try {
-      fs = FileSystem.newInstance(new Path(dataDir).toUri(), getConf());
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-    
-    try {
-      if (oldFs != null) {
-        oldFs.close();
-      }
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-    
     this.uhandler = uhandler;
     
-    if (dataDir.equals(lastDataDir)) {
-      if (debug) {
-        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id,
-            " this is a reopen... nothing else to do.");
+    synchronized (fsLock) {
+      // just like dataDir, we do not allow
+      // moving the tlog dir on reload
+      if (fs == null) {
+        if (ulogDir != null) {
+          dataDir = ulogDir;
+        }
+        if (dataDir == null || dataDir.length() == 0) {
+          dataDir = core.getDataDir();
+        }
+        
+        if (!core.getDirectoryFactory().isAbsolute(dataDir)) {
+          try {
+            dataDir = core.getDirectoryFactory().getDataHome(core.getCoreDescriptor());
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        }
+        
+        try {
+          fs = FileSystem.get(new Path(dataDir).toUri(), getConf());
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      } else {
+        if (debug) {
+          log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id,
+              " this is a reopen or double init ... nothing else to do.");
+        }
+        versionInfo.reload();
+        return;
       }
-      
-      versionInfo.reload();
-      
-      // on a normal reopen, we currently shouldn't have to do anything
-      return;
     }
-    lastDataDir = dataDir;
+    
     tlogDir = new Path(dataDir, TLOG_NAME);
     while (true) {
       try {
@@ -298,8 +290,15 @@ public class HdfsUpdateLog extends UpdateLog {
     if (tlog == null) {
       String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN,
           TLOG_NAME, id);
-      tlog = new HdfsTransactionLog(fs, new Path(tlogDir, newLogName),
+      HdfsTransactionLog ntlog = new HdfsTransactionLog(fs, new Path(tlogDir, newLogName),
           globalStrings);
+      tlog = ntlog;
+      
+      if (tlog != ntlog) {
+        ntlog.deleteOnClose = false;
+        ntlog.decref();
+        ntlog.forceClose();
+      }
     }
   }
   
