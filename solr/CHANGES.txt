@@ -150,8 +150,12 @@ Bug Fixes
 
 Optimizations
 ----------------------
+
  * SOLR-7049: Move work done by the LIST Collections API call to the Collections
    Handler (Varun Thacker via Anshum Gupta).
+
+ * SOLR-7116: Distributed facet refinement requests would needlessly compute other types
+   of faceting that have already been computed. (David Smiley, Hossman)
 
 Other Changes
 ----------------------
