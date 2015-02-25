@@ -148,6 +148,9 @@ Bug Fixes
 * SOLR-7104: Propagate property prefix parameters for ADDREPLICA Collections API call.
   (Varun Thacker via Anshum Gupta)
 
+* SOLR-7113: Multiple calls to UpdateLog#init is not thread safe with respect to the
+  HDFS FileSystem client object usage. (Mark Miller, Vamsee Yarlagadda)
+
 Optimizations
 ----------------------
 

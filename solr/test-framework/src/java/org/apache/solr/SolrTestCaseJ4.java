@@ -168,6 +168,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public String bugUrl() default "None";
   }
   
+  /**
+   * Annotation for test classes that want to disable ObjectReleaseTracker
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressObjectReleaseTracker {
+    /** Point to JIRA entry. */
+    public String bugUrl();
+  }
+  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
@@ -214,7 +226,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       deleteCore();
       resetExceptionIgnores();
       endTrackingSearchers();
-      assertTrue("Some resources were not closed, shutdown, or released.", ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+      if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+        assertTrue("Some resources were not closed, shutdown, or released.", ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+      } else {
+        if (!ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty()) {
+          log.warn("Some resources were not closed, shutdown, or released. Remove the SuppressObjectReleaseTracker annotation to get more information on the fail.");
+        }
+      }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
