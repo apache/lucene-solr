@@ -804,7 +804,9 @@ sub get_release_date {
     # Handle '1.2 RC6', which should be '1.2 final'
     $release = '1.2 final' if ($release eq '1.2 RC6');
 
-    $release =~ s/\.0\.0/\.0/;
+    if (not exists($release_dates{$release})) {
+      $release =~ s/\.0\.0/\.0/;
+    }
 
     $reldate = ( exists($release_dates{$release}) 
                ? $release_dates{$release}
