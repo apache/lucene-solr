@@ -44,6 +44,10 @@ Bug fixes
   unrecoverable (tragic) exception is hit.  (Simon Willnauer, Mike
   McCandless)
 
+* LUCENE-6105: Don't cache FST root arcs if the number of root arcs is
+  small, or if the cache would be > 20% of the size of the FST.
+  (Robert Muir, Mike McCandless)
+  
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.
@@ -92,7 +96,7 @@ Bug fixes
 
 * LUCENE-6094: Allow IW.rollback to stop ConcurrentMergeScheduler even
   when it's stalling because there are too many merges. (Mike McCandless)
-  
+
 Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
