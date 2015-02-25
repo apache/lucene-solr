@@ -23,4 +23,8 @@ public class TestLogMergePolicy extends BaseMergePolicyTestCase {
     return newLogMergePolicy(random());
   }
 
+  public void testDefaultForcedMergeMB() {
+    LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
+    assertTrue(mp.getMaxMergeMBForForcedMerge() > 0.0);
+  }
 }
