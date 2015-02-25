@@ -17,7 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.DataInputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -253,18 +256,30 @@ public abstract class StringHelper {
       x0 = Long.parseLong(prop, 16);
       x1 = x0;
     } else {
-      // Randomess from 3 different sources:
-      x0 = System.nanoTime();
-      x1 = StringHelper.class.hashCode() << 32;
-      StringBuilder sb = new StringBuilder();
-      // Properties can vary across JVM instances:
-      Properties p = System.getProperties();
-      for (String s: p.stringPropertyNames()) {
-        sb.append(s);
-        sb.append(p.getProperty(s));
+      // seed from /dev/urandom, if its available
+      try (DataInputStream is = new DataInputStream(Files.newInputStream(Paths.get("/dev/urandom")))) {
+        x0 = is.readLong();
+        x1 = is.readLong();
+      } catch (Exception unavailable) {
+        // may not be available on this platform
+        // fall back to lower quality randomness from 3 different sources:
+        x0 = System.nanoTime();
+        x1 = StringHelper.class.hashCode() << 32;
+        
+        StringBuilder sb = new StringBuilder();
+        // Properties can vary across JVM instances:
+        try {
+          Properties p = System.getProperties();
+          for (String s: p.stringPropertyNames()) {
+            sb.append(s);
+            sb.append(p.getProperty(s));
+          }
+          x1 |= sb.toString().hashCode();
+        } catch (SecurityException notallowed) {
+          // getting Properties requires wildcard read-write: may not be allowed
+          x1 |= StringBuffer.class.hashCode();
+        }
       }
-      x1 |= sb.toString().hashCode();
-      // TODO: maybe read from /dev/urandom when it's available?
     }
 
     // Use a few iterations of xorshift128 to scatter the seed
