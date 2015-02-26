@@ -346,6 +346,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return zkMap.containsKey(key);
       }
     }).anyTimes();
+
+    zkMap.put("/configs/myconfig", null);
     
     return liveNodes;
   }

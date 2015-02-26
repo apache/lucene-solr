@@ -78,6 +78,9 @@ Bug Fixes
   
 * SOLR-6928: solr.cmd stop works only in english (john.work, Jan Høydahl, Timothy Potter)
 
+* SOLR-7038: Validate the presence of configset before trying to create a collection.
+  (Anshum Gupta, Mark Miller)
+
 * SOLR-7016: Fix bin\solr.cmd to work in a directory with spaces in the name.
   (Timothy Potter, Uwe Schindler)
 

@@ -2116,6 +2116,13 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
     
+    String configName = getConfigName(collectionName, message);
+    if (configName == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "No config set found to associate with the collection.");
+    } else if (!validateConfig(configName)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
+    }
+
     try {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
@@ -2196,8 +2203,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
       boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader.getClusterProps());
 
-      String configName = createConfNode(collectionName, message, isLegacyCloud);
-
+      createConfNode(configName, collectionName, isLegacyCloud);
+      
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
       // wait for a while until we don't see the collection
@@ -2432,11 +2439,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     } while (srsp != null);
   }
 
-  private String createConfNode(String coll, ZkNodeProps message, boolean isLegacyCloud) throws KeeperException, InterruptedException {
+  private String getConfigName(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
     String configName = message.getStr(OverseerCollectionProcessor.COLL_CONF);
-    if(configName == null){
+    
+    if(configName == null) {
       // if there is only one conf, use that
-      List<String> configNames=null;
+      List<String> configNames = null;
       try {
         configNames = zkStateReader.getZkClient().getChildren(ZkController.CONFIGS_ZKNODE, null, true);
         if (configNames != null && configNames.size() == 1) {
@@ -2447,9 +2455,15 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       } catch (KeeperException.NoNodeException e) {
 
       }
-
     }
+    return configName;
+  }
 
+  private boolean validateConfig(String configName) throws KeeperException, InterruptedException {
+    return zkStateReader.getZkClient().exists(ZkController.CONFIGS_ZKNODE + "/" + configName, true);
+  }
+  
+  private void createConfNode(String configName, String coll, boolean isLegacyCloud) throws KeeperException, InterruptedException {
     if(configName!= null){
       log.info("creating collections conf node {} ",ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
       zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
@@ -2462,7 +2476,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         throw new SolrException(ErrorCode.BAD_REQUEST,"Unable to get config name");
       }
     }
-    return configName;
 
   }
 
