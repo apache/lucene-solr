@@ -743,9 +743,9 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   public JettySolrRunner createJetty(File solrHome, String dataDir,
       String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
-    
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
-        context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
+
+    JettySolrRunner jetty
+        = new JettySolrRunner(solrHome.getAbsolutePath(), solrConfigOverride, schemaOverride, buildJettyConfig(context));
 
     jetty.setShards(shardList);
     

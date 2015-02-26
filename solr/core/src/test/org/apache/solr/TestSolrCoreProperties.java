@@ -73,7 +73,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
 
     Files.createFile(collDir.toPath().resolve("core.properties"));
 
-    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
+    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), buildJettyConfig("/solr"));
 
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
