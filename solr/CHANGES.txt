@@ -208,6 +208,9 @@ Other Changes
 * SOLR-7160: Rename ConfigSolr to NodeConfig, and decouple it from xml
   representation (Alan Woodward)
 
+* SOLR-7130: Make stale state notification work without failing the requests
+  (Noble Paul, shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

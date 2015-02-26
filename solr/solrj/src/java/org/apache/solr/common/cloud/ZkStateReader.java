@@ -268,13 +268,13 @@ public class ZkStateReader implements Closeable {
     return aliases;
   }
 
-  public Boolean checkValid(String coll, int version) {
+  public Integer compareStateVersions(String coll, int version) {
     DocCollection collection = clusterState.getCollectionOrNull(coll);
     if (collection == null) return null;
     if (collection.getZNodeVersion() < version) {
       log.debug("server older than client {}<{}", collection.getZNodeVersion(), version);
       DocCollection nu = getCollectionLive(this, coll);
-      if (nu == null) return null;
+      if (nu == null) return -1 ;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         updateWatchedCollection(nu);
         collection = nu;
@@ -282,12 +282,12 @@ public class ZkStateReader implements Closeable {
     }
     
     if (collection.getZNodeVersion() == version) {
-      return Boolean.TRUE;
+      return null;
     }
     
     log.debug("wrong version from client {}!={} ", version, collection.getZNodeVersion());
     
-    return Boolean.FALSE;
+    return collection.getZNodeVersion();
   }
   
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
