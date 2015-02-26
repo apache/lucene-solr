@@ -181,6 +181,9 @@ goto done
 
 REM Really basic command-line arg parsing
 :parse_args
+
+set "arg=%~1"
+set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
@@ -212,6 +215,7 @@ IF "%1"=="-noprompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="-key" goto set_stop_key
 IF "%1"=="-all" goto set_stop_all
+IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
 
 :set_script_cmd
@@ -390,6 +394,17 @@ SHIFT
 SHIFT
 goto parse_args
 
+:set_passthru
+set "PASSTHRU=%~1=%~2"
+IF NOT "%SOLR_OPTS%"=="" (
+  set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
+) ELSE (
+  set "SOLR_OPTS=%PASSTHRU%"
+)
+SHIFT
+SHIFT
+goto parse_args
+
 :set_noprompt
 set NO_USER_PROMPT=1
 SHIFT
@@ -460,42 +475,70 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
-      for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+      set found_it=0
+      for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
         set SOME_SOLR_PORT=
-        For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+        For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
         if NOT "!SOME_SOLR_PORT!"=="" (
-          for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT!"') do (
+          for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+            @REM j is the ip:port and k is the pid
             IF NOT "%%k"=="0" (
-              @echo Stopping Solr running on port !SOME_SOLR_PORT!
-              set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
-              "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-              del %SOLR_TIP%\bin\solr-!SOME_SOLR_PORT!.port
-              timeout /T 5
-              REM Kill it if it is still running after the graceful shutdown
-              For /f "tokens=5" %%M in ('netstat -nao ^| find "TCP " ^| find ":!SOME_SOLR_PORT!"') do (
-                IF NOT "%%M"=="0" taskkill /f /PID %%M
+              @REM split the ip:port var by colon to see if the ip is 0.0.0.0
+              for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
+                @REM x is the ip
+                IF "%%x"=="0.0.0.0" (
+                  set found_it=1
+                  @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
+                  set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
+                  "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+                  del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
+                  timeout /T 5
+                  REM Kill it if it is still running after the graceful shutdown
+                  For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
+                    IF "%%N"=="%%k" (
+                      for /f "delims=: tokens=1,2" %%a IN ("%%M") do (
+                        IF "%%a"=="0.0.0.0" (
+                          @echo Forcefully killing process %%N
+                          taskkill /f /PID %%N
+                        )
+                      )
+                    )
+                  )
+                )
               )
             )
           )
         )
       )
+      if "!found_it!"=="0" echo No Solr nodes found to stop.
     ) ELSE (
       set SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use -all to stop all running nodes on this host.
       goto err
     )
   ) ELSE (
     set found_it=0
-    For /f "tokens=5" %%M in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT%"') do (
-      IF NOT "%%M"=="0" (
-        set found_it=1
-        @echo Stopping Solr running on port %SOLR_PORT%
-        set /A STOP_PORT=%SOLR_PORT% - 1000
-        "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-        del %SOLR_TIP%\bin\solr-%SOLR_PORT%.port
-        timeout /T 5
-        REM Kill it if it is still running after the graceful shutdown
-        For /f "tokens=5" %%j in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT%"') do (
-          IF NOT "%%j"=="0" taskkill /f /PID %%j
+    For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+      IF NOT "%%N"=="0" (
+        for /f "delims=: tokens=1,2" %%x IN ("%%M") do (
+          IF "%%x"=="0.0.0.0" (
+            set found_it=1
+            @echo Stopping Solr process %%N running on port %SOLR_PORT%
+            set /A STOP_PORT=%SOLR_PORT% - 1000
+            "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+            timeout /T 5
+            REM Kill it if it is still running after the graceful shutdown
+            For /f "tokens=2,5" %%j in ('netstat -nao ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+              IF "%%N"=="%%k" (
+                for /f "delims=: tokens=1,2" %%a IN ("%%j") do (
+                  IF "%%a"=="0.0.0.0" (
+                    @echo Forcefully killing process %%N
+                    taskkill /f /PID %%N
+                  )
+                )
+              )
+            )
+          )
         )
       )
 
@@ -523,10 +566,14 @@ IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
-  For /f "tokens=5" %%j in ('netstat -aon ^| find "TCP " ^| find ":%SOLR_PORT%"') do (
-    IF NOT "%%j"=="0" (
-      set "SCRIPT_ERROR=Process %%j is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
-      goto err
+  For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":%SOLR_PORT% "') do (
+    IF NOT "%%k"=="0" (
+      for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
+        IF "%%x"=="0.0.0.0" (
+          set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
+          goto err
+        )
+      )
     )
   )
 ) ELSE (
@@ -653,19 +700,25 @@ IF NOT "%SOLR_ADDL_ARGS%"=="" set START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%
 IF NOT "%SOLR_HOST_ARG%"=="" set START_OPTS=%START_OPTS% %SOLR_HOST_ARG%
 
 cd "%SOLR_SERVER_DIR%"
+
+IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
+  mkdir "%SOLR_SERVER_DIR%\tmp"
+)
 @echo.
 @echo Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%
 @echo.
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
-  echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
+  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
   "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar
 ) ELSE (
   START "" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar > "%SOLR_SERVER_DIR%\logs\solr-%SOLR_PORT%-console.log"
-  echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar > "%SOLR_SERVER_DIR%\logs\solr-%SOLR_PORT%-console.log"
+  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 )
 
 goto done
@@ -750,7 +803,7 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
     @echo solr -cloud -p !NODE_PORT! -d node1 !DASHZ! !DASHM!
     START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node1 !DASHZ! !DASHM!
     set NODE1_PORT=!NODE_PORT!
-    echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
+    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
   ) ELSE (
     IF "!ZK_HOST!"=="" (
       set /A ZK_PORT=!NODE1_PORT!+1000
@@ -759,7 +812,7 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
     @echo Starting node%%x on port !NODE_PORT! using command:
     @echo solr -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST! !DASHM!
     START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST! !DASHM!
-    echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
+    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
   )
 
   timeout /T 10
@@ -847,20 +900,22 @@ goto done
 :get_info
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
-for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
+for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
   set SOME_SOLR_PORT=
-  For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+  For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
   if NOT "!SOME_SOLR_PORT!"=="" (
     for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":!SOME_SOLR_PORT! "') do (
       IF NOT "%%k"=="0" (
         for /f "delims=: tokens=1,2" %%x IN ("%%j") do (
-          @echo.
-          set has_info=1
-          echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-          "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-            -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-            org.apache.solr.util.SolrCLI status -solr http://localhost:!SOME_SOLR_PORT!/solr
-          @echo.
+          if "%%x"=="0.0.0.0" (
+            @echo.
+            set has_info=1
+            echo Found Solr process %%k running on port !SOME_SOLR_PORT!
+            "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+              -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+              org.apache.solr.util.SolrCLI status -solr http://localhost:!SOME_SOLR_PORT!/solr
+            @echo.
+          )
         )
       )
     )
