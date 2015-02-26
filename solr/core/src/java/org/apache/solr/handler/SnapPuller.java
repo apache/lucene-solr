@@ -508,7 +508,11 @@ public class SnapPuller {
     } finally {
       try {
         if (!successfulInstall) {
-          logReplicationTimeAndConfFiles(null, successfulInstall);
+          try {
+            logReplicationTimeAndConfFiles(null, successfulInstall);
+          } catch(Exception e) {
+            LOG.error("caught", e);
+          }
         }
         filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
         replicationStartTime = 0;
