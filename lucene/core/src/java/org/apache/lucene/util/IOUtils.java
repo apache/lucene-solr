@@ -336,7 +336,8 @@ public final class IOUtils {
     }
     
     if (isDir) {
-      assert (Constants.LINUX || Constants.MAC_OS_X) == false :
+      // TODO: LUCENE-6169 - Fix this assert once Java 9 problems are solved!
+      assert (Constants.LINUX || Constants.MAC_OS_X) == false || Constants.JRE_IS_MINIMUM_JAVA9 :
         "On Linux and MacOSX fsyncing a directory should not throw IOException, "+
         "we just don't want to rely on that in production (undocumented). Got: " + exc;
       // Ignore exception if it is a directory
