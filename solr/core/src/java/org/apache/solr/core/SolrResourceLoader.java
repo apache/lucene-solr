@@ -55,6 +55,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -796,7 +797,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
     File confFile = new File(loader.getConfigDir(), resourceName);
-    OutputStreamWriter writer = null;
+    OutputStream out = null;
     try {
       File parentDir = confFile.getParentFile();
       if ( ! parentDir.isDirectory()) {
@@ -806,7 +807,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      final FileOutputStream out = new FileOutputStream(confFile);
+      out = new FileOutputStream(confFile);
       out.write(content);
       log.info("Written confile " + resourceName);
     } catch (IOException e) {
@@ -814,7 +815,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       log.error(msg, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
     } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(writer);
+      org.apache.commons.io.IOUtils.closeQuietly(out);
       try {
         FileUtils.sync(confFile);
       } catch (IOException e) {
