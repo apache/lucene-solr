@@ -48,7 +48,7 @@
                numberType="tdouble" distanceUnits="degrees"/>
 
     <fieldType name="bbox" class="solr.BBoxField"
-               numberType="tdoubleDV" distanceUnits="degrees"/>
+               numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
   </types>
 
 
