@@ -52,7 +52,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     String testData = "hello world";
     long timeoutMs = 500L;
 
-    DistributedQueue dq = new DistributedQueue(zkClient, setupDistributedQueueZNode(dqZNode));
+    DistributedQueue dq = new DistributedQueue(zkClient, setupDistributedQueueZNode(dqZNode), null);
 
     // basic ops
     assertTrue(dq.poll() == null);
@@ -124,7 +124,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   protected void setupZk() throws Exception {
     System.setProperty("zkClientTimeout", "8000");
-    zkServer = new ZkTestServer(createTempDir("zkData").toFile().getAbsolutePath());
+    zkServer = new ZkTestServer(createTempDir("zkData").getAbsolutePath());
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
