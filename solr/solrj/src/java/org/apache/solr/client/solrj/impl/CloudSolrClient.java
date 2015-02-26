@@ -1115,30 +1115,30 @@ public class CloudSolrClient extends SolrClient {
 
 
   protected DocCollection getDocCollection(ClusterState clusterState, String collection, Integer expectedVersion) throws SolrException {
-    if(collection == null) return null;
+    if (collection == null) return null;
     DocCollection col = getFromCache(collection);
-    if(col != null) {
-      if(expectedVersion == null) return col;
-      if(expectedVersion.intValue() == col.getZNodeVersion()) return col;
+    if (col != null) {
+      if (expectedVersion == null) return col;
+      if (expectedVersion.intValue() == col.getZNodeVersion()) return col;
     }
 
     ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
-    if(ref == null){
+    if (ref == null) {
       //no such collection exists
       return null;
     }
-    if(!ref.isLazilyLoaded()) {
+    if (!ref.isLazilyLoaded()) {
       //it is readily available just return it
       return ref.get();
     }
     List locks = this.locks;
     final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
-    synchronized (lock){
+    synchronized (lock) {
       //we have waited for sometime just check once again
       col = getFromCache(collection);
-      if(col !=null) {
-        if(expectedVersion == null) return col;
-        if(expectedVersion.intValue() == col.getZNodeVersion()) {
+      if (col != null) {
+        if (expectedVersion == null) return col;
+        if (expectedVersion.intValue() == col.getZNodeVersion()) {
           return col;
         } else {
           collectionStateCache.remove(collection);
@@ -1146,8 +1146,8 @@ public class CloudSolrClient extends SolrClient {
       }
       col = ref.get();//this is a call to ZK
     }
-    if(col == null ) return  null;
-    if(col.getStateFormat() >1) collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
+    if (col == null) return null;
+    if (col.getStateFormat() > 1) collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
     return col;
   }
 
