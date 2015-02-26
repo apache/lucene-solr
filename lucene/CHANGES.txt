@@ -59,6 +59,8 @@ Bug Fixes
 * LUCENE-6242: Ram usage estimation was incorrect for SparseFixedBitSet when
   object alignment was different from 8. (Uwe Schindler, Adrien Grand)
 
+* LUCENE-6293: Fixed TimSorter bug. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
