@@ -45,8 +45,7 @@ import java.util.TreeMap;
  * A distributed queue from zk recipes.
  */
 public class DistributedQueue {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(DistributedQueue.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DistributedQueue.class);
   
   private static long DEFAULT_TIMEOUT = 5*60*1000;
   
@@ -235,38 +234,50 @@ public class DistributedQueue {
       time.stop();
     }
   }
-  
-  
-  private class LatchChildWatcher implements Watcher {
-    
-    final Object lock;
-    private WatchedEvent event = null;
-    
-    public LatchChildWatcher() {
-      this.lock = new Object();
+
+  /**
+   * Watcher that blocks until a WatchedEvent occurs for a znode.
+   */
+  private final class LatchWatcher implements Watcher {
+
+    private final Object lock;
+    private WatchedEvent event;
+    private Event.EventType latchEventType;
+
+    LatchWatcher(Object lock) {
+      this(lock, null);
     }
 
-    public LatchChildWatcher(Object lock) {
-      this.lock = lock;
+    LatchWatcher(Event.EventType eventType) {
+      this(new Object(), eventType);
     }
-    
+
+    LatchWatcher(Object lock, Event.EventType eventType) {
+      this.lock = lock;
+      this.latchEventType = eventType;
+    }
+
     @Override
     public void process(WatchedEvent event) {
-      LOG.info("LatchChildWatcher fired on path: " + event.getPath() + " state: "
-          + event.getState() + " type " + event.getType());
-      synchronized (lock) {
-        this.event = event;
-        lock.notifyAll();
+      Event.EventType eventType = event.getType();
+      // None events are ignored
+      // If latchEventType is not null, only fire if the type matches
+      if (eventType != Event.EventType.None && (latchEventType == null || eventType == latchEventType)) {
+        LOG.info("{} fired on path {} state {}", eventType, event.getPath(), event.getState());
+        synchronized (lock) {
+          this.event = event;
+          lock.notifyAll();
+        }
       }
     }
-    
+
     public void await(long timeout) throws InterruptedException {
       synchronized (lock) {
         if (this.event != null) return;
         lock.wait(timeout);
       }
     }
-    
+
     public WatchedEvent getWatchedEvent() {
       return event;
     }
@@ -274,13 +285,13 @@ public class DistributedQueue {
 
   // we avoid creating *many* watches in some cases
   // by saving the childrenWatcher and the children associated - see SOLR-6336
-  private LatchChildWatcher childrenWatcher;
+  private LatchWatcher childrenWatcher;
   private TreeMap<Long,String> fetchedChildren;
   private final Object childrenWatcherLock = new Object();
 
   private Map<Long, String> getChildren(long wait) throws InterruptedException, KeeperException
   {
-    LatchChildWatcher watcher;
+    LatchWatcher watcher;
     TreeMap<Long,String> children;
     synchronized (childrenWatcherLock) {
       watcher = childrenWatcher;
@@ -288,7 +299,8 @@ public class DistributedQueue {
     }
 
     if (watcher == null ||  watcher.getWatchedEvent() != null) {
-      watcher = new LatchChildWatcher();
+      // this watcher is only interested in child change events
+      watcher = new LatchWatcher(Watcher.Event.EventType.NodeChildrenChanged);
       while (true) {
         try {
           children = orderedChildren(watcher);
@@ -390,8 +402,9 @@ public class DistributedQueue {
       String watchID = createData(
           dir + "/" + response_prefix + path.substring(path.lastIndexOf("-") + 1),
           null, CreateMode.EPHEMERAL);
+
       Object lock = new Object();
-      LatchChildWatcher watcher = new LatchChildWatcher(lock);
+      LatchWatcher watcher = new LatchWatcher(lock);
       synchronized (lock) {
         if (zookeeper.exists(watchID, watcher, true) != null) {
           watcher.await(timeout);
