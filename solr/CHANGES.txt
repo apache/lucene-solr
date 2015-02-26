@@ -65,6 +65,9 @@ Bug Fixes
 * SOLR-6839: Direct routing with CloudSolrServer will ignore the Overwrite document option.
   (Mark Miller)
 
+* SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
+  (Chris A. Mattmann, Uwe Schindler)  
+
 ==================  4.10.3 ==================
 
 Bug Fixes
