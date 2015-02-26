@@ -49,6 +49,9 @@ Bug Fixes
 * SOLR-6579: SnapPuller Replication blocks clean shutdown of tomcat
   (Philip Black-Knight via Noble Paul)
 
+* SOLR-6763: Shard leader elections should not persist across session expiry
+  (Alan Woodward, Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
