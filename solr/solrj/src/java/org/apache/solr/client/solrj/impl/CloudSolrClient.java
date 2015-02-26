@@ -807,8 +807,11 @@ public class CloudSolrClient extends SolrClient {
     NamedList<Object> resp = null;
     try {
       resp = sendRequest(request);
+      //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
       Object o = resp.get(STATE_VERSION, resp.size()-1);
       if(o != null && o instanceof Map) {
+        //remove this because no one else needs this and tests would fail if they are comparing responses
+        resp.remove(resp.size()-1);
         Map invalidStates = (Map) o;
         for (Object invalidEntries : invalidStates.entrySet()) {
           Map.Entry e = (Map.Entry) invalidEntries;
