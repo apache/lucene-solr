@@ -55,6 +55,8 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.sun.util.calendar";
   permission java.lang.RuntimePermission "accessClassInPackage.sun.util.locale";
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  // needed by queryparser/ NLS., TODO clean this up:
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.util";
   // needed for test of IOUtils.spins (maybe it can be avoided)
   permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/morfologik: needed for a horrible context classloader hack for solr in morfologikfilter: nuke this
