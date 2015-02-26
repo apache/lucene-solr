@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -308,7 +309,12 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public void startJetty() throws Exception {
-      jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null, true, null, sslConfig);
+      jetty = new JettySolrRunner(getHomeDir(), "bad_solrconfig.xml", null, JettyConfig.builder()
+          .setContext("/solr")
+          .stopAtShutdown(true)
+          .setPort(port)
+          .withSSLConfig(sslConfig)
+          .build());
       jetty.setDataDir(getDataDir());
       jetty.start();
       int newPort = jetty.getLocalPort();

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -45,10 +47,11 @@ public class MiniSolrCloudCluster {
   
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
 
-  private ZkTestServer zkServer;
-  private List<JettySolrRunner> jettys;
-  private File testDir;
-  private CloudSolrClient solrClient;
+  private final ZkTestServer zkServer;
+  private final List<JettySolrRunner> jettys;
+  private final File testDir;
+  private final CloudSolrClient solrClient;
+  private final JettyConfig jettyConfig;
 
   /**
    * "Mini" SolrCloud cluster to be used for testing
@@ -61,7 +64,7 @@ public class MiniSolrCloudCluster {
    */
   public MiniSolrCloudCluster(int numServers, String hostContext, File baseDir, File solrXml,
       SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class, String> extraRequestFilters) throws Exception {
+      SortedMap<Class<? extends Filter>, String> extraRequestFilters) throws Exception {
     this(numServers, hostContext, baseDir, solrXml, extraServlets, extraRequestFilters, null);
   }
 
@@ -77,9 +80,20 @@ public class MiniSolrCloudCluster {
    */
   public MiniSolrCloudCluster(int numServers, String hostContext, File baseDir, File solrXml,
       SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class, String> extraRequestFilters,
+      SortedMap<Class<? extends Filter>, String> extraRequestFilters,
       SSLConfig sslConfig) throws Exception {
-    testDir = baseDir;
+    this(numServers, baseDir, solrXml, JettyConfig.builder()
+        .setContext(hostContext)
+        .withSSLConfig(sslConfig)
+        .withFilters(extraRequestFilters)
+        .withServlets(extraServlets)
+        .build());
+  }
+
+  public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, JettyConfig jettyConfig) throws Exception {
+
+    this.testDir = baseDir;
+    this.jettyConfig = jettyConfig;
 
     String zkDir = testDir.getAbsolutePath() + File.separator
       + "zookeeper/server1/data";
@@ -95,13 +109,9 @@ public class MiniSolrCloudCluster {
     System.setProperty("solr.solrxml.location","zookeeper");
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    jettys = new LinkedList<JettySolrRunner>();
+    jettys = new LinkedList<>();
     for (int i = 0; i < numServers; ++i) {
-      if (sslConfig == null) {
-        startJettySolrRunner(hostContext, extraServlets, extraRequestFilters);
-      } else {
-        startJettySolrRunner(hostContext, extraServlets, extraRequestFilters, sslConfig);
-      }
+      startJettySolrRunner(jettyConfig);
     }
     
     solrClient = buildSolrClient();
@@ -123,34 +133,75 @@ public class MiniSolrCloudCluster {
 
   /**
    * Start a new Solr instance
+   *
    * @param hostContext context path of Solr servers used by Jetty
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
+   *
    * @return new Solr instance
+   *
    */
   public JettySolrRunner startJettySolrRunner(String hostContext,
       SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class, String> extraRequestFilters) throws Exception {
+      SortedMap<Class<? extends Filter>, String> extraRequestFilters) throws Exception {
     return startJettySolrRunner(hostContext, extraServlets, extraRequestFilters, null);
   }
 
   /**
    * Start a new Solr instance
+   *
    * @param hostContext context path of Solr servers used by Jetty
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    * @param sslConfig SSL configuration
+   *
    * @return new Solr instance
    */
   public JettySolrRunner startJettySolrRunner(String hostContext,
       SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class, String> extraRequestFilters, SSLConfig sslConfig) throws Exception {
+      SortedMap<Class<? extends Filter>, String> extraRequestFilters, SSLConfig sslConfig) throws Exception {
+    return startJettySolrRunner(hostContext, JettyConfig.builder()
+        .withServlets(extraServlets)
+        .withFilters(extraRequestFilters)
+        .withSSLConfig(sslConfig)
+        .build());
+  }
+
+  /**
+   * Start a new Solr instance
+   *
+   * @param config a JettyConfig for the instance's {@link org.apache.solr.client.solrj.embedded.JettySolrRunner}
+   *
+   * @return a JettySolrRunner
+   */
+  public JettySolrRunner startJettySolrRunner(JettyConfig config) throws Exception {
+    return startJettySolrRunner(config.context, config);
+  }
+
+  /**
+   * Start a new Solr instance on a particular servlet context
+   *
+   * @param hostContext the context to run on
+   * @param config a JettyConfig for the instance's {@link org.apache.solr.client.solrj.embedded.JettySolrRunner}
+   *
+   * @return a JettySolrRunner
+   */
+  public JettySolrRunner startJettySolrRunner(String hostContext, JettyConfig config) throws Exception {
     String context = getHostContextSuitableForServletContext(hostContext);
-    JettySolrRunner jetty = new JettySolrRunner(testDir.getAbsolutePath(), context,
-      0, null, null, true, extraServlets, sslConfig, extraRequestFilters);
+    JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
+    JettySolrRunner jetty = new JettySolrRunner(testDir.getAbsolutePath(), newConfig);
     jetty.start();
     jettys.add(jetty);
     return jetty;
+  }
+
+  /**
+   * Start a new Solr instance, using the default config
+   *
+   * @return a JettySolrRunner
+   */
+  public JettySolrRunner startJettySolrRunner() throws Exception {
+    return startJettySolrRunner(jettyConfig);
   }
 
   /**
@@ -222,7 +273,7 @@ public class MiniSolrCloudCluster {
 
   private static String getHostContextSuitableForServletContext(String ctx) {
     if (ctx == null || "".equals(ctx)) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0,ctx.length()-1);;
+    if (ctx.endsWith("/")) ctx = ctx.substring(0,ctx.length()-1);
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
     return ctx;
   }

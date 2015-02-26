@@ -208,6 +208,8 @@ Other Changes
 * SOLR-7160: Rename ConfigSolr to NodeConfig, and decouple it from xml
   representation (Alan Woodward)
 
+* SOLR-7166: Encapsulate JettySolrRunner configuration (Alan Woodward)
+
 * SOLR-7130: Make stale state notification work without failing the requests
   (Noble Paul, shalin)
 

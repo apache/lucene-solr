@@ -87,7 +87,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
     solrHomeDirectory = createTempDir().toFile();
 
-    jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
+    jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
   }
 
   @After

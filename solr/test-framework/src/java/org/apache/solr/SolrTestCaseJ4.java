@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -46,14 +47,14 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.core.CoresLocator;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -302,6 +303,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         trySslClientAuth);
     
     return new SSLTestConfig(trySsl, trySslClientAuth);
+  }
+
+  protected static JettyConfig buildJettyConfig(String context) {
+    return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig).build();
   }
   
   protected static String buildUrl(final int port, final String context) {

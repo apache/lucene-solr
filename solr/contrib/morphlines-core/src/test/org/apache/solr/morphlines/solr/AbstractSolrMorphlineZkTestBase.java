@@ -144,8 +144,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
       throws Exception {
 
     writeCoreProperties(solrHome.toPath(), DEFAULT_TEST_CORENAME);
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
-        context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
+    JettySolrRunner jetty
+        = new JettySolrRunner(solrHome.getAbsolutePath(), solrConfigOverride, schemaOverride, buildJettyConfig(context));
 
     jetty.setShards(shardList);
     

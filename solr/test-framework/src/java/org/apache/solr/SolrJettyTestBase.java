@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
@@ -75,7 +76,15 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner(solrHome, context, 0, configFile, schemaFile, stopAtShutdown, extraServlets, sslConfig);
+
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .setContext(context)
+        .stopAtShutdown(stopAtShutdown)
+        .withServlets(extraServlets)
+        .withSSLConfig(sslConfig)
+        .build();
+
+    jetty = new JettySolrRunner(solrHome, configFile, schemaFile, jettyConfig);
 
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {

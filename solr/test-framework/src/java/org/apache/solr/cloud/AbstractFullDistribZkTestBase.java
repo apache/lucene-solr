@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -494,8 +495,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public JettySolrRunner createJetty(String dataDir, String ulogDir, String shardList,
       String solrConfigOverride) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
-        solrConfigOverride, null, false, getExtraServlets(), sslConfig, getExtraRequestFilters());
+    JettyConfig jettyconfig = JettyConfig.builder()
+        .setContext(context)
+        .stopAtShutdown(false)
+        .withServlets(getExtraServlets())
+        .withFilters(getExtraRequestFilters())
+        .withSSLConfig(sslConfig)
+        .build();
+    
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), solrConfigOverride, null, jettyconfig);
+
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -509,7 +518,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       solrHome = getRelativeSolrHomePath(solrHome);
     }
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets(), sslConfig, getExtraRequestFilters());
+    JettyConfig jettyconfig = JettyConfig.builder()
+        .setContext(context)
+        .stopAtShutdown(false)
+        .withServlets(getExtraServlets())
+        .withFilters(getExtraRequestFilters())
+        .withSSLConfig(sslConfig)
+        .build();
+    
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), solrConfigOverride, schemaOverride, jettyconfig);
+
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -526,13 +544,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                      String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context,
-        0, solrConfigOverride, schemaOverride, false,
-        getExtraServlets(), sslConfig, getExtraRequestFilters());
+    JettyConfig jettyconfig = JettyConfig.builder()
+        .setContext(context)
+        .stopAtShutdown(false)
+        .withServlets(getExtraServlets())
+        .withFilters(getExtraRequestFilters())
+        .withSSLConfig(sslConfig)
+        .build();
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), solrConfigOverride, schemaOverride, jettyconfig);
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
 
-    SocketProxy proxy = new SocketProxy(0, sslConfig == null ? false : sslConfig.isSSLMode());
+    SocketProxy proxy = new SocketProxy(0, sslConfig != null && sslConfig.isSSLMode());
     jetty.setProxyPort(proxy.getListenPort());
     jetty.start();
     proxy.open(jetty.getBaseUrl().toURI());
