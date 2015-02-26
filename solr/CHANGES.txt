@@ -35,6 +35,10 @@ Bug Fixes
     - olap.* in AnalyticsComponent
   (Alexandre Rafalovitch & hossman)
 
+* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
+
+
 ==================  4.10.3 ==================
 
 Bug Fixes
