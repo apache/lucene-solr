@@ -226,12 +226,14 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
     }
   }
-  
-  synchronized void lockAndAbortAll(IndexWriter indexWriter) {
+
+  /** Returns how many documents were aborted. */
+  synchronized long lockAndAbortAll(IndexWriter indexWriter) {
     assert indexWriter.holdsFullFlushLock();
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "lockAndAbortAll");
     }
+    long abortedDocCount = 0;
     boolean success = false;
     try {
       deleteQueue.clear();
@@ -239,12 +241,13 @@ final class DocumentsWriter implements Closeable, Accountable {
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
-        abortThreadState(perThread);
+        abortedDocCount += abortThreadState(perThread);
       }
       deleteQueue.clear();
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
       success = true;
+      return abortedDocCount;
     } finally {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "finished lockAndAbortAll success=" + success);
@@ -255,22 +258,28 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
     }
   }
-
-  private final void abortThreadState(final ThreadState perThread) {
+  
+  /** Returns how many documents were aborted. */
+  private final int abortThreadState(final ThreadState perThread) {
     assert perThread.isHeldByCurrentThread();
     if (perThread.isActive()) { // we might be closed
       if (perThread.isInitialized()) { 
         try {
-          subtractFlushedNumDocs(perThread.dwpt.getNumDocsInRAM());
+          int abortedDocCount = perThread.dwpt.getNumDocsInRAM();
+          subtractFlushedNumDocs(abortedDocCount);
           perThread.dwpt.abort();
+          return abortedDocCount;
         } finally {
           flushControl.doOnAbort(perThread);
         }
       } else {
         flushControl.doOnAbort(perThread);
+        // This DWPT was never initialized so it has no indexed documents:
+        return 0;
       }
     } else {
       assert closed;
+      return 0;
     }
   }
   

@@ -717,6 +717,9 @@ Bug fixes
   sorted (set) doc values instance at the same time.
   (Tom Shally, Robert Muir, Adrien Grand)
 
+* LUCENE-6299: IndexWriter was failing to enforce the 2.1 billion doc
+  limit.  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-6212: Deprecate IndexWriter APIs that accept per-document Analyzer.

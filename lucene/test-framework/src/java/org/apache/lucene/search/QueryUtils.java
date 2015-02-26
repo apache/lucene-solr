@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AllDeletedFilterReader;
@@ -133,7 +134,7 @@ public class QueryUtils {
   public static class FCInvisibleMultiReader extends MultiReader {
     private final Object cacheKey = new Object();
   
-    public FCInvisibleMultiReader(IndexReader... readers) {
+    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
       super(readers);
     }
     

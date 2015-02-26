@@ -209,23 +209,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     useSlowOpenClosers = v;
   }
 
-  /**
-   * Returns true if {@link #in} must sync its files.
-   * Currently, only {@link NRTCachingDirectory} requires sync'ing its files
-   * because otherwise they are cached in an internal {@link RAMDirectory}. If
-   * other directories require that too, they should be added to this method.
-   */
-  private boolean mustSync() {
-    Directory delegate = in;
-    while (delegate instanceof FilterDirectory) {
-      if (delegate instanceof NRTCachingDirectory) {
-        return true;
-      }
-      delegate = ((FilterDirectory) delegate).getDelegate();
-    }
-    return delegate instanceof NRTCachingDirectory;
-  }
-  
   @Override
   public synchronized void sync(Collection<String> names) throws IOException {
     maybeYield();
@@ -233,16 +216,13 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (crashed) {
       throw new IOException("cannot sync after crash");
     }
-    // don't wear out our hardware so much in tests.
-    if (LuceneTestCase.rarely(randomState) || mustSync()) {
-      for (String name : names) {
-        // randomly fail with IOE on any file
-        maybeThrowIOException(name);
-        in.sync(Collections.singleton(name));
-        unSyncedFiles.remove(name);
-      }
-    } else {
-      unSyncedFiles.removeAll(names);
+    // always pass thru fsync, directories rely on this.
+    // 90% of time, we use DisableFsyncFS which omits the real calls.
+    for (String name : names) {
+      // randomly fail with IOE on any file
+      maybeThrowIOException(name);
+      in.sync(Collections.singleton(name));
+      unSyncedFiles.remove(name);
     }
   }
 
@@ -1051,20 +1031,38 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     public boolean isLocked() throws IOException {
       return delegateLock.isLocked();
     }
-  }
-
-  // TODO: why does this class override this method?
-  // we should use the default implementation so all of our checks work?
-  @Override
-  public synchronized void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
-    maybeYield();
-    // randomize the IOContext here?
-    in.copyFrom(from, src, dest, context);
-  }
+  }  
   
   /** Use this when throwing fake {@code IOException},
    *  e.g. from {@link MockDirectoryWrapper.Failure}. */
   public static class FakeIOException extends IOException {
   }
 
+  @Override
+  public String toString() {
+    if (maxSize != 0) {
+      return "MockDirectoryWrapper(" + in + ", current=" + maxUsedSize + ",max=" + maxSize + ")";
+    } else {
+      return super.toString();
+    }
+  }
+
+
+  // don't override optional methods like copyFrom: we need the default impl for things like disk 
+  // full checks. we randomly exercise "raw" directories anyway. We ensure default impls are used:
+  
+  @Override
+  public final ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
+    return super.openChecksumInput(name, context);
+  }
+
+  @Override
+  public final void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+    super.copyFrom(from, src, dest, context);
+  }
+
+  @Override
+  protected final void ensureOpen() throws AlreadyClosedException {
+    super.ensureOpen();
+  }
 }
