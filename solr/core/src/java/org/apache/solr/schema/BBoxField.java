@@ -115,7 +115,6 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   //  benefits.
   private void register(IndexSchema schema, String name, FieldType fieldType) {
     int props = fieldType.properties;
-    props &= ~MULTIVALUED; // must not be multivalued
     if(storeSubFields) {
       props |= STORED;
     }
