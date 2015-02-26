@@ -157,7 +157,7 @@ Bug Fixes
   (Pablo Queixalos, shalin)
 
 * SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
-  (Chris Mattman, Uwe Schindler)  
+  (Chris A. Mattmann, Uwe Schindler)  
 
 Optimizations
 ----------------------
