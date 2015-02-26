@@ -589,8 +589,8 @@ final class SloppyPhraseScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
-    return new TwoPhaseDocIdSetIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return new TwoPhaseIterator() {
       @Override
       public DocIdSetIterator approximation() {
         return conjunction;

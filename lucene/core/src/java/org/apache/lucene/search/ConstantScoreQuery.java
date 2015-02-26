@@ -183,7 +183,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator asTwoPhaseIterator() {
       return in.asTwoPhaseIterator();
     }
 

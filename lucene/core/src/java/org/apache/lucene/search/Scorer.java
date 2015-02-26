@@ -102,12 +102,12 @@ public abstract class Scorer extends DocIdSetIterator {
   }
 
   /**
-   * Optional method: Return a {@link TwoPhaseDocIdSetIterator} view of this
+   * Optional method: Return a {@link TwoPhaseIterator} view of this
    * {@link Scorer}. A return value of {@code null} indicates that
    * two-phase iteration is not supported.
    *
-   * Note that the returned {@link TwoPhaseDocIdSetIterator}'s
-   * {@link TwoPhaseDocIdSetIterator#approximation() approximation} must
+   * Note that the returned {@link TwoPhaseIterator}'s
+   * {@link TwoPhaseIterator#approximation() approximation} must
    * advance synchronously with this iterator: advancing the approximation must
    * advance this iterator and vice-versa.
    *
@@ -116,7 +116,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *
    * The default implementation returns {@code null}.
    */
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     return null;
   }
 }

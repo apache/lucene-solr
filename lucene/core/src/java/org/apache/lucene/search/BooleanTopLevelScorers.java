@@ -39,7 +39,7 @@ class BooleanTopLevelScorers {
     }
 
     @Override
-    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator asTwoPhaseIterator() {
       return in.asTwoPhaseIterator();
     }
 

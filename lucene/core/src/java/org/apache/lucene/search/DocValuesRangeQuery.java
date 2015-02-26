@@ -134,7 +134,7 @@ public final class DocValuesRangeQuery extends Query {
         }
 
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseDocIdSetIterator twoPhaseRange;
+        final TwoPhaseIterator twoPhaseRange;
         if (lowerVal instanceof Long || upperVal instanceof Long) {
 
           final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
@@ -211,7 +211,7 @@ public final class DocValuesRangeQuery extends Query {
     };
   }
 
-  private static class TwoPhaseNumericRange extends TwoPhaseDocIdSetIterator {
+  private static class TwoPhaseNumericRange extends TwoPhaseIterator {
 
     private final DocIdSetIterator approximation;
     private final SortedNumericDocValues values;
@@ -249,7 +249,7 @@ public final class DocValuesRangeQuery extends Query {
 
   }
 
-  private static class TwoPhaseOrdRange extends TwoPhaseDocIdSetIterator {
+  private static class TwoPhaseOrdRange extends TwoPhaseIterator {
 
     private final DocIdSetIterator approximation;
     private final SortedSetDocValues values;
@@ -287,19 +287,19 @@ public final class DocValuesRangeQuery extends Query {
 
   private static class RangeScorer extends Scorer {
 
-    private final TwoPhaseDocIdSetIterator twoPhaseRange;
+    private final TwoPhaseIterator twoPhaseRange;
     private final DocIdSetIterator disi;
     private final float score;
 
-    RangeScorer(Weight weight, TwoPhaseDocIdSetIterator twoPhaseRange, float score) {
+    RangeScorer(Weight weight, TwoPhaseIterator twoPhaseRange, float score) {
       super(weight);
       this.twoPhaseRange = twoPhaseRange;
-      this.disi = TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseRange);
+      this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseRange);
       this.score = score;
     }
 
     @Override
-    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator asTwoPhaseIterator() {
       return twoPhaseRange;
     }
 

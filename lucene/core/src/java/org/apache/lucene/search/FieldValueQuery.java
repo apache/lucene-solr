@@ -71,7 +71,7 @@ public final class FieldValueQuery extends Query {
         }
 
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseDocIdSetIterator twoPhaseIterator = new TwoPhaseDocIdSetIterator() {
+        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator() {
 
           @Override
           public boolean matches() throws IOException {
@@ -90,12 +90,12 @@ public final class FieldValueQuery extends Query {
             return approximation;
           }
         };
-        final DocIdSetIterator disi = TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator);
+        final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
 
         return new Scorer(this) {
 
           @Override
-          public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+          public TwoPhaseIterator asTwoPhaseIterator() {
             return twoPhaseIterator;
           }
 

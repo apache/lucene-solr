@@ -160,7 +160,7 @@ public class DocValuesTermsQuery extends Query {
         }
 
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseDocIdSetIterator twoPhaseIterator = new TwoPhaseDocIdSetIterator() {
+        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator() {
           @Override
           public DocIdSetIterator approximation() {
             return approximation;
@@ -180,11 +180,11 @@ public class DocValuesTermsQuery extends Query {
             return false;
           }
         };
-        final DocIdSetIterator disi = TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator);
+        final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
         return new Scorer(this) {
 
           @Override
-          public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+          public TwoPhaseIterator asTwoPhaseIterator() {
             return twoPhaseIterator;
           }
 

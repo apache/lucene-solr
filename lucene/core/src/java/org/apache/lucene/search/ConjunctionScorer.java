@@ -43,7 +43,7 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     return disi.asTwoPhaseIterator();
   }
 

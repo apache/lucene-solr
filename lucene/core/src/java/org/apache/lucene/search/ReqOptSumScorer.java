@@ -48,7 +48,7 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     return reqScorer.asTwoPhaseIterator();
   }
 

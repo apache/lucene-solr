@@ -105,7 +105,7 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     boolean hasApproximation = false;
     for (ScorerWrapper w : subScorers) {
       if (w.twoPhaseView != null) {
@@ -119,7 +119,7 @@ abstract class DisjunctionScorer extends Scorer {
       return null;
     }
 
-    return new TwoPhaseDocIdSetIterator() {
+    return new TwoPhaseIterator() {
 
       @Override
       public DocIdSetIterator approximation() {
