@@ -475,7 +475,7 @@ public class LBHttpSolrServer extends SolrServer {
     Map<String,ServerWrapper> justFailed = null;
 
     for (int attempts=0; attempts<maxTries; attempts++) {
-      int count = counter.incrementAndGet();      
+      int count = counter.incrementAndGet() & Integer.MAX_VALUE;
       ServerWrapper wrapper = serverList[count % serverList.length];
       wrapper.lastUsed = System.currentTimeMillis();
 

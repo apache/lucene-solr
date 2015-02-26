@@ -37,6 +37,8 @@ Bug Fixes
 
 * SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
 
+* SOLR-6457: LBHttpSolrClient: ArrayIndexOutOfBoundsException risk if counter overflows
+  (longkey via Noble Paul)
 
 
 ==================  4.10.3 ==================
