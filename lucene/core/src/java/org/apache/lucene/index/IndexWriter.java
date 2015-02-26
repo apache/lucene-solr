@@ -2056,13 +2056,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     try {
       synchronized (fullFlushLock) { 
-        docWriter.lockAndAbortAll(this);
+        long abortedDocCount = docWriter.lockAndAbortAll(this);
+        pendingNumDocs.addAndGet(-abortedDocCount);
+        
         processEvents(false, true);
         synchronized (this) {
           try {
             // Abort any running merges
             abortMerges();
             // Remove all segments
+            pendingNumDocs.addAndGet(-segmentInfos.totalDocCount());
             segmentInfos.clear();
             // Ask deleter to locate unreferenced files & remove them:
             deleter.checkpoint(segmentInfos, false);
@@ -2078,7 +2081,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             ++changeCount;
             segmentInfos.changed();
             globalFieldNumberMap.clear();
-            pendingNumDocs.set(0);
+
             success = true;
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
@@ -2351,11 +2354,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         totalDocCount += sis.totalDocCount();
         commits.add(sis);
       }
-        
-      // Make sure adding the new documents to this index won't
-      // exceed the limit:
-      reserveDocs(totalDocCount);
 
+      // Best-effort up front check:
+      testReserveDocs(totalDocCount);
+        
       boolean success = false;
       try {
         for (SegmentInfos sis : commits) {
@@ -2390,6 +2392,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success = false;
         try {
           ensureOpen();
+
+          // Now reserve the docs, just before we update SIS:
+          reserveDocs(totalDocCount);
+
           success = true;
         } finally {
           if (!success) {
@@ -2466,11 +2472,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       for (CodecReader leaf : readers) {
         numDocs += leaf.numDocs();
       }
-
-      // Make sure adding the new documents to this index won't
-      // exceed the limit:
-      reserveDocs(numDocs);
       
+      // Best-effort up front check:
+      testReserveDocs(numDocs);
+
       final IOContext context = new IOContext(new MergeInfo(Math.toIntExact(numDocs), -1, false, -1));
 
       // TODO: somehow we should fix this merge so it's
@@ -2563,6 +2568,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           return;
         }
         ensureOpen();
+
+        // Now reserve the docs, just before we update SIS:
+        reserveDocs(numDocs);
+      
         segmentInfos.add(infoPerCommit);
         checkpoint();
       }
@@ -4627,12 +4636,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Anything that will add N docs to the index should reserve first to
    *  make sure it's allowed.  This will throw {@code
    *  IllegalArgumentException} if it's not allowed. */ 
-  private void reserveDocs(long numDocs) {
-    if (pendingNumDocs.addAndGet(numDocs) > actualMaxDocs) {
-      // Reserve failed
-      pendingNumDocs.addAndGet(-numDocs);
-      throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + numDocs + ")");
+  private void reserveDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    if (pendingNumDocs.addAndGet(addedNumDocs) > actualMaxDocs) {
+      // Reserve failed: put the docs back and throw exc:
+      pendingNumDocs.addAndGet(-addedNumDocs);
+      tooManyDocs(addedNumDocs);
     }
+  }
+
+  /** Does a best-effort check, that the current index would accept this many additional docs, but does not actually reserve them.
+   *
+   * @throws IllegalArgumentException if there would be too many docs */
+  private void testReserveDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    if (pendingNumDocs.get() + addedNumDocs > actualMaxDocs) {
+      tooManyDocs(addedNumDocs);
+    }
+  }
+
+  private void tooManyDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
   }
 
   /** Wraps the incoming {@link Directory} so that we assign a per-thread
