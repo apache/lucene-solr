@@ -40,6 +40,8 @@ Bug Fixes
 * SOLR-6457: LBHttpSolrClient: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
 
+* SOLR-6481: CLUSTERSTATUS should check if the node hosting a replica is live when
+  reporting replica status (Timothy Potter)
 
 ==================  4.10.3 ==================
 
