@@ -73,6 +73,9 @@ Bug Fixes
 * SOLR-7011: Delete collection returns before collection is actually removed.
   (Christine Poerschke via shalin)
 
+* SOLR-6856: Restore ExtractingRequestHandler's ability to capture all HTML tags when
+  parsing (X)HTML. (hossman, Uwe Schindler, ehatcher, Steve Rowe)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
