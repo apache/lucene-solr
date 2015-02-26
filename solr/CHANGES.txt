@@ -59,6 +59,9 @@ Bug Fixes
     implementation instead appends each input piece via the langdetect API.
   (Vitaliy Zhovtyuk, Tomás Fernández Löbbe, Rob Tulloh, Steve Rowe)
 
+* SOLR-6850: AutoAddReplicas makes a call to wait to see live replicas that times
+  out after 30 milliseconds instead of 30 seconds. (Varun Thacker via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
