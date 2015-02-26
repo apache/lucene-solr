@@ -83,6 +83,9 @@ Bug Fixes
 
 * SOLR-7016: Fix bin\solr.cmd to work in a directory with spaces in the name.
   (Timothy Potter, Uwe Schindler)
+    
+* SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to 
+  parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
 
 ==================  4.10.3 ==================
 
