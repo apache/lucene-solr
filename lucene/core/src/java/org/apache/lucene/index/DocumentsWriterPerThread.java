@@ -205,13 +205,14 @@ class DocumentsWriterPerThread {
     if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
       // Reserve failed
       pendingNumDocs.decrementAndGet();
-      throw new IllegalStateException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
+      throw new IllegalArgumentException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
     }
   }
 
   public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
+    reserveDoc();
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
@@ -224,7 +225,6 @@ class DocumentsWriterPerThread {
     // document, so the counter will be "wrong" in that case, but
     // it's very hard to fix (we can't easily distinguish aborting
     // vs non-aborting exceptions):
-    reserveDoc();
     boolean success = false;
     try {
       try {

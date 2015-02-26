@@ -599,7 +599,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
   private static class DummyFilterDirectoryReader extends FilterDirectoryReader {
 
-    public DummyFilterDirectoryReader(DirectoryReader in) {
+    public DummyFilterDirectoryReader(DirectoryReader in) throws IOException {
       super(in, new SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
@@ -609,7 +609,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
 
     @Override
-    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new DummyFilterDirectoryReader(in);
     }
     

@@ -191,7 +191,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     private class ParallelLeafDirectoryReader extends FilterDirectoryReader {
-      public ParallelLeafDirectoryReader(DirectoryReader in) {
+      public ParallelLeafDirectoryReader(DirectoryReader in) throws IOException {
         super(in, new FilterDirectoryReader.SubReaderWrapper() {
             final long currentSchemaGen = getCurrentSchemaGen();
             @Override
@@ -207,7 +207,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
         return new ParallelLeafDirectoryReader(in);
       }
 

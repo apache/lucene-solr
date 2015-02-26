@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.store;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,35 +20,30 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 /**
- * A {@link DirectoryReader} that wraps all its subreaders with
- * {@link AssertingLeafReader}
+ * Delegates all operations, even optional ones, to the wrapped directory.
+ * <p>
+ * This class is used if you want the most realistic testing, but still
+ * with a checkindex on close. If you want asserts and evil things,
+ * use MockDirectoryWrapper instead.
  */
-public class AssertingDirectoryReader extends FilterDirectoryReader {
+public final class RawDirectoryWrapper extends BaseDirectoryWrapper {
 
-  static class AssertingSubReaderWrapper extends SubReaderWrapper {
-    @Override
-    public LeafReader wrap(LeafReader reader) {
-      return new AssertingLeafReader(reader);
-    }
+  public RawDirectoryWrapper(Directory delegate) {
+    super(delegate);
   }
-
-  public AssertingDirectoryReader(DirectoryReader in) throws IOException {
-    super(in, new AssertingSubReaderWrapper());
+  
+  @Override
+  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+    in.copyFrom(from, src, dest, context);
+  }
+  
+  @Override
+  public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
+    return in.openChecksumInput(name, context);
   }
 
   @Override
-  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-    return new AssertingDirectoryReader(in);
+  protected void ensureOpen() throws AlreadyClosedException {
+    in.ensureOpen();
   }
-
-  @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
-  }
-
-  @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
-  }
-
 }

@@ -31,7 +31,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -39,6 +38,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -100,7 +100,14 @@ public class PostingsHighlighter {
   // unnecessary.
   
   /** for rewriting: we don't want slow processing from MTQs */
-  private static final IndexReader EMPTY_INDEXREADER = new MultiReader();
+  private static final IndexReader EMPTY_INDEXREADER;
+  static {
+    try {
+      EMPTY_INDEXREADER = new MultiReader();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
+  }
   
   /** Default maximum content size to process. Typically snippets
    *  closer to the beginning of the document better summarize its content */

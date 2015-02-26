@@ -457,7 +457,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   private static class MyFilterDirectoryReader extends FilterDirectoryReader {
-    public MyFilterDirectoryReader(DirectoryReader in) {
+    public MyFilterDirectoryReader(DirectoryReader in) throws IOException {
       super(in, 
             new FilterDirectoryReader.SubReaderWrapper() {
               @Override
@@ -470,7 +470,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     }
 
     @Override
-    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new MyFilterDirectoryReader(in);
     }
   }

@@ -79,7 +79,7 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    * @param in the DirectoryReader to filter
    * @param wrapper the SubReaderWrapper to use to wrap subreaders
    */
-  public FilterDirectoryReader(DirectoryReader in, SubReaderWrapper wrapper) {
+  public FilterDirectoryReader(DirectoryReader in, SubReaderWrapper wrapper) throws IOException {
     super(in.directory(), wrapper.wrap(in.getSequentialSubReaders()));
     this.in = in;
   }
@@ -93,9 +93,9 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    * @param in the DirectoryReader to wrap
    * @return the wrapped DirectoryReader
    */
-  protected abstract DirectoryReader doWrapDirectoryReader(DirectoryReader in);
+  protected abstract DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException;
 
-  private final DirectoryReader wrapDirectoryReader(DirectoryReader in) {
+  private final DirectoryReader wrapDirectoryReader(DirectoryReader in) throws IOException {
     return in == null ? null : doWrapDirectoryReader(in);
   }
 

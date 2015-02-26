@@ -146,14 +146,14 @@ public class UninvertingReader extends FilterLeafReader {
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on. 
    */
-  public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) {
+  public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
     return new UninvertingDirectoryReader(in, mapping);
   }
   
   static class UninvertingDirectoryReader extends FilterDirectoryReader {
     final Map<String,Type> mapping;
     
-    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) {
+    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
@@ -164,7 +164,7 @@ public class UninvertingReader extends FilterLeafReader {
     }
 
     @Override
-    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new UninvertingDirectoryReader(in, mapping);
     }
   }
