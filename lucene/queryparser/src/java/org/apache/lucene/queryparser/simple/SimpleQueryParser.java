@@ -141,14 +141,18 @@ public class SimpleQueryParser extends QueryBuilder {
     this.flags = flags;
   }
 
-  /** Parses the query text and returns parsed query (or null if empty) */
+  /** Parses the query text and returns parsed query */
   public Query parse(String queryText) {
     char data[] = queryText.toCharArray();
     char buffer[] = new char[data.length];
 
     State state = new State(data, buffer, 0, data.length);
     parseSubQuery(state);
-    return state.top;
+    if (state.top == null) {
+      return new BooleanQuery();
+    } else {
+      return state.top;
+    }
   }
 
   private void parseSubQuery(State state) {

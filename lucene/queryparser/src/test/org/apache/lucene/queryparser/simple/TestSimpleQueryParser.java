@@ -273,17 +273,19 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testGarbageEmpty() throws Exception {
-    assertNull(parse(""));
-    assertNull(parse("  "));
-    assertNull(parse("  "));
-    assertNull(parse("\\ "));
-    assertNull(parse("\\ \\ "));
-    assertNull(parse("\"\""));
-    assertNull(parse("\" \""));
-    assertNull(parse("\" \"|\" \""));
-    assertNull(parse("(\" \"|\" \")"));
-    assertNull(parse("\" \" \" \""));
-    assertNull(parse("(\" \" \" \")"));
+    BooleanQuery expected = new BooleanQuery();
+
+    assertEquals(expected, parse(""));
+    assertEquals(expected, parse("  "));
+    assertEquals(expected, parse("  "));
+    assertEquals(expected, parse("\\ "));
+    assertEquals(expected, parse("\\ \\ "));
+    assertEquals(expected, parse("\"\""));
+    assertEquals(expected, parse("\" \""));
+    assertEquals(expected, parse("\" \"|\" \""));
+    assertEquals(expected, parse("(\" \"|\" \")"));
+    assertEquals(expected, parse("\" \" \" \""));
+    assertEquals(expected, parse("(\" \" \" \")"));
   }
 
   public void testGarbageAND() throws Exception {

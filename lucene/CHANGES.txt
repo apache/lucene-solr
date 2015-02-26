@@ -186,6 +186,9 @@ Changes in Runtime Behavior
 * LUCENE-6255: PhraseQuery now ignores leading holes and requires that
   positions are positive and added in order. (Adrien Grand)
 
+* LUCENE-6298: SimpleQueryParser returns an empty query rather than
+  null, if e.g. the terms were all stopwords. (Lee Hinman via Robert Muir)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features
