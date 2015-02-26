@@ -27,14 +27,14 @@ import org.apache.lucene.util.CollectionUtil;
 class ConjunctionDISI extends DocIdSetIterator {
 
   /** Create a conjunction over the provided iterators, taking advantage of
-   *  {@link TwoPhaseDocIdSetIterator}. */
+   *  {@link TwoPhaseIterator}. */
   public static ConjunctionDISI intersect(List<? extends DocIdSetIterator> iterators) {
     final List<DocIdSetIterator> allIterators = new ArrayList<>();
-    final List<TwoPhaseDocIdSetIterator> twoPhaseIterators = new ArrayList<>();
+    final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
     for (DocIdSetIterator iterator : iterators) {
       if (iterator instanceof Scorer) {
         // if we have a scorer, check if it supports two-phase iteration
-        TwoPhaseDocIdSetIterator twoPhaseIterator = ((Scorer) iterator).asTwoPhaseIterator();
+        TwoPhaseIterator twoPhaseIterator = ((Scorer) iterator).asTwoPhaseIterator();
         if (twoPhaseIterator != null) {
           // Note: 
           allIterators.add(twoPhaseIterator.approximation());
@@ -75,7 +75,7 @@ class ConjunctionDISI extends DocIdSetIterator {
     return true;
   }
 
-  TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  TwoPhaseIterator asTwoPhaseIterator() {
     return null;
   }
 
@@ -136,17 +136,17 @@ class ConjunctionDISI extends DocIdSetIterator {
   }
 
   /**
-   * {@link TwoPhaseDocIdSetIterator} view of a {@link TwoPhase} conjunction.
+   * {@link TwoPhaseIterator} view of a {@link TwoPhase} conjunction.
    */
-  private static class TwoPhaseConjunctionDISI extends TwoPhaseDocIdSetIterator {
+  private static class TwoPhaseConjunctionDISI extends TwoPhaseIterator {
 
     private final ConjunctionDISI approximation;
-    private final TwoPhaseDocIdSetIterator[] twoPhaseIterators;
+    private final TwoPhaseIterator[] twoPhaseIterators;
 
-    private TwoPhaseConjunctionDISI(List<? extends DocIdSetIterator> iterators, List<TwoPhaseDocIdSetIterator> twoPhaseIterators) {
+    private TwoPhaseConjunctionDISI(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
       approximation = new ConjunctionDISI(iterators);
       assert twoPhaseIterators.size() > 0;
-      this.twoPhaseIterators = twoPhaseIterators.toArray(new TwoPhaseDocIdSetIterator[0]);
+      this.twoPhaseIterators = twoPhaseIterators.toArray(new TwoPhaseIterator[0]);
     }
 
     @Override
@@ -156,7 +156,7 @@ class ConjunctionDISI extends DocIdSetIterator {
 
     @Override
     public boolean matches() throws IOException {
-      for (TwoPhaseDocIdSetIterator twoPhaseIterator : twoPhaseIterators) {
+      for (TwoPhaseIterator twoPhaseIterator : twoPhaseIterators) {
         if (twoPhaseIterator.matches() == false) {
           return false;
         }
@@ -169,7 +169,7 @@ class ConjunctionDISI extends DocIdSetIterator {
   /**
    * A conjunction DISI built on top of approximations. This implementation
    * verifies that documents actually match by consulting the provided
-   * {@link TwoPhaseDocIdSetIterator}s.
+   * {@link TwoPhaseIterator}s.
    *
    * Another important difference with {@link ConjunctionDISI} is that this
    * implementation supports approximations too: the approximation of this
@@ -183,7 +183,7 @@ class ConjunctionDISI extends DocIdSetIterator {
 
     final TwoPhaseConjunctionDISI twoPhaseView;
 
-    private TwoPhase(List<? extends DocIdSetIterator> iterators, List<TwoPhaseDocIdSetIterator> twoPhaseIterators) {
+    private TwoPhase(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
       super(iterators);
       twoPhaseView = new TwoPhaseConjunctionDISI(iterators, twoPhaseIterators);
     }

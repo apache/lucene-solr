@@ -127,7 +127,7 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator asTwoPhaseIterator() {
       return twoPhaseView;
     }
 
@@ -163,7 +163,7 @@ public class RandomApproximationQuery extends Query {
 
   }
 
-  private static class RandomTwoPhaseView extends TwoPhaseDocIdSetIterator {
+  private static class RandomTwoPhaseView extends TwoPhaseIterator {
 
     private final DocIdSetIterator disi;
     private final RandomApproximation approximation;

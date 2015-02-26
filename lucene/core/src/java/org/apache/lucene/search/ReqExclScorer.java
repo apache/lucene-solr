@@ -34,8 +34,8 @@ class ReqExclScorer extends FilterScorer {
   private final DocIdSetIterator reqApproximation;
   private final DocIdSetIterator exclApproximation;
   // two-phase views of the scorers, or null if they do not support approximations
-  private final TwoPhaseDocIdSetIterator reqTwoPhaseIterator;
-  private final TwoPhaseDocIdSetIterator exclTwoPhaseIterator;
+  private final TwoPhaseIterator reqTwoPhaseIterator;
+  private final TwoPhaseIterator exclTwoPhaseIterator;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
@@ -63,9 +63,9 @@ class ReqExclScorer extends FilterScorer {
     return toNonExcluded(reqApproximation.nextDoc());
   }
 
-  /** Confirms whether or not the given {@link TwoPhaseDocIdSetIterator}
+  /** Confirms whether or not the given {@link TwoPhaseIterator}
    *  matches on the current document. */
-  private static boolean matches(TwoPhaseDocIdSetIterator it) throws IOException {
+  private static boolean matches(TwoPhaseIterator it) throws IOException {
     return it == null || it.matches();
   }
 
@@ -76,8 +76,8 @@ class ReqExclScorer extends FilterScorer {
    *   - it does NOT call matches() on req if the excl approximation is exact
    *     and is on the same doc ID as the req approximation */
   private static boolean matches(int doc, int exclDoc,
-      TwoPhaseDocIdSetIterator reqTwoPhaseIterator,
-      TwoPhaseDocIdSetIterator exclTwoPhaseIterator) throws IOException {
+      TwoPhaseIterator reqTwoPhaseIterator,
+      TwoPhaseIterator exclTwoPhaseIterator) throws IOException {
     assert exclDoc >= doc;
     if (doc == exclDoc && matches(exclTwoPhaseIterator)) {
       return false;
@@ -126,11 +126,11 @@ class ReqExclScorer extends FilterScorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     if (reqTwoPhaseIterator == null) {
       return null;
     }
-    return new TwoPhaseDocIdSetIterator() {
+    return new TwoPhaseIterator() {
 
       @Override
       public DocIdSetIterator approximation() {

@@ -26,11 +26,11 @@ import java.io.IOException;
  * returned doc ID actually matches.
  * @lucene.experimental
  */
-public abstract class TwoPhaseDocIdSetIterator {
+public abstract class TwoPhaseIterator {
 
   /** Return a {@link DocIdSetIterator} view of the provided
-   *  {@link TwoPhaseDocIdSetIterator}. */
-  public static DocIdSetIterator asDocIdSetIterator(TwoPhaseDocIdSetIterator twoPhaseIterator) {
+   *  {@link TwoPhaseIterator}. */
+  public static DocIdSetIterator asDocIdSetIterator(TwoPhaseIterator twoPhaseIterator) {
     final DocIdSetIterator approximation = twoPhaseIterator.approximation();
     return new DocIdSetIterator() {
 
