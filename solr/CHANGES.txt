@@ -62,6 +62,9 @@ Bug Fixes
 * SOLR-6850: AutoAddReplicas makes a call to wait to see live replicas that times
   out after 30 milliseconds instead of 30 seconds. (Varun Thacker via Mark Miller)
 
+* SOLR-6839: Direct routing with CloudSolrServer will ignore the Overwrite document option.
+  (Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
