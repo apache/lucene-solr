@@ -68,6 +68,8 @@ Bug Fixes
 * SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
   (Chris A. Mattmann, Uwe Schindler)  
 
+* SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
