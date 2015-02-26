@@ -153,6 +153,9 @@ Bug Fixes
 * SOLR-7113: Multiple calls to UpdateLog#init is not thread safe with respect to the
   HDFS FileSystem client object usage. (Mark Miller, Vamsee Yarlagadda)
 
+* SOLR-7128: Two phase distributed search is fetching extra fields in GET_TOP_IDS phase.
+  (Pablo Queixalos, shalin)
+
 Optimizations
 ----------------------
 

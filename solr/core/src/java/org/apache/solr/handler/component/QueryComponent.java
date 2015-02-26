@@ -883,12 +883,16 @@ public class QueryComponent extends SearchComponent
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
     // TODO: should this really sendGlobalDfs if just includeScore?
-    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
+    boolean shardQueryIncludeScore = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore();
+    if (shardQueryIncludeScore) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
       StatsCache statsCache = rb.req.getCore().getStatsCache();
       statsCache.sendGlobalStats(rb, sreq);
+    } else  {
+      // reset so that only unique key is requested in shard requests
+      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
     }
-    boolean shardQueryIncludeScore = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore();
+
     if (distribSinglePass) {
       String[] fls = rb.req.getParams().getParams(CommonParams.FL);
       if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
@@ -902,7 +906,7 @@ public class QueryComponent extends SearchComponent
     }
     StringBuilder additionalFL = new StringBuilder();
     boolean additionalAdded = false;
-    if (!distribSinglePass || !fields.wantsField(keyFieldName)) 
+    if (!distribSinglePass || !fields.wantsField(keyFieldName))
       additionalAdded = addFL(additionalFL, keyFieldName, additionalAdded);
     if ((!distribSinglePass || !fields.wantsScore()) && shardQueryIncludeScore) 
       additionalAdded = addFL(additionalFL, "score", additionalAdded);
