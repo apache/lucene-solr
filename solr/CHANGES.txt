@@ -156,6 +156,9 @@ Bug Fixes
 * SOLR-7128: Two phase distributed search is fetching extra fields in GET_TOP_IDS phase.
   (Pablo Queixalos, shalin)
 
+* SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
+  (Chris Mattman, Uwe Schindler)  
+
 Optimizations
 ----------------------
 

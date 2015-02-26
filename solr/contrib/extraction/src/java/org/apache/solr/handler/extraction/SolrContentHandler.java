@@ -17,6 +17,18 @@
 
 package org.apache.solr.handler.extraction;
 
+import java.text.DateFormat;
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
@@ -31,13 +43,12 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.text.DateFormat;
-import java.util.*;
-
 
 /**
  * The class responsible for handling Tika events and translating them into {@link org.apache.solr.common.SolrInputDocument}s.
  * <B>This class is not thread-safe.</B>
+ * <p>
+ * This class cannot be reused, you have to create a new instance per document!
  * <p>
  * User's may wish to override this class to provide their own functionality.
  *
@@ -46,27 +57,30 @@ import java.util.*;
  * @see org.apache.solr.handler.extraction.ExtractingDocumentLoader
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
-  private transient static Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
-  protected SolrInputDocument document;
+  private transient static final Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
 
-  protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
+  public static final String contentFieldName = "content";
 
-  protected Metadata metadata;
-  protected SolrParams params;
-  protected StringBuilder catchAllBuilder = new StringBuilder(2048);
-  protected IndexSchema schema;
-  protected Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
-  private LinkedList<StringBuilder> bldrStack = new LinkedList<>();
+  protected final SolrInputDocument document;
 
-  protected boolean captureAttribs;
-  protected boolean lowerNames;
-  protected String contentFieldName = "content";
+  protected final Collection<String> dateFormats;
 
-  protected String unknownFieldPrefix = "";
-  protected String defaultField = "";
+  protected final Metadata metadata;
+  protected final SolrParams params;
+  protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
+  protected final IndexSchema schema;
+  protected final Map<String, StringBuilder> fieldBuilders;
+  private final Deque<StringBuilder> bldrStack = new ArrayDeque<>();
 
-  private boolean literalsOverride;
-  private Set<String> literalFieldNames;
+  protected final boolean captureAttribs;
+  protected final boolean lowerNames;
+  
+  protected final String unknownFieldPrefix;
+  protected final String defaultField;
+
+  private final boolean literalsOverride;
+  
+  private Set<String> literalFieldNames = null;
   
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     this(metadata, params, schema, DateUtil.DEFAULT_DATE_FORMATS);
@@ -75,7 +89,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   public SolrContentHandler(Metadata metadata, SolrParams params,
                             IndexSchema schema, Collection<String> dateFormats) {
-    document = new SolrInputDocument();
+    this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
     this.schema = schema;
@@ -86,12 +100,15 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.literalsOverride = params.getBool(LITERALS_OVERRIDE, true);
     this.unknownFieldPrefix = params.get(UNKNOWN_FIELD_PREFIX, "");
     this.defaultField = params.get(DEFAULT_FIELD, "");
+    
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<>();
       for (int i = 0; i < captureFields.length; i++) {
         fieldBuilders.put(captureFields[i], new StringBuilder());
       }
+    } else {
+      fieldBuilders = Collections.emptyMap();
     }
     bldrStack.add(catchAllBuilder);
   }
@@ -252,19 +269,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // no value set - throw exception for debugging
     // if (vals==null && fval==null) throw new RuntimeException(name + " has no non-null value ");
   }
-
-
-  @Override
-  public void startDocument() throws SAXException {
-    document.clear();
-    catchAllBuilder.setLength(0);
-    for (StringBuilder builder : fieldBuilders.values()) {
-      builder.setLength(0);
-    }
-    bldrStack.clear();
-    bldrStack.add(catchAllBuilder);
-  }
-
 
   @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
