@@ -30,6 +30,7 @@ import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.BBoxField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -374,12 +375,14 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @Test
   public void testSpatialConfig() throws Exception {
-    IndexSchema schema = h.getCoreInc().getLatestSchema();
+    try (SolrCore core = h.getCoreInc())  {
+      IndexSchema schema = core.getLatestSchema();
 
-    // BBox Config
-    // Make sure the subfields are not stored
-    SchemaField sub = schema.getField("bbox"+BBoxStrategy.SUFFIX_MINX);
-    assertFalse(sub.stored());
+      // BBox Config
+      // Make sure the subfields are not stored
+      SchemaField sub = schema.getField("bbox"+BBoxStrategy.SUFFIX_MINX);
+      assertFalse(sub.stored());
+    }
   }
   
 }
