@@ -118,7 +118,7 @@ New Features
 * SOLR-5507: Admin UI - Refactoring using AngularJS, first part (Upayavira via 
   Erick Erickson)
   
-* SOLR-7164: BBoxFieldType defaults sub fields to not-stored (ryan)
+* SOLR-7164: BBoxField defaults sub fields to not-stored (ryan)
 
 Bug Fixes
 ----------------------
