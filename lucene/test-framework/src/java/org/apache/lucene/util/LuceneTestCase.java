@@ -82,6 +82,7 @@ import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -111,6 +112,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RawDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -1318,7 +1320,7 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     if (bare) {
-      BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
+      BaseDirectoryWrapper base = new RawDirectoryWrapper(directory);
       closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));
       return base;
     } else {

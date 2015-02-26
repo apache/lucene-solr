@@ -302,6 +302,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       if (numSegments < 0) {
         throw new CorruptIndexException("invalid segment count: " + numSegments, input);
       }
+      long totalDocs = 0;
       for (int seg = 0; seg < numSegments; seg++) {
         String segName = input.readString();
         final byte segmentID[];
@@ -321,6 +322,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         Codec codec = readCodec(input);
         SegmentInfo info = codec.segmentInfoFormat().read(directory, segName, segmentID, IOContext.READ);
         info.setCodec(codec);
+        totalDocs += info.getDocCount();
         long delGen = input.readLong();
         int delCount = input.readInt();
         if (delCount < 0 || delCount > info.getDocCount()) {
@@ -386,6 +388,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         CodecUtil.checkEOF(input);
       }
 
+      // LUCENE-6299: check we are in bounds
+      if (totalDocs > IndexWriter.getActualMaxDocs()) {
+        throw new CorruptIndexException("Too many documents: an index cannot exceed " + IndexWriter.getActualMaxDocs() + " but readers have total maxDoc=" + totalDocs, input);
+      }
+      
       return infos;
     }
   }
@@ -826,11 +833,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Returns sum of all segment's docCounts.  Note that
    *  this does not include deletions */
   public int totalDocCount() {
-    int count = 0;
+    long count = 0;
     for(SegmentCommitInfo info : this) {
       count += info.info.getDocCount();
     }
-    return count;
+    // we should never hit this, checks should happen elsewhere...
+    assert count <= IndexWriter.getActualMaxDocs();
+    return (int) count;
   }
 
   /** Call this before committing if changes have been made to the
