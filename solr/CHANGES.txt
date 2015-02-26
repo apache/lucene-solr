@@ -75,6 +75,8 @@ Bug Fixes
 
 * SOLR-6856: Restore ExtractingRequestHandler's ability to capture all HTML tags when
   parsing (X)HTML. (hossman, Uwe Schindler, ehatcher, Steve Rowe)
+  
+* SOLR-6928: solr.cmd stop works only in english (john.work, Jan Høydahl, Timothy Potter)
 
 ==================  4.10.3 ==================
 
