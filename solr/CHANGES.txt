@@ -70,6 +70,9 @@ Bug Fixes
 
 * SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
 
+* SOLR-7011: Delete collection returns before collection is actually removed.
+  (Christine Poerschke via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
