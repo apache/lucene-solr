@@ -126,6 +126,8 @@ public abstract class DocValuesConsumer implements Closeable {
    */
   public void mergeNumericField(final FieldInfo fieldInfo, final MergeState mergeState, final List<NumericDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
 
+    mergeState.checkAbort.work(mergeState.segmentInfo.getDocCount());
+
     addNumericField(fieldInfo,
                     new Iterable<Number>() {
                       @Override
@@ -207,6 +209,8 @@ public abstract class DocValuesConsumer implements Closeable {
    */
   public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge, final List<Bits> docsWithField) throws IOException {
 
+    mergeState.checkAbort.work(mergeState.segmentInfo.getDocCount());
+
     addBinaryField(fieldInfo,
                    new Iterable<BytesRef>() {
                      @Override
@@ -287,6 +291,9 @@ public abstract class DocValuesConsumer implements Closeable {
    * iterables that filter deleted documents.
    */
   public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge) throws IOException {
+
+    mergeState.checkAbort.work(mergeState.segmentInfo.getDocCount());
+
     final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
     final SortedNumericDocValues dvs[] = toMerge.toArray(new SortedNumericDocValues[toMerge.size()]);
     
@@ -438,6 +445,9 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
+
+    mergeState.checkAbort.work(mergeState.segmentInfo.getDocCount());
+
     final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
     final SortedDocValues dvs[] = toMerge.toArray(new SortedDocValues[toMerge.size()]);
     
@@ -577,6 +587,9 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedSetField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedSetDocValues> toMerge) throws IOException {
+
+    mergeState.checkAbort.work(mergeState.segmentInfo.getDocCount());
+
     final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
     final SortedSetDocValues dvs[] = toMerge.toArray(new SortedSetDocValues[toMerge.size()]);
     
