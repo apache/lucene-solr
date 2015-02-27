@@ -226,7 +226,7 @@ Other Changes
 * SOLR-7130: Make stale state notification work without failing the requests
   (Noble Paul, shalin)
 
-* SOLR-7151: SolrClient query methods throw IOException
+* SOLR-7151: SolrClient query methods throw IOException (Alan Woodward)
 
 ==================  5.0.0 ==================
 
