@@ -29,7 +29,7 @@
   <!-- !!! RELEASE MANAGER: Change version numbers only here: !!! -->
   
   <!-- The base version of the next release (including bugfix number, e.g., x.y.z+): -->
-  <property name="version.base" value="4.10.3"/>
+  <property name="version.base" value="4.10.4"/>
   
   <!-- !!! RELEASE MANAGER: Don't change anything after this line! !!! -->
 
