@@ -100,7 +100,7 @@ class DrillSidewaysScorer extends BulkScorer {
     }
 
     long drillDownAdvancedCost = 0;
-    if (numDims > 1 && dims[1].disi == null) {
+    if (numDims > 1 && dims[1].disi != null) {
       drillDownAdvancedCost = dims[1].disi.cost();
     }
 
