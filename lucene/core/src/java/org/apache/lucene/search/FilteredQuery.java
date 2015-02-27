@@ -37,7 +37,7 @@ import org.apache.lucene.util.ToStringUtils;
  * query is used in a search - use a CachingWrapperFilter to avoid
  * regenerating the bits every time.
  * @since   1.4
- * @see     CachingWrapperFilter
+ * @see     CachingWrapperQuery
  */
 public class FilteredQuery extends Query {
 

@@ -94,10 +94,9 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AssertingIndexSearcher;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterCachingPolicy;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -442,14 +441,14 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES.add("RAMDirectory");
   }
 
-  /** A {@link org.apache.lucene.search.FilterCachingPolicy} that randomly caches. */
-  public static final FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
+  /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
+  public static final QueryCachingPolicy MAYBE_CACHE_POLICY = new QueryCachingPolicy() {
 
     @Override
-    public void onUse(Filter filter) {}
+    public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       return random().nextBoolean();
     }
 
@@ -1701,6 +1700,7 @@ public abstract class LuceneTestCase extends Assert {
         ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
       }
       ret.setSimilarity(classEnvRule.similarity);
+      ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
       return ret;
     } else {
       int threads = 0;
@@ -1737,6 +1737,7 @@ public abstract class LuceneTestCase extends Assert {
             : new IndexSearcher(r.getContext(), ex);
       }
       ret.setSimilarity(classEnvRule.similarity);
+      ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
       return ret;
     }
   }

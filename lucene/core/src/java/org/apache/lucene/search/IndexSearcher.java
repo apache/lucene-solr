@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -72,6 +73,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * use your own (non-Lucene) objects instead.</p>
  */
 public class IndexSearcher {
+
+  // 32MB and at most 10,000 queries
+  private static final QueryCache DEFAULT_QUERY_CACHE = new LRUQueryCache(10000, 1 << 25);
+  private static final QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
+
   final IndexReader reader; // package private for testing!
   
   // NOTE: these members might change in incompatible ways
@@ -86,7 +92,10 @@ public class IndexSearcher {
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new DefaultSimilarity();
-  
+
+  private QueryCache queryCache = DEFAULT_QUERY_CACHE;
+  private QueryCachingPolicy queryCachingPolicy = DEFAULT_CACHING_POLICY;
+
   /**
    * Expert: returns a default Similarity instance.
    * In general, this method is only called to initialize searchers and writers.
@@ -156,7 +165,28 @@ public class IndexSearcher {
   public IndexSearcher(IndexReaderContext context) {
     this(context, null);
   }
-  
+
+  /**
+   * Set the {@link QueryCache} to use when scores are not needed.
+   * A value of {@code null} indicates that query matches should never be
+   * cached. This method should be called <b>before</b> starting using this
+   * {@link IndexSearcher}.
+   * @see QueryCache
+   */
+  public void setQueryCache(QueryCache queryCache) {
+    this.queryCache = queryCache;
+  }
+
+  /**
+   * Set the {@link QueryCachingPolicy} to use for query caching.
+   * This method should be called <b>before</b> starting using this
+   * {@link IndexSearcher}.
+   * @see QueryCachingPolicy
+   */
+  public void setQueryCachingPolicy(QueryCachingPolicy queryCachingPolicy) {
+    this.queryCachingPolicy = Objects.requireNonNull(queryCachingPolicy);
+  }
+
   /**
    * Expert: Creates an array of leaf slices each holding a subset of the given leaves.
    * Each {@link LeafSlice} is executed in a single thread. By default there
@@ -557,7 +587,7 @@ public class IndexSearcher {
    */
   public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
     query = rewrite(query);
-    Weight weight = query.createWeight(this, needsScores);
+    Weight weight = createWeight(query, needsScores);
     float v = weight.getValueForNormalization();
     float norm = getSimilarity().queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm)) {
@@ -566,7 +596,21 @@ public class IndexSearcher {
     weight.normalize(norm, 1.0f);
     return weight;
   }
-  
+
+  /**
+   * Creates a {@link Weight} for the given query, potentially adding caching
+   * if possible and configured.
+   * @lucene.experimental
+   */
+  public Weight createWeight(Query query, boolean needsScores) throws IOException {
+    final QueryCache queryCache = this.queryCache;
+    Weight weight = query.createWeight(this, needsScores);
+    if (needsScores == false && queryCache != null) {
+      weight = queryCache.doCache(weight, queryCachingPolicy);
+    }
+    return weight;
+  }
+
   /**
    * Returns this searchers the top-level {@link IndexReaderContext}.
    * @see IndexReader#getContext()

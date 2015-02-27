@@ -51,7 +51,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.CachingCollector;
-import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
@@ -798,7 +798,7 @@ public class TestGrouping extends LuceneTestCase {
       // group, so we can use single pass collector
       dirBlocks = newDirectory();
       rBlocks = getDocBlockReader(dirBlocks, groupDocs);
-      final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
+      final Filter lastDocInBlock = new QueryWrapperFilter(new TermQuery(new Term("groupend", "x")));
       final NumericDocValues docIDToIDBlocks = MultiDocValues.getNumericValues(rBlocks, "id");
       assertNotNull(docIDToIDBlocks);
       

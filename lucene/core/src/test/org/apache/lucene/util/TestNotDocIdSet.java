@@ -38,7 +38,6 @@ public class TestNotDocIdSet extends BaseDocIdSetTestCase<NotDocIdSet> {
       throws IOException {
     super.assertEquals(numBits, ds1, ds2);
     final Bits bits2 = ds2.bits();
-    assertTrue(ds2.isCacheable()); // since we wrapped a FixedBitSet
     assertNotNull(bits2); // since we wrapped a FixedBitSet
     assertEquals(numBits, bits2.length());
     for (int i = 0; i < numBits; ++i) {

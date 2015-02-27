@@ -42,11 +42,6 @@ public final class NotDocIdSet extends DocIdSet {
   }
 
   @Override
-  public boolean isCacheable() {
-    return in.isCacheable();
-  }
-
-  @Override
   public Bits bits() throws IOException {
     final Bits inBits = in.bits();
     if (inBits == null) {

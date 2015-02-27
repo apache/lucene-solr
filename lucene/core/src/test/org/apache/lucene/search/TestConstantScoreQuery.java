@@ -23,10 +23,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** This class only tests some basic functionality in CSQ, the main parts are mostly
@@ -93,6 +95,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       writer.close();
       // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
       searcher = newSearcher(reader, true, false);
+      searcher.setQueryCache(null); // to assert on scorer impl
       
       // set a similarity that does not normalize our boost away
       searcher.setSimilarity(new DefaultSimilarity() {
@@ -127,6 +130,27 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
   }
 
+  // a filter for which other queries don't have special rewrite rules
+  private static class FilterWrapper extends Filter {
+
+    private final Filter in;
+    
+    FilterWrapper(Filter in) {
+      this.in = in;
+    }
+    
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+  }
+
   public void testConstantScoreQueryAndFilter() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
@@ -139,13 +163,13 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    Filter filterB = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "b"))));
+    Filter filterB = new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "b"))));
     Query query = new ConstantScoreQuery(filterB);
 
     IndexSearcher s = newSearcher(r);
     assertEquals(1, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query for field:b, Filter field:b
 
-    Filter filterA = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))));
+    Filter filterA = new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))));
     query = new ConstantScoreQuery(filterA);
 
     assertEquals(0, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query field:b, Filter field:a

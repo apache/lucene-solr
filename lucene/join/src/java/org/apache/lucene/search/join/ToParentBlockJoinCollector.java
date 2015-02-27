@@ -501,6 +501,8 @@ public class ToParentBlockJoinCollector implements Collector {
 
   @Override
   public boolean needsScores() {
-    return trackScores || trackMaxScore || sort.needsScores();
+    // needed so that eg. BooleanQuery does not rewrite its MUST clauses to
+    // FILTER since the filter scorers are hidden in Scorer.getChildren().
+    return true;
   }
 }

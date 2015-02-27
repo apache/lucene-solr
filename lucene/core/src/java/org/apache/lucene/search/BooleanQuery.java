@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -158,9 +159,27 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public final Iterator<BooleanClause> iterator() { return clauses().iterator(); }
 
+  private static BooleanQuery downgradeMustClauseToFilter(BooleanQuery bq) {
+    BooleanQuery clone = bq.clone();
+    clone.clauses.clear();
+    for (BooleanClause clause : bq.clauses()) {
+      if (clause.getOccur() == Occur.MUST) {
+        clone.add(clause.getQuery(), Occur.FILTER);
+      } else {
+        clone.add(clause);
+      }
+    }
+    return clone;
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BooleanWeight(this, searcher, needsScores, disableCoord);
+    BooleanQuery query = this;
+    if (needsScores == false) {
+      // we rewrite MUST clauses to FILTER for caching
+      query = downgradeMustClauseToFilter(query);
+    }
+    return new BooleanWeight(query, searcher, needsScores, disableCoord);
   }
 
   @Override

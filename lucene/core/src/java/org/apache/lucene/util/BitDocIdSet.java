@@ -61,12 +61,6 @@ public class BitDocIdSet extends DocIdSet {
     return set;
   }
 
-  /** This DocIdSet implementation is cacheable. */
-  @Override
-  public boolean isCacheable() {
-    return true;
-  }
-
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + set.ramBytesUsed();

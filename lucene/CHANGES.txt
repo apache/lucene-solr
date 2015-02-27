@@ -51,6 +51,9 @@ New Features
 * LUCENE-6294: Added oal.search.CollectorManager to allow for parallelization
   of the document collection process on IndexSearcher. (Adrien Grand)
 
+* LUCENE-6303: Added filter caching baked into IndexSearcher and enabled by
+  default. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
@@ -178,6 +181,9 @@ API Changes
 * LUCENE-6300: PrefixFilter, TermRangeFilter and NumericRangeFilter have been
   removed. Use PrefixQuery, TermRangeQuery and NumericRangeQuery instead.
   (Adrien Grand)
+
+* LUCENE-6303: Replaced FilterCache with QueryCache and CachingWrapperFilter
+  with CachingWrapperQuery. (Adrien Grand)
 
 Other
 

@@ -33,8 +33,10 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 /** Only purpose is to punch through and return a
- *  DrillSidewaysScorer */ 
+ *  DrillSidewaysScorer*/ 
 
+// TODO change the way DrillSidewaysScorer is used, this query does not work
+// with filter caching
 class DrillSidewaysQuery extends Query {
   final Query baseQuery;
   final Collector drillDownCollector;

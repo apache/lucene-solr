@@ -58,12 +58,6 @@ public abstract class FilteredDocIdSet extends DocIdSet {
     return _innerSet;
   }
 
-  /** This DocIdSet implementation is cacheable if the inner set is cacheable. */
-  @Override
-  public boolean isCacheable() {
-    return _innerSet.isCacheable();
-  }
-
   @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_OBJECT_REF + _innerSet.ramBytesUsed();

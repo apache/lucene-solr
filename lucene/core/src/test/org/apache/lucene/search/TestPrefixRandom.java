@@ -107,6 +107,15 @@ public class TestPrefixRandom extends LuceneTestCase {
     public String toString(String field) {
       return field.toString() + ":" + prefix.toString();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      final DumbPrefixQuery that = (DumbPrefixQuery) obj;
+      return prefix.equals(that.prefix);
+    }
   }
   
   /** test a bunch of random prefixes */

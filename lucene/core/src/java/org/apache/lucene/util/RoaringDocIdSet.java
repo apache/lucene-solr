@@ -243,11 +243,6 @@ public class RoaringDocIdSet extends DocIdSet {
   }
 
   @Override
-  public boolean isCacheable() {
-    return true;
-  }
-
-  @Override
   public long ramBytesUsed() {
     return ramBytesUsed;
   }

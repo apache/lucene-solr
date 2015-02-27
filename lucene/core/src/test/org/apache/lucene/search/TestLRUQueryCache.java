@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +35,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,34 +49,44 @@ import org.apache.lucene.util.RamUsageTester;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-public class TestLRUFilterCache extends LuceneTestCase {
+public class TestLRUQueryCache extends LuceneTestCase {
 
-  private static final FilterCachingPolicy NEVER_CACHE = new FilterCachingPolicy() {
-
-    @Override
-    public void onUse(Filter filter) {}
+  private static final QueryCachingPolicy NEVER_CACHE = new QueryCachingPolicy() {
 
     @Override
-    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+    public void onUse(Query query) {}
+
+    @Override
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       return false;
     }
 
   };
 
   public void testFilterRamBytesUsed() {
-    final Filter simpleFilter = new QueryWrapperFilter(new TermQuery(new Term("some_field", "some_term")));
-    final long actualRamBytesUsed = RamUsageTester.sizeOf(simpleFilter);
-    final long ramBytesUsed = LRUFilterCache.FILTER_DEFAULT_RAM_BYTES_USED;
+    final Query simpleQuery = new TermQuery(new Term("some_field", "some_term"));
+    final long actualRamBytesUsed = RamUsageTester.sizeOf(simpleQuery);
+    final long ramBytesUsed = LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
     // we cannot assert exactly that the constant is correct since actual
     // memory usage depends on JVM implementations and settings (eg. UseCompressedOops)
     assertEquals(actualRamBytesUsed, ramBytesUsed, actualRamBytesUsed / 2);
   }
 
   public void testConcurrency() throws Throwable {
-    final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(20), 1 + random().nextInt(10000));
+    final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(20), 1 + random().nextInt(10000));
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    SearcherManager mgr = new SearcherManager(w.w, random().nextBoolean(), new SearcherFactory());
+    final SearcherFactory searcherFactory = new SearcherFactory() {
+      @Override
+      public IndexSearcher newSearcher(IndexReader reader) throws IOException {
+        IndexSearcher searcher = new IndexSearcher(reader);
+        searcher.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
+        searcher.setQueryCache(queryCache);
+        return searcher;
+      }
+    };
+    final boolean applyDeletes = random().nextBoolean();
+    final SearcherManager mgr = new SearcherManager(w.w, applyDeletes, searcherFactory);
     final AtomicBoolean indexing = new AtomicBoolean(true);
     final AtomicReference<Throwable> error = new AtomicReference<>();
     final int numDocs = atLeast(10000);
@@ -90,7 +103,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
             if ((i & 63) == 0) {
               mgr.maybeRefresh();
               if (rarely()) {
-                filterCache.clear();
+                queryCache.clear();
               }
               if (rarely()) {
                 final String color = RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow"});
@@ -114,13 +127,12 @@ public class TestLRUFilterCache extends LuceneTestCase {
               final IndexSearcher searcher = mgr.acquire();
               try {
                 final String value = RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow", "green"});
-                final Filter f = new QueryWrapperFilter(new TermQuery(new Term("color", value)));
-                final Filter cached = filterCache.doCache(f, MAYBE_CACHE_POLICY);
+                final Query q = new TermQuery(new Term("color", value));
                 TotalHitCountCollector collector = new TotalHitCountCollector();
-                searcher.search(new ConstantScoreQuery(cached), collector);
-                TotalHitCountCollector collector2 = new TotalHitCountCollector();
-                searcher.search(new ConstantScoreQuery(f), collector2);
-                assertEquals(collector.getTotalHits(), collector2.getTotalHits());
+                searcher.search(q, collector); // will use the cache
+                final int totalHits1 = collector.getTotalHits();
+                final int totalHits2 = searcher.search(q, 1).totalHits; // will not use the cache because of scores
+                assertEquals(totalHits2, totalHits1);
               } finally {
                 mgr.release(searcher);
               }
@@ -143,11 +155,11 @@ public class TestLRUFilterCache extends LuceneTestCase {
     if (error.get() != null) {
       throw error.get();
     }
-    filterCache.assertConsistent();
+    queryCache.assertConsistent();
     mgr.close();
     w.close();
     dir.close();
-    filterCache.assertConsistent();
+    queryCache.assertConsistent();
   }
 
   public void testLRUEviction() throws Exception {
@@ -164,72 +176,42 @@ public class TestLRUFilterCache extends LuceneTestCase {
     w.addDocument(doc);
     final DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = newSearcher(reader);
-    final LRUFilterCache filterCache = new LRUFilterCache(2, 100000);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000);
 
-    final Filter blue = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
-    final Filter red = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
-    final Filter green = new QueryWrapperFilter(new TermQuery(new Term("color", "green")));
+    final Query blue = new TermQuery(new Term("color", "blue"));
+    final Query red = new TermQuery(new Term("color", "red"));
+    final Query green = new TermQuery(new Term("color", "green"));
 
-    assertEquals(Collections.emptyList(), filterCache.cachedFilters());
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
 
+    searcher.setQueryCache(queryCache);
     // the filter is not cached on any segment: no changes
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(green, NEVER_CACHE)), 1);
-    assertEquals(Collections.emptyList(), filterCache.cachedFilters());
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+    searcher.search(new ConstantScoreQuery(green), 1);
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(red, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Collections.singletonList(red), filterCache.cachedFilters());
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(green, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Arrays.asList(red, green), filterCache.cachedFilters());
+    searcher.search(new ConstantScoreQuery(green), 1);
+    assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(red, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Arrays.asList(green, red), filterCache.cachedFilters());
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(blue, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Arrays.asList(red, blue), filterCache.cachedFilters());
+    searcher.search(new ConstantScoreQuery(blue), 1);
+    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(blue, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Arrays.asList(red, blue), filterCache.cachedFilters());
+    searcher.search(new ConstantScoreQuery(blue), 1);
+    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(green, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Arrays.asList(blue, green), filterCache.cachedFilters());
+    searcher.search(new ConstantScoreQuery(green), 1);
+    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
 
-    searcher.search(new ConstantScoreQuery(filterCache.doCache(red, NEVER_CACHE)), 1);
-    assertEquals(Arrays.asList(blue, green), filterCache.cachedFilters());
-
-    reader.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testCache() throws IOException {
-    Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-
-    Document doc = new Document();
-    StringField f = new StringField("color", "", Store.NO);
-    doc.add(f);
-    final int numDocs = atLeast(10);
-    for (int i = 0; i < numDocs; ++i) {
-      f.setStringValue(RandomPicks.randomFrom(random(), Arrays.asList("blue", "red", "green")));
-      w.addDocument(doc);
-    }
-    final DirectoryReader reader = w.getReader();
-    final LeafReaderContext leaf1 = reader.leaves().get(0);
-
-    Filter filter1 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
-    // different instance yet equal
-    Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
-
-    final LRUFilterCache filterCache = new LRUFilterCache(Integer.MAX_VALUE, Long.MAX_VALUE);
-    final Filter cachedFilter1 = filterCache.doCache(filter1, FilterCachingPolicy.ALWAYS_CACHE);
-    DocIdSet cached1 = cachedFilter1.getDocIdSet(leaf1, null);
-
-    final Filter cachedFilter2 = filterCache.doCache(filter2, NEVER_CACHE);
-    DocIdSet cached2 = cachedFilter2.getDocIdSet(leaf1, null);
-    assertSame(cached1, cached2);
-
-    filterCache.assertConsistent();
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
 
     reader.close();
     w.close();
@@ -249,31 +231,35 @@ public class TestLRUFilterCache extends LuceneTestCase {
       w.addDocument(doc);
     }
     final DirectoryReader reader = w.getReader();
-    final LeafReaderContext leaf1 = reader.leaves().get(0);
+    final IndexSearcher searcher = newSearcher(reader);
 
-    final Filter filter1 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    final Query query1 = new TermQuery(new Term("color", "blue"));
+    query1.setBoost(random().nextFloat());
     // different instance yet equal
-    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    final Query query2 = new TermQuery(new Term("color", "blue"));
+    query2.setBoost(random().nextFloat());
 
-    final LRUFilterCache filterCache = new LRUFilterCache(Integer.MAX_VALUE, Long.MAX_VALUE);
+    final LRUQueryCache queryCache = new LRUQueryCache(Integer.MAX_VALUE, Long.MAX_VALUE);
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
-    final Filter cachedFilter1 = filterCache.doCache(filter1, FilterCachingPolicy.ALWAYS_CACHE);
-    cachedFilter1.getDocIdSet(leaf1, null);
+    searcher.search(new ConstantScoreQuery(query1), 1);
+    assertEquals(1, queryCache.cachedQueries().size());
 
-    filterCache.clearFilter(filter2);
+    queryCache.clearQuery(query2);
 
-    assertTrue(filterCache.cachedFilters().isEmpty());
-    filterCache.assertConsistent();
+    assertTrue(queryCache.cachedQueries().isEmpty());
+    queryCache.assertConsistent();
 
     reader.close();
     w.close();
     dir.close();
   }
 
-  // This test makes sure that by making the same assumptions as LRUFilterCache, RAMUsageTester
+  // This test makes sure that by making the same assumptions as LRUQueryCache, RAMUsageTester
   // computes the same memory usage.
   public void testRamBytesUsedAgreesWithRamUsageTester() throws IOException {
-    final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(5), 1 + random().nextInt(10000));
+    final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(5), 1 + random().nextInt(10000));
     // an accumulator that only sums up memory usage of referenced filters and doc id sets
     final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
       @Override
@@ -281,8 +267,8 @@ public class TestLRUFilterCache extends LuceneTestCase {
         if (o instanceof DocIdSet) {
           return ((DocIdSet) o).ramBytesUsed();
         }
-        if (o instanceof Filter) {
-          return filterCache.ramBytesUsed((Filter) o);
+        if (o instanceof Query) {
+          return queryCache.ramBytesUsed((Query) o);
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not take core cache keys into account
@@ -293,8 +279,8 @@ public class TestLRUFilterCache extends LuceneTestCase {
           queue.addAll(map.keySet());
           queue.addAll(map.values());
           final long sizePerEntry = o instanceof LinkedHashMap
-              ? LRUFilterCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
-              : LRUFilterCache.HASHTABLE_RAM_BYTES_PER_ENTRY;
+              ? LRUQueryCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
+              : LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY;
           return sizePerEntry * map.size();
         }
         // follow links to other objects, but ignore their memory usage
@@ -328,31 +314,58 @@ public class TestLRUFilterCache extends LuceneTestCase {
         w.addDocument(doc);
       }
       try (final DirectoryReader reader = w.getReader()) {
-        final IndexSearcher searcher = new IndexSearcher(reader);
+        final IndexSearcher searcher = newSearcher(reader);
+        searcher.setQueryCache(queryCache);
+        searcher.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
         for (int i = 0; i < 3; ++i) {
-          final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", RandomPicks.randomFrom(random(), colors))));
-          searcher.search(new ConstantScoreQuery(filterCache.doCache(filter, MAYBE_CACHE_POLICY)), 1);
+          final Query query = new TermQuery(new Term("color", RandomPicks.randomFrom(random(), colors)));
+          searcher.search(new ConstantScoreQuery(query), 1);
         }
       }
-      filterCache.assertConsistent();
-      assertEquals(RamUsageTester.sizeOf(filterCache, acc), filterCache.ramBytesUsed());
+      queryCache.assertConsistent();
+      assertEquals(RamUsageTester.sizeOf(queryCache, acc), queryCache.ramBytesUsed());
     }
 
     w.close();
     dir.close();
   }
 
-  /** A filter that produces empty sets. */
-  private static class DummyFilter extends Filter {
+  /** A query that doesn't match anything */
+  private static class DummyQuery extends Query {
+
+    private static int COUNTER = 0;
+    private final int id;
+
+    DummyQuery() {
+      id = COUNTER++;
+    }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return null;
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
+        @Override
+        Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+          return null;
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof DummyQuery == false) {
+        return false;
+      }
+      return id == ((DummyQuery) obj).id;
+    }
+
+    @Override
+    public int hashCode() {
+      return id;
     }
 
     @Override
     public String toString(String field) {
-      return "DummyFilter";
+      return "DummyQuery";
     }
 
   }
@@ -362,7 +375,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
   // by the cache itself, not cache entries, and we want to make sure that
   // memory usage is not grossly underestimated.
   public void testRamBytesUsedConstantEntryOverhead() throws IOException {
-    final LRUFilterCache filterCache = new LRUFilterCache(1000000, 10000000);
+    final LRUQueryCache queryCache = new LRUQueryCache(1000000, 10000000);
 
     final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
       @Override
@@ -370,8 +383,8 @@ public class TestLRUFilterCache extends LuceneTestCase {
         if (o instanceof DocIdSet) {
           return ((DocIdSet) o).ramBytesUsed();
         }
-        if (o instanceof Filter) {
-          return filterCache.ramBytesUsed((Filter) o);
+        if (o instanceof Query) {
+          return queryCache.ramBytesUsed((Query) o);
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not follow references to core cache keys
@@ -390,16 +403,18 @@ public class TestLRUFilterCache extends LuceneTestCase {
     }
     final DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
-    final int numFilters = atLeast(1000);
-    for (int i = 0; i < numFilters; ++i) {
-      final Filter filter = new DummyFilter();
-      final Filter cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
-      searcher.search(new ConstantScoreQuery(cached), 1);
+    final int numQueries = atLeast(1000);
+    for (int i = 0; i < numQueries; ++i) {
+      final Query query = new DummyQuery();
+      searcher.search(new ConstantScoreQuery(query), 1);
     }
+    assertTrue(queryCache.getCacheCount() > 0);
 
-    final long actualRamBytesUsed = RamUsageTester.sizeOf(filterCache, acc);
-    final long expectedRamBytesUsed = filterCache.ramBytesUsed();
+    final long actualRamBytesUsed = RamUsageTester.sizeOf(queryCache, acc);
+    final long expectedRamBytesUsed = queryCache.ramBytesUsed();
     // error < 30%
     assertEquals(actualRamBytesUsed, expectedRamBytesUsed, 30 * actualRamBytesUsed / 100);
 
@@ -409,7 +424,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
   }
 
   public void testOnUse() throws IOException {
-    final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(5), 1 + random().nextInt(1000));
+    final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(5), 1 + random().nextInt(1000));
 
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -428,33 +443,34 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = new IndexSearcher(reader);
 
-    final Map<Filter, Integer> actualCounts = new HashMap<>();
-    final Map<Filter, Integer> expectedCounts = new HashMap<>();
+    final Map<Query, Integer> actualCounts = new HashMap<>();
+    final Map<Query, Integer> expectedCounts = new HashMap<>();
 
-    final FilterCachingPolicy countingPolicy = new FilterCachingPolicy() {
+    final QueryCachingPolicy countingPolicy = new QueryCachingPolicy() {
 
       @Override
-      public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
         return random().nextBoolean();
       }
 
       @Override
-      public void onUse(Filter filter) {
-        expectedCounts.put(filter, 1 + expectedCounts.getOrDefault(filter, 0));
+      public void onUse(Query query) {
+        expectedCounts.put(query, 1 + expectedCounts.getOrDefault(query, 0));
       }
     };
 
-    Filter[] filters = new Filter[10 + random().nextInt(10)];
-    Filter[] cachedFilters = new Filter[filters.length];
-    for (int i = 0; i < filters.length; ++i) {
-      filters[i] = new QueryWrapperFilter(new TermQuery(new Term("color", RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow")))));
-      cachedFilters[i] = filterCache.doCache(filters[i], countingPolicy);
+    Query[] queries = new Query[10 + random().nextInt(10)];
+    for (int i = 0; i < queries.length; ++i) {
+      queries[i] = new TermQuery(new Term("color", RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow"))));
+      queries[i].setBoost(random().nextFloat());
     }
 
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(countingPolicy);
     for (int i = 0; i < 20; ++i) {
-      final int idx = random().nextInt(filters.length);
-      searcher.search(new ConstantScoreQuery(cachedFilters[idx]), 1);
-      actualCounts.put(filters[idx], 1 + actualCounts.getOrDefault(filters[idx], 0));
+      final int idx = random().nextInt(queries.length);
+      searcher.search(new ConstantScoreQuery(queries[idx]), 1);
+      actualCounts.put(queries[idx], 1 + actualCounts.getOrDefault(queries[idx], 0));
     }
 
     assertEquals(actualCounts, expectedCounts);
@@ -465,7 +481,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
   }
 
   public void testStats() throws IOException {
-    final LRUFilterCache filterCache = new LRUFilterCache(1, 10000000);
+    final LRUQueryCache queryCache = new LRUQueryCache(1, 10000000);
 
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -486,66 +502,67 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final DirectoryReader reader = w.getReader();
     final int segmentCount = reader.leaves().size();
     final IndexSearcher searcher = new IndexSearcher(reader);
-    final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
-    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    final Query query = new TermQuery(new Term("color", "red"));
+    final Query query2 = new TermQuery(new Term("color", "blue"));
 
+    searcher.setQueryCache(queryCache);
     // first pass, lookups without caching that all miss
-    Filter cached = filterCache.doCache(filter, NEVER_CACHE);
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
     for (int i = 0; i < 10; ++i) {
-      searcher.search(new ConstantScoreQuery(cached), 1);
+      searcher.search(new ConstantScoreQuery(query), 1);
     }
-    assertEquals(10 * segmentCount, filterCache.getTotalCount());
-    assertEquals(0, filterCache.getHitCount());
-    assertEquals(10 * segmentCount, filterCache.getMissCount());
-    assertEquals(0, filterCache.getCacheCount());
-    assertEquals(0, filterCache.getEvictionCount());
-    assertEquals(0, filterCache.getCacheSize());
+    assertEquals(10 * segmentCount, queryCache.getTotalCount());
+    assertEquals(0, queryCache.getHitCount());
+    assertEquals(10 * segmentCount, queryCache.getMissCount());
+    assertEquals(0, queryCache.getCacheCount());
+    assertEquals(0, queryCache.getEvictionCount());
+    assertEquals(0, queryCache.getCacheSize());
 
     // second pass, lookups + caching, only the first one is a miss
-    cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     for (int i = 0; i < 10; ++i) {
-      searcher.search(new ConstantScoreQuery(cached), 1);
+      searcher.search(new ConstantScoreQuery(query), 1);
     }
-    assertEquals(20 * segmentCount, filterCache.getTotalCount());
-    assertEquals(9 * segmentCount, filterCache.getHitCount());
-    assertEquals(11 * segmentCount, filterCache.getMissCount());
-    assertEquals(1 * segmentCount, filterCache.getCacheCount());
-    assertEquals(0, filterCache.getEvictionCount());
-    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+    assertEquals(20 * segmentCount, queryCache.getTotalCount());
+    assertEquals(9 * segmentCount, queryCache.getHitCount());
+    assertEquals(11 * segmentCount, queryCache.getMissCount());
+    assertEquals(1 * segmentCount, queryCache.getCacheCount());
+    assertEquals(0, queryCache.getEvictionCount());
+    assertEquals(1 * segmentCount, queryCache.getCacheSize());
 
     // third pass lookups without caching, we only have hits
-    cached = filterCache.doCache(filter, NEVER_CACHE);
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
     for (int i = 0; i < 10; ++i) {
-      searcher.search(new ConstantScoreQuery(cached), 1);
+      searcher.search(new ConstantScoreQuery(query), 1);
     }
-    assertEquals(30 * segmentCount, filterCache.getTotalCount());
-    assertEquals(19 * segmentCount, filterCache.getHitCount());
-    assertEquals(11 * segmentCount, filterCache.getMissCount());
-    assertEquals(1 * segmentCount, filterCache.getCacheCount());
-    assertEquals(0, filterCache.getEvictionCount());
-    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+    assertEquals(30 * segmentCount, queryCache.getTotalCount());
+    assertEquals(19 * segmentCount, queryCache.getHitCount());
+    assertEquals(11 * segmentCount, queryCache.getMissCount());
+    assertEquals(1 * segmentCount, queryCache.getCacheCount());
+    assertEquals(0, queryCache.getEvictionCount());
+    assertEquals(1 * segmentCount, queryCache.getCacheSize());
 
     // fourth pass with a different filter which will trigger evictions since the size is 1
-    cached = filterCache.doCache(filter2, FilterCachingPolicy.ALWAYS_CACHE);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     for (int i = 0; i < 10; ++i) {
-      searcher.search(new ConstantScoreQuery(cached), 1);
+      searcher.search(new ConstantScoreQuery(query2), 1);
     }
-    assertEquals(40 * segmentCount, filterCache.getTotalCount());
-    assertEquals(28 * segmentCount, filterCache.getHitCount());
-    assertEquals(12 * segmentCount, filterCache.getMissCount());
-    assertEquals(2 * segmentCount, filterCache.getCacheCount());
-    assertEquals(1 * segmentCount, filterCache.getEvictionCount());
-    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+    assertEquals(40 * segmentCount, queryCache.getTotalCount());
+    assertEquals(28 * segmentCount, queryCache.getHitCount());
+    assertEquals(12 * segmentCount, queryCache.getMissCount());
+    assertEquals(2 * segmentCount, queryCache.getCacheCount());
+    assertEquals(1 * segmentCount, queryCache.getEvictionCount());
+    assertEquals(1 * segmentCount, queryCache.getCacheSize());
 
     // now close, causing evictions due to the closing of segment cores
     reader.close();
     w.close();
-    assertEquals(40 * segmentCount, filterCache.getTotalCount());
-    assertEquals(28 * segmentCount, filterCache.getHitCount());
-    assertEquals(12 * segmentCount, filterCache.getMissCount());
-    assertEquals(2 * segmentCount, filterCache.getCacheCount());
-    assertEquals(2 * segmentCount, filterCache.getEvictionCount());
-    assertEquals(0, filterCache.getCacheSize());
+    assertEquals(40 * segmentCount, queryCache.getTotalCount());
+    assertEquals(28 * segmentCount, queryCache.getHitCount());
+    assertEquals(12 * segmentCount, queryCache.getMissCount());
+    assertEquals(2 * segmentCount, queryCache.getCacheCount());
+    assertEquals(2 * segmentCount, queryCache.getEvictionCount());
+    assertEquals(0, queryCache.getCacheSize());
 
     dir.close();
   }
@@ -595,10 +612,10 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final AtomicLong ramBytesUsage = new AtomicLong();
     final AtomicLong cacheSize = new AtomicLong();
 
-    final LRUFilterCache filterCache = new LRUFilterCache(2, 10000000) {
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 10000000) {
       @Override
-      protected void onHit(Object readerCoreKey, Filter filter) {
-        super.onHit(readerCoreKey, filter);
+      protected void onHit(Object readerCoreKey, Query query) {
+        super.onHit(readerCoreKey, query);
         switch(indexId.get(readerCoreKey).intValue()) {
           case 1:
             hitCount1.incrementAndGet();
@@ -612,8 +629,8 @@ public class TestLRUFilterCache extends LuceneTestCase {
       }
 
       @Override
-      protected void onMiss(Object readerCoreKey, Filter filter) {
-        super.onMiss(readerCoreKey, filter);
+      protected void onMiss(Object readerCoreKey, Query query) {
+        super.onMiss(readerCoreKey, query);
         switch(indexId.get(readerCoreKey).intValue()) {
           case 1:
             missCount1.incrementAndGet();
@@ -627,14 +644,14 @@ public class TestLRUFilterCache extends LuceneTestCase {
       }
 
       @Override
-      protected void onFilterCache(Filter filter, long ramBytesUsed) {
-        super.onFilterCache(filter, ramBytesUsed);
+      protected void onQueryCache(Query query, long ramBytesUsed) {
+        super.onQueryCache(query, ramBytesUsed);
         ramBytesUsage.addAndGet(ramBytesUsed);
       }
 
       @Override
-      protected void onFilterEviction(Filter filter, long ramBytesUsed) {
-        super.onFilterEviction(filter, ramBytesUsed);
+      protected void onQueryEviction(Query query, long ramBytesUsed) {
+        super.onQueryEviction(query, ramBytesUsed);
         ramBytesUsage.addAndGet(-ramBytesUsed);
       }
 
@@ -660,14 +677,18 @@ public class TestLRUFilterCache extends LuceneTestCase {
       }
     };
 
-    final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
-    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
-    final Filter filter3 = new QueryWrapperFilter(new TermQuery(new Term("color", "green")));
+    final Query query = new TermQuery(new Term("color", "red"));
+    final Query query2 = new TermQuery(new Term("color", "blue"));
+    final Query query3 = new TermQuery(new Term("color", "green"));
+
+    for (IndexSearcher searcher : Arrays.asList(searcher1, searcher2)) {
+      searcher.setQueryCache(queryCache);
+      searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+    }
 
     // search on searcher1
-    Filter cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
     for (int i = 0; i < 10; ++i) {
-      searcher1.search(new ConstantScoreQuery(cached), 1);
+      searcher1.search(new ConstantScoreQuery(query), 1);
     }
     assertEquals(9 * segmentCount1, hitCount1.longValue());
     assertEquals(0, hitCount2.longValue());
@@ -675,9 +696,8 @@ public class TestLRUFilterCache extends LuceneTestCase {
     assertEquals(0, missCount2.longValue());
 
     // then on searcher2
-    cached = filterCache.doCache(filter2, FilterCachingPolicy.ALWAYS_CACHE);
     for (int i = 0; i < 20; ++i) {
-      searcher2.search(new ConstantScoreQuery(cached), 1);
+      searcher2.search(new ConstantScoreQuery(query2), 1);
     }
     assertEquals(9 * segmentCount1, hitCount1.longValue());
     assertEquals(19 * segmentCount2, hitCount2.longValue());
@@ -685,34 +705,118 @@ public class TestLRUFilterCache extends LuceneTestCase {
     assertEquals(segmentCount2, missCount2.longValue());
 
     // now on searcher1 again to trigger evictions
-    cached = filterCache.doCache(filter3, FilterCachingPolicy.ALWAYS_CACHE);
     for (int i = 0; i < 30; ++i) {
-      searcher1.search(new ConstantScoreQuery(cached), 1);
+      searcher1.search(new ConstantScoreQuery(query3), 1);
     }
-    assertEquals(segmentCount1, filterCache.getEvictionCount());
+    assertEquals(segmentCount1, queryCache.getEvictionCount());
     assertEquals(38 * segmentCount1, hitCount1.longValue());
     assertEquals(19 * segmentCount2, hitCount2.longValue());
     assertEquals(2 * segmentCount1, missCount1.longValue());
     assertEquals(segmentCount2, missCount2.longValue());
 
     // check that the recomputed stats are the same as those reported by the cache
-    assertEquals(filterCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * LRUFilterCache.HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
-    assertEquals(filterCache.getCacheSize(), cacheSize.longValue());
+    assertEquals(queryCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
+    assertEquals(queryCache.getCacheSize(), cacheSize.longValue());
 
     reader1.close();
     reader2.close();
     w1.close();
     w2.close();
 
-    assertEquals(filterCache.ramBytesUsed(), ramBytesUsage.longValue());
+    assertEquals(queryCache.ramBytesUsed(), ramBytesUsage.longValue());
     assertEquals(0, cacheSize.longValue());
 
-    filterCache.clear();
+    queryCache.clear();
     assertEquals(0, ramBytesUsage.longValue());
     assertEquals(0, cacheSize.longValue());
 
     dir1.close();
     dir2.close();
+  }
+
+  public void testUseRewrittenQueryAsCacheKey() throws IOException {
+    final Query expectedCacheKey = new TermQuery(new Term("foo", "bar"));
+    final BooleanQuery query = new BooleanQuery();
+    final Query sub = expectedCacheKey.clone();
+    sub.setBoost(42);
+    query.add(sub, Occur.MUST);
+
+    final LRUQueryCache queryCache = new LRUQueryCache(1000000, 10000000);
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.YES));
+    w.addDocument(doc);
+    w.commit();
+    final IndexReader reader = w.getReader();
+    final IndexSearcher searcher = newSearcher(reader);
+    w.close();
+
+    final QueryCachingPolicy policy = new QueryCachingPolicy() {
+
+      @Override
+      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+        assertEquals(expectedCacheKey, QueryCache.cacheKey(query));
+        return true;
+      }
+
+      @Override
+      public void onUse(Query query) {
+        assertEquals(expectedCacheKey, QueryCache.cacheKey(query));
+      }
+    };
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(policy);
+    searcher.search(query, new TotalHitCountCollector());
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testBooleanQueryCachesSubClauses() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.YES));
+    w.addDocument(doc);
+    w.commit();
+    final IndexReader reader = w.getReader();
+    final IndexSearcher searcher = newSearcher(reader);
+    w.close();
+
+    final LRUQueryCache queryCache = new LRUQueryCache(1000000, 10000000);
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    BooleanQuery bq = new BooleanQuery();
+    TermQuery should = new TermQuery(new Term("foo", "baz"));
+    TermQuery must = new TermQuery(new Term("foo", "bar"));
+    TermQuery filter = new TermQuery(new Term("foo", "bar"));
+    TermQuery mustNot = new TermQuery(new Term("foo", "foo"));
+    bq.add(should, Occur.SHOULD);
+    bq.add(must, Occur.MUST);
+    bq.add(filter, Occur.FILTER);
+    bq.add(mustNot, Occur.MUST_NOT);
+
+    // same bq but with FILTER instead of MUST
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(should, Occur.SHOULD);
+    bq2.add(must, Occur.FILTER);
+    bq2.add(filter, Occur.FILTER);
+    bq2.add(mustNot, Occur.MUST_NOT);
+    
+    assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
+    searcher.search(bq, 1);
+    assertEquals(new HashSet<>(Arrays.asList(filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
+
+    queryCache.clear();
+    assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
+    searcher.search(new ConstantScoreQuery(bq), 1);
+    assertEquals(new HashSet<>(Arrays.asList(bq2, should, must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
+
+    reader.close();
+    dir.close();
   }
 
 }

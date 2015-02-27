@@ -97,7 +97,7 @@ if (c.query instanceof TermQuery) {
         filter = (Filter)cache.get(filterQuery);
       }
       if (filter == null) {                       // miss
-        filter = new CachingWrapperFilter(new QueryWrapperFilter(filterQuery)); // construct new entry
+        filter = new QueryWrapperFilter(new CachingWrapperQuery(filterQuery)); // construct new entry
         synchronized (cache) {
           cache.put(filterQuery, filter);         // cache it
         }

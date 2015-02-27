@@ -19,26 +19,26 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RoaringDocIdSet;
 
 public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
 
-  public void testCheapToCache() {
-    assertTrue(UsageTrackingFilterCachingPolicy.isCheapToCache(null));
-    assertTrue(UsageTrackingFilterCachingPolicy.isCheapToCache(DocIdSet.EMPTY));
-    assertTrue(UsageTrackingFilterCachingPolicy.isCheapToCache(new RoaringDocIdSet.Builder(5).add(3).build()));
-    assertFalse(UsageTrackingFilterCachingPolicy.isCheapToCache(new DocValuesDocIdSet(5, null) {
-      @Override
-      protected boolean matchDoc(int doc) {
-        return false;
-      }
-    }));
+  public void testCostlyFilter() {
+    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
+    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(NumericRangeQuery.newIntRange("intField", 8, 1, 1000, true, true)));
+    assertFalse(UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
   }
 
-  public void testCostlyFilter() {
-    assertTrue(UsageTrackingFilterCachingPolicy.isCostly(new QueryWrapperFilter(new PrefixQuery(new Term("field", "prefix")))));
-    assertTrue(UsageTrackingFilterCachingPolicy.isCostly(new QueryWrapperFilter(NumericRangeQuery.newIntRange("intField", 8, 1, 1000, true, true))));
-    assertFalse(UsageTrackingFilterCachingPolicy.isCostly(new QueryWrapperFilter(new TermQuery(new Term("field", "value")))));
+  public void testBoostIgnored() {
+    Query q1 = new TermQuery(new Term("foo", "bar"));
+    q1.setBoost(2);
+    Query q2 = q1.clone();
+    q2.setBoost(3);
+    Query q3 = q1.clone();
+    q3.setBoost(4);
+    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
+    policy.onUse(q1);
+    policy.onUse(q2);
+    assertEquals(2, policy.frequency(q3));
   }
 
 }

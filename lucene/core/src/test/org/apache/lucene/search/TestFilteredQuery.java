@@ -302,17 +302,38 @@ public class TestFilteredQuery extends LuceneTestCase {
     tChainedFilters(false);
   }
   
+  // a filter for which other queries don't have special rewrite rules
+  private static class FilterWrapper extends Filter {
+
+    private final Filter in;
+    
+    FilterWrapper(Filter in) {
+      this.in = in;
+    }
+    
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+  }
+  
   private void tChainedFilters(final boolean useRandomAccess) throws Exception {
     Query query = new FilteredQuery(new FilteredQuery(
-      new MatchAllDocsQuery(), new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "three")))), randomFilterStrategy(random(), useRandomAccess)),
-      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), randomFilterStrategy(random(), useRandomAccess));
+      new MatchAllDocsQuery(), new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "three")))), randomFilterStrategy(random(), useRandomAccess)),
+      new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), randomFilterStrategy(random(), useRandomAccess));
     ScoreDoc[] hits = searcher.search(query, 10).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), query, searcher);    
 
     // one more:
     query = new FilteredQuery(query,
-      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), randomFilterStrategy(random(), useRandomAccess));
+      new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), randomFilterStrategy(random(), useRandomAccess));
     hits = searcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query, searcher);    
@@ -390,8 +411,8 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   public void testRewrite() throws Exception {
-    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new CachingWrapperFilter(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
-    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new CachingWrapperFilter(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
   }
   
   public void testGetFilterStrategy() {

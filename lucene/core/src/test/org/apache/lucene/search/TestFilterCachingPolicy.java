@@ -38,11 +38,11 @@ public class TestFilterCachingPolicy extends LuceneTestCase {
     }
     final IndexReader reader = w.getReader();
     for (float minSizeRatio : new float[] {Float.MIN_VALUE, 0.01f, 0.1f, 0.9f}) {
-      final FilterCachingPolicy policy = new FilterCachingPolicy.CacheOnLargeSegments(minSizeRatio);
+      final QueryCachingPolicy policy = new QueryCachingPolicy.CacheOnLargeSegments(minSizeRatio);
       for (LeafReaderContext ctx : reader.leaves()) {
         final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("field", "value")));
         final DocIdSet set = null;
-        final boolean shouldCache = policy.shouldCache(filter, ctx, set);
+        final boolean shouldCache = policy.shouldCache(filter, ctx);
         final float sizeRatio = (float) ctx.reader().maxDoc() / reader.maxDoc();
         assertEquals(sizeRatio >= minSizeRatio, shouldCache);
       }

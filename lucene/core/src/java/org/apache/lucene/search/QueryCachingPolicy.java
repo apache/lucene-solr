@@ -29,21 +29,21 @@ import org.apache.lucene.index.TieredMergePolicy;
  *
  * Implementations of this class must be thread-safe.
  *
- * @see UsageTrackingFilterCachingPolicy
- * @see LRUFilterCache
+ * @see UsageTrackingQueryCachingPolicy
+ * @see LRUQueryCache
  * @lucene.experimental
  */
 // TODO: add APIs for integration with IndexWriter.IndexReaderWarmer
-public interface FilterCachingPolicy {
+public interface QueryCachingPolicy {
 
   /** A simple policy that caches all the provided filters on all segments. */
-  public static final FilterCachingPolicy ALWAYS_CACHE = new FilterCachingPolicy() {
+  public static final QueryCachingPolicy ALWAYS_CACHE = new QueryCachingPolicy() {
 
     @Override
-    public void onUse(Filter filter) {}
+    public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       return true;
     }
 
@@ -54,13 +54,13 @@ public interface FilterCachingPolicy {
    *  execution time of queries and are also more likely to stay around longer
    *  than small segments, which makes them more interesting for caching.
    */
-  public static class CacheOnLargeSegments implements FilterCachingPolicy {
+  public static class CacheOnLargeSegments implements QueryCachingPolicy {
 
     /** {@link CacheOnLargeSegments} instance that only caches on segments that
      *  account for more than 3% of the total index size. This should guarantee
      *  that all segments from the upper {@link TieredMergePolicy tier} will be
      *  cached while ensuring that at most <tt>33</tt> segments can make it to
-     *  the cache (given that some implementations such as {@link LRUFilterCache}
+     *  the cache (given that some implementations such as {@link LRUQueryCache}
      *  perform better when the number of cached segments is low). */
     public static final CacheOnLargeSegments DEFAULT = new CacheOnLargeSegments(0.03f);
 
@@ -80,10 +80,10 @@ public interface FilterCachingPolicy {
     }
 
     @Override
-    public void onUse(Filter filter) {}
+    public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
       final float sizeRatio = (float) context.reader().maxDoc() / topLevelContext.reader().maxDoc();
       return sizeRatio >= minSizeRatio;
@@ -94,7 +94,7 @@ public interface FilterCachingPolicy {
   /** Callback that is called every time that a cached filter is used.
    *  This is typically useful if the policy wants to track usage statistics
    *  in order to make decisions. */
-  void onUse(Filter filter);
+  void onUse(Query query);
 
   /** Whether the given {@link DocIdSet} should be cached on a given segment.
    *  This method will be called on each leaf context to know if the filter
@@ -102,6 +102,6 @@ public interface FilterCachingPolicy {
    *  attempt to load a {@link DocIdSet} from the cache. If it is not cached
    *  yet and this method returns <tt>true</tt> then a cache entry will be
    *  generated. Otherwise an uncached set will be returned. */
-  boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException;
+  boolean shouldCache(Query query, LeafReaderContext context) throws IOException;
 
 }

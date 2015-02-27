@@ -327,6 +327,10 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
+                      public boolean needsScores() {
+                        return true;
+                      }
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
@@ -344,6 +348,10 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q2,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
+                      public boolean needsScores() {
+                        return true;
+                      }
                       @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
@@ -366,6 +374,10 @@ public class TestOmitTf extends LuceneTestCase {
                     new CountingHitCollector() {
                       private Scorer scorer;
                       @Override
+                      public boolean needsScores() {
+                        return true;
+                      }
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
@@ -384,6 +396,10 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q4,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
+                      public boolean needsScores() {
+                        return true;
+                      }
                       @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
