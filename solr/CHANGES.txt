@@ -71,6 +71,16 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.2.6.v20141205
 
+Upgrading from Solr 5.0
+-----------------------
+
+* SolrClient query functions now declare themselves as throwing IOException in
+  addition to SolrServerException, to bring them in line with the update
+  functions.
+
+* SolrRequest.process() is now final.  Subclasses should instead be parametrized
+  by their corresponding SolrResponse type, and implement createResponse()
+
 Detailed Change List
 ----------------------
 
@@ -215,6 +225,8 @@ Other Changes
 
 * SOLR-7130: Make stale state notification work without failing the requests
   (Noble Paul, shalin)
+
+* SOLR-7151: SolrClient query methods throw IOException
 
 ==================  5.0.0 ==================
 

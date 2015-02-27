@@ -686,7 +686,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  private SolrDocumentList executeSolrQuery(SolrClient collection, String queryString) throws SolrServerException {
+  private SolrDocumentList executeSolrQuery(SolrClient collection, String queryString) throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery(queryString).setRows(2 * RECORD_COUNT).addSort("id", ORDER.asc);
     QueryResponse response = collection.query(query);
     return response.getResults();

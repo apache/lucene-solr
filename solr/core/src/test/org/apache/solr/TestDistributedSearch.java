@@ -17,11 +17,6 @@
 
 package org.apache.solr;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,6 +33,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * TODO? perhaps use:
@@ -633,7 +634,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 if (verifyStress) {
                   comparePartialResponses(rsp, controlRsp, upShards);
                 }
-              } catch (SolrServerException e) {
+              } catch (SolrServerException | IOException e) {
                 throw new RuntimeException(e);
               }
             }
@@ -648,7 +649,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
 
-  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrClient> upClients) throws SolrServerException {
+  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrClient> upClients) throws SolrServerException, IOException {
     // query a random "up" server
     int which = r.nextInt(upClients.size());
     SolrClient client = upClients.get(which);

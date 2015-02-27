@@ -1191,11 +1191,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           long num = cjetty.client.solrClient.query(query).getResults()
               .getNumFound();
           System.err.println("DOCS:" + num);
-        } catch (SolrServerException e) {
-          System.err.println("error contacting client: " + e.getMessage()
-              + "\n");
-          continue;
-        } catch (SolrException e) {
+        } catch (SolrServerException | SolrException | IOException e) {
           System.err.println("error contacting client: " + e.getMessage()
               + "\n");
           continue;
@@ -1401,7 +1397,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params)
-      throws SolrServerException {
+      throws SolrServerException, IOException {
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
     log.info("done");
   }
 
-  private void query(int count) throws SolrServerException {
+  private void query(int count) throws SolrServerException, IOException {
     SolrClient client = this.getSolrClient();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = client.query(query);

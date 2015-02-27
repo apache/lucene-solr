@@ -751,7 +751,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     assertEquals(1, res.getResults().getNumFound());
   }
 
-  private QueryResponse query(SolrClient client) throws SolrServerException {
+  private QueryResponse query(SolrClient client) throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery("*:*");
     return client.query(query);
   }

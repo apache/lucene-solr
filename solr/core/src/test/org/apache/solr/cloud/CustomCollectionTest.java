@@ -42,6 +42,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -447,7 +448,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
 
     if (r.nextBoolean())
       return super.queryServer(params);

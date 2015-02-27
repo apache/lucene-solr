@@ -536,7 +536,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
     // query a random server
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
@@ -607,7 +607,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                 if (verifyStress) {
                   compareResponses(rsp, controlRsp);
                 }
-              } catch (SolrServerException e) {
+              } catch (SolrServerException | IOException e) {
                 throw new RuntimeException(e);
               }
             }
@@ -623,10 +623,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
   
-  public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients) throws SolrServerException {
+  public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients) throws SolrServerException, IOException {
     return queryAndCompare(params, Arrays.<SolrClient>asList(clients));
   }
-  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrClient> clients) throws SolrServerException {
+  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrClient> clients) throws SolrServerException, IOException {
     QueryResponse first = null;
     for (SolrClient client : clients) {
       QueryResponse rsp = client.query(new ModifiableSolrParams(params));
