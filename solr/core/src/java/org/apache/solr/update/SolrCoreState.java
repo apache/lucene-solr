@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -139,5 +140,10 @@ public abstract class SolrCoreState {
   public abstract void cancelRecovery();
 
   public abstract void close(IndexWriterCloser closer);
+
+  /**
+   * @return throttle to limit how fast a core attempts to become leader
+   */
+  public abstract ActionThrottle getLeaderThrottle();
 
 }

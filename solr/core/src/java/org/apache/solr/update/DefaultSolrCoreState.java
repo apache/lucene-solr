@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
@@ -41,6 +42,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   private final Object recoveryLock = new Object();
+  
+  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 10000);
+  
+  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", 5000);
   
   // protects pauseWriter and writerFree
   private final Object writerPauseLock = new Object();
@@ -325,6 +330,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for local tlog recovery)
       boolean recoveringAfterStartup = recoveryStrat == null;
 
+      recoveryThrottle.minimumWaitBetweenActions();
+      recoveryThrottle.markAttemptingAction();
+      
       recoveryStrat = new RecoveryStrategy(cc, cd, this);
       recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
       recoveryStrat.start();
@@ -375,5 +383,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public Lock getCommitLock() {
     return commitLock;
   }
+  
+  @Override
+  public ActionThrottle getLeaderThrottle() {
+    return leaderThrottle;
+  }
+  
   
 }

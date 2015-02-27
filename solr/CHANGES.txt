@@ -89,6 +89,12 @@ Bug Fixes
   
 * SOLR-7067: bin/solr won't run under bash 4.2+. (Steve Rowe)
 
+* SOLR-7033, SOLR-5961: RecoveryStrategy should not publish any state when
+  closed / cancelled and there should always be a pause between recoveries 
+  even when recoveries are rapidly stopped and started as well as when a
+  node attempts to become the leader for a shard. 
+  (Mark Miller, Maxim Novikov)
+
 Other Changes
 ----------------------
 

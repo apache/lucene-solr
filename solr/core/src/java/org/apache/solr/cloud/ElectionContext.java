@@ -194,6 +194,21 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     log.info("Running the leader process for shard " + shardId);
     
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    ActionThrottle lt;
+    try (SolrCore core = cc.getCore(coreName)) {
+
+      if (core == null) {
+        cancelElection();
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "SolrCore not found:" + coreName + " in "
+                + cc.getCoreNames());
+      }
+      
+      lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
+    }
+    
+    lt.minimumWaitBetweenActions();
+    lt.markAttemptingAction();
     
     // clear the leader in clusterstate
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, ZkStateReader.LEADER_PROP,
@@ -211,7 +226,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       if (core == null) {
         cancelElection();
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Fatal Error, SolrCore not found:" + coreName + " in "
+            "SolrCore not found:" + coreName + " in "
                 + cc.getCoreNames());
       }
       
