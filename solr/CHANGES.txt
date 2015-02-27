@@ -89,6 +89,12 @@ Bug Fixes
   
 * SOLR-7067: bin/solr won't run under bash 4.2+. (Steve Rowe)
 
+Other Changes
+----------------------
+
+* SOLR-7147: Introduce new TrackingShardHandlerFactory for monitoring what requests
+  are sent to shards during tests. (hossman, shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

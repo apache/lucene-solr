@@ -137,7 +137,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330);
   }
   
-  protected void waitForRecoveriesToFinish(String collection,
+  public static void waitForRecoveriesToFinish(String collection,
       ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, int timeoutSeconds)
       throws Exception {
     log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
@@ -174,7 +174,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           if (verbose) System.out.println("Gave up waiting for recovery to finish..");
           if (failOnTimeout) {
             Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
-            printLayout();
+            zkStateReader.getZkClient().printLayoutToStdOut();
             fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
             // won't get here
             return;
