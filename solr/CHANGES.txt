@@ -98,6 +98,9 @@ Bug Fixes
 * SOLR-6847: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
   (shalin)
 
+* SOLR-7128: Two phase distributed search is fetching extra fields in GET_TOP_IDS phase.
+  (Pablo Queixalos, shalin)
+
 Other Changes
 ----------------------
 
