@@ -98,6 +98,24 @@ class DrillSidewaysScorer extends BulkScorer {
     // change up the order of the conjuntions below
     assert baseScorer != null;
 
+    // some scorers, eg ReqExlScorer, can hit NPE if cost is called after nextDoc
+    long baseQueryCost = baseScorer.cost();
+
+    final int numDims = dims.length;
+
+    long drillDownCost = 0;
+    for (int dim=0;dim<numDims;dim++) {
+      DocIdSetIterator disi = dims[dim].disi;
+      if (dims[dim].bits == null && disi != null) {
+        drillDownCost += disi.cost();
+      }
+    }
+
+    long drillDownAdvancedCost = 0;
+    if (numDims > 1 && dims[1].disi == null) {
+      drillDownAdvancedCost = dims[1].disi.cost();
+    }
+
     // Position all scorers to their first matching doc:
     baseScorer.nextDoc();
     int numBits = 0;
@@ -109,14 +127,11 @@ class DrillSidewaysScorer extends BulkScorer {
       }
     }
 
-    final int numDims = dims.length;
-
     Bits[] bits = new Bits[numBits];
     LeafCollector[] bitsSidewaysCollectors = new LeafCollector[numBits];
 
     DocIdSetIterator[] disis = new DocIdSetIterator[numDims-numBits];
     LeafCollector[] sidewaysCollectors = new LeafCollector[numDims-numBits];
-    long drillDownCost = 0;
     int disiUpto = 0;
     int bitsUpto = 0;
     for (int dim=0;dim<numDims;dim++) {
@@ -125,17 +140,12 @@ class DrillSidewaysScorer extends BulkScorer {
         disis[disiUpto] = disi;
         sidewaysCollectors[disiUpto] = dims[dim].sidewaysLeafCollector;
         disiUpto++;
-        if (disi != null) {
-          drillDownCost += disi.cost();
-        }
       } else {
         bits[bitsUpto] = dims[dim].bits;
         bitsSidewaysCollectors[bitsUpto] = dims[dim].sidewaysLeafCollector;
         bitsUpto++;
       }
     }
-
-    long baseQueryCost = baseScorer.cost();
 
     /*
     System.out.println("\nbaseDocID=" + baseScorer.docID() + " est=" + estBaseHitCount);
@@ -150,7 +160,7 @@ class DrillSidewaysScorer extends BulkScorer {
     if (bitsUpto > 0 || scoreSubDocsAtOnce || baseQueryCost < drillDownCost/10) {
       //System.out.println("queryFirst: baseScorer=" + baseScorer + " disis.length=" + disis.length + " bits.length=" + bits.length);
       doQueryFirstScoring(collector, disis, sidewaysCollectors, bits, bitsSidewaysCollectors);
-    } else if (numDims > 1 && (dims[1].disi == null || dims[1].disi.cost() < baseQueryCost/10)) {
+    } else if (numDims > 1 && (dims[1].disi == null || drillDownAdvancedCost < baseQueryCost/10)) {
       //System.out.println("drillDownAdvance");
       doDrillDownAdvanceScoring(collector, disis, sidewaysCollectors);
     } else {
