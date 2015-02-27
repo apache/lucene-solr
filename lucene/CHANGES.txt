@@ -61,6 +61,10 @@ Bug Fixes
 
 * LUCENE-6293: Fixed TimSorter bug. (Adrien Grand)
 
+* LUCENE-6001: DrillSideways hits NullPointerException for certain
+  BooleanQuery searches.  (Dragan Jotannovic, jane chang via Mike
+  McCandless)
+  
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
