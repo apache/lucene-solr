@@ -132,6 +132,18 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
 
     // fix for a bug where not all fields are returned if using multiple fl parameters, see SOLR-6796
     queryWithAsserts("q", "*:*", "fl", "id", "fl", "dynamic", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+
+    // missing fl with sort
+    queryWithAsserts("q", "*:*", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+    queryWithAsserts("q", "*:*", "sort", "payload desc");
+
+    // fl=*
+    queryWithAsserts("q", "*:*", "fl", "*", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+    queryWithAsserts("q", "*:*", "fl", "*", "sort", "payload desc");
+
+    // fl=*,score
+    queryWithAsserts("q", "*:*", "fl", "*,score", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+    queryWithAsserts("q", "*:*", "fl", "*,score", "sort", "payload desc");
   }
 
   /**
@@ -196,7 +208,7 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
     // score is optional, requested only if sorted by score
     if (fls.contains("score") || sortFields.contains("score")) idScoreFields.add("score");
 
-    if (idScoreFields.containsAll(fls)) {
+    if (idScoreFields.containsAll(fls) && !fls.isEmpty()) {
       // if id and/or score are the only fields being requested then we implicitly turn on distribSinglePass=true
       distribSinglePass = true;
     }
@@ -259,13 +271,23 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
       fail("Expected non-zero number of '" + paramName + "' parameters in request");
     }
     Set<String> requestedFields = new HashSet<>();
-    for (String p : params) {
-      requestedFields.addAll(StrUtils.splitSmart(p, ','));
+    if (params != null) {
+      for (String p : params) {
+        List<String> list = StrUtils.splitSmart(p, ',');
+        for (String s : list) {
+          // make sure field names aren't duplicated in the parameters
+          assertTrue("Field name " + s + " was requested multiple times: params = " + requestAndParams.params,
+              requestedFields.add(s));
+        }
+      }
     }
-    assertEquals("Number of requested fields do not match with expectations", expectedCount, requestedFields.size());
-    for (String field : values) {
-      if (!requestedFields.contains(field)) {
-        fail("Field " + field + " not found in param: " + paramName + " request had " + paramName + "=" + requestedFields);
+    // if a wildcard ALL field is requested then we don't need to match exact number of params
+    if (!requestedFields.contains("*"))  {
+      assertEquals("Number of requested fields do not match with expectations", expectedCount, requestedFields.size());
+      for (String field : values) {
+        if (!requestedFields.contains(field)) {
+          fail("Field " + field + " not found in param: " + paramName + " request had " + paramName + "=" + requestedFields);
+        }
       }
     }
   }
