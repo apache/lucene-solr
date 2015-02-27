@@ -305,7 +305,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Performs a query to the Solr server
    * @param params  an object holding all key/value parameters to send along the request
    */
-  public QueryResponse query(SolrParams params) throws SolrServerException {
+  public QueryResponse query(SolrParams params) throws SolrServerException, IOException {
     return new QueryRequest(params).process(this);
   }
 
@@ -314,7 +314,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @param params  an object holding all key/value parameters to send along the request
    * @param method  specifies the HTTP method to use for the request, such as GET or POST
    */
-  public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException {
+  public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException, IOException {
     return new QueryRequest(params, method).process(this);
   }
 
@@ -343,7 +343,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * @return retrieved SolrDocument, null if no document is found.
    */
-  public SolrDocument getById(String id) throws SolrServerException {
+  public SolrDocument getById(String id) throws SolrServerException, IOException {
     return getById(id, null);
   }
 
@@ -353,7 +353,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * @return retrieved SolrDocument, null if no document is found.
    */
-  public SolrDocument getById(String id, SolrParams params) throws SolrServerException {
+  public SolrDocument getById(String id, SolrParams params) throws SolrServerException, IOException {
     SolrDocumentList docs = getById(Arrays.asList(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
@@ -365,7 +365,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Retrieves the SolrDocuments associated with the given identifiers.
    * If a document was not found, it will not be added to the SolrDocumentList.
    */
-  public SolrDocumentList getById(Collection<String> ids) throws SolrServerException {
+  public SolrDocumentList getById(Collection<String> ids) throws SolrServerException, IOException {
     return getById(ids, null);
   }
 
@@ -374,7 +374,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * the SolrParams to execute the request.
    * If a document was not found, it will not be added to the SolrDocumentList.
    */
-  public SolrDocumentList getById(Collection<String> ids, SolrParams params) throws SolrServerException {
+  public SolrDocumentList getById(Collection<String> ids, SolrParams params) throws SolrServerException, IOException {
     if (ids == null || ids.isEmpty()) {
       throw new IllegalArgumentException("Must provide an identifier of a document to retrieve.");
     }

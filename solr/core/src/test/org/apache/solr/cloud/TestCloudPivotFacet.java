@@ -16,36 +16,42 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.PivotField;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.TrieDateField;
-
-import org.apache.solr.common.params.FacetParams; // jdoc lint
-import static org.apache.solr.common.params.FacetParams.*;
-
-import org.apache.commons.lang.StringUtils;
-
 import org.junit.BeforeClass;
-
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
+import java.util.Set;
+
+import static org.apache.solr.common.params.FacetParams.FACET;
+import static org.apache.solr.common.params.FacetParams.FACET_LIMIT;
+import static org.apache.solr.common.params.FacetParams.FACET_MISSING;
+import static org.apache.solr.common.params.FacetParams.FACET_OFFSET;
+import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_COUNT;
+import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
+import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
+import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
+import static org.apache.solr.common.params.FacetParams.FACET_SORT;
 
 /**
  * <p>
@@ -319,8 +325,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * @param constraint filters on pivot
    * @param params base solr parameters
    */
-  private void assertPivotData(String pivotName, PivotField constraint, SolrParams params) 
-    throws SolrServerException {
+  private void assertPivotData(String pivotName, PivotField constraint, SolrParams params)
+      throws SolrServerException, IOException {
     
     SolrParams p = SolrParams.wrapDefaults(params("rows","0"), params);
     QueryResponse res = cloudClient.query(p);

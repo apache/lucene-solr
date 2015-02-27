@@ -26,6 +26,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
+import java.io.IOException;
+
 /**
  * TODO? perhaps use:
  *  http://docs.codehaus.org/display/JETTY/ServletTester
@@ -266,7 +268,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
   }
 
-  private void simpleQuery(Object... queryParams) throws SolrServerException {
+  private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());

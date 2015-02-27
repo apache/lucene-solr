@@ -125,7 +125,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   /** SOLR-3161
    * Technically stream.body isn't remote streaming, but there wasn't a better place for this test method. */
   @Test(expected = SolrException.class)
-  public void testQtUpdateFails() throws SolrServerException {
+  public void testQtUpdateFails() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );//for anything
     query.add("echoHandler","true");
@@ -152,7 +152,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     return client.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
   }
 
-  private boolean searchFindsIt() throws SolrServerException {
+  private boolean searchFindsIt() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery( "id:1234" );
     QueryResponse rsp = getSolrClient().query(query);

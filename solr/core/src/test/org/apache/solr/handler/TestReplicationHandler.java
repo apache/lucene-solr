@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -172,7 +171,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return s.add(doc).getStatus();
   }
 
-  NamedList query(String query, SolrClient s) throws SolrServerException {
+  NamedList query(String query, SolrClient s) throws SolrServerException, IOException {
     NamedList res = new SimpleOrderedMap();
     ModifiableSolrParams params = new ModifiableSolrParams();
 

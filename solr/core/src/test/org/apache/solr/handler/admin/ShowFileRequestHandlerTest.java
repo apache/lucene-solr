@@ -45,7 +45,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     createJetty(legacyExampleCollection1SolrHome(), null, null);
   }
 
-  public void test404ViaHttp() throws SolrServerException {
+  public void test404ViaHttp() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     QueryRequest request = new QueryRequest(params("file",
                                                    "does-not-exist-404.txt"));
@@ -80,7 +80,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     }
   }
 
-  public void testDirList() throws SolrServerException {
+  public void testDirList() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest();

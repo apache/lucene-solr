@@ -125,7 +125,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * @throws SolrServerException if there is an error on the Solr server
    * @throws IOException if there is a communication error
    */
-  public T process(SolrClient client) throws SolrServerException, IOException {
+  public final T process(SolrClient client) throws SolrServerException, IOException {
     long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     T res = createResponse(client);
     res.setResponse(client.request(this));
