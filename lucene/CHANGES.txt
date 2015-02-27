@@ -47,6 +47,10 @@ Bug fixes
 * LUCENE-6105: Don't cache FST root arcs if the number of root arcs is
   small, or if the cache would be > 20% of the size of the FST.
   (Robert Muir, Mike McCandless)
+
+* LUCENE-6001: DrillSideways hits NullPointerException for certain
+  BooleanQuery searches.  (Dragan Jotannovic, jane chang via Mike
+  McCandless)
   
 API Changes
 

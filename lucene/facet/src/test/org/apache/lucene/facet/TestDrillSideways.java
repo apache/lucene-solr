@@ -43,6 +43,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
@@ -1065,6 +1067,47 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(0, r.hits.totalHits);
     
     IOUtils.close(writer, taxoWriter, searcher.getIndexReader(), taxoReader, dir, taxoDir);
+  }
+
+  public void testScorer() throws Exception {
+    // LUCENE-6001 some scorers, eg ReqExlScorer, can hit NPE if cost is called after nextDoc
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    // Writes facet ords to a separate directory from the
+    // main index:
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetsConfig config = new FacetsConfig();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "foo bar", Field.Store.NO));
+    doc.add(new FacetField("Author", "Bob"));
+    doc.add(new FacetField("dim", "a"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+
+    DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
+
+    BooleanQuery bq = new BooleanQuery(true);
+    bq.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
+    bq.add(new TermQuery(new Term("field", "bar")), BooleanClause.Occur.MUST_NOT);
+    DrillDownQuery ddq = new DrillDownQuery(config, bq);
+    ddq.add("field", "foo");
+    ddq.add("author", bq);
+    ddq.add("dim", bq);
+    DrillSidewaysResult r = ds.search(null, ddq, 10);
+    assertEquals(0, r.hits.totalHits);
+
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
 }
 
