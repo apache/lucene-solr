@@ -56,18 +56,23 @@ final class StandardDirectoryReader extends DirectoryReader {
         SegmentInfos sis = new SegmentInfos();
         sis.read(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
-        for (int i = sis.size()-1; i >= 0; i--) {
-          boolean success = false;
-          try {
+        boolean success = false;
+        try {
+          for (int i = sis.size()-1; i >= 0; i--) {
             readers[i] = new SegmentReader(sis.info(i), termInfosIndexDivisor, IOContext.READ);
-            success = true;
-          } finally {
-            if (!success) {
-              IOUtils.closeWhileHandlingException(readers);
-            }
+          }
+
+          // This may throw IllegalArgumentException if there are too many docs, so
+          // it must be inside try clause so we close readers in that case:
+          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false);
+          success = true;
+
+          return reader;
+        } finally {
+          if (success == false) {
+            IOUtils.closeWhileHandlingException(readers);
           }
         }
-        return new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false);
       }
     }.run(commit);
   }

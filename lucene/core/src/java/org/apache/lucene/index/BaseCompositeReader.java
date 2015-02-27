@@ -68,20 +68,22 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     this.subReaders = subReaders;
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
-    int maxDoc = 0, numDocs = 0;
+    long maxDoc = 0, numDocs = 0;
     for (int i = 0; i < subReaders.length; i++) {
-      starts[i] = maxDoc;
+      starts[i] = (int) maxDoc;
       final IndexReader r = subReaders[i];
       maxDoc += r.maxDoc();      // compute maxDocs
-      if (maxDoc < 0 /* overflow */ || maxDoc > IndexWriter.getActualMaxDocs()) {
-        throw new IllegalArgumentException("Too many documents, composite IndexReaders cannot exceed " + IndexWriter.getActualMaxDocs());
-      }
       numDocs += r.numDocs();    // compute numDocs
       r.registerParentReader(this);
     }
-    starts[subReaders.length] = maxDoc;
-    this.maxDoc = maxDoc;
-    this.numDocs = numDocs;
+
+    if (maxDoc > IndexWriter.getActualMaxDocs()) {
+      throw new IllegalArgumentException("Too many documents: composite IndexReaders cannot exceed " + IndexWriter.getActualMaxDocs() + " but readers have total maxDoc=" + maxDoc);
+    }
+
+    starts[subReaders.length] = (int) maxDoc;
+    this.maxDoc = (int) maxDoc;
+    this.numDocs = (int) numDocs;
   }
 
   @Override

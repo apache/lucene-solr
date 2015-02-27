@@ -194,7 +194,7 @@ import org.apache.lucene.util.Version;
 public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Hard limit on maximum number of documents that may be added to the
-   *  index.  If you try to add more than this you'll hit {@code IllegalStateException}. */
+   *  index.  If you try to add more than this you'll hit {@code IllegalArgumentException}. */
   // We defensively subtract 128 to be well below the lowest
   // ArrayUtil.MAX_ARRAY_LENGTH on "typical" JVMs.  We don't just use
   // ArrayUtil.MAX_ARRAY_LENGTH here because this can vary across JVMs:
@@ -813,6 +813,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       rollbackSegments = segmentInfos.createBackupSegmentInfos();
+      pendingNumDocs.set(segmentInfos.totalDocCount());
 
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = getFieldNumberMap();
@@ -2241,13 +2242,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      */
     try {
       synchronized (fullFlushLock) { 
-        docWriter.lockAndAbortAll(this);
+        long abortedDocCount = docWriter.lockAndAbortAll(this);
+        pendingNumDocs.addAndGet(-abortedDocCount);
+        
         processEvents(false, true);
         synchronized (this) {
           try {
             // Abort any running merges
             abortMerges();
             // Remove all segments
+            pendingNumDocs.addAndGet(-segmentInfos.totalDocCount());
             segmentInfos.clear();
             // Ask deleter to locate unreferenced files & remove them:
             deleter.checkpoint(segmentInfos, false);
@@ -2263,6 +2267,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             ++changeCount;
             segmentInfos.changed();
             globalFieldNumberMap.clear();
+
             success = true;
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
@@ -2510,6 +2515,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException if there is a low-level IO error
    * @throws LockObtainFailedException if we were unable to
    *   acquire the write lock in at least one directory
+   * @throws IllegalArgumentException if addIndexes would cause
+   *   the index to exceed {@link #MAX_DOCS}
    */
   public void addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
@@ -2529,22 +2536,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       List<SegmentCommitInfo> infos = new ArrayList<>();
 
-      int totalDocCount = 0;
+      // long so we can detect int overflow:
+      long totalDocCount = 0;
+      List<SegmentInfos> commits = new ArrayList<>(dirs.length);
+      for (Directory dir : dirs) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "addIndexes: process directory " + dir);
+        }
+        SegmentInfos sis = new SegmentInfos(); // read infos from dir
+        sis.read(dir);
+        totalDocCount += sis.totalDocCount();
+        commits.add(sis);
+      }
+
+      // Best-effort up front check:
+      testReserveDocs(totalDocCount);
 
       boolean success = false;
       try {
-        for (Directory dir : dirs) {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "addIndexes: process directory " + dir);
-          }
-          SegmentInfos sis = new SegmentInfos(); // read infos from dir
-          sis.read(dir);
+        for (SegmentInfos sis : commits) {
 
           final Set<String> dsFilesCopied = new HashSet<>();
           final Map<String, String> dsNames = new HashMap<>();
           final Set<String> copiedFiles = new HashSet<>();
-
-          totalDocCount += sis.totalDocCount();
 
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
@@ -2567,12 +2581,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       } finally {
         if (!success) {
           for(SegmentCommitInfo sipc : infos) {
-            for(String file : sipc.files()) {
-              try {
-                directory.deleteFile(file);
-              } catch (Throwable t) {
-              }
-            }
+            IOUtils.deleteFilesIgnoringExceptions(directory, sipc.files().toArray(new String[0]));
           }
         }
       }
@@ -2581,9 +2590,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success = false;
         try {
           ensureOpen();
-          // Make sure adding the new documents to this index won't
-          // exceed the limit:
+
+          // Now reserve the docs, just before we update SIS:
           reserveDocs(totalDocCount);
+
           success = true;
         } finally {
           if (!success) {
@@ -2649,12 +2659,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           if the index is corrupt
    * @throws IOException
    *           if there is a low-level IO error
+   * @throws IllegalArgumentException
+   *           if addIndexes would cause the index to exceed {@link #MAX_DOCS}
    */
   public void addIndexes(IndexReader... readers) throws IOException {
     ensureOpen();
-    int numDocs = 0;
 
     try {
+      // long so we can detect int overflow:
+      long numDocs = 0;
+
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "flush at addIndexes(IndexReader...)");
       }
@@ -2669,11 +2683,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
 
-      // Make sure adding the new documents to this index won't
-      // exceed the limit:
-      reserveDocs(numDocs);
-      
-      final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
+      // Best-effort up front check:
+      testReserveDocs(numDocs);
+
+      final IOContext context = new IOContext(new MergeInfo((int) numDocs, -1, true, -1));
 
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
@@ -2761,6 +2774,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           return;
         }
         ensureOpen();
+
+        // Now reserve the docs, just before we update SIS:
+        reserveDocs(numDocs);
+      
         segmentInfos.add(infoPerCommit);
         checkpoint();
       }
@@ -4899,12 +4916,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Anything that will add N docs to the index should reserve first to
    *  make sure it's allowed.  This will throw {@code
-   *  IllegalStateException} if it's not allowed. */ 
-  private void reserveDocs(int numDocs) {
-    if (pendingNumDocs.addAndGet(numDocs) > actualMaxDocs) {
-      // Reserve failed
-      pendingNumDocs.addAndGet(-numDocs);
-      throw new IllegalStateException("number of documents in the index cannot exceed " + actualMaxDocs);
+   *  IllegalArgumentException} if it's not allowed. */ 
+  private void reserveDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    if (pendingNumDocs.addAndGet(addedNumDocs) > actualMaxDocs) {
+      // Reserve failed: put the docs back and throw exc:
+      pendingNumDocs.addAndGet(-addedNumDocs);
+      tooManyDocs(addedNumDocs);
     }
+  }
+
+  /** Does a best-effort check, that the current index would accept this many additional docs, but does not actually reserve them.
+   *
+   * @throws IllegalArgumentException if there would be too many docs */
+  private void testReserveDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    if (pendingNumDocs.get() + addedNumDocs > actualMaxDocs) {
+      tooManyDocs(addedNumDocs);
+    }
+  }
+
+  private void tooManyDocs(long addedNumDocs) {
+    assert addedNumDocs >= 0;
+    throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
   }
 }

@@ -809,6 +809,9 @@ New Features
   and MacOSX are known to work. On Windows, fsyncing a directory is not
   possible with Java APIs.  (Mike McCandless, Uwe Schindler)
 
+* LUCENE-6299: IndexWriter was failing to enforce the 2.1 billion doc
+  limit.  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
