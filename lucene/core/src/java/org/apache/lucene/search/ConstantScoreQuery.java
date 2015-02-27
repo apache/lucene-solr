@@ -256,7 +256,7 @@ public class ConstantScoreQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight innerWeight = query.createWeight(searcher, false);
+    final Weight innerWeight = searcher.createWeight(query, false);
     if (needsScores) {
       return new ConstantScoreQuery.ConstantWeight(innerWeight);
     } else {

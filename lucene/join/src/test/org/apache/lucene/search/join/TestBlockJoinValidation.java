@@ -17,6 +17,7 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,10 +28,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.CachingWrapperQuery;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -39,6 +42,7 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -115,12 +119,33 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     indexSearcher.search(blockJoinQuery, 1);
   }
 
+  // a filter for which other queries don't have special rewrite rules
+  private static class FilterWrapper extends Filter {
+
+    private final Filter in;
+    
+    FilterWrapper(Filter in) {
+      this.in = in;
+    }
+    
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+  }
+
   @Test
   public void testValidationForToChildBjqWithChildFilterQuery() throws Exception {
     Query parentQueryWithRandomChild = createParentQuery();
 
     ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter);
-    Filter childFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("common_field", "1"))));
+    Filter childFilter = new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("common_field", "1"))));
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.ILLEGAL_ADVANCE_ON_PARENT);
     indexSearcher.search(new FilteredQuery(blockJoinQuery, childFilter), 1);
@@ -137,8 +162,8 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     // advance() method is used by ConjunctionScorer, so we need to create Boolean conjunction query
     BooleanQuery conjunctionQuery = new BooleanQuery();
     WildcardQuery childQuery = new WildcardQuery(new Term("child", createFieldValue(randomChildNumber)));
-    conjunctionQuery.add(new BooleanClause(childQuery, BooleanClause.Occur.MUST));
-    conjunctionQuery.add(new BooleanClause(blockJoinQuery, BooleanClause.Occur.MUST));
+    conjunctionQuery.add(childQuery, BooleanClause.Occur.MUST);
+    conjunctionQuery.add(blockJoinQuery, BooleanClause.Occur.MUST);
 
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage(ToChildBlockJoinQuery.INVALID_QUERY_MESSAGE);

@@ -18,81 +18,82 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterCachingPolicy;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitDocIdSet;
 
 /**
- * A filter wrapper that transforms the produces doc id sets into
- * {@link BitDocIdSet}s if necessary and caches them.
+ * {@link Filter} wrapper that implements {@link BitDocIdSetFilter}.
  */
-public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter implements Accountable {
+public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter {
+  private final Filter filter;
+  private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
 
-  private final CachingWrapperFilter filter;
-
-  /** Sole constructor. */
+  /** Wraps another filter's result and caches it into bitsets.
+   * @param filter Filter to cache results of
+   */
   public BitDocIdSetCachingWrapperFilter(Filter filter) {
-    super();
-    this.filter = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE) {
-      @Override
-      protected BitDocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
-        if (docIdSet == null || docIdSet instanceof BitDocIdSet) {
-          // this is different from CachingWrapperFilter: even when the DocIdSet is
-          // cacheable, we convert it to a BitSet since we require all the
-          // cached filters to be BitSets
-          return (BitDocIdSet) docIdSet;
-        }
+    this.filter = filter;
+  }
 
-        final DocIdSetIterator it = docIdSet.iterator();
-        if (it == null) {
-          return null;
-        }
-        BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
-        builder.or(it);
-        return builder.build();
+  /**
+   * Gets the contained filter.
+   * @return the contained filter.
+   */
+  public Filter getFilter() {
+    return filter;
+  }
+
+  private BitDocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
+    final DocIdSetIterator it = docIdSet.iterator();
+    if (it == null) {
+      return null;
+    } else {
+      BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
+      builder.or(it);
+      return builder.build();
+    }
+  }
+  
+  @Override
+  public BitDocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
+    final LeafReader reader = context.reader();
+    final Object key = reader.getCoreCacheKey();
+
+    DocIdSet docIdSet = cache.get(key);
+    if (docIdSet == null) {
+      docIdSet = filter.getDocIdSet(context, null);
+      docIdSet = docIdSetToCache(docIdSet, reader);
+      if (docIdSet == null) {
+        // We use EMPTY as a sentinel for the empty set, which is cacheable
+        docIdSet = DocIdSet.EMPTY;
       }
-    };
+      cache.put(key, docIdSet);
+    }
+    return docIdSet == DocIdSet.EMPTY ? null : (BitDocIdSet) docIdSet;
+  }
+  
+  @Override
+  public String toString(String field) {
+    return getClass().getSimpleName() + "("+filter.toString(field)+")";
   }
 
   @Override
-  public BitDocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
-    return (BitDocIdSet) filter.getDocIdSet(context, null);
+  public boolean equals(Object o) {
+    if (o == null || !getClass().equals(o.getClass())) return false;
+    final BitDocIdSetCachingWrapperFilter other = (BitDocIdSetCachingWrapperFilter) o;
+    return this.filter.equals(other.filter);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode() ^ filter.hashCode();
+    return (filter.hashCode() ^ getClass().hashCode());
   }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof BitDocIdSetCachingWrapperFilter == false) {
-      return false;
-    }
-    return filter.equals(((BitDocIdSetCachingWrapperFilter) obj).filter);
-  }
-
-  @Override
-  public String toString(String field) {
-    return filter.toString();
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return filter.ramBytesUsed();
-  }
-
-  @Override
-  public Collection<Accountable> getChildResources() {
-    return filter.getChildResources();
-  }
-
 }

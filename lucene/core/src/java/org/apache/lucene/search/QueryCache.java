@@ -18,19 +18,19 @@ package org.apache.lucene.search;
  */
 
 /**
- * A cache for filters.
+ * A cache for queries.
  *
- * @see LRUFilterCache
+ * @see LRUQueryCache
  * @lucene.experimental
- * @deprecated Use {@link QueryCache} instead
  */
-@Deprecated
-public interface FilterCache {
+public interface QueryCache {
 
   /**
-   * Return a wrapper around the provided <code>filter</code> that will cache
-   * {@link DocIdSet}s per-segment accordingly to the given <code>policy</code>.
+   * Return a wrapper around the provided <code>weight</code> that will cache
+   * matching docs per-segment accordingly to the given <code>policy</code>.
+   * NOTE: The returned weight will only be equivalent if scores are not needed.
+   * @see Collector#needsScores()
    */
-  Filter doCache(Filter filter, FilterCachingPolicy policy);
+  Weight doCache(Weight weight, QueryCachingPolicy policy);
 
 }

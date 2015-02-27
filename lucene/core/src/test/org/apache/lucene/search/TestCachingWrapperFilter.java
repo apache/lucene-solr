@@ -39,11 +39,24 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RoaringDocIdSet;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
+
+  private static FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
+
+    @Override
+    public void onUse(Filter filter) {}
+
+    @Override
+    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+      return random().nextBoolean();
+    }
+
+  };
+
   Directory dir;
   DirectoryReader ir;
   IndexSearcher is;
   RandomIndexWriter iw;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -64,7 +77,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     ir = iw.getReader();
     is = newSearcher(ir);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     iw.close();
@@ -84,7 +97,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertEquals(hits3.totalHits, hits4.totalHits);
     CheckHits.checkEqual(query, hits3.scoreDocs, hits4.scoreDocs);
   }
-  
+
   /** test null iterator */
   public void testEmpty() throws Exception {
     Query query = new BooleanQuery();
@@ -92,7 +105,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
-  
+
   /** test iterator returns NO_MORE_DOCS */
   public void testEmpty2() throws Exception {
     BooleanQuery query = new BooleanQuery();
@@ -102,14 +115,14 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
-  
+
   /** test null docidset */
   public void testEmpty3() throws Exception {
     Filter expected = new QueryWrapperFilter(new PrefixQuery(new Term("bogusField", "bogusVal")));
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
-  
+
   /** test iterator returns single document */
   public void testSingle() throws Exception {
     for (int i = 0; i < 10; i++) {
@@ -120,7 +133,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       assertFilterEquals(expected, actual);
     }
   }
-  
+
   /** test sparse filters (match single documents) */
   public void testSparse() throws Exception {
     for (int i = 0; i < 10; i++) {
@@ -133,7 +146,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       assertFilterEquals(expected, actual);
     }
   }
-  
+
   /** test dense filters (match entire index) */
   public void testDense() throws Exception {
     Query query = new MatchAllDocsQuery();
@@ -167,7 +180,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   public void testNullDocIdSet() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -190,11 +203,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // the caching filter should return the empty set constant
     assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
-    
+
     reader.close();
     dir.close();
   }
-  
+
   public void testNullDocIdSetIterator() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -227,11 +240,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // the caching filter should return the empty set constant
     assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
-    
+
     reader.close();
     dir.close();
   }
-  
+
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
     assertTrue(reader.getContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) reader.getContext();
@@ -254,7 +267,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       }
     }
   }
-  
+
   public void testIsCacheAble() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -397,7 +410,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher = newSearcher(reader, false);
-        
+
     docs = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), filter), 1);
     assertEquals("[query + filter] Should find 2 hits...", 2, docs.totalHits);
     assertTrue(filter.missCount > missCount);

@@ -26,6 +26,7 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -173,6 +174,16 @@ public class DrillSideways {
       drillDownQueries[i-startClause] = clauses[i].getQuery();
     }
     DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce());
+    if (hitCollector.needsScores() == false) {
+      // this is a borrible hack in order to make sure IndexSearcher will not
+      // attempt to cache the DrillSidewaysQuery
+      hitCollector = new FilterCollector(hitCollector) {
+        @Override
+        public boolean needsScores() {
+          return true;
+        }
+      };
+    }
     searcher.search(dsq, hitCollector);
 
     return new DrillSidewaysResult(buildFacetsResult(drillDownCollector, drillSidewaysCollectors, drillDownDims.keySet().toArray(new String[drillDownDims.size()])), null);

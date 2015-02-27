@@ -52,7 +52,7 @@ public class BooleanWeight extends Weight {
     weights = new ArrayList<>(query.clauses().size());
     for (int i = 0 ; i < query.clauses().size(); i++) {
       BooleanClause c = query.clauses().get(i);
-      Weight w = c.getQuery().createWeight(searcher, needsScores && c.isScoring());
+      Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring());
       weights.add(w);
       if (c.isScoring()) {
         maxCoord++;

@@ -38,7 +38,9 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
  * filters to simply filter, and then wrap with this class
  * to add caching.
+ * @deprecated Use {@link CachingWrapperQuery} and {@link BooleanClause.Occur#FILTER} clauses instead
  */
+@Deprecated
 public class CachingWrapperFilter extends Filter implements Accountable {
   private final Filter filter;
   private final FilterCachingPolicy policy;

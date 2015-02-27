@@ -55,17 +55,18 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterCachingPolicy;
+import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -908,16 +909,19 @@ public class TestRangeFacetCounts extends FacetTestCase {
     final AtomicBoolean filterWasUsed = new AtomicBoolean();
     if (random().nextBoolean()) {
       // Sort of silly:
-      fastMatchFilter = new CachingWrapperFilter(new QueryWrapperFilter(new MatchAllDocsQuery()), FilterCachingPolicy.ALWAYS_CACHE) {
-          @Override
-          protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader)
+      final Filter in = new QueryWrapperFilter(new MatchAllDocsQuery());
+      fastMatchFilter = new Filter() {
+        @Override
+        public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
             throws IOException {
-            final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
-            filterWasUsed.set(true);
-            cached.or(iterator);
-            return new BitDocIdSet(cached);
-          }
-        };
+          filterWasUsed.set(true);
+          return in.getDocIdSet(context, acceptDocs);
+        }
+        @Override
+        public String toString(String field) {
+          return in.toString(field);
+        }
+      };
     } else {
       fastMatchFilter = null;
     }
