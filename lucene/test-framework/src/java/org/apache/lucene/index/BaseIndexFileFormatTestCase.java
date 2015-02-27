@@ -196,6 +196,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
 
     Directory dir2 = newDirectory();
+    if (dir2 instanceof MockDirectoryWrapper) {
+      // Else, the virus checker may prevent deletion of files and cause
+      // us to see too many bytes used by extension in the end:
+      ((MockDirectoryWrapper) dir2).setEnableVirusScanner(false);
+    }
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
