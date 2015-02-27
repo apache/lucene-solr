@@ -86,6 +86,8 @@ Bug Fixes
     
 * SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to 
   parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
+  
+* SOLR-7067: bin/solr won't run under bash 4.2+. (Steve Rowe)
 
 ==================  4.10.3 ==================
 

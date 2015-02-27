@@ -47,7 +47,16 @@
 SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
-hasLsof=$(which lsof)
+
+if hash jar 2>/dev/null ; then      # hash returns true if jar is on the path
+  UNPACK_WAR_CMD="$(command -v jar) xf"
+elif hash unzip 2>/dev/null ; then  # hash returns true if unzip is on the path
+  UNPACK_WAR_CMD="$(command -v unzip) -q"
+else
+  echo -e "This script requires extracting a WAR file with either the jar or unzip utility, please install these utilities or contact your administrator for assistance."
+  exit 1
+fi
+  
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
@@ -252,7 +261,7 @@ function run_tool() {
   
   # Extract the solr.war if it hasn't been done already (so we can access the SolrCLI class)
   if [[ -e $DEFAULT_SERVER_DIR/webapps/solr.war && ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]]; then
-    (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && jar xf $DEFAULT_SERVER_DIR/webapps/solr.war)    
+    (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && $UNPACK_WAR_CMD $DEFAULT_SERVER_DIR/webapps/solr.war)    
   fi
   
   "$JAVA" -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
@@ -619,7 +628,7 @@ if [ "$EXAMPLE" != "" ]; then
                   fi
                                   
                   # check to see if something is already bound to that port
-                  if [ "$hasLsof" != "" ]; then
+                  if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
                     PORT_IN_USE=`lsof -Pni:$CLOUD_PORT`
                     if [ "$PORT_IN_USE" != "" ]; then
                       read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
@@ -927,7 +936,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
     nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_SERVER_DIR/logs/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_TIP/bin/solr-$SOLR_PORT.pid
   
     # no lsof on cygwin though
-    if [ "$hasLsof" != "" ]; then
+    if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
       echo -n "Waiting to see Solr listening on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
