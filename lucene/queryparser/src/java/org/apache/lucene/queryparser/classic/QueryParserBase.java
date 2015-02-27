@@ -64,7 +64,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
-  MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE;
+  MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_REWRITE;
   boolean allowLeadingWildcard = false;
 
   protected String field;
@@ -272,7 +272,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   }
 
   /**
-   * By default QueryParser uses {@link org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
+   * By default QueryParser uses {@link org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_REWRITE}
    * when creating a {@link PrefixQuery}, {@link WildcardQuery} or {@link TermRangeQuery}. This implementation is generally preferable because it
    * a) Runs faster b) Does not have the scarcity of terms unduly influence score
    * c) avoids any {@link TooManyClauses} exception.

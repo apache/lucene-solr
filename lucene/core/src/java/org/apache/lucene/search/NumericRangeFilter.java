@@ -44,7 +44,9 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * indexes and searches numeric valued fields.
  *
  * @since 2.9
+ * @deprecated Use {@link NumericRangeQuery} and {@link BooleanClause.Occur#FILTER} clauses instead.
  **/
+@Deprecated
 public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWrapperFilter<NumericRangeQuery<T>> {
 
   private NumericRangeFilter(final NumericRangeQuery<T> query) {

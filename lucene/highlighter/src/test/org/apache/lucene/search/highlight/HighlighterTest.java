@@ -17,8 +17,6 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -60,7 +61,6 @@ import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -72,7 +72,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
@@ -925,7 +924,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         FuzzyQuery fuzzyQuery = new FuzzyQuery(new Term(FIELD_NAME, "kinnedy"), 2);
-        fuzzyQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        fuzzyQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         doSearching(fuzzyQuery);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this, true);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -943,7 +942,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         WildcardQuery wildcardQuery = new WildcardQuery(new Term(FIELD_NAME, "k?nnedy"));
-        wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         doSearching(wildcardQuery);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -961,7 +960,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         WildcardQuery wildcardQuery = new WildcardQuery(new Term(FIELD_NAME, "k*dy"));
-        wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         doSearching(wildcardQuery);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -988,7 +987,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
             new BytesRef("kannedy"),
             new BytesRef("kznnedy"),
             true, true);
-        rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 
         query = rangeQuery;
         doSearching(query);
@@ -1007,7 +1006,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     numHighlights = 0;
 
     query = new WildcardQuery(new Term(FIELD_NAME, "ken*"));
-    ((WildcardQuery)query).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    ((WildcardQuery)query).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
     searcher = newSearcher(reader);
     // can't rewrite ConstantScore if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
@@ -1148,13 +1147,14 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        TermRangeFilter rf = TermRangeFilter.newStringRange("contents", "john", "john", true, true);
         SpanQuery clauses[] = { new SpanTermQuery(new Term("contents", "john")),
             new SpanTermQuery(new Term("contents", "kennedy")), };
         SpanNearQuery snq = new SpanNearQuery(clauses, 1, true);
-        FilteredQuery fq = new FilteredQuery(snq, rf);
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(snq, Occur.MUST);
+        bq.add(TermRangeQuery.newStringRange("contents", "john", "john", true, true), Occur.FILTER);
 
-        doSearching(fq);
+        doSearching(bq);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         // Currently highlights "John" and "Kennedy" separately
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -1171,13 +1171,14 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        TermRangeFilter rf = TermRangeFilter.newStringRange("contents", "john", "john", true, true);
         PhraseQuery pq = new PhraseQuery();
         pq.add(new Term("contents", "john"));
         pq.add(new Term("contents", "kennedy"));
-        FilteredQuery fq = new FilteredQuery(pq, rf);
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(pq, Occur.MUST);
+        bq.add(TermRangeQuery.newStringRange("contents", "john", "john", true, true), Occur.FILTER);
 
-        doSearching(fq);
+        doSearching(bq);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         // Currently highlights "John" and "Kennedy" separately
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -1197,7 +1198,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         BooleanQuery booleanQuery = new BooleanQuery();
         booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "john")), Occur.SHOULD);
         PrefixQuery prefixQuery = new PrefixQuery(new Term(FIELD_NAME, "kenn"));
-        prefixQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        prefixQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         booleanQuery.add(prefixQuery, Occur.SHOULD);
 
         doSearching(booleanQuery);

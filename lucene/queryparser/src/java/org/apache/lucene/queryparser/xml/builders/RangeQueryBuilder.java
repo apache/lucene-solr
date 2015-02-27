@@ -1,12 +1,8 @@
+/*
+ * Created on 25-Jan-2006
+ */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
-import org.apache.lucene.queryparser.xml.QueryBuilderFactory;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Query;
-import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,24 +20,27 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermRangeQuery;
+import org.w3c.dom.Element;
+
 /**
- * Builder for {@link ConstantScoreQuery}
+ * Builder for {@link TermRangeQuery}
  */
-public class ConstantScoreQueryBuilder implements QueryBuilder {
-
-  private final QueryBuilderFactory queryFactory;
-
-  public ConstantScoreQueryBuilder(QueryBuilderFactory queryFactory) {
-    this.queryFactory = queryFactory;
-  }
+public class RangeQueryBuilder implements QueryBuilder {
 
   @Override
   public Query getQuery(Element e) throws ParserException {
-    Element queryElem = DOMUtils.getFirstChildOrFail(e);
+    String fieldName = DOMUtils.getAttributeWithInheritance(e, "fieldName");
 
-    Query q = new ConstantScoreQuery(queryFactory.getQuery(queryElem));
-    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return q;
+    String lowerTerm = e.getAttribute("lowerTerm");
+    String upperTerm = e.getAttribute("upperTerm");
+    boolean includeLower = DOMUtils.getAttribute(e, "includeLower", true);
+    boolean includeUpper = DOMUtils.getAttribute(e, "includeUpper", true);
+    return TermRangeQuery.newStringRange(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
   }
 
 }

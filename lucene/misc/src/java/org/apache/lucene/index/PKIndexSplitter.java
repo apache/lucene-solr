@@ -24,7 +24,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
@@ -72,13 +73,13 @@ public class PKIndexSplitter {
    */
   public PKIndexSplitter(Directory input, Directory dir1, Directory dir2, Term midTerm) {
     this(input, dir1, dir2,
-      new TermRangeFilter(midTerm.field(), null, midTerm.bytes(), true, false));
+      new QueryWrapperFilter(new TermRangeQuery(midTerm.field(), null, midTerm.bytes(), true, false)));
   }
   
   public PKIndexSplitter(Directory input, Directory dir1, 
       Directory dir2, Term midTerm, IndexWriterConfig config1, IndexWriterConfig config2) {
     this(input, dir1, dir2,
-      new TermRangeFilter(midTerm.field(), null, midTerm.bytes(), true, false), config1, config2);
+        new QueryWrapperFilter(new TermRangeQuery(midTerm.field(), null, midTerm.bytes(), true, false)), config1, config2);
   }
   
   public void split() throws IOException {

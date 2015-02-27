@@ -29,7 +29,7 @@ import org.apache.lucene.util.ToStringUtils;
  * is built by QueryParser for input like <code>app*</code>.
  *
  * <p>This query uses the {@link
- * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}
  * rewrite method. */
 public class PrefixQuery extends MultiTermQuery {
   private Term prefix;

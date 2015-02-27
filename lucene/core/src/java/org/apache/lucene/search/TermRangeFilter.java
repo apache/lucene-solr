@@ -28,7 +28,9 @@ import org.apache.lucene.util.BytesRef;
  * Byte#compareTo(Byte)},  It is not intended
  * for numerical ranges; use {@link NumericRangeFilter} instead.
  * @since 2.9
+ * @deprecated Use {@link TermRangeQuery} and {@link BooleanClause.Occur#FILTER} clauses instead.
  */
+@Deprecated
 public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {
     
   /**

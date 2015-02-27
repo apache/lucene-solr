@@ -36,10 +36,9 @@ import org.apache.lucene.util.Bits;
  * <P>
  * For example, {@link TermRangeFilter} and {@link PrefixFilter} extend
  * <code>MultiTermQueryWrapperFilter</code>.
- * This class also provides the functionality behind
- * {@link MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE};
- * this is why it is not abstract.
+ * @deprecated Use {@link MultiTermQueryConstantScoreWrapper} instead
  */
+@Deprecated
 public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filter {
 
   protected final Q query;
@@ -58,7 +57,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (o==null) return false;

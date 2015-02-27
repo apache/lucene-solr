@@ -131,9 +131,9 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   public void testRewritesWithDuplicateTerms() throws Exception {
-    checkDuplicateTerms(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    checkDuplicateTerms(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     
-    checkDuplicateTerms(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    checkDuplicateTerms(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
     
     // use a large PQ here to only test duplicate terms and dont mix up when all scores are equal
     checkDuplicateTerms(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
@@ -187,7 +187,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   public void testBoosts() throws Exception {
-    checkBoosts(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    checkBoosts(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 
     // use a large PQ here to only test boosts and dont mix up when all scores are equal
     checkBoosts(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
@@ -225,10 +225,10 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   public void testMaxClauseLimitations() throws Exception {
-    checkMaxClauseLimitation(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    checkMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    checkMaxClauseLimitation(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    checkMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
     
-    checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_REWRITE);
     checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
     checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(1024));
   }

@@ -43,7 +43,7 @@ public final class UsageTrackingFilterCachingPolicy implements FilterCachingPoli
     // This does not measure the cost of iterating over the filter (for this we
     // already have the DocIdSetIterator#cost API) but the cost to build the
     // DocIdSet in the first place
-    return filter instanceof MultiTermQueryWrapperFilter;
+    return filter instanceof QueryWrapperFilter && ((QueryWrapperFilter) filter).getQuery() instanceof MultiTermQuery;
   }
 
   static boolean isCheapToCache(DocIdSet set) {

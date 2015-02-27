@@ -18,11 +18,12 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -38,19 +39,19 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
   
   @Override
   public Query rewrite(IndexReader reader, MultiTermQuery query) {
-    Query result = new ConstantScoreQuery(new MultiTermQueryDocValuesWrapperFilter(query));
+    Query result = new ConstantScoreQuery(new MultiTermQueryDocValuesWrapper(query));
     result.setBoost(query.getBoost());
     return result;
   }
   
-  static class MultiTermQueryDocValuesWrapperFilter extends Filter {
+  static class MultiTermQueryDocValuesWrapper extends Query {
     
     protected final MultiTermQuery query;
     
     /**
      * Wrap a {@link MultiTermQuery} as a Filter.
      */
-    protected MultiTermQueryDocValuesWrapperFilter(MultiTermQuery query) {
+    protected MultiTermQueryDocValuesWrapper(MultiTermQuery query) {
       this.query = query;
     }
     
@@ -65,97 +66,149 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
       if (o==this) return true;
       if (o==null) return false;
       if (this.getClass().equals(o.getClass())) {
-        return this.query.equals( ((MultiTermQueryDocValuesWrapperFilter)o).query );
+        final MultiTermQueryDocValuesWrapper that = (MultiTermQueryDocValuesWrapper) o;
+        return this.query.equals(that.query) && this.getBoost() == that.getBoost();
       }
       return false;
     }
     
     @Override
     public final int hashCode() {
-      return query.hashCode();
+      return Objects.hash(getClass(), query, getBoost());
     }
     
     /** Returns the field name for this query */
     public final String getField() { return query.getField(); }
     
-    /**
-     * Returns a DocIdSet with documents that should be permitted in search
-     * results.
-     */
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      final SortedDocValues fcsi = DocValues.getSorted(context.reader(), query.field);
-      // Cannot use FixedBitSet because we require long index (ord):
-      final LongBitSet termSet = new LongBitSet(fcsi.getValueCount());
-      TermsEnum termsEnum = query.getTermsEnum(new Terms() {
-        
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
         @Override
-        public TermsEnum iterator(TermsEnum reuse) {
-          return fcsi.termsEnum();
-        }
+        Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
+          final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
+          TermsEnum termsEnum = query.getTermsEnum(new Terms() {
+            
+            @Override
+            public TermsEnum iterator(TermsEnum reuse) {
+              return fcsi.termsEnum();
+            }
 
-        @Override
-        public long getSumTotalTermFreq() {
-          return -1;
-        }
+            @Override
+            public long getSumTotalTermFreq() {
+              return -1;
+            }
 
-        @Override
-        public long getSumDocFreq() {
-          return -1;
-        }
+            @Override
+            public long getSumDocFreq() {
+              return -1;
+            }
 
-        @Override
-        public int getDocCount() {
-          return -1;
-        }
+            @Override
+            public int getDocCount() {
+              return -1;
+            }
 
-        @Override
-        public long size() {
-          return -1;
-        }
+            @Override
+            public long size() {
+              return -1;
+            }
 
-        @Override
-        public boolean hasFreqs() {
-          return false;
-        }
+            @Override
+            public boolean hasFreqs() {
+              return false;
+            }
 
-        @Override
-        public boolean hasOffsets() {
-          return false;
-        }
+            @Override
+            public boolean hasOffsets() {
+              return false;
+            }
 
-        @Override
-        public boolean hasPositions() {
-          return false;
-        }
-        
-        @Override
-        public boolean hasPayloads() {
-          return false;
-        }
-      });
-      
-      assert termsEnum != null;
-      if (termsEnum.next() != null) {
-        // fill into a bitset
-        do {
-          long ord = termsEnum.ord();
-          if (ord >= 0) {
-            termSet.set(ord);
+            @Override
+            public boolean hasPositions() {
+              return false;
+            }
+            
+            @Override
+            public boolean hasPayloads() {
+              return false;
+            }
+          });
+          
+          assert termsEnum != null;
+          if (termsEnum.next() == null) {
+            // no matching terms
+            return null;
           }
-        } while (termsEnum.next() != null);
-      } else {
-        return null;
-      }
-      
-      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
-        @Override
-        protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
-          int ord = fcsi.getOrd(doc);
-          if (ord == -1) {
-            return false;
-          }
-          return termSet.get(ord);
+          // fill into a bitset
+          // Cannot use FixedBitSet because we require long index (ord):
+          final LongBitSet termSet = new LongBitSet(fcsi.getValueCount());
+          do {
+            long ord = termsEnum.ord();
+            if (ord >= 0) {
+              termSet.set(ord);
+            }
+          } while (termsEnum.next() != null);
+          
+          final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
+          final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator() {
+            @Override
+            public DocIdSetIterator approximation() {
+              return approximation;
+            }
+            @Override
+            public boolean matches() throws IOException {
+              final int doc = approximation.docID();
+              if (acceptDocs != null && acceptDocs.get(doc) == false) {
+                return false;
+              }
+              fcsi.setDocument(doc);
+              for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
+                if (termSet.get(ord)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+          };
+          final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
+          return new Scorer(this) {
+
+            @Override
+            public TwoPhaseIterator asTwoPhaseIterator() {
+              return twoPhaseIterator;
+            }
+
+            @Override
+            public float score() throws IOException {
+              return score;
+            }
+
+            @Override
+            public int freq() throws IOException {
+              return 1;
+            }
+
+            @Override
+            public int docID() {
+              return disi.docID();
+            }
+
+            @Override
+            public int nextDoc() throws IOException {
+              return disi.nextDoc();
+            }
+
+            @Override
+            public int advance(int target) throws IOException {
+              return disi.advance(target);
+            }
+
+            @Override
+            public long cost() {
+              return disi.cost();
+            }
+
+          };
         }
       };
     }

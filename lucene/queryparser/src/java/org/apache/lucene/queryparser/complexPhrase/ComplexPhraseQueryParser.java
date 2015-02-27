@@ -106,7 +106,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         // QueryParser is not guaranteed threadsafe anyway so this temporary
         // state change should not
         // present an issue
-        setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         return super.parse(query);
       } finally {
         setMultiTermRewriteMethod(oldMethod);
@@ -186,7 +186,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // Must use old-style RangeQuery in order to produce a BooleanQuery
       // that can be turned into SpanOr clause
       TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, part1, part2, startInclusive, endInclusive);
-      rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+      rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
       return rangeQuery;
     }
     return super.newRangeQuery(field, part1, part2, startInclusive, endInclusive);

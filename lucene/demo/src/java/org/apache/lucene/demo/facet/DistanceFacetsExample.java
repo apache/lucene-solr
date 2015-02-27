@@ -48,7 +48,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.SortField;
@@ -184,7 +183,7 @@ public class DistanceFacetsExample implements Closeable {
     BooleanQuery f = new BooleanQuery();
 
     // Add latitude range filter:
-    f.add(NumericRangeFilter.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
+    f.add(NumericRangeQuery.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
           BooleanClause.Occur.FILTER);
 
     // Add longitude range filter:
@@ -198,7 +197,7 @@ public class DistanceFacetsExample implements Closeable {
                BooleanClause.Occur.SHOULD);
       f.add(lonF, BooleanClause.Occur.MUST);
     } else {
-      f.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
+      f.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
             BooleanClause.Occur.FILTER);
     }
 

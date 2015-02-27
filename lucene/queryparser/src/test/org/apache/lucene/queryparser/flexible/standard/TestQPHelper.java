@@ -321,15 +321,15 @@ public class TestQPHelper extends LuceneTestCase {
     StandardQueryParser qp = new StandardQueryParser(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     Query q = qp.parse("foo*bar", "field");
     assertTrue(q instanceof WildcardQuery);
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
 
     q = qp.parse("foo*", "field");
     assertTrue(q instanceof PrefixQuery);
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
 
     q = qp.parse("[a TO z]", "field");
     assertTrue(q instanceof TermRangeQuery);
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_REWRITE, ((MultiTermQuery) q).getRewriteMethod());
   }
 
   public void testCJK() throws Exception {
@@ -665,12 +665,12 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_REWRITE, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     StandardQueryParser qp = new StandardQueryParser();
     
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]", "field")).getRewriteMethod());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]", "field")).getRewriteMethod());
 
     // test open ranges
     assertQueryEquals("[ a TO * ]", null, "[a TO *]");
@@ -1153,12 +1153,12 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(q, qp.parse("/[A-Z][123]/", df));
     q.setBoost(0.5f);
     assertEquals(q, qp.parse("/[A-Z][123]/^0.5", df));
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     assertTrue(qp.parse("/[A-Z][123]/^0.5", df) instanceof RegexpQuery);
     assertEquals(q, qp.parse("/[A-Z][123]/^0.5", df));
-    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)qp.parse("/[A-Z][123]/^0.5", df)).getRewriteMethod());
-    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_REWRITE, ((RegexpQuery)qp.parse("/[A-Z][123]/^0.5", df)).getRewriteMethod());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
     
     Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
     assertEquals(escaped, qp.parse("/[a-z]\\/[123]/", df));

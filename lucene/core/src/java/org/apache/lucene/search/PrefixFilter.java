@@ -22,7 +22,9 @@ import org.apache.lucene.index.Term;
 /**
  * A Filter that restricts search results to values that have a matching prefix in a given
  * field.
+ * @deprecated Use {@link PrefixQuery} and {@link BooleanClause.Occur#FILTER} clauses instead.
  */
+@Deprecated
 public class PrefixFilter extends MultiTermQueryWrapperFilter<PrefixQuery> {
 
   public PrefixFilter(Term prefix) {

@@ -97,7 +97,7 @@ public abstract class Query implements Cloneable {
    */
   public void extractTerms(Set<Term> terms) {
     // needs to be implemented by query subclasses
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(getClass().getName());
   }
 
   /** Returns a clone of this query. */

@@ -275,7 +275,7 @@ public class TestBlockJoin extends LuceneTestCase {
     MultiTermQuery qc = NumericRangeQuery.newIntRange("year", 2007, 2007, true, true);
     // Hacky: this causes the query to need 2 rewrite
     // iterations: 
-    qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
 
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 

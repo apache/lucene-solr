@@ -120,6 +120,11 @@ public class TestParser extends LuceneTestCase {
     assertEquals(1, ndq.getDisjuncts().size());
   }
 
+  public void testRangeQueryXML() throws ParserException, IOException {
+    Query q = parse("RangeQuery.xml");
+    dumpResults("RangeQuery", q, 5);
+  }
+
   public void testRangeFilterQueryXML() throws ParserException, IOException {
     Query q = parse("RangeFilterQuery.xml");
     dumpResults("RangeFilter", q, 5);

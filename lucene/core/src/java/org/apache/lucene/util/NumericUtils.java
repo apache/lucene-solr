@@ -28,7 +28,6 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 
 /**
@@ -57,7 +56,7 @@ import org.apache.lucene.search.NumericRangeQuery; // for javadocs
  * <p>For easy usage, the trie algorithm is implemented for indexing inside
  * {@link NumericTokenStream} that can index <code>int</code>, <code>long</code>,
  * <code>float</code>, and <code>double</code>. For querying,
- * {@link NumericRangeQuery} and {@link NumericRangeFilter} implement the query part
+ * {@link NumericRangeQuery} implements the query part
  * for the same data types.
  *
  * <p>This class can also be used, to generate lexicographically sortable (according to
@@ -74,7 +73,7 @@ public final class NumericUtils {
   /**
    * The default precision step used by {@link LongField},
    * {@link DoubleField}, {@link NumericTokenStream}, {@link
-   * NumericRangeQuery}, and {@link NumericRangeFilter}.
+   * NumericRangeQuery}.
    */
   public static final int PRECISION_STEP_DEFAULT = 16;
   

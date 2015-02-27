@@ -105,7 +105,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   /** test null docidset */
   public void testEmpty3() throws Exception {
-    Filter expected = new PrefixFilter(new Term("bogusField", "bogusVal"));
+    Filter expected = new QueryWrapperFilter(new PrefixQuery(new Term("bogusField", "bogusVal")));
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
@@ -266,9 +266,18 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
     // returns default empty docidset, always cacheable:
-    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
+    assertDocIdSetCacheable(reader, new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
+        return null;
+      }
+      @Override
+      public String toString(String field) {
+        return "cacheableFilter";
+      }
+    }, true);
     // is cacheable:
-    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", 10, 20, true, true), false);
+    assertDocIdSetCacheable(reader, new QueryWrapperFilter(NumericRangeQuery.newIntRange("test", 10, 20, true, true)), false);
     // a fixedbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       @Override

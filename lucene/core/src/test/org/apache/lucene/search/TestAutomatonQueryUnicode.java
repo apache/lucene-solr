@@ -102,13 +102,13 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
       throws IOException {
     AutomatonQuery query = new AutomatonQuery(newTerm("bogus"), automaton);
 
-    query.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    query.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     assertEquals(expected, automatonQueryNrHits(query));
 
-    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
     assertEquals(expected, automatonQueryNrHits(query));
 
-    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
     assertEquals(expected, automatonQueryNrHits(query));
   }
 

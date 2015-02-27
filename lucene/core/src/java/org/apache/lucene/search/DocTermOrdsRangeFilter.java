@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
  * A range filter built on top of a cached multi-valued term field (from {@link org.apache.lucene.index.LeafReader#getSortedSetDocValues}).
  * 
  * <p>Like {@link DocValuesRangeFilter}, this is just a specialized range query versus
- *    using a TermRangeQuery with {@link DocTermOrdsRewriteMethod}: it will only do
+ *    using a TermRangeQuery with {@link DocValuesRewriteMethod}: it will only do
  *    two ordinal to term lookups.</p>
  * @deprecated Use {@link DocValuesRangeQuery} instead
  */
