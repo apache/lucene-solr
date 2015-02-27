@@ -48,6 +48,9 @@ New Features
 * LUCENE-6227: Added BooleanClause.Occur.FILTER to filter documents without
   participating in scoring (on the contrary to MUST). (Adrien Grand)
 
+* LUCENE-6294: Added oal.search.CollectorManager to allow for parallelization
+  of the document collection process on IndexSearcher. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
