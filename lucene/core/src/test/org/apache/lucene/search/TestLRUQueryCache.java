@@ -270,8 +270,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         if (o instanceof Query) {
           return queryCache.ramBytesUsed((Query) o);
         }
-        if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
-          // do not take core cache keys into account
+        if (o instanceof IndexReader || o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
+          // do not take readers or core cache keys into account
           return 0;
         }
         if (o instanceof Map) {
