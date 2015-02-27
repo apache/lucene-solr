@@ -172,6 +172,10 @@ API Changes
 * LUCENE-6286: Removed IndexSearcher methods that take a Filter object.
   A BooleanQuery with a filter clause must be used instead. (Adrien Grand)
 
+* LUCENE-6300: PrefixFilter, TermRangeFilter and NumericRangeFilter have been
+  removed. Use PrefixQuery, TermRangeQuery and NumericRangeQuery instead.
+  (Adrien Grand)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj

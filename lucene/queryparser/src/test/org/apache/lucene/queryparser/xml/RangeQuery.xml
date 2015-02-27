@@ -15,23 +15,4 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<FilteredQuery>
-	<Query>
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="should">
-				<TermQuery>merger</TermQuery>
-			</Clause>
-			<Clause occurs="mustnot">
-				<TermQuery >sumitomo</TermQuery>		
-			</Clause>
-			<Clause occurs="must">
-				<TermQuery>bank</TermQuery>
-			</Clause>
-		</BooleanQuery>
-	</Query>
-	
-	<Filter>
-		<NumericRangeFilter fieldName="date2" lowerTerm="19870409" upperTerm="19870412"/>
-	</Filter>
-	
-</FilteredQuery>
+<RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>

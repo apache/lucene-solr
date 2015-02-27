@@ -39,9 +39,9 @@ import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
- * Tests the DocTermOrdsRewriteMethod
+ * Tests the DocValuesRewriteMethod
  */
-public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
+public class TestDocValuesRewriteMethod extends LuceneTestCase {
   protected IndexSearcher searcher1;
   protected IndexSearcher searcher2;
   private IndexReader reader;
@@ -115,7 +115,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
    */
   protected void assertSame(String regexp) throws IOException {
     RegexpQuery docValues = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
-    docValues.setRewriteMethod(new DocTermOrdsRewriteMethod());
+    docValues.setRewriteMethod(new DocValuesRewriteMethod());
     RegexpQuery inverted = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
    
     TopDocs invertedDocs = searcher1.search(inverted, 25);
@@ -131,9 +131,9 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
     assertEquals(a1, a2);
     assertFalse(a1.equals(b));
     
-    a1.setRewriteMethod(new DocTermOrdsRewriteMethod());
-    a2.setRewriteMethod(new DocTermOrdsRewriteMethod());
-    b.setRewriteMethod(new DocTermOrdsRewriteMethod());
+    a1.setRewriteMethod(new DocValuesRewriteMethod());
+    a2.setRewriteMethod(new DocValuesRewriteMethod());
+    b.setRewriteMethod(new DocValuesRewriteMethod());
     assertEquals(a1, a2);
     assertFalse(a1.equals(b));
     QueryUtils.check(a1);

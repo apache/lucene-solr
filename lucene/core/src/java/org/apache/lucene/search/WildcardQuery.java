@@ -35,7 +35,7 @@ import org.apache.lucene.util.automaton.Operations;
  * a Wildcard term should not start with the wildcard <code>*</code>
  * 
  * <p>This query uses the {@link
- * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}
  * rewrite method.
  *
  * @see AutomatonQuery

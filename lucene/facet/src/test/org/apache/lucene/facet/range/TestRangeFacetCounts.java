@@ -31,8 +31,8 @@ import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.DrillSideways;
+import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -44,10 +44,10 @@ import org.apache.lucene.facet.MultiFacets;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -62,7 +62,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
@@ -481,9 +480,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newLongRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newLongRange("field", minValue, maxValue, true, true));
         } else {
-          fastMatchFilter = NumericRangeFilter.newLongRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newLongRange("field", minAcceptedValue, maxAcceptedValue, true, true));
         }
       } else {
         fastMatchFilter = null;
@@ -505,11 +504,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
-          } else {
-            ddq.add("field", NumericRangeQuery.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
-          }
+          ddq.add("field", NumericRangeQuery.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
         }
@@ -640,9 +635,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newFloatRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newFloatRange("field", minValue, maxValue, true, true));
         } else {
-          fastMatchFilter = NumericRangeFilter.newFloatRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newFloatRange("field", minAcceptedValue, maxAcceptedValue, true, true));
         }
       } else {
         fastMatchFilter = null;
@@ -664,11 +659,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
-          } else {
-            ddq.add("field", NumericRangeQuery.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
-          }
+          ddq.add("field", NumericRangeQuery.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
         }
@@ -783,9 +774,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newDoubleRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newDoubleRange("field", minValue, maxValue, true, true));
         } else {
-          fastMatchFilter = NumericRangeFilter.newDoubleRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newDoubleRange("field", minAcceptedValue, maxAcceptedValue, true, true));
         }
       } else {
         fastMatchFilter = null;
@@ -807,11 +798,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
-          } else {
-            ddq.add("field", NumericRangeQuery.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
-          }
+          ddq.add("field", NumericRangeQuery.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
         }

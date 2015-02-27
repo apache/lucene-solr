@@ -25,7 +25,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -37,7 +36,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testCSQ() throws Exception {
     final Query q1 = new ConstantScoreQuery(new TermQuery(new Term("a", "b")));
     final Query q2 = new ConstantScoreQuery(new TermQuery(new Term("a", "c")));
-    final Query q3 = new ConstantScoreQuery(TermRangeFilter.newStringRange("a", "b", "c", true, true));
+    final Query q3 = new ConstantScoreQuery(TermRangeQuery.newStringRange("a", "b", "c", true, true));
     QueryUtils.check(q1);
     QueryUtils.check(q2);
     QueryUtils.checkEqual(q1,q1);

@@ -26,6 +26,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.util.Bits;
 
 /** Represents a range over long values.
@@ -113,52 +114,33 @@ public final class LongRange extends Range {
 
         final int maxDoc = context.reader().maxDoc();
 
-        final Bits fastMatchBits;
+        final DocIdSet fastMatchDocs;
         if (fastMatchFilter != null) {
-          DocIdSet dis = fastMatchFilter.getDocIdSet(context, null);
-          if (dis == null) {
+          fastMatchDocs = fastMatchFilter.getDocIdSet(context, null);
+          if (fastMatchDocs == null) {
             // No documents match
             return null;
           }
-          fastMatchBits = dis.bits();
-          if (fastMatchBits == null) {
-            throw new IllegalArgumentException("fastMatchFilter does not implement DocIdSet.bits");
-          }
         } else {
-          fastMatchBits = null;
+          fastMatchDocs = new DocIdSet() {
+            @Override
+            public long ramBytesUsed() {
+              return 0;
+            }
+            @Override
+            public DocIdSetIterator iterator() throws IOException {
+              return DocIdSetIterator.all(maxDoc);
+            }
+          };
         }
 
-        return new DocIdSet() {
-
+        return new FilteredDocIdSet(fastMatchDocs) {
           @Override
-          public Bits bits() {
-            return new Bits() {
-              @Override
-              public boolean get(int docID) {
-                if (acceptDocs != null && acceptDocs.get(docID) == false) {
-                  return false;
-                }
-                if (fastMatchBits != null && fastMatchBits.get(docID) == false) {
-                  return false;
-                }
-                return accept(values.longVal(docID));
-              }
-
-              @Override
-              public int length() {
-                return maxDoc;
-              }
-            };
-          }
-
-          @Override
-          public DocIdSetIterator iterator() {
-            throw new UnsupportedOperationException("this filter can only be accessed via bits()");
-          }
-
-          @Override
-          public long ramBytesUsed() {
-            return 0L;
+          protected boolean match(int docID) {
+            if (acceptDocs != null && acceptDocs.get(docID) == false) {
+              return false;
+            }
+            return accept(values.longVal(docID));
           }
         };
       }

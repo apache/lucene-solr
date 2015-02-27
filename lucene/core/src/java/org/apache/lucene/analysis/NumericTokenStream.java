@@ -27,7 +27,6 @@ import org.apache.lucene.document.DoubleField; // for javadocs
 import org.apache.lucene.document.FloatField; // for javadocs
 import org.apache.lucene.document.IntField; // for javadocs
 import org.apache.lucene.document.LongField; // for javadocs
-import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
@@ -40,7 +39,7 @@ import org.apache.lucene.util.NumericUtils;
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream}
  * for indexing numeric values that can be used by {@link
- * NumericRangeQuery} or {@link NumericRangeFilter}.
+ * NumericRangeQuery}.
  *
  * <p>Note that for simple usage, {@link IntField}, {@link
  * LongField}, {@link FloatField} or {@link DoubleField} is

@@ -22,8 +22,9 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
 import org.apache.lucene.search.join.ScoreMode;
@@ -560,8 +561,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   protected ToParentBlockJoinQuery join(final String childTerm) {
     return new ToParentBlockJoinQuery(
-        new TermQuery(new Term(child, childTerm)), new BitDocIdSetCachingWrapperFilter(new TermRangeFilter(parent,
-            null, null, false, false)), ScoreMode.None);
+        new TermQuery(new Term(child, childTerm)), new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(
+            new TermRangeQuery(parent, null, null, false, false))), ScoreMode.None);
   }
   
   private Collection<? extends Callable<Void>> callables(List<Document> blocks) {

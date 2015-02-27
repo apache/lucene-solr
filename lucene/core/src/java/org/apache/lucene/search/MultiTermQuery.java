@@ -39,17 +39,17 @@ import org.apache.lucene.util.AttributeSource;
  * matched.
  *
  * <p><b>NOTE</b>: if {@link #setRewriteMethod} is either
- * {@link #CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE} or {@link
- * #SCORING_BOOLEAN_QUERY_REWRITE}, you may encounter a
+ * {@link #CONSTANT_SCORE_BOOLEAN_REWRITE} or {@link
+ * #SCORING_BOOLEAN_REWRITE}, you may encounter a
  * {@link BooleanQuery.TooManyClauses} exception during
  * searching, which happens when the number of terms to be
  * searched exceeds {@link
  * BooleanQuery#getMaxClauseCount()}.  Setting {@link
- * #setRewriteMethod} to {@link #CONSTANT_SCORE_FILTER_REWRITE}
+ * #setRewriteMethod} to {@link #CONSTANT_SCORE_REWRITE}
  * prevents this.
  *
  * <p>The recommended rewrite method is {@link
- * #CONSTANT_SCORE_FILTER_REWRITE}: it doesn't spend CPU
+ * #CONSTANT_SCORE_REWRITE}: it doesn't spend CPU
  * computing unhelpful scores, and is the most
  * performant rewrite method given the query. If you
  * need scoring (like {@link FuzzyQuery}, use
@@ -58,12 +58,12 @@ import org.apache.lucene.util.AttributeSource;
  * and not hit this limitation.
  *
  * Note that org.apache.lucene.queryparser.classic.QueryParser produces
- * MultiTermQueries using {@link #CONSTANT_SCORE_FILTER_REWRITE}
+ * MultiTermQueries using {@link #CONSTANT_SCORE_REWRITE}
  * by default.
  */
 public abstract class MultiTermQuery extends Query {
   protected final String field;
-  protected RewriteMethod rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
+  protected RewriteMethod rewriteMethod = CONSTANT_SCORE_REWRITE;
 
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod {
@@ -89,10 +89,10 @@ public abstract class MultiTermQuery extends Query {
    *  exception.
    *
    *  @see #setRewriteMethod */
-  public static final RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new RewriteMethod() {
+  public static final RewriteMethod CONSTANT_SCORE_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<>(query));
+      Query result = new MultiTermQueryConstantScoreWrapper<>(query);
       result.setBoost(query.getBoost());
       return result;
     }
@@ -104,16 +104,16 @@ public abstract class MultiTermQuery extends Query {
    *  query.  Note that typically such scores are
    *  meaningless to the user, and require non-trivial CPU
    *  to compute, so it's almost always better to use {@link
-   *  #CONSTANT_SCORE_FILTER_REWRITE} instead.
+   *  #CONSTANT_SCORE_REWRITE} instead.
    *
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
    *  BooleanQuery.TooManyClauses} if the number of terms
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see #setRewriteMethod */
-  public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = ScoringRewrite.SCORING_BOOLEAN_QUERY_REWRITE;
+  public final static RewriteMethod SCORING_BOOLEAN_REWRITE = ScoringRewrite.SCORING_BOOLEAN_REWRITE;
   
-  /** Like {@link #SCORING_BOOLEAN_QUERY_REWRITE} except
+  /** Like {@link #SCORING_BOOLEAN_REWRITE} except
    *  scores are not computed.  Instead, each matching
    *  document receives a constant score equal to the
    *  query's boost.
@@ -123,7 +123,7 @@ public abstract class MultiTermQuery extends Query {
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see #setRewriteMethod */
-  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = ScoringRewrite.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE;
+  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_REWRITE = ScoringRewrite.CONSTANT_SCORE_BOOLEAN_REWRITE;
 
   /**
    * A rewrite method that first translates each term into

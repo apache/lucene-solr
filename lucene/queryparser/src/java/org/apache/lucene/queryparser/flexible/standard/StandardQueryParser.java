@@ -256,7 +256,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   
   /**
    * By default, it uses
-   * {@link MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} when creating a
+   * {@link MultiTermQuery#CONSTANT_SCORE_REWRITE} when creating a
    * prefix, wildcard and range queries. This implementation is generally
    * preferable because it a) Runs faster b) Does not have the scarcity of terms
    * unduly influence score c) avoids any {@link TooManyListenersException}

@@ -571,12 +571,12 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("[ a TO z}", null, "[a TO z}");
     assertQueryEquals("{ a TO z]", null, "{a TO z]"); 
 
-     assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
+     assertEquals(MultiTermQuery.CONSTANT_SCORE_REWRITE, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
 
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
     
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)getQuery("[ a TO z]", qp)).getRewriteMethod());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_REWRITE,((TermRangeQuery)getQuery("[ a TO z]", qp)).getRewriteMethod());
     
     // test open ranges
     assertQueryEquals("[ a TO * ]", null, "[a TO *]");
@@ -982,12 +982,12 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEquals(q, getQuery("/[A-Z][123]/",qp));
     q.setBoost(0.5f);
     assertEquals(q, getQuery("/[A-Z][123]/^0.5",qp));
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     assertTrue(getQuery("/[A-Z][123]/^0.5",qp) instanceof RegexpQuery);
-    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)getQuery("/[A-Z][123]/^0.5",qp)).getRewriteMethod());
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_REWRITE, ((RegexpQuery)getQuery("/[A-Z][123]/^0.5",qp)).getRewriteMethod());
     assertEquals(q, getQuery("/[A-Z][123]/^0.5",qp));
-    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
     
     Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
     assertEquals(escaped, getQuery("/[a-z]\\/[123]/",qp));

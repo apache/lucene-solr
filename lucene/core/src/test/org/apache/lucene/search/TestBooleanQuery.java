@@ -166,7 +166,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     BooleanQuery query = new BooleanQuery(); // Query: +foo -ba*
     query.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
     WildcardQuery wildcardQuery = new WildcardQuery(new Term("field", "ba*"));
-    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     query.add(wildcardQuery, BooleanClause.Occur.MUST_NOT);
 
     MultiReader multireader = new MultiReader(reader1, reader2);

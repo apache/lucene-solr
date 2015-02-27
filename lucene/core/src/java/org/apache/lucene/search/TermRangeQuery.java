@@ -35,7 +35,7 @@ import org.apache.lucene.util.ToStringUtils;
  * for numerical ranges; use {@link NumericRangeQuery} instead.
  *
  * <p>This query uses the {@link
- * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}
  * rewrite method.
  * @since 2.9
  */

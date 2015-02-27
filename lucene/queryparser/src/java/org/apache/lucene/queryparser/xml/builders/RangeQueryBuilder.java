@@ -3,12 +3,6 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.FilterBuilder;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,21 +20,27 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermRangeQuery;
+import org.w3c.dom.Element;
 
 /**
- * Builder for {@link TermRangeFilter}
+ * Builder for {@link TermRangeQuery}
  */
-public class RangeFilterBuilder implements FilterBuilder {
+public class RangeQueryBuilder implements QueryBuilder {
 
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Query getQuery(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritance(e, "fieldName");
 
     String lowerTerm = e.getAttribute("lowerTerm");
     String upperTerm = e.getAttribute("upperTerm");
     boolean includeLower = DOMUtils.getAttribute(e, "includeLower", true);
     boolean includeUpper = DOMUtils.getAttribute(e, "includeUpper", true);
-    return TermRangeFilter.newStringRange(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
+    return TermRangeQuery.newStringRange(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
   }
 
 }
