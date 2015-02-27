@@ -797,7 +797,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
     File confFile = new File(loader.getConfigDir(), resourceName);
-    OutputStream out = null;
     try {
       File parentDir = confFile.getParentFile();
       if ( ! parentDir.isDirectory()) {
@@ -807,17 +806,17 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      out = new FileOutputStream(confFile);
-      out.write(content);
+      try (OutputStream out = new FileOutputStream(confFile);) {
+        out.write(content);
+      }
       log.info("Written confile " + resourceName);
     } catch (IOException e) {
       final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
     } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(out);
       try {
-        FileUtils.sync(confFile);
+        IOUtils.fsync(confFile.toPath(), false);
       } catch (IOException e) {
         final String msg = "Error syncing conf file " + resourceName;
         log.error(msg, e);
