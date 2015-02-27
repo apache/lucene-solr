@@ -252,8 +252,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
     query = query.clone();
     query.setBoost(1f);
     assert query == cacheKey(query);
-    Query singleton = uniqueQueries.putIfAbsent(query, query);
+    Query singleton = uniqueQueries.get(query);
     if (singleton == null) {
+      uniqueQueries.put(query, query);
       onQueryCache(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(query));
     } else {
       query = singleton;
@@ -514,8 +515,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
     void putIfAbsent(Query query, DocIdSet set) {
       assert query == cacheKey(query);
-      if (cache.putIfAbsent(query, set) == null) {
-        // the set was actually put
+      if (cache.containsKey(query) == false) {
+        cache.put(query, set);
         onDocIdSetCache(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
       }
     }

@@ -455,7 +455,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
       @Override
       public void onUse(Query query) {
-        expectedCounts.put(query, 1 + expectedCounts.getOrDefault(query, 0));
+        if (expectedCounts.containsKey(query)) {
+          expectedCounts.put(query, 1 + expectedCounts.get(query));
+        } else {
+          expectedCounts.put(query, 1);
+        }
       }
     };
 
@@ -470,7 +474,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     for (int i = 0; i < 20; ++i) {
       final int idx = random().nextInt(queries.length);
       searcher.search(new ConstantScoreQuery(queries[idx]), 1);
-      actualCounts.put(queries[idx], 1 + actualCounts.getOrDefault(queries[idx], 0));
+      if (actualCounts.containsKey(queries[idx])) {
+        actualCounts.put(queries[idx], 1 + actualCounts.get(queries[idx]));
+      } else {
+        actualCounts.put(queries[idx], 1);
+      }
     }
 
     assertEquals(actualCounts, expectedCounts);
