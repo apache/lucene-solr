@@ -23,7 +23,7 @@ Bug Fixes
 ----------------------
 
 * SOLR-6931: We should do a limited retry when using HttpClient. 
- (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
+  (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
 
 * SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
   of all "keys" found in the request parameters, resulting in some key=value param pairs 
@@ -94,6 +94,9 @@ Bug Fixes
   even when recoveries are rapidly stopped and started as well as when a
   node attempts to become the leader for a shard. 
   (Mark Miller, Maxim Novikov)
+  
+* SOLR-6847: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
+  (shalin)
 
 Other Changes
 ----------------------
