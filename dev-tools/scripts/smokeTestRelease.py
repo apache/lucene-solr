@@ -1395,8 +1395,12 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
   notTested = []
   for x in allReleases:
     if x not in testedIndices:
-      if '.'.join(str(y) for y in x) in ('1.4.3', '1.9.1', '2.3.1', '2.3.2'):
+      version = '.'.join(str(y) for y in x)
+      if version in ('1.4.3', '1.9.1', '2.3.1', '2.3.2'):
         # Exempt the dark ages indices
+        continue
+      if version.startswith('5.'):
+        # 4.10.x only!: exempt the future indices
         continue
       notTested.append(x)
 
