@@ -526,10 +526,16 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     BytesRefBuilder scratch = new BytesRefBuilder();
     IndexInput clone = data.clone();
     clone.seek(0);
+    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included in SimpleTextUtil.CHECKSUM):
+    long footerStartPos = data.length() - (SimpleTextUtil.CHECKSUM.length + 21);
     ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
-    while(true) {
+    while (true) {
       SimpleTextUtil.readLine(input, scratch);
-      if (scratch.get().equals(END)) {
+      if (input.getFilePointer() >= footerStartPos) {
+        // Make sure we landed at precisely the right location:
+        if (input.getFilePointer() != footerStartPos) {
+          throw new CorruptIndexException("SimpleText failure: footer does not start at expected position current=" + input.getFilePointer() + " vs expected=" + footerStartPos, input);
+        }
         SimpleTextUtil.checkFooter(input);
         break;
       }
