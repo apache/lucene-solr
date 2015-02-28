@@ -281,10 +281,9 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     }
 
     final ByteBuffer newBuffers[] = buildSlice(buffers, offset, length);
-    final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
     final int ofs = (int) (offset & chunkSizeMask);
     
-    final ByteBufferIndexInput clone = newCloneInstance(newResourceDescription, newBuffers, ofs, length);
+    final ByteBufferIndexInput clone = newCloneInstance(getFullSliceDescription(sliceDescription), newBuffers, ofs, length);
     clone.isClone = true;
 
     // register the new clone in our clone list to clean it up on closing:

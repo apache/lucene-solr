@@ -70,7 +70,11 @@ Bug Fixes
 * LUCENE-6001: DrillSideways hits NullPointerException for certain
   BooleanQuery searches.  (Dragan Jotannovic, jane chang via Mike
   McCandless)
-  
+
+* LUCENE-6311: Fix NIOFSDirectory and SimpleFSDirectory so that the
+  toString method of IndexInputs confess when they are from a compound
+  file. (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
