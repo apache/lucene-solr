@@ -167,7 +167,10 @@ Bug Fixes
   (Pablo Queixalos, shalin)
 
 * SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
-  (Chris A. Mattmann, Uwe Schindler)  
+  (Chris A. Mattmann, Uwe Schindler)
+
+* SOLR-7178: OverseerAutoReplicaFailoverThread compares Integer objects using ==
+  (shalin)
 
 Optimizations
 ----------------------
