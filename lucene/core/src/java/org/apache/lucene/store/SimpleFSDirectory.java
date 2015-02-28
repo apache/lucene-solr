@@ -131,7 +131,7 @@ public class SimpleFSDirectory extends FSDirectory {
       if (offset < 0 || length < 0 || offset + length > this.length()) {
         throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
       }
-      return new SimpleFSIndexInput(sliceDescription, channel, off + offset, length, getBufferSize());
+      return new SimpleFSIndexInput(getFullSliceDescription(sliceDescription), channel, off + offset, length, getBufferSize());
     }
 
     @Override

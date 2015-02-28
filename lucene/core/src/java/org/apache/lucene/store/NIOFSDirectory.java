@@ -137,7 +137,7 @@ public class NIOFSDirectory extends FSDirectory {
       if (offset < 0 || length < 0 || offset + length > this.length()) {
         throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
       }
-      return new NIOFSIndexInput(sliceDescription, channel, off + offset, length, getBufferSize());
+      return new NIOFSIndexInput(getFullSliceDescription(sliceDescription), channel, off + offset, length, getBufferSize());
     }
 
     @Override
