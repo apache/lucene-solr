@@ -300,6 +300,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       fieldNames.add(fieldInfo.name);
     }
 
+    // We already have our own filter cache
+    setQueryCache(null);
+
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
   }
