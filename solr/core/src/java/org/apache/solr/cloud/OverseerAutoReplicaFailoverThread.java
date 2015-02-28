@@ -152,7 +152,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       return;
     }
     if (clusterState != null) {
-      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0 &&
+      if (clusterState.getZkClusterStateVersion() != null &&
+          clusterState.getZkClusterStateVersion().equals(lastClusterStateVersion) && baseUrlForBadNodes.size() == 0 &&
           liveNodes.equals(clusterState.getLiveNodes())) {
         // nothing has changed, no work to do
         return;
