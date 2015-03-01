@@ -261,11 +261,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = clauses.get(i);
-      if (c.isProhibited()) {
-        buffer.append("-");
-      } else if (c.isRequired()) {
-        buffer.append("+");
-      }
+      buffer.append(c.getOccur().toString());
 
       Query subQuery = c.getQuery();
       if (subQuery != null) {
