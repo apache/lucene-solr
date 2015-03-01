@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -154,13 +155,12 @@ public class FilteredQuery extends Query {
    * than document scoring or if the filter has a linear running time to compute
    * the next matching doc like exact geo distances.
    */
-  private static final class QueryFirstScorer extends FilterScorer {
+  private static final class QueryFirstScorer extends Scorer {
     private final Scorer scorer;
-    private int scorerDoc = -1;
     private final Bits filterBits;
 
     protected QueryFirstScorer(Weight weight, Bits filterBits, Scorer other) {
-      super(other, weight);
+      super(weight);
       this.scorer = other;
       this.filterBits = filterBits;
     }
@@ -170,8 +170,8 @@ public class FilteredQuery extends Query {
       int doc;
       for(;;) {
         doc = scorer.nextDoc();
-        if (doc == Scorer.NO_MORE_DOCS || filterBits.get(doc)) {
-          return scorerDoc = doc;
+        if (doc == DocIdSetIterator.NO_MORE_DOCS || filterBits.get(doc)) {
+          return doc;
         }
       } 
     }
@@ -179,15 +179,31 @@ public class FilteredQuery extends Query {
     @Override
     public int advance(int target) throws IOException {
       int doc = scorer.advance(target);
-      if (doc != Scorer.NO_MORE_DOCS && !filterBits.get(doc)) {
-        return scorerDoc = nextDoc();
+      if (doc != DocIdSetIterator.NO_MORE_DOCS && !filterBits.get(doc)) {
+        return nextDoc();
       } else {
-        return scorerDoc = doc;
+        return doc;
       }
     }
+    
     @Override
     public int docID() {
-      return scorerDoc;
+      return scorer.docID();
+    }
+
+    @Override
+    public float score() throws IOException {
+      return scorer.score();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return scorer.freq();
+    }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
     }
 
     @Override
@@ -195,6 +211,37 @@ public class FilteredQuery extends Query {
       return Collections.singleton(new ChildScorer(scorer, "FILTERED"));
     }
 
+    @Override
+    public TwoPhaseIterator asTwoPhaseIterator() {    
+      TwoPhaseIterator inner = scorer.asTwoPhaseIterator();
+      if (inner != null) {
+        // we are like a simplified conjunction here, handle the nested case:
+        return new TwoPhaseIterator() {
+          @Override
+          public DocIdSetIterator approximation() {
+            return inner.approximation();
+          }
+          @Override
+          public boolean matches() throws IOException {
+            // check the approximation matches first, then check bits last.
+            return inner.matches() && filterBits.get(scorer.docID());
+          }
+        };
+      } else {
+        // scorer doesnt have an approximation, just use it, to force bits applied last.
+        return new TwoPhaseIterator() {
+          @Override
+          public DocIdSetIterator approximation() {
+            return scorer;
+          }
+          
+          @Override
+          public boolean matches() throws IOException {
+            return filterBits.get(scorer.docID());
+          }
+        };
+      }
+    }
   }
 
   private static class QueryFirstBulkScorer extends BulkScorer {
@@ -242,53 +289,29 @@ public class FilteredQuery extends Query {
    * jumping past the target document. When both land on the same document, it's
    * collected.
    */
-  private static final class LeapFrogScorer extends FilterScorer {
-    private final DocIdSetIterator secondary;
-    private final DocIdSetIterator primary;
+  private static final class LeapFrogScorer extends Scorer {
+    private final ConjunctionDISI conjunction;
     private final Scorer scorer;
-    private int primaryDoc = -1;
-    private int secondaryDoc = -1;
 
     protected LeapFrogScorer(Weight weight, DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
-      super(scorer, weight);
-      this.primary = primary;
-      this.secondary = secondary;
+      super(weight);
+      conjunction = ConjunctionDISI.intersect(Arrays.asList(primary, secondary));
       this.scorer = scorer;
     }
 
-    private final int advanceToNextCommonDoc() throws IOException {
-      for (;;) {
-        if (secondaryDoc < primaryDoc) {
-          secondaryDoc = secondary.advance(primaryDoc);
-        } else if (secondaryDoc == primaryDoc) {
-          return primaryDoc;
-        } else {
-          primaryDoc = primary.advance(secondaryDoc);
-        }
-      }
-    }
-
     @Override
-    public final int nextDoc() throws IOException {
-      primaryDoc = primaryNext();
-      return advanceToNextCommonDoc();
-    }
-    
-    protected int primaryNext() throws IOException {
-      return primary.nextDoc();
+    public int nextDoc() throws IOException {
+      return conjunction.nextDoc();
     }
     
     @Override
     public final int advance(int target) throws IOException {
-      if (target > primaryDoc) {
-        primaryDoc = primary.advance(target);
-      }
-      return advanceToNextCommonDoc();
+      return conjunction.advance(target);
     }
 
     @Override
     public final int docID() {
-      return secondaryDoc;
+      return conjunction.docID();
     }
 
     @Override
@@ -298,7 +321,22 @@ public class FilteredQuery extends Query {
 
     @Override
     public long cost() {
-      return Math.min(primary.cost(), secondary.cost());
+      return conjunction.cost();
+    }
+
+    @Override
+    public float score() throws IOException {
+      return scorer.score();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return scorer.freq();
+    }
+
+    @Override
+    public TwoPhaseIterator asTwoPhaseIterator() {
+      return conjunction.asTwoPhaseIterator();
     }
   }
   

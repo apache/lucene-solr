@@ -62,17 +62,17 @@ public abstract class FilterScorer extends Scorer {
   }
 
   @Override
-  public int docID() {
+  public final int docID() {
     return in.docID();
   }
 
   @Override
-  public int nextDoc() throws IOException {
+  public final int nextDoc() throws IOException {
     return in.nextDoc();
   }
 
   @Override
-  public int advance(int target) throws IOException {
+  public final int advance(int target) throws IOException {
     return in.advance(target);
   }
 
@@ -80,5 +80,9 @@ public abstract class FilterScorer extends Scorer {
   public long cost() {
     return in.cost();
   }
-
+  
+  @Override
+  public final TwoPhaseIterator asTwoPhaseIterator() {
+    return in.asTwoPhaseIterator();
+  }
 }

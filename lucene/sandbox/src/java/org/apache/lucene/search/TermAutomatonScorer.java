@@ -30,6 +30,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 
+// TODO: add two-phase and needsScores support. maybe use conjunctionDISI internally?
 class TermAutomatonScorer extends Scorer {
   private final EnumAndScorer[] subs;
   private final EnumAndScorer[] subsOnDoc;
