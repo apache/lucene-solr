@@ -741,4 +741,13 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.close();
     dir.close();
   }
+  
+  public void testToString() {
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "a")), Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "b")), Occur.MUST);
+    bq.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
+    bq.add(new TermQuery(new Term("field", "d")), Occur.FILTER);
+    assertEquals("a +b -c #d", bq.toString("field"));
+  }
 }
