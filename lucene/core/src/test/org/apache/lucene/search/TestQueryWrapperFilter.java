@@ -203,6 +203,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final IndexReader reader = writer.getReader();
     writer.close();
     final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
     final Query query = new QueryWrapperFilter(new RandomApproximationQuery(new TermQuery(new Term("foo", "bar")), random()));
     final Weight weight = searcher.createNormalizedWeight(query, random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0), null);

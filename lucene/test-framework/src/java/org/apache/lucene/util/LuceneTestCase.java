@@ -96,6 +96,7 @@ import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -1650,6 +1651,12 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  @Before
+  public void resetDefaultQueryCache() {
+    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25));
+    IndexSearcher.setDefaultQueryCachingPolicy(MAYBE_CACHE_POLICY);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads.
@@ -1701,7 +1708,6 @@ public abstract class LuceneTestCase extends Assert {
         ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
       }
       ret.setSimilarity(classEnvRule.similarity);
-      ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
       return ret;
     } else {
       int threads = 0;

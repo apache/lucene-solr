@@ -214,7 +214,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     w.commit();
 
     DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));

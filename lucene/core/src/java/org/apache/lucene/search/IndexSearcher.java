@@ -76,8 +76,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public class IndexSearcher {
 
   // 32MB and at most 10,000 queries
-  private static final QueryCache DEFAULT_QUERY_CACHE = new LRUQueryCache(10000, 1 << 25);
-  private static final QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
+  private static QueryCache DEFAULT_QUERY_CACHE = new LRUQueryCache(10000, 1 << 25);
+  private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
 
   final IndexReader reader; // package private for testing!
   
@@ -107,7 +107,23 @@ public class IndexSearcher {
   public static Similarity getDefaultSimilarity() {
     return defaultSimilarity;
   }
-  
+
+  /**
+   * Expert: set the default {@link QueryCache} instance.
+   * @lucene.internal
+   */
+  public static void setDefaultQueryCache(QueryCache defaultQueryCache) {
+    DEFAULT_QUERY_CACHE = defaultQueryCache;
+  }
+
+  /**
+   * Expert: set the default {@link QueryCachingPolicy} instance.
+   * @lucene.internal
+   */
+  public static void setDefaultQueryCachingPolicy(QueryCachingPolicy defaultQueryCachingPolicy) {
+    DEFAULT_CACHING_POLICY = defaultQueryCachingPolicy;
+  }
+
   /** The Similarity implementation used by this searcher. */
   private Similarity similarity = defaultSimilarity;
 
