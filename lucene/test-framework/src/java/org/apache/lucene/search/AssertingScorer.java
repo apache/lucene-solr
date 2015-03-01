@@ -27,6 +27,8 @@ import java.util.WeakHashMap;
 
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
+  
+  // TODO: add asserts for two-phase intersection
 
   static enum IteratorState { START, ITERATING, FINISHED };
 

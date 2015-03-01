@@ -27,7 +27,7 @@ import java.util.Collections;
  * This <code>Scorer</code> implements {@link Scorer#advance(int)},
  * and it uses the advance() on the given scorers.
  */
-class ReqExclScorer extends FilterScorer {
+class ReqExclScorer extends Scorer {
 
   private final Scorer reqScorer;
   // approximations of the scorers, or the scorers themselves if they don't support approximations
@@ -42,7 +42,7 @@ class ReqExclScorer extends FilterScorer {
    * @param exclScorer indicates exclusion.
    */
   public ReqExclScorer(Scorer reqScorer, Scorer exclScorer) {
-    super(reqScorer);
+    super(reqScorer.weight);
     this.reqScorer = reqScorer;
     reqTwoPhaseIterator = reqScorer.asTwoPhaseIterator();
     if (reqTwoPhaseIterator == null) {
@@ -106,10 +106,16 @@ class ReqExclScorer extends FilterScorer {
     return reqScorer.docID();
   }
 
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #nextDoc()} is called the first time.
-   * @return The score of the required scorer.
-   */
+  @Override
+  public int freq() throws IOException {
+    return reqScorer.freq();
+  }
+
+  @Override
+  public long cost() {
+    return reqScorer.cost();
+  }
+
   @Override
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
