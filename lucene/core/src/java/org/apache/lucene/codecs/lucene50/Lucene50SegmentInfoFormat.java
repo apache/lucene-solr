@@ -48,8 +48,8 @@ import org.apache.lucene.util.Version;
  *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
- *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
- *   <li>Diagnostics,Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>Files --&gt; {@link DataOutput#writeSetOfStrings Set&lt;String&gt;}</li>
+ *   <li>Diagnostics,Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
@@ -83,7 +83,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       Throwable priorE = null;
       SegmentInfo si = null;
       try {
-        CodecUtil.checkIndexHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
+        int format = CodecUtil.checkIndexHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
                                           Lucene50SegmentInfoFormat.VERSION_START,
                                           Lucene50SegmentInfoFormat.VERSION_CURRENT,
                                           segmentID, "");
@@ -94,11 +94,22 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
           throw new CorruptIndexException("invalid docCount: " + docCount, input);
         }
         final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
-        final Map<String,String> diagnostics = input.readStringStringMap();
-        final Set<String> files = input.readStringSet();
-        final Map<String,String> attributes = input.readStringStringMap();
         
-        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, Collections.unmodifiableMap(attributes));
+        final Map<String,String> diagnostics;
+        final Set<String> files;
+        final Map<String,String> attributes;
+        
+        if (format >= VERSION_SAFE_MAPS) {
+          diagnostics = input.readMapOfStrings();
+          files = input.readSetOfStrings();
+          attributes = input.readMapOfStrings();
+        } else {
+          diagnostics = Collections.unmodifiableMap(input.readStringStringMap());
+          files = Collections.unmodifiableSet(input.readStringSet());
+          attributes = Collections.unmodifiableMap(input.readStringStringMap());
+        }
+        
+        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes);
         si.setFiles(files);
       } catch (Throwable exception) {
         priorE = exception;
@@ -132,15 +143,15 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeStringStringMap(si.getDiagnostics());
+      output.writeMapOfStrings(si.getDiagnostics());
       Set<String> files = si.files();
       for (String file : files) {
         if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
           throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
         }
       }
-      output.writeStringSet(files);
-      output.writeStringStringMap(si.getAttributes());
+      output.writeSetOfStrings(files);
+      output.writeMapOfStrings(si.getAttributes());
       CodecUtil.writeFooter(output);
     }
   }
@@ -149,5 +160,6 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
   public final static String SI_EXTENSION = "si";
   static final String CODEC_NAME = "Lucene50SegmentInfo";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_SAFE_MAPS = 1;
+  static final int VERSION_CURRENT = VERSION_SAFE_MAPS;
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.lucene.codecs.Codec;
@@ -82,7 +83,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,

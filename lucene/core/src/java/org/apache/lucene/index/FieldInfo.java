@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  *  Access to the Field Info file that describes document fields and whether or
@@ -44,7 +44,7 @@ public final class FieldInfo {
   private IndexOptions indexOptions = IndexOptions.NONE;
   private boolean storePayloads; // whether this field stores payloads together with term positions
 
-  private Map<String,String> attributes;
+  private final Map<String,String> attributes;
 
   private long dvGen;
   /**
@@ -55,16 +55,10 @@ public final class FieldInfo {
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
       boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
       long dvGen, Map<String,String> attributes) {
-    if (docValues == null) {
-      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
-    }
-    if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
-    }
-    this.name = name;
+    this.name = Objects.requireNonNull(name);
     this.number = number;
-    this.docValuesType = docValues;
-    this.indexOptions = indexOptions;
+    this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
+    this.indexOptions = Objects.requireNonNull(indexOptions, "IndexOptions cannot be null (field: \"" + name + "\")");
     if (indexOptions != IndexOptions.NONE) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
@@ -75,7 +69,7 @@ public final class FieldInfo {
       this.omitNorms = false;
     }
     this.dvGen = dvGen;
-    this.attributes = attributes;
+    this.attributes = Objects.requireNonNull(attributes);
     assert checkConsistency();
   }
 
@@ -246,11 +240,7 @@ public final class FieldInfo {
    * Get a codec attribute value, or null if it does not exist
    */
   public String getAttribute(String key) {
-    if (attributes == null) {
-      return null;
-    } else {
-      return attributes.get(key);
-    }
+    return attributes.get(key);
   }
   
   /**
@@ -264,14 +254,11 @@ public final class FieldInfo {
    * the new value.
    */
   public String putAttribute(String key, String value) {
-    if (attributes == null) {
-      attributes = new HashMap<>();
-    }
     return attributes.put(key, value);
   }
   
   /**
-   * Returns internal codec attributes map. May be null if no mappings exist.
+   * Returns internal codec attributes map.
    */
   public Map<String,String> attributes() {
     return attributes;

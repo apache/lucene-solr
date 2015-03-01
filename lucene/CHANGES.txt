@@ -189,6 +189,9 @@ API Changes
 * LUCENE-6303: Replaced FilterCache with QueryCache and CachingWrapperFilter
   with CachingWrapperQuery. (Adrien Grand)
 
+* LUCENE-6317: Deprecate DataOutput.writeStringSet and writeStringStringMap.
+  Use writeSetOfStrings/Maps instead. (Mike McCandless, Robert Muir)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj

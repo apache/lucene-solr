@@ -287,7 +287,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, DocValuesType.NONE);
-        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, null);
+        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<>());
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, DocValuesType.NONE);
         byName.put(fi.name, fi);
@@ -310,7 +310,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, null);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, new HashMap<>());
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);

@@ -74,6 +74,12 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(info.files(), info2.files());
+    try {
+      info2.files().add("bogus");
+      fail("files set should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
     dir.close();
   }
   
@@ -91,6 +97,12 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(diagnostics, info2.getDiagnostics());
+    try {
+      info2.getDiagnostics().put("bogus", "bogus");
+      fail("diagnostics map should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
     dir.close();
   }
   
@@ -108,6 +120,12 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(attributes, info2.getAttributes());
+    try {
+      info2.getAttributes().put("bogus", "bogus");
+      fail("attributes map should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
     dir.close();
   }
   

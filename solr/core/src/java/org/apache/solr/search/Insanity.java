@@ -66,7 +66,7 @@ public class Insanity {
       for (FieldInfo fi : in.getFieldInfos()) {
         if (fi.name.equals(insaneField)) {
           filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
-                                          fi.hasPayloads(), fi.getIndexOptions(), DocValuesType.NONE, -1, null));
+                                          fi.hasPayloads(), fi.getIndexOptions(), DocValuesType.NONE, -1, Collections.emptyMap()));
         } else {
           filteredInfos.add(fi);
         }

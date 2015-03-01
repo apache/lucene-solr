@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -220,7 +221,7 @@ public class TestDoc extends LuceneTestCase {
 
     final Codec codec = Codec.getDefault();
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-    final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(r1, r2),
                                              si, InfoStream.getDefault(), trackingDir,

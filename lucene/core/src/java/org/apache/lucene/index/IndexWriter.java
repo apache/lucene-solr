@@ -2483,7 +2483,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
       SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
-                                         false, codec, null, StringHelper.randomId(), new HashMap<>());
+                                         false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
                                                globalFieldNumberMap, 
@@ -3712,7 +3712,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Version.LATEST, mergeSegmentName, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    SegmentInfo si = new SegmentInfo(directory, Version.LATEST, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
     Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
