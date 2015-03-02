@@ -19,10 +19,13 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.lucene.util.BitUtil;
 
@@ -254,7 +257,11 @@ public abstract class DataInput implements Cloneable {
   }
 
   /** Reads a Map&lt;String,String&gt; previously written
-   *  with {@link DataOutput#writeStringStringMap(Map)}. */
+   *  with {@link DataOutput#writeStringStringMap(Map)}. 
+   *  @deprecated Only for reading existing formats. Encode maps with 
+   *  {@link DataOutput#writeMapOfStrings(Map)} instead.
+   */
+  @Deprecated
   public Map<String,String> readStringStringMap() throws IOException {
     final Map<String,String> map = new HashMap<>();
     final int count = readInt();
@@ -266,9 +273,34 @@ public abstract class DataInput implements Cloneable {
 
     return map;
   }
+  
+  /** 
+   * Reads a Map&lt;String,String&gt; previously written
+   * with {@link DataOutput#writeMapOfStrings(Map)}. 
+   * @return An immutable map containing the written contents.
+   */
+  public Map<String,String> readMapOfStrings() throws IOException {
+    int count = readVInt();
+    if (count == 0) {
+      return Collections.emptyMap();
+    } else if (count == 1) {
+      return Collections.singletonMap(readString(), readString());
+    } else {
+      Map<String,String> map = count > 10 ? new HashMap<>() : new TreeMap<>();
+      for (int i = 0; i < count; i++) {
+        final String key = readString();
+        final String val = readString();
+        map.put(key, val);
+      }
+      return Collections.unmodifiableMap(map);
+    }
+  }
 
   /** Reads a Set&lt;String&gt; previously written
-   *  with {@link DataOutput#writeStringSet(Set)}. */
+   *  with {@link DataOutput#writeStringSet(Set)}. 
+   *  @deprecated Only for reading existing formats. Encode maps with 
+   *  {@link DataOutput#writeSetOfStrings(Set)} instead. */
+  @Deprecated
   public Set<String> readStringSet() throws IOException {
     final Set<String> set = new HashSet<>();
     final int count = readInt();
@@ -277,6 +309,26 @@ public abstract class DataInput implements Cloneable {
     }
 
     return set;
+  }
+  
+  /** 
+   * Reads a Set&lt;String&gt; previously written
+   * with {@link DataOutput#writeSetOfStrings(Set)}. 
+   * @return An immutable set containing the written contents.
+   */
+  public Set<String> readSetOfStrings() throws IOException {
+    int count = readVInt();
+    if (count == 0) {
+      return Collections.emptySet();
+    } else if (count == 1) {
+      return Collections.singleton(readString());
+    } else {
+      Set<String> set = count > 10 ? new HashSet<>() : new TreeSet<>();
+      for (int i = 0; i < count; i++) {
+        set.add(readString());
+      }
+      return Collections.unmodifiableSet(set);
+    }
   }
 
   /**

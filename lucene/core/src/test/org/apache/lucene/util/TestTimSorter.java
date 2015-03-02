@@ -129,7 +129,7 @@ public class TestTimSorter extends BaseSortTestCase {
       Y += X + 1;
     }
 
-    if(runningTotal + X <= length) {
+    if((long) runningTotal + X <= length) {
       runningTotal += X;
       generateWrongElem(X, minRun, runs);
     }

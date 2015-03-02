@@ -128,6 +128,9 @@ Optimizations
   rewrites to a BooleanQuery when the filter is a QueryWrapperFilter in order
   to leverage approximations. (Adrien Grand)
 
+* LUCENE-6318: Reduce RAM usage of FieldInfos when there are many fields.
+  (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()
@@ -188,6 +191,9 @@ API Changes
 
 * LUCENE-6303: Replaced FilterCache with QueryCache and CachingWrapperFilter
   with CachingWrapperQuery. (Adrien Grand)
+
+* LUCENE-6317: Deprecate DataOutput.writeStringSet and writeStringStringMap.
+  Use writeSetOfStrings/Maps instead. (Mike McCandless, Robert Muir)
 
 Other
 

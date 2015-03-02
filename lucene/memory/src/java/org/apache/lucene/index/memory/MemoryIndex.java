@@ -19,6 +19,7 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
@@ -443,7 +444,7 @@ public class MemoryIndex {
         fieldInfo = new FieldInfo(fieldName, fields.size(), false, false, this.storePayloads,
             this.storeOffsets
                 ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
-            DocValuesType.NONE, -1, null);
+            DocValuesType.NONE, -1, Collections.emptyMap());
         sliceArray = new SliceByteStartArray(BytesRefHash.DEFAULT_CAPACITY);
         terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);
       }

@@ -578,6 +578,9 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       Query q1 = q;
       Query q2 = bq;
       if (random().nextInt(5) == 1) {
+        if (VERBOSE) {
+          System.out.println("  use random filter");
+        }
         RandomFilter filter = new RandomFilter(random().nextLong(), random().nextFloat());
         q1 = new FilteredQuery(q1, filter);
         q2 = new FilteredQuery(q2, filter);

@@ -140,7 +140,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
-                                         isCompoundFile, null, diagnostics, id, Collections.unmodifiableMap(attributes));
+                                         isCompoundFile, null, Collections.unmodifiableMap(diagnostics), id, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
       return info;
     }
