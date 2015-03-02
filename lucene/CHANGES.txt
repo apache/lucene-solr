@@ -128,6 +128,9 @@ Optimizations
   rewrites to a BooleanQuery when the filter is a QueryWrapperFilter in order
   to leverage approximations. (Adrien Grand)
 
+* LUCENE-6318: Reduce RAM usage of FieldInfos when there are many fields.
+  (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()

@@ -120,6 +120,9 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];
         
+        // previous field's attribute map, we share when possible:
+        Map<String,String> lastAttributes = Collections.emptyMap();
+        
         for (int i = 0; i < size; i++) {
           String name = input.readString();
           final int fieldNumber = input.readVInt();
@@ -136,12 +139,17 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
           // DV Types are packed in one byte
           final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
           final long dvGen = input.readLong();
-          final Map<String,String> attributes;
+          Map<String,String> attributes;
           if (format >= FORMAT_SAFE_MAPS) {
             attributes = input.readMapOfStrings();
           } else {
             attributes = Collections.unmodifiableMap(input.readStringStringMap());
           }
+          // just use the last field's map if its the same
+          if (attributes.equals(lastAttributes)) {
+            attributes = lastAttributes;
+          }
+          lastAttributes = attributes;
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes);
