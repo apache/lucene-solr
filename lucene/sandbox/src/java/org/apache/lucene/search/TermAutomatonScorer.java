@@ -149,6 +149,12 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public int advance(int target) throws IOException {
+    if (docID == -1) {
+      popCurrentDoc();
+      if (docID >= target) {
+        return doNext();
+      }
+    }
     for(int i=0;i<numSubsOnDoc;i++) {
       EnumAndScorer sub = subsOnDoc[i];
       if (sub.posEnum.advance(target) != NO_MORE_DOCS) {
