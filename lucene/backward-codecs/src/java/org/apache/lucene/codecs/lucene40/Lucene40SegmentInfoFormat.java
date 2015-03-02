@@ -65,13 +65,13 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
         throw new CorruptIndexException("invalid docCount: " + docCount, input);
       }
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
-      final Map<String,String> diagnostics = input.readStringStringMap();
-      final Map<String,String> attributes = input.readStringStringMap();
-      final Set<String> files = input.readStringSet();
+      final Map<String,String> diagnostics = Collections.unmodifiableMap(input.readStringStringMap());
+      final Map<String,String> attributes = Collections.unmodifiableMap(input.readStringStringMap());
+      final Set<String> files = Collections.unmodifiableSet(input.readStringSet());
       
       CodecUtil.checkEOF(input);
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null, Collections.unmodifiableMap(attributes));
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null, attributes);
       si.setFiles(files);
 
       success = true;

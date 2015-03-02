@@ -487,10 +487,8 @@ class ReadersAndUpdates {
         for (FieldInfo fi : reader.getFieldInfos()) {
           FieldInfo clone = builder.add(fi);
           // copy the stuff FieldInfos.Builder doesn't copy
-          if (fi.attributes() != null) {
-            for (Entry<String,String> e : fi.attributes().entrySet()) {
-              clone.putAttribute(e.getKey(), e.getValue());
-            }
+          for (Entry<String,String> e : fi.attributes().entrySet()) {
+            clone.putAttribute(e.getKey(), e.getValue());
           }
           clone.setDocValuesGen(fi.getDocValuesGen());
         }

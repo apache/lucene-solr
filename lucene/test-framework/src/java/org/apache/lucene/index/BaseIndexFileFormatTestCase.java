@@ -301,10 +301,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
     Codec codec = getCodec();
     
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, null, StringHelper.randomId(), new HashMap<String,String>());
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, Collections.<String,String>emptyMap(), StringHelper.randomId(), new HashMap<String,String>());
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
-                                    proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), null);
+                                    proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<String,String>());
 
     FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
 

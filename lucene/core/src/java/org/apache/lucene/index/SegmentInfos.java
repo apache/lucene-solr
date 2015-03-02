@@ -74,10 +74,10 @@ import org.apache.lucene.util.StringHelper;
  * <li>HasSegID --&gt; {@link DataOutput#writeByte Int8}</li>
  * <li>SegID --&gt; {@link DataOutput#writeByte Int8<sup>ID_LENGTH</sup>}</li>
  * <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
- * <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap
+ * <li>CommitUserData --&gt; {@link DataOutput#writeMapOfStrings
  * Map&lt;String,String&gt;}</li>
  * <li>UpdatesFiles --&gt; Map&lt;{@link DataOutput#writeInt Int32},
- * {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}&gt;</li>
+ * {@link DataOutput#writeSetOfStrings(Set) Set&lt;String&gt;}&gt;</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * Field Descriptions:
@@ -129,6 +129,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /** The file format version for the segments_N codec header, since 5.0+ */
   public static final int VERSION_50 = 4;
+  /** The file format version for the segments_N codec header, since 5.1+ */
+  public static final int VERSION_51 = 5; // use safe maps
+  static final int VERSION_CURRENT = VERSION_51;
 
   /** Used to name new segments. */
   // TODO: should this be a long ...?
@@ -283,7 +286,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_50);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_CURRENT);
       // 5.0+
       byte id[] = null;
       if (format >= VERSION_50) {
@@ -358,23 +361,36 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             }
             siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
           } else {
-            siPerCommit.setFieldInfosFiles(input.readStringSet());
+            if (format >= VERSION_51) {
+              siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
+            } else {
+              siPerCommit.setFieldInfosFiles(Collections.unmodifiableSet(input.readStringSet()));
+            }
             final Map<Integer,Set<String>> dvUpdateFiles;
             final int numDVFields = input.readInt();
             if (numDVFields == 0) {
               dvUpdateFiles = Collections.emptyMap();
             } else {
-              dvUpdateFiles = new HashMap<>(numDVFields);
+              Map<Integer,Set<String>> map = new HashMap<>(numDVFields);
               for (int i = 0; i < numDVFields; i++) {
-                dvUpdateFiles.put(input.readInt(), input.readStringSet());
+                if (format >= VERSION_51) {
+                  map.put(input.readInt(), input.readSetOfStrings());
+                } else {
+                  map.put(input.readInt(), Collections.unmodifiableSet(input.readStringSet()));
+                }
               }
+              dvUpdateFiles = Collections.unmodifiableMap(map);
             }
             siPerCommit.setDocValuesUpdatesFiles(dvUpdateFiles);
           }
         }
         infos.add(siPerCommit);
       }
-      infos.userData = input.readStringStringMap();
+      if (format >= VERSION_51) {
+        infos.userData = input.readMapOfStrings();
+      } else {
+        infos.userData = Collections.unmodifiableMap(input.readStringStringMap());
+      }
 
       if (format >= VERSION_48) {
         CodecUtil.checkFooter(input);
@@ -450,7 +466,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     try {
       segnOutput = directory.createOutput(segmentFileName, IOContext.DEFAULT);
-      CodecUtil.writeIndexHeader(segnOutput, "segments", VERSION_50, 
+      CodecUtil.writeIndexHeader(segnOutput, "segments", VERSION_CURRENT, 
                                    StringHelper.randomId(), Long.toString(nextGeneration, Character.MAX_RADIX));
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
@@ -478,16 +494,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         segnOutput.writeInt(delCount);
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
         segnOutput.writeLong(siPerCommit.getDocValuesGen());
-        segnOutput.writeStringSet(siPerCommit.getFieldInfosFiles());
+        segnOutput.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
         final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
         segnOutput.writeInt(dvUpdatesFiles.size());
         for (Entry<Integer,Set<String>> e : dvUpdatesFiles.entrySet()) {
           segnOutput.writeInt(e.getKey());
-          segnOutput.writeStringSet(e.getValue());
+          segnOutput.writeSetOfStrings(e.getValue());
         }
         assert si.dir == directory;
       }
-      segnOutput.writeStringStringMap(userData);
+      segnOutput.writeMapOfStrings(userData);
       CodecUtil.writeFooter(segnOutput);
       segnOutput.close();
       directory.sync(Collections.singleton(segmentFileName));

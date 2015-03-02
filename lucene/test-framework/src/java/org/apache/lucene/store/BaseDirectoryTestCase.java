@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.CRC32;
 
 import org.apache.lucene.index.DirectoryReader;
@@ -348,6 +349,93 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IndexInput input = dir.openInput("stringmap", newIOContext(random()));
     assertEquals(30, input.length());
     assertEquals(m, input.readStringStringMap());
+    input.close();
+    dir.close();
+  }
+  
+  public void testSetOfStrings() throws Exception {
+    Directory dir = getDirectory(createTempDir("testSetOfStrings"));
+    
+    IndexOutput output = dir.createOutput("stringset", newIOContext(random()));
+    output.writeSetOfStrings(asSet("test1", "test2"));
+    output.writeSetOfStrings(Collections.<String>emptySet());
+    output.writeSetOfStrings(asSet("test3"));
+    output.close();
+    
+    IndexInput input = dir.openInput("stringset", newIOContext(random()));
+    Set<String> set = input.readSetOfStrings();
+    assertEquals(asSet("test1", "test2"), set);
+    try {
+      set.add("bogus");
+      fail("set should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    set = input.readSetOfStrings();
+    assertEquals(Collections.emptySet(), set);
+    try {
+      set.add("bogus");
+      fail("set should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    set = input.readSetOfStrings();
+    assertEquals(Collections.singleton("test3"), set);
+    try {
+      set.add("bogus");
+      fail("set should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    assertEquals(input.length(), input.getFilePointer());
+    input.close();
+    dir.close();
+  }
+  
+  public void testMapOfStrings() throws Exception {
+    Map<String,String> m = new HashMap<>();
+    m.put("test1", "value1");
+    m.put("test2", "value2");
+    
+    Directory dir = getDirectory(createTempDir("testMapOfStrings"));
+    IndexOutput output = dir.createOutput("stringmap", newIOContext(random()));
+    output.writeMapOfStrings(m);
+    output.writeMapOfStrings(Collections.<String,String>emptyMap());
+    output.writeMapOfStrings(Collections.singletonMap("key", "value"));
+    output.close();
+    
+    IndexInput input = dir.openInput("stringmap", newIOContext(random()));
+    Map<String,String> map = input.readMapOfStrings();
+    assertEquals(m, map);
+    try {
+      map.put("bogus1", "bogus2");
+      fail("map should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    map = input.readMapOfStrings();
+    assertEquals(Collections.emptyMap(), map);
+    try {
+      map.put("bogus1", "bogus2");
+      fail("map should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    map = input.readMapOfStrings();
+    assertEquals(Collections.singletonMap("key", "value"), map);
+    try {
+      map.put("bogus1", "bogus2");
+      fail("map should be immutable");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
+    
+    assertEquals(input.length(), input.getFilePointer());
     input.close();
     dir.close();
   }

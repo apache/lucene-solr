@@ -19,6 +19,7 @@ package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
@@ -215,7 +216,7 @@ public class UninvertingReader extends FilterLeafReader {
         }
       }
       filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
-                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, null));
+                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, Collections.<String,String>emptyMap()));
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }

@@ -17,11 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +66,7 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
   
-  private Map<String,String> attributes;
+  private final Map<String,String> attributes;
 
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
@@ -78,11 +76,11 @@ public final class SegmentInfo {
   private Version version;
 
   void setDiagnostics(Map<String, String> diagnostics) {
-    this.diagnostics = diagnostics;
+    this.diagnostics = Objects.requireNonNull(diagnostics);
   }
 
   /** Returns diagnostics saved into the segment when it was
-   *  written. */
+   *  written. The map is immutable. */
   public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
@@ -96,13 +94,13 @@ public final class SegmentInfo {
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
                      byte[] id, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
-    this.dir = dir;
-    this.version = version;
-    this.name = name;
+    this.dir = Objects.requireNonNull(dir);
+    this.version = Objects.requireNonNull(version);
+    this.name = Objects.requireNonNull(name);
     this.docCount = docCount;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
-    this.diagnostics = diagnostics;
+    this.diagnostics = Objects.requireNonNull(diagnostics);
     this.id = id;
     if (id != null && id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));

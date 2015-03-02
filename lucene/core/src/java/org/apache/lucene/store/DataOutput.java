@@ -286,7 +286,9 @@ public abstract class DataOutput {
    * {@link #writeString(String) String}s.
    * 
    * @param map Input map. May be null (equivalent to an empty map)
+   * @deprecated Use {@link #writeMapOfStrings(Map)} instead.
    */
+  @Deprecated
   public void writeStringStringMap(Map<String,String> map) throws IOException {
     if (map == null) {
       writeInt(0);
@@ -298,6 +300,24 @@ public abstract class DataOutput {
       }
     }
   }
+  
+  /**
+   * Writes a String map.
+   * <p>
+   * First the size is written as an {@link #writeVInt(int) vInt},
+   * followed by each key-value pair written as two consecutive 
+   * {@link #writeString(String) String}s.
+   * 
+   * @param map Input map.
+   * @throws NullPointerException if {@code map} is null.
+   */
+  public void writeMapOfStrings(Map<String,String> map) throws IOException {
+    writeVInt(map.size());
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      writeString(entry.getKey());
+      writeString(entry.getValue());
+    }
+  }
 
   /**
    * Writes a String set.
@@ -307,7 +327,9 @@ public abstract class DataOutput {
    * {@link #writeString(String) String}.
    * 
    * @param set Input set. May be null (equivalent to an empty set)
+   * @deprecated Use {@link #writeMapOfStrings(Map)} instead.
    */
+  @Deprecated
   public void writeStringSet(Set<String> set) throws IOException {
     if (set == null) {
       writeInt(0);
@@ -316,6 +338,23 @@ public abstract class DataOutput {
       for(String value : set) {
         writeString(value);
       }
+    }
+  }
+  
+  /**
+   * Writes a String set.
+   * <p>
+   * First the size is written as an {@link #writeVInt(int) vInt},
+   * followed by each value written as a
+   * {@link #writeString(String) String}.
+   * 
+   * @param set Input set.
+   * @throws NullPointerException if {@code set} is null.
+   */
+  public void writeSetOfStrings(Set<String> set) throws IOException {
+    writeVInt(set.size());
+    for (String value : set) {
+      writeString(value);
     }
   }
 }
