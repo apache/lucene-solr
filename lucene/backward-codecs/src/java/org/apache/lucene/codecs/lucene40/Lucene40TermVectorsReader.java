@@ -104,7 +104,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws IOException {
     final String segment = si.name;
-    final int size = si.getDocCount();
+    final int size = si.maxDoc();
     
     boolean success = false;
 

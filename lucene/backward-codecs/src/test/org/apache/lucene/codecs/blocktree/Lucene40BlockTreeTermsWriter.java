@@ -273,7 +273,7 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
       throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
     }
 
-    maxDoc = state.segmentInfo.getDocCount();
+    maxDoc = state.segmentInfo.maxDoc();
 
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40BlockTreeTermsReader.TERMS_EXTENSION);
     out = state.directory.createOutput(termsFileName, state.context);

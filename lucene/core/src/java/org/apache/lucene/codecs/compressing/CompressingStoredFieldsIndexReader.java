@@ -54,7 +54,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
   // It is the responsibility of the caller to close fieldsIndexIn after this constructor
   // has been called
   CompressingStoredFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
-    maxDoc = si.getDocCount();
+    maxDoc = si.maxDoc();
     int[] docBases = new int[16];
     long[] startPointers = new long[16];
     int[] avgChunkDocs = new int[16];

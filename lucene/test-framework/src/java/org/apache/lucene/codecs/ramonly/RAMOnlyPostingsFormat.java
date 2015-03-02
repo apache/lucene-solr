@@ -263,7 +263,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         postings.fieldToTerms.put(field, ramField);
         termsConsumer.reset(ramField);
 
-        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
+        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.maxDoc());
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
         PostingsEnum postingsEnum = null;

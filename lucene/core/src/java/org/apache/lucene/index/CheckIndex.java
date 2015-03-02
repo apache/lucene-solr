@@ -157,7 +157,7 @@ public class CheckIndex implements Closeable {
       public Codec codec;
 
       /** Document count (does not take deletions into account). */
-      public int docCount;
+      public int maxDoc;
 
       /** True if segment is compound file format. */
       public boolean compound;
@@ -587,16 +587,16 @@ public class CheckIndex implements Closeable {
       }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
+      msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " maxDoc=" + info.info.maxDoc());
       segInfoStat.name = info.info.name;
-      segInfoStat.docCount = info.info.getDocCount();
+      segInfoStat.maxDoc = info.info.maxDoc();
       
       final Version version = info.info.getVersion();
-      if (info.info.getDocCount() <= 0 && version != null && version.onOrAfter(Version.LUCENE_4_5_0)) {
-        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
+      if (info.info.maxDoc() <= 0 && version != null && version.onOrAfter(Version.LUCENE_4_5_0)) {
+        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.maxDoc());
       }
 
-      int toLoseDocCount = info.info.getDocCount();
+      int toLoseDocCount = info.info.maxDoc();
 
       SegmentReader reader = null;
 
@@ -621,8 +621,7 @@ public class CheckIndex implements Closeable {
         if (!info.hasDeletions()) {
           msg(infoStream, "    no deletions");
           segInfoStat.hasDeletions = false;
-        }
-        else{
+        } else {
           msg(infoStream, "    has deletions [delGen=" + info.getDelGen() + "]");
           segInfoStat.hasDeletions = true;
           segInfoStat.deletionsGen = info.getDelGen();
@@ -642,26 +641,26 @@ public class CheckIndex implements Closeable {
         reader.checkIntegrity();
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startIntegrityNS)));
 
-        if (reader.maxDoc() != info.info.getDocCount()) {
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
+        if (reader.maxDoc() != info.info.maxDoc()) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfo.maxDoc " + info.info.maxDoc());
         }
         
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         
         if (reader.hasDeletions()) {
-          if (reader.numDocs() != info.info.getDocCount() - info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + (info.info.getDocCount() - info.getDelCount()) + " vs reader=" + reader.numDocs());
+          if (reader.numDocs() != info.info.maxDoc() - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.info.maxDoc() - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.info.getDocCount() - reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount() - reader.numDocs()));
+          if ((info.info.maxDoc() - reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.maxDoc() - reader.numDocs()));
           }
-          if (info.info.getDocCount() - reader.numDocs() != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
+          if (info.info.maxDoc() - reader.numDocs() != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.maxDoc() - reader.numDocs()));
           }
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.maxDoc() - reader.numDocs()));
           }
         }
         

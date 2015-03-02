@@ -325,11 +325,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         Codec codec = readCodec(input);
         SegmentInfo info = codec.segmentInfoFormat().read(directory, segName, segmentID, IOContext.READ);
         info.setCodec(codec);
-        totalDocs += info.getDocCount();
+        totalDocs += info.maxDoc();
         long delGen = input.readLong();
         int delCount = input.readInt();
-        if (delCount < 0 || delCount > info.getDocCount()) {
-          throw new CorruptIndexException("invalid deletion count: " + delCount + " vs docCount=" + info.getDocCount(), input);
+        if (delCount < 0 || delCount > info.maxDoc()) {
+          throw new CorruptIndexException("invalid deletion count: " + delCount + " vs maxDoc=" + info.maxDoc(), input);
         }
         long fieldInfosGen = -1;
         if (format >= VERSION_46) {
@@ -488,8 +488,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
         int delCount = siPerCommit.getDelCount();
-        if (delCount < 0 || delCount > si.getDocCount()) {
-          throw new IllegalStateException("cannot write segment: invalid docCount segment=" + si.name + " docCount=" + si.getDocCount() + " delCount=" + delCount);
+        if (delCount < 0 || delCount > si.maxDoc()) {
+          throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " delCount=" + delCount);
         }
         segnOutput.writeInt(delCount);
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
@@ -846,12 +846,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     lastGeneration = other.lastGeneration;
   }
 
-  /** Returns sum of all segment's docCounts.  Note that
+  /** Returns sum of all segment's maxDocs.  Note that
    *  this does not include deletions */
-  public int totalDocCount() {
+  public int totalMaxDoc() {
     long count = 0;
     for(SegmentCommitInfo info : this) {
-      count += info.info.getDocCount();
+      count += info.info.maxDoc();
     }
     // we should never hit this, checks should happen elsewhere...
     assert count <= IndexWriter.getActualMaxDocs();

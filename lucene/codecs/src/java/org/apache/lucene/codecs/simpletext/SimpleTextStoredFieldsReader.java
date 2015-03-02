@@ -79,7 +79,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
         } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
-    readIndex(si.getDocCount());
+    readIndex(si.maxDoc());
   }
   
   // used by clone

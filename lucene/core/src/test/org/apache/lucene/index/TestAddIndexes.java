@@ -339,7 +339,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer.addIndexes(aux);
     assertEquals(1040, writer.maxDoc());
-    assertEquals(1000, writer.getDocCount(0));
+    assertEquals(1000, writer.maxDoc(0));
     writer.close();
 
     // make sure the index is correct
@@ -368,7 +368,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer.addIndexes(aux);
     assertEquals(1032, writer.maxDoc());
-    assertEquals(1000, writer.getDocCount(0));
+    assertEquals(1000, writer.maxDoc(0));
     writer.close();
 
     // make sure the index is correct
@@ -396,7 +396,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer.addIndexes(aux, new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(aux)));
     assertEquals(1060, writer.maxDoc());
-    assertEquals(1000, writer.getDocCount(0));
+    assertEquals(1000, writer.maxDoc(0));
     writer.close();
 
     // make sure the index is correct
@@ -438,7 +438,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
     writer.addIndexes(aux, new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(aux)));
     assertEquals(1020, writer.maxDoc());
-    assertEquals(1000, writer.getDocCount(0));
+    assertEquals(1000, writer.maxDoc(0));
     writer.close();
     dir.close();
     aux.close();
@@ -498,7 +498,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer.addIndexes(aux, aux2);
     assertEquals(1040, writer.maxDoc());
-    assertEquals(1000, writer.getDocCount(0));
+    assertEquals(1000, writer.maxDoc(0));
     writer.close();
     dir.close();
     aux.close();

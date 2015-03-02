@@ -212,7 +212,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     // we don't assert this, because SI format has nothing to do with it... set by SIS
     // assertSame(expected.getCodec(), actual.getCodec());
     assertEquals(expected.getDiagnostics(), actual.getDiagnostics());
-    assertEquals(expected.getDocCount(), actual.getDocCount());
+    assertEquals(expected.maxDoc(), actual.maxDoc());
     assertIDEquals(expected.getId(), actual.getId());
     assertEquals(expected.getUseCompoundFile(), actual.getUseCompoundFile());
     assertEquals(expected.getVersion(), actual.getVersion());

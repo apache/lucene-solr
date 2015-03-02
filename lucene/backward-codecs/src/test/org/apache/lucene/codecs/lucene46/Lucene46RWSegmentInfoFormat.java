@@ -50,7 +50,7 @@ public final class Lucene46RWSegmentInfoFormat extends Lucene46SegmentInfoFormat
       }
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(version.toString());
-      output.writeInt(si.getDocCount());
+      output.writeInt(si.maxDoc());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());

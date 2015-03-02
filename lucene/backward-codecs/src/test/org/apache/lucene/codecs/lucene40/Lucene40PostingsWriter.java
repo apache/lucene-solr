@@ -119,7 +119,7 @@ final class Lucene40PostingsWriter extends PushPostingsWriterBase {
       }
     }
 
-    totalNumDocs = state.segmentInfo.getDocCount();
+    totalNumDocs = state.segmentInfo.maxDoc();
 
     skipListWriter = new Lucene40SkipListWriter(skipInterval,
                                                maxSkipLevels,

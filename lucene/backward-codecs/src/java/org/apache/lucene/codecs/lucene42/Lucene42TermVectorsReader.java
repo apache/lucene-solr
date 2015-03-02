@@ -112,7 +112,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
-    numDocs = si.getDocCount();
+    numDocs = si.maxDoc();
     ChecksumIndexInput indexStream = null;
     try {
       // Load the index into memory

@@ -147,7 +147,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     final int maxCountPerDoc = maxCount;
     assert pendingCounts.size() == maxDoc;
     final int valueCount = hash.size();

@@ -81,7 +81,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
-    readIndex(si.getDocCount());
+    readIndex(si.maxDoc());
   }
 
   // used by clone

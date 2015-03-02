@@ -43,9 +43,9 @@ public final class SegmentReader extends CodecReader {
   private final SegmentCommitInfo si;
   private final Bits liveDocs;
 
-  // Normally set to si.docCount - si.delDocCount, unless we
+  // Normally set to si.maxDoc - si.delDocCount, unless we
   // were created as an NRT reader from IW, in which case IW
-  // tells us the docCount:
+  // tells us the number of live docs:
   private final int numDocs;
 
   final SegmentCoreReaders core;
@@ -75,7 +75,7 @@ public final class SegmentReader extends CodecReader {
         assert si.getDelCount() == 0;
         liveDocs = null;
       }
-      numDocs = si.info.getDocCount() - si.getDelCount();
+      numDocs = si.info.maxDoc() - si.getDelCount();
       
       fieldInfos = initFieldInfos();
       docValuesProducer = initDocValuesProducer();
@@ -99,7 +99,7 @@ public final class SegmentReader extends CodecReader {
   SegmentReader(SegmentCommitInfo si, SegmentReader sr) throws IOException {
     this(si, sr,
          si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE),
-         si.info.getDocCount() - si.getDelCount());
+         si.info.maxDoc() - si.getDelCount());
   }
 
   /** Create new SegmentReader sharing core from a previous
@@ -195,7 +195,7 @@ public final class SegmentReader extends CodecReader {
   @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
-    return si.info.getDocCount();
+    return si.info.maxDoc();
   }
 
   @Override
@@ -232,7 +232,7 @@ public final class SegmentReader extends CodecReader {
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(si.info.getDocCount() - numDocs - si.getDelCount());
+    return si.toString(si.info.maxDoc() - numDocs - si.getDelCount());
   }
   
   /**

@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.store.Directory;
@@ -340,8 +340,8 @@ public class SegmentCommitInfo {
   }
 
   void setDelCount(int delCount) {
-    if (delCount < 0 || delCount > info.getDocCount()) {
-      throw new IllegalArgumentException("invalid delCount=" + delCount + " (docCount=" + info.getDocCount() + ")");
+    if (delCount < 0 || delCount > info.maxDoc()) {
+      throw new IllegalArgumentException("invalid delCount=" + delCount + " (maxDoc=" + info.maxDoc() + ")");
     }
     this.delCount = delCount;
   }

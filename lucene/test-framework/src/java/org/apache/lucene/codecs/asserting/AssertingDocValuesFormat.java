@@ -58,7 +58,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     DocValuesConsumer consumer = in.fieldsConsumer(state);
     assert consumer != null;
-    return new AssertingDocValuesConsumer(consumer, state.segmentInfo.getDocCount());
+    return new AssertingDocValuesConsumer(consumer, state.segmentInfo.maxDoc());
   }
 
   @Override
@@ -66,7 +66,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     assert state.fieldInfos.hasDocValues();
     DocValuesProducer producer = in.fieldsProducer(state);
     assert producer != null;
-    return new AssertingDocValuesProducer(producer, state.segmentInfo.getDocCount());
+    return new AssertingDocValuesProducer(producer, state.segmentInfo.maxDoc());
   }
   
   static class AssertingDocValuesConsumer extends DocValuesConsumer {

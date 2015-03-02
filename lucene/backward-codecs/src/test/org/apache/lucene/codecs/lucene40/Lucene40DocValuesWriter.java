@@ -147,7 +147,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
       output.writeLong(minValue);
       output.writeLong(0 - minValue); // default value (representation of 0)
       PackedInts.Writer writer = PackedInts.getWriter(output, 
-                                                      state.segmentInfo.getDocCount(),
+                                                      state.segmentInfo.maxDoc(),
                                                       PackedInts.bitsRequired(delta), 
                                                       PackedInts.DEFAULT);
       for (Number n : values) {
@@ -185,7 +185,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
       }
     }
     
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final boolean fixed = minLength == maxLength;
     final boolean dedup = uniqueValues != null && uniqueValues.size() * 2 < maxDoc;
     
@@ -294,7 +294,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
     final long maxAddress = data.getFilePointer() - startPos;
     index.writeVLong(maxAddress);
     
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     assert maxDoc != Integer.MAX_VALUE; // unsupported by the 4.0 impl
     
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc+1, PackedInts.bitsRequired(maxAddress), PackedInts.DEFAULT);
@@ -338,7 +338,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
     int valueCount = dictionary.size();
     assert valueCount > 0;
     index.writeInt(valueCount);
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
 
     for (BytesRef v : values) {
@@ -382,7 +382,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
     /* ordinals */
     long totalBytes = data.getFilePointer() - startPosition;
     index.writeLong(totalBytes);
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(currentAddress), PackedInts.DEFAULT);
 
     for (BytesRef v : values) {
@@ -483,7 +483,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
     /* ordinals */
     
     index.writeInt(valueCount);
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     assert valueCount > 0;
     final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
     for (Number n : docToOrd) {
@@ -533,7 +533,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
     
     /* ordinals */
     
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     assert valueCount > 0;
     final PackedInts.Writer ords = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
     for (Number n : docToOrd) {

@@ -257,7 +257,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   {
     validateSettings(minItemsInBlock, maxItemsInBlock);
 
-    this.maxDoc = state.segmentInfo.getDocCount();
+    this.maxDoc = state.segmentInfo.maxDoc();
     this.fieldInfos = state.fieldInfos;
     this.minItemsInBlock = minItemsInBlock;
     this.maxItemsInBlock = maxItemsInBlock;

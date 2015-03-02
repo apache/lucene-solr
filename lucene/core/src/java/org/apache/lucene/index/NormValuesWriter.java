@@ -66,7 +66,7 @@ class NormValuesWriter {
 
   public void flush(SegmentWriteState state, NormsConsumer normsConsumer) throws IOException {
 
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     final PackedLongValues values = pending.build();
 
     normsConsumer.addNormsField(fieldInfo,

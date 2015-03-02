@@ -164,7 +164,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_DOCCOUNT);
-      SimpleTextUtil.write(output, Integer.toString(si.getDocCount()), scratch);
+      SimpleTextUtil.write(output, Integer.toString(si.maxDoc()), scratch);
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_USECOMPOUND);

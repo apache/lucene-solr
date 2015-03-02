@@ -122,7 +122,7 @@ final class Lucene41StoredFieldsReader extends StoredFieldsReader {
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
-    numDocs = si.getDocCount();
+    numDocs = si.maxDoc();
     ChecksumIndexInput indexStream = null;
     try {
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);

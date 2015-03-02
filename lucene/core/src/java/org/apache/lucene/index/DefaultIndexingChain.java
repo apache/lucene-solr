@@ -88,14 +88,14 @@ final class DefaultIndexingChain extends DocConsumer {
     // NOTE: caller (DocumentsWriterPerThread) handles
     // aborting on any exception from this method
 
-    int numDocs = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     writeNorms(state);
     writeDocValues(state);
     
     // it's possible all docs hit non-aborting exceptions...
     initStoredFieldsWriter();
-    fillStoredFields(numDocs);
-    storedFieldsWriter.finish(state.fieldInfos, numDocs);
+    fillStoredFields(maxDoc);
+    storedFieldsWriter.finish(state.fieldInfos, maxDoc);
     storedFieldsWriter.close();
 
     Map<String,TermsHashPerField> fieldsToFlush = new HashMap<>();
@@ -120,7 +120,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Writes all buffered doc values (called from {@link #flush}). */
   private void writeDocValues(SegmentWriteState state) throws IOException {
-    int docCount = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     DocValuesConsumer dvConsumer = null;
     boolean success = false;
     try {
@@ -138,7 +138,7 @@ final class DefaultIndexingChain extends DocConsumer {
               dvConsumer = fmt.fieldsConsumer(state);
             }
 
-            perField.docValuesWriter.finish(docCount);
+            perField.docValuesWriter.finish(maxDoc);
             perField.docValuesWriter.flush(state, dvConsumer);
             perField.docValuesWriter = null;
           } else if (perField.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
@@ -200,7 +200,7 @@ final class DefaultIndexingChain extends DocConsumer {
           // changed for this field since the first time we added it.
           if (fi.omitsNorms() == false && fi.getIndexOptions() != IndexOptions.NONE) {
             assert perField.norms != null: "field=" + fi.name;
-            perField.norms.finish(state.segmentInfo.getDocCount());
+            perField.norms.finish(state.segmentInfo.maxDoc());
             perField.norms.flush(state, normsConsumer);
           }
         }

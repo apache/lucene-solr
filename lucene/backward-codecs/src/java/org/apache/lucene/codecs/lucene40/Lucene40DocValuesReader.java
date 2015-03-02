@@ -145,7 +145,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.VAR_INTS_VERSION_CURRENT);
     byte header = input.readByte();
     if (header == Lucene40DocValuesFormat.VAR_INTS_FIXED_64) {
-      int maxDoc = state.segmentInfo.getDocCount();
+      int maxDoc = state.segmentInfo.maxDoc();
       final long values[] = new long[maxDoc];
       for (int i = 0; i < values.length; i++) {
         values[i] = input.readLong();
@@ -193,7 +193,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 1) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final byte values[] = new byte[maxDoc];
     input.readBytes(values, 0, values.length);
     long bytesUsed = RamUsageEstimator.sizeOf(values);
@@ -217,7 +217,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 2) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final short values[] = new short[maxDoc];
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readShort();
@@ -243,7 +243,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 4) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final int values[] = new int[maxDoc];
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readInt();
@@ -269,7 +269,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 8) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final long values[] = new long[maxDoc];
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readLong();
@@ -295,7 +295,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 4) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final int values[] = new int[maxDoc];
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readInt();
@@ -321,7 +321,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     if (valueSize != 8) {
       throw new CorruptIndexException("invalid valueSize: " + valueSize, input);
     }
-    int maxDoc = state.segmentInfo.getDocCount();
+    int maxDoc = state.segmentInfo.maxDoc();
     final long values[] = new long[maxDoc];
     for (int i = 0; i < values.length; i++) {
       values[i] = input.readLong();
@@ -376,7 +376,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                    Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_CURRENT);
       final int fixedLength = input.readInt();
       PagedBytes bytes = new PagedBytes(16);
-      bytes.copy(input, fixedLength * (long)state.segmentInfo.getDocCount());
+      bytes.copy(input, fixedLength * (long)state.segmentInfo.maxDoc());
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       CodecUtil.checkEOF(input);
       success = true;
@@ -681,7 +681,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
   // detects and corrects LUCENE-4717 in old indexes
   private SortedDocValues correctBuggyOrds(final SortedDocValues in) {
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     for (int i = 0; i < maxDoc; i++) {
       if (in.getOrd(i) == 0) {
         return in; // ok
@@ -719,7 +719,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
-    return new Bits.MatchAllBits(state.segmentInfo.getDocCount());
+    return new Bits.MatchAllBits(state.segmentInfo.maxDoc());
   }
 
   @Override

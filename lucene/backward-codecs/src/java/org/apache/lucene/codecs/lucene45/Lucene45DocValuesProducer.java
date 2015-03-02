@@ -126,7 +126,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
-    this.maxDoc = state.segmentInfo.getDocCount();
+    this.maxDoc = state.segmentInfo.maxDoc();
     merging = false;
     boolean success = false;
     try {

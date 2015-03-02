@@ -79,7 +79,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     long gen = info.getDelGen();
     String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
-    final int length = info.info.getDocCount();
+    final int length = info.info.maxDoc();
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
