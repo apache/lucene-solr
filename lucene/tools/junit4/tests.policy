@@ -74,8 +74,20 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
   
   // read access to all system properties:
-  // needed by junit4 BootstrapEvent (it calls System.getProperties, used by ant xml reporting?)
-  permission java.util.PropertyPermission "*", "read,write";
+  permission java.util.PropertyPermission "*", "read";
+  // write access to only these:
+  // locale randomization
+  permission java.util.PropertyPermission "user.language", "write";
+  // timezone randomization
+  permission java.util.PropertyPermission "user.timezone", "write";
+
+  // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
+  permission java.util.PropertyPermission "tests.runnested", "write";
+
+  // solr properties. TODO: move these out to SolrTestCase
+  permission java.util.PropertyPermission "solr.data.dir", "write";
+  permission java.util.PropertyPermission "solr.solr.home", "write";
+  permission java.util.PropertyPermission "solr.directoryFactory", "write";
 
   // replicator: jetty tests require some network permissions:
   // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:

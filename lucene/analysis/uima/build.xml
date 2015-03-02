@@ -24,7 +24,10 @@
   </description>
 	
   <property name="tests.userdir" value="src/test-files"/>
+  <!-- TODO: why is this limited to one JVM? -->
   <property name="tests.jvms.override" value="1" />
+  <!-- TODO: go fix this in uima, its stupid -->
+  <property name="tests.policy" location="../../tools/junit4/solr-tests.policy"/>
 
   <path id="uimajars">
     <fileset dir="lib"/>

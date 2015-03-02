@@ -5,11 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,10 +23,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  * limitations under the License.
  */
 public class TestDateTools extends LuceneTestCase {
-  @Rule
-  public TestRule testRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   public void testStringToDate() throws ParseException {
     
     Date d = null;
