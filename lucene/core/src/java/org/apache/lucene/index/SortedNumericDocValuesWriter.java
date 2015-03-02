@@ -103,7 +103,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     assert pendingCounts.size() == maxDoc;
     final PackedLongValues values = pending.build();
     final PackedLongValues valueCounts = pendingCounts.build();

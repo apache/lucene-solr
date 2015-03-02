@@ -63,7 +63,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
     Bits raw = in.readLiveDocs(dir, info, context);
     assert raw != null;
-    check(raw, info.info.getDocCount(), info.getDelCount());
+    check(raw, info.info.maxDoc(), info.getDelCount());
     return new AssertingBits(raw);
   }
 
@@ -71,7 +71,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     assert bits instanceof AssertingMutableBits;
     MutableBits raw = (MutableBits) ((AssertingMutableBits)bits).in;
-    check(raw, info.info.getDocCount(), info.getDelCount() + newDelCount);
+    check(raw, info.info.maxDoc(), info.getDelCount() + newDelCount);
     in.writeLiveDocs(raw, dir, info, newDelCount, context);
   }
   

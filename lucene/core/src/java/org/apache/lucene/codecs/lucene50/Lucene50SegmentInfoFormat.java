@@ -140,7 +140,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       output.writeInt(version.minor);
       output.writeInt(version.bugfix);
       assert version.prerelease == 0;
-      output.writeInt(si.getDocCount());
+      output.writeInt(si.maxDoc());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeMapOfStrings(si.getDiagnostics());

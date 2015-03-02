@@ -152,10 +152,10 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected long sizeDocs(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     if (calibrateSizeByDeletes) {
       int delCount = writer.numDeletedDocs(info);
-      assert delCount <= info.info.getDocCount();
-      return (info.info.getDocCount() - (long)delCount);
+      assert delCount <= info.info.maxDoc();
+      return (info.info.maxDoc() - (long)delCount);
     } else {
-      return info.info.getDocCount();
+      return info.info.maxDoc();
     }
   }
 

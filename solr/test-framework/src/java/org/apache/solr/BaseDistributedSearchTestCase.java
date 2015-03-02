@@ -54,6 +54,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -306,9 +307,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected JettySolrRunner createControlJetty() throws Exception {
-    writeCoreProperties(testDir.toPath().resolve("control/cores"), DEFAULT_TEST_CORENAME);
-    System.setProperty("coreRootDirectory", testDir.toPath().resolve("control").toString());
-    JettySolrRunner jetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+    Path jettyHome = testDir.toPath().resolve("control");
+    File jettyHomeFile = jettyHome.toFile();
+    seedSolrHome(jettyHomeFile);
+    seedCoreRootDirWithDefaultTestCore(jettyHome);
+    System.setProperty("coreRootDirectory", jettyHome.toString());
+    JettySolrRunner jetty = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
     return jetty;
   }
 
@@ -323,13 +327,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      String shardname = "shard" + i;
-      Path coresPath = testDir.toPath().resolve(shardname).resolve("cores");
-      writeCoreProperties(coresPath, DEFAULT_TEST_CORENAME);
-      System.setProperty("coreRootDirectory", testDir.toPath().resolve(shardname).toString());
-      JettySolrRunner j = createJetty(new File(getSolrHome()),
-          testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
-          getSchemaFile());
+      final String shardname = "shard" + i;
+      Path jettyHome = testDir.toPath().resolve(shardname);
+      File jettyHomeFile = jettyHome.toFile();
+      seedSolrHome(jettyHomeFile);
+      seedCoreRootDirWithDefaultTestCore(jettyHome);
+      System.setProperty("coreRootDirectory", jettyHome.toString());
+      JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+                                      
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
       String shardStr = buildUrl(j.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
@@ -1041,12 +1046,38 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
   
-  protected void setupJettySolrHome(File jettyHome) throws IOException {
+  /**
+   * Given a directory that will be used as the SOLR_HOME for a jetty instance, seeds that 
+   * directory with the contents of {@link #getSolrHome} and ensures that the proper {@link #getSolrXml} 
+   * file is in place.
+   */
+  private void seedSolrHome(File jettyHome) throws IOException {
     FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
     String solrxml = getSolrXml();
     if (solrxml != null) {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
+  }
+
+  /**
+   * Given a directory that will be used as the <code>coreRootDirectory</code> for a jetty instance, 
+   * Creates a core directory named {@link #DEFAULT_TEST_CORENAME} using a trivial
+   * <code>core.properties</code> if this file does not already exist.
+   *
+   * @see #writeCoreProperties(Path,String)
+   * @see #CORE_PROPERTIES_FILENAME
+   */
+  private void seedCoreRootDirWithDefaultTestCore(Path coreRootDirectory) throws IOException {
+    // Kludgy and brittle with assumptions about writeCoreProperties, but i don't want to 
+    // try to change the semantics of that method to ignore existing files
+    Path coreDir = coreRootDirectory.resolve(DEFAULT_TEST_CORENAME);
+    if (Files.notExists(coreDir.resolve(CORE_PROPERTIES_FILENAME))) {
+      writeCoreProperties(coreDir, DEFAULT_TEST_CORENAME);
+    } // else nothing to do, DEFAULT_TEST_CORENAME already exists
+  }
+
+  protected void setupJettySolrHome(File jettyHome) throws IOException {
+    seedSolrHome(jettyHome);
 
     Properties coreProperties = new Properties();
     coreProperties.setProperty("name", "collection1");

@@ -87,8 +87,9 @@ public abstract class MergePolicy {
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
    *  subset of segments to be merged as well as whether the
-   *  new segment should use the compound file format. */
-
+   *  new segment should use the compound file format.
+   *
+   * @lucene.experimental */
   public static class OneMerge {
 
     SegmentCommitInfo info;         // used by IndexWriter
@@ -114,7 +115,7 @@ public abstract class MergePolicy {
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
-    public final int totalDocCount;
+    public final int totalMaxDoc;
     Throwable error;
 
     /** Sole constructor.
@@ -128,9 +129,9 @@ public abstract class MergePolicy {
       this.segments = new ArrayList<>(segments);
       int count = 0;
       for(SegmentCommitInfo info : segments) {
-        count += info.info.getDocCount();
+        count += info.info.maxDoc();
       }
-      totalDocCount = count;
+      totalMaxDoc = count;
 
       rateLimiter = new MergeRateLimiter(this);
     }
@@ -232,14 +233,14 @@ public abstract class MergePolicy {
     public int totalNumDocs() throws IOException {
       int total = 0;
       for (SegmentCommitInfo info : segments) {
-        total += info.info.getDocCount();
+        total += info.info.maxDoc();
       }
       return total;
     }
 
     /** Return {@link MergeInfo} describing this merge. */
     public MergeInfo getMergeInfo() {
-      return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, maxNumSegments);
+      return new MergeInfo(totalMaxDoc, estimatedMergeBytes, isExternal, maxNumSegments);
     }    
   }
 
@@ -440,9 +441,9 @@ public abstract class MergePolicy {
   protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     long byteSize = info.sizeInBytes();
     int delCount = writer.numDeletedDocs(info);
-    double delRatio = info.info.getDocCount() <= 0 ? 0.0f : (float) delCount / (float) info.info.getDocCount();
+    double delRatio = info.info.maxDoc() <= 0 ? 0.0f : (float) delCount / (float) info.info.maxDoc();
     assert delRatio <= 1.0;
-    return (info.info.getDocCount() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
+    return (info.info.maxDoc() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
   }
   
   /** Returns true if this single info is already fully merged (has no

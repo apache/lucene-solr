@@ -110,7 +110,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
-    numDocs = si.getDocCount();
+    numDocs = si.maxDoc();
     int version = -1;
     CompressingStoredFieldsIndexReader indexReader = null;
     

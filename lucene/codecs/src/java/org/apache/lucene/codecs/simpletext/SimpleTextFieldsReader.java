@@ -79,7 +79,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final int maxDoc;
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
-    this.maxDoc = state.segmentInfo.getDocCount();
+    this.maxDoc = state.segmentInfo.maxDoc();
     fieldInfos = state.fieldInfos;
     in = state.directory.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
     boolean success = false;

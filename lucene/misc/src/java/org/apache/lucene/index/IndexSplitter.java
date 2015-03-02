@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Command-line tool that enables listing segments in an
@@ -137,7 +136,7 @@ public class IndexSplitter {
       SegmentCommitInfo infoPerCommit = getInfo(n);
       SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
-      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), 
+      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.maxDoc(),
                                             info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics(), info.getId(), new HashMap<>());
       destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(),
           infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen(),

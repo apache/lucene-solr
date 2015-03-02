@@ -52,7 +52,7 @@ public final class SegmentInfo {
   /** Unique segment name in the directory. */
   public final String name;
 
-  private int docCount;         // number of docs in seg
+  private int maxDoc;         // number of docs in seg
 
   /** Where this segment resides. */
   public final Directory dir;
@@ -90,14 +90,14 @@ public final class SegmentInfo {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, Version version, String name, int docCount,
+  public SegmentInfo(Directory dir, Version version, String name, int maxDoc,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
                      byte[] id, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = Objects.requireNonNull(dir);
     this.version = Objects.requireNonNull(version);
     this.name = Objects.requireNonNull(name);
-    this.docCount = docCount;
+    this.maxDoc = maxDoc;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
     this.diagnostics = Objects.requireNonNull(diagnostics);
@@ -142,19 +142,19 @@ public final class SegmentInfo {
 
   /** Returns number of documents in this segment (deletions
    *  are not taken into account). */
-  public int getDocCount() {
-    if (this.docCount == -1) {
-      throw new IllegalStateException("docCount isn't set yet");
+  public int maxDoc() {
+    if (this.maxDoc == -1) {
+      throw new IllegalStateException("maxDoc isn't set yet");
     }
-    return docCount;
+    return maxDoc;
   }
 
   // NOTE: leave package private
-  void setDocCount(int docCount) {
-    if (this.docCount != -1) {
-      throw new IllegalStateException("docCount was already set: this.docCount=" + this.docCount + " vs docCount=" + docCount);
+  void setMaxDoc(int maxDoc) {
+    if (this.maxDoc != -1) {
+      throw new IllegalStateException("maxDoc was already set: this.maxDoc=" + this.maxDoc + " vs maxDoc=" + maxDoc);
     }
-    this.docCount = docCount;
+    this.maxDoc = maxDoc;
   }
 
   /** Return all files referenced by this SegmentInfo. */
@@ -186,7 +186,7 @@ public final class SegmentInfo {
     char cfs = getUseCompoundFile() ? 'c' : 'C';
     s.append(cfs);
 
-    s.append(docCount);
+    s.append(maxDoc);
 
     if (delCount != 0) {
       s.append('/').append(delCount);

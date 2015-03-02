@@ -23,7 +23,7 @@ package org.apache.lucene.store;
 
 public class MergeInfo {
   
-  public final int totalDocCount;
+  public final int totalMaxDoc;
   
   public final long estimatedMergeBytes;
   
@@ -40,8 +40,8 @@ public class MergeInfo {
    * 
    */
 
-  public MergeInfo(int totalDocCount, long estimatedMergeBytes, boolean isExternal, int mergeMaxNumSegments) {
-    this.totalDocCount = totalDocCount;
+  public MergeInfo(int totalMaxDoc, long estimatedMergeBytes, boolean isExternal, int mergeMaxNumSegments) {
+    this.totalMaxDoc = totalMaxDoc;
     this.estimatedMergeBytes = estimatedMergeBytes;
     this.isExternal = isExternal;
     this.mergeMaxNumSegments = mergeMaxNumSegments;
@@ -56,7 +56,7 @@ public class MergeInfo {
         + (int) (estimatedMergeBytes ^ (estimatedMergeBytes >>> 32));
     result = prime * result + (isExternal ? 1231 : 1237);
     result = prime * result + mergeMaxNumSegments;
-    result = prime * result + totalDocCount;
+    result = prime * result + totalMaxDoc;
     return result;
   }
 
@@ -75,14 +75,14 @@ public class MergeInfo {
       return false;
     if (mergeMaxNumSegments != other.mergeMaxNumSegments)
       return false;
-    if (totalDocCount != other.totalDocCount)
+    if (totalMaxDoc != other.totalMaxDoc)
       return false;
     return true;
   }
 
   @Override
   public String toString() {
-    return "MergeInfo [totalDocCount=" + totalDocCount
+    return "MergeInfo [totalMaxDoc=" + totalMaxDoc
         + ", estimatedMergeBytes=" + estimatedMergeBytes + ", isExternal="
         + isExternal + ", mergeMaxNumSegments=" + mergeMaxNumSegments + "]";
   }

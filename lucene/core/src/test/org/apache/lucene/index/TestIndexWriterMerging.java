@@ -320,7 +320,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
           break;
         }
         for(int i=0;i<merge.segments.size();i++) {
-          assert merge.segments.get(i).info.getDocCount() < 20;
+          assert merge.segments.get(i).info.maxDoc() < 20;
         }
         writer.merge(merge);
       }

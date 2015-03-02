@@ -84,7 +84,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     int minSkipInterval;
-    if (state.segmentInfo.getDocCount() > 1000000) {
+    if (state.segmentInfo.maxDoc() > 1000000) {
       // Test2BPostings can OOME otherwise:
       minSkipInterval = 3;
     } else {

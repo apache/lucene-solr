@@ -178,7 +178,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   {
     BlockTreeTermsWriter.validateSettings(minItemsInBlock, maxItemsInBlock);
 
-    maxDoc = state.segmentInfo.getDocCount();
+    maxDoc = state.segmentInfo.maxDoc();
 
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
     out = state.directory.createOutput(termsFileName, state.context);

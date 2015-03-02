@@ -41,7 +41,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    return new AssertingStoredFieldsReader(in.fieldsReader(directory, si, fn, context), si.getDocCount());
+    return new AssertingStoredFieldsReader(in.fieldsReader(directory, si, fn, context), si.maxDoc());
   }
 
   @Override

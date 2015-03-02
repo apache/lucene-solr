@@ -56,7 +56,7 @@ final class TermVectorsConsumer extends TermsHash {
   @Override
   void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (writer != null) {
-      int numDocs = state.segmentInfo.getDocCount();
+      int numDocs = state.segmentInfo.maxDoc();
       assert numDocs > 0;
       // At least one doc in this run had term vectors enabled
       try {

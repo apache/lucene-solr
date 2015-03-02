@@ -119,8 +119,8 @@ public class FSTTermsReader extends FieldsProducer {
   }
   private void checkFieldSummary(SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
-    if (field.docCount < 0 || field.docCount > info.getDocCount()) {
-      throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount(), in);
+    if (field.docCount < 0 || field.docCount > info.maxDoc()) {
+      throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.maxDoc(), in);
     }
     // #postings must be >= #docs with field
     if (field.sumDocFreq < field.docCount) {
