@@ -614,7 +614,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
     assertTrue(scorer instanceof ConjunctionScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -676,7 +676,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
     assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
