@@ -172,6 +172,9 @@ Bug Fixes
 * SOLR-7178: OverseerAutoReplicaFailoverThread compares Integer objects using ==
   (shalin)
 
+* SOLR-7171: BaseDistributedSearchTestCase now clones getSolrHome() for each subclass, 
+  and consistently uses getSolrXml().  (hossman)
+
 Optimizations
 ----------------------
 

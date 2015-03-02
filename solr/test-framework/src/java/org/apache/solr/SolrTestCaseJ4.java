@@ -133,6 +133,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static final String DEFAULT_TEST_CORENAME = "collection1";
+  protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   private static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -152,7 +153,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     log.info("Writing core.properties file to {}", coreDirectory);
     Files.createDirectories(coreDirectory);
     try (Writer writer =
-             new OutputStreamWriter(Files.newOutputStream(coreDirectory.resolve("core.properties")), Charset.forName("UTF-8"))) {
+             new OutputStreamWriter(Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)), Charset.forName("UTF-8"))) {
       properties.store(writer, testname);
     }
   }

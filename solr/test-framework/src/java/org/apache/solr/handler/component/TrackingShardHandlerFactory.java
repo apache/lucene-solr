@@ -155,7 +155,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     for (JettySolrRunner runner : runners) {
       CoreContainer container = ((SolrDispatchFilter) runner.getDispatchFilter().getFilter()).getCores();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
-      assert factory instanceof TrackingShardHandlerFactory;
+      assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: " + factory.getClass();
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
       trackingShardHandlerFactory.setTrackingQueue(queue);
     }
