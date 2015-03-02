@@ -195,6 +195,11 @@ API Changes
 * LUCENE-6317: Deprecate DataOutput.writeStringSet and writeStringStringMap.
   Use writeSetOfStrings/Maps instead. (Mike McCandless, Robert Muir)
 
+* LUCENE-6307: Rename SegmentInfo.getDocCount -> .maxDoc,
+  SegmentInfos.totalDocCount -> .totalMaxDoc, MergeInfo.totalDocCount
+  -> .totalMaxDoc and MergePolicy.OneMerge.totalDocCount ->
+  .totalMaxDoc (Adrien Grand, Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj

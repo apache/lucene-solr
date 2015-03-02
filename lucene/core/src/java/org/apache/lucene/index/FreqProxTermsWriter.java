@@ -63,7 +63,7 @@ final class FreqProxTermsWriter extends TermsHash {
             int doc = postingsEnum.nextDoc();
             if (doc < delDocLimit) {
               if (state.liveDocs == null) {
-                state.liveDocs = state.segmentInfo.getCodec().liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
+                state.liveDocs = state.segmentInfo.getCodec().liveDocsFormat().newLiveDocs(state.segmentInfo.maxDoc());
               }
               if (state.liveDocs.get(doc)) {
                 state.delCountOnFlush++;

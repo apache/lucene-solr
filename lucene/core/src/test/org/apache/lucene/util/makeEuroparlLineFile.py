@@ -35,16 +35,16 @@ reChapterOnly = re.compile('^<CHAPTER ID=.*?>$')
 reTagOnly = re.compile('^<.*?>$')
 reNumberOnly = re.compile(r'^\d+\.?$')
 
-docCount = 0
+maxDoc = 0
 didEnglish = False
 
 def write(date, title, pending, fOut):
-  global docCount
+  global maxDoc
   body = ' '.join(pending).replace('\t', ' ').strip()
   if len(body) > 0:
     line = '%s\t%s\t%s\n' % (title, date, body)
     fOut.write(line)
-    docCount += 1
+    maxDoc += 1
     del pending[:]
     if VERBOSE:
       print len(body)
@@ -109,10 +109,10 @@ fOut = open(fileOut, 'wb')
 
 for fileName in glob.glob('%s/??-??.tgz' % dirIn):
   if fileName.endswith('.tgz'):
-    print 'process %s; %d docs so far...' % (fileName, docCount)
+    print 'process %s; %d docs so far...' % (fileName, maxDoc)
     processTar(fileName, fOut)
 
-print 'TOTAL: %s' % docCount
+print 'TOTAL: %s' % maxDoc
 
 #run something like this:
 """

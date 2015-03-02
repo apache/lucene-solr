@@ -184,7 +184,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
             // Make a best effort to detect when the app illegally "rm -rf" their
             // index while a reader was open, and then called openIfChanged:
-            boolean illegalDocCountChange = commitInfo.info.getDocCount() != oldReader.getSegmentInfo().info.getDocCount();
+            boolean illegalDocCountChange = commitInfo.info.maxDoc() != oldReader.getSegmentInfo().info.maxDoc();
             
             boolean hasNeitherDeletionsNorUpdates = commitInfo.hasDeletions()== false && commitInfo.hasFieldUpdates() == false;
 

@@ -41,7 +41,7 @@ public class AssertingNormsFormat extends NormsFormat {
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     NormsConsumer consumer = in.normsConsumer(state);
     assert consumer != null;
-    return new AssertingNormsConsumer(consumer, state.segmentInfo.getDocCount());
+    return new AssertingNormsConsumer(consumer, state.segmentInfo.maxDoc());
   }
 
   @Override
@@ -49,7 +49,7 @@ public class AssertingNormsFormat extends NormsFormat {
     assert state.fieldInfos.hasNorms();
     NormsProducer producer = in.normsProducer(state);
     assert producer != null;
-    return new AssertingNormsProducer(producer, state.segmentInfo.getDocCount());
+    return new AssertingNormsProducer(producer, state.segmentInfo.maxDoc());
   }
   
   static class AssertingNormsConsumer extends NormsConsumer {

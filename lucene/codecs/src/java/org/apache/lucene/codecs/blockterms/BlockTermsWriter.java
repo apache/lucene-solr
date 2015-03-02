@@ -105,7 +105,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
-    maxDoc = state.segmentInfo.getDocCount();
+    maxDoc = state.segmentInfo.maxDoc();
     out = state.directory.createOutput(termsFileName, state.context);
     boolean success = false;
     try {
