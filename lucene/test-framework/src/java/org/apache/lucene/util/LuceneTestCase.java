@@ -81,7 +81,6 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -419,16 +418,6 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
-  /**
-   * These property keys will be ignored in verification of altered properties.
-   * @see SystemPropertiesInvariantRule
-   * @see #ruleChain
-   * @see #classRules
-   */
-  private static final String [] IGNORED_INVARIANT_PROPERTIES = {
-    "user.timezone", "java.rmi.server.randomIDs"
-  };
-
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
     "SimpleFSDirectory",
@@ -583,8 +572,20 @@ public abstract class LuceneTestCase extends Assert {
         return !(name.equals("setUp") || name.equals("tearDown"));
       }
     })
-    .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(classNameRule = new TestRuleStoreClassName())
+    .around(new TestRuleRestoreSystemProperties(
+        // Enlist all properties to which we have write access (security manager);
+        // these should be restored to previous state, no matter what the outcome of the test.
+
+        // We reset the default locale and timezone; these properties change as a side-effect
+        "user.language",
+        "user.timezone",
+        
+        // TODO: these should, ideally, be moved to Solr's base class.
+        "solr.directoryFactory",
+        "solr.solr.home",
+        "solr.data.dir"
+        ))
     .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
 
 
@@ -611,7 +612,6 @@ public abstract class LuceneTestCase extends Assert {
     .outerRule(testFailureMarker)
     .around(ignoreAfterMaxFailures)
     .around(threadAndTestNameRule)
-    .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
     .around(parentChainCallRule);
 
