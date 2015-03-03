@@ -28,6 +28,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
+Jetty 9.2.9.v20150224
 
 System Requirements
 ----------------------
@@ -69,7 +70,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.6.v20141205
+Jetty 8.1.10.v20130312
 
 Upgrading from Solr 5.0
 -----------------------
@@ -253,7 +254,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.6.v20141205
+Jetty 8.1.10.v20130312
 
 Upgrading from Solr 4.x
 ----------------------
