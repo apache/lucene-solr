@@ -175,6 +175,9 @@ Bug Fixes
 * SOLR-7171: BaseDistributedSearchTestCase now clones getSolrHome() for each subclass, 
   and consistently uses getSolrXml().  (hossman)
 
+* SOLR-6657:  DocumentDictionaryFactory requires weightField to be mandatory, but it shouldn't
+  (Erick Erickson)
+
 Optimizations
 ----------------------
 
