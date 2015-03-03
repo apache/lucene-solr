@@ -46,10 +46,7 @@ public class DocumentDictionaryFactory extends DictionaryFactory {
     if (field == null) {
       throw new IllegalArgumentException(FIELD + " is a mandatory parameter");
     }
-    if (weightField == null) {
-      throw new IllegalArgumentException(WEIGHT_FIELD + " is a mandatory parameter");
-    }
-    
+
     return new DocumentDictionary(searcher.getIndexReader(), field, weightField, payloadField);
   }
   
