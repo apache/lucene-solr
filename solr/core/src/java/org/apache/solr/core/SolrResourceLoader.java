@@ -763,7 +763,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  void assertAwareCompatibility( Class aware, Object obj )
+  static void assertAwareCompatibility( Class aware, Object obj )
   {
     Class[] valid = awareCompatibility.get( aware );
     if( valid == null ) {

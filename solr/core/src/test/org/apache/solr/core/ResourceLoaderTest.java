@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -45,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+
+import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 
 {
@@ -87,8 +88,8 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
     
     Class<?> clazz = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    loader.assertAwareCompatibility( clazz, new NGramFilterFactory(new HashMap<String,String>()) );
-    loader.assertAwareCompatibility( clazz, new KeywordTokenizerFactory(new HashMap<String,String>()) );
+    assertAwareCompatibility( clazz, new NGramFilterFactory(new HashMap<String,String>()) );
+    assertAwareCompatibility( clazz, new KeywordTokenizerFactory(new HashMap<String,String>()) );
     
     // Make sure it throws an error for invalid objects
     Object[] invalid = new Object[] {
@@ -99,7 +100,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
     };
     for( Object obj : invalid ) {
       try {
-        loader.assertAwareCompatibility( clazz, obj );
+        assertAwareCompatibility(clazz, obj);
         Assert.fail( "Should be invalid class: "+obj + " FOR " + clazz );
       }
       catch( SolrException ex ) { } // OK
@@ -108,9 +109,9 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
 
     clazz = SolrCoreAware.class;
     // Check ResourceLoaderAware valid objects
-    loader.assertAwareCompatibility( clazz, new LukeRequestHandler() );
-    loader.assertAwareCompatibility( clazz, new FacetComponent() );
-    loader.assertAwareCompatibility( clazz, new JSONResponseWriter() );
+    assertAwareCompatibility(clazz, new LukeRequestHandler());
+    assertAwareCompatibility(clazz, new FacetComponent());
+    assertAwareCompatibility(clazz, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
     invalid = new Object[] {
@@ -120,7 +121,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
     };
     for( Object obj : invalid ) {
       try {
-        loader.assertAwareCompatibility( clazz, obj );
+        assertAwareCompatibility(clazz, obj);
         Assert.fail( "Should be invalid class: "+obj + " FOR " + clazz );
       }
       catch( SolrException ex ) { } // OK
