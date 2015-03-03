@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -46,6 +47,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -817,6 +819,98 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     reader.close();
     dir.close();
+  }
+
+  private static Term randomTerm() {
+    final String term = RandomPicks.randomFrom(random(), Arrays.asList("foo", "bar", "baz"));
+    return new Term("foo", term);
+  }
+
+  private static Query buildRandomQuery(int level) {
+    if (level == 10) {
+      // at most 10 levels
+      return new MatchAllDocsQuery();
+    }
+    switch (random().nextInt(6)) {
+      case 0:
+        return new TermQuery(randomTerm());
+      case 1:
+        BooleanQuery bq = new BooleanQuery();
+        final int numClauses = TestUtil.nextInt(random(), 1, 3);
+        int numShould = 0;
+        for (int i = 0; i < numClauses; ++i) {
+          final Occur occur = RandomPicks.randomFrom(random(), Occur.values());
+          bq.add(buildRandomQuery(level + 1), occur);
+          if (occur == Occur.SHOULD) {
+            numShould++;
+          }
+        }
+        bq.setMinimumNumberShouldMatch(TestUtil.nextInt(random(), 0, numShould));
+        return bq;
+      case 2:
+        PhraseQuery pq = new PhraseQuery();
+        pq.add(randomTerm());
+        pq.add(randomTerm());
+        pq.setSlop(random().nextInt(2));
+        return pq;
+      case 3:
+        return new MatchAllDocsQuery();
+      case 4:
+        return new ConstantScoreQuery(buildRandomQuery(level + 1));
+      case 5:
+        DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(random().nextFloat());
+        final int numQueries = TestUtil.nextInt(random(), 1, 3);
+        for (int i = 0; i < numQueries; ++i) {
+          dmq.add(buildRandomQuery(level + 1));
+        }
+        return dmq;
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  public void testRandom() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    TextField f = new TextField("foo", "foo", Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+
+    final int maxSize = TestUtil.nextInt(random(), 1, 10000);
+    final long maxRamBytesUsed = TestUtil.nextLong(random(), 1, 5000000);
+    final LRUQueryCache queryCache = new LRUQueryCache(maxSize, maxRamBytesUsed);
+    IndexSearcher uncachedSearcher = null;
+    IndexSearcher cachedSearcher = null;
+
+    final int iters = atLeast(20000);
+    for (int i = 0; i < iters; ++i) {
+      if (i == 0 || random().nextInt(100) == 1) {
+        reader.close();
+        f.setStringValue(RandomPicks.randomFrom(random(), Arrays.asList("foo", "bar", "bar baz")));
+        w.addDocument(doc);
+        if (random().nextBoolean()) {
+          w.deleteDocuments(buildRandomQuery(0));
+        }
+        reader = w.getReader();
+        uncachedSearcher = newSearcher(reader);
+        uncachedSearcher.setQueryCache(null);
+        cachedSearcher = newSearcher(reader);
+        cachedSearcher.setQueryCache(queryCache);
+        cachedSearcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+      }
+      final Query q = buildRandomQuery(0);
+      assertEquals(uncachedSearcher.count(q), cachedSearcher.count(q));
+      if (rarely()) {
+        queryCache.assertConsistent();
+      }
+    }
+    queryCache.assertConsistent();
+    w.close();
+    reader.close();
+    dir.close();
+    queryCache.assertConsistent();
   }
 
 }
