@@ -55,11 +55,11 @@
     <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
       <resolver ref="local"/>
       <!-- <resolver ref="local-maven-2" /> -->
-      <resolver ref="rr-snapshot"/>
       <resolver ref="main"/>
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
       <resolver ref="releases.cloudera.com"/>
+      <resolver ref="rr-snapshot"/>
       <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
     </chain>
