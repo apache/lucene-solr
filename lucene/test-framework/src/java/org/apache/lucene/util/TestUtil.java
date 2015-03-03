@@ -73,6 +73,7 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FilterLeafReader;
@@ -301,14 +302,23 @@ public final class TestUtil {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
-    reader.checkIntegrity();
-    CheckIndex.testLiveDocs(reader, infoStream, true);
-    CheckIndex.testFieldInfos(reader, infoStream, true);
-    CheckIndex.testFieldNorms(reader, infoStream, true);
-    CheckIndex.testPostings(reader, infoStream, false, true);
-    CheckIndex.testStoredFields(reader, infoStream, true);
-    CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors, true);
-    CheckIndex.testDocValues(reader, infoStream, true);
+    final CodecReader codecReader;
+    if (reader instanceof CodecReader) {
+      codecReader = (CodecReader) reader;
+      reader.checkIntegrity();
+    } else {
+      codecReader = SlowCodecReaderWrapper.wrap(reader);
+    }
+    CheckIndex.testLiveDocs(codecReader, infoStream, true);
+    CheckIndex.testFieldInfos(codecReader, infoStream, true);
+    CheckIndex.testFieldNorms(codecReader, infoStream, true);
+    CheckIndex.testPostings(codecReader, infoStream, false, true);
+    CheckIndex.testStoredFields(codecReader, infoStream, true);
+    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true);
+    CheckIndex.testDocValues(codecReader, infoStream, true);
+    
+    // some checks really against the reader API
+    checkReaderSanity(reader);
     
     if (LuceneTestCase.INFOSTREAM) {
       System.out.println(bos.toString(IOUtils.UTF_8));
@@ -322,6 +332,76 @@ public final class TestUtil {
         throw new IllegalStateException("invalid ramBytesUsed for reader: " + bytesUsed);
       }
       assert Accountables.toString(sr) != null;
+    }
+  }
+  
+  // used by TestUtil.checkReader to check some things really unrelated to the index,
+  // just looking for bugs in indexreader implementations.
+  private static void checkReaderSanity(LeafReader reader) throws IOException {
+    for (FieldInfo info : reader.getFieldInfos()) {
+      
+      // reader shouldn't return normValues if the field does not have them
+      if (!info.hasNorms()) {
+        if (reader.getNormValues(info.name) != null) {
+          throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
+        }
+      }
+      
+      // reader shouldn't return docValues if the field does not have them
+      // reader shouldn't return multiple docvalues types for the same field.
+      switch(info.getDocValuesType()) {
+        case NONE:
+          if (reader.getBinaryDocValues(info.name) != null ||
+              reader.getNumericDocValues(info.name) != null ||
+              reader.getSortedDocValues(info.name) != null || 
+              reader.getSortedSetDocValues(info.name) != null || 
+              reader.getDocsWithField(info.name) != null) {
+            throw new RuntimeException("field: " + info.name + " has docvalues but should omit them!");
+          }
+          break;
+        case SORTED:
+          if (reader.getBinaryDocValues(info.name) != null ||
+              reader.getNumericDocValues(info.name) != null ||
+              reader.getSortedNumericDocValues(info.name) != null ||
+              reader.getSortedSetDocValues(info.name) != null) {
+            throw new RuntimeException(info.name + " returns multiple docvalues types!");
+          }
+          break;
+        case SORTED_NUMERIC:
+          if (reader.getBinaryDocValues(info.name) != null ||
+              reader.getNumericDocValues(info.name) != null ||
+              reader.getSortedSetDocValues(info.name) != null ||
+              reader.getSortedDocValues(info.name) != null) {
+            throw new RuntimeException(info.name + " returns multiple docvalues types!");
+          }
+          break;
+        case SORTED_SET:
+          if (reader.getBinaryDocValues(info.name) != null ||
+              reader.getNumericDocValues(info.name) != null ||
+              reader.getSortedNumericDocValues(info.name) != null ||
+              reader.getSortedDocValues(info.name) != null) {
+            throw new RuntimeException(info.name + " returns multiple docvalues types!");
+          }
+          break;
+        case BINARY:
+          if (reader.getNumericDocValues(info.name) != null ||
+              reader.getSortedDocValues(info.name) != null ||
+              reader.getSortedNumericDocValues(info.name) != null ||
+              reader.getSortedSetDocValues(info.name) != null) {
+            throw new RuntimeException(info.name + " returns multiple docvalues types!");
+          }
+          break;
+        case NUMERIC:
+          if (reader.getBinaryDocValues(info.name) != null ||
+              reader.getSortedDocValues(info.name) != null ||
+              reader.getSortedNumericDocValues(info.name) != null ||
+              reader.getSortedSetDocValues(info.name) != null) {
+            throw new RuntimeException(info.name + " returns multiple docvalues types!");
+          }
+          break;
+        default:
+          throw new AssertionError();
+      }
     }
   }
 

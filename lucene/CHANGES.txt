@@ -131,6 +131,8 @@ Optimizations
 * LUCENE-6318: Reduce RAM usage of FieldInfos when there are many fields.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-6320: Speed up CheckIndex. (Robert Muir)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()

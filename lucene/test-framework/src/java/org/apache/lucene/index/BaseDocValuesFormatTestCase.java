@@ -45,6 +45,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -2674,9 +2675,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
               PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
               startingGun.await();
               for (LeafReaderContext leaf : r.leaves()) {
-                CheckIndex.testDocValues(leaf.reader(), infoStream, true);
+                DocValuesStatus status = CheckIndex.testDocValues((SegmentReader)leaf.reader(), infoStream, true);
+                if (status.error != null) {
+                  throw status.error;
+                }
               }
-            } catch (Exception e) {
+            } catch (Throwable e) {
               throw new RuntimeException();
             }
           }
