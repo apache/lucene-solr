@@ -749,8 +749,39 @@ Bug fixes
   sorted (set) doc values instance at the same time.
   (Tom Shally, Robert Muir, Adrien Grand)
 
-* LUCENE-6299: IndexWriter was failing to enforce the 2.1 billion doc
-  limit.  (Robert Muir, Mike McCandless)
+* LUCENE-6093: Don't throw NullPointerException from
+  BlendedInfixSuggester for lookups that do not end in a prefix
+  token.  (jane chang via Mike McCandless)
+
+* LUCENE-6279: Don't let an abusive leftover _N_upgraded.si in the
+  index directory cause index corruption on upgrade (Robert Muir, Mike
+  McCandless)
+
+* LUCENE-6287: Fix concurrency bug in IndexWriter that could cause
+  index corruption (missing _N.si files) the first time 4.x kisses a
+  3.x index if merges are also running.  (Simon Willnauer, Mike
+  McCandless)
+
+* LUCENE-6205: Fixed intermittent concurrency issue that could cause
+  FileNotFoundException when writing doc values updates at the same
+  time that a merge kicks off.  (Mike McCandless)
+
+* LUCENE-6214: Fixed IndexWriter deadlock when one thread is
+  committing while another opens a near-real-time reader and an
+  unrecoverable (tragic) exception is hit.  (Simon Willnauer, Mike
+  McCandless)
+
+* LUCENE-6105: Don't cache FST root arcs if the number of root arcs is
+  small, or if the cache would be > 20% of the size of the FST.
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-6001: DrillSideways hits NullPointerException for certain
+  BooleanQuery searches.  (Dragan Jotannovic, jane chang via Mike
+  McCandless)
+  
+* LUCENE-6306: Merging of doc values and norms now checks whether the
+  merge was aborted so IndexWriter.rollback can more promptly abort a
+  running merge. (Robert Muir, Mike McCandless)
 
 API Changes
 

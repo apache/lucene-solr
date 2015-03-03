@@ -1024,6 +1024,96 @@ Other Changes
 * SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
   at least one jetty to kill. (shalin)
 
+==================  4.10.4 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-6931: We should do a limited retry when using HttpClient. 
+  (Mark Miller, Hrishikesh Gadre, Gregory Chanan)
+
+* SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
+  of all "keys" found in the request parameters, resulting in some key=value param pairs 
+  being duplicated.  This was noticeably affecting some areas of the code where iteration 
+  was done over the set of all params: 
+    - literal.* in ExtractingRequestHandler
+    - facet.* in FacetComponent
+    - spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
+    - olap.* in AnalyticsComponent
+  (Alexandre Rafalovitch & hossman)
+
+* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
+* SOLR-6457: LBHttpSolrClient: ArrayIndexOutOfBoundsException risk if counter overflows
+  (longkey via Noble Paul)
+
+* SOLR-6481: CLUSTERSTATUS should check if the node hosting a replica is live when
+  reporting replica status (Timothy Potter)
+
+* SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
+  (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
+
+* SOLR-6579: SnapPuller Replication blocks clean shutdown of tomcat
+  (Philip Black-Knight via Noble Paul)
+
+* SOLR-6763: Shard leader elections should not persist across session expiry
+  (Alan Woodward, Mark Miller)
+  
+* SOLR-3881: Avoid OOMs in LanguageIdentifierUpdateProcessor:
+  - Added langid.maxFieldValueChars and langid.maxTotalChars params to limit
+    input, by default 10k and 20k chars, respectively.
+  - Moved input concatenation to Tika implementation; the langdetect
+    implementation instead appends each input piece via the langdetect API.
+  (Vitaliy Zhovtyuk, Tomás Fernández Löbbe, Rob Tulloh, Steve Rowe)
+
+* SOLR-6850: AutoAddReplicas makes a call to wait to see live replicas that times
+  out after 30 milliseconds instead of 30 seconds. (Varun Thacker via Mark Miller)
+
+* SOLR-6839: Direct routing with CloudSolrServer will ignore the Overwrite document option.
+  (Mark Miller)
+
+* SOLR-7139: Fix SolrContentHandler for TIKA to ignore multiple startDocument events.
+  (Chris A. Mattmann, Uwe Schindler)  
+
+* SOLR-6941: DistributedQueue#containsTaskWithRequestId can fail with NPE. (Mark Miller)
+
+* SOLR-7011: Delete collection returns before collection is actually removed.
+  (Christine Poerschke via shalin)
+
+* SOLR-6856: Restore ExtractingRequestHandler's ability to capture all HTML tags when
+  parsing (X)HTML. (hossman, Uwe Schindler, ehatcher, Steve Rowe)
+  
+* SOLR-6928: solr.cmd stop works only in english (john.work, Jan Høydahl, Timothy Potter)
+
+* SOLR-7038: Validate the presence of configset before trying to create a collection.
+  (Anshum Gupta, Mark Miller)
+
+* SOLR-7016: Fix bin\solr.cmd to work in a directory with spaces in the name.
+  (Timothy Potter, Uwe Schindler)
+    
+* SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to 
+  parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
+  
+* SOLR-7067: bin/solr won't run under bash 4.2+. (Steve Rowe)
+
+* SOLR-7033, SOLR-5961: RecoveryStrategy should not publish any state when
+  closed / cancelled and there should always be a pause between recoveries 
+  even when recoveries are rapidly stopped and started as well as when a
+  node attempts to become the leader for a shard. 
+  (Mark Miller, Maxim Novikov)
+  
+* SOLR-6847: LeaderInitiatedRecoveryThread compares wrong replica's state with lirState.
+  (shalin)
+
+* SOLR-7128: Two phase distributed search is fetching extra fields in GET_TOP_IDS phase.
+  (Pablo Queixalos, shalin)
+
+Other Changes
+----------------------
+
+* SOLR-7147: Introduce new TrackingShardHandlerFactory for monitoring what requests
+  are sent to shards during tests. (hossman, shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
