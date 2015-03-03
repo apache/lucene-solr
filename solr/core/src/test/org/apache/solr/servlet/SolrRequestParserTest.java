@@ -410,6 +410,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       v.add(entry.getValue());
       expect(request.getHeaders(entry.getKey())).andReturn(v.elements()).anyTimes();
     }
+    expect(request.getAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE)).andReturn(null).anyTimes();
     replay(request);
     
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
@@ -430,6 +431,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getContentType()).andReturn(null).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
     expect(request.getHeader(anyObject())).andReturn(null).anyTimes();
+    expect(request.getAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE)).andReturn(null).anyTimes();
     replay(request);
 
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());

@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.SolrParams;
@@ -50,10 +51,17 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected Map<Object,Object> context;
   protected Iterable<ContentStream> streams;
 
-  public SolrQueryRequestBase(SolrCore core, SolrParams params) {
+  private final RTimer requestTimer;
+
+  public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimer requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
     this.params = this.origParams = params;
+    this.requestTimer = requestTimer;
+  }
+
+  public SolrQueryRequestBase(SolrCore core, SolrParams params) {
+    this(core, params, new RTimer());
   }
 
   @Override
@@ -83,6 +91,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   @Override
   public long getStartTime() {
     return startTime;
+  }
+
+  public RTimer getRequestTimer () {
+    return requestTimer;
   }
 
   // The index searcher associated with this request

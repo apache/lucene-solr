@@ -237,6 +237,8 @@ Other Changes
 
 * SOLR-7151: SolrClient query methods throw IOException (Alan Woodward)
 
+* SOLR-6275: Improve accuracy of QTime reporting (Ramkumar Aiyengar)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

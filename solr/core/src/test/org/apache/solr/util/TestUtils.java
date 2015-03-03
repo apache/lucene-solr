@@ -18,20 +18,28 @@
 package org.apache.solr.util;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
  */
-public class TestUtils extends LuceneTestCase {
+public class TestUtils extends SolrTestCaseJ4 {
   
   public void testJoin() {
     assertEquals("a|b|c",   StrUtils.join(Arrays.asList("a","b","c"), '|'));
@@ -136,7 +144,7 @@ public class TestUtils extends LuceneTestCase {
       try {
         iter.remove();
         Assert.fail( "should be unsupported..." );
-      } catch( UnsupportedOperationException ex ) {}
+      } catch( UnsupportedOperationException ignored) {}
     }
     // the values should be bigger
     assertEquals( new Integer(10), map.get( "one" ) );
@@ -153,5 +161,44 @@ public class TestUtils extends LuceneTestCase {
     sortable = NumberUtils.long2sortableStr( num );
     assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
     assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
+  }
+
+  @Test
+  public void testNanoTimeSpeed()
+  {
+    final int maxNumThreads = 100;
+    final int numIters = 1000;
+    if (VERBOSE) log.info("testNanoTime: maxNumThreads = {}, numIters = {}", maxNumThreads, numIters);
+
+    final ExecutorService workers = Executors.newCachedThreadPool(new DefaultSolrThreadFactory("nanoTimeTestThread"));
+
+    for (int numThreads = 1; numThreads <= maxNumThreads; numThreads++) {
+      List<Callable<Long>> tasks = new ArrayList<> ();
+      for (int i = 0; i < numThreads; i ++) {
+        tasks.add(new Callable<Long>() {
+          @Override
+          public Long call() {
+            final long startTime = System.nanoTime();
+            for (int i = 0; i < numIters; i++) {
+              System.nanoTime();
+            }
+            return System.nanoTime() - startTime;
+          }
+        });
+      }
+
+      try {
+        List<Future<Long>> results = workers.invokeAll(tasks);
+        long totalTime = 0;
+        for (Future<Long> res : results) {
+          totalTime += res.get();
+        }
+        long timePerIter = totalTime / (numIters * numThreads);
+        assertTrue("Time taken for System.nanoTime is too high", timePerIter < 10000);
+        if (VERBOSE) log.info("numThreads = {}, time_per_call = {}ns", numThreads, timePerIter);
+      } catch (InterruptedException | ExecutionException ignored) {}
+    }
+
+    ExecutorUtil.shutdownAndAwaitTermination(workers);
   }
 }
