@@ -3,6 +3,8 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.10.5 ======================
+
 ======================= Lucene 4.10.4 ======================
 
 Bug fixes
