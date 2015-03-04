@@ -188,6 +188,8 @@ Other Changes
 
 * SOLR-7151: SolrClient query methods throw IOException (Alan Woodward)
 
+* SOLR-6275: Improve accuracy of QTime reporting (Ramkumar Aiyengar)
+
 * SOLR-7174: DIH should reset TikaEntityProcessor so that it is capable
   of re-use (Alexandre Rafalovitch , Gary Taylor via Noble Paul)
 

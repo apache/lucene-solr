@@ -171,44 +171,7 @@ public class SolrQueryResponse {
     return err;
   }
 
-  /**
-   * The endtime of the request in milliseconds.
-   * Used to calculate query time.
-   * @see #setEndTime(long)
-   * @see #getEndTime()
-   */
-  protected long endtime;
-
-  /**
-   * Get the time in milliseconds when the response officially finished. 
-   */
-  public long getEndTime() {
-    if (endtime==0) {
-      setEndTime();
-    }
-    return endtime;
-  }
-
-  /**
-   * Stop the timer for how long this query took.
-   * @see #setEndTime(long)
-   */
-  public long setEndTime() {
-    return setEndTime(System.currentTimeMillis());
-  }
-
-  /**
-   * Set the in milliseconds when the response officially finished. 
-   * @see #setEndTime()
-   */
-  public long setEndTime(long endtime) {
-    if (endtime!=0) {
-      this.endtime=endtime;
-    }
-    return this.endtime;
-  }
-  
-  /** Repsonse header to be logged */ 
+  /** Response header to be logged */
   public NamedList<Object> getResponseHeader() {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");

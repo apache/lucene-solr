@@ -70,6 +70,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,6 +234,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String corename = "";
       String origCorename = null;
       try {
+        // set a request timer which can be reused by requests if needed
+        req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimer());
         // put the core container in request attribute
         req.setAttribute("org.apache.solr.CoreContainer", cores);
         String path = req.getServletPath();
