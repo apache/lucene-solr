@@ -1652,7 +1652,15 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   @Before
-  public void resetDefaultQueryCache() {
+  public void resetTestDefaultQueryCache() {
+    // Make sure each test method has its own cache
+    resetDefaultQueryCache();
+  }
+
+  @BeforeClass
+  public static void resetDefaultQueryCache() {
+    // we need to reset the query cache in an @BeforeClass so that tests that
+    // instantiate an IndexSearcher in an @BeforeClass method use a fresh new cache
     IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25));
     IndexSearcher.setDefaultQueryCachingPolicy(MAYBE_CACHE_POLICY);
   }
