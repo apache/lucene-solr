@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -273,7 +274,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testGarbageEmpty() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    MatchNoDocsQuery expected = new MatchNoDocsQuery();
 
     assertEquals(expected, parse(""));
     assertEquals(expected, parse("  "));

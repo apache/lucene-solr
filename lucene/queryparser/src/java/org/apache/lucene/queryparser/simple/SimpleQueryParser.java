@@ -23,6 +23,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.QueryBuilder;
@@ -149,7 +150,7 @@ public class SimpleQueryParser extends QueryBuilder {
     State state = new State(data, buffer, 0, data.length);
     parseSubQuery(state);
     if (state.top == null) {
-      return new BooleanQuery();
+      return new MatchNoDocsQuery();
     } else {
       return state.top;
     }
