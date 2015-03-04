@@ -68,6 +68,12 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private String htmlMapper;
 
   @Override
+  public void init(Context context) {
+    super.init(context);
+    done = false;
+  }
+
+  @Override
   protected void firstInit(Context context) {
     super.firstInit(context);
     try {
@@ -102,7 +108,6 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     if(parser == null) {
       parser = AUTO_PARSER;
     }
-    done = false;
   }
 
   @Override

@@ -188,6 +188,9 @@ Other Changes
 
 * SOLR-7151: SolrClient query methods throw IOException (Alan Woodward)
 
+* SOLR-7174: DIH should reset TikaEntityProcessor so that it is capable
+  of re-use (Alexandre Rafalovitch , Gary Taylor via Noble Paul)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
