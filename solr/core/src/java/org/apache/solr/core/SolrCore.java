@@ -83,9 +83,9 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.ExpandComponent;
@@ -291,7 +291,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       dir = getDirectoryFactory().get(getDataDir(), DirContext.META_DATA, getSolrConfig().indexConfig.lockType);
       IndexInput input;
       try {
-        input = dir.openInput(SnapPuller.INDEX_PROPERTIES, IOContext.DEFAULT);
+        input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, IOContext.DEFAULT);
       } catch (FileNotFoundException | NoSuchFileException e) {
         input = null;
       }
@@ -307,7 +307,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           }
           
         } catch (Exception e) {
-          log.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
+          log.error("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }

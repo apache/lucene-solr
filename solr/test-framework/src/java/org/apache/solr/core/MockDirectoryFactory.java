@@ -69,7 +69,7 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
       // already been created.
       mockDirWrapper.setPreventDoubleWrite(false);
       
-      // snappuller & co don't seem ready for this:
+      // IndexFetcher & co don't seem ready for this:
       mockDirWrapper.setEnableVirusScanner(false);
       
       if (allowReadingFilesStillOpenForWrite) {
