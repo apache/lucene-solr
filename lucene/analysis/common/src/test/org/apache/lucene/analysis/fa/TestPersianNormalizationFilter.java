@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.fa;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -73,6 +71,7 @@ public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

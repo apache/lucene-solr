@@ -15,6 +15,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Rethrow;
 
 /*
@@ -40,9 +41,11 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
 
     Map<String,Analyzer> analyzerPerField =
         Collections.<String,Analyzer>singletonMap("special", new SimpleAnalyzer());
+    
+    Analyzer defaultAnalyzer = new WhitespaceAnalyzer();
 
     PerFieldAnalyzerWrapper analyzer =
-              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(), analyzerPerField);
+              new PerFieldAnalyzerWrapper(defaultAnalyzer, analyzerPerField);
 
     try (TokenStream tokenStream = analyzer.tokenStream("field", text)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
@@ -67,6 +70,10 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
       assertFalse(tokenStream.incrementToken());
       tokenStream.end();
     }
+    // TODO: fix this about PFAW, this is crazy
+    analyzer.close();
+    defaultAnalyzer.close();
+    IOUtils.close(analyzerPerField.values());    
   }
   
   public void testReuseWrapped() throws Exception {
@@ -124,6 +131,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     ts4 = wrapper3.tokenStream("moreSpecial", text);
     assertSame(ts3, ts4);
     assertSame(ts2, ts3);
+    IOUtils.close(wrapper3, wrapper2, wrapper1, specialAnalyzer, defaultAnalyzer);
   }
   
   public void testCharFilters() throws Exception {
@@ -152,5 +160,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
         new int[] { 0 },
         new int[] { 2 }
     );
+    p.close();
+    a.close(); // TODO: fix this about PFAW, its a trap
   }
 }

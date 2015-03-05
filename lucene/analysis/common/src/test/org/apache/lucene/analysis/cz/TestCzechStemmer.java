@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.cz;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -103,6 +102,8 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(cz, "soudcům", new String[] { "soudk" });
     assertAnalyzesTo(cz, "soudcích", new String[] { "soudk" });
     assertAnalyzesTo(cz, "soudcem", new String[] { "soudk" });
+    
+    cz.close();
   }
   
   /**
@@ -147,6 +148,8 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(cz, "ženách", new String[] { "žn" });
     assertAnalyzesTo(cz, "ženou", new String[] { "žn" });
     assertAnalyzesTo(cz, "ženami", new String[] { "žn" });
+    
+    cz.close();
   }
 
   /**
@@ -189,7 +192,9 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(cz, "stavení", new String[] { "stavn" });
     assertAnalyzesTo(cz, "stavením", new String[] { "stavn" });
     assertAnalyzesTo(cz, "staveních", new String[] { "stavn" });
-    assertAnalyzesTo(cz, "staveními", new String[] { "stavn" });    
+    assertAnalyzesTo(cz, "staveními", new String[] { "stavn" }); 
+    
+    cz.close();
   }
   
   /**
@@ -218,6 +223,8 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(cz, "jarnímu", new String[] { "jarn" });
     assertAnalyzesTo(cz, "jarním", new String[] { "jarn" });
     assertAnalyzesTo(cz, "jarními", new String[] { "jarn" });  
+    
+    cz.close();
   }
   
   /**
@@ -227,6 +234,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     CzechAnalyzer cz = new CzechAnalyzer();
     assertAnalyzesTo(cz, "Karlův", new String[] { "karl" });
     assertAnalyzesTo(cz, "jazykový", new String[] { "jazyk" });
+    cz.close();
   }
   
   /**
@@ -267,6 +275,8 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     /* rewrite of e* -> * */
     assertAnalyzesTo(cz, "deska", new String[] { "desk" });
     assertAnalyzesTo(cz, "desek", new String[] { "desk" });
+    
+    cz.close();
   }
   
   /**
@@ -276,6 +286,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     CzechAnalyzer cz = new CzechAnalyzer();
     assertAnalyzesTo(cz, "e", new String[] { "e" });
     assertAnalyzesTo(cz, "zi", new String[] { "zi" });
+    cz.close();
   }
   
   public void testWithKeywordAttribute() throws IOException {
@@ -297,6 +308,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
 }

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.gl;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -33,13 +32,25 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * Simple tests for {@link GalicianMinimalStemmer}
  */
 public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
-    }
-  };
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
   
   public void testPlural() throws Exception {
     checkOneTerm(a, "elefantes", "elefante");
@@ -64,6 +75,7 @@ public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "elefantes", "elefantes");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -80,5 +92,6 @@ public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -32,24 +32,27 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
    * This test fails with NPE when the stopwords file is missing in classpath
    */
   public void testResourcesAvailable() {
-    new BulgarianAnalyzer();
+    new BulgarianAnalyzer().close();
   }
   
   public void testStopwords() throws IOException {
     Analyzer a = new BulgarianAnalyzer();
     assertAnalyzesTo(a, "Как се казваш?", new String[] {"казваш"});
+    a.close();
   }
   
   public void testCustomStopwords() throws IOException {
     Analyzer a = new BulgarianAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "Как се казваш?", 
         new String[] {"как", "се", "казваш"});
+    a.close();
   }
   
   public void testReusableTokenStream() throws IOException {
     Analyzer a = new BulgarianAnalyzer();
     assertAnalyzesTo(a, "документи", new String[] {"документ"});
     assertAnalyzesTo(a, "документ", new String[] {"документ"});
+    a.close();
   }
   
   /**
@@ -64,6 +67,7 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "компютър", new String[] {"компютр"});
     
     assertAnalyzesTo(a, "градове", new String[] {"град"});
+    a.close();
   }
   
   public void testWithStemExclusionSet() throws IOException {
@@ -71,10 +75,13 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
     set.add("строеве");
     Analyzer a = new BulgarianAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "строевете строеве", new String[] { "строй", "строеве" });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BulgarianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    BulgarianAnalyzer a = new BulgarianAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
 }

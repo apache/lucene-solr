@@ -83,6 +83,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void tearDown() throws Exception {
     reader.close();
     directory.close();
+    analyzer.close();
     super.tearDown();
   }
 
@@ -156,6 +157,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 7, 7, 10, 10, 13 },
         new int[] { 6, 9, 9, 12, 12, 18, 18 },
         new int[] { 1, 0, 1, 0, 1, 0, 1 });
+    a.close();
   }
 
   public void testNonDefaultMinShingleSize() throws Exception {
@@ -171,6 +173,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0,  0,  0,  7,  7,  7, 14, 14, 14, 19, 19, 28, 33 },
                           new int[] { 6, 18, 27, 13, 27, 32, 18, 32, 41, 27, 41, 32, 41 },
                           new int[] { 1,  0,  0,  1,  0,  0,  1,  0,  0,  1,  0,  1,  1 });
+    analyzer.close();
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 4,
@@ -183,6 +186,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] {  0,  0,  7,  7, 14, 14, 19 },
                           new int[] { 18, 27, 27, 32, 32, 41, 41 },
                           new int[] {  1,  0,  1,  0,  1,  0,  1 });
+    analyzer.close();
   }
   
   public void testNonDefaultMinAndSameMaxShingleSize() throws Exception {
@@ -198,6 +202,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0,  0,  7,  7, 14, 14, 19, 19, 28, 33 },
                           new int[] { 6, 18, 13, 27, 18, 32, 27, 41, 32, 41 },
                           new int[] { 1,  0,  1,  0,  1,  0,  1,  0,  1,  1 });
+    analyzer.close();
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), 3, 3,
@@ -210,6 +215,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] {  0,  7, 14, 19 },
                           new int[] { 18, 27, 32, 41 },
                           new int[] {  1,  1,  1,  1 });
+    analyzer.close();
   }
 
   public void testNoTokenSeparator() throws Exception {
@@ -227,6 +233,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0,  0,  7,  7, 14, 14, 19 },
                           new int[] { 6, 13, 13, 18, 18, 27, 27 },
                           new int[] { 1,  0,  1,  0,  1,  0,  1 });
+    analyzer.close();
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
@@ -241,6 +248,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] {  0,  7, 14 },
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
+    analyzer.close();
   }
 
   public void testNullTokenSeparator() throws Exception {
@@ -258,6 +266,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0,  0,  7,  7, 14, 14, 19 },
                           new int[] { 6, 13, 13, 18, 18, 27, 27 },
                           new int[] { 1,  0,  1,  0,  1,  0,  1 });
+    analyzer.close();
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
@@ -272,6 +281,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] {  0,  7, 14 },
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
+    analyzer.close();
   }
 
   public void testAltTokenSeparator() throws Exception {
@@ -289,6 +299,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0,  0,  7,  7, 14, 14, 19 },
                           new int[] { 6, 13, 13, 18, 18, 27, 27 },
                           new int[] { 1,  0,  1,  0,  1,  0,  1 });
+    analyzer.close();
 
     analyzer = new ShingleAnalyzerWrapper(
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
@@ -303,6 +314,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] {  0,  7, 14 },
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
+    analyzer.close();
   }
 
   public void testAltFillerToken() throws Exception {
@@ -329,7 +341,17 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                      new int[] { 0,  0,  7,  7, 19, 19 },
                      new int[] { 6, 13, 13, 19, 27, 27 },
                      new int[] { 1,  0,  1,  0,  1,  1 });
+    analyzer.close();
 
+    delegate = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        CharArraySet stopSet = StopFilter.makeStopSet("into");
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        TokenFilter filter = new StopFilter(tokenizer, stopSet);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
     analyzer = new ShingleAnalyzerWrapper(
         delegate,
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
@@ -341,7 +363,17 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                      new int[] {  0,  7, 19 },
                      new int[] { 13, 19, 27 },
                      new int[] {  1,  1,  1 });
+    analyzer.close();
 
+    delegate = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        CharArraySet stopSet = StopFilter.makeStopSet("into");
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        TokenFilter filter = new StopFilter(tokenizer, stopSet);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
     analyzer = new ShingleAnalyzerWrapper(
         delegate,
         ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
@@ -353,6 +385,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                      new int[] {  0,  7, 19 },
                      new int[] { 13, 19, 27 },
                      new int[] {  1,  1,  1 });
+    analyzer.close();
   }
 
   public void testOutputUnigramsIfNoShinglesSingleToken() throws Exception {
@@ -367,5 +400,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 0 },
                           new int[] { 6 },
                           new int[] { 1 });
+    analyzer.close();
   }
 }

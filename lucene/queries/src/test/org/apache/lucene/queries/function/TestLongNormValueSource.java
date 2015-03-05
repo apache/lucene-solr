@@ -17,6 +17,7 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -46,12 +47,15 @@ public class TestLongNormValueSource extends LuceneTestCase {
   static Directory dir;
   static IndexReader reader;
   static IndexSearcher searcher;
+  static Analyzer analyzer;
+  
   private static Similarity sim = new PreciseDefaultSimilarity();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
-    IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
+    analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwConfig = newIndexWriterConfig(analyzer);
     iwConfig.setMergePolicy(newLogMergePolicy());
     iwConfig.setSimilarity(sim);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
@@ -76,6 +80,8 @@ public class TestLongNormValueSource extends LuceneTestCase {
     reader = null;
     dir.close();
     dir = null;
+    analyzer.close();
+    analyzer = null;
   }
 
   public void testNorm() throws Exception {

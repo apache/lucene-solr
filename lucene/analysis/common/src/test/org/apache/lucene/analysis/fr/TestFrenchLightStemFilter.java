@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.fr;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -35,13 +34,25 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Simple tests for {@link FrenchLightStemFilter}
  */
 public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new MockTokenizer( MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new FrenchLightStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer( MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new FrenchLightStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /** Test some examples from the paper */
   public void testExamples() throws IOException {
@@ -189,6 +200,7 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "chevaux", "chevaux");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -205,5 +217,6 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

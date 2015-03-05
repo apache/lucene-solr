@@ -16,7 +16,7 @@ package org.apache.lucene.analysis.pattern;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.Reader;
+
 import java.io.StringReader;
 import java.util.regex.Pattern;
 
@@ -606,6 +606,7 @@ public class TestPatternCaptureGroupTokenFilter extends BaseTokenStreamTestCase 
     };
 
     checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
+    a.close();
   }
 
   private void testPatterns(String input, String[] regexes, String[] tokens,

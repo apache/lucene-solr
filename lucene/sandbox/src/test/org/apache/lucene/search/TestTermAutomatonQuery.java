@@ -48,6 +48,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
@@ -610,9 +611,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       }
     }
 
-    w.close();
-    r.close();
-    dir.close();
+    IOUtils.close(w, r, dir, analyzer);
   }
 
   private Set<String> toDocIDs(IndexSearcher s, TopDocs hits) throws IOException {

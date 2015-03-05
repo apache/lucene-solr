@@ -163,6 +163,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
       };
 
       checkRandomData(random(), analyzer, 200);
+      analyzer.close();
     }
   }
   
@@ -175,6 +176,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

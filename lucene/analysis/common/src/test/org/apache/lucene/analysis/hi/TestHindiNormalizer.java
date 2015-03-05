@@ -76,5 +76,6 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

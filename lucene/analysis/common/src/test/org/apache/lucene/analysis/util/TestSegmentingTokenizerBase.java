@@ -27,22 +27,35 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.IOUtils;
 
 /** Basic tests for {@link SegmentingTokenizerBase} */
 public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
-  private Analyzer sentence = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      return new TokenStreamComponents(new WholeSentenceTokenizer());
-    }
-  };
+  private Analyzer sentence, sentenceAndWord;
   
-  private Analyzer sentenceAndWord = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      return new TokenStreamComponents(new SentenceAndWordTokenizer());
-    }
-  };
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    sentence = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new WholeSentenceTokenizer());
+      }
+    };
+    sentenceAndWord = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new SentenceAndWordTokenizer());
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(sentence, sentenceAndWord);
+    super.tearDown();
+  }
+
   
   /** Some simple examples, just outputting the whole sentence boundaries as "terms" */
   public void testBasics() throws IOException {

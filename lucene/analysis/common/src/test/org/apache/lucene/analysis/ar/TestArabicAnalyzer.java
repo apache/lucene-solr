@@ -31,7 +31,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ArabicAnalyzer();
+    new ArabicAnalyzer().close();
   }
   
   /**
@@ -53,6 +53,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     
     assertAnalyzesTo(a, "ما ملكت أيمانكم", new String[] { "ملكت", "ايمانكم"});
     assertAnalyzesTo(a, "الذين ملكت أيمانكم", new String[] { "ملكت", "ايمانكم" }); // stopwords
+    a.close();
   }
   
   /**
@@ -62,14 +63,17 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     ArabicAnalyzer a = new ArabicAnalyzer();
     assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
     assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
+    a.close();
   }
 
   /**
    * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
    */
   public void testEnglishInput() throws Exception {
-    assertAnalyzesTo(new ArabicAnalyzer(), "English text.", new String[] {
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    assertAnalyzesTo(a, "English text.", new String[] {
         "english", "text" });
+    a.close();
   }
   
   /**
@@ -80,6 +84,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     ArabicAnalyzer a = new ArabicAnalyzer(set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
+    a.close();
   }
   
   public void testWithStemExclusionSet() throws IOException {
@@ -87,15 +92,18 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     ArabicAnalyzer a = new ArabicAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
-
+    a.close();
     
     a = new ArabicAnalyzer(CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ArabicAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
 }

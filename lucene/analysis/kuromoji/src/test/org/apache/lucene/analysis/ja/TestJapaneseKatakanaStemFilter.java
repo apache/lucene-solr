@@ -32,14 +32,26 @@ import java.io.IOException;
  * Tests for {@link JapaneseKatakanaStemFilter}
  */
 public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      // Use a MockTokenizer here since this filter doesn't really depend on Kuromoji
-      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new JapaneseKatakanaStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        // Use a MockTokenizer here since this filter doesn't really depend on Kuromoji
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new JapaneseKatakanaStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /**
    * Test a few common katakana spelling variations.
@@ -73,6 +85,7 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "コーヒー", "コーヒー");
+    a.close();
   }
 
   public void testUnsupportedHalfWidthVariants() throws IOException {
@@ -93,5 +106,6 @@ public class TestJapaneseKatakanaStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

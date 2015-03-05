@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.de;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -35,13 +34,25 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Simple tests for {@link GermanLightStemFilter}
  */
 public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new GermanLightStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new GermanLightStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
@@ -59,6 +70,7 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "sängerinnen", "sängerinnen");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -75,5 +87,6 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

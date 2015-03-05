@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ckb;
 import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -31,7 +30,19 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Test the Sorani Stemmer.
  */
 public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
-  SoraniAnalyzer a = new SoraniAnalyzer();
+  Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new SoraniAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
   
   public void testIndefiniteSingular() throws Exception {
     checkOneTerm(a, "پیاوێک", "پیاو"); // -ek
@@ -90,6 +101,7 @@ public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
   /** test against a basic vocabulary file */

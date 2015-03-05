@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -47,6 +48,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 public class TestSpellChecker extends LuceneTestCase {
   private SpellCheckerMock spellChecker;
   private Directory userindex, spellindex;
+  private Analyzer analyzer;
   private List<IndexSearcher> searchers;
 
   @Override
@@ -55,7 +57,8 @@ public class TestSpellChecker extends LuceneTestCase {
     
     //create a user index
     userindex = newDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(new MockAnalyzer(random())));
+    analyzer = new MockAnalyzer(random());
+    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(analyzer));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -99,6 +102,7 @@ public class TestSpellChecker extends LuceneTestCase {
     if (!spellChecker.isClosed())
       spellChecker.close();
     spellindex.close();
+    analyzer.close();
     super.tearDown();
   }
 

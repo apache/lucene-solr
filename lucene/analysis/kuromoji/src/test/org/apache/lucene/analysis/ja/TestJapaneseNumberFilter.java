@@ -36,15 +36,26 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
-
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
-      return new TokenStreamComponents(tokenizer, new JapaneseNumberFilter(tokenizer));
-    }
-  };
-
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, new JapaneseNumberFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
+  
   @Test
   public void testBasics() throws IOException {
 
@@ -188,6 +199,7 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
         new int[]{2, 4},
         new int[]{1, 1}
     );
+    keywordMarkingAnalyzer.close();
   }
 
   @Test
@@ -285,6 +297,7 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
         Files.newBufferedReader(input, StandardCharsets.UTF_8),
         Files.newBufferedWriter(normalizedOutput, StandardCharsets.UTF_8)
     );
+    plainAnalyzer.close();
   }
 
   public void analyze(Analyzer analyzer, Reader reader, Writer writer) throws IOException {

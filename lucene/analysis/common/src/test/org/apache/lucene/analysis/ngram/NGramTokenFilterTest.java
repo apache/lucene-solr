@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -140,6 +139,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
         new int[]    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 },
         new int[]    {   11,   11,   11,   11,   11,   11,   11,   11,   11,   11,   11 },
         new int[]    {     1,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0  });
+    analyzer.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -156,6 +156,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
         }    
       };
       checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+      a.close();
     }
   }
   
@@ -170,6 +171,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
+    a.close();
   }
 
   public void testSupplementaryCharacters() throws IOException {

@@ -81,6 +81,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       
     };
     checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
+    a.close();
     
     Analyzer b = new Analyzer() {
 
@@ -92,6 +93,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       
     };
     checkRandomData(random(), b, 1000 * RANDOM_MULTIPLIER); 
+    b.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -103,5 +105,6 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

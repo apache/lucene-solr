@@ -28,13 +28,25 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
-      return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
+        return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   public void testBasics() throws IOException {
     assertAnalyzesTo(analyzer, "それはまだ実験段階にあります",
@@ -55,6 +67,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "それはまだ実験段階にあります",
         new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます"  }
     );
+    a.close();
   }
   
   public void testEnglish() throws IOException {
@@ -75,5 +88,6 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -23,31 +23,41 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.cjk.CJKWidthFilter;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.util.IOUtils;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Random;
 
 /**
  * Tests for {@link TestJapaneseReadingFormFilter}
  */
 public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
-  private Analyzer katakanaAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
-      return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, false));
-    }
-  };
-
-  private Analyzer romajiAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
-      return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, true));
-    }
-  };
-
+  private Analyzer katakanaAnalyzer, romajiAnalyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    katakanaAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, false));
+      }
+    };
+    romajiAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, true));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(katakanaAnalyzer, romajiAnalyzer);
+    super.tearDown();
+  }
 
   public void testKatakanaReadings() throws IOException {
     assertAnalyzesTo(katakanaAnalyzer, "今夜はロバート先生と話した",
@@ -67,6 +77,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "今夜はﾛﾊﾞｰﾄ先生と話した",
         new String[] { "コンヤ", "ハ", "ロバート", "センセイ", "ト", "ハナシ", "タ" }
     );
+    a.close();
   }
 
   public void testRomajiReadings() throws IOException {
@@ -87,6 +98,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "今夜はﾛﾊﾞｰﾄ先生と話した",
         new String[] { "kon'ya", "ha", "robato", "sensei", "to", "hanashi", "ta" }
     );
+    a.close();
   }
 
   public void testRandomData() throws IOException {
@@ -104,5 +116,6 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

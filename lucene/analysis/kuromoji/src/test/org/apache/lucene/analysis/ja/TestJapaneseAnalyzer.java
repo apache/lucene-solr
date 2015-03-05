@@ -31,7 +31,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new JapaneseAnalyzer();
+    new JapaneseAnalyzer().close();
   }
   
   /**
@@ -40,12 +40,14 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
    * and offsets are correct.
    */
   public void testBasics() throws IOException {
-    assertAnalyzesTo(new JapaneseAnalyzer(), "多くの学生が試験に落ちた。",
+    Analyzer a = new JapaneseAnalyzer();
+    assertAnalyzesTo(a, "多くの学生が試験に落ちた。",
         new String[] { "多く", "学生", "試験", "落ちる" },
         new int[] { 0, 3, 6,  9 },
         new int[] { 2, 5, 8, 11 },
         new int[] { 1, 2, 2,  2 }
       );
+    a.close();
   }
 
   /**
@@ -53,7 +55,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
    */
   public void testDecomposition() throws IOException {
 
-    final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
+    Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
 
@@ -108,7 +110,9 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                               );
 
     // Kyoto University Baseball Club
-    assertAnalyzesToPositions(new JapaneseAnalyzer(), "京都大学硬式野球部",
+    a.close();
+    a = new JapaneseAnalyzer();
+    assertAnalyzesToPositions(a, "京都大学硬式野球部",
                      new String[] { "京都大",
                                     "学",
                                     "硬式",
@@ -117,6 +121,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                               new int[] {1, 1, 1, 1, 1},
                               new int[] {1, 1, 1, 1, 1});
     // toDotFile(a, "成田空港", "/mnt/scratch/out.dot");
+    a.close();
   }
 
   
@@ -129,6 +134,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
     checkRandomData(random, a, atLeast(1000));
+    a.close();
   }
   
   /** blast some random large strings through the analyzer */
@@ -138,6 +144,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
         JapaneseAnalyzer.getDefaultStopSet(),
         JapaneseAnalyzer.getDefaultStopTags());
     checkRandomData(random, a, 2*RANDOM_MULTIPLIER, 8192);
+    a.close();
   }
 
   // Copied from TestJapaneseTokenizer, to make sure passing
@@ -154,6 +161,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                               new int[] { 1, 2, 4 },
                               new Integer(4)
     );
+    a.close();
   }
 
   // LUCENE-3897: this string (found by running all jawiki
@@ -165,6 +173,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
     checkAnalysisConsistency(random, a, random.nextBoolean(), s);
+    a.close();
   }
 
   // LUCENE-3897: this string (found by
@@ -176,6 +185,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
     checkAnalysisConsistency(random, a, random.nextBoolean(), s);
+    a.close();
   }
 
   // LUCENE-3897: this string (found by
@@ -187,6 +197,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
     checkAnalysisConsistency(random, a, random.nextBoolean(), s);
+    a.close();
   }
 
   public void test4thCuriousString() throws Exception {
@@ -194,8 +205,8 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    Random random = random();
-    checkAnalysisConsistency(random, a, true, s);
+    checkAnalysisConsistency(random(), a, true, s);
+    a.close();
   }
 
   public void test5thCuriousString() throws Exception {
@@ -203,7 +214,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    Random random = random();
-    checkAnalysisConsistency(random, a, false, s);
+    checkAnalysisConsistency(random(), a, false, s);
+    a.close();
   }
 }

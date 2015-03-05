@@ -113,6 +113,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
       };
       checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 20);
       checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 8192);
+      a.close();
     }
   }
 

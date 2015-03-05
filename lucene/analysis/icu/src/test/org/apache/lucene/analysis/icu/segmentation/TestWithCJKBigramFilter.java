@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Tests ICUTokenizer's ability to work with CJKBigramFilter.
@@ -34,35 +35,46 @@ import org.apache.lucene.analysis.util.CharArraySet;
  */
 public class TestWithCJKBigramFilter extends BaseTokenStreamTestCase {
   
-  /**
-   * ICUTokenizer+CJKBigramFilter
-   */
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
-      TokenStream result = new CJKBigramFilter(source);
-      return new TokenStreamComponents(source, new StopFilter(result, CharArraySet.EMPTY_SET));
-    }
-  };
+  Analyzer analyzer, analyzer2;
   
-  /**
-   * ICUTokenizer+ICUNormalizer2Filter+CJKBigramFilter.
-   * 
-   * ICUNormalizer2Filter uses nfkc_casefold by default, so this is a language-independent
-   * superset of CJKWidthFilter's foldings.
-   */
-  private Analyzer analyzer2 = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
-      // we put this before the CJKBigramFilter, because the normalization might combine
-      // some halfwidth katakana forms, which will affect the bigramming.
-      TokenStream result = new ICUNormalizer2Filter(source);
-      result = new CJKBigramFilter(source);
-      return new TokenStreamComponents(source, new StopFilter(result, CharArraySet.EMPTY_SET));
-    }
-  };
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    /*
+     * ICUTokenizer+CJKBigramFilter
+     */
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
+        TokenStream result = new CJKBigramFilter(source);
+        return new TokenStreamComponents(source, new StopFilter(result, CharArraySet.EMPTY_SET));
+      }
+    };
+    /*
+     * ICUTokenizer+ICUNormalizer2Filter+CJKBigramFilter.
+     * 
+     * ICUNormalizer2Filter uses nfkc_casefold by default, so this is a language-independent
+     * superset of CJKWidthFilter's foldings.
+     */
+    analyzer2 = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
+        // we put this before the CJKBigramFilter, because the normalization might combine
+        // some halfwidth katakana forms, which will affect the bigramming.
+        TokenStream result = new ICUNormalizer2Filter(source);
+        result = new CJKBigramFilter(result);
+        return new TokenStreamComponents(source, new StopFilter(result, CharArraySet.EMPTY_SET));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(analyzer, analyzer2);
+    super.tearDown();
+  }
   
   public void testJa1() throws IOException {
     assertAnalyzesTo(analyzer, "一二三四五六七八九十",

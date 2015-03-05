@@ -22,38 +22,49 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.IOUtils;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
 public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase {
+  private Analyzer keywordAnalyzer, japaneseAnalyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    keywordAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
 
-  private Analyzer keywordAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(tokenizer, tokenizer);
-    }
+      @Override
+      protected Reader initReader(String fieldName, Reader reader) {
+        return new JapaneseIterationMarkCharFilter(reader);
+      }
+    };
+    japaneseAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
 
-    @Override
-    protected Reader initReader(String fieldName, Reader reader) {
-      return new JapaneseIterationMarkCharFilter(reader);
-    }
-  };
-
-  private Analyzer japaneseAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
-      return new TokenStreamComponents(tokenizer, tokenizer);
-    }
-
-    @Override
-    protected Reader initReader(String fieldName, Reader reader) {
-      return new JapaneseIterationMarkCharFilter(reader);
-    }
-  };
+      @Override
+      protected Reader initReader(String fieldName, Reader reader) {
+        return new JapaneseIterationMarkCharFilter(reader);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(keywordAnalyzer, japaneseAnalyzer);
+    super.tearDown();
+  }
   
   public void testKanji() throws IOException {
     // Test single repetition

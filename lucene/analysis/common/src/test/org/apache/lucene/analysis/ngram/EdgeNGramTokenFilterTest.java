@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -183,6 +182,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
         }    
       };
       checkRandomData(random(), a, 100*RANDOM_MULTIPLIER);
+      a.close();
     }
   }
   
@@ -197,6 +197,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
+    a.close();
   }
 
   public void testGraphs() throws IOException {

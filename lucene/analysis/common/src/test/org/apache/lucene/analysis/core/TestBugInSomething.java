@@ -75,6 +75,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       }
     };
     checkAnalysisConsistency(random(), a, false, "wmgddzunizdomqyj");
+    a.close();
   }
   
   CharFilter wrappedStream = new CharFilter(new StringReader("bogus")) {
@@ -261,6 +262,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       }  
     };
     checkRandomData(random(), analyzer, 2000);
+    analyzer.close();
   }
   
   public void testCuriousWikipediaString() throws Exception {
@@ -285,5 +287,6 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       }  
     };
     checkAnalysisConsistency(random(), a, false, "B\u28c3\ue0f8[ \ud800\udfc2 </p> jb");
+    a.close();
   }
 }

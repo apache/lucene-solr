@@ -20,6 +20,7 @@ package org.apache.lucene.sandbox.queries;
 import java.io.IOException;
 import java.util.HashSet;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,6 +32,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -40,12 +42,14 @@ public class DuplicateFilterTest extends LuceneTestCase {
   private IndexReader reader;
   TermQuery tq = new TermQuery(new Term("text", "lucene"));
   private IndexSearcher searcher;
+  Analyzer analyzer;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    analyzer = new MockAnalyzer(random());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
 
     //Add series of docs with filterable fields : url, text and dates  flags
     addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");
@@ -69,8 +73,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
+    IOUtils.close(reader, directory, analyzer);
     super.tearDown();
   }
 

@@ -227,6 +227,7 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
     };
     // TODO: properly support positionLengthAttribute
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    a.close();
   }
   
   /** blast some random large strings through the analyzer */
@@ -241,5 +242,6 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
     };
     // TODO: properly support positionLengthAttribute
     checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 1027, false, false);
+    a.close();
   }
 }

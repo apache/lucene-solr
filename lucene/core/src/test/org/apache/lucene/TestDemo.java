@@ -77,5 +77,6 @@ public class TestDemo extends LuceneTestCase {
 
     ireader.close();
     directory.close();
+    analyzer.close();
   }
 }

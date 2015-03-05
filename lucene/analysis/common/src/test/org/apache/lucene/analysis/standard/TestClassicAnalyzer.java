@@ -35,17 +35,29 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
 
 /** tests for classicanalyzer */
 public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
-  private Analyzer  a = new ClassicAnalyzer();
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new ClassicAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
 
   public void testMaxTermLength() throws Exception {
     ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(5);
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"});
+    sa.close();
   }
 
   public void testMaxTermLength2() throws Exception {
@@ -54,6 +66,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     sa.setMaxTokenLength(5);
     
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"}, new int[]{1, 1, 2, 1});
+    sa.close();
   }
 
   public void testMaxTermLength3() throws Exception {
@@ -115,6 +128,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     try {
       ClassicAnalyzer analyzer = new ClassicAnalyzer();
       assertAnalyzesTo(analyzer, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+      analyzer.close();
     } catch (NullPointerException e) {
       fail("Should not throw an NPE and it did");
     }
@@ -137,8 +151,10 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // 2.4 should not show the bug. But, alas, it's also obsolete,
     // so we check latest released (Robert's gonna break this on 4.0 soon :) )
+    a2.close();
     a2 = new ClassicAnalyzer();
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+    a2.close();
   }
 
   public void testEMailAddresses() throws Exception {
@@ -246,6 +262,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   public void testJava14BWCompatibility() throws Exception {
     ClassicAnalyzer sa = new ClassicAnalyzer();
     assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
+    sa.close();
   }
 
   /**
@@ -253,7 +270,8 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   */
   public void testWickedLongTerm() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new ClassicAnalyzer()));
+    Analyzer analyzer = new ClassicAnalyzer();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
 
     char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
@@ -309,16 +327,21 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     reader.close();
 
     dir.close();
+    analyzer.close();
+    sa.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ClassicAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new ClassicAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Random random = random();
-    checkRandomData(random, new ClassicAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    Analyzer analyzer = new ClassicAnalyzer();
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    analyzer.close();
   }
 }

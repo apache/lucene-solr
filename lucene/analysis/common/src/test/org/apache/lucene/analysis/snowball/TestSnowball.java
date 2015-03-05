@@ -48,6 +48,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     
     assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
+    a.close();
   }
   
   public void testFilterTokens() throws Exception {
@@ -113,6 +114,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
         }
       };
       checkOneTerm(a, "", "");
+      a.close();
     }
   }
   
@@ -131,5 +133,6 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       }  
     };
     checkRandomData(random(), a, 100*RANDOM_MULTIPLIER);
+    a.close();
   }
 }

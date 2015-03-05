@@ -84,6 +84,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   public static void afterClassFunctionTestSetup() throws Exception {
     dir.close();
     dir = null;
+    anlzr.close();
     anlzr = null;
   }
 

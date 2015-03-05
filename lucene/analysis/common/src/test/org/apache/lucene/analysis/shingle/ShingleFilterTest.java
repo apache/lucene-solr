@@ -1113,6 +1113,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   /** blast some random large strings through the analyzer */
@@ -1126,6 +1127,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
+    a.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -1137,6 +1139,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
   public void testTrailingHole1() throws IOException {

@@ -26,7 +26,19 @@ import java.util.Arrays;
 
 public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
 
-  private Analyzer a = new UAX29URLEmailAnalyzer();
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new UAX29URLEmailAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
 
   public void testHugeDoc() throws IOException {
     StringBuilder sb = new StringBuilder();
@@ -343,6 +355,6 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new UAX29URLEmailAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
   }
 }
