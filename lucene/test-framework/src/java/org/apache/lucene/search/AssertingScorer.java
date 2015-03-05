@@ -93,8 +93,7 @@ public class AssertingScorer extends Scorer {
   public float score() throws IOException {
     assert iterating();
     final float score = in.score();
-    assert !Float.isNaN(score);
-    assert !Float.isNaN(score);
+    assert !Float.isNaN(score) : "NaN score for in="+in;
     return score;
   }
 
