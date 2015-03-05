@@ -252,6 +252,8 @@ Other Changes
 * SOLR-7174: DIH should reset TikaEntityProcessor so that it is capable
   of re-use (Alexandre Rafalovitch , Gary Taylor via Noble Paul)
 
+* SOLR-6804: Untangle SnapPuller and ReplicationHandler (Ramkumar Aiyengar)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
