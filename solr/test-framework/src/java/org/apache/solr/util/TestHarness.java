@@ -51,6 +51,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * This class provides a simple harness that may be useful when
@@ -169,7 +170,7 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, coresLocator);
+    container = new CoreContainer(config, new Properties(), coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);

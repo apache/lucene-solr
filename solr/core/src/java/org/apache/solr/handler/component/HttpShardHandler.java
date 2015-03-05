@@ -16,6 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import com.google.common.base.Strings;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -177,6 +178,8 @@ public class HttpShardHandler extends ShardHandler {
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(sreq, shard);
+    if (Strings.isNullOrEmpty(shard))
+      System.out.println("Empty shard!");
 
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       @Override

@@ -80,6 +80,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 @ThreadLeakAction({Action.WARN})
@@ -744,18 +745,20 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
 
-    JettySolrRunner jetty
-        = new JettySolrRunner(solrHome.getAbsolutePath(), solrConfigOverride, schemaOverride, buildJettyConfig(context));
+    Properties props = new Properties();
+    if (solrConfigOverride != null)
+      props.setProperty("solrconfig", solrConfigOverride);
+    if (schemaOverride != null)
+      props.setProperty("schema", schemaOverride);
+    props.setProperty("shards", shardList);
 
-    jetty.setShards(shardList);
-    
-    if (System.getProperty("collection") == null) {
-      System.setProperty("collection", "collection1");
-    }
-    
+    String collection = System.getProperty("collection");
+    if (collection == null)
+      collection = "collection1";
+    props.setProperty("collection", collection);
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), props, buildJettyConfig(context));
     jetty.start();
-    
-    System.clearProperty("collection");
     
     return jetty;
   }

@@ -55,7 +55,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
+    createJetty(legacyExampleCollection1SolrHome());
   }
 
   @Before

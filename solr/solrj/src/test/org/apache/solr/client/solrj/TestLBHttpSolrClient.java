@@ -46,6 +46,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -309,13 +310,14 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public void startJetty() throws Exception {
-      jetty = new JettySolrRunner(getHomeDir(), "bad_solrconfig.xml", null, JettyConfig.builder()
-          .setContext("/solr")
-          .stopAtShutdown(true)
-          .setPort(port)
-          .withSSLConfig(sslConfig)
-          .build());
-      jetty.setDataDir(getDataDir());
+
+      Properties props = new Properties();
+      props.setProperty("solrconfig", "bad_solrconfig.xml");
+      props.setProperty("solr.data.dir", getDataDir());
+
+      JettyConfig jettyConfig = JettyConfig.builder(buildJettyConfig("/solr")).setPort(port).build();
+
+      jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();
       int newPort = jetty.getLocalPort();
       if (port != 0 && newPort != port) {

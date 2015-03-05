@@ -310,8 +310,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     Path jettyHome = testDir.toPath().resolve("control");
     File jettyHomeFile = jettyHome.toFile();
     seedSolrHome(jettyHomeFile);
-    seedCoreRootDirWithDefaultTestCore(jettyHome);
-    System.setProperty("coreRootDirectory", jettyHome.toString());
+    seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
     JettySolrRunner jetty = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
     return jetty;
   }
@@ -331,10 +330,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       Path jettyHome = testDir.toPath().resolve(shardname);
       File jettyHomeFile = jettyHome.toFile();
       seedSolrHome(jettyHomeFile);
-      seedCoreRootDirWithDefaultTestCore(jettyHome);
-      System.setProperty("coreRootDirectory", jettyHome.toString());
+      seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
       JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
-                                      
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
       String shardStr = buildUrl(j.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
@@ -396,18 +393,29 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, boolean explicitCoreNodeName) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), solrConfigOverride, schemaOverride, JettyConfig.builder()
+    Properties props = new Properties();
+    if (solrConfigOverride != null)
+      props.setProperty("solrconfig", solrConfigOverride);
+    if (schemaOverride != null)
+      props.setProperty("schema", schemaOverride);
+    if (shardList != null)
+      props.setProperty("shards", shardList);
+    if (dataDir != null) {
+      props.setProperty("solr.data.dir", dataDir);
+    }
+    if (explicitCoreNodeName) {
+      props.setProperty("coreNodeName", Integer.toString(nodeCnt.incrementAndGet()));
+    }
+    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), props, JettyConfig.builder()
         .stopAtShutdown(true)
         .setContext(context)
         .withFilters(getExtraRequestFilters())
         .withServlets(getExtraServlets())
         .withSSLConfig(sslConfig)
         .build());
-    jetty.setShards(shardList);
-    jetty.setDataDir(dataDir);
-    if (explicitCoreNodeName) {
-      jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
-    }
+
     jetty.start();
     
     return jetty;
@@ -1051,7 +1059,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * directory with the contents of {@link #getSolrHome} and ensures that the proper {@link #getSolrXml} 
    * file is in place.
    */
-  private void seedSolrHome(File jettyHome) throws IOException {
+  protected void seedSolrHome(File jettyHome) throws IOException {
     FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
     String solrxml = getSolrXml();
     if (solrxml != null) {
@@ -1087,7 +1095,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     coreProperties.setProperty("schema", "${schema:schema.xml}");
     coreProperties.setProperty("coreNodeName", "${coreNodeName:}");
 
-    writeCoreProperties(jettyHome.toPath().resolve("cores/collection1"), coreProperties, "collection1");
+    writeCoreProperties(jettyHome.toPath().resolve("cores").resolve("collection1"), coreProperties, "collection1");
 
      //   <core name="collection1" instanceDir="collection1" shard="${shard:}"
      // collection="${collection:collection1}" config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"
