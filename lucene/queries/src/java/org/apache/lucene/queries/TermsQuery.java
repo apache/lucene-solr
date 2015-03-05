@@ -192,13 +192,9 @@ public class TermsQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if ((obj == null) || (obj.getClass() != this.getClass())) {
+    if (!super.equals(obj)) {
       return false;
     }
-
     TermsQuery that = (TermsQuery) obj;
     // first check the fields before even comparing the bytes
     if (that.hashCode == hashCode && getBoost() == that.getBoost() && Arrays.equals(termsAndFields, that.termsAndFields)) {
@@ -210,11 +206,6 @@ public class TermsQuery extends Query implements Accountable {
       }
     }
     return false;
-  }
-
-  @Override
-  public int hashCode() {
-    return hashCode ^ Float.floatToIntBits(getBoost());
   }
 
   @Override

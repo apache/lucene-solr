@@ -117,10 +117,10 @@ public class DocValuesTermsQuery extends Query {
       return false;
     }
     DocValuesTermsQuery that = (DocValuesTermsQuery) obj;
-    if (!field.equals(that.field)) {
+    if (!super.equals(obj)) {
       return false;
     }
-    if (getBoost() != that.getBoost()) {
+    if (!field.equals(that.field)) {
       return false;
     }
     return Arrays.equals(terms, that.terms);

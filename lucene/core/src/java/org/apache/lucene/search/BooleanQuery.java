@@ -304,7 +304,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return false;
     }
     BooleanQuery other = (BooleanQuery)o;
-    return this.getBoost() == other.getBoost()
+    return super.equals(o)
         && this.clauses.equals(other.clauses)
         && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch()
         && this.disableCoord == other.disableCoord;
@@ -313,7 +313,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ clauses.hashCode()
+    return super.hashCode() ^ clauses.hashCode()
       + getMinimumNumberShouldMatch() + (disableCoord ? 17:0);
   }
   

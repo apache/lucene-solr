@@ -509,7 +509,7 @@ public class TestQueryRescorer extends LuceneTestCase {
         return false;
       }
       FixedScoreQuery other = (FixedScoreQuery) o;
-      return Float.floatToIntBits(getBoost()) == Float.floatToIntBits(other.getBoost()) &&
+      return super.equals(o) &&
         reverse == other.reverse &&
         Arrays.equals(idToNum, other.idToNum);
     }

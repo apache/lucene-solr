@@ -203,14 +203,12 @@ public class FunctionQuery extends Query {
   public boolean equals(Object o) {
     if (!FunctionQuery.class.isInstance(o)) return false;
     FunctionQuery other = (FunctionQuery)o;
-    return this.getBoost() == other.getBoost()
+    return super.equals(o)
             && this.func.equals(other.func);
   }
 
-  /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return func.hashCode()*31 + Float.floatToIntBits(getBoost());
+    return super.hashCode() ^ func.hashCode();
   }
-
 }

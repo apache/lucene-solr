@@ -357,7 +357,7 @@ public class MultiPhraseQuery extends Query {
   public boolean equals(Object o) {
     if (!(o instanceof MultiPhraseQuery)) return false;
     MultiPhraseQuery other = (MultiPhraseQuery)o;
-    return this.getBoost() == other.getBoost()
+    return super.equals(o)
       && this.slop == other.slop
       && termArraysEquals(this.termArrays, other.termArrays)
       && this.positions.equals(other.positions);
@@ -366,11 +366,10 @@ public class MultiPhraseQuery extends Query {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost())
+    return super.hashCode()
       ^ slop
       ^ termArraysHashCode()
-      ^ positions.hashCode()
-      ^ 0x4AC65113;
+      ^ positions.hashCode();
   }
   
   // Breakout calculation of the termArrays hashcode
