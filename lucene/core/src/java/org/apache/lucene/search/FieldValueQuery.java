@@ -46,7 +46,7 @@ public final class FieldValueQuery extends Query {
       return false;
     }
     final FieldValueQuery that = (FieldValueQuery) obj;
-    return field.equals(that.field) && getBoost() == that.getBoost();
+    return super.equals(obj) && field.equals(that.field);
   }
 
   @Override

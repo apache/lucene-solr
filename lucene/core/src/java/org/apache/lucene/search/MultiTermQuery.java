@@ -288,7 +288,7 @@ public abstract class MultiTermQuery extends Query {
     if (getClass() != obj.getClass())
       return false;
     MultiTermQuery other = (MultiTermQuery) obj;
-    if (Float.floatToIntBits(getBoost()) != Float.floatToIntBits(other.getBoost()))
+    if (!super.equals(obj))
       return false;
     if (!rewriteMethod.equals(other.rewriteMethod)) {
       return false;

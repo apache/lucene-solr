@@ -85,7 +85,7 @@ public final class DocValuesRangeQuery extends Query {
         && Objects.equals(upperVal, that.upperVal)
         && includeLower == that.includeLower
         && includeUpper == that.includeUpper
-        && getBoost() == that.getBoost();
+        && super.equals(obj);
   }
 
   @Override

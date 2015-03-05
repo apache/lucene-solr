@@ -144,17 +144,4 @@ public class MatchAllDocsQuery extends Query {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MatchAllDocsQuery))
-      return false;
-    MatchAllDocsQuery other = (MatchAllDocsQuery) o;
-    return this.getBoost() == other.getBoost();
-  }
-
-  @Override
-  public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ 0x1AA71190;
-  }
 }

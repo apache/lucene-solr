@@ -284,7 +284,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   public boolean equals(Object o) {
     if (! (o instanceof DisjunctionMaxQuery) ) return false;
     DisjunctionMaxQuery other = (DisjunctionMaxQuery)o;
-    return this.getBoost() == other.getBoost()
+    return super.equals(o)
             && this.tieBreakerMultiplier == other.tieBreakerMultiplier
             && this.disjuncts.equals(other.disjuncts);
   }

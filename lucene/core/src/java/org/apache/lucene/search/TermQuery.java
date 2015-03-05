@@ -210,14 +210,11 @@ public class TermQuery extends Query {
   public boolean equals(Object o) {
     if (!(o instanceof TermQuery)) return false;
     TermQuery other = (TermQuery) o;
-    return (this.getBoost() == other.getBoost())
-        && this.term.equals(other.term);
+    return super.equals(o) && this.term.equals(other.term);
   }
-  
-  /** Returns a hash code value for this object. */
+
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ term.hashCode();
+    return super.hashCode() ^ term.hashCode();
   }
-  
 }
