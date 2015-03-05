@@ -1050,7 +1050,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // tries to
       // replicate
       masterJetty.stop();
-      masterJetty.start(true);
+      masterJetty.start();
       
       // masterClient = createNewSolrClient(masterJetty.getLocalPort());
       

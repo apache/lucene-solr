@@ -87,6 +87,7 @@ import java.util.concurrent.Future;
  */
 @SuppressWarnings("serial")
 public class CloudSolrClient extends SolrClient {
+
   protected static final Logger log = LoggerFactory.getLogger(CloudSolrClient.class);
 
   private volatile ZkStateReader zkStateReader;

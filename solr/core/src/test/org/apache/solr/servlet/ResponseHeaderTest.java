@@ -17,13 +17,6 @@ package org.apache.solr.servlet;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map.Entry;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -40,6 +33,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map.Entry;
+
 
 public class ResponseHeaderTest extends SolrJettyTestBase {
   
@@ -51,7 +51,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "solrconfig-headers.xml"), new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
-    createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
+    createJetty(solrHomeDirectory.getAbsolutePath());
   }
   
   @AfterClass

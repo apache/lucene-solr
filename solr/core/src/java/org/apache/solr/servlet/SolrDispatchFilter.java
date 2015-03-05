@@ -96,9 +96,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
-
-import static java.util.Collections.singletonMap;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -120,6 +119,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public SolrDispatchFilter() {
   }
+
+  public static final String PROPERTIES_ATTRIBUTE = "solr.properties";
+
+  public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
   
   @Override
   public void init(FilterConfig config) throws ServletException
@@ -130,7 +133,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
 
-      this.cores = createCoreContainer();
+      Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
+      if (extraProperties == null)
+        extraProperties = new Properties();
+
+      String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
+      if (solrHome == null)
+        solrHome = SolrResourceLoader.locateSolrHome();
+
+      this.cores = createCoreContainer(solrHome, extraProperties);
+
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -145,7 +157,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     log.info("SolrDispatchFilter.init() done");
   }
 
-  private NodeConfig loadConfigSolr(SolrResourceLoader loader) {
+  /**
+   * Override this to change CoreContainer initialization
+   * @return a CoreContainer to hold this server's cores
+   */
+  protected CoreContainer createCoreContainer(String solrHome, Properties extraProperties) {
+    NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
+    cores = new CoreContainer(nodeConfig, extraProperties);
+    cores.load();
+    return cores;
+  }
+
+  private NodeConfig loadNodeConfig(String solrHome, Properties nodeProperties) {
+
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
 
     String solrxmlLocation = System.getProperty("solr.solrxml.location", "solrhome");
 
@@ -158,33 +183,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (StringUtils.isEmpty(zkHost))
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Could not load solr.xml from zookeeper: zkHost system property not set");
-      SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
-      try {
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         if (!zkClient.exists("/solr.xml", true))
           throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper: node not found");
         byte[] data = zkClient.getData("/solr.xml", null, null, true);
         return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper", e);
-      } finally {
-        zkClient.close();
       }
     }
 
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Bad solr.solrxml.location set: " + solrxmlLocation + " - should be 'solrhome' or 'zookeeper'");
-  }
-
-  /**
-   * Override this to change CoreContainer initialization
-   * @return a CoreContainer to hold this server's cores
-   */
-  protected CoreContainer createCoreContainer() {
-    SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-    NodeConfig config = loadConfigSolr(loader);
-    CoreContainer cores = new CoreContainer(config);
-    cores.load();
-    return cores;
   }
   
   public CoreContainer getCores() {

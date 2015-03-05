@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
@@ -203,7 +204,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
     CoreDescriptor badcore = new CoreDescriptor(cc, "badcore", "badcore", "configSet", "nosuchconfigset");
     cl.add(badcore);
 
@@ -452,7 +453,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
     cl.add(new CoreDescriptor(cc, "col_ok", "col_ok", "configSet", "minimal"));
     cl.add(new CoreDescriptor(cc, "col_bad", "col_bad", "configSet", "bad-mergepolicy"));
     cc.load();

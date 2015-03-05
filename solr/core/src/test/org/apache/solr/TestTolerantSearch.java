@@ -58,7 +58,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   @BeforeClass
   public static void createThings() throws Exception {
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath(), null, null);
+    createJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
     collection1 = new HttpSolrClient(url + "/collection1");
     collection2 = new HttpSolrClient(url + "/collection2");

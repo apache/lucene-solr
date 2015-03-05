@@ -81,6 +81,9 @@ Upgrading from Solr 5.0
 * SolrRequest.process() is now final.  Subclasses should instead be parametrized
   by their corresponding SolrResponse type, and implement createResponse()
 
+* The signature of SolrDispatchFilter.createCoreContainer() has changed to take
+  (String,Properties) arguments
+
 Detailed Change List
 ----------------------
 
@@ -236,6 +239,10 @@ Other Changes
   (Noble Paul, shalin)
 
 * SOLR-7151: SolrClient query methods throw IOException (Alan Woodward)
+
+* SOLR-7179: JettySolrRunner no longer passes configuration to
+  SolrDispatchFilter via system properties, but instead uses a Properties
+  object in the servlet context (Alan Woodward)
 
 * SOLR-6275: Improve accuracy of QTime reporting (Ramkumar Aiyengar)
 

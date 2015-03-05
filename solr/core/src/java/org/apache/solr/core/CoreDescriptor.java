@@ -206,6 +206,8 @@ public class CoreDescriptor {
     else {
       cloudDesc = null;
     }
+
+    System.out.println("CORE DESCRIPTOR: " + coreProperties);
   }
 
   /**

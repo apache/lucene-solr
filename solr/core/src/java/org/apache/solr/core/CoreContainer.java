@@ -161,14 +161,19 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    this(config, new Properties());
   }
 
-  public CoreContainer(NodeConfig config, CoresLocator locator) {
+  public CoreContainer(NodeConfig config, Properties properties) {
+    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
+  }
+
+  public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {
     this.loader = config.getSolrResourceLoader();
     this.solrHome = loader.getInstanceDir();
     this.cfg = checkNotNull(config);
     this.coresLocator = locator;
+    this.containerProperties = new Properties(properties);
   }
 
   /**
@@ -183,6 +188,7 @@ public class CoreContainer {
     loader = null;
     coresLocator = null;
     cfg = null;
+    containerProperties = null;
   }
   
   /**
@@ -250,7 +256,7 @@ public class CoreContainer {
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 
-    containerProperties = cfg.getSolrProperties();
+    containerProperties.putAll(cfg.getSolrProperties());
 
     // setup executor to load cores in parallel
     // do not limit the size of the executor in zk mode since cores may try and wait for each other.

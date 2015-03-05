@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 public class SolrExampleBinaryTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
+    createJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override

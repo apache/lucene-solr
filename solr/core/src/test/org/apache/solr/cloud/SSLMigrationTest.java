@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
@@ -81,9 +82,16 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
           .withFilters(getExtraRequestFilters())
           .withSSLConfig(sslConfig)
           .build();
-      JettySolrRunner newRunner = new JettySolrRunner(runner.getSolrHome(), getSolrConfigFile(), getSchemaFile(), config);
-      newRunner.setDataDir(getDataDir(testDir + "/shard" + i + "/data"));
-      newRunner.start(true);
+
+      Properties props = new Properties();
+      if (getSolrConfigFile() != null)
+        props.setProperty("solrconfig", getSolrConfigFile());
+      if (getSchemaFile() != null)
+        props.setProperty("schema", getSchemaFile());
+      props.setProperty("solr.data.dir", getDataDir(testDir + "/shard" + i + "/data"));
+
+      JettySolrRunner newRunner = new JettySolrRunner(runner.getSolrHome(), props, config);
+      newRunner.start();
       jettys.set(i, newRunner);
     }
     

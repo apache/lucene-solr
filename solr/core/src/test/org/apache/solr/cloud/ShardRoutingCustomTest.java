@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
   String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)

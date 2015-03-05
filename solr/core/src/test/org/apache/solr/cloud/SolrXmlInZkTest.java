@@ -23,7 +23,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.Before;
@@ -36,6 +35,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
@@ -74,8 +74,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome, "solr.xml"));
     }
 
-    System.setProperty("solr.solr.home", solrHome.getAbsolutePath());
-
     ignoreException("No UpdateLog found - cannot sync");
     ignoreException("No UpdateLog found - cannot recover");
 
@@ -100,14 +98,15 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     log.info("####SETUP_START " + getTestName());
 
     // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
+    Properties props = new Properties();
+    props.setProperty("solr.test.sys.prop1", "propone");
+    props.setProperty("solr.test.sys.prop2", "proptwo");
 
-    Method method = SolrDispatchFilter.class.getDeclaredMethod("loadConfigSolr", SolrResourceLoader.class);
+    Method method = SolrDispatchFilter.class.getDeclaredMethod("loadNodeConfig", String.class, Properties.class);
     method.setAccessible(true);
     if (solrDispatchFilter != null) solrDispatchFilter.destroy();
     solrDispatchFilter = new SolrDispatchFilter();
-    Object obj = method.invoke(solrDispatchFilter, new SolrResourceLoader(null));
+    Object obj = method.invoke(solrDispatchFilter, solrHome.getAbsolutePath(), props);
     cfg = (NodeConfig) obj;
 
     log.info("####SETUP_END " + getTestName());
@@ -208,11 +207,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     // Should see an error when zkHost is not defined but solr.solrxml.location is set to zookeeper.
     System.clearProperty("zkHost");
     try {
-      Method method = SolrDispatchFilter.class.getDeclaredMethod("loadConfigSolr", SolrResourceLoader.class);
+      Method method = SolrDispatchFilter.class.getDeclaredMethod("loadNodeConfig", String.class, Properties.class);
       method.setAccessible(true);
       if (solrDispatchFilter != null) solrDispatchFilter.destroy();
       solrDispatchFilter = new SolrDispatchFilter();
-      method.invoke(solrDispatchFilter, new SolrResourceLoader(null));
+      method.invoke(solrDispatchFilter, "", new Properties());
       fail("Should have thrown an exception");
     } catch (InvocationTargetException ite) {
       assertTrue("Should be catching a SolrException", ite.getTargetException() instanceof SolrException);

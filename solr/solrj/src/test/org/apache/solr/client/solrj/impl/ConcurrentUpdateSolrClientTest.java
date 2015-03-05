@@ -19,10 +19,12 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.HttpResponse;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -123,9 +125,11 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
-    jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(TestServlet.class, "/cuss/*");
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
+        .withSSLConfig(sslConfig)
+        .build();
+    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
   
   @Test
