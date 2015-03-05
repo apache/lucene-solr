@@ -95,5 +95,6 @@ public class TestHindiStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -33,24 +33,27 @@ public class TestSoraniAnalyzer extends BaseTokenStreamTestCase {
    * This test fails with NPE when the stopwords file is missing in classpath
    */
   public void testResourcesAvailable() {
-    new SoraniAnalyzer();
+    new SoraniAnalyzer().close();
   }
   
   public void testStopwords() throws IOException {
     Analyzer a = new SoraniAnalyzer();
     assertAnalyzesTo(a, "ئەم پیاوە", new String[] {"پیاو"});
+    a.close();
   }
   
   public void testCustomStopwords() throws IOException {
     Analyzer a = new SoraniAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "ئەم پیاوە", 
         new String[] {"ئەم", "پیاو"});
+    a.close();
   }
   
   public void testReusableTokenStream() throws IOException {
     Analyzer a = new SoraniAnalyzer();
     assertAnalyzesTo(a, "پیاوە", new String[] {"پیاو"});
     assertAnalyzesTo(a, "پیاو", new String[] {"پیاو"});
+    a.close();
   }
   
   public void testWithStemExclusionSet() throws IOException {
@@ -58,11 +61,14 @@ public class TestSoraniAnalyzer extends BaseTokenStreamTestCase {
     set.add("پیاوە");
     Analyzer a = new SoraniAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "پیاوە", new String[] { "پیاوە" });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new SoraniAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer a = new SoraniAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
 
   public void testBackcompat40() throws IOException {

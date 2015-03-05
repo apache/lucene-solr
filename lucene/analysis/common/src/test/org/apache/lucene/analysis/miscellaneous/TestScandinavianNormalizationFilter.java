@@ -24,20 +24,27 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-import java.io.Reader;
-
-
 public class TestScandinavianNormalizationFilter extends BaseTokenStreamTestCase {
-
-
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String field) {
-      final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      final TokenStream stream = new ScandinavianNormalizationFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, stream);
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String field) {
+        final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        final TokenStream stream = new ScandinavianNormalizationFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
 
   public void test() throws Exception {
 
@@ -116,6 +123,7 @@ public class TestScandinavianNormalizationFilter extends BaseTokenStreamTestCase
       } 
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */

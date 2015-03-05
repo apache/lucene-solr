@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,6 +46,7 @@ import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -85,7 +87,8 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
   @Test
   public void testEmptyReader() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     // Make sure the index is created?
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
@@ -99,14 +102,14 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     assertEquals(inputIterator.weight(), 0);
     assertNull(inputIterator.payload());
 
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
   
   @Test
   public void testBasic() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
@@ -131,14 +134,14 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
   
   @Test
   public void testWithContext() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
@@ -168,14 +171,14 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertEquals(originalCtxs, inputIterator.contexts());
     }
     assertTrue(docs.isEmpty());
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
 
   @Test
   public void testWithoutPayload() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
@@ -200,14 +203,14 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertEquals(inputIterator.payload(), null);
     }
     assertTrue(docs.isEmpty());
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
   
   @Test
   public void testWithDeletions() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
@@ -253,15 +256,14 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
   
   @Test
   public void testWithValueSource() throws IOException {
-    
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
@@ -282,8 +284,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
     assertTrue(docs.isEmpty());
-    ir.close();
-    dir.close();
+    IOUtils.close(ir, analyzer, dir);
   }
   
 }

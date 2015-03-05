@@ -18,6 +18,7 @@ package org.apache.lucene.sandbox.queries.regex;
  */
 
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,6 +31,7 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanRegexQuery extends LuceneTestCase {
@@ -53,7 +55,8 @@ public class TestSpanRegexQuery extends LuceneTestCase {
   
   public void testSpanRegex() throws Exception {
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(analyzer));
     Document doc = new Document();
     // doc.add(newField("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));
@@ -75,7 +78,6 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // true);
     int numHits = searcher.search(sfq, 1000).totalHits;
     assertEquals(1, numHits);
-    reader.close();
-    directory.close();
+    IOUtils.close(reader, directory, analyzer);
   }
 }

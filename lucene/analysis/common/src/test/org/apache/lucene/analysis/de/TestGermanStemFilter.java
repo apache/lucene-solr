@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -39,14 +40,26 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  *
  */
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
-  Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new MockTokenizer(MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(t,
-          new GermanStemFilter(new LowerCaseFilter(t)));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer(MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(t,
+            new GermanStemFilter(new LowerCaseFilter(t)));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
 
   public void testStemming() throws Exception {  
     InputStream vocOut = getClass().getResourceAsStream("data.txt");
@@ -65,6 +78,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "sängerinnen", "sängerinnen");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -81,5 +95,6 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

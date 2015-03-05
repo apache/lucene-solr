@@ -47,6 +47,7 @@ public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
   public void testRandomStrings() throws IOException {

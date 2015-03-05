@@ -901,16 +901,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
-      MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
-      if (VERBOSE) {
-        System.out.println("Creating random analyzer:" + a);
-      }
-      try {
-        checkRandomData(random, a, 500*RANDOM_MULTIPLIER, 20, false,
-                        false /* We already validate our own offsets... */);
-      } catch (Throwable e) {
-        System.err.println("Exception from random analyzer: " + a);
-        throw e;
+      try (MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong())) {
+        if (VERBOSE) {
+          System.out.println("Creating random analyzer:" + a);
+        }
+        try {
+          checkRandomData(random, a, 500*RANDOM_MULTIPLIER, 20, false,
+              false /* We already validate our own offsets... */);
+        } catch (Throwable e) {
+          System.err.println("Exception from random analyzer: " + a);
+          throw e;
+        }
       }
     }
   }
@@ -920,16 +921,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
-      MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
-      if (VERBOSE) {
-        System.out.println("Creating random analyzer:" + a);
-      }
-      try {
-        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 80, false,
-                        false /* We already validate our own offsets... */);
-      } catch (Throwable e) {
-        System.err.println("Exception from random analyzer: " + a);
-        throw e;
+      try (MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong())) {
+        if (VERBOSE) {
+          System.out.println("Creating random analyzer:" + a);
+        }
+        try {
+          checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 80, false,
+              false /* We already validate our own offsets... */);
+        } catch (Throwable e) {
+          System.err.println("Exception from random analyzer: " + a);
+          throw e;
+        }
       }
     }
   }

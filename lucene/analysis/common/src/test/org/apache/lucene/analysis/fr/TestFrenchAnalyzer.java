@@ -111,7 +111,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
       fa,
       "33Bis 1940-1945 1940:1945 (---i+++)*",
       new String[] { "33bi", "1940", "1945", "1940", "1945", "i" });
-
+    fa.close();
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -133,6 +133,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
               "chist",
               "element",
               "captif" });
+      fa.close();
   }
 
   public void testExclusionTableViaCtor() throws Exception {
@@ -142,15 +143,18 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
         CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
+    fa.close();
 
     fa = new FrenchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
+    fa.close();
   }
   
   public void testElision() throws Exception {
     FrenchAnalyzer fa = new FrenchAnalyzer();
     assertAnalyzesTo(fa, "voir l'embrouille", new String[] { "voir", "embrouil" });
+    fa.close();
   }
   
   /**
@@ -159,11 +163,14 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   public void testStopwordsCasing() throws IOException {
     FrenchAnalyzer a = new FrenchAnalyzer();
     assertAnalyzesTo(a, "Votre", new String[] { });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new FrenchAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer a = new FrenchAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   /** test accent-insensitive */
@@ -171,6 +178,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new FrenchAnalyzer();
     checkOneTerm(a, "sécuritaires", "securitair");
     checkOneTerm(a, "securitaires", "securitair");
+    a.close();
   }
 
   public void testBackcompat40() throws IOException {

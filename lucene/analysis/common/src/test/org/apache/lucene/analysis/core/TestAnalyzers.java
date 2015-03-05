@@ -18,15 +18,18 @@ package org.apache.lucene.analysis.core;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
-import java.util.Random;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -48,6 +51,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "b" });
     assertAnalyzesTo(a, "\"QUOTED\" word", 
                      new String[] { "quoted", "word" });
+    a.close();
   }
 
   public void testNull() throws Exception {
@@ -68,6 +72,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "2B" });
     assertAnalyzesTo(a, "\"QUOTED\" word", 
                      new String[] { "\"QUOTED\"", "word" });
+    a.close();
   }
 
   public void testStop() throws Exception {
@@ -76,6 +81,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
+    a.close();
   }
 
   void verifyPayload(TokenStream ts) throws IOException {
@@ -159,6 +165,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     // unpaired trail surrogate
     assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
         new String [] { "abac\uDC16adaba" });
+    a.close();
   }
 
   /**
@@ -179,8 +186,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     // unpaired trail surrogate
     assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
         new String [] { "ABAC\uDC16ADABA" });
+    a.close();
   }
-  
   
   /**
    * Test that LowercaseFilter handles the lowercasing correctly if the term
@@ -223,17 +230,20 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new WhitespaceAnalyzer(), 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new SimpleAnalyzer(), 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), new StopAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer() };
+    for (Analyzer analyzer : analyzers) {
+      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    }
+    IOUtils.close(analyzers);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Random random = random();
-    checkRandomData(random, new WhitespaceAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new SimpleAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, new StopAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer() };
+    for (Analyzer analyzer : analyzers) {
+      checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    }
+    IOUtils.close(analyzers);
   } 
 }
 

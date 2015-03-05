@@ -123,6 +123,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, positions.nextDoc());
     r.close();
     dir.close();
+    analyzer.close();
   }
   
   public void testGeneral() throws IOException {

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.cz;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -32,15 +33,24 @@ import org.apache.lucene.util.Version;
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   
+  /** This test fails with NPE when the 
+   * stopwords file is missing in classpath */
+  public void testResourcesAvailable() {
+    new CzechAnalyzer().close();
+  }
+  
   public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", 
+    Analyzer analyzer = new CzechAnalyzer();
+    assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
+    analyzer.close();
   }
   
   public void testReusableTokenStream() throws Exception {
     Analyzer analyzer = new CzechAnalyzer();
     assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
     assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česk", "republik" });
+    analyzer.close();
   }
 
   public void testWithStemExclusionSet() throws IOException{
@@ -48,11 +58,14 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
     set.add("hole");
     CzechAnalyzer cz = new CzechAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(cz, "hole desek", new String[] {"hole", "desk"});
+    cz.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CzechAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new CzechAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

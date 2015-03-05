@@ -137,6 +137,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
     };
     
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -148,6 +149,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
   /**

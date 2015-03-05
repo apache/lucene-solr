@@ -123,6 +123,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
       };
       checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
       checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 1027);
+      a.close();
     }
   }
 

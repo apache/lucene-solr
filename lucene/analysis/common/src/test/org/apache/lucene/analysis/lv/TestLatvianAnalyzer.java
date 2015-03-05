@@ -28,7 +28,7 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new LatvianAnalyzer();
+    new LatvianAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "tirgus", "tirg");
     // stopword
     assertAnalyzesTo(a, "un", new String[] {});
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
         LatvianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "tirgiem", "tirgiem");
     checkOneTerm(a, "tirgus", "tirg");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new LatvianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new LatvianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

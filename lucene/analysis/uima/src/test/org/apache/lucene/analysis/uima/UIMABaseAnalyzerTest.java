@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -119,16 +120,18 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", null),
-        100 * RANDOM_MULTIPLIER);
+    Analyzer analyzer = new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", null);
+    checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   @Test
   public void testRandomStringsWithConfigurationParameters() throws Exception {
     Map<String, Object> cp = new HashMap<>();
     cp.put("line-end", "\r");
-    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestWSTokenizerAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", cp),
-        100 * RANDOM_MULTIPLIER);
+    Analyzer analyzer = new UIMABaseAnalyzer("/uima/TestWSTokenizerAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", cp);
+    checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
 }

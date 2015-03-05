@@ -29,6 +29,8 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -45,8 +47,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.TestUtil;
-import org.junit.After;
-import org.junit.Before;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
@@ -62,6 +62,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   private DirectoryReader indexReader;
   protected RandomIndexWriter indexWriter;
   private Directory directory;
+  private Analyzer analyzer;
   protected IndexSearcher indexSearcher;
 
   protected SpatialContext ctx;//subclass must initialize
@@ -69,7 +70,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected Map<String,Type> uninvertMap = new HashMap<>();
   
   @Override
-  @Before
   public void setUp() throws Exception {
     super.setUp();
     // TODO: change this module to index docvalues instead of uninverting
@@ -79,13 +79,14 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
     directory = newDirectory();
     final Random random = random();
-    indexWriter = new RandomIndexWriter(random,directory, newIndexWriterConfig(random));
+    analyzer = new MockAnalyzer(random);
+    indexWriter = new RandomIndexWriter(random,directory, newIWConfig(random, analyzer));
     indexReader = UninvertingReader.wrap(indexWriter.getReader(), uninvertMap);
     indexSearcher = newSearcher(indexReader);
   }
 
-  protected IndexWriterConfig newIndexWriterConfig(Random random) {
-    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random));
+  protected IndexWriterConfig newIWConfig(Random random, Analyzer analyzer) {
+    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, analyzer);
     //TODO can we randomly choose a doc-values supported format?
     if (needsDocValues())
       indexWriterConfig.setCodec( TestUtil.getDefaultCodec());
@@ -97,10 +98,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   }
 
   @Override
-  @After
   public void tearDown() throws Exception {
-    indexWriter.close();
-    IOUtils.close(indexReader,directory);
+    IOUtils.close(indexWriter, indexReader, analyzer, directory);
     super.tearDown();
   }
 

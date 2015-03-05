@@ -30,14 +30,25 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 public class TestExtendedMode extends BaseTokenStreamTestCase {
-  private final Analyzer analyzer = new Analyzer() {
-    
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.EXTENDED);
-      return new TokenStreamComponents(tokenizer, tokenizer);
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.EXTENDED);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /** simple test for supplementary characters */
   public void testSurrogates() throws IOException {

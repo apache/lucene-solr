@@ -62,6 +62,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "föó bär FÖÖ BAR", 
         new String[] { "foo", "föó", "bar", "bär", "foo", "föö", "bar" },
         new int[]    { 1,     0,     1,     0,     1,     0,     1});
+    a.close();
   }
 
   public void testHtmlStripClassicFolding() throws Exception {
@@ -93,6 +94,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "<p><b>föó</b> bär     FÖÖ BAR</p>", 
         new String[] { "foo", "föó", "bar", "bär", "foo", "föö", "bar" },
         new int[]    { 1,     0,     1,     0,     1,     0,     1});
+    a.close();
   }
   
   public void testStopWordsFromClasspath() throws Exception {
@@ -114,6 +116,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertSame(Version.LATEST, a.getVersion());
 
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
+    a.close();
   }
   
   public void testStopWordsFromClasspathWithMap() throws Exception {
@@ -141,6 +144,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     } catch (IllegalArgumentException | UnsupportedOperationException e) {
       // pass
     }
+    a.close();
   }
   
   public void testStopWordsFromFile() throws Exception {
@@ -152,6 +156,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
             "format", "wordset")
         .build();
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
+    a.close();
   }
   
   public void testStopWordsFromFileAbsolute() throws Exception {
@@ -163,6 +168,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
             "format", "wordset")
         .build();
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
+    a.close();
   }
   
   // Now test misconfigurations:

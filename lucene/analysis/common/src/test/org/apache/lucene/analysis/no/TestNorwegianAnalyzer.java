@@ -28,7 +28,7 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new NorwegianAnalyzer();
+    new NorwegianAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "havnedistrikter", "havnedistrikt");
     // stopword
     assertAnalyzesTo(a, "det", new String[] {});
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
         NorwegianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "havnedistriktene", "havnedistriktene");
     checkOneTerm(a, "havnedistrikter", "havnedistrikt");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new NorwegianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new NorwegianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

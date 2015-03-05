@@ -49,6 +49,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PriorityQueue;
@@ -126,9 +127,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       assertEquals("3", r.document(search.scoreDocs[0].doc).get("id"));
       
     }
-    r.close();
-    w.close();
-    dir.close();
+    IOUtils.close(r, w, dir, analyzer);
   }
   
   public void testEqualsHashCode() {
@@ -321,9 +320,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
               r.document(search.scoreDocs[0].doc).get("id"),
               r.document(search.scoreDocs[1].doc).get("id"))));
     }
-    r.close();
-    w.close();
-    dir.close();
+    IOUtils.close(r, w, dir, analyzer);
   }
   
   public void testIllegalOccur() {
@@ -395,9 +392,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       assertEquals("3", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("0", r.document(search.scoreDocs[2].doc).get("id"));
     }
-    r.close();
-    w.close();
-    dir.close();
+    IOUtils.close(r, w, dir, analyzer);
   }
   
   public void testRandomIndex() throws IOException {
@@ -496,10 +491,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       QueryUtils.check(random(), cq, newSearcher(reader2));
       reader2.close();
     } finally {
-      reader.close();
-      wrapper.close();
-      w.close();
-      dir.close();
+      IOUtils.close(reader, wrapper, w, dir, analyzer);
     }
     
   }

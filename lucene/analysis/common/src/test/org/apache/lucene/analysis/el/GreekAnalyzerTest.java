@@ -48,6 +48,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     // as well as the elimination of stop words
     assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+    a.close();
   }
 
   public void testReusableTokenStream() throws Exception {
@@ -65,11 +66,14 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     // as well as the elimination of stop words
     assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GreekAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer a = new GreekAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
 
   public void testBackcompat40() throws IOException {

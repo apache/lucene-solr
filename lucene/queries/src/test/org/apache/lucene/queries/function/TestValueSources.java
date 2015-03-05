@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
@@ -92,6 +93,7 @@ import org.junit.BeforeClass;
  */
 public class TestValueSources extends LuceneTestCase {
   static Directory dir;
+  static Analyzer analyzer;
   static IndexReader reader;
   static IndexSearcher searcher;
   
@@ -109,7 +111,8 @@ public class TestValueSources extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
-    IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
+    analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwConfig = newIndexWriterConfig(analyzer);
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document document = new Document();
@@ -169,6 +172,8 @@ public class TestValueSources extends LuceneTestCase {
     reader = null;
     dir.close();
     dir = null;
+    analyzer.close();
+    analyzer = null;
   }
   
   public void testConst() throws Exception {

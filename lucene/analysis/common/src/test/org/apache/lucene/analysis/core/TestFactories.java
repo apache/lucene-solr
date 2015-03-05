@@ -46,6 +46,8 @@ import org.apache.lucene.util.Version;
 // TODO: move this, TestRandomChains, and TestAllAnalyzersHaveFactories
 // to an integration test module that sucks in all analysis modules.
 // currently the only way to do this is via eclipse etc (LUCENE-3974)
+
+// TODO: fix this to use CustomAnalyzer instead of its own FactoryAnalyzer
 public class TestFactories extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     for (String tokenizer : TokenizerFactory.availableTokenizers()) {
@@ -77,7 +79,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(factory, null, null), 20, 20, false, false);
+      Analyzer a = new FactoryAnalyzer(factory, null, null);
+      checkRandomData(random(), a, 20, 20, false, false);
+      a.close();
     }
   }
   
@@ -97,7 +101,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, factory, null), 20, 20, false, false);
+      Analyzer a = new FactoryAnalyzer(assertingTokenizer, factory, null);
+      checkRandomData(random(), a, 20, 20, false, false);
+      a.close();
     }
   }
   
@@ -117,7 +123,9 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, null, factory), 20, 20, false, false);
+      Analyzer a = new FactoryAnalyzer(assertingTokenizer, null, factory);
+      checkRandomData(random(), a, 20, 20, false, false);
+      a.close();
     }
   }
   

@@ -30,14 +30,26 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Tests {@link SerbianNormalizationFilter}
  */
 public class TestSerbianNormalizationFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String field) {
-      final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      final TokenStream stream = new SerbianNormalizationFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, stream);
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        final TokenStream stream = new SerbianNormalizationFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /**
    * Tests Cyrillic text.
@@ -67,5 +79,6 @@ public class TestSerbianNormalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -28,7 +28,7 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new PortugueseAnalyzer();
+    new PortugueseAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "quilométricos", "quilometric");
     // stopword
     assertAnalyzesTo(a, "não", new String[] {});
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
         PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "quilométricas", "quilométricas");
     checkOneTerm(a, "quilométricos", "quilometric");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new PortugueseAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new PortugueseAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

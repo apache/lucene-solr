@@ -97,6 +97,8 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "братя", new String[] {"брат"});
     assertAnalyzesTo(a, "братята", new String[] {"брат"});
     assertAnalyzesTo(a, "брате", new String[] {"брат"});
+    
+    a.close();
   }
   
   /**
@@ -109,6 +111,8 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "вестта", new String[] {"вест"});
     assertAnalyzesTo(a, "вести", new String[] {"вест"});
     assertAnalyzesTo(a, "вестите", new String[] {"вест"});
+    
+    a.close();
   }
   
   /**
@@ -138,6 +142,8 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "изключенията", new String[] {"изключени"});
     /* note the below form in this example does not conflate with the rest */
     assertAnalyzesTo(a, "изключения", new String[] {"изключн"});
+    
+    a.close();
   }
   
   /**
@@ -154,6 +160,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "красивото", new String[] {"красив"});
     assertAnalyzesTo(a, "красиви", new String[] {"красив"});
     assertAnalyzesTo(a, "красивите", new String[] {"красив"});
+    a.close();
   }
   
   /**
@@ -212,6 +219,8 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     /* note the below forms conflate with each other, but not the rest */
     assertAnalyzesTo(a, "строя", new String[] {"стр"});
     assertAnalyzesTo(a, "строят", new String[] {"стр"});
+    
+    a.close();
   }
 
   public void testWithKeywordAttribute() throws IOException {
@@ -234,5 +243,6 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

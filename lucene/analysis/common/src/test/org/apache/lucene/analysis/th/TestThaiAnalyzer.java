@@ -17,15 +17,9 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -47,18 +41,22 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
    * testcase for offsets
    */
   public void testOffsets() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี",
+    Analyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
+    assertAnalyzesTo(analyzer, "การที่ได้ต้องแสดงว่างานดี",
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
         new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
+    analyzer.close();
   }
   
   public void testStopWords() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(), "การที่ได้ต้องแสดงว่างานดี",
+    Analyzer analyzer = new ThaiAnalyzer();
+    assertAnalyzesTo(analyzer, "การที่ได้ต้องแสดงว่างานดี",
         new String[] { "แสดง", "งาน", "ดี" },
         new int[] { 13, 20, 23 },
         new int[] { 17, 23, 25 },
         new int[] { 5, 2, 1 });
+    analyzer.close();
   }
   
   /*
@@ -79,32 +77,37 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0, 3, 6, 9, 17, 21, 24, 27 },
         new int[] { 3, 6, 9, 13, 21, 24, 27, 29 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
+    analyzer.close();
   }
   
   public void testReusableTokenStream() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(analyzer, "", new String[] {});
-
-      assertAnalyzesTo(
-          analyzer,
-          "การที่ได้ต้องแสดงว่างานดี",
-          new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
-
-      assertAnalyzesTo(
-          analyzer,
-          "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
-          new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
+    
+    assertAnalyzesTo(
+        analyzer,
+        "การที่ได้ต้องแสดงว่างานดี",
+        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
+    
+    assertAnalyzesTo(
+        analyzer,
+        "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
+        new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
+    analyzer.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ThaiAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new ThaiAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Random random = random();
-    checkRandomData(random, new ThaiAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    Analyzer analyzer = new ThaiAnalyzer();
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    analyzer.close();
   }
   
   // LUCENE-3044
@@ -117,16 +120,19 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
+    analyzer.close();
   }
   
   public void testTwoSentences() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(CharArraySet.EMPTY_SET), "This is a test. การที่ได้ต้องแสดงว่างานดี",
+    Analyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
+    assertAnalyzesTo(analyzer, "This is a test. การที่ได้ต้องแสดงว่างานดี",
           new String[] { "this", "is", "a", "test", "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
           new int[] { 0, 5, 8, 10, 16, 19, 22, 25, 29, 33, 36, 39 },
           new int[] { 4, 7, 9, 14, 19, 22, 25, 29, 33, 36, 39, 41 });
+    analyzer.close();
   }
 
-  public void testBackcompat40() throws IOException {
+  public void testBackcompat40() throws Exception {
     ThaiAnalyzer a = new ThaiAnalyzer();
     a.setVersion(Version.LUCENE_4_6_1);
     // this is just a test to see the correct unicode version is being used, not actually testing hebrew

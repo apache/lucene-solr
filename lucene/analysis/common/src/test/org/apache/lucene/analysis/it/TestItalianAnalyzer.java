@@ -28,7 +28,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ItalianAnalyzer();
+    new ItalianAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "abbandonati", "abbandonat");
     // stopword
     assertAnalyzesTo(a, "dallo", new String[] {});
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
         ItalianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "abbandonata", "abbandonata");
     checkOneTerm(a, "abbandonati", "abbandonat");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ItalianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new ItalianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
   /** test that the elisionfilter is working */
@@ -60,6 +64,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new ItalianAnalyzer();
     assertAnalyzesTo(a, "dell'Italia", new String[] { "ital" });
     assertAnalyzesTo(a, "l'Italiano", new String[] { "italian" });
+    a.close();
   }
 
   public void testBackcompat40() throws IOException {

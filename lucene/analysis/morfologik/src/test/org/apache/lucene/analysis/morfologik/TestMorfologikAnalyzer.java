@@ -46,6 +46,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "liście", new String[] { "liście", "liść", "list", "lista" });
     assertAnalyzesTo(a, "danych", new String[] { "dany", "dana", "dane", "dać" });
     assertAnalyzesTo(a, "ęóąśłżźćń", new String[] { "ęóąśłżźćń" });
+    a.close();
   }
 
   /** Test stemming of multiple tokens and proper term metrics. */
@@ -66,11 +67,13 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 3  },
         new int[] { 1, 1, 13 },
         new int[] { 1, 0, 1  });
+    a.close();
   }
 
   @SuppressWarnings("unused")
   private void dumpTokens(String input) throws IOException {
-    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", input)) {
+    try (Analyzer a = getTestAnalyzer();
+        TokenStream ts = a.tokenStream("dummy", input)) {
       ts.reset();
 
       MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
@@ -100,6 +103,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       assertEquals("second stream", "dany", termAtt_2.toString());
       ts_2.end();
     }
+    a.close();
   }
 
   /** Test stemming of mixed-case tokens. */
@@ -116,6 +120,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "aarona",   new String[] { "aarona" });
 
     assertAnalyzesTo(a, "Liście",   new String[] { "liście", "liść", "list", "lista" });
+    a.close();
   }
 
   private void assertPOSToken(TokenStream ts, String term, String... tags) throws IOException {
@@ -140,7 +145,8 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    try (TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście")) {
+    try (Analyzer a = getTestAnalyzer();
+         TokenStream ts = a.tokenStream("dummy", "liście")) {
       ts.reset();
       assertPOSToken(ts, "liście",  
         "subst:sg:acc:n2",
@@ -187,10 +193,13 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       new int[] { 0, 7, 7, 7, 7 },
       new int[] { 6, 13, 13, 13, 13 },
       new int[] { 1, 1, 0, 0, 0 });
+    a.close();
   }
 
   /** blast some random strings through the analyzer */
   public void testRandom() throws Exception {
-    checkRandomData(random(), getTestAnalyzer(), 1000 * RANDOM_MULTIPLIER); 
+    Analyzer a = getTestAnalyzer();
+    checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
+    a.close();
   }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.lucene.analysis.synonym;
 
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -40,11 +39,13 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     "s(100000004,2,'king''s meany',n,1,1).\n";
   
   public void testSynonyms() throws Exception {
-    WordnetSynonymParser parser = new WordnetSynonymParser(true, true, new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    WordnetSynonymParser parser = new WordnetSynonymParser(true, true, analyzer);
     parser.parse(new StringReader(synonymsFile));
     final SynonymMap map = parser.build();
+    analyzer.close();
     
-    Analyzer analyzer = new Analyzer() {
+    analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
@@ -66,5 +67,6 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     /* multi words */
     assertAnalyzesTo(analyzer, "king's evil",
         new String[] { "king's", "king's", "evil", "meany" });
+    analyzer.close();
   }
 }

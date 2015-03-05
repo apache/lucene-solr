@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.de;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -35,13 +34,25 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Simple tests for {@link GermanMinimalStemFilter}
  */
 public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new GermanMinimalStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new GermanMinimalStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /** Test some examples from the paper */
   public void testExamples() throws IOException {
@@ -66,6 +77,7 @@ public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "sängerinnen", "sängerinnen");
+    a.close();
   }
   
   /** Test against a vocabulary from the reference impl */
@@ -87,5 +99,6 @@ public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

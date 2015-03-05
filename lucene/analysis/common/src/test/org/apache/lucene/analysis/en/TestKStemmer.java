@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.en;
 import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -32,13 +31,25 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Tests for {@link KStemmer}
  */
 public class TestKStemmer extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-      return new TokenStreamComponents(tokenizer, new KStemFilter(tokenizer));
-    }
-  };
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+        return new TokenStreamComponents(tokenizer, new KStemFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
@@ -63,6 +74,7 @@ public class TestKStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
   /****** requires original java kstem source code to create map

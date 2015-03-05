@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -33,23 +34,24 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   private Directory directory;
-  private IndexSearcher searcher;
   private IndexReader reader;
+  private Analyzer analyzer;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()));
+    analyzer = new SimpleAnalyzer();
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer));
 
     Document doc = new Document();
     doc.add(new StringField("partnum", "Q36", Field.Store.YES));
@@ -59,13 +61,11 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     reader = DirectoryReader.open(directory);
-    searcher = newSearcher(reader);
   }
   
   @Override
   public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
+    IOUtils.close(analyzer, reader, directory);
     super.tearDown();
   }
 
@@ -86,7 +86,8 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new KeywordAnalyzer()));
+    Analyzer analyzer = new KeywordAnalyzer();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     Document doc = new Document();
     doc.add(new TextField("partnum", "Q36", Field.Store.YES));
     writer.addDocument(doc);
@@ -112,11 +113,13 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
         null,
         0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    analyzer.close();
   }
 
   // LUCENE-1441
   public void testOffsets() throws Exception {
-    try (TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"))) {
+    try (Analyzer analyzer = new KeywordAnalyzer();
+         TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd"))) {
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       stream.reset();
       assertTrue(stream.incrementToken());
@@ -129,6 +132,8 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new KeywordAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new KeywordAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 }

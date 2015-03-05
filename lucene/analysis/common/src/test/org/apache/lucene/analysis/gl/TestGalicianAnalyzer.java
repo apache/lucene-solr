@@ -28,7 +28,7 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new GalicianAnalyzer();
+    new GalicianAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "corresponderá", "correspond");
     // stopword
     assertAnalyzesTo(a, "e", new String[] {});
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
         GalicianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "correspondente", "correspondente");
     checkOneTerm(a, "corresponderá", "correspond");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GalicianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new GalicianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

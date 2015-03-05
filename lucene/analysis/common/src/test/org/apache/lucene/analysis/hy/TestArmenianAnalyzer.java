@@ -28,7 +28,7 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ArmenianAnalyzer();
+    new ArmenianAnalyzer().close();
   }
   
   /** test stopwords and stemming */
@@ -39,6 +39,7 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "արծիվներ", "արծ");
     // stopword
     assertAnalyzesTo(a, "է", new String[] { });
+    a.close();
   }
   
   /** test use of exclusion set */
@@ -48,11 +49,14 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
         ArmenianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "արծիվներ", "արծիվներ");
     checkOneTerm(a, "արծիվ", "արծ");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new ArmenianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new ArmenianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.en;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -30,14 +29,26 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Simple tests for {@link EnglishMinimalStemFilter}
  */
 public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new EnglishMinimalStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
   
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new EnglishMinimalStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
+    
   /** Test some examples from various papers about this technique */
   public void testExamples() throws IOException {
     checkOneTerm(analyzer, "queries", "query");
@@ -65,5 +76,6 @@ public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

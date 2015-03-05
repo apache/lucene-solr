@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -78,6 +79,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   // not so useful since it's all one token?!
@@ -99,6 +101,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   public void testLetterHtmlish() throws Exception {
@@ -116,6 +119,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   public void testLetterHtmlishHuge() throws Exception {
@@ -136,6 +140,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   public void testLetterUnicode() throws Exception {
@@ -153,6 +158,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   public void testLetterUnicodeHuge() throws Exception {
@@ -173,6 +179,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
+    IOUtils.close(left, right);
   }
   
   // we only check a few core attributes here.

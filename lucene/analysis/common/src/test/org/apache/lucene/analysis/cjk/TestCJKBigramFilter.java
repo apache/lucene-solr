@@ -17,31 +17,42 @@ package org.apache.lucene.analysis.cjk;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.IOUtils;
 
 public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
-  Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new StandardTokenizer();
-      return new TokenStreamComponents(t, new CJKBigramFilter(t));
-    }
-  };
+  Analyzer analyzer, unibiAnalyzer;
   
-  Analyzer unibiAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new StandardTokenizer();
-      return new TokenStreamComponents(t, 
-          new CJKBigramFilter(t, 0xff, true));
-    }
-  };
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new StandardTokenizer();
+        return new TokenStreamComponents(t, new CJKBigramFilter(t));
+      }
+    };
+    unibiAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new StandardTokenizer();
+        return new TokenStreamComponents(t, 
+            new CJKBigramFilter(t, 0xff, true));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(analyzer, unibiAnalyzer);
+    super.tearDown();
+  }
   
   public void testHuge() throws Exception {
     assertAnalyzesTo(analyzer, "多くの学生が試験に落ちた" + "多くの学生が試験に落ちた" + "多くの学生が試験に落ちた"
@@ -79,6 +90,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
                        "<HIRAGANA>", "<SINGLE>", "<HIRAGANA>", "<HIRAGANA>", "<SINGLE>" },
         new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
         new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+    a.close();
   }
   
   public void testAllScripts() throws Exception {
@@ -92,6 +104,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
     };
     assertAnalyzesTo(a, "多くの学生が試験に落ちた。",
         new String[] { "多く", "くの", "の学", "学生", "生が", "が試", "試験", "験に", "に落", "落ち", "ちた" });
+    a.close();
   }
   
   public void testUnigramsAndBigramsAllScripts() throws Exception {
@@ -132,6 +145,7 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
                        "<HIRAGANA>", "<SINGLE>", "<HIRAGANA>", "<HIRAGANA>", "<SINGLE>" },
         new int[] { 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1 });
+    a.close();
   }
   
   public void testUnigramsAndBigramsHuge() throws Exception {

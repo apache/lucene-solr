@@ -31,7 +31,7 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new HindiAnalyzer();
+    new HindiAnalyzer().close();
   }
   
   public void testBasics() throws Exception {
@@ -39,6 +39,7 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
     // two ways to write 'hindi' itself.
     checkOneTerm(a, "हिन्दी", "हिंद");
     checkOneTerm(a, "हिंदी", "हिंद");
+    a.close();
   }
   
   public void testExclusionSet() throws Exception {
@@ -46,11 +47,14 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new HindiAnalyzer( 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "हिंदी", "हिंदी");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new HindiAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new HindiAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
 
   public void testBackcompat40() throws IOException {

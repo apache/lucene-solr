@@ -29,7 +29,19 @@ import java.util.Locale;
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
-  private Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new ICUCollationKeyAnalyzer(collator);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
 
   private BytesRef firstRangeBeginning = new BytesRef
     (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
@@ -62,7 +74,9 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
       Locale locale = Locale.GERMAN;
       Collator collator = Collator.getInstance(locale);
       collator.setStrength(Collator.IDENTICAL);
-      assertThreadSafe(new ICUCollationKeyAnalyzer(collator));
+      Analyzer a = new ICUCollationKeyAnalyzer(collator);
+      assertThreadSafe(a);
+      a.close();
     }
   }
 }

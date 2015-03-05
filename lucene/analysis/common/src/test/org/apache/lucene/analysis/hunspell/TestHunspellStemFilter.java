@@ -87,6 +87,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       }  
     };
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -98,6 +99,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
   public void testIgnoreCaseNoSideEffects() throws Exception {
@@ -118,5 +120,6 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "NoChAnGy", "NoChAnGy");
+    a.close();
   }
 }

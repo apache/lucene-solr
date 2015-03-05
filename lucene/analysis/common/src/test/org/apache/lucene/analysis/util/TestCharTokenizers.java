@@ -141,6 +141,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     // just for fun
     checkRandomData(random(), analyzer, num);
+    analyzer.close();
   }
   
   // LUCENE-3642: normalize BMP->SMP and check that offsets are correct
@@ -179,5 +180,6 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     // just for fun
     checkRandomData(random(), analyzer, num);
+    analyzer.close();
   }
 }

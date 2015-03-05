@@ -18,26 +18,46 @@ package org.apache.lucene.analysis.id;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Tests {@link IndonesianStemmer}
  */
 public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
-  /* full stemming, no stopwords */
-  Analyzer a = new Analyzer() {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
-    }
-  };
+  private Analyzer a, b;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    /* full stemming, no stopwords */
+    a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
+      }
+    };
+    /* inflectional-only stemming */
+    b = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer, false));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(a, b);
+    super.tearDown();
+  }
   
   /** Some examples from the paper */
   public void testExamples() throws IOException {
@@ -111,15 +131,6 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "kecelakaan", "celaka");
   }
   
-  /* inflectional-only stemming */
-  Analyzer b = new Analyzer() {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer, false));
-    }
-  };
-  
   /** Test stemming only inflectional suffixes */
   public void testInflectionalOnly() throws IOException {
     checkOneTerm(b, "bukunya", "buku");
@@ -143,5 +154,6 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

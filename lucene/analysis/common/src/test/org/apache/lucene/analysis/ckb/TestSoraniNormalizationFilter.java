@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ckb;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -30,13 +29,25 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Tests normalization for Sorani (this is more critical than stemming...)
  */
 public class TestSoraniNormalizationFilter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(tokenizer, new SoraniNormalizationFilter(tokenizer));
-    }
-  };
+  Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new SoraniNormalizationFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
   
   public void testY() throws Exception {
     checkOneTerm(a, "\u064A", "\u06CC");
@@ -96,5 +107,6 @@ public class TestSoraniNormalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

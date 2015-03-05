@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 import java.io.BufferedReader;
@@ -86,15 +87,42 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
-  private Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-
-      Tokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
-      return new TokenStreamComponents(tokenizer);
-    }
-  };
-
+  private Analyzer a, urlAnalyzer, emailAnalyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+    urlAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
+        tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
+        TokenFilter filter = new URLFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    emailAnalyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
+        TokenFilter filter = new EmailFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(a, urlAnalyzer, emailAnalyzer);
+    super.tearDown();
+  }
 
   /** Passes through tokens with type "<URL>" and blocks all other types. */
   private class URLFilter extends TokenFilter {
@@ -132,27 +160,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       }
       return isTokenAvailable;
     }
-  }
-
-  private Analyzer urlAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
-      tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
-      TokenFilter filter = new URLFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, filter);
-    }
-  };
-
-  private Analyzer emailAnalyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
-      TokenFilter filter = new EmailFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, filter);
-    }
-  };
-  
+  }  
   
   public void testArmenian() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "Վիքիպեդիայի 13 միլիոն հոդվածները (4,600` հայերեն վիքիպեդիայում) գրվել են կամավորների կողմից ու համարյա բոլոր հոդվածները կարող է խմբագրել ցանկաց մարդ ով կարող է բացել Վիքիպեդիայի կայքը։",

@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +28,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
-import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestPatternTokenizer extends BaseTokenStreamTestCase 
@@ -137,6 +134,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
       }    
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
     
     Analyzer b = new Analyzer() {
       @Override
@@ -146,5 +144,6 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
       }    
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    b.close();
   }
 }

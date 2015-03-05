@@ -33,6 +33,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "Tisch", "tisch");
     checkOneTerm(a, "Tische", "tisch");
     checkOneTerm(a, "Tischen", "tisch");
+    a.close();
   }
   
   public void testWithKeywordAttribute() throws IOException {
@@ -49,6 +50,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     GermanAnalyzer a = new GermanAnalyzer( CharArraySet.EMPTY_SET, 
         new CharArraySet( asSet("tischen"), false));
     checkOneTerm(a, "tischen", "tischen");
+    a.close();
   }
   
   /** test some features of the new snowball filter
@@ -59,11 +61,14 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     // a/o/u + e is equivalent to the umlaut form
     checkOneTerm(a, "Schaltflächen", "schaltflach");
     checkOneTerm(a, "Schaltflaechen", "schaltflach");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new GermanAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    GermanAnalyzer a = new GermanAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
 
   public void testBackcompat40() throws IOException {

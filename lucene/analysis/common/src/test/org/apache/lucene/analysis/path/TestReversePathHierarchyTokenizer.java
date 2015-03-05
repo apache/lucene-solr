@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.path;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 
 import static org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer.DEFAULT_DELIMITER;
 import static org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer.DEFAULT_SKIP;
@@ -187,6 +185,7 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
     };
     // TODO: properly support positionLengthAttribute
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    a.close();
   }
   
   /** blast some random large strings through the analyzer */
@@ -201,5 +200,6 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
     };
     // TODO: properly support positionLengthAttribute
     checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 1027, false, false);
+    a.close();
   }
 }
