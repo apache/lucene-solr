@@ -291,10 +291,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(final SolrRequest request)
+  public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
-      return client.request(request);
+      return client.request(request, collection);
     }
     UpdateRequest req = (UpdateRequest) request;
 
@@ -305,13 +305,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
         if (req.getDeleteQuery() == null) {
           blockUntilFinished();
-          return client.request(request);
+          return client.request(request, collection);
         }
       }
     } else {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
         blockUntilFinished();
-        return client.request(request);
+        return client.request(request, collection);
       }
     }
 
@@ -322,7 +322,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       if (params.getBool(UpdateParams.WAIT_SEARCHER, false)) {
         log.info("blocking for commit/optimize");
         blockUntilFinished(); // empty the queue
-        return client.request(request);
+        return client.request(request, collection);
       }
     }
 

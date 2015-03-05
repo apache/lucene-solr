@@ -86,12 +86,15 @@ public class EmbeddedSolrServer extends SolrClient
   }
   
   @Override
-  public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException 
+  public NamedList<Object> request(SolrRequest request, String coreName) throws SolrServerException, IOException
   {
     String path = request.getPath();
     if( path == null || !path.startsWith( "/" ) ) {
       path = "/select";
     }
+
+    if (coreName == null)
+      coreName = this.coreName;
 
     // Check for cores action
     SolrCore core =  coreContainer.getCore( coreName );

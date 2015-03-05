@@ -43,15 +43,12 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -201,7 +198,7 @@ public class HttpSolrClient extends SolrClient {
    *      org.apache.solr.client.solrj.ResponseParser)
    */
   @Override
-  public NamedList<Object> request(final SolrRequest request)
+  public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
@@ -698,54 +695,6 @@ public class HttpSolrClient extends SolrClient {
   
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
-  }
-  
-  /**
-   * Adds the documents supplied by the given iterator.
-   * 
-   * @param docIterator
-   *          the iterator which returns SolrInputDocument instances
-   * 
-   * @return the response from the SolrServer
-   */
-  public UpdateResponse add(Iterator<SolrInputDocument> docIterator)
-      throws SolrServerException, IOException {
-    UpdateRequest req = new UpdateRequest();
-    req.setDocIterator(docIterator);
-    return req.process(this);
-  }
-  
-  /**
-   * Adds the beans supplied by the given iterator.
-   * 
-   * @param beanIterator
-   *          the iterator which returns Beans
-   * 
-   * @return the response from the SolrServer
-   */
-  public UpdateResponse addBeans(final Iterator<?> beanIterator)
-      throws SolrServerException, IOException {
-    UpdateRequest req = new UpdateRequest();
-    req.setDocIterator(new Iterator<SolrInputDocument>() {
-      
-      @Override
-      public boolean hasNext() {
-        return beanIterator.hasNext();
-      }
-      
-      @Override
-      public SolrInputDocument next() {
-        Object o = beanIterator.next();
-        if (o == null) return null;
-        return getBinder().toSolrInputDocument(o);
-      }
-      
-      @Override
-      public void remove() {
-        beanIterator.remove();
-      }
-    });
-    return req.process(this);
   }
   
   /**

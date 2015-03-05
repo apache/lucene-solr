@@ -120,18 +120,36 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   /**
    * Send this request to a {@link SolrClient} and return the response
+   *
    * @param client the SolrClient to communicate with
+   * @param collection the collection to execute the request against
+   *
    * @return the response
+   *
+   * @throws SolrServerException if there is an error on the Solr server
+   * @throws IOException if there is a communication error
+   */
+  public final T process(SolrClient client, String collection) throws SolrServerException, IOException {
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    T res = createResponse(client);
+    res.setResponse(client.request(this, collection));
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
+    return res;
+  }
+
+  /**
+   * Send this request to a {@link SolrClient} and return the response
+   *
+   * @param client the SolrClient to communicate with
+   *
+   * @return the response
+   *
    * @throws SolrServerException if there is an error on the Solr server
    * @throws IOException if there is a communication error
    */
   public final T process(SolrClient client) throws SolrServerException, IOException {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    T res = createResponse(client);
-    res.setResponse(client.request(this));
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
-    return res;
+    return process(client, null);
   }
 
 }
