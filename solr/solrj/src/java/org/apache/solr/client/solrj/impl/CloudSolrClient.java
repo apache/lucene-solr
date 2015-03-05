@@ -501,7 +501,7 @@ public class CloudSolrClient extends SolrClient {
     zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 
-  private NamedList<Object> directUpdate(AbstractUpdateRequest request, ClusterState clusterState) throws SolrServerException {
+  private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection, ClusterState clusterState) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
@@ -515,7 +515,6 @@ public class CloudSolrClient extends SolrClient {
       }
     }
 
-    String collection = nonRoutableParams.get(UpdateParams.COLLECTION, defaultCollection);
     if (collection == null) {
       throw new SolrServerException("No collection param specified on request and no default collection has been set.");
     }
@@ -747,9 +746,11 @@ public class CloudSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
+  public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
     SolrParams reqParams = request.getParams();
-    String collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
+
+    if (collection == null)
+      collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
     return requestWithRetryOnStaleState(request, 0, collection);
   }
 
@@ -807,7 +808,7 @@ public class CloudSolrClient extends SolrClient {
 
     NamedList<Object> resp = null;
     try {
-      resp = sendRequest(request);
+      resp = sendRequest(request, collection);
       //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
       Object o = resp.get(STATE_VERSION, resp.size()-1);
       if(o != null && o instanceof Map) {
@@ -905,7 +906,7 @@ public class CloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(SolrRequest request)
+  protected NamedList<Object> sendRequest(SolrRequest request, String collection)
       throws SolrServerException, IOException {
     connect();
     
@@ -916,8 +917,7 @@ public class CloudSolrClient extends SolrClient {
     
     if (request instanceof IsUpdateRequest) {
       if (request instanceof UpdateRequest) {
-        NamedList<Object> response = directUpdate((AbstractUpdateRequest) request,
-            clusterState);
+        NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection, clusterState);
         if (response != null) {
           return response;
         }
@@ -938,7 +938,6 @@ public class CloudSolrClient extends SolrClient {
         theUrlList.add(zkStateReader.getBaseUrlForNodeName(liveNode));
       }
     } else {
-      String collection = reqParams.get(UpdateParams.COLLECTION, defaultCollection);
       
       if (collection == null) {
         throw new SolrServerException(
@@ -983,22 +982,18 @@ public class CloudSolrClient extends SolrClient {
           if (!liveNodes.contains(coreNodeProps.getNodeName())
               || !coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) continue;
           if (nodes.put(node, nodeProps) == null) {
-            if (!sendToLeaders || (sendToLeaders && coreNodeProps.isLeader())) {
+            if (!sendToLeaders || coreNodeProps.isLeader()) {
               String url;
               if (reqParams.get(UpdateParams.COLLECTION) == null) {
-                url = ZkCoreNodeProps.getCoreUrl(
-                    nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
-                    defaultCollection);
+                url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), collection);
               } else {
                 url = coreNodeProps.getCoreUrl();
               }
               urlList2.add(url);
-            } else if (sendToLeaders) {
+            } else {
               String url;
               if (reqParams.get(UpdateParams.COLLECTION) == null) {
-                url = ZkCoreNodeProps.getCoreUrl(
-                    nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
-                    defaultCollection);
+                url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), collection);
               } else {
                 url = coreNodeProps.getCoreUrl();
               }
@@ -1039,7 +1034,7 @@ public class CloudSolrClient extends SolrClient {
       }
       
     }
-    
+
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);
     LBHttpSolrClient.Rsp rsp = lbClient.request(req);
     return rsp.getResponse();
