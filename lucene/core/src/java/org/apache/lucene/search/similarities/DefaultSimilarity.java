@@ -29,7 +29,7 @@ import org.apache.lucene.util.SmallFloat;
  * {@link #decodeNormValue(long) decoded} back to a float <i>norm</i> value.
  * This encoding/decoding, while reducing index size, comes with the price of
  * precision loss - it is not guaranteed that <i>decode(encode(x)) = x</i>. For
- * instance, <i>decode(encode(0.89)) = 0.75</i>.
+ * instance, <i>decode(encode(0.89)) = 0.875</i>.
  * <p>
  * Compression of norm values to a single byte saves memory at search time,
  * because once a field is referenced at search time, its norms - for all

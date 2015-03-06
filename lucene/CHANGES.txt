@@ -223,6 +223,9 @@ Other
 * LUCENE-6333: Refactored queries to delegate their equals and hashcode
   impls to the super class. (Lee Hinman via Adrien Grand)
 
+* LUCENE-6343: DefaultSimilarity javadocs had the wrong float value to
+  demonstrate precision of encoded norms (András Péteri via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6255: PhraseQuery now ignores leading holes and requires that
