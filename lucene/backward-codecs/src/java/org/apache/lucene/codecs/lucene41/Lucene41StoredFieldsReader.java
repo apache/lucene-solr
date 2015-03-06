@@ -507,7 +507,9 @@ final class Lucene41StoredFieldsReader extends StoredFieldsReader {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
 
       final int bits = (int) (infoAndBits & TYPE_MASK);
-      assert bits <= NUMERIC_DOUBLE: "bits=" + Integer.toHexString(bits);
+      if (bits < 0 || bits > NUMERIC_DOUBLE) {
+        throw new CorruptIndexException("Invalid bits: " + Integer.toHexString(bits) + ", docid=" + docID, doc.in);
+      }
 
       switch(visitor.needsField(fieldInfo)) {
         case YES:

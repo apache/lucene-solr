@@ -97,6 +97,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
 
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(attributes));
+        infos[i].checkConsistency();
       }
       
       if (codecVersion >= Lucene46FieldInfosFormat.FORMAT_CHECKSUM) {

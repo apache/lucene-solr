@@ -64,6 +64,9 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
       for (int i = 0; i < size; i++) {
         String name = input.readString();
         final int fieldNumber = input.readVInt();
+        if (fieldNumber < 0) {
+          throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
+        }
         byte bits = input.readByte();
         boolean isIndexed = (bits & Lucene40FieldInfosFormat.IS_INDEXED) != 0;
         boolean storeTermVector = (bits & Lucene40FieldInfosFormat.STORE_TERMVECTOR) != 0;
@@ -108,6 +111,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         }
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, oldValuesType.mapping, -1, Collections.unmodifiableMap(attributes));
+        infos[i].checkConsistency();
       }
 
       CodecUtil.checkEOF(input);
