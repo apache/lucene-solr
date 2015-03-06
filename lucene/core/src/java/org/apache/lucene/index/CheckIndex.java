@@ -411,6 +411,20 @@ public class CheckIndex implements Closeable {
   }
 
   private boolean verbose;
+  
+  /** See {@link #getChecksumsOnly}. */
+  public boolean getChecksumsOnly() {
+    return checksumsOnly;
+  }
+  
+  /** 
+   * If true, only validate physical integrity for all files. 
+   * Note that the returned nested status objects (e.g. storedFieldStatus) will be null.  */
+  public void setChecksumsOnly(boolean v) {
+    checksumsOnly = v;
+  }
+  
+  private boolean checksumsOnly;
 
   /** Set infoStream where messages should go.  If null, no
    *  messages are printed.  If verbose is true then more
@@ -668,42 +682,45 @@ public class CheckIndex implements Closeable {
           }
         }
         
-        // Test Livedocs
-        segInfoStat.liveDocStatus = testLiveDocs(reader, infoStream, failFast);
+        if (checksumsOnly == false) {
+          // Test Livedocs
+          segInfoStat.liveDocStatus = testLiveDocs(reader, infoStream, failFast);
 
-        // Test Fieldinfos
-        segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
+          // Test Fieldinfos
+          segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
         
-        // Test Field Norms
-        segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
+          // Test Field Norms
+          segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
-        // Test the Term Index
-        segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
+          // Test the Term Index
+          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
 
-        // Test Stored Fields
-        segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
+          // Test Stored Fields
+          segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
 
-        // Test Term Vectors
-        segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
+          // Test Term Vectors
+          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
 
-        segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
+          // Test Docvalues
+          segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
 
-        // Rethrow the first exception we encountered
-        //  This will cause stats for failed segments to be incremented properly
-        if (segInfoStat.liveDocStatus.error != null) {
-          throw new RuntimeException("Live docs test failed");
-        } else if (segInfoStat.fieldInfoStatus.error != null) {
-          throw new RuntimeException("Field Info test failed");
-        } else if (segInfoStat.fieldNormStatus.error != null) {
-          throw new RuntimeException("Field Norm test failed");
-        } else if (segInfoStat.termIndexStatus.error != null) {
-          throw new RuntimeException("Term Index test failed");
-        } else if (segInfoStat.storedFieldStatus.error != null) {
-          throw new RuntimeException("Stored Field test failed");
-        } else if (segInfoStat.termVectorStatus.error != null) {
-          throw new RuntimeException("Term Vector test failed");
-        }  else if (segInfoStat.docValuesStatus.error != null) {
-          throw new RuntimeException("DocValues test failed");
+          // Rethrow the first exception we encountered
+          //  This will cause stats for failed segments to be incremented properly
+          if (segInfoStat.liveDocStatus.error != null) {
+            throw new RuntimeException("Live docs test failed");
+          } else if (segInfoStat.fieldInfoStatus.error != null) {
+            throw new RuntimeException("Field Info test failed");
+          } else if (segInfoStat.fieldNormStatus.error != null) {
+            throw new RuntimeException("Field Norm test failed");
+          } else if (segInfoStat.termIndexStatus.error != null) {
+            throw new RuntimeException("Term Index test failed");
+          } else if (segInfoStat.storedFieldStatus.error != null) {
+            throw new RuntimeException("Stored Field test failed");
+          } else if (segInfoStat.termVectorStatus.error != null) {
+            throw new RuntimeException("Term Vector test failed");
+          }  else if (segInfoStat.docValuesStatus.error != null) {
+            throw new RuntimeException("DocValues test failed");
+          }
         }
 
         msg(infoStream, "");
@@ -2110,13 +2127,16 @@ public class CheckIndex implements Closeable {
     boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
+    boolean doChecksumsOnly = false;
     List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
     int i = 0;
     while(i < args.length) {
       String arg = args[i];
-      if ("-exorcise".equals(arg)) {
+      if ("-fast".equals(arg)) {
+        doChecksumsOnly = true;
+      } else if ("-exorcise".equals(arg)) {
         doExorcise = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
@@ -2151,6 +2171,7 @@ public class CheckIndex implements Closeable {
       System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -fast: just verify file checksums, omitting logical integrity checks\n" + 
                          "  -crossCheckTermVectors: verifies that term vectors match postings; THIS IS VERY SLOW!\n" +
                          "  -codec X: when exorcising, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
@@ -2185,6 +2206,11 @@ public class CheckIndex implements Closeable {
       System.out.println("ERROR: cannot specify both -exorcise and -segment");
       return 1;
     }
+    
+    if (doChecksumsOnly && doCrossCheckTermVectors) {
+      System.out.println("ERROR: cannot specify both -fast and -crossCheckTermVectors");
+      return 1;
+    }
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory directory = null;
@@ -2204,6 +2230,7 @@ public class CheckIndex implements Closeable {
     try (Directory dir = directory;
          CheckIndex checker = new CheckIndex(dir)) {
       checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
+      checker.setChecksumsOnly(doChecksumsOnly);
       checker.setInfoStream(System.out, verbose);
       
       Status result = checker.checkIndex(onlySegments);
