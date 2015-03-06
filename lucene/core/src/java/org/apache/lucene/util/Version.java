@@ -311,7 +311,9 @@ public final class Version {
     try {
       major = Integer.parseInt(token);
     } catch (NumberFormatException nfe) {
-      throw new ParseException("Failed to parse major version from \"" + token + "\" (got: " + version + ")", 0);
+      ParseException p = new ParseException("Failed to parse major version from \"" + token + "\" (got: " + version + ")", 0);
+      p.initCause(nfe);
+      throw p;
     }
 
     if (tokens.hasMoreTokens() == false) {
@@ -323,7 +325,9 @@ public final class Version {
     try {
       minor = Integer.parseInt(token);
     } catch (NumberFormatException nfe) {
-      throw new ParseException("Failed to parse minor version from \"" + token + "\" (got: " + version + ")", 0);
+      ParseException p = new ParseException("Failed to parse minor version from \"" + token + "\" (got: " + version + ")", 0);
+      p.initCause(nfe);
+      throw p;
     }
 
     int bugfix = 0;
@@ -334,7 +338,9 @@ public final class Version {
       try {
         bugfix = Integer.parseInt(token);
       } catch (NumberFormatException nfe) {
-        throw new ParseException("Failed to parse bugfix version from \"" + token + "\" (got: " + version + ")", 0);
+        ParseException p = new ParseException("Failed to parse bugfix version from \"" + token + "\" (got: " + version + ")", 0);
+        p.initCause(nfe);
+        throw p;
       }
 
       if (tokens.hasMoreTokens()) {
@@ -342,7 +348,9 @@ public final class Version {
         try {
           prerelease = Integer.parseInt(token);
         } catch (NumberFormatException nfe) {
-          throw new ParseException("Failed to parse prerelease version from \"" + token + "\" (got: " + version + ")", 0);
+          ParseException p = new ParseException("Failed to parse prerelease version from \"" + token + "\" (got: " + version + ")", 0);
+          p.initCause(nfe);
+          throw p;
         }
         if (prerelease == 0) {
           throw new ParseException("Invalid value " + prerelease + " for prerelease; should be 1 or 2 (got: " + version + ")", 0);
