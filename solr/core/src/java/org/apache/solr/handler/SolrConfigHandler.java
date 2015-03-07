@@ -43,19 +43,14 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.PluginsRegistry;
+import org.apache.solr.core.ImplicitPlugins;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.SchemaManager;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +59,7 @@ import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
@@ -152,7 +148,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       Map<String, Object> map = req.getCore().getSolrConfig().toMap();
       Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
       if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
-      List<PluginInfo> plugins = PluginsRegistry.getHandlers(req.getCore());
+      List<PluginInfo> plugins = ImplicitPlugins.getHandlers(req.getCore());
       for (PluginInfo plugin : plugins) {
         if (SolrRequestHandler.TYPE.equals(plugin.type)) {
           if (!reqHandlers.containsKey(plugin.name)) {
@@ -316,7 +312,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                 if ("delete".equals(prefix)) {
                   overlay = deleteNamedComponent(op, overlay, info.tag);
                 } else {
-                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create"));
+                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
                 }
               } else {
                 op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
@@ -359,7 +355,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info, CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
       String name = op.getStr(NAME);
-      String clz = op.getStr(CLASS_NAME);
+      String clz = info.options.contains(REQUIRE_CLASS) ? op.getStr(CLASS_NAME) : op.getStr(CLASS_NAME, null);
       op.getMap(PluginInfo.DEFAULTS, null);
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
@@ -383,10 +379,11 @@ public class SolrConfigHandler extends RequestHandlerBase {
     }
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {
-      if (op.getStr("lib", null) == null) {
+      if (clz == null) return true;
+      if ( !"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
-          SolrCore.createInstance(clz, expected, expected.getSimpleName(), req.getCore());
+          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
         } catch (Exception e) {
           op.addError(e.getMessage());
           return false;
@@ -522,6 +519,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
   public static final String SET = "set";
   public static final String UPDATE = "update";
   public static final String CREATE = "create";
-  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete");
+  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
 
 }

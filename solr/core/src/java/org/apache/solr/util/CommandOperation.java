@@ -52,8 +52,8 @@ public class CommandOperation {
       Object obj = getRootPrimitive();
       return obj == def ? null : String.valueOf(obj);
     }
-    String s = (String) getMapVal(key);
-    return s == null ? def : s;
+    Object o = getMapVal(key);
+    return o == null ? def : String.valueOf(o);
   }
 
   public Map<String, Object> getDataMap() {

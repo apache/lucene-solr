@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrRequestHandler;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,8 +48,8 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   @Test
   public void testLazyLoading() {
     SolrCore core = h.getCore();
-    SolrRequestHandler handler = core.getRequestHandler( "lazy" );
-    assertFalse( handler instanceof StandardRequestHandler ); 
+    PluginRegistry.PluginHolder<SolrRequestHandler> handler = core.getRequestHandlers().getRegistry().get("lazy");
+    assertFalse(handler.isLoaded());
     
     assertU(adoc("id", "42",
                  "name", "Zapp Brannigan"));

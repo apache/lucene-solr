@@ -19,16 +19,13 @@ package org.apache.solr;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.List;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.PluginRegistry;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -94,11 +91,12 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     }
 
     public void testLazy() {
-      QueryResponseWriter qrw = h.getCore().getQueryResponseWriter("useless");
-      assertTrue("Should be a lazy class", qrw instanceof SolrCore.LazyQueryResponseWriterWrapper);
+        PluginRegistry.PluginHolder<QueryResponseWriter> qrw = h.getCore().getResponseWriters().getRegistry().get("useless");
+        assertTrue("Should be a lazy class", qrw instanceof PluginRegistry.LazyPluginHolder);
 
-      qrw = h.getCore().getQueryResponseWriter("xml");
-      assertTrue("Should not be a lazy class", qrw instanceof XMLResponseWriter);
+        qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
+        assertTrue("Should not be a lazy class", qrw.isLoaded());
+        assertTrue("Should not be a lazy class", qrw.getClass() == PluginRegistry.PluginHolder.class);
 
     }
     

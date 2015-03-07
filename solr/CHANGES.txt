@@ -84,6 +84,9 @@ Upgrading from Solr 5.0
 * The signature of SolrDispatchFilter.createCoreContainer() has changed to take
   (String,Properties) arguments
 
+* Deprecated the 'lib' option added to create-requesthandler as part of SOLR-6801 in 5.0 release.
+  Please use the add-runtimelib command
+
 Detailed Change List
 ----------------------
 
@@ -135,6 +138,8 @@ New Features
 
 * SOLR-7155: All SolrClient methods now take an optional 'collection' argument
   (Alan Woodward)
+
+* SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
 Bug Fixes
 ----------------------

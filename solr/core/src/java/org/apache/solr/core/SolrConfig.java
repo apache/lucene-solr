@@ -26,6 +26,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -45,8 +46,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RegexFileFilter;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -77,10 +76,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.Collections.unmodifiableMap;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
 import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 
 /**
@@ -99,6 +102,7 @@ public class SolrConfig extends Config implements MapSerializable{
     MULTI_OK, 
     REQUIRE_NAME,
     REQUIRE_CLASS,
+    LAZY,
     // EnumSet.of and/or EnumSet.copyOf(Collection) are anoying
     // because of type determination
     NOOP
@@ -296,9 +300,9 @@ public class SolrConfig extends Config implements MapSerializable{
   }
 
   public static final  List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
-      .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-      .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
@@ -307,6 +311,7 @@ public class SolrConfig extends Config implements MapSerializable{
       // and even then -- only if there is a single SpellCheckComponent
       // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
+      .add(new SolrPluginInfo(PluginRegistry.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
       // this is hackish, since it picks up all SolrEventListeners,
       // regardless of when/how/why they are used (or even if they are
       // declared outside of the appropriate context) but there's no nice
@@ -323,10 +328,11 @@ public class SolrConfig extends Config implements MapSerializable{
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK))
       .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
       .build();
-  private static final Map<String, SolrPluginInfo> clsVsInfo = new HashMap<>();
-
+  public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
   static {
-    for (SolrPluginInfo plugin : plugins) clsVsInfo.put(plugin.clazz.getName(), plugin);
+    Map<String, SolrPluginInfo> map = new HashMap<>();
+    for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
+    classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
 
   public static class SolrPluginInfo{
@@ -634,7 +640,7 @@ public class SolrConfig extends Config implements MapSerializable{
    */
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
-    SolrPluginInfo info = clsVsInfo.get(type);
+    SolrPluginInfo info = classVsSolrPluginInfo.get(type);
     if (info != null && info.options.contains(REQUIRE_NAME)) {
       Map<String, Map> infos = overlay.getNamedPlugins(info.tag);
       if (!infos.isEmpty()) {
@@ -664,14 +670,14 @@ public class SolrConfig extends Config implements MapSerializable{
   private void initLibs() {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
-    
+
     log.info("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
-    
+
     try {
       for (int i = 0; i < nodes.getLength(); i++) {
         Node node = nodes.item(i);
-        
+
         String baseDir = DOMUtil.getAttr(node, "dir");
         String path = DOMUtil.getAttr(node, "path");
         if (null != baseDir) {
@@ -696,7 +702,7 @@ public class SolrConfig extends Config implements MapSerializable{
       loader.reloadLuceneSPI();
     }
   }
-  
+
   public int getMultipartUploadLimitKB() {
     return multipartUploadLimitKB;
   }

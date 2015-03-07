@@ -45,7 +45,7 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 
-public class PluginsRegistry {
+public class ImplicitPlugins {
 
   public static List<PluginInfo> getHandlers(SolrCore solrCore){
     List<PluginInfo> implicits = new ArrayList<>();
@@ -88,4 +88,5 @@ public class PluginsRegistry {
     Map m = makeMap("name", name, "class", clz.getName());
     return new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(singletonMap(DEFAULTS, new NamedList(defaults))),null);
   }
+  public static final String IMPLICIT = "implicit";
 }

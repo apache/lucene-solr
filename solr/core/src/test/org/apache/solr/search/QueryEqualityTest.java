@@ -55,11 +55,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public static void afterClassParserCoverageTest() {
 
     if ( ! doAssertParserCoverage) return;
-
-    for (int i=0; i < QParserPlugin.standardPlugins.length; i+=2) {
-      assertTrue("qparser #"+i+" name not a string", 
-                 QParserPlugin.standardPlugins[i] instanceof String);
-      final String name = (String)QParserPlugin.standardPlugins[i];
+    for (String name : QParserPlugin.standardPlugins.keySet()) {
       assertTrue("testParserCoverage was run w/o any other method explicitly testing qparser: " + name, qParsersTested.contains(name));
     }
 
