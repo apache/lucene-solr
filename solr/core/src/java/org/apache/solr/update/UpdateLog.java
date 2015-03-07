@@ -130,7 +130,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   protected TransactionLog tlog;
   protected TransactionLog prevTlog;
-  protected Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
+  protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
   protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
 
@@ -142,7 +142,8 @@ public class UpdateLog implements PluginInfoInitialized {
 
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
-  public final int numRecordsToKeep = 100;
+  protected int numRecordsToKeep;
+  protected int maxNumLogsToKeep;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
@@ -215,10 +216,31 @@ public class UpdateLog implements PluginInfoInitialized {
     return versionInfo;
   }
 
+  public int getNumRecordsToKeep() {
+    return numRecordsToKeep;
+  }
+
+  public int getMaxNumLogsToKeep() {
+    return maxNumLogsToKeep;
+  }
+
+  protected static int objToInt(Object obj, int def) {
+    if (obj != null) {
+      return Integer.parseInt(obj.toString());
+    }
+    else return def;
+  }
+
   @Override
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
     defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
+
+    numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
+    maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+
+    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
+        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep);
   }
 
   /* Note, when this is called, uhandler is not completely constructed.
@@ -335,7 +357,7 @@ public class UpdateLog implements PluginInfoInitialized {
       int nrec = log.numRecords();
       // remove oldest log if we don't need it to keep at least numRecordsToKeep, or if
       // we already have the limit of 10 log files.
-      if (currRecords - nrec >= numRecordsToKeep || logs.size() >= 10) {
+      if (currRecords - nrec >= numRecordsToKeep || (maxNumLogsToKeep > 0 && logs.size() >= maxNumLogsToKeep)) {
         currRecords -= nrec;
         numOldRecords -= nrec;
         logs.removeLast().decref();  // dereference so it will be deleted when no longer in use

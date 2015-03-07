@@ -243,7 +243,7 @@ class CollectionTester {
 
       if (a >= expectedList.size() || b >=v.size()) {
         popPath();
-        setErr("List size mismatch");
+        setErr("List size mismatch (expected: " + expectedList.size() + ", got: " + v.size() + ")");
         return false;
       }
 

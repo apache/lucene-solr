@@ -87,6 +87,9 @@ New Features
 * SOLR-7155: All SolrClient methods now take an optional 'collection' argument
   (Alan Woodward)
 
+* SOLR-6359: Allow number of logs and records kept by UpdateLog to be configured
+  (Ramkumar Aiyengar)
+
 Bug Fixes
 ----------------------
 
