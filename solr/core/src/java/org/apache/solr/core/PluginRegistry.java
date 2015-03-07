@@ -276,6 +276,13 @@ public class PluginRegistry<T> implements AutoCloseable {
       this.pluginMeta = pluginMeta;
       this.core = core;
       this.resourceLoader = loader;
+      if (loader instanceof MemClassLoader) {
+        if (!"true".equals(System.getProperty("enable.runtime.lib"))) {
+          String s = "runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true";
+          log.warn(s);
+          solrException = new SolrException(SolrException.ErrorCode.SERVER_ERROR, s);
+        }
+      }
     }
 
     @Override
