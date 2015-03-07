@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import org.apache.solr.common.SolrException;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
@@ -28,7 +27,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,16 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestRecovery extends SolrTestCaseJ4 {
 
@@ -770,46 +759,63 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       createCore();
 
-      int start = 0;
-      int maxReq = 50;
+      int numIndexed = 0;
+      int maxReq = 200;
 
       LinkedList<Long> versions = new LinkedList<>();
-      addDocs(10, start, versions); start+=10;
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+
+      int docsPerBatch = 3;
+      // we don't expect to reach numRecordsToKeep as yet, so the bottleneck is still number of logs to keep
+      int expectedToRetain = ulog.getMaxNumLogsToKeep() * docsPerBatch;
+      int versExpected;
+
+      for (int i = 1; i <= ulog.getMaxNumLogsToKeep() + 2; i ++) {
+        addDocs(docsPerBatch, numIndexed, versions); numIndexed += docsPerBatch;
+        versExpected = Math.min(numIndexed, expectedToRetain + docsPerBatch); // not yet committed, so one more tlog could slip in
+        assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, versExpected)));
+        assertU(commit());
+        versExpected = Math.min(numIndexed, expectedToRetain);
+        assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, versExpected)));
+        assertEquals(Math.min(i, ulog.getMaxNumLogsToKeep()), ulog.getLogList(logDir).length);
+      }
+
+      docsPerBatch = ulog.getNumRecordsToKeep() + 20;
+      // about to commit a lot of docs, so numRecordsToKeep becomes the bottleneck
+      expectedToRetain = ulog.getNumRecordsToKeep();
+
+      addDocs(docsPerBatch, numIndexed, versions);  numIndexed+=docsPerBatch;
+      versExpected = Math.min(numIndexed, expectedToRetain);
+      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, versExpected)));
       assertU(commit());
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+      expectedToRetain = expectedToRetain - 1; // we lose a log entry due to the commit record
+      versExpected = Math.min(numIndexed, expectedToRetain);
+      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, versExpected)));
 
-      addDocs(10, start, versions);  start+=10;
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
-      assertU(commit());
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
-
-      assertEquals(2, ulog.getLogList(logDir).length);
-
-      addDocs(105, start, versions);  start+=105;
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
-      assertU(commit());
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
-
-      // previous two logs should be gone now
+      // previous logs should be gone now
       assertEquals(1, ulog.getLogList(logDir).length);
 
-      addDocs(1, start, versions);  start+=1;
+      addDocs(1, numIndexed, versions);  numIndexed+=1;
       h.close();
       createCore();      // trigger recovery, make sure that tlog reference handling is correct
 
       // test we can get versions while replay is happening
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, expectedToRetain)));
 
       logReplay.release(1000);
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+      expectedToRetain = expectedToRetain - 1; // we lose a log entry due to the commit record made by recovery
+      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,expectedToRetain)));
 
-      addDocs(105, start, versions);  start+=105;
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+      docsPerBatch = ulog.getNumRecordsToKeep() + 20;
+      // about to commit a lot of docs, so numRecordsToKeep becomes the bottleneck
+      expectedToRetain = ulog.getNumRecordsToKeep();
+
+      addDocs(docsPerBatch, numIndexed, versions);  numIndexed+=docsPerBatch;
+      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,expectedToRetain)));
       assertU(commit());
-      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
+      expectedToRetain = expectedToRetain - 1; // we lose a log entry due to the commit record
+      assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,expectedToRetain)));
 
       // previous logs should be gone now
       assertEquals(1, ulog.getLogList(logDir).length);
@@ -817,7 +823,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       //
       // test that a corrupt tlog file doesn't stop us from coming up, or seeing versions before that tlog file.
       //
-      addDocs(1, start, new LinkedList<Long>()); // don't add this to the versions list because we are going to lose it...
+      addDocs(1, numIndexed, new LinkedList<Long>()); // don't add this to the versions list because we are going to lose it...
       h.close();
       files = ulog.getLogList(logDir);
       Arrays.sort(files);
@@ -828,7 +834,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ignoreException("Failure to open existing");
       createCore();
       // we should still be able to get the list of versions (not including the trashed log file)
-      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, start)));
+      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, expectedToRetain)));
       resetExceptionIgnores();
 
     } finally {

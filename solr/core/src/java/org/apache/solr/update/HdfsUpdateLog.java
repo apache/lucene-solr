@@ -84,7 +84,12 @@ public class HdfsUpdateLog extends UpdateLog {
     
     defaultSyncLevel = SyncLevel.getSyncLevel((String) info.initArgs
         .get("syncLevel"));
-    
+
+    numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
+    maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+
+    log.info("Initializing HdfsUpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
+        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep);
   }
 
   private Configuration getConf() {
@@ -217,7 +222,7 @@ public class HdfsUpdateLog extends UpdateLog {
     // non-complete tlogs.
     HdfsUpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
     try {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+      startingVersions = startingUpdates.getVersions(getNumRecordsToKeep());
       startingOperation = startingUpdates.getLatestOperation();
       
       // populate recent deletes list (since we can't get that info from the

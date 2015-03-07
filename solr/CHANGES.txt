@@ -141,6 +141,9 @@ New Features
 
 * SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
+* SOLR-6359: Allow number of logs and records kept by UpdateLog to be configured
+  (Ramkumar Aiyengar)
+
 Bug Fixes
 ----------------------
 

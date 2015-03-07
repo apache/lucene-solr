@@ -259,7 +259,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     UpdateLog.RecentUpdates recentUpdates = null;
     try {
       recentUpdates = ulog.getRecentUpdates();
-      recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
+      recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, e);
       recentVersions = new ArrayList<>(0);
@@ -382,7 +382,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep, false, false);
+              Collections.singletonList(leaderUrl), ulog.getNumRecordsToKeep(), false, false);
           peerSync.setStartingVersions(recentVersions);
           boolean syncSuccess = peerSync.sync();
           if (syncSuccess) {
