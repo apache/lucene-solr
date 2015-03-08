@@ -21,7 +21,6 @@ package org.apache.solr.core;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -35,7 +34,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -157,10 +155,10 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     }
     ByteBuffer jar = null;
 
-//     jar = persistZip("/tmp/runtimelibs.jar", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
+//     jar = persistZip("/tmp/runtimelibs.jar.bin", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
 //    if(true) return;
 
-    jar = getFileContent("runtimecode/runtimelibs.jar");
+    jar = getFileContent("runtimecode/runtimelibs.jar.bin");
     TestBlobHandler.postAndCheck(cloudClient, baseURL, blobName, jar, 1);
 
     payload = "{\n" +
@@ -204,7 +202,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "org.apache.solr.core.RuntimeLibSearchComponent", 10);
     compareValues(result, MemClassLoader.class.getName(), asList( "loader"));
 
-    jar = getFileContent("runtimecode/runtimelibs_v2.jar");
+    jar = getFileContent("runtimecode/runtimelibs_v2.jar.bin");
     TestBlobHandler.postAndCheck(cloudClient, baseURL, blobName, jar, 2);
     payload = "{\n" +
         "'update-runtimelib' : { 'name' : 'colltest' ,'version':2}\n" +
