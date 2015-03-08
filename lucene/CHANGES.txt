@@ -19,8 +19,6 @@ New Features
   for counting ranges that align with the underlying terms as defined by the
   NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
 
-* LUCENE-6341: Add a -fast option to CheckIndex. (Robert Muir)
-
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to
@@ -58,6 +56,8 @@ New Features
 
 * LUCENE-6304: Added a new MatchNoDocsQuery that matches no documents.
   (Lee Hinman via Adrien Grand)
+
+* LUCENE-6341: Add a -fast option to CheckIndex. (Robert Muir)
 
 Bug Fixes
 
