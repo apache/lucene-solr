@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -42,11 +41,11 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   static final Logger log =  LoggerFactory.getLogger(MemClassLoader.class);
   private boolean allJarsLoaded = false;
   private final SolrResourceLoader parentLoader;
-  private List<PluginRegistry.RuntimeLib> libs = new ArrayList<>();
+  private List<PluginBag.RuntimeLib> libs = new ArrayList<>();
   private Map<String, Class> classCache = new HashMap<>();
 
 
-  public MemClassLoader(List<PluginRegistry.RuntimeLib> libs, SolrResourceLoader resourceLoader) {
+  public MemClassLoader(List<PluginBag.RuntimeLib> libs, SolrResourceLoader resourceLoader) {
     this.parentLoader = resourceLoader;
     this.libs = libs;
   }
@@ -55,7 +54,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   public synchronized void loadJars() {
     if (allJarsLoaded) return;
 
-    for (PluginRegistry.RuntimeLib lib : libs) {
+    for (PluginBag.RuntimeLib lib : libs) {
       try {
         lib.loadJar();
       } catch (Exception exception) {
@@ -113,7 +112,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
     String path = name.replace('.', '/').concat(".class");
     ByteBuffer buf = null;
-    for (PluginRegistry.RuntimeLib lib : libs) {
+    for (PluginBag.RuntimeLib lib : libs) {
       try {
         buf = lib.getFileContent(path);
         if (buf != null) {
@@ -130,7 +129,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
   @Override
   public void close() throws Exception {
-    for (PluginRegistry.RuntimeLib lib : libs) {
+    for (PluginBag.RuntimeLib lib : libs) {
       try {
         lib.close();
       } catch (Exception e) {

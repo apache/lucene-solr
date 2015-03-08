@@ -39,13 +39,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonList;
-
 /**
  * This manages the lifecycle of a set of plugin of the same type .
  */
-public class PluginRegistry<T> implements AutoCloseable {
-  public static Logger log = LoggerFactory.getLogger(PluginRegistry.class);
+public class PluginBag<T> implements AutoCloseable {
+  public static Logger log = LoggerFactory.getLogger(PluginBag.class);
 
   private Map<String, PluginHolder<T>> registry = new HashMap<>();
   private Map<String, PluginHolder<T>> immutableRegistry = Collections.unmodifiableMap(registry);
@@ -54,7 +52,7 @@ public class PluginRegistry<T> implements AutoCloseable {
   private SolrCore core;
   private SolrConfig.SolrPluginInfo meta;
 
-  public PluginRegistry(Class<T> klass, SolrCore core) {
+  public PluginBag(Class<T> klass, SolrCore core) {
     this.core = core;
     this.klass = klass;
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());

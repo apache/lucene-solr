@@ -175,7 +175,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   private final long startTime;
   private final RequestHandlers reqHandlers;
-  private final PluginRegistry<SearchComponent> searchComponents = new PluginRegistry<>(SearchComponent.class, this);
+  private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private IndexDeletionPolicyWrapper solrDelPolicy;
@@ -788,7 +788,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         directoryFactory = solrCoreState.getDirectoryFactory();
         this.isReloaded = true;
       }
-      memClassLoader = new MemClassLoader(PluginRegistry.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginRegistry.RuntimeLib.class.getName())), getResourceLoader());
+      memClassLoader = new MemClassLoader(PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())), getResourceLoader());
       initIndex(prev != null);
 
       initWriters();
@@ -1249,7 +1249,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   /**
    * Returns an unmodifiable Map containing the registered handlers
    */
-  public PluginRegistry<SolrRequestHandler> getRequestHandlers() {
+  public PluginBag<SolrRequestHandler> getRequestHandlers() {
     return reqHandlers.handlers;
   }
 
@@ -1305,7 +1305,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    * Accessor for all the Search Components
    * @return An unmodifiable Map of Search Components
    */
-  public PluginRegistry<SearchComponent> getSearchComponents() {
+  public PluginBag<SearchComponent> getSearchComponents() {
     return searchComponents;
   }
 
@@ -2050,11 +2050,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     SolrException.log(log,null,e);
   }
 
-  public PluginRegistry<QueryResponseWriter> getResponseWriters() {
+  public PluginBag<QueryResponseWriter> getResponseWriters() {
     return responseWriters;
   }
 
-  private final PluginRegistry<QueryResponseWriter> responseWriters = new PluginRegistry<>(QueryResponseWriter.class, this);
+  private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
     HashMap<String, QueryResponseWriter> m= new HashMap<>();
@@ -2119,15 +2119,15 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
 
-  private final PluginRegistry<QParserPlugin> qParserPlugins = new PluginRegistry<>(QParserPlugin.class, this);
+  private final PluginBag<QParserPlugin> qParserPlugins = new PluginBag<>(QParserPlugin.class, this);
 
   public QParserPlugin getQueryPlugin(String parserName) {
     return qParserPlugins.get(parserName);
   }
 
-  private final PluginRegistry<ValueSourceParser> valueSourceParsers = new PluginRegistry<>(ValueSourceParser.class, this);
+  private final PluginBag<ValueSourceParser> valueSourceParsers = new PluginBag<>(ValueSourceParser.class, this);
 
-  private final PluginRegistry<TransformerFactory> transformerFactories = new PluginRegistry<>(TransformerFactory.class, this);
+  private final PluginBag<TransformerFactory> transformerFactories = new PluginBag<>(TransformerFactory.class, this);
 
   <T> Map<String, T> createInstances(Map<String, Class<? extends T>> map) {
     Map<String, T> result = new LinkedHashMap<>();

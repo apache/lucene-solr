@@ -35,7 +35,7 @@ public final class RequestHandlers {
 
   protected final SolrCore core;
 
-  final PluginRegistry<SolrRequestHandler> handlers;
+  final PluginBag<SolrRequestHandler> handlers;
 
   /**
    * Trim the trailing '/' if it's there, and convert null to empty string.
@@ -57,7 +57,7 @@ public final class RequestHandlers {
   
   public RequestHandlers(SolrCore core) {
       this.core = core;
-    handlers =  new PluginRegistry<>(SolrRequestHandler.class, core);
+    handlers =  new PluginBag<>(SolrRequestHandler.class, core);
   }
 
   /**
@@ -88,7 +88,7 @@ public final class RequestHandlers {
   /**
    * Returns an unmodifiable Map containing the registered handlers
    */
-  public PluginRegistry<SolrRequestHandler> getRequestHandlers() {
+  public PluginBag<SolrRequestHandler> getRequestHandlers() {
     return handlers;
   }
 

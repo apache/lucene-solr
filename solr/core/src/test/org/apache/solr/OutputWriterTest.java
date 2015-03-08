@@ -22,7 +22,7 @@ import java.io.Writer;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginRegistry;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -91,12 +91,12 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     }
 
     public void testLazy() {
-        PluginRegistry.PluginHolder<QueryResponseWriter> qrw = h.getCore().getResponseWriters().getRegistry().get("useless");
-        assertTrue("Should be a lazy class", qrw instanceof PluginRegistry.LazyPluginHolder);
+        PluginBag.PluginHolder<QueryResponseWriter> qrw = h.getCore().getResponseWriters().getRegistry().get("useless");
+        assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
 
         qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
         assertTrue("Should not be a lazy class", qrw.isLoaded());
-        assertTrue("Should not be a lazy class", qrw.getClass() == PluginRegistry.PluginHolder.class);
+        assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
 
     }
     

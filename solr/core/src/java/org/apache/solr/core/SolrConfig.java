@@ -26,7 +26,6 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -76,14 +75,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.Collections.unmodifiableMap;
-import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
 import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 
 /**
@@ -311,7 +307,7 @@ public class SolrConfig extends Config implements MapSerializable{
       // and even then -- only if there is a single SpellCheckComponent
       // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
-      .add(new SolrPluginInfo(PluginRegistry.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
+      .add(new SolrPluginInfo(PluginBag.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
       // this is hackish, since it picks up all SolrEventListeners,
       // regardless of when/how/why they are used (or even if they are
       // declared outside of the appropriate context) but there's no nice

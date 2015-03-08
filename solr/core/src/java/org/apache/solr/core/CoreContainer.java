@@ -107,13 +107,13 @@ public class CoreContainer {
   public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   public static final String INFO_HANDLER_PATH = "/admin/info";
 
-  private PluginRegistry<SolrRequestHandler> containerHandlers = new PluginRegistry<>(SolrRequestHandler.class, null);
+  private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   public SolrRequestHandler getRequestHandler(String path) {
     return RequestHandlerBase.getRequestHandler(path, containerHandlers);
   }
 
-  public PluginRegistry<SolrRequestHandler> getRequestHandlers() {
+  public PluginBag<SolrRequestHandler> getRequestHandlers() {
     return this.containerHandlers;
   }
 
