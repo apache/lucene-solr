@@ -96,14 +96,27 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
 
   @Override
   public void onUse(Query query) {
-    // we only track hash codes, which
+    // call possible Query clone and hashCode outside of sync block
+    // in case it's somewhat expensive:
+    int hashCode = QueryCache.cacheKey(query).hashCode();
+
+    // we only track hash codes to avoid holding references to possible
+    // large queries; this may cause rare false positives, but at worse
+    // this just means we cache a query that was not in fact used enough:
     synchronized (this) {
-      recentlyUsedFilters.add(QueryCache.cacheKey(query).hashCode());
+      recentlyUsedFilters.add(hashCode);
     }
   }
 
-  synchronized int frequency(Query query) {
-    return recentlyUsedFilters.frequency(QueryCache.cacheKey(query).hashCode());
+  int frequency(Query query) {
+    
+    // call possible Query clone and hashCode outside of sync block
+    // in case it's somewhat expensive:
+    int hashCode = QueryCache.cacheKey(query).hashCode();
+
+    synchronized (this) {
+      return recentlyUsedFilters.frequency(hashCode);
+    }
   }
 
   @Override
