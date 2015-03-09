@@ -220,8 +220,9 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
   }
-  public void testClearPreviousRecordFields() throws Exception{
-    String json= "{\n" +
+
+  public void testClearPreviousRecordFields() throws Exception {
+    String json = "{\n" +
         "'first': 'John',\n" +
         "'exams': [\n" +
         "{'subject': 'Maths', 'test'   : 'term1', 'marks':90},\n" +
@@ -249,7 +250,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
 
     for (Map<String, Object> record : records) {
       for (Map.Entry<String, Object> e : record.entrySet()) {
-        assertFalse(e.getValue() instanceof  List);
+        assertFalse(e.getValue() instanceof List);
       }
     }
   }

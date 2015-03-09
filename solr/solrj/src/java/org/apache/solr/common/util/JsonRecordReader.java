@@ -414,10 +414,10 @@ public class JsonRecordReader {
           }
         }
       } finally {
-        if ((isRecord() || !isRecordStarted) ) {
-            for (String fld : valuesAddedinThisFrame) {
-              values.remove(fld);
-            }
+        if ((isRecord() || !isRecordStarted)) {
+          for (String fld : valuesAddedinThisFrame) {
+            values.remove(fld);
+          }
         }
       }
     }
