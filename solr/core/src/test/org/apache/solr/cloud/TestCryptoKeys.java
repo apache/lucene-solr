@@ -187,10 +187,10 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     assertNotNull(TestBlobHandler.getAsString(map), s);//No key matched signature for jar
     assertTrue(TestBlobHandler.getAsString(map), s.contains("No key matched signature for jar"));
 
-    String rightSig = "YkTQgOtvcM/H/5EQdABGl3wjjrPhonAGlouIx59vppBy2cZEofX3qX1yZu5sPNRmJisNXEuhHN2149dxeUmk2Q==";
+    String rightSig = "nKmpxWH7XBlGuf51wEyIabN+HrkmFa/2sKJFIC/SeCKa1+txQxgO8vuekTGXymksq9b3K8Hs2+KsK3c9zTYORA==";
 
     payload = "{\n" +
-        "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'YkTQgOtvcM/H/5EQdABGl3wjjrPhonAGlouIx59vppBy2cZEofX3qX1yZu5sPNRmJisNXEuhHN2149dxeUmk2Q=='}\n" +
+        "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'nKmpxWH7XBlGuf51wEyIabN+HrkmFa/2sKJFIC/SeCKa1+txQxgO8vuekTGXymksq9b3K8Hs2+KsK3c9zTYORA=='}\n" +
         "}";
     client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
     TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
@@ -209,9 +209,9 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
         "org.apache.solr.core.RuntimeLibReqHandler", 10);
     compareValues(map, MemClassLoader.class.getName(), asList("loader"));
 
-    rightSig = "VJPMTxDf8Km3IBj2B5HWkIOqeM/o+HHNobOYCNA3WjrEVfOMZbMMqS1Lo7uLUUp//RZwOGkOhrUhuPNY1z2CGEIKX2/m8VGH64L14d52oSvFiwhoTDDuuyjW1TFGu35D";
+    rightSig = "tHD0kI+lF1kORSWU6inBdKB9vN+y2IEudms8KsxvVYx6uo8R9TPRUowOcEVHS0TEyTmApC4iMGakJZ4uond3BtqC4jZsRcRDt+SG23jk9MAt3e9Xg/X/s3x2XrcYzeQM";
     payload = "{\n" +
-        "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'VJPMTxDf8Km3IBj2B5HWkIOqeM/o+HHNobOYCNA3WjrEVfOMZbMMqS1Lo7uLUUp//RZwOGkOhrUhuPNY1z2CGEIKX2/m8VGH64L14d52oSvFiwhoTDDuuyjW1TFGu35D'}\n" +
+        "'update-runtimelib' : { 'name' : 'signedjar' ,'version':1, 'sig': 'tHD0kI+lF1kORSWU6inBdKB9vN+y2IEudms8KsxvVYx6uo8R9TPRUowOcEVHS0TEyTmApC4iMGakJZ4uond3BtqC4jZsRcRDt+SG23jk9MAt3e9Xg/X/s3x2XrcYzeQM'}\n" +
         "}";
     client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
     TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
