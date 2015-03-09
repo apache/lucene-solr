@@ -18,8 +18,10 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.*;
@@ -49,9 +51,7 @@ import javax.xml.xpath.XPathFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /***
  * Field type for support of string values with custom sort order.
@@ -226,6 +226,14 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
+  public FieldType.NumericType getNumericType() {
+    return FieldType.NumericType.INT;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Integer minValue = stringValueToIntValue(min);
     Integer maxValue = stringValueToIntValue(max);
@@ -255,10 +263,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public void checkSchemaField(final SchemaField field) {
-    if (field.hasDocValues() && !field.multiValued() && !(field.isRequired() || field.getDefaultValue() != null)) {
-      throw new IllegalStateException("Field " + this + " has single-valued doc values enabled, but has no default value and is not required");
-    }
+  public void checkSchemaField(SchemaField field) {
   }
 
   /**
@@ -391,6 +396,30 @@ public class EnumField extends PrimitiveFieldType {
 
     f.setBoost(boost);
     return f;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+    if (sf.hasDocValues()) {
+      List<IndexableField> fields = new ArrayList<>();
+      final IndexableField field = createField(sf, value, boost);
+      fields.add(field);
+
+      if (sf.multiValued()) {
+        BytesRefBuilder bytes = new BytesRefBuilder();
+        readableToIndexed(stringValueToIntValue(value.toString()).toString(), bytes);
+        fields.add(new SortedSetDocValuesField(sf.getName(), bytes.toBytesRef()));
+      } else {
+        final long bits = field.numericValue().intValue();
+        fields.add(new NumericDocValuesField(sf.getName(), bits));
+      }
+      return fields;
+    } else {
+      return Collections.singletonList(createField(sf, value, boost));
+    }
   }
 
   /**

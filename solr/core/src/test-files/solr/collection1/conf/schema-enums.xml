@@ -21,6 +21,7 @@
     <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
     <!-- Test EnumField -->
     <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+    <field name="severity_dv" type="severityType" indexed="true" stored="true" multiValued="false" docValues="true"/>
     <field name="text" type="text" indexed="true" stored="true" multiValued="true"/>
   </fields>
   <uniqueKey>id</uniqueKey>
