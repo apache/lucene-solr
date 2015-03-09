@@ -45,10 +45,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -610,17 +611,20 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   public void testWrongZkChrootTest() throws IOException {
+
+    exception.expect(SolrException.class);
+    exception.expectMessage("cluster not found/not ready");
+
     try (CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress() + "/xyz/foo")) {
       client.setDefaultCollection(DEFAULT_COLLECTION);
       client.setZkClientTimeout(1000 * 60);
       client.connect();
       fail("Expected exception");
-    } catch(SolrException e) {
-      assertTrue(e.getCause() instanceof KeeperException);
     }
-    // see SOLR-6146 - this test will fail by virtue of the zkClient tracking performed
-    // in the afterClass method of the base class
   }
 
   public void customHttpClientTest() throws IOException {

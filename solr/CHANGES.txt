@@ -152,6 +152,10 @@ New Features
 
 * SOLR-5846: EnumField supports DocValues functionality. (Elran Dvir, shalin)
 
+* SOLR-4044: CloudSolrClient.connect() throws a more useful exception if the
+  cluster is not ready, and can now take an optional timeout argument to wait
+  for the cluster. (Alan Woodward, shalin, yonik, Mark Miller, Vitaliy Zhovtyuk)
+
 Bug Fixes
 ----------------------
 
