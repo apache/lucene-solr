@@ -136,8 +136,8 @@ New Features
   
 * SOLR-7164: BBoxField defaults sub fields to not-stored (ryan)
 
-* SOLR-7155: All SolrClient methods now take an optional 'collection' argument
-  (Alan Woodward)
+* SOLR-7155,SOLR-7201: All SolrClient methods now take an optional 'collection' argument
+  (Alan Woodward, Shawn Heisey)
 
 * SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
