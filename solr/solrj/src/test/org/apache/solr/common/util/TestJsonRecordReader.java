@@ -220,4 +220,38 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
   }
+
+  public void testClearPreviousRecordFields() throws Exception {
+    String json = "{\n" +
+        "'first': 'John',\n" +
+        "'exams': [\n" +
+        "{'subject': 'Maths', 'test'   : 'term1', 'marks':90},\n" +
+        "{'subject': 'Biology', 'test'   : 'term1', 'marks':86}\n" +
+        "]\n" +
+        "}\n" +
+        "{\n" +
+        "'first': 'Bob',\n" +
+        "'exams': [\n" +
+        "{'subject': 'Maths', 'test': 'term1', 'marks': 95\n" +
+        "}\n" +
+        ",\n" +
+        "{\n" +
+        "'subject': 'Biology', 'test'   : 'term1', 'marks': 92}\n" +
+        "]\n" +
+        "}";
+
+
+    JsonRecordReader streamer;
+    List<Map<String, Object>> records;
+
+    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("/**"));
+    records = streamer.getAllRecords(new StringReader(json));
+    assertEquals(4, records.size());
+
+    for (Map<String, Object> record : records) {
+      for (Map.Entry<String, Object> e : record.entrySet()) {
+        assertFalse(e.getValue() instanceof List);
+      }
+    }
+  }
 }

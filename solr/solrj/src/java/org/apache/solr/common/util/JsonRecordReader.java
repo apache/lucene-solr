@@ -320,7 +320,7 @@ public class JsonRecordReader {
 
       final boolean isRecordStarted = recordStarted || isRecord;
       Set<String> valuesAddedinThisFrame = null;
-      if (isRecord) {
+      if (isRecord || !recordStarted) {
         // This Node is a match for an PATH from a forEach attribute,
         // prepare for the clean up that will occurr when the record
         // is emitted after its END_ELEMENT is matched
@@ -384,7 +384,7 @@ public class JsonRecordReader {
               Object val = parseSingleFieldValue(event, parser, runnable);
               if (val != null) {
                 putValue(values, nameInRecord, val);
-                if (isRecordStarted) valuesAddedinThisFrame.add(nameInRecord);
+                valuesAddedinThisFrame.add(nameInRecord);
               }
 
             } else {
@@ -414,12 +414,9 @@ public class JsonRecordReader {
           }
         }
       } finally {
-        if ((isRecord() || !isRecordStarted) && !stack.empty()) {
-          Set<String> cleanThis = stack.pop();
-          if (cleanThis != null) {
-            for (String fld : cleanThis) {
-              values.remove(fld);
-            }
+        if ((isRecord() || !isRecordStarted)) {
+          for (String fld : valuesAddedinThisFrame) {
+            values.remove(fld);
           }
         }
       }
