@@ -733,4 +733,11 @@ public class SolrZkClient implements Closeable {
     return e;
   }
 
+  /**
+   * @return the address of the zookeeper cluster
+   */
+  public String getZkServerAddress() {
+    return zkServerAddress;
+  }
+
 }

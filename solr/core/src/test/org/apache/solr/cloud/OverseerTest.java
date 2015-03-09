@@ -86,6 +86,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public MockZKController(String zkAddress, String nodeName) throws InterruptedException, TimeoutException, IOException, KeeperException {
       this.nodeName = nodeName;
       zkClient = new SolrZkClient(zkAddress, TIMEOUT);
+
+      ZkController.createClusterZkNodes(zkClient);
+
       zkStateReader = new ZkStateReader(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
       
@@ -235,7 +238,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
@@ -290,7 +293,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
@@ -370,7 +373,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
       
       overseerClient = electNewOverseer(server.getZkAddress());
 
@@ -534,7 +537,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      zkClient.makePath("/live_nodes", true);
+      ZkController.createClusterZkNodes(zkClient);
 
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -632,8 +635,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+
+      ZkController.createClusterZkNodes(zkClient);
       
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -751,7 +754,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       controllerClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(controllerClient);
 
       killer = new OverseerRestarter(server.getZkAddress());
       killerThread = new Thread(killer);
@@ -808,7 +811,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(controllerClient);
       
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -872,8 +875,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
-      
+      ZkController.createClusterZkNodes(controllerClient);
+
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();
 
@@ -914,7 +917,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(controllerClient);
 
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -1046,7 +1049,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
 
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();

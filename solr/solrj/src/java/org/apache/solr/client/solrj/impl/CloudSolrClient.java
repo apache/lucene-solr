@@ -74,6 +74,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -470,6 +472,30 @@ public class CloudSolrClient extends SolrClient {
         }
       }
     }
+  }
+
+  /**
+   * Connect to a cluster.  If the cluster is not ready, retry connection up to a given timeout.
+   * @param duration the timeout
+   * @param timeUnit the units of the timeout
+   * @throws TimeoutException if the cluster is not ready after the timeout
+   * @throws InterruptedException if the wait is interrupted
+   */
+  public void connect(long duration, TimeUnit timeUnit) throws TimeoutException, InterruptedException {
+    log.info("Waiting for {} {} for cluster at {} to be ready", duration, timeUnit, zkHost);
+    long timeout = System.nanoTime() + timeUnit.toNanos(duration);
+    while (System.nanoTime() < timeout) {
+      try {
+        connect();
+        log.info("Cluster at {} ready", zkHost);
+        return;
+      }
+      catch (RuntimeException e) {
+        // not ready yet, then...
+      }
+      TimeUnit.MILLISECONDS.sleep(250);
+    }
+    throw new TimeoutException("Timed out waiting for cluster");
   }
 
   public void setParallelUpdates(boolean parallelUpdates) {

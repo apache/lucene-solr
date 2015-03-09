@@ -601,6 +601,20 @@ public final class ZkController {
     return zkServerAddress;
   }
 
+  /**
+   * Create the zknodes necessary for a cluster to operate
+   * @param zkClient a SolrZkClient
+   * @throws KeeperException if there is a Zookeeper error
+   * @throws InterruptedException on interrupt
+   */
+  public static void createClusterZkNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+    cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.CLUSTER_STATE, zkClient);
+  }
+
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
 
     try {
@@ -612,11 +626,9 @@ public final class ZkController {
         publishAndWaitForDownStates();
       }
       
-      // makes nodes zkNode
-      cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
-      
+      createClusterZkNodes(zkClient);
+
       createEphemeralLiveNode();
-      cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
       ShardHandler shardHandler;
       UpdateShardHandler updateShardHandler;

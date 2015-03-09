@@ -295,12 +295,10 @@ public class ZkStateReader implements Closeable {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-      cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
-      cmdExecutor.ensureExists(ALIASES, zkClient);
-      
+
       log.info("Updating cluster state from ZooKeeper... ");
       
-      zkClient.exists(CLUSTER_STATE, new Watcher() {
+      Stat stat = zkClient.exists(CLUSTER_STATE, new Watcher() {
         
         @Override
         public void process(WatchedEvent event) {
@@ -339,6 +337,10 @@ public class ZkStateReader implements Closeable {
         }
         
       }, true);
+
+      if (stat == null)
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+            "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
     }
    
     

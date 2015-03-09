@@ -17,14 +17,12 @@ package org.apache.solr.cloud.overseer;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTest;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,6 +30,9 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
@@ -48,7 +49,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
 
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -131,7 +132,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
-      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      ZkController.createClusterZkNodes(zkClient);
 
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
