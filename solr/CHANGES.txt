@@ -156,6 +156,8 @@ New Features
   cluster is not ready, and can now take an optional timeout argument to wait
   for the cluster. (Alan Woodward, shalin, yonik, Mark Miller, Vitaliy Zhovtyuk)
 
+* SOLR-7126: Secure loading of runtime external jars (Noble Paul)
+
 Bug Fixes
 ----------------------
 

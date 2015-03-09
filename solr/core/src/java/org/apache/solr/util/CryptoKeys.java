@@ -37,9 +37,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class CryptoKeys {
   private static final Logger log = LoggerFactory.getLogger(CryptoKeys.class);
-
   private final Map<String, PublicKey> keys;
-
+  private Exception exception;
 
   public CryptoKeys(Map<String, byte[]> trustedKeys) throws Exception {
     HashMap<String, PublicKey> m = new HashMap<>();
@@ -53,15 +52,16 @@ public final class CryptoKeys {
   /**
    * Try with all signatures and return the name of the signature that matched
    */
-  public String verify(String sig, byte[] data) {
-
+  public String verify(String sig, ByteBuffer data) {
+    exception = null;
     for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
       boolean verified;
       try {
-        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), ByteBuffer.wrap(data));
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
         log.info("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
+        exception = e;
         log.info("NOT verified  ");
       }
 
@@ -89,6 +89,7 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
+    int oldPos = data.position();
     Signature signature = null;
     try {
       signature = Signature.getInstance("SHA1withRSA");
@@ -99,6 +100,9 @@ public final class CryptoKeys {
 
     } catch (NoSuchAlgorithmException e) {
       //will not happen
+    } finally {
+      //Signature.update resets the position. set it back to old
+      data.position(oldPos);
     }
     return false;
   }

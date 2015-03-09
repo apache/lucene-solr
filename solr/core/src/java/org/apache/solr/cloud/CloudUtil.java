@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -109,12 +108,13 @@ public class CloudUtil {
   /**Read the list of public keys from ZK
    */
 
-  public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk){
-     Map<String,byte[]> result =  new HashMap<>();
+  public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
+    Map<String, byte[]> result = new HashMap<>();
     try {
-      List<String> children = zk.getChildren("/keys", null, true);
+      List<String> children = zk.getChildren("/keys/" + dir, null, true);
       for (String key : children) {
-        result.put(key, zk.getData("/keys/"+key,null,null,true));
+        if (key.endsWith(".der")) result.put(key, zk.getData("/keys/" + dir +
+            "/" + key, null, null, true));
       }
     } catch (KeeperException.NoNodeException e) {
       log.warn("Error fetching key names");
@@ -128,4 +128,5 @@ public class CloudUtil {
     return result;
 
   }
+
 }

@@ -57,6 +57,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     for (PluginBag.RuntimeLib lib : libs) {
       try {
         lib.loadJar();
+        lib.verify();
       } catch (Exception exception) {
         if (exception instanceof SolrException) throw (SolrException) exception;
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Atleast one runtimeLib could not be loaded", exception);
@@ -116,7 +117,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
       try {
         buf = lib.getFileContent(path);
         if (buf != null) {
-          jarName.set(lib.name);
+          jarName.set(lib.getName());
           break;
         }
       } catch (Exception exp) {
