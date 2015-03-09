@@ -514,6 +514,7 @@ public class CloudSolrClient extends SolrClient {
    * @throws IOException if an IO error occurs
    */
   public void uploadConfig(Path configPath, String configName) throws IOException {
+    connect();
     zkStateReader.getConfigManager().uploadConfigDir(configPath, configName);
   }
 
@@ -524,6 +525,7 @@ public class CloudSolrClient extends SolrClient {
    * @throws IOException  if an I/O exception occurs
    */
   public void downloadConfig(String configName, Path downloadPath) throws IOException {
+    connect();
     zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 

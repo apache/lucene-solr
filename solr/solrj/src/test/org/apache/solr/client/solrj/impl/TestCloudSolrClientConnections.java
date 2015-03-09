@@ -21,9 +21,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
@@ -59,6 +61,35 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       cluster.shutdown();
     }
 
+  }
+
+  @Test
+  public void testCloudClientUploads() throws Exception {
+
+    File solrXml = getFile("solrj").toPath().resolve("solr/solr.xml").toFile();
+    Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
+
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      try {
+        client.uploadConfig(configPath, "testconfig");
+        fail("Requests to a non-running cluster should throw a SolrException");
+      } catch (SolrException e) {
+        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
+      }
+
+      cluster.startJettySolrRunner();
+      client.connect(20, TimeUnit.SECONDS);
+
+      client.uploadConfig(configPath, "testconfig");
+
+      ZkConfigManager configManager = new ZkConfigManager(client.getZkStateReader().getZkClient());
+      assertTrue("List of uploaded configs does not contain 'testconfig'", configManager.listConfigs().contains("testconfig"));
+
+    } finally {
+      cluster.shutdown();
+    }
   }
 
 }
