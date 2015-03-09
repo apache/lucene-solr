@@ -144,6 +144,9 @@ New Features
 * SOLR-6359: Allow number of logs and records kept by UpdateLog to be configured
   (Ramkumar Aiyengar)
 
+* SOLR-7189: Allow DIH to extract content from embedded documents via Tika.
+  (Tim Allison via shalin)
+
 Bug Fixes
 ----------------------
 
