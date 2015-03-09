@@ -92,6 +92,8 @@ New Features
 
 * SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
+* SOLR-7126: Secure loading of runtime external jars (Noble Paul)
+
 Bug Fixes
 ----------------------
 

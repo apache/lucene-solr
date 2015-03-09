@@ -267,7 +267,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         10);
   }
 
-  private ByteBuffer getFileContent(String f) throws IOException {
+  public static ByteBuffer getFileContent(String f) throws IOException {
     ByteBuffer jar;
     try (FileInputStream fis = new FileInputStream(getFile(f))) {
       byte[] buf = new byte[fis.available()];

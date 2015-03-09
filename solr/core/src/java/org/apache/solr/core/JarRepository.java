@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,6 +203,10 @@ public class JarRepository {
         zis.closeEntry();
       }
       return null;
+    }
+
+    public String checkSignature(String base64Sig, CryptoKeys keys) {
+      return keys.verify(base64Sig, buffer);
     }
 
   }

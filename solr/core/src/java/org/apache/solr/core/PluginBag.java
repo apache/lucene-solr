@@ -20,6 +20,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,10 +30,12 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -323,10 +326,10 @@ public class PluginBag<T> implements AutoCloseable {
    * This represents a Runtime Jar. A jar requires two details , name and version
    */
   public static class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
-    String name;
-    String version;
+    private String name, version, sig;
     private JarRepository.JarContentRef jarContent;
-    private final JarRepository jarRepository;
+    private final CoreContainer coreContainer;
+    private boolean verified = false;
 
     @Override
     public void init(PluginInfo info) {
@@ -336,10 +339,11 @@ public class PluginBag<T> implements AutoCloseable {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
       }
       version = String.valueOf(v);
+      sig = info.attributes.get("sig");
     }
 
     public RuntimeLib(SolrCore core) {
-      jarRepository = core.getCoreDescriptor().getCoreContainer().getJarRepository();
+      coreContainer = core.getCoreDescriptor().getCoreContainer();
     }
 
 
@@ -347,8 +351,21 @@ public class PluginBag<T> implements AutoCloseable {
       if (jarContent != null) return;
       synchronized (this) {
         if (jarContent != null) return;
-        jarContent = jarRepository.getJarIncRef(name + "/" + version);
+        jarContent = coreContainer.getJarRepository().getJarIncRef(name + "/" + version);
       }
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getVersion() {
+      return version;
+    }
+
+    public String getSig() {
+      return sig;
+
     }
 
     public ByteBuffer getFileContent(String entryName) throws IOException {
@@ -360,7 +377,7 @@ public class PluginBag<T> implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-      if (jarContent != null) jarRepository.decrementJarRefCount(jarContent);
+      if (jarContent != null) coreContainer.getJarRepository().decrementJarRefCount(jarContent);
     }
 
     public static List<RuntimeLib> getLibObjects(SolrCore core, List<PluginInfo> libs) {
@@ -371,6 +388,39 @@ public class PluginBag<T> implements AutoCloseable {
         l.add(rtl);
       }
       return l;
+    }
+
+    public void verify() throws Exception {
+      if (verified) return;
+      if (jarContent == null) {
+        log.error("Calling verify before loading the jar");
+        return;
+      }
+
+      if (!coreContainer.isZooKeeperAware())
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Signing jar is possible only in cloud");
+      Map<String, byte[]> keys = CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
+      if (keys.isEmpty()) {
+        if (sig == null) {
+          verified = true;
+          log.info("A run time lib {} is loaded  without verification ", name);
+          return;
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No public keys are available in ZK to verify signature for runtime lib  " + name);
+        }
+      } else if (sig == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, MessageFormat.format("runtimelib {0} should be signed with one of the keys in ZK /keys/exe ", name));
+      }
+
+      try {
+        String matchedKey = jarContent.jar.checkSignature(sig, new CryptoKeys(keys));
+        if (matchedKey == null)
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
+        log.info("Jar {} signed with {} successfully verified", name, matchedKey);
+      } catch (Exception e) {
+        if (e instanceof SolrException) throw e;
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
+      }
     }
   }
 }
