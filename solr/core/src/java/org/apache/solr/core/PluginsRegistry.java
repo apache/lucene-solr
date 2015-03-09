@@ -34,6 +34,7 @@ import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.admin.PluginInfoHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
+import org.apache.solr.handler.admin.SegmentsInfoRequestHandler;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.admin.SolrInfoMBeanHandler;
 import org.apache.solr.handler.admin.SystemInfoHandler;
@@ -80,6 +81,7 @@ public class PluginsRegistry {
     PluginInfo ping = getReqHandlerInfo("/admin/ping", PingRequestHandler.class, null);
     ping.initArgs.add(INVARIANTS, new NamedList<>(makeMap("echoParams", "all", "q", "solrpingquery")));
     implicits.add(ping);
+    implicits.add(getReqHandlerInfo("/admin/segments", SegmentsInfoRequestHandler.class, null));
     return implicits;
   }
 
