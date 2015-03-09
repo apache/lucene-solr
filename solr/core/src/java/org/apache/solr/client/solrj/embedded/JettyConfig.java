@@ -25,17 +25,17 @@ import java.util.TreeMap;
 
 public class JettyConfig {
 
-  final int port;
+  public final int port;
 
   public final String context;
 
-  final boolean stopAtShutdown;
+  public final boolean stopAtShutdown;
 
-  final Map<ServletHolder, String> extraServlets;
+  public final Map<ServletHolder, String> extraServlets;
 
-  final Map<Class<? extends Filter>, String> extraFilters;
+  public final Map<Class<? extends Filter>, String> extraFilters;
 
-  final SSLConfig sslConfig;
+  public final SSLConfig sslConfig;
 
   private JettyConfig(int port, String context, boolean stopAtShutdown, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {

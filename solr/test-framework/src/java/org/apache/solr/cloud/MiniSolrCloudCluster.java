@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import com.google.common.base.Charsets;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -25,6 +26,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -103,6 +105,9 @@ public class MiniSolrCloudCluster {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
         AbstractZkTestCase.TIMEOUT, 45000, null)) {
       zkClient.makePath("/solr/solr.xml", solrXml, false, true);
+      if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
+        zkClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, "{'urlScheme':'https'}".getBytes(Charsets.UTF_8), true);
+      }
     }
 
     // tell solr to look in zookeeper for solr.xml

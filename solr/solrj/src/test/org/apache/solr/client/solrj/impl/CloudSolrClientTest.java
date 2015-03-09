@@ -17,6 +17,7 @@ package org.apache.solr.client.solrj.impl;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -76,6 +77,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@Seed("1CB6EE5E0046C651:94E2D184AEBAABA9")
 public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
   static Logger log = LoggerFactory.getLogger(CloudSolrClientTest.class);
 
