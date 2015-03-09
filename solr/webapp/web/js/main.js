@@ -49,7 +49,8 @@ require
     'lib/order!scripts/query',
     'lib/order!scripts/replication',
     'lib/order!scripts/schema-browser',
-    'lib/order!scripts/threads'
+    'lib/order!scripts/threads',
+    'lib/order!scripts/segments'
   ],
   function( $ )
   {

@@ -147,6 +147,9 @@ New Features
 * SOLR-7189: Allow DIH to extract content from embedded documents via Tika.
   (Tim Allison via shalin)
 
+* SOLR-6841: Visualize lucene segment information in Admin UI.
+  (Alexey Kozhemiakin, Michal Bienkowski, hossman, Shawn Heisey, Varun Thacker via shalin)
+
 Bug Fixes
 ----------------------
 

@@ -392,7 +392,8 @@ var solr_admin = function( app_config )
                     '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
                     '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
                     '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
-                    '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>'
+                    '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' +
+                    '<li class="segments"><a href="#/' + core_name + '/segments"><span>Segments info</span></a></li>'
                   )
                   .show();
 
