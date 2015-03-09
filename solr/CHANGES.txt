@@ -212,6 +212,9 @@ Bug Fixes
 * SOLR-4464: DIH Processed documents counter resets to zero after first entity is processed.
   (Dave Cook, Shawn Heisey, Aaron Greenspan, Thomas Champagne via shalin)
 
+* SOLR-7209: /update/json/docs carry forward fields from previous records (Noble Paul)
+
+
 Optimizations
 ----------------------
 
