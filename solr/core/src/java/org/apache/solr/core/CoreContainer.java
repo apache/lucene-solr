@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -108,13 +107,13 @@ public class CoreContainer {
   public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   public static final String INFO_HANDLER_PATH = "/admin/info";
 
-  private Map<String, SolrRequestHandler> containerHandlers = new HashMap<>();
+  private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   public SolrRequestHandler getRequestHandler(String path) {
     return RequestHandlerBase.getRequestHandler(path, containerHandlers);
   }
 
-  public Map<String, SolrRequestHandler> getRequestHandlers(){
+  public PluginBag<SolrRequestHandler> getRequestHandlers() {
     return this.containerHandlers;
   }
 

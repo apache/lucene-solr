@@ -39,7 +39,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -146,9 +145,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     
     // use rep handler directly, so we can do this sync rather than async
     SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
-    if (handler instanceof LazyRequestHandlerWrapper) {
-      handler = ((LazyRequestHandlerWrapper) handler).getWrappedHandler();
-    }
     ReplicationHandler replicationHandler = (ReplicationHandler) handler;
     
     if (replicationHandler == null) {

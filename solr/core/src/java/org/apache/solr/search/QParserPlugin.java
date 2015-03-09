@@ -26,6 +26,9 @@ import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoMBean {
   /** internal use - name of the default parser */
@@ -38,35 +41,39 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
    * This result to NPE during initialization.
    * For every plugin, listed here, NAME field has to be final and static.
    */
-  public static final Object[] standardPlugins = {
-    LuceneQParserPlugin.NAME, LuceneQParserPlugin.class,
-    OldLuceneQParserPlugin.NAME, OldLuceneQParserPlugin.class,
-    FunctionQParserPlugin.NAME, FunctionQParserPlugin.class,
-    PrefixQParserPlugin.NAME, PrefixQParserPlugin.class,
-    BoostQParserPlugin.NAME, BoostQParserPlugin.class,
-    DisMaxQParserPlugin.NAME, DisMaxQParserPlugin.class,
-    ExtendedDismaxQParserPlugin.NAME, ExtendedDismaxQParserPlugin.class,
-    FieldQParserPlugin.NAME, FieldQParserPlugin.class,
-    RawQParserPlugin.NAME, RawQParserPlugin.class,
-    TermQParserPlugin.NAME, TermQParserPlugin.class,
-    TermsQParserPlugin.NAME, TermsQParserPlugin.class,
-    NestedQParserPlugin.NAME, NestedQParserPlugin.class,
-    FunctionRangeQParserPlugin.NAME, FunctionRangeQParserPlugin.class,
-    SpatialFilterQParserPlugin.NAME, SpatialFilterQParserPlugin.class,
-    SpatialBoxQParserPlugin.NAME, SpatialBoxQParserPlugin.class,
-    JoinQParserPlugin.NAME, JoinQParserPlugin.class,
-    SurroundQParserPlugin.NAME, SurroundQParserPlugin.class,
-    SwitchQParserPlugin.NAME, SwitchQParserPlugin.class,
-    MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class,
-    BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class,
-    BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class,
-    CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class,
-    SimpleQParserPlugin.NAME, SimpleQParserPlugin.class,
-    ComplexPhraseQParserPlugin.NAME, ComplexPhraseQParserPlugin.class,
-    ReRankQParserPlugin.NAME, ReRankQParserPlugin.class,
-    ExportQParserPlugin.NAME, ExportQParserPlugin.class,
-    MLTQParserPlugin.NAME, MLTQParserPlugin.class
-  };
+  public static final Map<String, Class<? extends QParserPlugin>> standardPlugins;
+
+  static {
+    HashMap<String, Class<? extends QParserPlugin>> map = new HashMap<>();
+    map.put(LuceneQParserPlugin.NAME, LuceneQParserPlugin.class);
+    map.put(OldLuceneQParserPlugin.NAME, OldLuceneQParserPlugin.class);
+    map.put(FunctionQParserPlugin.NAME, FunctionQParserPlugin.class);
+    map.put(PrefixQParserPlugin.NAME, PrefixQParserPlugin.class);
+    map.put(BoostQParserPlugin.NAME, BoostQParserPlugin.class);
+    map.put(DisMaxQParserPlugin.NAME, DisMaxQParserPlugin.class);
+    map.put(ExtendedDismaxQParserPlugin.NAME, ExtendedDismaxQParserPlugin.class);
+    map.put(FieldQParserPlugin.NAME, FieldQParserPlugin.class);
+    map.put(RawQParserPlugin.NAME, RawQParserPlugin.class);
+    map.put(TermQParserPlugin.NAME, TermQParserPlugin.class);
+    map.put(TermsQParserPlugin.NAME, TermsQParserPlugin.class);
+    map.put(NestedQParserPlugin.NAME, NestedQParserPlugin.class);
+    map.put(FunctionRangeQParserPlugin.NAME, FunctionRangeQParserPlugin.class);
+    map.put(SpatialFilterQParserPlugin.NAME, SpatialFilterQParserPlugin.class);
+    map.put(SpatialBoxQParserPlugin.NAME, SpatialBoxQParserPlugin.class);
+    map.put(JoinQParserPlugin.NAME, JoinQParserPlugin.class);
+    map.put(SurroundQParserPlugin.NAME, SurroundQParserPlugin.class);
+    map.put(SwitchQParserPlugin.NAME, SwitchQParserPlugin.class);
+    map.put(MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class);
+    map.put(BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class);
+    map.put(BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class);
+    map.put(CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class);
+    map.put(SimpleQParserPlugin.NAME, SimpleQParserPlugin.class);
+    map.put(ComplexPhraseQParserPlugin.NAME, ComplexPhraseQParserPlugin.class);
+    map.put(ReRankQParserPlugin.NAME, ReRankQParserPlugin.class);
+    map.put(ExportQParserPlugin.NAME, ExportQParserPlugin.class);
+    map.put(MLTQParserPlugin.NAME, MLTQParserPlugin.class);
+    standardPlugins = Collections.unmodifiableMap(map);
+  }
 
   /** return a {@link QParser} */
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);

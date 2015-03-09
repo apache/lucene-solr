@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +42,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.util.SimplePostTool;
@@ -76,37 +74,16 @@ public class JarRepository {
   }
 
   /**
-   * Returns the contents of a jar and increments a reference count. Please return the same object to decerease the refcount
+   * Returns the contents of a jar and increments a reference count. Please return the same object to decrease the refcount
    *
    * @param key it is a combination of blobname and version like blobName/version
    * @return The reference of a jar
    */
-  public JarContentRef getJarIncRef(String key) throws IOException {
+  public JarContentRef getJarIncRef(String key) {
     JarContent jar = jars.get(key);
     if (jar == null) {
       if (this.coreContainer.isZooKeeperAware()) {
-        ZkStateReader zkStateReader = this.coreContainer.getZkController().getZkStateReader();
-        ClusterState cs = zkStateReader.getClusterState();
-        DocCollection coll = cs.getCollectionOrNull(CollectionsHandler.SYSTEM_COLL);
-        if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
-        ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
-        if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for .system collection");
-        Collections.shuffle(slices, RANDOM); //do load balancing
-
-        Replica replica = null;
-        for (Slice slice : slices)  {
-          List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
-          Collections.shuffle(replicas, RANDOM);
-          for (Replica r : replicas) {
-            if (ZkStateReader.ACTIVE.equals(r.getStr(ZkStateReader.STATE_PROP))) {
-              replica = r;
-              break;
-            }
-          }
-        }
-        if (replica == null) {
-          throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
-        }
+        Replica replica = getSystemCollReplica();
         String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
 
         HttpClient httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
@@ -119,6 +96,12 @@ public class JarRepository {
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
           }
           b = SimplePostTool.inputStreamToByteArray(entity.getEntity().getContent());
+        } catch (Exception e) {
+          if (e instanceof SolrException) {
+            throw (SolrException) e;
+          } else {
+            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "could not load : " + key, e);
+          }
         } finally {
           httpGet.releaseConnection();
         }
@@ -136,6 +119,36 @@ public class JarRepository {
     }
     return ref;
 
+  }
+
+  private Replica getSystemCollReplica() {
+    ZkStateReader zkStateReader = this.coreContainer.getZkController().getZkStateReader();
+    ClusterState cs = zkStateReader.getClusterState();
+    DocCollection coll = cs.getCollectionOrNull(CollectionsHandler.SYSTEM_COLL);
+    if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
+    ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
+    if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for .system collection");
+    Collections.shuffle(slices, RANDOM); //do load balancing
+
+    Replica replica = null;
+    for (Slice slice : slices) {
+      List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
+      Collections.shuffle(replicas, RANDOM);
+      for (Replica r : replicas) {
+        if (ZkStateReader.ACTIVE.equals(r.getStr(ZkStateReader.STATE_PROP))) {
+          if(zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))){
+            replica = r;
+            break;
+          } else {
+            log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+          }
+        }
+      }
+    }
+    if (replica == null) {
+      throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
+    }
+    return replica;
   }
 
   /**

@@ -22,8 +22,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RequestHandlers;
-import org.apache.solr.core.RequestParams;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,7 +35,6 @@ import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
 
 import java.net.URL;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
@@ -215,7 +213,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    *
    * This function is thread safe.
    */
-  public static SolrRequestHandler getRequestHandler(String handlerName, Map<String, SolrRequestHandler> reqHandlers) {
+  public static SolrRequestHandler getRequestHandler(String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
     if(handlerName == null) return null;
     SolrRequestHandler handler = reqHandlers.get(handlerName);
     int idx = 0;
@@ -226,9 +224,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
           String firstPart = handlerName.substring(0, idx);
           handler = reqHandlers.get(firstPart);
           if (handler == null) continue;
-          if(handler instanceof RequestHandlers.LazyRequestHandlerWrapper) {
-            handler = ((RequestHandlers.LazyRequestHandlerWrapper)handler).getWrappedHandler();
-          }
           if (handler instanceof NestedRequestHandler) {
             return ((NestedRequestHandler) handler).getSubHandler(handlerName.substring(idx));
           }

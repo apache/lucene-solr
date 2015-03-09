@@ -86,8 +86,9 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
       byte[] bytarr2  = new byte[2048];
       for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
-      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
-      postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
+      String blobName = "test";
+      postAndCheck(cloudClient, baseUrl, blobName, ByteBuffer.wrap(bytarr), 1);
+      postAndCheck(cloudClient, baseUrl, blobName, ByteBuffer.wrap(bytarr2), 2);
 
       url = baseUrl + "/.system/blob/test/1";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
@@ -123,8 +124,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     DirectUpdateHandler2.commitOnClose = true;
   }
 
-  public static void postAndCheck(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytes, int count) throws Exception {
-    postData(cloudClient, baseUrl, bytes);
+  public static void postAndCheck(CloudSolrClient cloudClient, String baseUrl, String blobName, ByteBuffer bytes, int count) throws Exception {
+    postData(cloudClient, baseUrl, blobName, bytes);
 
     String url;
     Map map = null;
@@ -132,7 +133,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     long start = System.currentTimeMillis();
     int i=0;
     for(;i<150;i++) {//15 secs
-      url = baseUrl + "/.system/blob/test";
+      url = baseUrl + "/.system/blob/" + blobName;
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
       if(!(""+count).equals(numFound)) {
@@ -171,12 +172,12 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static void postData(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
+  public static void postData(CloudSolrClient cloudClient, String baseUrl, String blobName, ByteBuffer bytarr) throws IOException {
     HttpPost httpPost = null;
     HttpEntity entity;
     String response = null;
     try {
-      httpPost = new HttpPost(baseUrl+"/.system/blob/test");
+      httpPost = new HttpPost(baseUrl + "/.system/blob/" + blobName);
       httpPost.setHeader("Content-Type","application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
