@@ -75,6 +75,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+/**
+ * A SolrClient implementation that talks directly to a Solr server via HTTP
+ *
+ * There are two ways to use an HttpSolrClient:
+ *
+ * 1) Pass a URL to the constructor that points directly at a particular core
+ * <pre>
+ *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr/core1");
+ *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+ * </pre>
+ * In this case, you can query the given core directly, but you cannot query any other
+ * cores or issue CoreAdmin requests with this client.
+ *
+ * 2) Pass the base URL of the node to the constructor
+ * <pre>
+ *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr");
+ *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+ * </pre>
+ * In this case, you must pass the name of the required core for all queries and updates,
+ * but you may use the same client for all cores, and for CoreAdmin requests.
+ */
 public class HttpSolrClient extends SolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
@@ -204,11 +225,15 @@ public class HttpSolrClient extends SolrClient {
     if (responseParser == null) {
       responseParser = parser;
     }
-    return request(request, responseParser);
+    return request(request, responseParser, collection);
+  }
+
+  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+    return request(request, processor, null);
   }
   
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
-    return executeMethod(createMethod(request),processor);
+  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor, String collection) throws SolrServerException, IOException {
+    return executeMethod(createMethod(request, collection),processor);
   }
   
   /**
@@ -236,7 +261,7 @@ public class HttpSolrClient extends SolrClient {
    */
   public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request);
+    final HttpRequestBase method = createMethod(request, null);
     ExecutorService pool = Executors.newFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       mrr.future = pool.submit(new Callable<NamedList<Object>>(){
@@ -271,7 +296,7 @@ public class HttpSolrClient extends SolrClient {
     return queryModParams;
   }
 
-  protected HttpRequestBase createMethod(final SolrRequest request) throws IOException, SolrServerException {
+  protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
     HttpRequestBase method = null;
     InputStream is = null;
     SolrParams params = request.getParams();
@@ -296,6 +321,10 @@ public class HttpSolrClient extends SolrClient {
     if (invariantParams != null) {
       wparams.add(invariantParams);
     }
+
+    String basePath = baseUrl;
+    if (collection != null)
+      basePath += "/" + collection;
     
     int tries = maxRetries + 1;
     try {
@@ -309,11 +338,11 @@ public class HttpSolrClient extends SolrClient {
             if( streams != null ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" );
             }
-            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( wparams, false ) );
+            method = new HttpGet(basePath + path + ClientUtils.toQueryString(wparams, false));
           }
           else if( SolrRequest.METHOD.POST == request.getMethod() || SolrRequest.METHOD.PUT == request.getMethod() ) {
 
-            String url = baseUrl + path;
+            String url = basePath + path;
             boolean hasNullStreamName = false;
             if (streams != null) {
               for (ContentStream cs : streams) {

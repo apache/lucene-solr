@@ -509,6 +509,24 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals(0, response.getStatus());
     }
   }
+
+  @Test
+  public void testCollectionParameters() throws IOException, SolrServerException {
+
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString())) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "collection");
+      client.add("collection1", doc);
+      client.commit("collection1");
+
+      assertEquals(1, client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1")) {
+      assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
+  }
   
   @Test
   public void testSetParametersExternalClient() throws IOException{
