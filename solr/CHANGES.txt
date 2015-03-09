@@ -200,6 +200,9 @@ Bug Fixes
 * SOLR-6657:  DocumentDictionaryFactory requires weightField to be mandatory, but it shouldn't
   (Erick Erickson)
 
+* SOLR-7206: MiniSolrCloudCluster wasn't dealing with SSL mode correctly (Alan
+  Woodward)
+
 * SOLR-4464: DIH Processed documents counter resets to zero after first entity is processed.
   (Dave Cook, Shawn Heisey, Aaron Greenspan, Thomas Champagne via shalin)
 
