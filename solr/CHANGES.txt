@@ -150,6 +150,8 @@ New Features
 * SOLR-6841: Visualize lucene segment information in Admin UI.
   (Alexey Kozhemiakin, Michal Bienkowski, hossman, Shawn Heisey, Varun Thacker via shalin)
 
+* SOLR-5846: EnumField supports DocValues functionality. (Elran Dvir, shalin)
+
 Bug Fixes
 ----------------------
 
