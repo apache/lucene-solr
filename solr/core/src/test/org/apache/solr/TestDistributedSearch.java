@@ -877,7 +877,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     indexr("id", "5", fieldName, "Critical");
     
     commit();
-    
+
+    handle.put("stats_fields", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
+
     rsp = query("q", "*:*", "stats", "true", "stats.field", fieldName);
     assertEquals(new EnumFieldValue(0, "Not Available"),
                  rsp.getFieldStatsInfo().get(fieldName).getMin());
