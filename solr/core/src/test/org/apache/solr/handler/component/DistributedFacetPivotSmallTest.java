@@ -334,16 +334,21 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       }
     }
 
-    doTestDeepPivotStats();
+    doTestDeepPivotStats(false); // all price stats
+    doTestDeepPivotStats(true); // just the mean price stat
 
     doTestPivotStatsFromOneShard();
   }
 
-  private void doTestDeepPivotStats() throws Exception {
+  /**
+   * @param justMean - only the mean stat is requested/computed
+   */
+  private void doTestDeepPivotStats(boolean justMean) throws Exception {
     SolrParams params = params("q", "*:*", "rows", "0", 
                                "facet", "true", "stats", "true", 
                                "facet.pivot", "{!stats=s1}place_t,company_t", 
-                               "stats.field", "{!key=avg_price tag=s1}price_ti");
+                               "stats.field", ("{!key=avg_price tag=s1 "+
+                                               (justMean ? "mean=true" : "") +"}price_ti"));
     QueryResponse rsp = query(params);
 
     List<PivotField> placePivots = rsp.getFacetPivot().get("place_t,company_t");
@@ -357,15 +362,24 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     assertEquals(4, microsoftPivotField.getCount());
 
     FieldStatsInfo dublinMicrosoftStatsInfo = microsoftPivotField.getFieldStatsInfo().get("avg_price");
-    assertEquals(15.0, dublinMicrosoftStatsInfo.getMin());
-    assertEquals(29.0, dublinMicrosoftStatsInfo.getMax());
-    assertEquals(3, (long) dublinMicrosoftStatsInfo.getCount());
-    assertEquals(1, (long) dublinMicrosoftStatsInfo.getMissing());
-    assertEquals(63.0, dublinMicrosoftStatsInfo.getSum());
-    assertEquals(1427.0, dublinMicrosoftStatsInfo.getSumOfSquares(), 0.1E-7);
     assertEquals(21.0, (double) dublinMicrosoftStatsInfo.getMean(), 0.1E-7);
-    assertEquals(7.211102550927978, dublinMicrosoftStatsInfo.getStddev(), 0.1E-7);
-
+    if (justMean) {
+      assertNull(dublinMicrosoftStatsInfo.getMin());
+      assertNull(dublinMicrosoftStatsInfo.getMax());
+      assertNull(dublinMicrosoftStatsInfo.getCount());
+      assertNull(dublinMicrosoftStatsInfo.getMissing());
+      assertNull(dublinMicrosoftStatsInfo.getSum());
+      assertNull(dublinMicrosoftStatsInfo.getSumOfSquares());
+      assertNull(dublinMicrosoftStatsInfo.getStddev());
+    } else {
+      assertEquals(15.0, dublinMicrosoftStatsInfo.getMin());
+      assertEquals(29.0, dublinMicrosoftStatsInfo.getMax());
+      assertEquals(3, (long) dublinMicrosoftStatsInfo.getCount());
+      assertEquals(1, (long) dublinMicrosoftStatsInfo.getMissing());
+      assertEquals(63.0, dublinMicrosoftStatsInfo.getSum());
+      assertEquals(1427.0, dublinMicrosoftStatsInfo.getSumOfSquares(), 0.1E-7);
+      assertEquals(7.211102550927978, dublinMicrosoftStatsInfo.getStddev(), 0.1E-7);
+    }
 
     PivotField cardiffPivotField = placePivots.get(2);
     assertEquals("cardiff", cardiffPivotField.getValue());
@@ -376,15 +390,24 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     assertEquals(3, polecatPivotField.getCount());
 
     FieldStatsInfo cardiffPolecatStatsInfo = polecatPivotField.getFieldStatsInfo().get("avg_price");
-    assertEquals(15.0, cardiffPolecatStatsInfo.getMin());
-    assertEquals(39.0, cardiffPolecatStatsInfo.getMax());
-    assertEquals(2, (long) cardiffPolecatStatsInfo.getCount());
-    assertEquals(1, (long) cardiffPolecatStatsInfo.getMissing());
-    assertEquals(54.0, cardiffPolecatStatsInfo.getSum());
-    assertEquals(1746.0, cardiffPolecatStatsInfo.getSumOfSquares(), 0.1E-7);
     assertEquals(27.0, (double) cardiffPolecatStatsInfo.getMean(), 0.1E-7);
-    assertEquals(16.97056274847714, cardiffPolecatStatsInfo.getStddev(), 0.1E-7);
-
+    if (justMean) {
+      assertNull(cardiffPolecatStatsInfo.getMin());
+      assertNull(cardiffPolecatStatsInfo.getMax());
+      assertNull(cardiffPolecatStatsInfo.getCount());
+      assertNull(cardiffPolecatStatsInfo.getMissing());
+      assertNull(cardiffPolecatStatsInfo.getSum());
+      assertNull(cardiffPolecatStatsInfo.getSumOfSquares());
+      assertNull(cardiffPolecatStatsInfo.getStddev());
+    } else {
+      assertEquals(15.0, cardiffPolecatStatsInfo.getMin());
+      assertEquals(39.0, cardiffPolecatStatsInfo.getMax());
+      assertEquals(2, (long) cardiffPolecatStatsInfo.getCount());
+      assertEquals(1, (long) cardiffPolecatStatsInfo.getMissing());
+      assertEquals(54.0, cardiffPolecatStatsInfo.getSum());
+      assertEquals(1746.0, cardiffPolecatStatsInfo.getSumOfSquares(), 0.1E-7);
+      assertEquals(16.97056274847714, cardiffPolecatStatsInfo.getStddev(), 0.1E-7);
+    }
 
     PivotField krakowPivotField = placePivots.get(3);
     assertEquals("krakow", krakowPivotField.getValue());
@@ -395,14 +418,25 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     assertEquals(1, fujitsuPivotField.getCount());
 
     FieldStatsInfo krakowFujitsuStatsInfo = fujitsuPivotField.getFieldStatsInfo().get("avg_price");
-    assertEquals(null, krakowFujitsuStatsInfo.getMin());
-    assertEquals(null, krakowFujitsuStatsInfo.getMax());
-    assertEquals(0, (long) krakowFujitsuStatsInfo.getCount());
-    assertEquals(1, (long) krakowFujitsuStatsInfo.getMissing());
-    assertEquals(0.0, krakowFujitsuStatsInfo.getSum());
-    assertEquals(0.0, krakowFujitsuStatsInfo.getSumOfSquares(), 0.1E-7);
     assertEquals(Double.NaN, (double) krakowFujitsuStatsInfo.getMean(), 0.1E-7);
-    assertEquals(0.0, krakowFujitsuStatsInfo.getStddev(), 0.1E-7);
+    if (justMean) {
+      assertNull(krakowFujitsuStatsInfo.getMin());
+      assertNull(krakowFujitsuStatsInfo.getMax());
+      assertNull(krakowFujitsuStatsInfo.getCount());
+      assertNull(krakowFujitsuStatsInfo.getMissing());
+      assertNull(krakowFujitsuStatsInfo.getSum());
+      assertNull(krakowFujitsuStatsInfo.getSumOfSquares());
+      assertNull(krakowFujitsuStatsInfo.getStddev());
+     } else {
+      assertEquals(null, krakowFujitsuStatsInfo.getMin());
+      assertEquals(null, krakowFujitsuStatsInfo.getMax());
+      assertEquals(0, (long) krakowFujitsuStatsInfo.getCount());
+      assertEquals(1, (long) krakowFujitsuStatsInfo.getMissing());
+      assertEquals(0.0, krakowFujitsuStatsInfo.getSum());
+      assertEquals(0.0, krakowFujitsuStatsInfo.getSumOfSquares(), 0.1E-7);
+      assertEquals(Double.NaN, (double) krakowFujitsuStatsInfo.getMean(), 0.1E-7);
+      assertEquals(0.0, krakowFujitsuStatsInfo.getStddev(), 0.1E-7);
+    }
   }
 
   // Useful to check for errors, orders lists and does toString() equality check

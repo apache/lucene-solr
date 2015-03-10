@@ -410,6 +410,7 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory" />
     </analyzer>
   </fieldType>
+  <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
 </types>
 
@@ -548,6 +549,10 @@
 
    <field name="payloadDelimited" type="payloadDelimited" />
 
+   <!-- EnumType -->
+   <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+
+
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -620,6 +625,7 @@
    <dynamicField name="*_path"  type="path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
    <dynamicField name="*_ancestor"  type="ancestor_path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
 
+   <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true" />
  </fields>
 
  <defaultSearchField>text</defaultSearchField>

@@ -278,8 +278,7 @@ public class PivotFacetProcessor extends SimpleFacets
           for (StatsField statsField : statsFields) {
             stv.put(statsField.getOutputKey(), statsField.computeLocalStatsValues(subset));
           }
-          // for pivots, we *always* include requested stats - even if 'empty'
-          pivot.add("stats", StatsComponent.convertToResponse(true, stv));
+          pivot.add("stats", StatsComponent.convertToResponse(stv));
         }
         values.add( pivot );
       }

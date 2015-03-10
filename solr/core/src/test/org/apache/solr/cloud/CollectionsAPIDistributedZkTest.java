@@ -139,7 +139,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       // for now, always upload the config and schema to the canonical names
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, getCloudSolrConfig(), "solrconfig.xml");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "schema.xml", "schema.xml");
-
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "enumsConfig.xml", "enumsConfig.xml");
+      
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "stopwords.txt");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "protwords.txt");

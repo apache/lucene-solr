@@ -158,6 +158,12 @@ New Features
 
 * SOLR-7126: Secure loading of runtime external jars (Noble Paul)
 
+* SOLR-6349: Added support for stats.field localparams to enable/disable individual stats to 
+  limit the amount of computation done and the amount of data returned. 
+  eg: stats.field={!min=true max=true}field_name
+  (Tomas Fernandez-Lobbe, Xu Zhang, hossman)
+
+
 Bug Fixes
 ----------------------
 
@@ -220,6 +226,9 @@ Bug Fixes
   18983 for any purpose.  Also escapes the dot character in all grep commands
   looking for start.jar.
   (Xu Zhang via Shawn Heisey)
+
+* SOLR-6682: Fix response when using EnumField with StatsComponent
+  (Xu Zhang via hossman)
 
 Optimizations
 ----------------------
