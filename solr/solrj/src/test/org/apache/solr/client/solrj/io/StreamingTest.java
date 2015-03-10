@@ -907,6 +907,34 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     commit();
   }
 
+  private void testParallelStreamSingleWorker() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
+    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
+
+    commit();
+
+    String zkHost = zkServer.getZkAddress();
+
+    Map paramsA = mapParams("q","*:*","fl","id,a_s,a_i","sort", "a_s asc", "partitionKeys","a_s");
+    CloudSolrStream streamA = new CloudSolrStream(zkHost, "collection1", paramsA);
+
+    Map paramsB = mapParams("q","id:(0 2)","fl","a_s","sort", "a_s asc", "partitionKeys","a_s");
+    CloudSolrStream streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
+
+    FilterStream fstream = new FilterStream(streamA, streamB, new AscFieldComp("a_s"));
+    ParallelStream pstream = new ParallelStream(zkHost,"collection1", fstream, 1, new AscFieldComp("a_s"));
+    List<Tuple> tuples = getTuples(pstream);
+
+    assert(tuples.size() == 2);
+    assertOrder(tuples, 0,2);
+
+    del("*:*");
+    commit();
+  }
 
 
   private void testParallelHashJoinStream() {
@@ -1119,6 +1147,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     testHashJoinStream();
     testMergeJoinStream();
     testMergeStream();
+    testParallelStreamSingleWorker();
     testParallelStream();
     testParallelRollupStream();
     testParallelMetricStream();

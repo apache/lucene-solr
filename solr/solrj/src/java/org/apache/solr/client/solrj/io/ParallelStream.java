@@ -129,30 +129,36 @@ public class ParallelStream extends CloudSolrStream {
       ClusterState clusterState = zkStateReader.getClusterState();
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
       long time = System.currentTimeMillis();
-      int workerNum = 0;
+      List<Replica> shuffler = new ArrayList();
       for(Slice slice : slices) {
-        HashMap params = new HashMap();
-
-        params.put("distrib","false"); // We are the aggregator.
-        params.put("numWorkers", workers);
-        params.put("workerID", workerNum);
-        params.put("stream", this.encoded);
-        params.put("qt","/stream");
-
         Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList();
-        for(Replica replica : replicas) {
+        for (Replica replica : replicas) {
           shuffler.add(replica);
         }
+      }
 
-        Collections.shuffle(shuffler, new Random(time));
-        Replica rep = shuffler.get(0);
+      if(workers > shuffler.size()) {
+        throw new IOException("Number of workers exceeds nodes in the worker collection");
+      }
+
+      Collections.shuffle(shuffler, new Random(time));
+
+      for(int w=0; w<workers; w++) {
+        HashMap params = new HashMap();
+        params.put("distrib","false"); // We are the aggregator.
+        params.put("numWorkers", workers);
+        params.put("workerID", w);
+        params.put("stream", this.encoded);
+        params.put("qt","/stream");
+        Replica rep = shuffler.get(w);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();
         SolrStream solrStream = new SolrStream(url, params);
         solrStreams.add(solrStream);
-        ++workerNum;
       }
+
+      assert(solrStreams.size() == workers);
+
     } catch (Exception e) {
       throw new IOException(e);
     }
