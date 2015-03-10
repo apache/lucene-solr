@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
@@ -53,13 +54,11 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   //  least it would just make things more complicated.
 
   protected final int prefixGridScanLevel;//at least one less than grid.getMaxLevels()
-  protected final boolean hasIndexedLeaves;
 
   public AbstractVisitingPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                          int detailLevel, int prefixGridScanLevel, boolean hasIndexedLeaves) {
+                                          int detailLevel, int prefixGridScanLevel) {
     super(queryShape, fieldName, grid, detailLevel);
     this.prefixGridScanLevel = Math.max(0, Math.min(prefixGridScanLevel, grid.getMaxLevels() - 1));
-    this.hasIndexedLeaves = hasIndexedLeaves;
     assert detailLevel <= grid.getMaxLevels();
   }
 
@@ -90,7 +89,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * which by default finds the top cells that intersect {@code queryShape}. If
    * there isn't an indexed cell for a corresponding cell returned for this
    * method then it's short-circuited until it finds one, at which point
-   * {@link #visit(org.apache.lucene.spatial.prefix.tree.Cell)} is called. At
+   * {@link #visitPrefix(org.apache.lucene.spatial.prefix.tree.Cell)} is called. At
    * some depths, of the tree, the algorithm switches to a scanning mode that
    * calls {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}
    * for each leaf cell found.
@@ -114,10 +113,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     does act as a short-circuit.  So maybe do some percent of the time or when the level
     is above some threshold.
 
-  * Once we don't have redundant non-leaves indexed with leaf cells (LUCENE-4942), we can
-    sometimes know to call next() instead of seek() if we're processing a leaf cell that
-    didn't have a corresponding non-leaf.
-
   */
 
     //
@@ -125,10 +120,10 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     //
 
     private VNode curVNode;//current pointer, derived from query shape
-    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
-    private Cell scanCell;
+    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf. in main loop only
 
     private BytesRef thisTerm;//the result of termsEnum.term()
+    private Cell indexedCell;//Cell wrapper of thisTerm. Always updated when thisTerm is.
 
     public VisitorTemplate(LeafReaderContext context, Bits acceptDocs) throws IOException {
       super(context, acceptDocs);
@@ -138,9 +133,9 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       assert curVNode == null : "Called more than once?";
       if (termsEnum == null)
         return null;
-      //advance
-      if ((thisTerm = termsEnum.next()) == null)
-        return null; // all done
+      if (!nextTerm()) {//advances
+        return null;
+      }
 
       curVNode = new VNode(null);
       curVNode.reset(grid.getWorldCell());
@@ -177,30 +172,46 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         }
 
         //Seek to curVNode's cell (or skip if termsEnum has moved beyond)
-        curVNode.cell.getTokenBytesNoLeaf(curVNodeTerm);
-        int compare = thisTerm.compareTo(curVNodeTerm);
+        final int compare = indexedCell.compareToNoLeaf(curVNode.cell);
         if (compare > 0) {
-          // leap frog (termsEnum is beyond where we would otherwise seek)
-          assert ! context.reader().terms(fieldName).iterator(null).seekExact(curVNodeTerm) : "should be absent";
-        } else {
-          if (compare < 0) {
-            // Seek !
-            TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(curVNodeTerm);
-            if (seekStatus == TermsEnum.SeekStatus.END)
-              break; // all done
-            thisTerm = termsEnum.term();
-            if (seekStatus == TermsEnum.SeekStatus.NOT_FOUND) {
-              continue; // leap frog
-            }
-          }
-          // Visit!
-          boolean descend = visit(curVNode.cell);
-          //advance
-          if ((thisTerm = termsEnum.next()) == null)
+          // The indexed cell is after; continue loop to next query cell
+          continue;
+        }
+        if (compare < 0) {
+          // The indexed cell is before; seek ahead to query cell:
+          //      Seek !
+          curVNode.cell.getTokenBytesNoLeaf(curVNodeTerm);
+          TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(curVNodeTerm);
+          if (seekStatus == TermsEnum.SeekStatus.END)
             break; // all done
-          if (descend)
-            addIntersectingChildren();
+          thisTerm = termsEnum.term();
+          indexedCell = grid.readCell(thisTerm, indexedCell);
+          if (seekStatus == TermsEnum.SeekStatus.NOT_FOUND) {
+            // Did we find a leaf of the cell we were looking for or something after?
+            if (!indexedCell.isLeaf() || indexedCell.compareToNoLeaf(curVNode.cell) != 0)
+              continue; // The indexed cell is after; continue loop to next query cell
+          }
+        }
+        // indexedCell == queryCell (disregarding leaf).
 
+        // If indexedCell is a leaf then there's no prefix (prefix sorts before) -- just visit and continue
+        if (indexedCell.isLeaf()) {
+          visitLeaf(indexedCell);//TODO or query cell? Though shouldn't matter.
+          if (!nextTerm()) break;
+          continue;
+        }
+        // If a prefix (non-leaf) then visit; see if we descend.
+        final boolean descend = visitPrefix(curVNode.cell);//need to use curVNode.cell not indexedCell
+        if (!nextTerm()) break;
+        // Check for adjacent leaf with the same prefix
+        if (indexedCell.isLeaf() && indexedCell.getLevel() == curVNode.cell.getLevel()) {
+          visitLeaf(indexedCell);//TODO or query cell? Though shouldn't matter.
+          if (!nextTerm()) break;
+        }
+
+
+        if (descend) {
+          addIntersectingChildren();
         }
 
       }//main loop
@@ -208,27 +219,13 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       return finish();
     }
 
-    /** Called initially, and whenever {@link #visit(org.apache.lucene.spatial.prefix.tree.Cell)}
+    /** Called initially, and whenever {@link #visitPrefix(org.apache.lucene.spatial.prefix.tree.Cell)}
      * returns true. */
     private void addIntersectingChildren() throws IOException {
       assert thisTerm != null;
       Cell cell = curVNode.cell;
       if (cell.getLevel() >= detailLevel)
         throw new IllegalStateException("Spatial logic error");
-
-      //Check for adjacent leaf (happens for indexed non-point shapes)
-      if (hasIndexedLeaves && cell.getLevel() != 0) {
-        //If the next indexed term just adds a leaf marker to cell,
-        // then add all of those docs
-        scanCell = grid.readCell(thisTerm, scanCell);
-        assert curVNode.cell.isPrefixOf(scanCell) : "missing leaf or descendants";
-        if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
-          visitLeaf(scanCell);
-          //advance
-          if ((thisTerm = termsEnum.next()) == null)
-            return; // all done
-        }
-      }
 
       //Decide whether to continue to divide & conquer, or whether it's time to
       // scan through terms beneath this cell.
@@ -269,22 +266,22 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}.
      */
     protected void scan(int scanDetailLevel) throws IOException {
-      for ( ;
-          thisTerm != null;
-          thisTerm = termsEnum.next()) {
-        scanCell = grid.readCell(thisTerm, scanCell);
-        if (!curVNode.cell.isPrefixOf(scanCell))
-          break;
-
-        int termLevel = scanCell.getLevel();
-        if (termLevel < scanDetailLevel) {
-          if (scanCell.isLeaf())
-            visitScanned(scanCell);
-        } else if (termLevel == scanDetailLevel) {
-          if (!scanCell.isLeaf())//LUCENE-5529
-            visitScanned(scanCell);
+      //note: this can be a do-while instead in 6x; 5x has a back-compat with redundant leaves -- LUCENE-4942
+      while (curVNode.cell.isPrefixOf(indexedCell)) {
+        if (indexedCell.getLevel() == scanDetailLevel
+            || (indexedCell.getLevel() < scanDetailLevel && indexedCell.isLeaf())) {
+          visitScanned(indexedCell);
         }
-      }//term loop
+        //advance
+        if (!nextTerm()) break;
+      }
+    }
+
+    private boolean nextTerm() throws IOException {
+      if ((thisTerm = termsEnum.next()) == null)
+        return false;
+      indexedCell = grid.readCell(thisTerm, indexedCell);
+      return true;
     }
 
     /** Used for {@link VNode#children}. */
@@ -322,23 +319,21 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     protected abstract DocIdSet finish() throws IOException;
 
     /**
-     * Visit an indexed non-leaf cell returned from
-     * {@link #findSubCellsToVisit(org.apache.lucene.spatial.prefix.tree.Cell)}
-     * that is also found in the index.
-     * It will also be called by the default implementation of
-     * {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)} for
-     * cells at the bottom detail level.
+     * Visit an indexed non-leaf cell. The presence of a prefix cell implies
+     * there are leaf cells at further levels. The cell passed should have it's
+     * {@link org.apache.lucene.spatial.prefix.tree.Cell#getShapeRel()} set
+     * relative to the filtered shape.
      *
      * @param cell An intersecting cell; not a leaf.
-     * @return true to descend to more levels. It is an error to return true
-     * if cell.level == detailLevel
+     * @return true to descend to more levels.
      */
-    protected abstract boolean visit(Cell cell) throws IOException;
+    protected abstract boolean visitPrefix(Cell cell) throws IOException;
 
     /**
      * Called when an indexed leaf cell is found. An
-     * indexed leaf cell means associated documents generally won't be found at
-     * further detail levels.
+     * indexed leaf cell usually means associated documents won't be found at
+     * further detail levels.  However, if a document has
+     * multiple overlapping shapes at different resolutions, then this isn't true.
      */
     protected abstract void visitLeaf(Cell cell) throws IOException;
 
@@ -347,14 +342,16 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * might not even intersect the query shape, so be sure to check for that.
      * The default implementation will check that and if passes then call
      * {@link #visitLeaf(org.apache.lucene.spatial.prefix.tree.Cell)} or
-     * {@link #visit(org.apache.lucene.spatial.prefix.tree.Cell)}.
+     * {@link #visitPrefix(org.apache.lucene.spatial.prefix.tree.Cell)}.
      */
     protected void visitScanned(Cell cell) throws IOException {
-      if (queryShape.relate(cell.getShape()).intersects()) {
+      final SpatialRelation relate = cell.getShape().relate(queryShape);
+      if (relate.intersects()) {
+        cell.setShapeRel(relate);//just being pedantic
         if (cell.isLeaf()) {
           visitLeaf(cell);
         } else {
-          visit(cell);
+          visitPrefix(cell);
         }
       }
     }

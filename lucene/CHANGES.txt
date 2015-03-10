@@ -138,6 +138,10 @@ Optimizations
 
 * LUCENE-6320: Speed up CheckIndex. (Robert Muir)
 
+* LUCENE-4942: Optimized the encoding of PrefixTreeStrategy indexes for
+  non-point data: 33% smaller index, 68% faster indexing, and 44% faster
+  searching. YMMV (David Smiley)
+
 API Changes
 
 * LUCENE-6204, LUCENE-6208: Simplify CompoundFormat: remove files()

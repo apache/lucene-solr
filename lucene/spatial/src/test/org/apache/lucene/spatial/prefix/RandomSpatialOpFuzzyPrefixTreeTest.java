@@ -67,7 +67,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   static final int ITERATIONS = 10;
 
-  private SpatialPrefixTree grid;
+  protected SpatialPrefixTree grid;
   private SpatialContext ctx2D;
 
   public void setupGrid(int maxLevels) throws IOException {
@@ -108,7 +108,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     if (maxLevels == -1)
       maxLevels = randomIntBetween(1, 8);//max 64k cells (4^8), also 256*256
     this.grid = new QuadPrefixTree(ctx, maxLevels);
-    this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
+    this.strategy = newRPT();
   }
 
   public void setupGeohashGrid(int maxLevels) {
@@ -117,7 +117,11 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     if (maxLevels == -1)
       maxLevels = randomIntBetween(1, 3);//max 16k cells (32^3)
     this.grid = new GeohashPrefixTree(ctx, maxLevels);
-    this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
+    this.strategy = newRPT();
+  }
+
+  protected RecursivePrefixTreeStrategy newRPT() {
+    return new RecursivePrefixTreeStrategy(this.grid, getClass().getSimpleName());
   }
 
   @Test
@@ -226,6 +230,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     return doc;
   }
 
+  @SuppressWarnings("fallthrough")
   private void doTest(final SpatialOperation operation) throws IOException {
     //first show that when there's no data, a query will result in no results
     {

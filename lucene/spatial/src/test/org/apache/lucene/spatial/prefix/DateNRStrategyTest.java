@@ -28,6 +28,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
@@ -42,7 +43,17 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
   public void setUp() throws Exception {
     super.setUp();
     tree = DateRangePrefixTree.INSTANCE;
-    strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
+    if (randomBoolean()) {
+      strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
+    } else {
+      //Test the format that existed <= Lucene 5.0
+      strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange") {
+        @Override
+        protected CellToBytesRefIterator newCellToBytesRefIterator() {
+          return new CellToBytesRefIterator50();
+        }
+      };
+    }
     Calendar tmpCal = tree.newCal();
     int randomCalWindowField = randomIntBetween(1, Calendar.ZONE_OFFSET - 1);//we're not allowed to add zone offset
     tmpCal.add(randomCalWindowField, 2_000);

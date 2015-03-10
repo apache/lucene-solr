@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -127,8 +126,8 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return pointsOnly;
   }
 
-  /** True if only indexed points shall be supported. There are no "leafs" in such a case.  See
-   *  {@link org.apache.lucene.spatial.prefix.IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
+  /** True if only indexed points shall be supported. There are no "leafs" in such a case, except those
+   * at maximum precision. */
   public void setPointsOnly(boolean pointsOnly) {
     this.pointsOnly = pointsOnly;
   }
@@ -142,23 +141,33 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   /**
    * Turns {@link SpatialPrefixTree#getTreeCellIterator(Shape, int)} into a
    * {@link org.apache.lucene.analysis.TokenStream}.
-   * {@code simplifyIndexedCells} is an optional hint affecting non-point shapes: it will
-   * simply/aggregate sets of complete leaves in a cell to its parent, resulting in ~20-25%
-   * fewer cells. It will likely be removed in the future.
    */
   public Field[] createIndexableFields(Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
-    TokenStream tokenStream = createTokenStream(shape, detailLevel);
+    return createIndexableFields(shape, detailLevel);
+  }
+
+  public Field[] createIndexableFields(Shape shape, int detailLevel) {
+    //TODO re-use TokenStream LUCENE-5776: Subclass Field, put cell iterator there, override tokenStream()
+    Iterator<Cell> cells = createCellIteratorToIndex(shape, detailLevel, null);
+    CellToBytesRefIterator cellToBytesRefIterator = newCellToBytesRefIterator();
+    cellToBytesRefIterator.reset(cells);
+    BytesRefIteratorTokenStream tokenStream = new BytesRefIteratorTokenStream();
+    tokenStream.setBytesRefIterator(cellToBytesRefIterator);
     Field field = new Field(getFieldName(), tokenStream, FIELD_TYPE);
     return new Field[]{field};
   }
 
-  protected TokenStream createTokenStream(Shape shape, int detailLevel) {
+  protected CellToBytesRefIterator newCellToBytesRefIterator() {
+    //subclasses could return one that never emits leaves, or does both, or who knows.
+    return new CellToBytesRefIterator();
+  }
+
+  protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
     if (pointsOnly && !(shape instanceof Point)) {
       throw new IllegalArgumentException("pointsOnly is true yet a " + shape.getClass() + " is given for indexing");
     }
-    Iterator<Cell> cells = grid.getTreeCellIterator(shape, detailLevel);
-    return new CellTokenStream().setCells(cells);
+    return grid.getTreeCellIterator(shape, detailLevel);//TODO should take a re-use iterator
   }
 
   /* Indexed, tokenized, not stored. */

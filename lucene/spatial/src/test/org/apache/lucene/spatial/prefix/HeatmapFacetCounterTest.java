@@ -31,7 +31,6 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
-
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -235,7 +234,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     // we use IntersectsPrefixTreeFilter directly so that we can specify the level to go to exactly.
     RecursivePrefixTreeStrategy strategy = (RecursivePrefixTreeStrategy) this.strategy;
     Filter filter = new IntersectsPrefixTreeFilter(
-        pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels(), !strategy.isPointsOnly());
+        pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels());
     final TotalHitCountCollector collector = new TotalHitCountCollector();
     indexSearcher.search(new FilteredQuery(new MatchAllDocsQuery(), filter), collector);
     cellsValidated++;
