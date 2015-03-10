@@ -283,6 +283,9 @@ valued. -->
     </fieldType>  
 
 
+    <!-- EnumType -->
+    <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
+
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
      type: mandatory - the name of a previously defined type from the <types> section
@@ -321,6 +324,10 @@ valued. -->
    <field name="cat_intDocValues" type="int"  indexed="true" stored="true" docValues="true" multiValued="true" />
    <field name="cat_floatDocValues" type="float"  indexed="true" stored="true" docValues="true" multiValued="true" />
    <field name="cat_length" type="text_length" indexed="true" stored="true" multiValued="true"/>
+
+
+   <!-- EnumType -->
+   <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

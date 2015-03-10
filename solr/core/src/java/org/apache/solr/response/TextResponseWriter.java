@@ -24,6 +24,7 @@ import java.util.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
@@ -196,6 +197,8 @@ public abstract class TextResponseWriter {
     } else if (val instanceof BytesRef) {
       BytesRef arr = (BytesRef)val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
+    } else if (val instanceof EnumFieldValue) {
+      writeStr(name, val.toString(), true);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);

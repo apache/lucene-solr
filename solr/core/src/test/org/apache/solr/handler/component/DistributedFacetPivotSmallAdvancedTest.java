@@ -89,19 +89,23 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
     handle.put("maxScore", SKIPVAL);
 
     doTestDeepPivotStatsOnString();
-    doTestTopStatsWithRefinement();
+
+    doTestTopStatsWithRefinement(true);
+    doTestTopStatsWithRefinement(false);
   }
 
   /**
    * we need to ensure that stats never "overcount" the values from a single shard
    * even if we hit that shard with a refinement request 
    */
-  private void doTestTopStatsWithRefinement() throws Exception {
-    
-    
+  private void doTestTopStatsWithRefinement(final boolean allStats) throws Exception {
+
+    String stat_param = allStats ? 
+      "{!tag=s1}foo_i" : "{!tag=s1 min=true max=true count=true missing=true}foo_i";
+
     ModifiableSolrParams coreParams = params("q", "*:*", "rows", "0",
                                              "stats", "true",
-                                             "stats.field", "{!tag=s1}foo_i" );
+                                             "stats.field", stat_param );
     ModifiableSolrParams facetParams = new ModifiableSolrParams(coreParams);
     facetParams.add(params("facet", "true",
                            "facet.limit", "1",
@@ -128,10 +132,18 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
       assertEquals(msg, 91.0, fieldStatsInfo.getMax());
       assertEquals(msg, 10, (long) fieldStatsInfo.getCount());
       assertEquals(msg, 0, (long) fieldStatsInfo.getMissing());
-      assertEquals(msg, 248.0, fieldStatsInfo.getSum());
-      assertEquals(msg, 15294.0, fieldStatsInfo.getSumOfSquares(), 0.1E-7);
-      assertEquals(msg, 24.8, (double) fieldStatsInfo.getMean(), 0.1E-7);
-      assertEquals(msg, 31.87405772027709, fieldStatsInfo.getStddev(), 0.1E-7);
+
+      if (allStats) {
+        assertEquals(msg, 248.0, fieldStatsInfo.getSum());
+        assertEquals(msg, 15294.0, fieldStatsInfo.getSumOfSquares(), 0.1E-7);
+        assertEquals(msg, 24.8, (double) fieldStatsInfo.getMean(), 0.1E-7);
+        assertEquals(msg, 31.87405772027709, fieldStatsInfo.getStddev(), 0.1E-7);
+      } else {
+        assertNull(msg, fieldStatsInfo.getSum());
+        assertNull(msg, fieldStatsInfo.getSumOfSquares());
+        assertNull(msg, fieldStatsInfo.getMean());
+        assertNull(msg, fieldStatsInfo.getStddev());
+      }
 
       if (params.getBool("facet", false)) {
         // if this was a facet request, then the top pivot constraint and pivot 
@@ -156,6 +168,12 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
         assertEquals(4, (long) dublinMicrosoftStatsInfo.getCount());
         assertEquals(0, (long) dublinMicrosoftStatsInfo.getMissing());
         
+        if (! allStats) {
+          assertNull(msg, dublinMicrosoftStatsInfo.getSum());
+          assertNull(msg, dublinMicrosoftStatsInfo.getSumOfSquares());
+          assertNull(msg, dublinMicrosoftStatsInfo.getMean());
+          assertNull(msg, dublinMicrosoftStatsInfo.getStddev());
+        }
       }
     }
 

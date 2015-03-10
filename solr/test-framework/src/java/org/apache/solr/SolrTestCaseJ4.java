@@ -750,7 +750,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     try {
       String m = (null == message) ? "" : message + " ";
       String response = h.query(req);
-
+      
       if (req.getParams().getBool("facet", false)) {
         // add a test to ensure that faceting did not throw an exception
         // internally, where it would be added to facet_counts/exception
@@ -1888,6 +1888,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     FileUtils.copyFile(new File(top, "open-exchange-rates.json"), new File(subHome, "open-exchange-rates.json"));
     FileUtils.copyFile(new File(top, "protwords.txt"), new File(subHome, "protwords.txt"));
     FileUtils.copyFile(new File(top, "schema.xml"), new File(subHome, "schema.xml"));
+    FileUtils.copyFile(new File(top, "enumsConfig.xml"), new File(subHome, "enumsConfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.xml"), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "stopwords.txt"), new File(subHome, "stopwords.txt"));

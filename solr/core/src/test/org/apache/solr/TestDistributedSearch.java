@@ -19,26 +19,41 @@ package org.apache.solr;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
+import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.EnumSet;
 
 /**
  * TODO? perhaps use:
@@ -63,18 +78,25 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
 
+  @Override
+  protected String getSolrXml() {
+    return "solr-trackingshardhandler.xml";
+  }
+
   @Test
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
 
-
     del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men",
+           "foo_sev_enum", "Medium",
            tdate_a, "2010-04-20T11:00:00Z",
            tdate_b, "2009-08-20T11:00:00Z",
            "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.",
+           "foo_sev_enum", "Medium",
+           "foo_sev_enum", "High",
            tdate_a, "2010-05-02T11:00:00Z",
            tdate_b, "2009-11-02T11:00:00Z");
     indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow",
@@ -90,6 +112,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
     indexr(id,8, i1, 876, tlong, 876,
            tdate_b, "2010-01-05T11:00:00Z",
+           "foo_sev_enum", "High",
            t1,"all the kings horses and all the kings men");
     indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
 
@@ -97,6 +120,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
     indexr(id,11, i1, -987, tlong, 987,
+           "foo_sev_enum", "Medium",
            t1,"An eye for eye only ends up making the whole world blind.");
     indexr(id,12, i1, 379, tlong, 379,
            t1,"Great works are performed, not by strength, but by perseverance.");
@@ -363,7 +387,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
     // test field that is valid in schema and missing in some shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2);
-
+    
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", "stats_dt");
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_a);
@@ -392,6 +416,283 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "stats.field", i1,
           "stats.field", tdate_a,
           "stats.field", tdate_b);
+    
+    // only ask for "min" and "mean", explicitly exclude deps of mean, whitebox check shard responses
+    try {
+      RequestTrackingQueue trackingQueue = new RequestTrackingQueue();
+      TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
+
+      rsp = query("q","*:*", "sort",i1+" desc", "stats", "true",
+                  "stats.field", "{!min=true sum=false mean=true count=false}" + i1);
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(i1);
+      assertNotNull("no stats for " + i1, s);
+      //
+      assertEquals("wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
+      assertEquals("wrong mean", 377.153846D, (Double)s.getMean(), 0.0001D );
+      //
+      assertNull("expected null for count", s.getCount());
+      assertNull("expected null for calcDistinct", s.getCountDistinct());
+      assertNull("expected null for distinct vals", s.getDistinctValues());
+      assertNull("expected null for max", s.getMax());
+      assertNull("expected null for missing", s.getMissing());
+      assertNull("expected null for stddev", s.getStddev());
+      assertNull("expected null for sum", s.getSum());
+
+      // sanity check deps relationship
+      for (Stat dep : EnumSet.of(Stat.sum, Stat.count)) {
+        assertTrue("Purpose of this test is to ensure that asking for some stats works even when the deps " +
+                   "of those stats are explicitly excluded -- but the expected dep relationshp is no longer valid. " +
+                   "ie: who changed the code and didn't change this test?, expected: " + dep,
+                   Stat.mean.getDistribDeps().contains(dep));
+      }
+
+      // check our shard requests & responses - ensure we didn't get unneccessary stats from every shard
+      int numStatsShardRequests = 0;
+      EnumSet<Stat> shardStatsExpected = EnumSet.of(Stat.min, Stat.sum, Stat.count);
+      for (List<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {
+        for (ShardRequestAndParams shardReq : shard) {
+          if (shardReq.params.getBool(StatsParams.STATS, false)) {
+            numStatsShardRequests++;
+            for (ShardResponse shardRsp : shardReq.sreq.responses) {
+              NamedList<Object> shardStats = 
+                ((NamedList<NamedList<NamedList<Object>>>)
+                 shardRsp.getSolrResponse().getResponse().get("stats")).get("stats_fields").get(i1);
+
+              assertNotNull("no stard stats for " + i1, shardStats);
+              //
+              for (Map.Entry<String,Object> entry : shardStats) {
+                Stat found = Stat.forName(entry.getKey());
+                assertNotNull("found shardRsp stat key we were not expecting: " + entry, found);
+                assertTrue("found stat we were not expecting: " + entry, shardStatsExpected.contains(found));
+                
+              }
+            }
+          }
+        }
+      }
+      assertTrue("did't see any stats=true shard requests", 0 < numStatsShardRequests);
+    } finally {
+      TrackingShardHandlerFactory.setTrackingQueue(jettys, null);
+    }
+    
+    // only ask for "min", "mean" and "stddev",
+    rsp = query("q","*:*", "sort",i1+" desc", "stats", "true",
+                "stats.field", "{!min=true mean=true stddev=true}" + i1);
+    { // don't leak variables 
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(i1);
+      assertNotNull("no stats for " + i1, s);
+      //
+      assertEquals("wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
+      assertEquals("wrong mean", 377.153846D, (Double)s.getMean(), 0.0001D );
+      assertEquals("wrong stddev", 1271.76215D, (Double)s.getStddev(), 0.0001D );
+      //
+      assertNull("expected null for count", s.getCount());
+      assertNull("expected null for calcDistinct", s.getCountDistinct());
+      assertNull("expected null for distinct vals", s.getDistinctValues());
+      assertNull("expected null for max", s.getMax());
+      assertNull("expected null for missing", s.getMissing());
+      assertNull("expected null for sum", s.getSum());
+    }
+
+    final String[] stats = new String[] {
+      "min", "max", "sum", "sumOfSquares", "stddev", "mean", "missing", "count"
+    };
+    
+    // ask for arbitrary pairs of stats
+    for (String stat1 : stats) {
+      for (String stat2 : stats) {
+        // NOTE: stat1 might equal stat2 - good edge case to test for
+
+        rsp = query("q","*:*", "sort",i1+" desc", "stats", "true",
+                    "stats.field", "{!" + stat1 + "=true " + stat2 + "=true}" + i1);
+
+        final List<String> statsExpected = new ArrayList<String>(2);
+        statsExpected.add(stat1);
+        if ( ! stat1.equals(stat2) ) {
+          statsExpected.add(stat2);
+        }
+
+        // ignore the FieldStatsInfo convinience class, and look directly at the NamedList
+        // so we don't need any sort of crazy reflection
+        NamedList<Object> svals = 
+          ((NamedList<NamedList<NamedList<Object>>>)
+           rsp.getResponse().get("stats")).get("stats_fields").get(i1);
+
+        assertNotNull("no stats for field " + i1, svals);
+        assertEquals("wrong quantity of stats", statsExpected.size(), svals.size());
+
+        
+        for (String s : statsExpected) {
+          assertNotNull("stat shouldn't be null: " + s, svals.get(s));
+          assertTrue("stat should be a Number: " + s + " -> " + svals.get(s).getClass(),
+                     svals.get(s) instanceof Number);
+          // some loose assertions since we're iterating over various stats
+          if (svals.get(s) instanceof Double) {
+            Double val = (Double) svals.get(s);
+            assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
+            assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
+            assertFalse("stat shouldn't be 0: " + s, val.equals(0.0D));
+          } else {
+            // count or missing
+            assertTrue("stat should be count of missing: " + s,
+                       ("count".equals(s) || "missing".equals(s)));
+            assertTrue("stat should be a Long: " + s + " -> " + svals.get(s).getClass(),
+                       svals.get(s) instanceof Long);
+            Long val = (Long) svals.get(s);
+            assertFalse("stat shouldn't be 0: " + s, val.equals(0L));
+          }
+        }
+      }
+    }
+    
+    // all of these diff ways of asking for min & calcdistinct should have the same result
+    for (SolrParams p : new SolrParams[] {
+        params("stats.field", "{!min=true calcdistinct=true}" + i1),
+        params("stats.calcdistinct", "true",
+               "stats.field", "{!min=true}" + i1),
+        params("f."+i1+".stats.calcdistinct", "true",
+               "stats.field", "{!min=true}" + i1),
+        params("stats.calcdistinct", "false",
+               "f."+i1+".stats.calcdistinct", "true",
+               "stats.field", "{!min=true}" + i1),
+        params("stats.calcdistinct", "false",
+               "f."+i1+".stats.calcdistinct", "false",
+               "stats.field", "{!min=true calcdistinct=true}" + i1),
+      }) {
+      
+      rsp = query(SolrParams.wrapDefaults
+                  (p, params("q","*:*", "sort",i1+" desc", "stats", "true")));
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(i1);
+      assertNotNull(p+" no stats for " + i1, s);
+      //
+      assertEquals(p+" wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
+      assertEquals(p+" wrong calcDistinct", new Long(13), s.getCountDistinct());
+      assertNotNull(p+" expected non-null list for distinct vals", s.getDistinctValues());
+      assertEquals(p+" expected list for distinct vals", 13, s.getDistinctValues().size());
+      //
+      assertNull(p+" expected null for mean", s.getMean() );
+      assertNull(p+" expected null for count", s.getCount());
+      assertNull(p+" expected null for max", s.getMax());
+      assertNull(p+" expected null for missing", s.getMissing());
+      assertNull(p+" expected null for stddev", s.getStddev());
+      assertNull(p+" expected null for sum", s.getSum());
+      
+    }
+
+    // all of these diff ways of excluding calcdistinct should have the same result
+    for (SolrParams p : new SolrParams[] {
+        params("stats.field", "{!min=true calcdistinct=false}" + i1),
+        params("stats.calcdistinct", "false",
+               "stats.field", "{!min=true}" + i1),
+        params("f."+i1+".stats.calcdistinct", "false",
+               "stats.field", "{!min=true}" + i1),
+        params("stats.calcdistinct", "true",
+               "f."+i1+".stats.calcdistinct", "false",
+               "stats.field", "{!min=true}" + i1),
+        params("stats.calcdistinct", "true",
+               "f."+i1+".stats.calcdistinct", "true",
+               "stats.field", "{!min=true calcdistinct=false}" + i1),
+      }) {
+      
+      rsp = query(SolrParams.wrapDefaults
+                  (p, params("q","*:*", "sort",i1+" desc", "stats", "true")));
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(i1);
+      assertNotNull(p+" no stats for " + i1, s);
+      //
+      assertEquals(p+" wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
+      //
+      assertNull(p+" expected null for calcDistinct", s.getCountDistinct());
+      assertNull(p+" expected null for distinct vals", s.getDistinctValues());
+      //
+      assertNull(p+" expected null for mean", s.getMean() );
+      assertNull(p+" expected null for count", s.getCount());
+      assertNull(p+" expected null for max", s.getMax());
+      assertNull(p+" expected null for missing", s.getMissing());
+      assertNull(p+" expected null for stddev", s.getStddev());
+      assertNull(p+" expected null for sum", s.getSum());
+      
+    }
+
+    // this field doesn't exist in any doc in the result set.
+    // ensure we get expected values for the stats we ask for, but null for the stats
+    rsp = query("q","*:*", "sort",i1+" desc", "stats", "true",
+                "stats.field", "{!min=true mean=true stddev=true}does_not_exist_i");
+    { // don't leak variables 
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get("does_not_exist_i");
+      assertNotNull("no stats for bogus field", s);
+
+      // things we explicit expect because we asked for them
+      // NOTE: min is expected to be null even though requested because of no values
+      assertEquals("wrong min", null, s.getMin()); 
+      assertTrue("mean should be NaN", ((Double)s.getMean()).isNaN());
+      assertEquals("wrong stddev", 0.0D, (Double)s.getStddev(), 0.0D );
+
+      // things that we didn't ask for, so they better be null
+      assertNull("expected null for count", s.getCount());
+      assertNull("expected null for calcDistinct", s.getCountDistinct());
+      assertNull("expected null for distinct vals", s.getDistinctValues());
+      assertNull("expected null for max", s.getMax());
+      assertNull("expected null for missing", s.getMissing());
+      assertNull("expected null for sum", s.getSum());
+    }
+
+    // look at stats on non numeric fields
+    //
+    // not all stats are supported on every field type, so some of these permutations will 
+    // result in no stats being computed but this at least lets us sanity check that for each 
+    // of these field+stats(s) combinations we get consistent results between the distribted 
+    // request and the single node situation.
+    EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
+    int numTotalStatQueries = 0;
+    // don't go overboard, just do all permutations of 1 or 2 stat params, for each field & query
+    final int numStatParamsAtOnce = 2; 
+    for (int numParams = 1; numParams <= numStatParamsAtOnce; numParams++) {
+      for (EnumSet<Stat> set : new StatSetCombinations(numParams, allStats)) {
+
+        for (String field : new String[] {
+            "foo_f", i1, tlong, tdate_a, oddField, "foo_sev_enum",
+            // fields that no doc has any value in
+            "bogus___s", "bogus___f", "bogus___i", "bogus___tdt", "bogus___sev_enum"
+          }) {
+
+          for ( String q : new String[] {
+              "*:*",                         // all docs
+              "bogus___s:bogus",             // no docs
+              "id:" + random().nextInt(50 ), // 0 or 1 doc...
+              "id:" + random().nextInt(50 ), 
+              "id:" + random().nextInt(100), 
+              "id:" + random().nextInt(100), 
+              "id:" + random().nextInt(200) 
+            }) {
+
+            // EnumSets use natural ordering, we want to randomize the order of the params
+            List<Stat> combo = new ArrayList<Stat>(set);
+            Collections.shuffle(combo, random());
+            
+            StringBuilder paras = new StringBuilder("{!key=k ");
+            
+            for (Stat stat : combo) {
+              paras.append(stat + "=true ");
+            }
+            
+            paras.append("}").append(field);
+            numTotalStatQueries++;
+            rsp = query("q","*:*", "rows", "0", "stats", "true",
+                        "stats.field", paras.toString());
+            // simple assert, mostly relying on comparison with single shard
+            FieldStatsInfo s = rsp.getFieldStatsInfo().get("k");
+            assertNotNull(s);
+
+            // TODO: if we had a programatic way to determine what stats are supported 
+            // by what field types, we could make more confident asserts here.
+          }
+        }
+      }
+    }
+    assertEquals("Sanity check failed: either test broke, or test changed, or you adjusted Stat enum" + 
+                 " (adjust constant accordingly if intentional)",
+                 3465, numTotalStatQueries);
+
 
     /*** TODO: the failure may come back in "exception"
     try {
@@ -567,6 +868,27 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         throw e;
       }
     }
+    
+    String fieldName = "severity";
+    indexr("id", "1", fieldName, "Not Available");
+    indexr("id", "2", fieldName, "Low");
+    indexr("id", "3", fieldName, "Medium");
+    indexr("id", "4", fieldName, "High");
+    indexr("id", "5", fieldName, "Critical");
+    
+    commit();
+
+    handle.put("stats_fields", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
+
+    rsp = query("q", "*:*", "stats", "true", "stats.field", fieldName);
+    assertEquals(new EnumFieldValue(0, "Not Available"),
+                 rsp.getFieldStatsInfo().get(fieldName).getMin());
+    query("q", "*:*", "stats", "true", "stats.field", fieldName,  
+          StatsParams.STATS_CALC_DISTINCT, "true");
+    assertEquals(new EnumFieldValue(4, "Critical"),
+                 rsp.getFieldStatsInfo().get(fieldName).getMax());
+    query("q", "*:*", "stats", "true", "stats.field", fieldName, 
+          "stats.facet", fieldName);
   }
 
   protected void checkMinCountsField(List<FacetField.Count> counts, Object[] pairs) {
