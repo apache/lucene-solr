@@ -54,7 +54,7 @@ public abstract class SpatialPrefixTreeFactory {
       instance = new QuadPrefixTree.Factory();
     else {
       try {
-        Class c = classLoader.loadClass(cname);
+        Class<?> c = classLoader.loadClass(cname);
         instance = (SpatialPrefixTreeFactory) c.newInstance();
       } catch (Exception e) {
         throw new RuntimeException(e);

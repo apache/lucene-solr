@@ -32,10 +32,10 @@ import java.util.List;
  * @lucene.internal
  */
 public class ShapeFieldCache<T extends Shape> {
-  private List<T>[] cache;
-  public int defaultLength;
+  private final List<T>[] cache;
+  public final int defaultLength;
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public ShapeFieldCache( int length, int defaultLength ) {
     cache = new List[length];
     this.defaultLength= defaultLength;
