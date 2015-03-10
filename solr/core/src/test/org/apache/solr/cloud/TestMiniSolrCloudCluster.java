@@ -166,7 +166,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
   public void testErrorsInStartup() throws Exception {
 
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
-    AtomicInteger jettyIndex = new AtomicInteger();
+    final AtomicInteger jettyIndex = new AtomicInteger();
 
     MiniSolrCloudCluster cluster = null;
     try {
@@ -195,7 +195,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
   public void testErrorsInShutdown() throws Exception {
 
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
-    AtomicInteger jettyIndex = new AtomicInteger();
+    final AtomicInteger jettyIndex = new AtomicInteger();
 
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(3, createTempDir().toFile(), solrXml, JettyConfig.builder().build()) {
         @Override
