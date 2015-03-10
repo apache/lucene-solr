@@ -69,34 +69,13 @@ import org.apache.solr.common.util.NamedList;
 public class HashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash";
-  private static Semaphore semaphore = new Semaphore(8,true);
-  private static ExecutorService threadPool = Executors.newCachedThreadPool(new SolrjNamedThreadFactory("HashQParserPlugin"));
-  private static boolean init = true;
 
-  private static synchronized void closeHook(SolrCore core) {
-    if(init) {
-      init = false;
-      core.addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {
-          threadPool.shutdown();
-          //To change body of implemented methods use File | Settings | File Templates.
-        }
-
-        @Override
-        public void postClose(SolrCore core) {
-          //To change body of implemented methods use File | Settings | File Templates.
-        }
-      });
-    }
-  }
 
   public void init(NamedList params) {
 
   }
 
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
-    closeHook(request.getSearcher().getCore());
     return new HashQParser(query, localParams, params, request);
   }
 
@@ -156,25 +135,14 @@ public class HashQParserPlugin extends QParserPlugin {
       IndexReaderContext context = solrIndexSearcher.getTopReaderContext();
 
       List<LeafReaderContext> leaves =  context.leaves();
-      ArrayBlockingQueue queue = new ArrayBlockingQueue(leaves.size());
-
+      FixedBitSet[] fixedBitSets = new FixedBitSet[leaves.size()];
 
       for(LeafReaderContext leaf : leaves) {
         try {
-          semaphore.acquire();
-          SegmentPartitioner segmentPartitioner = new SegmentPartitioner(leaf,worker,workers, keys, solrIndexSearcher, queue,semaphore);
-          threadPool.execute(segmentPartitioner);
-        } catch(Exception e) {
-          throw new IOException(e);
-        }
-      }
-
-      FixedBitSet[] fixedBitSets = new FixedBitSet[leaves.size()];
-      for(int i=0; i<leaves.size(); i++) {
-        try {
-          SegmentPartitioner segmentPartitioner = (SegmentPartitioner)queue.take();
+          SegmentPartitioner segmentPartitioner = new SegmentPartitioner(leaf,worker,workers, keys, solrIndexSearcher);
+          segmentPartitioner.run();
           fixedBitSets[segmentPartitioner.context.ord] = segmentPartitioner.docs;
-        }catch(Exception e) {
+        } catch(Exception e) {
           throw new IOException(e);
         }
       }
@@ -205,20 +173,15 @@ public class HashQParserPlugin extends QParserPlugin {
       private int worker;
       private int workers;
       private HashKey k;
-      private Semaphore sem;
-      private ArrayBlockingQueue queue;
       public FixedBitSet docs;
       public SegmentPartitioner(LeafReaderContext context,
                                 int worker,
                                 int workers,
                                 String[] keys,
-                                SolrIndexSearcher solrIndexSearcher,
-                                ArrayBlockingQueue queue, Semaphore sem) {
+                                SolrIndexSearcher solrIndexSearcher) {
         this.context = context;
         this.worker = worker;
         this.workers = workers;
-        this.queue = queue;
-        this.sem = sem;
 
         HashKey[] hashKeys = new HashKey[keys.length];
         IndexSchema schema = solrIndexSearcher.getSchema();
@@ -251,9 +214,6 @@ public class HashQParserPlugin extends QParserPlugin {
           }
         }catch(Exception e) {
          throw new RuntimeException(e);
-        } finally {
-          sem.release();
-          queue.add(this);
         }
       }
     }
