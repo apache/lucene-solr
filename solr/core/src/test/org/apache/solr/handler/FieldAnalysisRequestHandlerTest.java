@@ -411,4 +411,18 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
   }
+  
+  @Test
+  public void testSpatial() throws Exception {
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("location_rpt");
+    request.setFieldValue("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))");
+
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    NamedList<List<NamedList>> tokens = (NamedList<List<NamedList>>)
+        ((NamedList)result.get("field_types").get("location_rpt")).get("index");
+    List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.BytesRefIteratorTokenStream");
+    
+    assertEquals("s", tokenList.get(0).get("text") );
+  }
 }
