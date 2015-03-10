@@ -17,33 +17,29 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
 import org.apache.lucene.spatial.prefix.tree.Cell;
-import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s that index points
- * (AND ONLY POINTS!).
- *
- * @lucene.internal
- */
-public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
+/** For testing Lucene <= 5.0. Index redundant prefixes for leaf cells. Fixed in LUCENE-4942. */
+class CellToBytesRefIterator50 extends CellToBytesRefIterator {
 
-  private final SpatialPrefixTree grid;
-  private Cell scanCell;//re-used in readShape to save GC
-
-  public PointPrefixTreeFieldCacheProvider(SpatialPrefixTree grid, String shapeField, int defaultSize) {
-    super( shapeField, defaultSize );
-    this.grid = grid;
-  }
+  Cell repeatCell;
 
   @Override
-  protected Point readShape(BytesRef term) {
-    scanCell = grid.readCell(term, scanCell);
-    if (scanCell.getLevel() == grid.getMaxLevels())
-      return scanCell.getShape().getCenter();
-    return null;
+  public BytesRef next() {
+    if (repeatCell != null) {
+      bytesRef = repeatCell.getTokenBytesWithLeaf(bytesRef);
+      repeatCell = null;
+      return bytesRef;
+    }
+    if (!cellIter.hasNext()) {
+      return null;
+    }
+    Cell cell = cellIter.next();
+    bytesRef = cell.getTokenBytesNoLeaf(bytesRef);
+    if (cell.isLeaf()) {
+      repeatCell = cell;
+    }
+    return bytesRef;
   }
 }

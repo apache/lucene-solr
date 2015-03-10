@@ -17,13 +17,13 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
+import java.util.Collection;
+
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-
-import java.util.Collection;
 
 /** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
  * @lucene.internal */
@@ -64,7 +64,7 @@ public abstract class LegacyCell implements Cell {
     shape = null;
     this.bytes = bytes.bytes;
     this.b_off = bytes.offset;
-    this.b_len = bytes.length;
+    this.b_len = (short) bytes.length;
     readLeafAdjust();
   }
 
@@ -72,6 +72,8 @@ public abstract class LegacyCell implements Cell {
     isLeaf = (b_len > 0 && bytes[b_off + b_len - 1] == LEAF_BYTE);
     if (isLeaf)
       b_len--;
+    if (getLevel() == getMaxLevels())
+      isLeaf = true;
   }
 
 //  @Override
@@ -87,6 +89,8 @@ public abstract class LegacyCell implements Cell {
 //  }
 
   protected abstract SpatialPrefixTree getGrid();
+
+  protected abstract int getMaxLevels();
 
   @Override
   public SpatialRelation getShapeRel() {
@@ -111,7 +115,7 @@ public abstract class LegacyCell implements Cell {
   @Override
   public BytesRef getTokenBytesWithLeaf(BytesRef result) {
     result = getTokenBytesNoLeaf(result);
-    if (!isLeaf)
+    if (!isLeaf || getLevel() == getMaxLevels())
       return result;
     if (result.bytes.length < result.offset + result.length + 1) {
       assert false : "Not supposed to happen; performance bug";

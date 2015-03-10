@@ -17,33 +17,34 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
+import java.util.Iterator;
+
 import org.apache.lucene.spatial.prefix.tree.Cell;
-import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
- * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s that index points
- * (AND ONLY POINTS!).
+ * A reset'able {@link org.apache.lucene.util.BytesRefIterator} wrapper around
+ * an {@link java.util.Iterator} of {@link org.apache.lucene.spatial.prefix.tree.Cell}s.
+ *
+ * @see PrefixTreeStrategy#newCellToBytesRefIterator()
  *
  * @lucene.internal
  */
-public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
+public class CellToBytesRefIterator implements BytesRefIterator {
 
-  private final SpatialPrefixTree grid;
-  private Cell scanCell;//re-used in readShape to save GC
+  protected Iterator<Cell> cellIter;
+  protected BytesRef bytesRef = new BytesRef();
 
-  public PointPrefixTreeFieldCacheProvider(SpatialPrefixTree grid, String shapeField, int defaultSize) {
-    super( shapeField, defaultSize );
-    this.grid = grid;
+  public void reset(Iterator<Cell> cellIter) {
+    this.cellIter = cellIter;
   }
 
   @Override
-  protected Point readShape(BytesRef term) {
-    scanCell = grid.readCell(term, scanCell);
-    if (scanCell.getLevel() == grid.getMaxLevels())
-      return scanCell.getShape().getCenter();
-    return null;
+  public BytesRef next() {
+    if (!cellIter.hasNext()) {
+      return null;
+    }
+    return cellIter.next().getTokenBytesWithLeaf(bytesRef);
   }
 }

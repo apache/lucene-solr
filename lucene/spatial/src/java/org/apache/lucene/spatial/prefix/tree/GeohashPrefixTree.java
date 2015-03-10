@@ -17,16 +17,16 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.util.BytesRef;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * A {@link SpatialPrefixTree} based on
@@ -104,7 +104,7 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
     GhCell(String geohash) {
       super(stringToBytesPlus1(geohash), 0, geohash.length());
       this.geohash = geohash;
-      if (isLeaf())
+      if (isLeaf() && getLevel() < getMaxLevels())//we don't have a leaf byte at max levels (an opt)
         this.geohash = geohash.substring(0, geohash.length() - 1);
     }
 
@@ -114,6 +114,9 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
     @Override
     protected GeohashPrefixTree getGrid() { return GeohashPrefixTree.this; }
+
+    @Override
+    protected int getMaxLevels() { return maxLevels; }
 
     @Override
     protected void readCell(BytesRef bytesRef) {

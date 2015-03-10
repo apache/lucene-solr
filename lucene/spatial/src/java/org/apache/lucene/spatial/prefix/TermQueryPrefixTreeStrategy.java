@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.prefix;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -31,9 +33,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
 
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large
@@ -53,6 +52,20 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
   public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid, fieldName);
+  }
+
+  @Override
+  protected CellToBytesRefIterator newCellToBytesRefIterator() {
+    //Ensure we don't have leaves, as this strategy doesn't handle them.
+    return new CellToBytesRefIterator() {
+      @Override
+      public BytesRef next() {
+        if (!cellIter.hasNext()) {
+          return null;
+        }
+        return cellIter.next().getTokenBytesNoLeaf(bytesRef);
+      }
+    };
   }
 
   @Override
@@ -92,7 +105,8 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     for (BytesRef byteRef : terms) {
       byteRef.bytes = masterBytes.bytes();
     }
-    //unfortunately TermsFilter will needlessly sort & dedupe
+    //unfortunately TermsQuery will needlessly sort & dedupe
+    //TODO an automatonQuery might be faster?
     return new QueryWrapperFilter(new TermsQuery(getFieldName(), terms));
   }
 
