@@ -86,6 +86,8 @@
     <fieldType name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true" multiValued="true"/>
 
     <fieldType name="dateRange" class="solr.DateRangeField" />
+    <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+        geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
 
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
