@@ -122,7 +122,7 @@ public class MiniSolrCloudCluster {
    *
    * @throws Exception if there was an error starting the cluster
    */
-  public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, JettyConfig jettyConfig) throws Exception {
+  public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, final JettyConfig jettyConfig) throws Exception {
 
     this.testDir = baseDir;
     this.jettyConfig = jettyConfig;
