@@ -72,6 +72,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(ReRankQParserPlugin.NAME, ReRankQParserPlugin.class);
     map.put(ExportQParserPlugin.NAME, ExportQParserPlugin.class);
     map.put(MLTQParserPlugin.NAME, MLTQParserPlugin.class);
+    map.put(HashQParserPlugin.NAME, HashQParserPlugin.class);
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
