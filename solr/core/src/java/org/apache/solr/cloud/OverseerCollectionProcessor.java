@@ -2328,11 +2328,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         ClusterStateMutator.getShardNames(shardNames, message.getStr("shards", null));
         numSlices = shardNames.size();
       } else {
+        if (numSlices == null ) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required param (when using CompositeId router).");
+        }
         ClusterStateMutator.getShardNames(numSlices, shardNames);
-      }
-
-      if (numSlices == null ) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required param (when using CompositeId router).");
       }
 
       int maxShardsPerNode = message.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1);
