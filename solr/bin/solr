@@ -361,7 +361,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process 
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep $SOLR_PID | grep start.jar | grep jetty.port`      
+  SOLR_PROC=`ps auxww | grep $SOLR_PID | grep start\.jar | grep jetty.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -410,10 +410,10 @@ function get_info() {
     done
   else
     # no pid files but check using ps just to be sure
-    numSolrs=`ps auxww | grep start.jar | grep solr.solr.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
+    numSolrs=`ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
-      for ID in `ps auxww | grep start.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r`
+      for ID in `ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r`
         do
           port=`jetty_port "$ID"`
           if [ "$port" != "" ]; then
@@ -658,7 +658,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "$CREATE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
+    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
       do
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
@@ -748,7 +748,7 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   fi
 
   if [ -z "$DELETE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
+    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
       do
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
@@ -1112,7 +1112,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
   fi
 
   if [ "$SOLR_PID" != "" ]; then
@@ -1125,7 +1125,7 @@ else
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
@@ -1369,14 +1369,14 @@ $SOLR_OPTS"
             exit;
           fi
         else
-          SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+          SOLR_PID=`ps auxww | grep start\.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
           echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
           exit;
         fi
       done) &
       spinner $!
     else
-      SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+      SOLR_PID=`ps auxww | grep start\.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
       exit;
     fi
