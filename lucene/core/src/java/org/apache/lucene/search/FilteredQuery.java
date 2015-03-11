@@ -340,9 +340,6 @@ public class FilteredQuery extends Query {
     }
   }
   
-  /** Rewrites the query. If the wrapped is an instance of
-   * {@link MatchAllDocsQuery} it returns a {@link ConstantScoreQuery}. Otherwise
-   * it returns a new {@code FilteredQuery} wrapping the rewritten query. */
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (filter instanceof QueryWrapperFilter) {
