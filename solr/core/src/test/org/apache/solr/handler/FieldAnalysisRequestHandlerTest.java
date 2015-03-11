@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -423,6 +423,6 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         ((NamedList)result.get("field_types").get("location_rpt")).get("index");
     List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.BytesRefIteratorTokenStream");
     
-    assertEquals("s", tokenList.get(0).get("text") );
+    assertTrue( tokenList.get(0).get("text").toString().startsWith("s") );
   }
 }
