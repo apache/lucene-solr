@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -356,7 +356,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     NamedList indexPart = textType.get("index");
     assertNotNull("expecting an index token analysis for field type 'charfilthtmlmap'", indexPart);
-    
+
     assertEquals("\n\nwhátëvêr\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
     assertEquals("\n\nwhatever\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
 
@@ -365,7 +365,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals(tokenList.size(), 1);
     assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, new int[]{1}, null, false));
   }
-  
+
   @Test
   public void testPositionHistoryWithWDF() throws Exception {
 
@@ -411,7 +411,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
   }
-  
+
   @Test
   public void testSpatial() throws Exception {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
@@ -422,7 +422,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     NamedList<List<NamedList>> tokens = (NamedList<List<NamedList>>)
         ((NamedList)result.get("field_types").get("location_rpt")).get("index");
     List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.BytesRefIteratorTokenStream");
-    
+
     assertTrue( tokenList.get(0).get("text").toString().startsWith("s") );
   }
 }
