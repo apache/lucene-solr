@@ -31,6 +31,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -423,6 +425,12 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         ((NamedList)result.get("field_types").get("location_rpt")).get("index");
     List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.BytesRefIteratorTokenStream");
 
-    assertTrue( tokenList.get(0).get("text").toString().startsWith("s") );
+
+    List<String> vals = new ArrayList<>(tokenList.size());
+    for(NamedList v : tokenList) {
+      vals.add( (String)v.get("text") );
+    }
+    Collections.sort(vals);
+    assertEquals( "[s, s7, s7w, s7w1+, s9, s9v, s9v2+, sp, spp, spp5+, sv, svk, svk6+]", vals.toString() );
   }
 }
