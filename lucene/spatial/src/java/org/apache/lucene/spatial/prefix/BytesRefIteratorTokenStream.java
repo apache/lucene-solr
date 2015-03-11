@@ -87,7 +87,9 @@ class BytesRefIteratorTokenStream extends TokenStream {
 
     @Override
     public BRTermToBytesRefAttributeImpl clone() {
-      final BRTermToBytesRefAttributeImpl clone = (BRTermToBytesRefAttributeImpl) super.clone();
+      // super.clone won't work since we need a new BytesRef reference and it's nice to have it final. The superclass
+      // has no state to copy anyway.
+      final BRTermToBytesRefAttributeImpl clone = new BRTermToBytesRefAttributeImpl();
       clone.setBytesRef(BytesRef.deepCopyOf(bytes));
       return clone;
     }
