@@ -307,6 +307,9 @@ Other Changes
 * SOLR-7180: MiniSolrCloudCluster will startup and shutdown its jetties in
   parallel (Alan Woodward, Tomás Fernández Löbbe, Vamsee Yarlagadda)
 
+* SOLR-7173: Fix ReplicationFactorTest on Windows by adding better retry
+  support after seeing no response exceptions. (Ishan Chattopadhyaya via Timothy Potter)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

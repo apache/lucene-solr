@@ -778,6 +778,30 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
+  @SuppressWarnings("rawtypes")
+  protected int sendDocsWithRetry(List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
+    UpdateRequest up = new UpdateRequest();
+    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+    up.add(batch);
+    NamedList resp = null;
+    int numRetries = 0;
+    while(true) {
+      try {
+        resp = cloudClient.request(up);
+        return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), resp);
+      } catch (Exception exc) {
+        Throwable rootCause = SolrException.getRootCause(exc);
+        if (++numRetries <= maxRetries) {
+          log.warn("ERROR: " + rootCause + " ... Sleeping for " + waitBeforeRetry + " seconds before re-try ...");
+          Thread.sleep(waitBeforeRetry * 1000L);
+        } else {
+          log.error("No more retries available! Add batch failed due to: " + rootCause);
+          throw exc;
+        }
+      }
+    }
+  }
+
   @Override
   protected void indexDoc(SolrInputDocument doc) throws IOException,
       SolrServerException {

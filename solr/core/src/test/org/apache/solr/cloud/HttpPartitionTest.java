@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -473,38 +474,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String url = zkProps.getBaseUrl() + "/" + coll;
     return new HttpSolrClient(url);
   }
-  
-  protected void doSendDoc(int docid) throws Exception {
-    UpdateRequest up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(2));
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField(id, String.valueOf(docid));
-    doc.addField("a_t", "hello" + docid);
-    up.add(doc);
-    int minAchievedRf =
-        cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up));
-  }
-  
+
   protected void sendDoc(int docId) throws Exception {
-    try {
-      doSendDoc(docId);
-    } catch (SolrServerException e) {
-      if (e.getRootCause() instanceof NoHttpResponseException) {
-        // we don't know if the doc was accepted or not, we send again
-        Thread.sleep(100);
-        try {
-          doSendDoc(docId);
-        } catch (SolrServerException e2) {
-          if (e2.getRootCause() instanceof NoHttpResponseException) {
-            // we don't know if the doc was accepted or not, we send again
-            Thread.sleep(3000);
-            doSendDoc(docId);
-          }
-        }
-      }
-    }
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField(id, String.valueOf(docId));
+    doc.addField("a_t", "hello" + docId);
+
+    sendDocsWithRetry(Collections.singletonList(doc), 2, 3, 100);
   }
-   
+
   /**
    * Query the real-time get handler for a specific doc by ID to verify it
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
