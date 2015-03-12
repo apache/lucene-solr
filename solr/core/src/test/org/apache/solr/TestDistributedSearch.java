@@ -494,6 +494,26 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull("expected null for sum", s.getSum());
     }
 
+    // request stats, but disable them all via param refs
+    rsp = query("q","*:*", "sort",i1+" desc", "stats", "true", "doMin", "false",
+                "stats.field", "{!min=$doMin}" + i1);
+    { // don't leak variables 
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(i1);
+      // stats section should exist, even though stats should be null
+      assertNotNull("no stats for " + i1, s);
+      //
+      assertNull("expected null for min", s.getMin() );
+      assertNull("expected null for mean", s.getMean() );
+      assertNull("expected null for stddev", s.getStddev() );
+      //
+      assertNull("expected null for count", s.getCount());
+      assertNull("expected null for calcDistinct", s.getCountDistinct());
+      assertNull("expected null for distinct vals", s.getDistinctValues());
+      assertNull("expected null for max", s.getMax());
+      assertNull("expected null for missing", s.getMissing());
+      assertNull("expected null for sum", s.getSum());
+    }
+
     final String[] stats = new String[] {
       "min", "max", "sum", "sumOfSquares", "stddev", "mean", "missing", "count"
     };
