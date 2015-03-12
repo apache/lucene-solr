@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -258,11 +259,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
     
-    UpdateRequest up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-    up.add(batch);
-    int batchRf = 
-        cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
+    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
     assertRf(3, "batch should have succeeded on all replicas", batchRf);
     
     // add some chaos to the batch
@@ -276,12 +273,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + i);
       batch.add(doc);
     }
-    
-    up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-    up.add(batch);
-    batchRf = 
-        cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
+
+    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
     assertRf(2, "batch should have succeeded on 2 replicas (only one replica should be down)", batchRf);
 
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
@@ -294,12 +287,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + i);
       batch.add(doc);
     }
-    
-    up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-    up.add(batch);
-    batchRf = 
-        cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
+
+    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
     assertRf(1, "batch should have succeeded on the leader only (both replicas should be down)", batchRf);
 
     getProxyForReplica(replicas.get(0)).reopen();        
