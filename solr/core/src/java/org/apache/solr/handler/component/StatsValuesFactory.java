@@ -347,6 +347,9 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   double sum;
   double sumOfSquares;
 
+  double minD; // perf optimization, only valid if (null != this.min)
+  double maxD; // perf optimization, only valid if (null != this.max)
+
   final protected boolean computeSum;
   final protected boolean computeSumOfSquares;
 
@@ -405,13 +408,19 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if (computeMin) { // nested if to encourage JIT to optimize aware final var?
       if (null != min) {
         double minD = min.doubleValue();
-        this.min = (null == this.min) ? minD : Math.min(this.min.doubleValue(), minD);
+        if (null == this.min || minD < this.minD) {
+          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          this.min = this.minD = minD;
+        }
       }
     }
     if (computeMax) { // nested if to encourage JIT to optimize aware final var?
       if (null != max) {
         double maxD = max.doubleValue();
-        this.max = (null == this.max) ? maxD : Math.max(this.max.doubleValue(), maxD);
+        if (null == this.max || this.maxD < maxD) {
+          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          this.max = this.maxD = maxD;
+        }
       }
     }
   }

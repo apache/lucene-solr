@@ -1163,6 +1163,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "but since only local param is false no stats should be returned",
             req("q","*:*", "stats", "true",
                 "stats.field", "{!key=k min=false}a_i")
+            // section of stats for this field should exist ...
+            , XPRE + "lst[@name='stats_fields']/lst[@name='k']"
+            // ...but be empty 
             , "count(" + kpre + "*)=0"
             );
 

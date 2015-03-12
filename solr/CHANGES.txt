@@ -243,6 +243,9 @@ Optimizations
  * SOLR-7116: Distributed facet refinement requests would needlessly compute other types
    of faceting that have already been computed. (David Smiley, Hossman)
 
+ * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
+   where local params disable all stats (hossman)
+
 Other Changes
 ----------------------
 

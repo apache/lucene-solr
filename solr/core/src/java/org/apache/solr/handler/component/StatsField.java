@@ -346,6 +346,12 @@ public class StatsField {
    */
   public StatsValues computeLocalStatsValues(DocSet base) throws IOException {
 
+    if (statsToCalculate.isEmpty()) { 
+      // perf optimization for the case where we compute nothing
+      // ie: stats.field={!min=$domin}myfield&domin=false
+      return StatsValuesFactory.createStatsValues(this);
+    }
+
     if (null != schemaField 
         && (schemaField.multiValued() || schemaField.getType().multiValuedFieldCache())) {
 
