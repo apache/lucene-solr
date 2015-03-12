@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -552,13 +553,28 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   // called from parser
   Query handleBoost(Query q, Token boost) {
-    if (boost != null) {
-      float boostVal = Float.parseFloat(boost.image);
-      // avoid boosting null queries, such as those caused by stop words
-      if (q != null) {
-        q.setBoost(q.getBoost() * boostVal);
-      }
+    // q==null check is to avoid boosting null queries, such as those caused by stop words
+    if (boost == null || boost.image.length()==0 || q == null) {
+      return q;
     }
+
+    if (boost.image.charAt(0) == '=') {
+      // syntax looks like foo:x^=3
+      float val = Float.parseFloat(boost.image.substring(1));
+      Query newQ = q;
+      if (// q instanceof FilterQuery ||  // TODO: fix this when FilterQuery is introduced to avoid needless wrapping: SOLR-7219
+          q instanceof ConstantScoreQuery) {
+        newQ.setBoost(val);
+      } else {
+        newQ = new ConstantScoreQuery(q);
+        newQ.setBoost(val);
+      }
+      return newQ;
+    }
+
+    float boostVal = Float.parseFloat(boost.image);
+    q.setBoost(q.getBoost() * boostVal);
+
     return q;
   }
 

@@ -163,6 +163,10 @@ New Features
   eg: stats.field={!min=true max=true}field_name
   (Tomas Fernandez-Lobbe, Xu Zhang, hossman)
 
+* SOLR-7218: lucene/solr query syntax to give any query clause a constant score.
+  General Form: <clause>^=<constant_score>
+  Example: (color:blue color:green)^=2.0 text:shoes
+
 
 Bug Fixes
 ----------------------

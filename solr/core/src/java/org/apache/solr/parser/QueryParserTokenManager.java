@@ -692,7 +692,7 @@ private int jjMoveStringLiteralDfa0_0()
 private int jjMoveNfa_0(int startState, int curPos)
 {
    int startsAt = 0;
-   jjnewStateCnt = 4;
+   jjnewStateCnt = 5;
    int i = 1;
    jjstateSet[0] = startState;
    int kind = 0x7fffffff;
@@ -712,28 +712,34 @@ private int jjMoveNfa_0(int startState, int curPos)
                   {
                      if (kind > 29)
                         kind = 29;
-                     jjCheckNAddTwoStates(1, 2);
+                     jjCheckNAddTwoStates(2, 3);
                   }
                   else if (curChar == 45)
-                     jjCheckNAdd(1);
+                     jjCheckNAdd(2);
+                  else if (curChar == 61)
+                     jjCheckNAddTwoStates(1, 2);
                   break;
                case 1:
-                  if ((0x3ff000000000000L & l) == 0L)
-                     break;
-                  if (kind > 29)
-                     kind = 29;
-                  jjCheckNAddTwoStates(1, 2);
+                  if (curChar == 45)
+                     jjCheckNAdd(2);
                   break;
                case 2:
-                  if (curChar == 46)
-                     jjCheckNAdd(3);
-                  break;
-               case 3:
                   if ((0x3ff000000000000L & l) == 0L)
                      break;
                   if (kind > 29)
                      kind = 29;
-                  jjCheckNAdd(3);
+                  jjCheckNAddTwoStates(2, 3);
+                  break;
+               case 3:
+                  if (curChar == 46)
+                     jjCheckNAdd(4);
+                  break;
+               case 4:
+                  if ((0x3ff000000000000L & l) == 0L)
+                     break;
+                  if (kind > 29)
+                     kind = 29;
+                  jjCheckNAdd(4);
                   break;
                default : break;
             }
@@ -772,7 +778,7 @@ private int jjMoveNfa_0(int startState, int curPos)
          kind = 0x7fffffff;
       }
       ++curPos;
-      if ((i = jjnewStateCnt) == (startsAt = 4 - (jjnewStateCnt = startsAt)))
+      if ((i = jjnewStateCnt) == (startsAt = 5 - (jjnewStateCnt = startsAt)))
          return curPos;
       try { curChar = input_stream.readChar(); }
       catch(java.io.IOException e) { return curPos; }
