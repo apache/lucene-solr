@@ -103,7 +103,7 @@ PARSER_END(QueryParser)
 }
 
 <Boost> TOKEN : {
- <NUMBER:    ("-")? (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
+ <NUMBER:    ("=")?("-")? (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
 }
 
 <Range> TOKEN : {
