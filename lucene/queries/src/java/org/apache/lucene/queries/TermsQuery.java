@@ -209,6 +209,11 @@ public class TermsQuery extends Query implements Accountable {
   }
 
   @Override
+  public int hashCode() {
+      return super.hashCode() ^ this.hashCode;
+  }
+
+  @Override
   public String toString(String defaultField) {
     StringBuilder builder = new StringBuilder();
     BytesRef spare = new BytesRef(termsBytes);
