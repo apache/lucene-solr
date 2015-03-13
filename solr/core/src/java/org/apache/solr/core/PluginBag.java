@@ -259,6 +259,12 @@ public class PluginBag<T> implements AutoCloseable {
       if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
 
     }
+
+    public String getClassName() {
+      if (isLoaded()) return inst.getClass().getName();
+      if (pluginInfo != null) return pluginInfo.className;
+      return null;
+    }
   }
 
   /**
