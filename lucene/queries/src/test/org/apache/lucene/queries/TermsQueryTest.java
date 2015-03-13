@@ -166,6 +166,15 @@ public class TermsQueryTest extends LuceneTestCase {
         assertFalse(right.equals(notEqual));
       }
     }
+
+    TermsQuery tq1 = new TermsQuery(new Term("thing", "apple"));
+    TermsQuery tq2 = new TermsQuery(new Term("thing", "orange"));
+    assertFalse(tq1.hashCode() == tq2.hashCode());
+
+    // different fields with the same term should have differing hashcodes
+    tq1 = new TermsQuery(new Term("thing1", "apple"));
+    tq2 = new TermsQuery(new Term("thing2", "apple"));
+    assertFalse(tq1.hashCode() == tq2.hashCode());
   }
 
   public void testSingleFieldEquals() {
