@@ -315,6 +315,8 @@ Other Changes
 * SOLR-7173: Fix ReplicationFactorTest on Windows by adding better retry
   support after seeing no response exceptions. (Ishan Chattopadhyaya via Timothy Potter)
 
+* SOLR-7246: Speed up BasicZkTest, TestManagedResourceStorage (Ramkumar Aiyengar)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
