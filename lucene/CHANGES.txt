@@ -59,6 +59,9 @@ New Features
 
 * LUCENE-6341: Add a -fast option to CheckIndex. (Robert Muir)
 
+* LUCENE-6355: IndexWriter's infoStream now also logs time to write FieldInfos
+  during merge (Lee Hinman via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
