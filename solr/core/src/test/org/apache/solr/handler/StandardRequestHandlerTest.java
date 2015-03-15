@@ -51,27 +51,19 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     assertU(adoc("id", "11", "title", "test", "val_s1", "bbb"));
     assertU(adoc("id", "12", "title", "test", "val_s1", "ccc"));
     assertU(commit());
-    
-    Map<String,String> args = new HashMap<>();
-    args.put( CommonParams.Q, "title:test" );
-    args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
-    
-    
-    assertQ("Make sure they got in", req
+
+    assertQ(req("q", "title:test")
             ,"//*[@numFound='3']"
             );
     
-    args.put( CommonParams.SORT, "val_s1 asc" );
-    assertQ("with sort param [asc]", req
+    assertQ(req("q", "title:test", "sort","val_s1 asc")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             ,"//result/doc[2]/int[@name='id'][.='11']"
             ,"//result/doc[3]/int[@name='id'][.='12']"
             );
 
-    args.put( CommonParams.SORT, "val_s1 desc" );
-    assertQ("with sort param [desc]", req
+    assertQ(req("q", "title:test", "sort","val_s1 desc")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
             ,"//result/doc[2]/int[@name='id'][.='11']"
@@ -79,25 +71,23 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             );
     
     // Make sure score parsing works
-    args.put( CommonParams.SORT, "score desc" );
-    assertQ("with sort param [desc]", req,"//*[@numFound='3']" );
+    assertQ(req("q", "title:test", "sort","score desc")
+        ,"//*[@numFound='3']"
+    );
 
-    args.put( CommonParams.SORT, "score asc" );
-    assertQ("with sort param [desc]", req,"//*[@numFound='3']" );
+    assertQ(req("q", "title:test", "sort","score asc")
+        ,"//*[@numFound='3']"
+    );
     
     // Using legacy ';' param
-    args.remove( CommonParams.SORT );
-    args.put( QueryParsing.DEFTYPE, "lucenePlusSort" );
-    args.put( CommonParams.Q, "title:test; val_s1 desc" );
-    assertQ("with sort param [desc]", req
+    assertQ(req("q", "title:test; val_s1 desc", "defType","lucenePlusSort")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
             ,"//result/doc[2]/int[@name='id'][.='11']"
             ,"//result/doc[3]/int[@name='id'][.='10']"
             );
 
-    args.put( CommonParams.Q, "title:test; val_s1 asc" );
-    assertQ("with sort param [asc]", req
+    assertQ(req("q", "title:test; val_s1 asc", "defType","lucenePlusSort")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             ,"//result/doc[2]/int[@name='id'][.='11']"
