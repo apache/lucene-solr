@@ -55,6 +55,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.ZkContainer;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -68,6 +69,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.TestHarness;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -686,7 +688,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static void deleteCore() {
     log.info("###deleteCore" );
-    if (h != null) { h.close(); }
+    if (h != null) {
+      // If the test case set up Zk, it should still have it as available,
+      // otherwise the core close will just be unnecessarily delayed.
+      CoreContainer cc = h.getCoreContainer();
+      if (! cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+        try {
+          cc.getZkController().getZkClient().exists("/", false);
+        } catch (KeeperException e) {
+          log.error("Testing connectivity to ZK by checking for root path failed", e);
+          fail("Trying to tear down a ZK aware core container with ZK not reachable");
+        } catch (InterruptedException ignored) {}
+      }
+
+      h.close();
+    }
 
     if (factoryProp == null) {
       System.clearProperty("solr.directoryFactory");

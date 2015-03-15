@@ -147,6 +147,8 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void azt_afterClass() throws Exception {
+    deleteCore();
+
     System.clearProperty("zkHost");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
