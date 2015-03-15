@@ -91,11 +91,13 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
         ,"//result/doc[2]/int[@name='id'][.='43']");
     
     params.set(CommonParams.Q, "id:44");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
 
     // test MoreLikeThis debug
     params.set(CommonParams.DEBUG_QUERY, "true");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford",mltreq
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
@@ -106,11 +108,13 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     // test that qparser plugins work
     params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
 
     params.set(CommonParams.Q, "id:42");
     params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/int[@name='id'][.='43']"
         ,"//result/doc[2]/int[@name='id'][.='46']");
@@ -119,12 +123,14 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     // test that qparser plugins work w/ the MoreLikeThisHandler
     params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.Q, "{!field f=id}44");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
 
     // test that debugging works (test for MoreLikeThis*Handler*)
     params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.DEBUG_QUERY, "true");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']"
         ,"//lst[@name='debug']/lst[@name='explain']"
@@ -134,5 +140,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     // String response = h.query(mltreq);
     // System.out.println(response);
 
+    mltreq.close();
   }
 }
