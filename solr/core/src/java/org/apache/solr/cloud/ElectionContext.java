@@ -402,7 +402,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                                                     120,
                                                     coreNodeName);
               zkController.ensureReplicaInLeaderInitiatedRecovery(
-                  collection, shardId, coreNodeProps.getCoreUrl(), coreNodeProps, false);
+                  collection, shardId, coreNodeProps, false, coreNodeName);
               
               ExecutorService executor = cc.getUpdateShardHandler().getUpdateExecutor();
               executor.execute(lirThread);

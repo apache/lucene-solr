@@ -19,8 +19,10 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CloudConfig;
@@ -243,6 +245,65 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
   }
+
+  public void testEnsureReplicaInLeaderInitiatedRecovery() throws Exception  {
+    String zkDir = createTempDir("testEnsureReplicaInLeaderInitiatedRecovery").toFile().getAbsolutePath();
+    CoreContainer cc = null;
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      cc = getCoreContainer();
+      ZkController zkController = null;
+
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, new CurrentCoreDescriptorProvider() {
+
+          @Override
+          public List<CoreDescriptor> getCurrentDescriptors() {
+            // do nothing
+            return null;
+          }
+        });
+        HashMap<String, Object> propMap = new HashMap<>();
+        propMap.put(ZkStateReader.BASE_URL_PROP, "http://127.0.0.1:8983/solr");
+        propMap.put(ZkStateReader.CORE_NAME_PROP, "replica1");
+        propMap.put(ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr");
+        Replica replica = new Replica("replica1", propMap);
+        try {
+          // this method doesn't throw exception when node isn't leader
+          zkController.ensureReplicaInLeaderInitiatedRecovery("c1", "shard1",
+              new ZkCoreNodeProps(replica), false, "non_existent_leader");
+          fail("ZkController should not write LIR state for node which is not leader");
+        } catch (Exception e) {
+          assertNull("ZkController should not write LIR state for node which is not leader",
+              zkController.getLeaderInitiatedRecoveryState("c1", "shard1", "replica1"));
+        }
+      } finally {
+        if (zkController != null)
+          zkController.close();
+      }
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+      server.shutdown();
+    }
+  }
+
+  /*
+  Test that:
+  1) LIR state to 'down' is not set unless publishing node is a leader
+    1a) Test that leader can publish when LIR node already exists in zk
+    1b) Test that leader can publish when LIR node does not exist
+  2) LIR state to 'active' or 'recovery' can be set regardless of whether publishing
+    node is leader or not
+   */
 
   private CoreContainer getCoreContainer() {
     return new MockCoreContainer();

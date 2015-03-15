@@ -146,7 +146,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String replicaUrl = replicaCoreNodeProps.getCoreUrl();
 
     assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
-    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaUrl, replicaCoreNodeProps, false));
+    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaCoreNodeProps, false, leader.getName()));
     assertTrue(zkController.isReplicaInRecoveryHandling(replicaUrl));
     Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
     assertNotNull(lirStateMap);
