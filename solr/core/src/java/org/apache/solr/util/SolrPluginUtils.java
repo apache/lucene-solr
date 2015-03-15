@@ -134,9 +134,9 @@ public class SolrPluginUtils {
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
 
-    List<String> paramNames =null;
+    List<String> paramNames = null;
     String useParams = req.getParams().get(RequestParams.USEPARAM);
-    if(useParams!=null && !useParams.isEmpty()){
+    if (useParams != null && !useParams.isEmpty()) {
       // now that we have expanded the request macro useParams with the actual values
       // it makes no sense to keep it visible now on.
       // distrib request sends all params to the nodes down the line and
@@ -144,25 +144,25 @@ public class SolrPluginUtils {
       // which is not desirable. At the same time, because we send the useParams
       // value as an empty string to other nodes we get the desired benefit of
       // overriding the useParams specified in the requestHandler directly
-      req.setParams(SolrParams.wrapDefaults(maskUseParams,req.getParams()));
+      req.setParams(SolrParams.wrapDefaults(maskUseParams, req.getParams()));
     }
-    if(useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
-    if(useParams !=null && !useParams.isEmpty()) paramNames = StrUtils.splitSmart(useParams, ',');
-    if(paramNames != null){
-        for (String name : paramNames) {
-          SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
-          if(requestParams !=null){
-            defaults = SolrParams.wrapDefaults(requestParams , defaults);
-          }
+    if (useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
+    if (useParams != null && !useParams.isEmpty()) paramNames = StrUtils.splitSmart(useParams, ',');
+    if (paramNames != null) {
+      for (String name : paramNames) {
+        SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
+        if (requestParams != null) {
+          defaults = SolrParams.wrapDefaults(requestParams, defaults);
         }
       }
+    }
 
-      SolrParams p = req.getParams();
-      p = SolrParams.wrapDefaults(p, defaults);
-      p = SolrParams.wrapAppended(p, appends);
-      p = SolrParams.wrapDefaults(invariants, p);
+    SolrParams p = req.getParams();
+    p = SolrParams.wrapDefaults(p, defaults);
+    p = SolrParams.wrapAppended(p, appends);
+    p = SolrParams.wrapDefaults(invariants, p);
 
-      req.setParams(p);
+    req.setParams(p);
   }
 
 
