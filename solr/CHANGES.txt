@@ -90,6 +90,21 @@ New Features
 * SOLR-7155,SOLR-7201: All SolrClient methods now take an optional 'collection' argument
   (Alan Woodward, Shawn Heisey)
 
+* SOLR-6359: Allow number of logs and records kept by UpdateLog to be configured
+    (Ramkumar Aiyengar)
+
+* SOLR-7189: Allow DIH to extract content from embedded documents via Tika.
+    (Tim Allison via shalin)
+
+* SOLR-6841: Visualize lucene segment information in Admin UI.
+    (Alexey Kozhemiakin, Michal Bienkowski, hossman, Shawn Heisey, Varun Thacker via shalin)
+
+* SOLR-5846: EnumField supports DocValues functionality. (Elran Dvir, shalin)
+
+* SOLR-4044: CloudSolrClient.connect() throws a more useful exception if the
+    cluster is not ready, and can now take an optional timeout argument to wait
+    for the cluster. (Alan Woodward, shalin, yonik, Mark Miller, Vitaliy Zhovtyuk)
+
 * SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
 * SOLR-7126: Secure loading of runtime external jars (Noble Paul)
