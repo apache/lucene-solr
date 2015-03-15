@@ -872,9 +872,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             sendRecoveryCommand =
                 zkController.ensureReplicaInLeaderInitiatedRecovery(collection,
                     shardId,
-                    replicaUrl,
                     stdNode.getNodeProps(),
-                    false);
+                    false,
+                    leaderCoreNodeName);
 
             // we want to try more than once, ~10 minutes
             if (sendRecoveryCommand) {

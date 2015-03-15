@@ -236,6 +236,9 @@ Bug Fixes
 
 * SOLR-6892: Improve the way update processors are used and make it simpler (Noble Paul)
 
+* SOLR-7109: Indexing threads stuck during network partition can put leader into down state.
+  (Mark Miller, Anshum Gupta, Ramkumar Aiyengar, yonik, shalin)
+
 Optimizations
 ----------------------
 
