@@ -29,12 +29,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct", "Lucene3x"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
 @Monster("very slow")
+@SuppressSysoutChecks(bugUrl = "Stuff gets printed")
 public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes IndexWriter.MAX_DOCS docs with a fixed binary field
