@@ -170,7 +170,7 @@ public final class ZkController {
       return true;
     }
   }
-  private final Map<ContextKey, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<>());
+  private final Map<ContextKey, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<ContextKey, ElectionContext>());
   
   private final SolrZkClient zkClient;
   private final ZkCmdExecutor cmdExecutor;
