@@ -97,7 +97,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     //System.out.println("MRMP: findMerges sis=" + segmentInfos + " eligible=" + eligibleSegments);
     MergeSpecification mergeSpec = null;
-    if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && eligibleSegments.get(0).hasDeletions())) {
+    if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && isMerged(segmentInfos, eligibleSegments.get(0), writer) == false)) {
       mergeSpec = new MergeSpecification();
       // Already shuffled having come out of a set but
       // shuffle again for good measure:
