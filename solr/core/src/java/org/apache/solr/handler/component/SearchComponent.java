@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -134,6 +135,7 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
     map.put(HighlightComponent.COMPONENT_NAME, HighlightComponent.class);
     map.put(QueryComponent.COMPONENT_NAME, QueryComponent.class);
     map.put(FacetComponent.COMPONENT_NAME, FacetComponent.class);
+    map.put(FacetModule.COMPONENT_NAME, FacetModule.class);
     map.put(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class);
     map.put(StatsComponent.COMPONENT_NAME, StatsComponent.class);
     map.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);

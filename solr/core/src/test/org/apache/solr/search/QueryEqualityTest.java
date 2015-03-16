@@ -932,5 +932,19 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
 
+  public void testAggs() throws Exception {
+    assertFuncEquals("agg(avg(foo_i))", "agg(avg(foo_i))");
+    assertFuncEquals("agg(avg(foo_i))", "agg_avg(foo_i)");
+    assertFuncEquals("agg_min(foo_i)", "agg(min(foo_i))");
+    assertFuncEquals("agg_max(foo_i)", "agg(max(foo_i))");
+
+    assertFuncEquals("agg_avg(foo_i)", "agg_avg(foo_i)");
+    assertFuncEquals("agg_sum(foo_i)", "agg_sum(foo_i)");
+    assertFuncEquals("agg_count()", "agg_count()");
+    assertFuncEquals("agg_unique(foo_i)", "agg_unique(foo_i)");
+    assertFuncEquals("agg_sumsq(foo_i)", "agg_sumsq(foo_i)");
+    // assertFuncEquals("agg_stdev(foo_i)", "agg_stdev(foo_i)");
+    // assertFuncEquals("agg_multistat(foo_i)", "agg_multistat(foo_i)");
+  }
 
 }

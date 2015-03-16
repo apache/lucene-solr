@@ -97,6 +97,13 @@ public interface SolrQueryRequest {
    * @param params The new set of parameter
    */
   public void forward(String handler, SolrParams params,  SolrQueryResponse rsp);
+
+  /** Returns any associated JSON (or null if none) in deserialized generic form.
+   * Java classes used to represent the JSON are as follows: Map, List, String, Long, Double, Boolean
+   */
+  public Map<String,Object> getJSON();
+
+  public void setJSON(Map<String,Object> json);
 }
 
 

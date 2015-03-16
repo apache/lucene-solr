@@ -25,6 +25,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -136,7 +137,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     TimerContext timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
+      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
       req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
