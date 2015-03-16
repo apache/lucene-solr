@@ -57,6 +57,11 @@ public class ModifiableSolrParams extends SolrParams
     }
   }
 
+  public Map<String,String[]> getMap() {
+    return vals;
+  }
+
+
   //----------------------------------------------------------------
   //----------------------------------------------------------------
 

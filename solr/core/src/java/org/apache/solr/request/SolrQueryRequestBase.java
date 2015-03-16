@@ -50,6 +50,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected SolrParams params;
   protected Map<Object,Object> context;
   protected Iterable<ContentStream> streams;
+  protected Map<String,Object> json;
 
   private final RTimer requestTimer;
 
@@ -170,6 +171,16 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
       getCore().getRequestHandler(handler).handleRequest(r, rsp);
     }
 
+  }
+
+  @Override
+  public Map<String, Object> getJSON() {
+    return json;
+  }
+
+  @Override
+  public void setJSON(Map<String, Object> json) {
+    this.json = json;
   }
 
 }

@@ -43,6 +43,10 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
     super();
   }
 
+  public SimpleOrderedMap(int sz) {
+    super(sz);
+  }
+
   /**
    * Creates an instance backed by an explicitly specified list of
    * pairwise names/values.

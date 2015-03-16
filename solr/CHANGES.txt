@@ -166,6 +166,15 @@ New Features
 * SOLR-7218: lucene/solr query syntax to give any query clause a constant score.
   General Form: <clause>^=<constant_score>
   Example: (color:blue color:green)^=2.0 text:shoes
+  (yonik)
+
+* SOLR-7214: New Facet module with a JSON API, facet functions, aggregations, and analytics.
+  Any facet type can have sub facets, and facets can be sorted by arbitrary aggregation functions.
+  Examples:
+    json.facet={x:'avg(price)', y:'unique(color)'}
+    json.facet={count1:{query:"price:[10 TO 20]"}, count2:{query:"color:blue AND popularity:[0 TO 50]"} }
+    json.facet={categories:{terms:{field:cat, sort:"x desc", facet:{x:"avg(price)", y:"sum(price)"}}}}
+  (yonik)
 
 
 Bug Fixes
