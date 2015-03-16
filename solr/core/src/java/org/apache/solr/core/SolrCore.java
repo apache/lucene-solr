@@ -77,6 +77,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -129,7 +130,9 @@ import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -176,6 +179,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final long startTime;
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
+  private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this);
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private IndexDeletionPolicyWrapper solrDelPolicy;
@@ -796,6 +800,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
+      updateProcessors.init(Collections.EMPTY_MAP, this);
 
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
@@ -993,7 +998,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
               new DistributedUpdateProcessorFactory(),
               new RunUpdateProcessorFactory()
       };
-      def = new UpdateRequestProcessorChain(factories, this);
+      def = new UpdateRequestProcessorChain(Arrays.asList(factories), this);
     }
     map.put(null, def);
     map.put("", def);
@@ -1015,6 +1020,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           "unknown UpdateRequestProcessorChain: "+name );
     }
     return chain;
+  }
+
+  public UpdateRequestProcessorChain getUpdateProcessorChain(SolrParams params) {
+    String chainName = params.get(UpdateParams.UPDATE_CHAIN);
+    UpdateRequestProcessorChain defaultUrp = getUpdateProcessingChain(chainName);
+    ProcessorInfo processorInfo = new ProcessorInfo(params);
+    if (processorInfo.isEmpty()) return defaultUrp;
+    return UpdateRequestProcessorChain.constructChain(defaultUrp, processorInfo, this);
+  }
+
+  public PluginBag<UpdateRequestProcessorFactory> getUpdateProcessors() {
+    return updateProcessors;
   }
 
   // this core current usage count

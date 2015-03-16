@@ -229,7 +229,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
   public static void indexMap(SolrQueryRequest req, SolrQueryResponse rsp, Map<String, Object> doc) throws IOException {
     SolrInputDocument solrDoc = new SolrInputDocument();
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(),e.getValue());
-    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(req.getParams().get(UpdateParams.UPDATE_CHAIN));
+    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = solrDoc;

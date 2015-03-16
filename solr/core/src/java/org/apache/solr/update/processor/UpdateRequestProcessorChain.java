@@ -17,6 +17,9 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -28,8 +31,12 @@ import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Manages a chain of UpdateRequestProcessorFactories.
@@ -87,7 +94,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 {
   public final static Logger log = LoggerFactory.getLogger(UpdateRequestProcessorChain.class);
 
-  private UpdateRequestProcessorFactory[] chain;
+  private List<UpdateRequestProcessorFactory> chain;
   private final SolrCore solrCore;
 
   public UpdateRequestProcessorChain(SolrCore solrCore) {
@@ -144,7 +151,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     }
     if (0 <= runIndex && 0 == numDistrib) {
       // by default, add distrib processor immediately before run
-      DistributedUpdateProcessorFactory distrib 
+      DistributedUpdateProcessorFactory distrib
         = new DistributedUpdateProcessorFactory();
       distrib.init(new NamedList());
       list.add(runIndex, distrib);
@@ -152,14 +159,19 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       log.info("inserting DistributedUpdateProcessorFactory into " + infomsg);
     }
 
-    chain = list.toArray(new UpdateRequestProcessorFactory[list.size()]); 
+    chain = list;
+    ProcessorInfo processorInfo = new ProcessorInfo(new MapSolrParams(info.attributes));
+    if (processorInfo.isEmpty()) return;
+    UpdateRequestProcessorChain newChain = constructChain(this, processorInfo, solrCore);
+    chain = newChain.chain;
+
   }
 
   /**
-   * Creates a chain backed directly by the specified array. Modifications to 
+   * Creates a chain backed directly by the specified list. Modifications to
    * the array will affect future calls to <code>createProcessor</code>
    */
-  public UpdateRequestProcessorChain( UpdateRequestProcessorFactory[] chain, 
+  public UpdateRequestProcessorChain(List<UpdateRequestProcessorFactory> chain,
                                       SolrCore solrCore) {
     this.chain = chain;
     this.solrCore =  solrCore;
@@ -187,8 +199,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     final boolean skipToDistrib = distribPhase != null;
     boolean afterDistrib = true;  // we iterate backwards, so true to start
 
-    for (int i = chain.length-1; i>=0; i--) {
-      UpdateRequestProcessorFactory factory = chain[i];
+    for (int i = chain.size() - 1; i >= 0; i--) {
+      UpdateRequestProcessorFactory factory = chain.get(i);
 
       if (skipToDistrib) {
         if (afterDistrib) {
@@ -208,13 +220,101 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     return last;
   }
 
+
+  @Deprecated
+  public UpdateRequestProcessorFactory[] getFactories() {
+    return chain.toArray(new UpdateRequestProcessorFactory[0]);
+  }
+
   /**
-   * Returns the underlying array of factories used in this chain.  
-   * Modifications to the array will affect future calls to 
+   * Returns the underlying array of factories used in this chain.
+   * Modifications to the array will affect future calls to
    * <code>createProcessor</code>
    */
-  public UpdateRequestProcessorFactory[] getFactories() {
+  public List<UpdateRequestProcessorFactory> getProcessors() {
     return chain;
+  }
+
+  public static UpdateRequestProcessorChain constructChain(UpdateRequestProcessorChain defaultUrp,
+                                                           ProcessorInfo processorInfo, SolrCore core) {
+    LinkedList<UpdateRequestProcessorFactory> urps = new LinkedList(defaultUrp.chain);
+    List<UpdateRequestProcessorFactory> p = getReqProcessors(processorInfo.processor, core);
+    List<UpdateRequestProcessorFactory> post = getReqProcessors(processorInfo.postProcessor, core);
+    //processor are tried to be inserted before LogUpdateprocessor+DistributedUpdateProcessor
+    insertBefore(urps, p, DistributedUpdateProcessorFactory.class, 0);
+    //port-processor is tried to be inserted before RunUpdateProcessor
+    insertBefore(urps, post, RunUpdateProcessorFactory.class, urps.size() - 1);
+    UpdateRequestProcessorChain result = new UpdateRequestProcessorChain(urps, core);
+    if (log.isInfoEnabled()) {
+      ArrayList<String> names = new ArrayList<>(urps.size());
+      for (UpdateRequestProcessorFactory urp : urps) names.add(urp.getClass().getSimpleName());
+      log.info("New dynamic chain constructed : " + StrUtils.join(names, '>'));
+    }
+    return result;
+  }
+
+  private static void insertBefore(LinkedList<UpdateRequestProcessorFactory> urps, List<UpdateRequestProcessorFactory> newFactories, Class klas, int idx) {
+    if (newFactories.isEmpty()) return;
+    for (int i = 0; i < urps.size(); i++) {
+      if (klas.isInstance(urps.get(i))) {
+        idx = i;
+        if (klas == DistributedUpdateProcessorFactory.class) {
+          if (i > 0 && urps.get(i - 1) instanceof LogUpdateProcessorFactory) {
+            idx = i - 1;
+          }
+        }
+        break;
+      }
+    }
+    for (int i = newFactories.size() - 1; 0 <= i; i--) urps.add(idx, newFactories.get(i));
+  }
+
+  static List<UpdateRequestProcessorFactory> getReqProcessors(String processor, SolrCore core) {
+    if (processor == null) return Collections.EMPTY_LIST;
+    List<UpdateRequestProcessorFactory> result = new ArrayList<>();
+    if (processor != null) {
+      List<String> names = StrUtils.splitSmart(processor, ',');
+      List<UpdateRequestProcessorFactory> l = new ArrayList<>(names.size());
+      for (String s : names) {
+        s = s.trim();
+        if (s.isEmpty()) continue;
+        UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
+        if (p == null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+        result.add(p);
+      }
+    }
+    return result;
+  }
+
+  public static class ProcessorInfo {
+    public final String processor, postProcessor;
+
+    public ProcessorInfo(SolrParams params) {
+      processor = params.get("processor");
+      postProcessor = params.get("post-processor");
+    }
+
+    public boolean isEmpty() {
+      return processor == null && postProcessor == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 0;
+      if (processor != null) hash += processor.hashCode();
+      if (postProcessor != null) hash += postProcessor.hashCode();
+      return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof ProcessorInfo)) return false;
+      ProcessorInfo that = (ProcessorInfo) obj;
+
+      return Objects.equals(this.processor, that.processor) &&
+          Objects.equals(this.postProcessor, that.postProcessor);
+    }
   }
 
 }

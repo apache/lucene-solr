@@ -65,6 +65,7 @@ public class PluginInfo implements MapSerializable{
     LinkedHashMap m = new LinkedHashMap<>(map);
     initArgs = new NamedList();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
+      if (NAME.equals(entry.getKey()) || CLASS_NAME.equals(entry.getKey())) continue;
       Object value = entry.getValue();
       if (value instanceof Map) value = new NamedList((Map) value);
       initArgs.add(entry.getKey(), value);

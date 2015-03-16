@@ -117,7 +117,7 @@ public class CloudUtil {
             "/" + key, null, null, true));
       }
     } catch (KeeperException.NoNodeException e) {
-      log.warn("Error fetching key names");
+      log.info("Error fetching key names");
       return Collections.EMPTY_MAP;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
