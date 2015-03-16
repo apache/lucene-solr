@@ -388,6 +388,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
     w.forceMerge(1);
     IndexReader r = w.getReader();
+    assertFalse(r.hasDeletions());
 
     // Confusingly, norms should exist, and should all be 0, even though we deleted all docs that had the field "content".  They should not
     // be undead:
