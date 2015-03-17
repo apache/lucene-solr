@@ -135,7 +135,7 @@ public class ConfigOverlay implements MapSerializable{
   private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
     LinkedList<String> hierarchy = new LinkedList<>();
     if(!isEditableProp(propName, isXPath,hierarchy)) {
-      if(failOnError) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, MessageFormat.format( NOT_EDITABLE,propName));
+      if(failOnError) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, StrUtils.formatString( NOT_EDITABLE,propName));
       else return null;
     }
     return hierarchy;

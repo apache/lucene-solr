@@ -34,6 +34,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.SimplePostTool;
@@ -47,7 +48,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +146,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
       return;
     }
-    fail(MessageFormat.format("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
+    fail(StrUtils.formatString("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
         i, count, System.currentTimeMillis() - start, getAsString(map)));
   }
 

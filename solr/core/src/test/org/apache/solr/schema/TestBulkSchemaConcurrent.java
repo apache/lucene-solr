@@ -18,7 +18,6 @@ package org.apache.solr.schema;
  */
 
 
-import static java.text.MessageFormat.format;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 
@@ -36,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
@@ -173,17 +173,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
         errmessages.clear();
         Map m = getObj(harness, aField, "fields");
-        if (m == null) errmessages.add(format("field {0} not created", aField));
+        if (m == null) errmessages.add(StrUtils.formatString("field {0} not created", aField));
         
         m = getObj(harness, dynamicFldName, "dynamicFields");
-        if (m == null) errmessages.add(format("dynamic field {0} not created", dynamicFldName));
-        
+        if (m == null) errmessages.add(StrUtils.formatString("dynamic field {0} not created", dynamicFldName));
+
         List l = getSourceCopyFields(harness, aField);
         if (!checkCopyField(l, aField, dynamicCopyFldDest))
-          errmessages.add(format("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
+          errmessages.add(StrUtils.formatString("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
         
         m = getObj(harness, newFieldTypeName, "fieldTypes");
-        if (m == null) errmessages.add(format("new type {0}  not created", newFieldTypeName));
+        if (m == null) errmessages.add(StrUtils.formatString("new type {0}  not created", newFieldTypeName));
         
         if (errmessages.isEmpty()) break;
         
@@ -243,17 +243,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
         errmessages.clear();
         Map m = getObj(harness, aField, "fields");
-        if (m == null) errmessages.add(format("field {0} no longer present", aField));
+        if (m == null) errmessages.add(StrUtils.formatString("field {0} no longer present", aField));
 
         m = getObj(harness, dynamicFldName, "dynamicFields");
-        if (m == null) errmessages.add(format("dynamic field {0} no longer present", dynamicFldName));
+        if (m == null) errmessages.add(StrUtils.formatString("dynamic field {0} no longer present", dynamicFldName));
 
         List l = getSourceCopyFields(harness, aField);
         if (!checkCopyField(l, aField, dynamicCopyFldDest))
-          errmessages.add(format("CopyField source={0},dest={1} no longer present", aField, dynamicCopyFldDest));
+          errmessages.add(StrUtils.formatString("CopyField source={0},dest={1} no longer present", aField, dynamicCopyFldDest));
 
         m = getObj(harness, newFieldTypeName, "fieldTypes");
-        if (m == null) errmessages.add(format("new type {0} no longer present", newFieldTypeName));
+        if (m == null) errmessages.add(StrUtils.formatString("new type {0} no longer present", newFieldTypeName));
 
         if (errmessages.isEmpty()) break;
 
@@ -305,17 +305,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
         errmessages.clear();
         Map m = getObj(harness, aField, "fields");
-        if (m != null) errmessages.add(format("field {0} still exists", aField));
+        if (m != null) errmessages.add(StrUtils.formatString("field {0} still exists", aField));
 
         m = getObj(harness, dynamicFldName, "dynamicFields");
-        if (m != null) errmessages.add(format("dynamic field {0} still exists", dynamicFldName));
+        if (m != null) errmessages.add(StrUtils.formatString("dynamic field {0} still exists", dynamicFldName));
 
         List l = getSourceCopyFields(harness, aField);
         if (checkCopyField(l, aField, dynamicCopyFldDest))
-          errmessages.add(format("CopyField source={0},dest={1} still exists", aField, dynamicCopyFldDest));
+          errmessages.add(StrUtils.formatString("CopyField source={0},dest={1} still exists", aField, dynamicCopyFldDest));
 
         m = getObj(harness, newFieldTypeName, "fieldTypes");
-        if (m != null) errmessages.add(format("new type {0} still exists", newFieldTypeName));
+        if (m != null) errmessages.add(StrUtils.formatString("new type {0} still exists", newFieldTypeName));
 
         if (errmessages.isEmpty()) break;
 

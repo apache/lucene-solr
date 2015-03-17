@@ -38,6 +38,7 @@ import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
 import org.apache.lucene.search.join.BitDocIdSetFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -335,9 +336,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     String children = createChildren(parentType, 0, depth, parentData, holder);
     
     String rootFields = createFieldsList(FIELD_ID, "desc", "type_s");
-    String rootEntity = MessageFormat.format(rootEntityTemplate, parentType, "SELECT * FROM " + parentType, rootFields, children);
+    String rootEntity = StrUtils.formatString(rootEntityTemplate, parentType, "SELECT * FROM " + parentType, rootFields, children);
 
-    String config = MessageFormat.format(dataConfigTemplate, rootEntity);
+    String config = StrUtils.formatString(dataConfigTemplate, rootEntity);
     return config;
   }
   
@@ -398,7 +399,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
       List<Hierarchy> childData = createMockedIterator(childName, parentData, holder);
       
       String subChildren = createChildren(childName, currentLevel + 1, maxLevel, childData, holder);
-      String child = MessageFormat.format(childEntityTemplate, childName, select, fields, subChildren);
+      String child = StrUtils.formatString(childEntityTemplate, childName, select, fields, subChildren);
       builder.append(child);
       builder.append('\n');
     }

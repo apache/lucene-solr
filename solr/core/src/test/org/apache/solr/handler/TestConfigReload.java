@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -136,7 +137,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
       if(succeeded.size() == urls.size()) break;
       succeeded.clear();
     }
-    assertEquals(MessageFormat.format("tried these servers {0} succeeded only in {1} ", urls,succeeded) , urls.size(), succeeded.size());
+    assertEquals(StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded) , urls.size(), succeeded.size());
   }
 
   private  Map getAsMap(String uri) throws Exception {
