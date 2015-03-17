@@ -55,7 +55,6 @@ import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
@@ -253,7 +252,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
             if (op.hasError()) break;
             for (String s : name) {
               if (params.getParams(s) == null) {
-                op.addError(MessageFormat.format("can't delete . No such params ''{0}'' exist", s));
+                op.addError(StrUtils.formatString("can't delete . No such params ''{0}'' exist", s));
               }
               params = params.setParams(s, null);
             }
@@ -303,7 +302,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
           default: {
             List<String> pcs = StrUtils.splitSmart(op.name.toLowerCase(Locale.ROOT), '-');
             if (pcs.size() != 2) {
-              op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+              op.addError(StrUtils.formatString("Unknown operation ''{0}'' ", op.name));
             } else {
               String prefix = pcs.get(0);
               String name = pcs.get(1);
@@ -315,7 +314,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                   overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
                 }
               } else {
-                op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+                op.addError(StrUtils.formatString("Unknown operation ''{0}'' ", op.name));
               }
             }
           }
@@ -348,7 +347,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       if (overlay.getNamedPlugins(typ).containsKey(name)) {
         return overlay.deleteNamedPlugin(name, typ);
       } else {
-        op.addError(MessageFormat.format("NO such {0} ''{1}'' ", typ, name));
+        op.addError(StrUtils.formatString("NO such {0} ''{1}'' ", typ, name));
         return overlay;
       }
     }
@@ -363,7 +362,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (overlay.getNamedPlugins(info.tag).containsKey(name)) {
         if (isCeate) {
-          op.addError(MessageFormat.format(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.tag.toLowerCase(Locale.ROOT)));
+          op.addError(StrUtils.formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.tag.toLowerCase(Locale.ROOT)));
           return overlay;
         } else {
           return overlay.addNamedPlugin(op.getDataMap(), info.tag);
@@ -372,7 +371,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
         if (isCeate) {
           return overlay.addNamedPlugin(op.getDataMap(), info.tag);
         } else {
-          op.addError(MessageFormat.format(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, "create-" + info.tag.toLowerCase(Locale.ROOT)));
+          op.addError(StrUtils.formatString(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, "create-" + info.tag.toLowerCase(Locale.ROOT)));
           return overlay;
         }
       }
@@ -409,7 +408,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       if (op.hasError()) return overlay;
       for (String o : name) {
         if (!overlay.getUserProps().containsKey(o)) {
-          op.addError(format("No such property ''{0}''", name));
+          op.addError(StrUtils.formatString("No such property ''{0}''", name));
         } else {
           overlay = overlay.unsetUserProperty(o);
         }
@@ -424,7 +423,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
       for (String o : name) {
         if (!ConfigOverlay.isEditableProp(o, false, null)) {
-          op.addError(format(NOT_EDITABLE, name));
+          op.addError(StrUtils.formatString(NOT_EDITABLE, name));
         } else {
           overlay = overlay.unsetProperty(o);
         }
@@ -439,7 +438,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
         String name = e.getKey();
         Object val = e.getValue();
         if (!ConfigOverlay.isEditableProp(name, false, null)) {
-          op.addError(format(NOT_EDITABLE, name));
+          op.addError(StrUtils.formatString(NOT_EDITABLE, name));
           continue;
         }
         overlay = overlay.setProperty(name, val);
@@ -460,7 +459,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
           c == '.'
           ) continue;
       else {
-        return MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
+        return StrUtils.formatString("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
       }
     }
     return null;

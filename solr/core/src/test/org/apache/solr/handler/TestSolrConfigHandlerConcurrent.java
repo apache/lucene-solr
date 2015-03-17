@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -184,19 +185,19 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {
-          errmessages.add(MessageFormat.format( "overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
+          errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
           continue;
         }
 
 
         Object o = getObjectByPath(m, true, asList("query", cacheName, "size"));
-        if(!val1.equals(o)) errmessages.add(MessageFormat.format("'size' property not set, expected = {0}, actual {1}", val1,o));
+        if(!val1.equals(o)) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "initialSize"));
-        if(!val2.equals(o)) errmessages.add(MessageFormat.format("'initialSize' property not set, expected = {0}, actual {1}", val2,o));
+        if(!val2.equals(o)) errmessages.add(StrUtils.formatString("'initialSize' property not set, expected = {0}, actual {1}", val2, o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "autowarmCount"));
-        if(!val3.equals(o)) errmessages.add(MessageFormat.format("'autowarmCount' property not set, expected = {0}, actual {1}", val3,o));
+        if(!val3.equals(o)) errmessages.add(StrUtils.formatString("'autowarmCount' property not set, expected = {0}, actual {1}", val3, o));
         if(errmessages.isEmpty()) break;
       }
       if(!errmessages.isEmpty()) {

@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
@@ -415,7 +416,7 @@ public class PluginBag<T> implements AutoCloseable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No public keys are available in ZK to verify signature for runtime lib  " + name);
         }
       } else if (sig == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, MessageFormat.format("runtimelib {0} should be signed with one of the keys in ZK /keys/exe ", name));
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString("runtimelib {0} should be signed with one of the keys in ZK /keys/exe ", name));
       }
 
       try {

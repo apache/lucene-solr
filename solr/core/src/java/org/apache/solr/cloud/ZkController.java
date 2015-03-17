@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
@@ -2178,8 +2179,8 @@ public final class ZkController {
               log.warn("could not get stat");
             }
 
-            log.info(MessageFormat.format(errMsg, resourceLocation, znodeVersion));
-            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg, resourceLocation, znodeVersion) + ", retry.");
+            log.info(StrUtils.formatString(errMsg, resourceLocation, znodeVersion));
+            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, StrUtils.formatString(errMsg, resourceLocation, znodeVersion) + ", retry.");
           }
         }
       }
@@ -2193,8 +2194,8 @@ public final class ZkController {
         log.error(e.getMessage());
 
       }
-      log.info(MessageFormat.format(errMsg + " zkVersion= " + v, resourceLocation, znodeVersion));
-      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg, resourceLocation, znodeVersion) + ", retry.");
+      log.info(StrUtils.formatString(errMsg + " zkVersion= " + v, resourceLocation, znodeVersion));
+      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, StrUtils.formatString(errMsg, resourceLocation, znodeVersion) + ", retry.");
     } catch (ResourceModifiedInZkException e) {
       throw e;
     } catch (Exception e) {

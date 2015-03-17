@@ -18,7 +18,6 @@ package org.apache.solr.schema;
  */
 
 
-import static java.text.MessageFormat.format;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getCopyFields;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 
@@ -36,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
@@ -182,17 +182,17 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
           && TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
         errmessages.clear();
         Map m = getObj(harness, aField, "fields");
-        if (m == null) errmessages.add(format("field {0} not created", aField));
+        if (m == null) errmessages.add(StrUtils.formatString("field {0} not created", aField));
         
         m = getObj(harness, dynamicFldName, "dynamicFields");
-        if (m == null) errmessages.add(format("dynamic field {0} not created", dynamicFldName));
+        if (m == null) errmessages.add(StrUtils.formatString("dynamic field {0} not created", dynamicFldName));
         
         List l = getCopyFields(harness, "a1");
         if (!checkCopyField(l, aField, dynamicCopyFldDest)) errmessages
-            .add(format("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
+            .add(StrUtils.formatString("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
         
         m = getObj(harness, "mystr", "fieldTypes");
-        if (m == null) errmessages.add(format("new type {}  not created", newFieldTypeName));
+        if (m == null) errmessages.add(StrUtils.formatString("new type {}  not created", newFieldTypeName));
         Thread.sleep(10);
       }
     } finally {

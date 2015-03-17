@@ -34,3 +34,7 @@ java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFiles
 
 @defaultMessage Use shuffle(List, Random) instead so that it can be reproduced
 java.util.Collections#shuffle(java.util.List)
+
+@defaultMessage Construct MessageFormat(String pattern, String locale) and then use the format(String,Object...) method
+java.text.MessageFormat#format(java.lang.String,java.lang.Object[])
+java.text.MessageFormat#<init>(java.lang.String)

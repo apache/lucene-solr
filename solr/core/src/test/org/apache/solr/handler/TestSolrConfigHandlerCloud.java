@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
@@ -266,7 +267,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   }
 
   public static void compareValues(Map result, Object expected, List<String> jsonPath) {
-    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
+    assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
         Objects.equals(expected, ConfigOverlay.getObjectByPath(result, false, jsonPath)));
   }
 

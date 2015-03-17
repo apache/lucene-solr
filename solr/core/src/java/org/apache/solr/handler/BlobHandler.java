@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
-import java.text.MessageFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +134,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(MessageFormat.format("inserting new blob {0} ,size {1}, md5 {2}", doc.get("id"), String.valueOf(payload.limit()), md5));
+        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get("id"), String.valueOf(payload.limit()), md5));
         indexMap(req, rsp, doc);
         log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
 
@@ -159,7 +158,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         } else {
           String q = "blobName:{0}";
           if (version != -1) q = "id:{0}/{1}";
-          QParser qparser = QParser.getParser(MessageFormat.format(q, blobName, version), "lucene", req);
+          QParser qparser = QParser.getParser(StrUtils.formatString(q, blobName, version), "lucene", req);
           final TopDocs docs = req.getSearcher().search(qparser.parse(), 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits > 0) {
             rsp.add(ReplicationHandler.FILE_STREAM, new SolrCore.RawWriter() {
@@ -181,7 +180,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
           } else {
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-                MessageFormat.format("Invalid combination of blobName {0} and version {1}", blobName, String.valueOf(version)));
+                StrUtils.formatString("Invalid combination of blobName {0} and version {1}", blobName, version));
           }
 
         }
@@ -196,7 +195,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
         req.forward(null,
             new MapSolrParams((Map) makeMap(
-                "q", MessageFormat.format(q, blobName, version),
+                "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
                 "sort", "version desc"))
             , rsp);
