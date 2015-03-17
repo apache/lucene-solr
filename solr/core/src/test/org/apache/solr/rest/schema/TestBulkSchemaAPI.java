@@ -18,15 +18,12 @@ package org.apache.solr.rest.schema;
  */
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
-import org.restlet.ext.servlet.ServerServlet;
 
 import java.io.File;
 import java.io.StringReader;
@@ -35,35 +32,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
 
   private static File tmpSolrHome;
-  private static File tmpConfDir;
-
-  private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
-
 
   @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
-
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
-        "/solr", true, extraServlets);
+        "/solr", true, null);
   }
 
   @After
@@ -81,7 +65,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   public void testMultipleAddFieldWithErrors() throws Exception {
 
-    String payload = SolrTestCaseJ4.json( "{\n" +
+    String payload = "{\n" +
         "    'add-field' : {\n" +
         "                 'name':'a1',\n" +
         "                 'type': 'string1',\n" +
@@ -93,10 +77,9 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                 'stored':true,\n" +
         "                 'indexed':true\n" +
         "                 }\n" +
-        "   \n" +
-        "    }");
+        "    }";
 
-    String response = restTestHarness.post("/schema?wt=json", payload);
+    String response = restTestHarness.post("/schema?wt=json", json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     List l = (List) map.get("errors");
 
@@ -111,6 +94,41 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
 
   public void testMultipleCommands() throws Exception{
+    RestTestHarness harness = restTestHarness;
+
+    Map m = getObj(harness, "wdf_nocase", "fields");
+    assertNotNull("'wdf_nocase' field does not exist in the schema", m);
+    
+    m = getObj(harness, "wdf_nocase", "fieldTypes");
+    assertNotNull("'wdf_nocase' field type does not exist in the schema", m);
+    
+    m = getObj(harness, "boolean", "fieldTypes");
+    assertNotNull("'boolean' field type does not exist in the schema", m);
+    assertNull(m.get("sortMissingFirst"));
+    assertTrue((Boolean)m.get("sortMissingLast"));
+    
+    m = getObj(harness, "name", "fields");
+    assertNotNull("'name' field does not exist in the schema", m);
+    assertEquals("nametext", m.get("type"));
+
+    m = getObj(harness, "bind", "fields");
+    assertNotNull("'bind' field does not exist in the schema", m);
+    assertEquals("boolean", m.get("type"));
+
+    m = getObj(harness, "attr_*", "dynamicFields");
+    assertNotNull("'attr_*' dynamic field does not exist in the schema", m);
+    assertEquals("text", m.get("type"));
+
+    List l = getSourceCopyFields(harness, "*_i");
+    Set s = new HashSet();
+    assertEquals(4, l.size());
+    s.add(((Map)l.get(0)).get("dest"));
+    s.add(((Map)l.get(1)).get("dest"));
+    s.add(((Map) l.get(2)).get("dest"));
+    s.add(((Map) l.get(3)).get("dest"));
+    assertTrue(s.contains("title"));
+    assertTrue(s.contains("*_s"));
+
     String payload = "{\n" +
         "          'add-field' : {\n" +
         "                       'name':'a1',\n" +
@@ -126,48 +144,85 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       },\n" +
         "          'add-dynamic-field' : {\n" +
         "                       'name' :'*_lol',\n" +
-        "                        'type':'string',\n" +
-        "                        'stored':true,\n" +
-        "                        'indexed':true\n" +
-        "                        },\n" +
+        "                       'type':'string',\n" +
+        "                       'stored':true,\n" +
+        "                       'indexed':true\n" +
+        "                       },\n" +
         "          'add-copy-field' : {\n" +
         "                       'source' :'a1',\n" +
-        "                        'dest':['a2','hello_lol']\n" +
-        "                        },\n" +
+        "                       'dest':['a2','hello_lol']\n" +
+        "                       },\n" +
         "          'add-field-type' : {\n" +
         "                       'name' :'mystr',\n" +
         "                       'class' : 'solr.StrField',\n" +
-        "                        'sortMissingLast':'true'\n" +
-        "                        },\n" +
+        "                       'sortMissingLast':'true'\n" +
+        "                       },\n" +
         "          'add-field-type' : {" +
-        "                     'name' : 'myNewTxtField',\n" +
-        "                     'class':'solr.TextField','positionIncrementGap':'100',\n" +
-        "                     'analyzer' : {\n" +
-        "                                  'charFilters':[\n" +
-        "                                            {'class':'solr.PatternReplaceCharFilterFactory','replacement':'$1$1','pattern':'([a-zA-Z])\\\\\\\\1+'}\n" +
+        "                       'name' : 'myNewTxtField',\n" +
+        "                       'class':'solr.TextField',\n" +
+        "                       'positionIncrementGap':'100',\n" +
+        "                       'analyzer' : {\n" +
+        "                               'charFilters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.PatternReplaceCharFilterFactory',\n" +
+        "                                           'replacement':'$1$1',\n" +
+        "                                           'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "                                          }\n" +
         "                                         ],\n" +
-        "                     'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
-        "                     'filters':[\n" +
-        "                             {'class':'solr.WordDelimiterFilterFactory','preserveOriginal':'0'},\n" +
-        "                             {'class':'solr.StopFilterFactory','words':'stopwords.txt','ignoreCase':'true'},\n" +
-        "                             {'class':'solr.LowerCaseFilterFactory'},\n" +
-        "                             {'class':'solr.ASCIIFoldingFilterFactory'},\n" +
-        "                             {'class':'solr.KStemFilterFactory'}\n" +
-        "                  ]\n" +
-        "                }\n" +
-        "              }"+
-        "          }";
-
-    RestTestHarness harness = restTestHarness;
-
-
-    String response = harness.post("/schema?wt=json", SolrTestCaseJ4.json( payload));
+        "                               'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
+        "                               'filters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.WordDelimiterFilterFactory',\n" +
+        "                                           'preserveOriginal':'0'\n" +
+        "                                          },\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.StopFilterFactory',\n" +
+        "                                           'words':'stopwords.txt',\n" +
+        "                                           'ignoreCase':'true'\n" +
+        "                                          },\n" +
+        "                                          {'class':'solr.LowerCaseFilterFactory'},\n" +
+        "                                          {'class':'solr.ASCIIFoldingFilterFactory'},\n" +
+        "                                          {'class':'solr.KStemFilterFactory'}\n" +
+        "                                         ]\n" +
+        "                               }\n" +
+        "                       },\n"+
+        "          'add-field' : {\n" +
+        "                       'name':'a3',\n" +
+        "                       'type': 'myNewTxtField',\n" +
+        "                       'stored':true,\n" +
+        "                       'indexed':true\n" +
+        "                       },\n" +
+        "          'delete-field' : {'name':'wdf_nocase'},\n" +
+        "          'delete-field-type' : {'name':'wdf_nocase'},\n" +
+        "          'delete-dynamic-field' : {'name':'*_tt'},\n" +
+        "          'delete-copy-field' : {'source':'a1', 'dest':'a2'},\n" +
+        "          'delete-copy-field' : {'source':'*_i', 'dest':['title', '*_s']},\n" +
+        "          'replace-field-type' : {\n" +
+        "                       'name':'boolean',\n" +
+        "                       'class':'solr.BoolField',\n" +
+        "                       'sortMissingFirst':true\n" +
+        "                       },\n" +
+        "          'replace-field' : {\n" +
+        "                       'name':'name',\n" +
+        "                       'type':'string',\n" +
+        "                       'indexed':true,\n" +
+        "                       'stored':true\n" +
+        "                       },\n" +
+        "          'replace-dynamic-field' : {\n" +
+        "                       'name':'attr_*',\n" +
+        "                       'type':'string',\n" +
+        "                       'indexed':true,\n" +
+        "                       'stored':true,\n" +
+        "                       'multiValued':true\n" +
+        "                       }\n" +
+        "          }\n";
+    
+    String response = harness.post("/schema?wt=json", json(payload));
 
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
-    assertNull(response,  map.get("errors"));
+    assertNull(response, map.get("errors"));
 
-
-    Map m = getObj(harness, "a1", "fields");
+    m = getObj(harness, "a1", "fields");
     assertNotNull("field a1 not created", m);
 
     assertEquals("string", m.get("type"));
@@ -182,29 +237,279 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals(Boolean.TRUE, m.get("indexed"));
 
     m = getObj(harness,"*_lol", "dynamicFields");
-    assertNotNull("field *_lol not created",m );
+    assertNotNull("field *_lol not created", m);
 
     assertEquals("string", m.get("type"));
     assertEquals(Boolean.TRUE, m.get("stored"));
     assertEquals(Boolean.TRUE, m.get("indexed"));
 
-    List l = getCopyFields(harness,"a1");
-    Set s =new HashSet();
-    assertEquals(2,l.size());
+    l = getSourceCopyFields(harness, "a1");
+    s = new HashSet();
+    assertEquals(1, l.size());
     s.add(((Map) l.get(0)).get("dest"));
-    s.add(((Map) l.get(1)).get("dest"));
     assertTrue(s.contains("hello_lol"));
-    assertTrue(s.contains("a2"));
 
-    m = getObj(harness,"mystr", "fieldTypes");
+    l = getSourceCopyFields(harness, "*_i");
+    s = new HashSet();
+    assertEquals(2, l.size());
+    s.add(((Map)l.get(0)).get("dest"));
+    s.add(((Map) l.get(1)).get("dest"));
+    assertFalse(s.contains("title"));
+    assertFalse(s.contains("*_s"));
+
+    m = getObj(harness, "mystr", "fieldTypes");
     assertNotNull(m);
-    assertEquals("solr.StrField",m.get("class"));
-    assertEquals("true",String.valueOf(m.get("sortMissingLast")));
+    assertEquals("solr.StrField", m.get("class"));
+    assertEquals("true", String.valueOf(m.get("sortMissingLast")));
 
-    m = getObj(harness,"myNewTxtField", "fieldTypes");
+    m = getObj(harness, "myNewTxtField", "fieldTypes");
     assertNotNull(m);
 
+    m = getObj(harness, "a3", "fields");
+    assertNotNull("field a3 not created", m);
+    assertEquals("myNewTxtField", m.get("type"));
 
+    m = getObj(harness, "wdf_nocase", "fields");
+    assertNull("field 'wdf_nocase' not deleted", m);
+
+    m = getObj(harness, "wdf_nocase", "fieldTypes");
+    assertNull("field type 'wdf_nocase' not deleted", m);
+
+    m = getObj(harness, "*_tt", "dynamicFields");
+    assertNull("dynamic field '*_tt' not deleted", m);
+
+    m = getObj(harness, "boolean", "fieldTypes");
+    assertNotNull("'boolean' field type does not exist in the schema", m);
+    assertNull(m.get("sortMissingLast"));
+    assertTrue((Boolean)m.get("sortMissingFirst"));
+
+    m = getObj(harness, "bind", "fields"); // this field will be rebuilt when "boolean" field type is replaced
+    assertNotNull("'bind' field does not exist in the schema", m);
+
+    m = getObj(harness, "name", "fields");
+    assertNotNull("'name' field does not exist in the schema", m);
+    assertEquals("string", m.get("type"));
+
+    m = getObj(harness, "attr_*", "dynamicFields");
+    assertNotNull("'attr_*' dynamic field does not exist in the schema", m);
+    assertEquals("string", m.get("type"));
+  }
+  
+  public void testDeleteAndReplace() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    Map map = getObj(harness, "NewField1", "fields");
+    assertNull("Field 'NewField1' already exists in the schema", map);
+
+    map = getObj(harness, "NewField2", "fields");
+    assertNull("Field 'NewField2' already exists in the schema", map);
+
+    map = getObj(harness, "NewFieldType", "fieldTypes");
+    assertNull("'NewFieldType' field type already exists in the schema", map);
+
+    List list = getSourceCopyFields(harness, "NewField1");
+    assertEquals("There is already a copy field with source 'NewField1' in the schema", 0, list.size());
+
+    map = getObj(harness, "NewDynamicField1*", "dynamicFields");
+    assertNull("Dynamic field 'NewDynamicField1*' already exists in the schema", map);
+
+    map = getObj(harness, "NewDynamicField2*", "dynamicFields");
+    assertNull("Dynamic field 'NewDynamicField2*' already exists in the schema", map);
+
+    String cmds = "{\n" + 
+        "     'add-field-type': {   'name':'NewFieldType',     'class':'solr.StrField'                    },\n" +
+        "          'add-field': [{  'name':'NewField1',         'type':'NewFieldType'                    },\n" +
+        "                        {  'name':'NewField2',         'type':'NewFieldType'                    },\n" +
+        "                        {  'name':'NewField3',         'type':'NewFieldType'                    },\n" +
+        "                        {  'name':'NewField4',         'type':'NewFieldType'                    }],\n" +
+        "  'add-dynamic-field': [{  'name':'NewDynamicField1*', 'type':'NewFieldType'                    },\n" +
+        "                        {  'name':'NewDynamicField2*', 'type':'NewFieldType'                    },\n" +
+        "                        {  'name':'NewDynamicField3*', 'type':'NewFieldType'                    }],\n" +
+        "     'add-copy-field': [{'source':'NewField1',         'dest':['NewField2', 'NewDynamicField1A']},\n" +
+        "                        {'source':'NewDynamicField1*', 'dest':'NewField2'                       },\n" +
+        "                        {'source':'NewDynamicField2*', 'dest':'NewField2'                       },\n" +
+        "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                       },\n" +
+        "                        {'source':'NewField4',         'dest':'NewField3'                       }]\n" +
+        "}\n";
+
+    String response = harness.post("/schema?wt=json", json(cmds));
+
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    map = getObj(harness, "NewFieldType", "fieldTypes");
+    assertNotNull("'NewFieldType' is not in the schema", map);
+
+    map = getObj(harness, "NewField1", "fields");
+    assertNotNull("Field 'NewField1' is not in the schema", map);
+
+    map = getObj(harness, "NewField2", "fields");
+    assertNotNull("Field 'NewField2' is not in the schema", map);
+
+    map = getObj(harness, "NewField3", "fields");
+    assertNotNull("Field 'NewField3' is not in the schema", map);
+
+    map = getObj(harness, "NewField4", "fields");
+    assertNotNull("Field 'NewField4' is not in the schema", map);
+
+    list = getSourceCopyFields(harness, "NewField1");
+    Set set = new HashSet();
+    for (Object obj : list) {
+      set.add(((Map)obj).get("dest"));
+    }
+    assertEquals(2, list.size());
+    assertTrue(set.contains("NewField2"));
+    assertTrue(set.contains("NewDynamicField1A"));
+
+    list = getSourceCopyFields(harness, "NewDynamicField1*");
+    assertEquals(1, list.size());
+    assertEquals("NewField2", ((Map)list.get(0)).get("dest"));
+
+    list = getSourceCopyFields(harness, "NewDynamicField2*");
+    assertEquals(1, list.size());
+    assertEquals("NewField2", ((Map)list.get(0)).get("dest"));
+
+    list = getSourceCopyFields(harness, "NewDynamicField3*");
+    assertEquals(1, list.size());
+    assertEquals("NewField3", ((Map)list.get(0)).get("dest"));
+
+    list = getSourceCopyFields(harness, "NewField4");
+    assertEquals(1, list.size());
+    assertEquals("NewField3", ((Map)list.get(0)).get("dest"));
+
+    cmds = "{'delete-field-type' : {'name':'NewFieldType'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Object errors = map.get("errors");
+    assertNotNull(errors);
+    assertTrue(errors.toString().contains("Can't delete 'NewFieldType' because it's the field type of "));
+
+    cmds = "{'delete-field' : {'name':'NewField1'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNotNull(errors);
+    assertTrue(errors.toString().contains
+        ("Can't delete 'NewField1' because it's referred to by at least one copy field directive"));
+
+    cmds = "{'delete-field' : {'name':'NewField2'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNotNull(errors);
+    assertTrue(errors.toString().contains
+        ("Can't delete 'NewField2' because it's referred to by at least one copy field directive"));
+
+    cmds = "{'replace-field' : {'name':'NewField1', 'type':'string'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
+    // Make sure the copy field directives with source NewField1 are preserved
+    list = getSourceCopyFields(harness, "NewField1");
+    set = new HashSet();
+    for (Object obj : list) {
+      set.add(((Map)obj).get("dest"));
+    }
+    assertEquals(2, list.size());
+    assertTrue(set.contains("NewField2"));
+    assertTrue(set.contains("NewDynamicField1A"));
+
+    cmds = "{'delete-dynamic-field' : {'name':'NewDynamicField1*'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNotNull(errors);
+    assertTrue(errors.toString().contains
+        ("copyField dest :'NewDynamicField1A' is not an explicit field and doesn't match a dynamicField."));
+
+    cmds = "{'replace-field' : {'name':'NewField2', 'type':'string'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNull(errors);
+    // Make sure the copy field directives with destination NewField2 are preserved
+    list = getDestCopyFields(harness, "NewField2");
+    set = new HashSet();
+    for (Object obj : list) {
+      set.add(((Map)obj).get("source"));
+    }
+    assertEquals(3, list.size());
+    assertTrue(set.contains("NewField1"));
+    assertTrue(set.contains("NewDynamicField1*"));
+    assertTrue(set.contains("NewDynamicField2*"));
+
+    cmds = "{'replace-dynamic-field' : {'name':'NewDynamicField2*', 'type':'string'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNull(errors);
+    // Make sure the copy field directives with source NewDynamicField2* are preserved
+    list = getSourceCopyFields(harness, "NewDynamicField2*");
+    assertEquals(1, list.size());
+    assertEquals("NewField2", ((Map) list.get(0)).get("dest"));
+
+    cmds = "{'replace-dynamic-field' : {'name':'NewDynamicField1*', 'type':'string'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    errors = map.get("errors");
+    assertNull(errors);
+    // Make sure the copy field directives with destinations matching NewDynamicField1* are preserved
+    list = getDestCopyFields(harness, "NewDynamicField1A");
+    assertEquals(1, list.size());
+    assertEquals("NewField1", ((Map) list.get(0)).get("source"));
+
+    cmds = "{'replace-field-type': {'name':'NewFieldType', 'class':'solr.BinaryField'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
+    // Make sure the copy field directives with sources and destinations of type NewFieldType are preserved
+    list = getDestCopyFields(harness, "NewField3");
+    assertEquals(2, list.size());
+    set = new HashSet();
+    for (Object obj : list) {
+      set.add(((Map)obj).get("source"));
+    }
+    assertTrue(set.contains("NewField4"));
+    assertTrue(set.contains("NewDynamicField3*"));
+
+    cmds = "{\n" +
+        "  'delete-copy-field': [{'source':'NewField1',         'dest':['NewField2', 'NewDynamicField1A']},\n" +
+        "                        {'source':'NewDynamicField1*', 'dest':'NewField2'                       },\n" +
+        "                        {'source':'NewDynamicField2*', 'dest':'NewField2'                       },\n" +
+        "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                       },\n" +
+        "                        {'source':'NewField4',         'dest':'NewField3'                       }]\n" +
+        "}\n";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
+    list = getSourceCopyFields(harness, "NewField1");
+    assertEquals(0, list.size());
+    list = getSourceCopyFields(harness, "NewDynamicField1*");
+    assertEquals(0, list.size());
+    list = getSourceCopyFields(harness, "NewDynamicField2*");
+    assertEquals(0, list.size());
+    list = getSourceCopyFields(harness, "NewDynamicField3*");
+    assertEquals(0, list.size());
+    list = getSourceCopyFields(harness, "NewField4");
+    assertEquals(0, list.size());
+    
+    cmds = "{'delete-field': [{'name':'NewField1'},{'name':'NewField2'},{'name':'NewField3'},{'name':'NewField4'}]}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
+
+    cmds = "{'delete-dynamic-field': [{'name':'NewDynamicField1*'}," +
+        "                             {'name':'NewDynamicField2*'},\n" +
+        "                             {'name':'NewDynamicField3*'}]\n" +
+        "}\n";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
+    
+    cmds = "{'delete-field-type':{'name':'NewFieldType'}}";
+    response = harness.post("/schema?wt=json", json(cmds));
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(map.get("errors"));
   }
 
   public static Map getObj(RestTestHarness restHarness, String fld, String key) throws Exception {
@@ -212,7 +517,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
     List l = (List) ((Map)map.get("schema")).get(key);
     for (Object o : l) {
       Map m = (Map) o;
-      if(fld.equals(m.get("name"))) return m;
+      if (fld.equals(m.get("name"))) 
+        return m;
     }
     return null;
   }
@@ -226,17 +532,25 @@ public class TestBulkSchemaAPI extends RestTestBase {
     return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
   }
 
-  public static List getCopyFields(RestTestHarness harness, String src) throws Exception {
+  public static List getSourceCopyFields(RestTestHarness harness, String src) throws Exception {
     Map map = getRespMap(harness);
     List l = (List) ((Map)map.get("schema")).get("copyFields");
     List result = new ArrayList();
     for (Object o : l) {
       Map m = (Map) o;
-      if(src.equals(m.get("source"))) result.add(m);
+      if (src.equals(m.get("source"))) result.add(m);
     }
     return result;
-
   }
 
-
+  public static List getDestCopyFields(RestTestHarness harness, String dest) throws Exception {
+    Map map = getRespMap(harness);
+    List l = (List) ((Map)map.get("schema")).get("copyFields");
+    List result = new ArrayList();
+    for (Object o : l) {
+      Map m = (Map) o;
+      if (dest.equals(m.get("dest"))) result.add(m);
+    }
+    return result;
+  }
 }

@@ -62,11 +62,9 @@ public class SchemaHandler extends RequestHandlerBase {
         }
         break;
       }
-
     } else {
       handleGET(req, rsp);
     }
-
   }
 
   private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -165,6 +163,6 @@ public class SchemaHandler extends RequestHandlerBase {
 
   @Override
   public String getDescription() {
-    return "Edit schema.xml";
+    return "CRUD operations over the Solr schema";
   }
 }

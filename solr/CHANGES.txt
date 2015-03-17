@@ -175,6 +175,9 @@ New Features
     json.facet={count1:{query:"price:[10 TO 20]"}, count2:{query:"color:blue AND popularity:[0 TO 50]"} }
     json.facet={categories:{terms:{field:cat, sort:"x desc", facet:{x:"avg(price)", y:"sum(price)"}}}}
   (yonik)
+  
+* SOLR-6141: Schema API: Remove fields, dynamic fields, field types and copy
+  fields; and replace fields, dynamic fields and field types. (Steve Rowe)
 
 
 Bug Fixes
