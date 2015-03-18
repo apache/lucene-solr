@@ -179,6 +179,10 @@ New Features
 * SOLR-6141: Schema API: Remove fields, dynamic fields, field types and copy
   fields; and replace fields, dynamic fields and field types. (Steve Rowe)
 
+* SOLR-7217: HTTP POST body is auto-detected when the client is curl and the content
+  type is form data (curl's default), allowing users to use curl to send
+  JSON or XML without having to specify the content type. (yonik)
+
 
 Bug Fixes
 ----------------------

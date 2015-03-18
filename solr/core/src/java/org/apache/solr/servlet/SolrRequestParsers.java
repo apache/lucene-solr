@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
 
 public class SolrRequestParsers 
 {
-  final Logger log = LoggerFactory.getLogger(SolrRequestParsers.class);
+  final static Logger log = LoggerFactory.getLogger(SolrRequestParsers.class);
   
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";
@@ -325,7 +325,7 @@ public class SolrRequestParsers
               // we already have a charsetDecoder, so we can directly decode without buffering:
               final String key = decodeChars(keyBytes, keyPos, charsetDecoder),
                   value = decodeChars(valueBytes, valuePos, charsetDecoder);
-              MultiMapSolrParams.addParam(key, value, map);
+              MultiMapSolrParams.addParam(key.trim(), value, map);
             }
           } else if (valueStream.size() > 0) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded invalid: missing key");
@@ -398,7 +398,7 @@ public class SolrRequestParsers
       it.remove();
       final Long valuePos = (Long) it.next();
       it.remove();
-      MultiMapSolrParams.addParam(decodeChars(keyBytes, keyPos.longValue(), charsetDecoder),
+      MultiMapSolrParams.addParam(decodeChars(keyBytes, keyPos.longValue(), charsetDecoder).trim(),
           decodeChars(valueBytes, valuePos.longValue(), charsetDecoder), map);
     }
   }
@@ -569,7 +569,7 @@ public class SolrRequestParsers
           // If it's a form field, put it in our parameter map
           if (item.isFormField()) {
             MultiMapSolrParams.addParam( 
-              item.getFieldName(), 
+              item.getFieldName().trim(),
               item.getString(), params.getMap() );
           }
           // Add the stream
@@ -587,44 +587,40 @@ public class SolrRequestParsers
    */
   static class FormDataRequestParser implements SolrRequestParser
   {
+    private static final long WS_MASK=(1L<<' ')|(1L<<'\t')|(1L<<'\r')|(1L<<'\n')|(1L<<'#')|(1L<<'/')|(0x01); // set 1 bit so 0xA0 will be flagged as possible whitespace
+
     private final int uploadLimitKB;
     
     public FormDataRequestParser( int limit )
     {
       uploadLimitKB = limit;
     }
-    
-    @Override
-    public SolrParams parseParamsAndFillStreams( 
-        final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
-    {
-      if (!isFormData(req)) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
-      }
 
+    public SolrParams parseParamsAndFillStreams(HttpServletRequest req, ArrayList<ContentStream> streams, InputStream in) throws Exception {
       final Map<String,String[]> map = new HashMap<>();
-      
+
       // also add possible URL parameters and include into the map (parsed using UTF-8):
       final String qs = req.getQueryString();
       if (qs != null) {
         parseQueryString(qs, map);
       }
-      
+
       // may be -1, so we check again later. But if it's already greater we can stop processing!
       final long totalLength = req.getContentLength();
       final long maxLength = ((long) uploadLimitKB) * 1024L;
       if (totalLength > maxLength) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content length (" +
-          totalLength + " bytes) exceeds upload limit of " + uploadLimitKB + " KB");
+            totalLength + " bytes) exceeds upload limit of " + uploadLimitKB + " KB");
       }
 
       // get query String from request body, using the charset given in content-type:
       final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
       final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
-      InputStream in = null;
+
       try {
-        in = req.getInputStream();
-        final long bytesRead = parseFormDataContent(FastInputStream.wrap(in), maxLength, charset, map, false);
+        in = FastInputStream.wrap( in == null ? req.getInputStream() : in);
+
+        final long bytesRead = parseFormDataContent(in, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {
           throw getParameterIncompatibilityException();
         }
@@ -635,11 +631,21 @@ public class SolrRequestParsers
       } finally {
         IOUtils.closeWhileHandlingException(in);
       }
-      
+
       return new MultiMapSolrParams(map);
     }
-    
-    private SolrException getParameterIncompatibilityException() {
+
+
+    @Override
+    public SolrParams parseParamsAndFillStreams(HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception {
+      if (!isFormData(req)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: " + req.getContentType());
+      }
+
+      return parseParamsAndFillStreams(req, streams, null);
+    }
+
+    public static  SolrException getParameterIncompatibilityException() {
       return new SolrException(ErrorCode.SERVER_ERROR,
         "Solr requires that request parameters sent using application/x-www-form-urlencoded " +
         "content-type can be read through the request input stream. Unfortunately, the " +
@@ -673,35 +679,168 @@ public class SolrRequestParsers
     MultipartRequestParser multipart;
     RawRequestParser raw;
     FormDataRequestParser formdata;
-    
+
     StandardRequestParser(MultipartRequestParser multi, RawRequestParser raw, FormDataRequestParser formdata) 
     {
       this.multipart = multi;
       this.raw = raw;
       this.formdata = formdata;
     }
-    
+
     @Override
-    public SolrParams parseParamsAndFillStreams( 
-        final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
-    {
-      String method = req.getMethod().toUpperCase(Locale.ROOT);
-      if ("GET".equals(method) || "HEAD".equals(method) 
-          || (("PUT".equals(method) || "DELETE".equals(method))
-              && (req.getRequestURI().contains("/schema")
-                  || req.getRequestURI().contains("/config")))) {
-        return parseQueryString(req.getQueryString());
-      }
-      if ("POST".equals( method ) ) {
-        if (formdata.isFormData(req)) {
-          return formdata.parseParamsAndFillStreams(req, streams);
+    public SolrParams parseParamsAndFillStreams(final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception {
+      String contentType = req.getContentType();
+      String method = req.getMethod(); // No need to uppercase... HTTP verbs are case sensitive
+      String uri = req.getRequestURI();
+      boolean isPost = "POST".equals(method);
+
+      // SOLR-6787 changed the behavior of a POST without content type.  Previously it would throw an exception,
+      // but now it will use the raw request parser.
+      /***
+       if (contentType == null && isPost) {
+         throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
+       }
+       ***/
+
+
+      // According to previous StandardRequestParser logic (this is a re-written version),
+      // POST was handled normally, but other methods (PUT/DELETE)
+      // were handled by restlet if the URI contained /schema or /config
+      // "handled by restlet" means that we don't attempt to handle any request body here.
+      if (!isPost) {
+        if (contentType == null) {
+          return parseQueryString(req.getQueryString());
         }
-        if (ServletFileUpload.isMultipartContent(req)) {
-          return multipart.parseParamsAndFillStreams(req, streams);
+
+        // OK, we have a BODY at this point
+
+        boolean restletPath = false;
+        int idx = uri.indexOf("/schema");
+        if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
+          restletPath = true;
         }
-        return raw.parseParamsAndFillStreams(req, streams);
+        idx = uri.indexOf("/config");
+        if (idx >= 0 && uri.endsWith("/config") || uri.contains("/config/")) {
+          restletPath = true;
+        }
+
+        if (restletPath) {
+          return parseQueryString(req.getQueryString());
+        }
+
+        if ("PUT".equals(method) || "DELETE".equals(method)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
+        }
       }
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
+
+
+      if (formdata.isFormData(req)) {
+        String userAgent = req.getHeader("User-Agent");
+        boolean isCurl = userAgent != null && userAgent.startsWith("curl/");
+        FastInputStream input = FastInputStream.wrap( req.getInputStream() );
+
+        if (isCurl) {
+          SolrParams params = autodetect(req, streams, input);
+          if (params != null) return params;
+        }
+
+        return formdata.parseParamsAndFillStreams(req, streams, input);
+      }
+
+      if (ServletFileUpload.isMultipartContent(req)) {
+        return multipart.parseParamsAndFillStreams(req, streams);
+      }
+
+      // some other content-type (json, XML, csv, etc)
+      return raw.parseParamsAndFillStreams(req, streams);
     }
   }
+
+
+  private static final long WS_MASK=(1L<<' ')|(1L<<'\t')|(1L<<'\r')|(1L<<'\n')|(1L<<'#')|(1L<<'/')|(0x01); // set 1 bit so 0xA0 will be flagged as possible whitespace
+
+  /** Returns the parameter map if a different content type was auto-detected */
+  private static SolrParams autodetect(HttpServletRequest req, ArrayList<ContentStream> streams, FastInputStream in) throws IOException {
+    String detectedContentType = null;
+    boolean shouldClose = true;
+
+    try {
+      in.peek();  // should cause some bytes to be read
+      byte[] arr = in.getBuffer();
+      int pos = in.getPositionInBuffer();
+      int end = in.getEndInBuffer();
+
+      for (int i = pos; i < end - 1; i++) {  // we do "end-1" because we check "arr[i+1]" sometimes in the loop body
+        int ch = arr[i];
+        boolean isWhitespace = ((WS_MASK >> ch) & 0x01) != 0 && (ch <= ' ' || ch == 0xa0);
+        if (!isWhitespace) {
+          // first non-whitespace chars
+          if (ch == '#'                         // single line comment
+              || (ch == '/' && (arr[i + 1] == '/' || arr[i + 1] == '*'))  // single line or multi-line comment
+              || (ch == '{' || ch == '[')       // start of JSON object
+              )
+          {
+            detectedContentType = "application/json";
+          }
+          if (ch == '<') {
+            detectedContentType = "text/xml";
+          }
+          break;
+        }
+      }
+
+      if (detectedContentType == null) {
+        shouldClose = false;
+        return null;
+      }
+
+      Long size = null;
+      String v = req.getHeader("Content-Length");
+      if (v != null) {
+        size = Long.valueOf(v);
+      }
+      streams.add(new InputStreamContentStream(in, detectedContentType, size));
+
+
+      final Map<String, String[]> map = new HashMap<>();
+      // also add possible URL parameters and include into the map (parsed using UTF-8):
+      final String qs = req.getQueryString();
+      if (qs != null) {
+        parseQueryString(qs, map);
+      }
+
+      return new MultiMapSolrParams(map);
+
+    } catch (IOException ioe) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
+    } catch (IllegalStateException ise) {
+      throw (SolrException) FormDataRequestParser.getParameterIncompatibilityException().initCause(ise);
+    } finally {
+      if (shouldClose) {
+        IOUtils.closeWhileHandlingException(in);
+      }
+    }
+  }
+
+
+  /**
+   * Wrap InputStream as a ContentStream
+   */
+  static class InputStreamContentStream extends ContentStreamBase {
+    private final InputStream is;
+
+    public InputStreamContentStream(InputStream is, String detectedContentType, Long size ) {
+      this.is = is;
+      this.contentType = detectedContentType;
+      this.size = size;
+    }
+
+    @Override
+    public InputStream getStream() throws IOException {
+      return is;
+    }
+  }
+
+
+
 }

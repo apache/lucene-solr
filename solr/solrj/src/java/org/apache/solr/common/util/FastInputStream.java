@@ -96,6 +96,21 @@ public class FastInputStream extends DataInputInputStream {
     return end - pos;
   }
 
+  /** Returns the internal buffer used for caching */
+  public byte[] getBuffer() {
+    return buf;
+  }
+
+  /** Current position within the internal buffer */
+  public int getPositionInBuffer() {
+    return pos;
+  }
+
+  /** Current end-of-data position within the internal buffer.  This is one past the last valid byte. */
+  public int getEndInBuffer() {
+    return end;
+  }
+
   @Override
   public int read(byte b[], int off, int len) throws IOException {
     int r=0;  // number of bytes we have read
