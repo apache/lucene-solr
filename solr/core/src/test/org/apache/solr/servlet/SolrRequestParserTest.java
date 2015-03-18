@@ -22,7 +22,9 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -241,7 +243,27 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertArrayEquals( "contentType: "+contentType, new String[]{"foo","bar"}, p.getParams("dup") );
     }
   }
-  
+
+
+  static class ByteServletInputStream extends ServletInputStream  {
+    final BufferedInputStream in;
+    final int len;
+    int readCount = 0;
+
+    public ByteServletInputStream(byte[] data) {
+      this.len = data.length;
+      this.in = new BufferedInputStream(new ByteArrayInputStream(data));
+    }
+
+    @Override
+    public int read() throws IOException {
+      int read = in.read();
+      readCount += read;
+      return read;
+    }
+  }
+
+
   @Test
   public void testStandardParseParamsAndFillStreamsISO88591() throws Exception
   {
