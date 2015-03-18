@@ -127,6 +127,10 @@ New Features
     json.facet={categories:{terms:{field:cat, sort:"x desc", facet:{x:"avg(price)", y:"sum(price)"}}}}
   (yonik)
 
+* SOLR-7217: HTTP POST body is auto-detected when the client is curl and the content
+  type is form data (curl's default), allowing users to use curl to send
+  JSON or XML without having to specify the content type. (yonik)
+
 
 Bug Fixes
 ----------------------

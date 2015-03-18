@@ -107,6 +107,7 @@ public abstract class ContentStreamBase implements ContentStream
     @Override
     public String getContentType() {
       if(contentType==null) {
+        // TODO: this is buggy... does not allow for whitespace, JSON comments, etc.
         InputStream stream = null;
         try {
           stream = new FileInputStream(file);
@@ -140,29 +141,40 @@ public abstract class ContentStreamBase implements ContentStream
   public static class StringStream extends ContentStreamBase
   {
     private final String str;
-    
+
     public StringStream( String str ) {
-      this.str = str; 
-      
-      contentType = null;
+      this(str, detect(str));
+    }
+
+    public StringStream( String str, String contentType ) {
+      this.str = str;
+      this.contentType = contentType;
       name = null;
       size = new Long( str.length() );
       sourceInfo = "string";
     }
 
-    @Override
-    public String getContentType() {
-      if(contentType==null && str.length() > 0) {
-        char first = str.charAt(0);
-        if(first == '<') {
-          return "application/xml";
+    public static String detect(String str) {
+      String detectedContentType = null;
+      int lim = str.length() - 1;
+      for (int i=0; i<lim; i++) {
+        char ch = str.charAt(i);
+        if (Character.isWhitespace(ch)) {
+          continue;
         }
-        if(first == '{') {
-          return "application/json";
+        // first non-whitespace chars
+        if (ch == '#'                         // single line comment
+            || (ch == '/' && (str.charAt(i + 1) == '/' || str.charAt(i + 1) == '*'))  // single line or multi-line comment
+            || (ch == '{' || ch == '[')       // start of JSON object
+            )
+        {
+          detectedContentType = "application/json";
+        } else if (ch == '<') {
+          detectedContentType = "text/xml";
         }
-        // find a comma? for CSV?
+        break;
       }
-      return contentType;
+      return detectedContentType;
     }
 
     @Override
