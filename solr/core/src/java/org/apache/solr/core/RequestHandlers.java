@@ -57,7 +57,8 @@ public final class RequestHandlers {
   
   public RequestHandlers(SolrCore core) {
       this.core = core;
-    handlers =  new PluginBag<>(SolrRequestHandler.class, core);
+    // we need a thread safe registry since methods like register are currently documented to be thread safe.
+    handlers =  new PluginBag<>(SolrRequestHandler.class, core, true);
   }
 
   /**
