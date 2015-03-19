@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -49,20 +50,31 @@ import org.slf4j.LoggerFactory;
 public class PluginBag<T> implements AutoCloseable {
   public static Logger log = LoggerFactory.getLogger(PluginBag.class);
 
-  private Map<String, PluginHolder<T>> registry = new HashMap<>();
-  private Map<String, PluginHolder<T>> immutableRegistry = Collections.unmodifiableMap(registry);
+  private final Map<String, PluginHolder<T>> registry;
+  private final Map<String, PluginHolder<T>> immutableRegistry;
   private String def;
-  private Class klass;
+  private final Class klass;
   private SolrCore core;
-  private SolrConfig.SolrPluginInfo meta;
+  private final SolrConfig.SolrPluginInfo meta;
 
-  public PluginBag(Class<T> klass, SolrCore core) {
+  /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
+  public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     this.core = core;
     this.klass = klass;
+    // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
+    // Not sure how much benefit this would have over ConcurrentHashMap though
+    // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
+    this.registry = needThreadSafety ? new ConcurrentHashMap<>() : new HashMap<>();
+    this.immutableRegistry = Collections.unmodifiableMap(registry);
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
     }
+  }
+
+  /** Constructs a non-threadsafe plugin registry */
+  public PluginBag(Class<T> klass, SolrCore core) {
+    this(klass, core, false);
   }
 
   static void initInstance(Object inst, PluginInfo info, SolrCore core) {
@@ -97,6 +109,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   boolean alias(String src, String target) {
+    if (src == null) return false;
     PluginHolder<T> a = registry.get(src);
     if (a == null) return false;
     PluginHolder<T> b = registry.get(target);
