@@ -565,7 +565,8 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       m.values = values;
       return m;
     }
-    return new CharArrayMap<>(map, false);
+    // In jdk-9b54 or later, a plain diamond causes compile error with "-source 1.7":
+    return new CharArrayMap<V>(map, false);
   }
   
   /** Returns an empty, unmodifiable map. */
