@@ -168,7 +168,7 @@ public class CommandOperation {
     getMapVal(null);
     if (hasError()) return emptyMap();//just to verify the type is Map
     @SuppressWarnings("unchecked") 
-    LinkedHashMap<String,Object> cp = new LinkedHashMap<>((Map<String,?>)commandData);
+    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
     if (keys == null) return cp;
     for (String key : keys) {
       cp.remove(key);
