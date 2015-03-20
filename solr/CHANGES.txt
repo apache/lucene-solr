@@ -186,6 +186,15 @@ New Features
 * SOLR-6892: Update processors can now be top-level components and they can be
   specified in request to create a new custom update chain (Noble Paul)
 
+* SOLR-7216: Solr JSON Request API:
+  - HTTP search requests can have a JSON body.
+  - JSON request can also be passed via the "json" parameter.
+  - Smart merging of multiple JSON parameters: ruery parameters starting with "json."
+    will be merged into the JSON request.
+  - Legacy query parameters can also be passed in the "params" block of
+    the JSON request.
+  (yonik)
+
 
 Bug Fixes
 ----------------------
