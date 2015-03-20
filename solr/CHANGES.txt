@@ -340,6 +340,8 @@ Other Changes
 * SOLR-7258: Forbid MessageFormat.format and MessageFormat single-arg constructor.
   (shalin)
 
+* SOLR-7162: Remove unused SolrSortField interface. (yonik, Connor Warrington via shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
