@@ -105,7 +105,11 @@ public class DebugComponent extends SearchComponent
       else {
         info.addAll( stdinfo );
       }
-      
+
+      if (rb.req.getJSON() != null) {
+        info.add("json", rb.req.getJSON());
+      }
+
       if (rb.isDebugQuery() && rb.getQparser() != null) {
         rb.getQparser().addDebugInfo(rb.getDebugInfo());
       }
@@ -349,6 +353,9 @@ public class DebugComponent extends SearchComponent
       dl.addAll(tmp);
       return dl;
     }
+
+    // only add to list if JSON is different
+    if (source.equals(dest)) return source;
 
     // merge unlike elements in a list
     List<Object> t = new ArrayList<>();

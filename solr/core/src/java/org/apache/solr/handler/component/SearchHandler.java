@@ -174,12 +174,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    // int sleep = req.getParams().getInt("sleep",0);
-    // if (sleep > 0) {log.error("SLEEPING for " + sleep);  Thread.sleep(sleep);}
-    if (req.getContentStreams() != null && req.getContentStreams().iterator().hasNext()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Search requests cannot accept content streams");
-    }
-    
     ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
