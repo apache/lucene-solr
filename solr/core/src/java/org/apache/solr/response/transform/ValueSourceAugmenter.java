@@ -103,7 +103,7 @@ public class ValueSourceAugmenter extends DocTransformer
   }
   
   protected void setValue(SolrDocument doc, Object val) {
-    if(doc!=null) {
+    if(val!=null) {
       doc.setField( name, val );
     }
   }
