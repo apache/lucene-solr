@@ -195,6 +195,8 @@ New Features
     the JSON request.
   (yonik)
 
+* SOLR-7245: Temporary ZK election or connection loss should not stall indexing
+  due to leader initiated recovery (Ramkumar Aiyengar)
 
 Bug Fixes
 ----------------------

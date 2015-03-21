@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.http.NoHttpResponseException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -26,7 +25,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -146,7 +144,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String replicaUrl = replicaCoreNodeProps.getCoreUrl();
 
     assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
-    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaCoreNodeProps, false, leader.getName()));
+    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaCoreNodeProps, leader.getName(), false, true));
     assertTrue(zkController.isReplicaInRecoveryHandling(replicaUrl));
     Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
     assertNotNull(lirStateMap);
