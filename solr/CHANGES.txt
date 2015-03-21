@@ -266,6 +266,9 @@ Bug Fixes
 
 * SOLR-7109: Indexing threads stuck during network partition can put leader into down state.
   (Mark Miller, Anshum Gupta, Ramkumar Aiyengar, yonik, shalin)
+  
+* SOLR-7092: Stop the HDFS lease recovery retries in HdfsTransactionLog on close and try
+  to avoid lease recovery on closed files. (Mark Miller)
 
 Optimizations
 ----------------------
