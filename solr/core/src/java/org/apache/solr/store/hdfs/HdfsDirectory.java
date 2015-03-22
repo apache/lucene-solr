@@ -60,7 +60,7 @@ public class HdfsDirectory extends BaseDirectory {
     super(lockFactory);
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
-    fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);
+    fileSystem = FileSystem.get(hdfsDirPath.toUri(), configuration);
     fileContext = FileContext.getFileContext(hdfsDirPath.toUri(), configuration);
     
     while (true) {

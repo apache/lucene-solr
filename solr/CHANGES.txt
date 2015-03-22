@@ -276,6 +276,12 @@ Bug Fixes
 * SOLR-7141: RecoveryStrategy: Raise time that we wait for any updates from the leader before
   they saw the recovery state to have finished. (Mark Miller)
 
+* SOLR-7284: HdfsUpdateLog is using hdfs FileSystem.get without turning off the cache.
+  (Mark Miller)
+  
+* SOLR-7286: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 
