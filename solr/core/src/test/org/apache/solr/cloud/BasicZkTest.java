@@ -25,7 +25,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -106,7 +105,10 @@ public class BasicZkTest extends AbstractZkTestCase {
     int zkPort = zkServer.getPort();
 
     zkServer.shutdown();
-    
+
+    // document indexing shouldn't stop immediately after a ZK disconnect
+    assertU(adoc("id", "201"));
+
     Thread.sleep(300);
     
     // try a reconnect from disconnect
@@ -173,10 +175,5 @@ public class BasicZkTest extends AbstractZkTestCase {
     params.set("distrib", false);
     req.setParams(params);
     return req;
-  }
-  
-  @AfterClass
-  public static void afterClass() {
-
   }
 }

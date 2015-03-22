@@ -278,7 +278,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         try {
           // this method doesn't throw exception when node isn't leader
           zkController.ensureReplicaInLeaderInitiatedRecovery("c1", "shard1",
-              new ZkCoreNodeProps(replica), false, "non_existent_leader");
+              new ZkCoreNodeProps(replica), "non_existent_leader", false, false);
           fail("ZkController should not write LIR state for node which is not leader");
         } catch (Exception e) {
           assertNull("ZkController should not write LIR state for node which is not leader",

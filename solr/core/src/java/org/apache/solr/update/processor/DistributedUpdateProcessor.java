@@ -52,7 +52,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
@@ -147,7 +146,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.nodeErrorTracker = new HashMap<>(5);
       this.otherLeaderRf = new HashMap<>();
     }
-            
+
     // gives the replication factor that was achieved for this request
     public int getAchievedRf() {
       // look across all shards to find the minimum achieved replication
@@ -286,7 +285,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     returnVersions = req.getParams().getBool(UpdateParams.VERSIONS ,false);
 
     // TODO: better way to get the response, or pass back info to it?
-    SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
+    // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     this.req = req;
     
@@ -847,11 +846,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // before we go setting other replicas to down, make sure we're still the leader!
         String leaderCoreNodeName = null;
+        Exception getLeaderExc = null;
         try {
-          leaderCoreNodeName = zkController.getZkStateReader().getLeaderRetry(collection, shardId).getName();
+          Replica leader = zkController.getZkStateReader().getLeader(collection, shardId);
+          if (leader != null) {
+            leaderCoreNodeName = leader.getName();
+          }
         } catch (Exception exc) {
-          log.error("Failed to determine if " + cloudDesc.getCoreNodeName() + " is still the leader for " + collection +
-              " " + shardId + " before putting " + replicaUrl + " into leader-initiated recovery due to: " + exc);
+          getLeaderExc = exc;
+        }
+        if (leaderCoreNodeName == null) {
+          log.warn("Failed to determine if {} is still the leader for collection={} shardId={} " +
+                  "before putting {} into leader-initiated recovery",
+              cloudDesc.getCoreNodeName(), collection, shardId, replicaUrl, getLeaderExc);
         }
 
         List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection,
@@ -873,8 +880,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 zkController.ensureReplicaInLeaderInitiatedRecovery(collection,
                     shardId,
                     stdNode.getNodeProps(),
-                    false,
-                    leaderCoreNodeName);
+                    leaderCoreNodeName,
+                    false /* forcePublishState */,
+                    false /* retryOnConnLoss */
+                );
 
             // we want to try more than once, ~10 minutes
             if (sendRecoveryCommand) {
@@ -909,7 +918,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         continue; // the replica is already in recovery handling or is not live   
 
       Throwable rootCause = SolrException.getRootCause(error.e);
-      log.error("Setting up to try to start recovery on replica " + replicaUrl + " after: " + rootCause);
+      log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
 
       // try to send the recovery command to the downed replica in a background thread
       CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
@@ -1591,7 +1600,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
       doLocalCommit(cmd);
-    } else if (zkEnabled) {
+    } else {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);

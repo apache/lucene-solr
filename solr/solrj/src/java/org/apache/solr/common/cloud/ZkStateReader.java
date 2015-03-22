@@ -102,6 +102,8 @@ public class ZkStateReader implements Closeable {
   protected volatile ClusterState clusterState;
 
   private static final long SOLRCLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("solrcloud.update.delay", "5000"));
+  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
+  private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = 4000;
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -642,12 +644,22 @@ public class ZkStateReader implements Closeable {
         shard, timeout));
     return props.getCoreUrl();
   }
-  
+
+  public Replica getLeader(String collection, String shard) throws InterruptedException {
+    if (clusterState != null) {
+      Replica replica = clusterState.getLeader(collection, shard);
+      if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
+        return replica;
+      }
+    }
+    return null;
+  }
+
   /**
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
-    return getLeaderRetry(collection, shard, 4000);
+    return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }
 
   /**
@@ -655,14 +667,11 @@ public class ZkStateReader implements Closeable {
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (System.nanoTime() < timeoutAt && !closed) {
-      if (clusterState != null) {    
-        Replica replica = clusterState.getLeader(collection, shard);
-        if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
-          return replica;
-        }
-      }
-      Thread.sleep(50);
+    while (true) {
+      Replica leader = getLeader(collection, shard);
+      if (leader != null) return leader;
+      if (System.nanoTime() >= timeoutAt || closed) break;
+      Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
         + timeout + "ms " + ", collection: " + collection + " slice: " + shard);
