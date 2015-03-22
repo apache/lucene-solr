@@ -270,6 +270,9 @@ Bug Fixes
 * SOLR-7092: Stop the HDFS lease recovery retries in HdfsTransactionLog on close and try
   to avoid lease recovery on closed files. (Mark Miller)
 
+* SOLR-7285: ActionThrottle will not pause if getNanoTime first returns 0.
+  (Mark Miller, Gregory Chanan)
+
 Optimizations
 ----------------------
 
