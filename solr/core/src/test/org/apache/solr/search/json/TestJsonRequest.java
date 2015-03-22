@@ -39,7 +39,6 @@ public class TestJsonRequest extends SolrTestCaseHS {
   public static void initServers() throws Exception {
     if (servers == null) {
       servers = new SolrInstances(3, "solrconfig-tlog.xml","schema_latest.xml");
-      servers = null;
     }
   }
 
@@ -48,6 +47,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
+      servers = null;
     }
   }
 
