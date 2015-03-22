@@ -66,6 +66,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class RecoveryStrategy extends Thread implements ClosableThread {
+  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
   
@@ -368,9 +369,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state 
-        // are sure to have finished
+        // are sure to have finished (see SOLR-7141 for
+        // discussion around current value)
         try {
-          Thread.sleep(2000);
+          Thread.sleep(WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
