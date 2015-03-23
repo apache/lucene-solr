@@ -605,8 +605,8 @@ public final class FST<T> implements Accountable {
    * Writes an automaton to a file. 
    */
   public void save(final Path path) throws IOException {
-    try (OutputStream os = Files.newOutputStream(path)) {
-      save(new OutputStreamDataOutput(new BufferedOutputStream(os)));
+    try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))) {
+      save(new OutputStreamDataOutput(os));
     }
   }
 
