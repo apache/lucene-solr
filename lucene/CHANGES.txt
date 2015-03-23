@@ -64,6 +64,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-6368: FST.save can truncate output (BufferedOutputStream may be closed 
+  after the underlying stream). (Ippei Matsushima via Dawid Weiss)
+
 * LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
   (Dawid Weiss)
   
