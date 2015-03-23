@@ -368,6 +368,8 @@ Other Changes
 
 * SOLR-7162: Remove unused SolrSortField interface. (yonik, Connor Warrington via shalin)
 
+* SOLR-6414: Update to Hadoop 2.6.0. (Mark Miller)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
