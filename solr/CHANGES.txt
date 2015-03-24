@@ -198,6 +198,8 @@ New Features
 * SOLR-7245: Temporary ZK election or connection loss should not stall indexing
   due to leader initiated recovery (Ramkumar Aiyengar)
 
+* SOLR-6350: StatsComponent now supports Percentiles (Xu Zhang, hossman)
+
 Bug Fixes
 ----------------------
 

@@ -52,8 +52,6 @@ public class StatsComponent extends SearchComponent {
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     if (!rb.doStats) return;
-    
-    boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
     Map<String, StatsValues> statsValues = new LinkedHashMap<>();
 
     for (StatsField statsField : rb._statsInfo.getStatsFields()) {
