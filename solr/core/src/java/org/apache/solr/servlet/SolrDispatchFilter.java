@@ -60,6 +60,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.logging.MDCUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -73,7 +74,6 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -81,6 +81,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -219,6 +220,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
+    MDCUtils.clearMDC();
 
     if (abortErrorMessage != null) {
       sendError((HttpServletResponse) response, 500, abortErrorMessage);
@@ -305,11 +307,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
             if (core != null) {
               path = path.substring( idx );
+              MDCUtils.setCore(core.getName());
             }
           }
           if (core == null) {
             if (!cores.isZooKeeperAware() ) {
               core = cores.getCore("");
+              if (core != null)
+                MDCUtils.setCore(core.getName());
             }
           }
         }
@@ -321,6 +326,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           if (core != null) {
             // we found a core, update the path
             path = path.substring( idx );
+            MDCUtils.setCore(core.getName());
           }
           
           // if we couldn't find it locally, look on other nodes
@@ -355,6 +361,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           // try the default core
           if (core == null) {
             core = cores.getCore("");
+            MDCUtils.setCore(core.getName());
           }
         }
 

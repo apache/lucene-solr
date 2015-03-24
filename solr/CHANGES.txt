@@ -384,6 +384,9 @@ Other Changes
 
 * SOLR-6414: Update to Hadoop 2.6.0. (Mark Miller)
 
+* SOLR-6673: MDC based logging of collection, shard, replica, core
+  (Ishan Chattopadhyaya , Noble Paul)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
