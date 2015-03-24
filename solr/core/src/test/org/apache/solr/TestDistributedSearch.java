@@ -19,8 +19,8 @@ package org.apache.solr;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -151,6 +152,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
+
+    //Test common query parameters.
+    validateCommonQueryParameters();
 
     // random value sort
     for (String f : fieldNames) {
@@ -1086,5 +1090,25 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   public void validateControlData(QueryResponse control) throws Exception {
     super.validateControlData(control);
     assertNull("Expected the partialResults header to be null", control.getHeader().get("partialResults"));
+  }
+
+  private void validateCommonQueryParameters() throws Exception {
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setStart(-1).setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+    }
+
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setRows(-1).setStart(0).setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+   }
   }
 }
