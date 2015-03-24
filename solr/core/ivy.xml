@@ -68,7 +68,8 @@
     
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
     <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${/com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru}" conf="compile.hadoop"/>
-
+    <dependency org="org.htrace" name="htrace-core" rev="${/org.htrace/htrace-core}" conf="compile.hadoop"/>
+    
     <!-- Hadoop DfsMiniCluster Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
