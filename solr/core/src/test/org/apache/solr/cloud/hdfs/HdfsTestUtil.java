@@ -44,6 +44,8 @@ public class HdfsTestUtil {
 
   private static FSDataOutputStream badTlogOutStream;
 
+  private static FileSystem badTlogOutStreamFs;
+
   public static MiniDFSCluster setupClass(String dir) throws Exception {
     return setupClass(dir, true);
   }
@@ -94,12 +96,13 @@ public class HdfsTestUtil {
       
       timers.put(dfsCluster, timer);
     } else {
+      // TODO: we could do much better at testing this
       // force a lease recovery by creating a tlog file and not closing it
       URI uri = dfsCluster.getURI();
       Path hdfsDirPath = new Path(uri.toString() + "/solr/collection1/core_node1/data/tlog/tlog.0000000000000000000");
       // tran log already being created testing
-      FileSystem fs = FileSystem.newInstance(hdfsDirPath.toUri(), conf);
-      badTlogOutStream = fs.create(hdfsDirPath);
+      badTlogOutStreamFs = FileSystem.get(hdfsDirPath.toUri(), conf);
+      badTlogOutStream = badTlogOutStreamFs.create(hdfsDirPath);
     }
     
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
@@ -113,6 +116,10 @@ public class HdfsTestUtil {
       IOUtils.closeQuietly(badTlogOutStream);
     }
     
+    if (badTlogOutStreamFs != null) {
+      IOUtils.closeQuietly(badTlogOutStreamFs);
+    }
+    
     SolrTestCaseJ4.resetFactory();
     System.clearProperty("solr.lock.type");
     System.clearProperty("test.build.data");
@@ -120,7 +127,10 @@ public class HdfsTestUtil {
     System.clearProperty("solr.hdfs.home");
     System.clearProperty("solr.hdfs.blockcache.global");
     if (dfsCluster != null) {
-      timers.remove(dfsCluster);
+      Timer timer = timers.remove(dfsCluster);
+      if (timer != null) {
+        timer.cancel();
+      }
       dfsCluster.shutdown();
     }
     
