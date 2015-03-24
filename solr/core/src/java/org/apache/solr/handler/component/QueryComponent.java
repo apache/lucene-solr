@@ -216,6 +216,16 @@ public class QueryComponent extends SearchComponent
 
     if (params.getBool(GroupParams.GROUP, false)) {
       prepareGrouping(rb);
+    } else {
+      //Validate only in case of non-grouping search.
+      if(rb.getSortSpec().getCount() < 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'rows' parameter cannot be negative");
+      }
+    }
+
+    //Input validation.
+    if (rb.getQueryCommand().getOffset() < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
     }
   }
 
@@ -304,10 +314,6 @@ public class QueryComponent extends SearchComponent
     if ((purpose & ShardRequest.PURPOSE_SET_TERM_STATS) != 0) {
       // retrieve from request and update local cache
       statsCache.receiveGlobalStats(req);
-    }
-
-    if (rb.getQueryCommand().getOffset() < 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
     }
 
     // -1 as flag if not set.

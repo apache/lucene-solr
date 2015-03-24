@@ -292,6 +292,10 @@ Bug Fixes
 * SOLR-7294: Migrate API fails with 'Invalid status request: notfoundretried 6times' message.
   (Jessica Cheng Mallet, shalin)
 
+* SOLR-7254: Make an invalid negative start/rows throw a HTTP 400 error (Bad Request) instead
+  of causing a 500 error.  (Ramkumar Aiyengar, Hrishikesh Gadre, yonik)
+ 
+
 Optimizations
 ----------------------
 
