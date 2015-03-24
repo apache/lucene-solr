@@ -33,17 +33,18 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread (HADOOP-9049)
-//@Ignore("this test violates the test security policy because of org.apache.hadoop.fs.RawLocalFileSystem.mkdirs")
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   private static final int MAX_NUMBER_OF_WRITES = 10000;

@@ -49,16 +49,18 @@ import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakScope(Scope.NONE) // hdfs mini cluster currently leaks threads
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 // TODO: longer term this should be combined with TestRecovery somehow ??
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
