@@ -226,6 +226,9 @@ Bug Fixes
 * SOLR-7141: RecoveryStrategy: Raise time that we wait for any updates from the leader before
   they saw the recovery state to have finished. (Mark Miller)
 
+* SOLR-7248: In legacyCloud=false mode we should check if the core was hosted on the same node before registering it
+  (Varun Thacker, Noble Paul, Mark Miller)
+
 Optimizations
 ----------------------
 
