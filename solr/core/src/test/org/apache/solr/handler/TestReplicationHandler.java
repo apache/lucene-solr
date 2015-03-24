@@ -301,8 +301,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                     details.get("slave"));
       // SOLR-2677: assert not false negatives
       Object timesFailed = ((NamedList)details.get("slave")).get(IndexFetcher.TIMES_FAILED);
-      assertEquals("slave has fetch error count",
-                   null, timesFailed);
+      // SOLR-7134: we can have a fail because some mock index files have no checksum, will
+      // always be downloaded, and may not be able to be moved into the existing index
+      assertTrue("slave has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
 
       if (3 != i) {
         // index & fetch

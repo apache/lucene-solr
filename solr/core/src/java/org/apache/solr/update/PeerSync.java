@@ -495,7 +495,7 @@ public class PeerSync  {
             cmd.setVersion(version);
             cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
             if (debug) {
-              log.debug(msg() + "add " + cmd);
+              log.debug(msg() + "add " + cmd + " id " + sdoc.getField("id"));
             }
             proc.processAdd(cmd);
             break;
@@ -508,7 +508,7 @@ public class PeerSync  {
             cmd.setVersion(version);
             cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
             if (debug) {
-              log.debug(msg() + "delete " + cmd);
+              log.debug(msg() + "delete " + cmd + " " + new BytesRef(idBytes).utf8ToString());
             }
             proc.processDelete(cmd);
             break;

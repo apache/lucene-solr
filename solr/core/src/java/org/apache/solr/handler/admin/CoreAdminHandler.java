@@ -832,7 +832,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               searchHolder.decref();
             }
           } catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+            log.debug("Error in solrcloud_debug block", e);
           }
         }
         if (!success) {
@@ -1011,7 +1011,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               searchHolder.decref();
             }
           } catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+            log.debug("Error in solrcloud_debug block", e);
           }
         }
       }

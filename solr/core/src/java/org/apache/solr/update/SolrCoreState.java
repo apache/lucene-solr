@@ -146,4 +146,7 @@ public abstract class SolrCoreState {
    */
   public abstract ActionThrottle getLeaderThrottle();
 
+  public abstract boolean getLastReplicateIndexSuccess();
+
+  public abstract void setLastReplicateIndexSuccess(boolean success);
 }

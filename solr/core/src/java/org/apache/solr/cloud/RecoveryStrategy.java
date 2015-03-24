@@ -160,8 +160,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     boolean success = replicationHandler.doFetch(solrParams, false);
     
     if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Replication for recovery failed.");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
     }
     
     // solrcloud_debug
@@ -179,7 +178,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               + " from "
               + leaderUrl
               + " gen:"
-              + core.getDeletionPolicy().getLatestCommit().getGeneration()
+              + core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration()
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()
@@ -189,7 +188,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           searchHolder.decref();
         }
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+        log.debug("Error in solrcloud_debug block", e);
       }
     }
 
@@ -409,7 +408,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                   searchHolder.decref();
                 }
               } catch (Exception e) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+                log.debug("Error in solrcloud_debug block", e);
               }
             }
 
@@ -557,7 +556,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           searchHolder.decref();
         }
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+        log.debug("Error in solrcloud_debug block", e);
       }
     }
     

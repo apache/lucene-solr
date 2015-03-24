@@ -282,6 +282,8 @@ Bug Fixes
 * SOLR-7286: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
   (Mark Miller)
 
+* SOLR-7134: Replication can still cause index corruption. (Mark Miller, shalin, Mike Drob)
+
 Optimizations
 ----------------------
 

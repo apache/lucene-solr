@@ -105,7 +105,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress());
       client.setDefaultCollection(ACOLLECTION + i);
       cloudClients.add(client);
-      StopableIndexingThread indexThread = new StopableIndexingThread(null, client, "1", true, docCount);
+      StopableIndexingThread indexThread = new StopableIndexingThread(null, client, "1", true, docCount, 1, true);
       threads.add(indexThread);
       indexThread.start();
     }

@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -98,6 +99,25 @@ public class RealTimeGetComponent extends SearchComponent
 
     val = params.get("getUpdates");
     if (val != null) {
+      // solrcloud_debug
+      if (log.isDebugEnabled()) {
+        try {
+          RefCounted<SolrIndexSearcher> searchHolder = req.getCore()
+              .getNewestSearcher(false);
+          SolrIndexSearcher searcher = searchHolder.get();
+          try {
+            log.debug(req.getCore().getCoreDescriptor()
+                .getCoreContainer().getZkController().getNodeName()
+                + " min count to sync to (from most recent searcher view) "
+                + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+          } finally {
+            searchHolder.decref();
+          }
+        } catch (Exception e) {
+          log.debug("Error in solrcloud_debug block", e);
+        }
+      }
+      
       processGetUpdates(rb);
       return;
     }

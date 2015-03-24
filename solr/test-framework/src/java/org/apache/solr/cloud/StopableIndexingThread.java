@@ -42,18 +42,23 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
   private SolrClient cloudClient;
   private int numDeletes;
   private int numAdds;
-
+  private List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+  private int batchSize;
+  private boolean pauseBetweenUpdates;
+  
   public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
-    this(controlClient, cloudClient, id, doDeletes, -1);
+    this(controlClient, cloudClient, id, doDeletes, -1, 1, true);
   }
   
-  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes, int numCycles) {
+  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes, int numCycles, int batchSize, boolean pauseBetweenUpdates) {
     super("StopableIndexingThread");
     this.controlClient = controlClient;
     this.cloudClient = cloudClient;
     this.id = id;
     this.doDeletes = doDeletes;
     this.numCycles = numCycles;
+    this.batchSize = batchSize;
+    this.pauseBetweenUpdates = pauseBetweenUpdates;
     setDaemon(true);
   }
   
@@ -100,8 +105,17 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
       
       try {
         numAdds++;
-        indexr("id", id, i1, 50, t1,
+        SolrInputDocument doc = new SolrInputDocument();
+        addFields(doc, "id", id, i1, 50, t1,
             "to come to the aid of their country.");
+        addFields(doc, "rnd_b", true);
+        
+        docs.add(doc);
+        
+        if (docs.size() >= batchSize)  {
+          indexDocs(docs);
+          docs.clear();
+        }
       } catch (Exception e) {
         addFailed = true;
         System.err.println("REQUEST FAILED for id=" + id);
@@ -117,10 +131,12 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
         deletes.add(id);
       }
       
-      try {
-        Thread.currentThread().sleep(AbstractFullDistribZkTestBase.random().nextInt(100));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+      if (docs.size() > 0 && pauseBetweenUpdates) {
+        try {
+          Thread.currentThread().sleep(AbstractFullDistribZkTestBase.random().nextInt(500) + 50);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
     
@@ -151,26 +167,18 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
     }
   }
   
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    indexDoc(doc);
-  }
-  
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
+  protected void indexDocs(List<SolrInputDocument> docs) throws IOException,
       SolrServerException {
     
     if (controlClient != null) {
       UpdateRequest req = new UpdateRequest();
-      req.add(doc);
+      req.add(docs);
       req.setParam("CONTROL", "TRUE");
       req.process(controlClient);
     }
-
     
     UpdateRequest ureq = new UpdateRequest();
-    ureq.add(doc);
+    ureq.add(docs);
     ureq.process(cloudClient);
   }
   

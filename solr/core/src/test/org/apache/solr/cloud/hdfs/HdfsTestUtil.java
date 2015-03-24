@@ -18,6 +18,8 @@ import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,6 +39,7 @@ import org.apache.solr.common.util.IOUtils;
  */
 
 public class HdfsTestUtil {
+  private static Logger log = LoggerFactory.getLogger(HdfsTestUtil.class);
   
   private static Locale savedLocale;
   
@@ -131,7 +134,15 @@ public class HdfsTestUtil {
       if (timer != null) {
         timer.cancel();
       }
-      dfsCluster.shutdown();
+      try {
+        dfsCluster.shutdown();
+      } catch (Error e) {
+        // Added in SOLR-7134
+        // Rarely, this can fail to either a NullPointerException
+        // or a class not found exception. The later may fixable
+        // by adding test dependencies.
+        log.warn("Exception shutting down dfsCluster", e);
+      }
     }
     
     // TODO: we HACK around HADOOP-9643
