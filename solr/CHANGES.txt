@@ -286,6 +286,9 @@ Bug Fixes
 
 * SOLR-7134: Replication can still cause index corruption. (Mark Miller, shalin, Mike Drob)
 
+* SOLR-7248: In legacyCloud=false mode we should check if the core was hosted on the same node before registering it
+  (Varun Thacker, Noble Paul, Mark Miller)
+
 Optimizations
 ----------------------
 

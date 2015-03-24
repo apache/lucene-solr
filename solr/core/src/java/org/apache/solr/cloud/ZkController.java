@@ -1516,21 +1516,33 @@ public final class ZkController {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
       assert coreNodeName != null;
-      if (cloudDesc.getShardId() == null) throw new SolrException(ErrorCode.SERVER_ERROR ,"No shard id for :" + cd);
+      if (cloudDesc.getShardId() == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR ,"No shard id for :" + cd);
+      }
       long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
-      String errMessage= null;
-      for (; System.nanoTime()<endTime; ) {
-        Thread.sleep(100);
-        errMessage = null;
+      String errMessage = null;
+      while (System.nanoTime() < endTime) {
         Slice slice = zkStateReader.getClusterState().getSlice(cd.getCollectionName(), cloudDesc.getShardId());
         if (slice == null) {
           errMessage = "Invalid slice : " + cloudDesc.getShardId();
           continue;
         }
-        if (slice.getReplica(coreNodeName) != null) return;
+        if (slice.getReplica(coreNodeName) != null) {
+          Replica replica = slice.getReplica(coreNodeName);
+          String baseUrl = replica.getStr(BASE_URL_PROP);
+          String coreName = replica.getStr(CORE_NAME_PROP);
+          if (baseUrl.equals(this.baseURL) && coreName.equals(cd.getName())) {
+            return;
+          } else {
+            errMessage = "replica with coreNodeName " + coreNodeName + " exists but with a different name or base_url";
+          }
+        }
+        Thread.sleep(100);
       }
-      if(errMessage == null)  errMessage = " no_such_replica in clusterstate ,replicaName :  " + coreNodeName;
-      throw new SolrException(ErrorCode.SERVER_ERROR,errMessage + "state : "+ zkStateReader.getClusterState().getCollection(cd.getCollectionName()));
+      if (errMessage == null) {
+        errMessage = "replica " + coreNodeName + " is not present in cluster state";
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, errMessage + ". state : "+ zkStateReader.getClusterState().getCollection(cd.getCollectionName()));
     }
   }
 
