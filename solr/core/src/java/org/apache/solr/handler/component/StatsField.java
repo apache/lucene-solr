@@ -81,8 +81,34 @@ public class StatsField {
     mean(false, sum, count),
     sumOfSquares(true),
     stddev(false, sum, count, sumOfSquares),
-    calcdistinct(true);
-    
+    calcdistinct(true),
+    percentiles(true){
+      /** special for percentiles **/
+      boolean parseParams(StatsField sf) {
+        String percentileParas = sf.localParams.get(this.name());
+        if (percentileParas != null) {
+          List<Double> percentiles = new ArrayList<Double>();
+          try {
+            for (String percentile : StrUtils.splitSmart(percentileParas, ',')) {
+              percentiles.add(Double.parseDouble(percentile));
+            }
+            if (!percentiles.isEmpty()) {
+              sf.percentilesList.addAll(percentiles);
+              sf.tdigestCompression = sf.localParams.getDouble("tdigestCompression", 
+                                                               sf.tdigestCompression);
+              return true;
+            }
+          } catch (NumberFormatException e) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to parse "
+                + StatsParams.STATS_FIELD + " local params: " + sf.localParams + " due to: "
+                + e.getMessage(), e);
+          }
+
+        }
+        return false;
+      }
+    };
+
     private final List<Stat> distribDeps;
     
     /**
@@ -123,6 +149,12 @@ public class StatsField {
     public EnumSet<Stat> getDistribDeps() {
       return EnumSet.copyOf(this.distribDeps);
     }
+    
+    /** return value of true means user is requesting this stat */
+    boolean parseParams(StatsField sf) {
+      return sf.localParams.getBool(this.name(), false);
+    }
+    
   }
 
   /**
@@ -144,8 +176,12 @@ public class StatsField {
   private final List<String> excludeTagList;
   private final EnumSet<Stat> statsToCalculate = EnumSet.noneOf(Stat.class);
   private final EnumSet<Stat> statsInResponse = EnumSet.noneOf(Stat.class);
+  private final List<Double> percentilesList= new ArrayList<Double>();
   private final boolean isShard;
-
+  
+  private double tdigestCompression = 100.0D;
+  
+  
   /**
    * @param rb the current request/response
    * @param statsParam the raw {@link StatsParams#STATS_FIELD} string
@@ -168,7 +204,6 @@ public class StatsField {
 
       this.localParams = localParams;
       
-
       String parserName = localParams.get(QueryParsing.TYPE);
       SchemaField sf = null;
       ValueSource vs = null;
@@ -220,7 +255,7 @@ public class StatsField {
     this.topLevelCalcDistinct = null == schemaField
         ? params.getBool(StatsParams.STATS_CALC_DISTINCT, false) 
         : params.getFieldBool(schemaField.getName(), StatsParams.STATS_CALC_DISTINCT, false);
-        
+
     populateStatsSets();
         
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
@@ -451,30 +486,28 @@ public class StatsField {
     return "StatsField<" + originalParam + ">";
   }
 
-
   /**
    * A helper method which inspects the {@link #localParams} associated with this StatsField, 
    * and uses them to populate the {@link #statsInResponse} and {@link #statsToCalculate} data 
    * structures
    */
   private void populateStatsSets() {
-    
     boolean statSpecifiedByLocalParam = false;
     // local individual stat
     Iterator<String> itParams = localParams.getParameterNamesIterator();
+    
     while (itParams.hasNext()) {
       String paramKey = itParams.next();
-        Stat stat = Stat.forName(paramKey);
-        if (stat != null) {
-          statSpecifiedByLocalParam = true;
-          // TODO: this isn't going to work for planned "non-boolean' stats - eg: SOLR-6350, SOLR-6968
-          if (localParams.getBool(paramKey, false)) {
-            statsInResponse.add(stat);
-            statsToCalculate.addAll(stat.getDistribDeps());
-          }
+      Stat stat = Stat.forName(paramKey);
+      if (stat != null) {
+        statSpecifiedByLocalParam = true;
+        if (stat.parseParams(this)) {
+          statsInResponse.add(stat);
+          statsToCalculate.addAll(stat.getDistribDeps());
         }
+      }
     }
-    
+
     // if no individual stat setting. 
     if ( ! statSpecifiedByLocalParam ) {
       statsInResponse.addAll(DEFAULT_STATS);
@@ -505,5 +538,15 @@ public class StatsField {
     return false;
   }
 
-
+  public List<Double> getPercentilesList() {
+    return percentilesList;
+  }
+  
+  public boolean getIsShard() {
+    return isShard;
+  }
+  
+  public double getTdigestCompression() {
+    return tdigestCompression;
+  }
 }

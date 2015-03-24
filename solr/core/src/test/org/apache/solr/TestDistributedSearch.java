@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.EnumSet;
@@ -392,6 +393,48 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_a);
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", tdate_b);
+    
+    query("q", "*:*", "sort", i1 + " desc", "stats", "true", "stats.field",
+        "{!percentiles='1,2,3,4,5'}" + i1);
+    
+    query("q", "*:*", "sort", i1 + " desc", "stats", "true", "stats.field",
+        "{!percentiles='1,20,30,40,98,99,99.9'}" + i1);
+    
+    rsp = query("q", "*:*", "sort", i1 + " desc", "stats", "true", "stats.field",
+                "{!percentiles='1.0,99.999,0.001'}" + tlong);
+    { // don't leak variabls
+      Double[] expectedKeys = new Double[] { 1.0D, 99.999D, 0.001D };
+      Double[] expectedVals = new Double[] { 2.0D, 4320.0D, 2.0D }; 
+      FieldStatsInfo s = rsp.getFieldStatsInfo().get(tlong);
+      assertNotNull("no stats for " + tlong, s);
+
+      Map<Double,Double> p = s.getPercentiles();
+      assertNotNull("no percentils", p);
+      assertEquals("insufficient percentiles", expectedKeys.length, p.size());
+      Iterator<Double> actualKeys = p.keySet().iterator();
+      for (int i = 0; i < expectedKeys.length; i++) {
+        Double expectedKey = expectedKeys[i];
+        assertTrue("Ran out of actual keys as of : "+ i + "->" +expectedKey,
+                   actualKeys.hasNext());
+        assertEquals(expectedKey, actualKeys.next());
+        assertEquals("percentiles are off: " + p.toString(),
+                     expectedVals[i], p.get(expectedKey), 1.0D);
+      }
+
+      //
+      assertNull("expected null for count", s.getMin());
+      assertNull("expected null for count", s.getMean());
+      assertNull("expected null for count", s.getCount());
+      assertNull("expected null for calcDistinct", s.getCountDistinct());
+      assertNull("expected null for distinct vals", s.getDistinctValues());
+      assertNull("expected null for max", s.getMax());
+      assertNull("expected null for missing", s.getMissing());
+      assertNull("expected null for stddev", s.getStddev());
+      assertNull("expected null for sum", s.getSum());
+    }
+    
+    query("q", "*:*", "sort", i1 + " desc", "stats", "true", "stats.field",
+        "{!percentiles='1,20,50,80,99'}" + tdate_a);
 
     query("q","*:*", "sort",i1+" desc", "stats", "true", 
           "fq", "{!tag=nothing}-*:*",
@@ -437,6 +480,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull("expected null for missing", s.getMissing());
       assertNull("expected null for stddev", s.getStddev());
       assertNull("expected null for sum", s.getSum());
+      assertNull("expected null for percentiles", s.getPercentiles());
 
       // sanity check deps relationship
       for (Stat dep : EnumSet.of(Stat.sum, Stat.count)) {
@@ -492,6 +536,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull("expected null for max", s.getMax());
       assertNull("expected null for missing", s.getMissing());
       assertNull("expected null for sum", s.getSum());
+      assertNull("expected null for percentiles", s.getPercentiles());
     }
 
     // request stats, but disable them all via param refs
@@ -512,6 +557,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull("expected null for max", s.getMax());
       assertNull("expected null for missing", s.getMissing());
       assertNull("expected null for sum", s.getSum());
+      assertNull("expected null for percentiles", s.getPercentiles());
     }
 
     final String[] stats = new String[] {
@@ -596,6 +642,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull(p+" expected null for missing", s.getMissing());
       assertNull(p+" expected null for stddev", s.getStddev());
       assertNull(p+" expected null for sum", s.getSum());
+      assertNull(p+" expected null for percentiles", s.getPercentiles());
       
     }
 
@@ -630,6 +677,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull(p+" expected null for missing", s.getMissing());
       assertNull(p+" expected null for stddev", s.getStddev());
       assertNull(p+" expected null for sum", s.getSum());
+      assertNull(p+"expected null for percentiles", s.getPercentiles());
       
     }
 
@@ -654,6 +702,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull("expected null for max", s.getMax());
       assertNull("expected null for missing", s.getMissing());
       assertNull("expected null for sum", s.getSum());
+      assertNull("expected null for percentiles", s.getPercentiles());
     }
 
     // look at stats on non numeric fields
@@ -662,7 +711,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // result in no stats being computed but this at least lets us sanity check that for each 
     // of these field+stats(s) combinations we get consistent results between the distribted 
     // request and the single node situation.
-    EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
+    //
+    // NOTE: percentiles excluded because it doesn't support simple 'true/false' syntax
+    // (and since it doesn't work for non-numerics anyway, we aren't missing any coverage here)
+    EnumSet<Stat> allStats = EnumSet.complementOf(EnumSet.of(Stat.percentiles));
+
     int numTotalStatQueries = 0;
     // don't go overboard, just do all permutations of 1 or 2 stat params, for each field & query
     final int numStatParamsAtOnce = 2; 

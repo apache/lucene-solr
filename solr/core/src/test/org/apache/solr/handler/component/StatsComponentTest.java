@@ -16,6 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -45,9 +49,9 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import org.apache.commons.math3.util.Combinations;
+import com.tdunning.math.stats.AVLTreeDigest;
 
 import org.junit.BeforeClass;
-
 
 /**
  * Statistics Component Test
@@ -1051,7 +1055,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               );
     }
   }
-
+  
   public void testEnumFieldTypeStatus() throws Exception {
     clearIndex();
     
@@ -1141,8 +1145,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "a_i", "9", "foo_t", "how now brown cow"));
     assertU(commit());
     
+    AVLTreeDigest tdigest = new AVLTreeDigest(100);
+    
     // some quick sanity check assertions...
-
     // trivial check that we only get the exact 2 we ask for
     assertQ("ask for and get only 2 stats",
             req("q","*:*", "stats", "true",
@@ -1169,40 +1174,59 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "count(" + kpre + "*)=0"
             );
 
-   double sum = 0;
-   double sumOfSquares = 0;
-   final int count = 20;
-   for (int i = 0; i < count; i++) {
-     assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i", String.valueOf(i%10), "foo_t", "how now brown cow"));
-     sum+=i%10;
-     sumOfSquares+=(i%10)*(i%10);
-   }
+    double sum = 0;
+    double sumOfSquares = 0;
+    final int count = 20;
+    for (int i = 0; i < count; i++) {
+      assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i",
+          String.valueOf(i % 10), "foo_t", "how now brown cow"));
+      tdigest.add(i % 10);
+      sum += i % 10;
+      sumOfSquares += (i % 10) * (i % 10);
+    }
    
-   assertU(commit());
-
-   EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
-
-   Map<Stat, String> expectedStats = new HashMap<>();
-   expectedStats.put(Stat.min, "0.0");
-   expectedStats.put(Stat.max, "9.0");
-   expectedStats.put(Stat.missing, "0");
-   expectedStats.put(Stat.sum, String.valueOf(sum));
-   expectedStats.put(Stat.count, String.valueOf(count));
-   expectedStats.put(Stat.mean, String.valueOf(sum/count));
-   expectedStats.put(Stat.sumOfSquares, String.valueOf(sumOfSquares));
-   expectedStats.put(Stat.stddev, String.valueOf(Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (20 * (count - 1.0D)))));
-   expectedStats.put(Stat.calcdistinct, "10");
+    assertU(commit());
+    
+    ByteBuffer buf = ByteBuffer.allocate(tdigest.smallByteSize());
+    tdigest.asSmallBytes(buf);
+    EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
+    
+    Map<Stat,String> expectedStats = new HashMap<>();
+    expectedStats.put(Stat.min, "0.0");
+    expectedStats.put(Stat.max, "9.0");
+    expectedStats.put(Stat.missing, "0");
+    expectedStats.put(Stat.sum, String.valueOf(sum));
+    expectedStats.put(Stat.count, String.valueOf(count));
+    expectedStats.put(Stat.mean, String.valueOf(sum / count));
+    expectedStats.put(Stat.sumOfSquares, String.valueOf(sumOfSquares));
+    expectedStats.put(Stat.stddev, String.valueOf(Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (20 * (count - 1.0D)))));
+    expectedStats.put(Stat.calcdistinct, "10");
+    // NOTE: per shard expected value
+    expectedStats.put(Stat.percentiles, Base64.byteArrayToBase64(buf.array(), 0, buf.array().length));
+    
+    Map<Stat,String> expectedType = new HashMap<>();
+    expectedType.put(Stat.min, "double");
+    expectedType.put(Stat.max, "double");
+    expectedType.put(Stat.missing, "long");
+    expectedType.put(Stat.sum, "double");
+    expectedType.put(Stat.count, "long");
+    expectedType.put(Stat.mean, "double");
+    expectedType.put(Stat.sumOfSquares, "double");
+    expectedType.put(Stat.stddev, "double");
+    expectedType.put(Stat.calcdistinct, "long");
+    expectedType.put(Stat.percentiles, "str");
    
-   Map<Stat, String> expectedType = new HashMap<>();
-   expectedType.put(Stat.min, "double");
-   expectedType.put(Stat.max, "double");
-   expectedType.put(Stat.missing, "long");
-   expectedType.put(Stat.sum, "double");
-   expectedType.put(Stat.count, "long");
-   expectedType.put(Stat.mean, "double");
-   expectedType.put(Stat.sumOfSquares, "double");
-   expectedType.put(Stat.stddev, "double");
-   expectedType.put(Stat.calcdistinct, "long");
+    Map<Stat,String> localParasInput = new HashMap<>();
+    localParasInput.put(Stat.min, "true");
+    localParasInput.put(Stat.max, "true");
+    localParasInput.put(Stat.missing, "true");
+    localParasInput.put(Stat.sum, "true");
+    localParasInput.put(Stat.count, "true");
+    localParasInput.put(Stat.mean, "true");
+    localParasInput.put(Stat.sumOfSquares, "true");
+    localParasInput.put(Stat.stddev, "true");
+    localParasInput.put(Stat.calcdistinct, "true");
+    localParasInput.put(Stat.percentiles, "'90, 99'");
 
    // canary in the coal mine
    assertEquals("size of expectedStats doesn't match all known stats; " + 
@@ -1233,13 +1257,15 @@ public class StatsComponentTest extends AbstractSolrTestCase {
                      "[@name='" + key + "'][.='" + expectedStats.get(perShardStat) + "']");
        // even if we go out of our way to exclude the dependent stats, 
        // the shard should return them since they are a dependency for the requested stat
-       exclude.append(perShardStat + "=false ");
+       if (!stat.equals(Stat.percentiles)){
+         exclude.append(perShardStat + "=false ");
+       }
      }
      testParas.add("count(" + kpre + "*)=" + (distribDeps.size() + calcdistinctFudge));
 
      assertQ("ask for only "+stat+", with isShard=true, and expect only deps: " + distribDeps,
              req("q", "*:*", "isShard", "true", "stats", "true", 
-                 "stats.field", "{!key=k " + exclude + stat + "=true}a_i")
+                 "stats.field", "{!key=k " + exclude + stat +"=" + localParasInput.get(stat) + "}a_i")
              , testParas.toArray(new String[testParas.size()])
              );
    }
@@ -1265,8 +1291,17 @@ public class StatsComponentTest extends AbstractSolrTestCase {
            calcdistinctFudge++; 
            testParas.add("count(" + kpre + "arr[@name='distinctValues']/*)=10");
          }
-         paras.append(stat + "=true ");
-         testParas.add(kpre + expectedType.get(stat) + "[@name='" + key + "'][.='" + expectedStats.get(stat) + "']");
+         paras.append(stat + "=" + localParasInput.get(stat)+ " ");
+         
+         if (!stat.equals(Stat.percentiles)){
+           testParas.add(kpre + expectedType.get(stat) + "[@name='" + key + "'][.='" + expectedStats.get(stat) + "']");
+         } else {
+           testParas.add("count(" + kpre + "lst[@name='percentiles']/*)=2");
+           String p90 = "" + tdigest.quantile(0.90D);
+           String p99 = "" + tdigest.quantile(0.99D);
+           testParas.add(kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]");
+           testParas.add(kpre + "lst[@name='percentiles']/double[@name='99.0'][.="+p99+"]");
+         }
        }
 
        paras.append("}a_i");
@@ -1279,7 +1314,6 @@ public class StatsComponentTest extends AbstractSolrTestCase {
                );
      }
    }
-
   }
   
   // Test for Solr-6349
@@ -1402,6 +1436,90 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     }
   }
 
+  // simple percentiles test
+  public void testPercentiles() throws Exception {
+    
+    // NOTE: deliberately not in numeric order
+    String percentiles = "10.0,99.9,1.0,2.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,98.0,99.0";
+    List <String> percentilesList = StrUtils.splitSmart(percentiles, ',');
+    
+    // test empty case 
+    SolrQueryRequest query = req("q", "*:*", "stats", "true",
+                                 "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      for (int i = 0; i < percentilesList.size(); i++) {
+        // ensure exact order, but all values should be null (empty result set)
+        assertEquals(percentilesList.get(i), pout.getName(i));
+        assertEquals(null, pout.getVal(i));
+      }
+    } finally {
+      query.close();
+    }
+    
+    int id = 0;
+    // add trivial docs to test basic percentiles
+    for (int i = 0; i < 100; i++) {
+      // add the same values multiple times (diff docs)
+      for (int j =0; j < 5; j++) {
+        assertU(adoc("id", ++id+"", "stat_f", ""+i));
+      }
+    }
+
+    assertU(commit());
+
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      for (int i = 0; i < percentilesList.size(); i++) { 
+        String p = percentilesList.get(i);
+        assertEquals(p, pout.getName(i));
+        assertEquals(Double.parseDouble(p), pout.getVal(i), 1.0D);
+                     
+      }
+    } finally {
+      query.close();
+    }
+    
+    // test request for no percentiles
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles=''}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      assertNull(pout);
+    } finally {
+      query.close();
+    }
+
+    // non-numeric types don't support percentiles
+    assertU(adoc("id", ++id+"", "stat_dt", "1999-05-03T04:55:01Z"));
+    assertU(adoc("id", ++id+"", "stat_s", "cow"));
+    
+    assertU(commit());
+
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_dt",
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_s");
+
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      assertNull(extractPercentils(rsp, "stat_dt"));
+      assertNull(extractPercentils(rsp, "stat_s"));
+    } finally {
+      query.close();
+    }
+    
+  }
+
+  private NamedList<Double> extractPercentils(SolrQueryResponse rsp, String key) {
+    return ((NamedList<NamedList<NamedList<NamedList<Double>>>> )
+            rsp.getValues().get("stats")).get("stats_fields").get(key).get("percentiles");
+  }
+
   /** 
    * given a comboSize and an EnumSet of Stats, generates iterators that produce every possible
    * enum combination of that size 
@@ -1435,5 +1553,4 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       };
     }
   }
-
 }
