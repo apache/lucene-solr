@@ -116,7 +116,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     boolean success = true;
 
     for (List e : collectErrors) {
-      if(!e.isEmpty()){
+      if (e != null && !e.isEmpty()) {
         success = false;
         log.error(e.toString());
       }
