@@ -21,11 +21,12 @@ import java.util.Random;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 /**
  * random sloppy phrase query tests
  */
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-6369")
 public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A B"~N ⊆ "A B"~N+1 */
   public void testIncreasingSloppiness() throws Exception {
