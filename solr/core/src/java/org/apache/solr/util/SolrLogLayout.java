@@ -11,13 +11,18 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.MDC;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -107,7 +112,7 @@ public class SolrLogLayout extends Layout {
     sb.append(" T");
     sb.append(th.getId());
   }
-  
+
   @Override
   public String format(LoggingEvent event) {
     return _format(event);
@@ -183,7 +188,9 @@ public class SolrLogLayout extends Layout {
     // useful for sequencing when looking at multiple parts of a log file, but
     // ms since start should be fine.
     appendThread(sb, event);
-    
+
+    appendMDC(sb);
+
     if (info != null) {
       sb.append(' ').append(info.shortId); // core
     }
@@ -360,5 +367,18 @@ public class SolrLogLayout extends Layout {
   @Override
   public boolean ignoresThrowable() {
     return false;
+  }
+
+
+  private void appendMDC(StringBuilder sb) {
+    sb.append(" [" + getMDCValueOrEmpty(COLLECTION_PROP) + "] ");
+    sb.append("[" + getMDCValueOrEmpty(SHARD_ID_PROP) + "] ");
+    sb.append("[" + getMDCValueOrEmpty(REPLICA_PROP) + "] ");
+    sb.append("[" + getMDCValueOrEmpty(CORE_NAME_PROP)+"] ");
+  }
+
+  private String getMDCValueOrEmpty(String key) {
+    String val = MDC.get(key);
+    return val==null? "": val;
   }
 }

@@ -19,17 +19,20 @@ package org.apache.solr.common;
 
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 
 /**
  *
  */
 public class SolrException extends RuntimeException {
+
+  final private Map mdcContext;
 
   /**
    * This list of valid HTTP Status error codes that Solr may return in 
@@ -65,15 +68,18 @@ public class SolrException extends RuntimeException {
   public SolrException(ErrorCode code, String msg) {
     super(msg);
     this.code = code.code;
+    this.mdcContext = MDC.getCopyOfContextMap();
   }
   public SolrException(ErrorCode code, String msg, Throwable th) {
     super(msg, th);
     this.code = code.code;
+    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, Throwable th) {
     super(th);
     this.code = code.code;
+    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   /**
@@ -84,6 +90,7 @@ public class SolrException extends RuntimeException {
   protected SolrException(int code, String msg, Throwable th) {
     super(msg, th);
     this.code = code;
+    this.mdcContext = MDC.getCopyOfContextMap();
   }
   
   int code=0;
@@ -203,6 +210,36 @@ public class SolrException extends RuntimeException {
       }
     }
     return t;
+  }
+
+  public void logInfoWithMdc(Logger logger, String msg) {
+    Map previousMdcContext = MDC.getCopyOfContextMap();
+    MDC.setContextMap(mdcContext);
+    try {
+      logger.info(msg);
+    } finally{
+      MDC.setContextMap(previousMdcContext);
+    }
+  }
+
+  public void logDebugWithMdc(Logger logger, String msg) {
+    Map previousMdcContext = MDC.getCopyOfContextMap();
+    MDC.setContextMap(mdcContext);
+    try {
+      logger.debug(msg);
+    } finally{
+      MDC.setContextMap(previousMdcContext);
+    }
+  }
+
+  public void logWarnWithMdc(Logger logger, String msg) {
+    Map previousMdcContext = MDC.getCopyOfContextMap();
+    MDC.setContextMap(mdcContext);
+    try {
+      logger.warn(msg);
+    } finally{
+      MDC.setContextMap(previousMdcContext);
+    }
   }
 
 }
