@@ -1594,9 +1594,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         cmd.setOnlyIfLeader(true);
 
         ModifiableSolrParams p = new ModifiableSolrParams(cmd.getParams());
-        setupAsyncRequest(asyncId, requestMap, p, nodeName);
-
-        sendShardRequest(nodeName, p, shardHandler);
+        sendShardRequest(nodeName, p, shardHandler, asyncId, requestMap);
       }
 
       collectShardResponses(results, true,
@@ -1619,9 +1617,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         params.add(CoreAdminParams.TARGET_CORE, subShardName);
       }
       params.set(CoreAdminParams.RANGES, rangesStr);
-      setupAsyncRequest(asyncId, requestMap, params, parentShardLeader.getNodeName());
 
-      sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
+      sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
 
       collectShardResponses(results, true, "SPLITSHARD failed to invoke SPLIT core admin command",
           shardHandler);
@@ -1639,9 +1636,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTAPPLYUPDATES.toString());
         params.set(CoreAdminParams.NAME, subShardName);
 
-        setupAsyncRequest(asyncId, requestMap, params, nodeName);
-
-        sendShardRequest(nodeName, params, shardHandler);
+        sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
       }
 
       collectShardResponses(results, true,
@@ -1722,9 +1717,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           cmd.setOnlyIfLeader(true);
           ModifiableSolrParams p = new ModifiableSolrParams(cmd.getParams());
 
-          setupAsyncRequest(asyncId, requestMap, p, nodeName);
-
-          sendShardRequest(nodeName, p, shardHandler);
+          sendShardRequest(nodeName, p, shardHandler, asyncId, requestMap);
 
         }
       }
@@ -2031,9 +2024,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTBUFFERUPDATES.toString());
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
     String nodeName = targetLeader.getNodeName();
-    setupAsyncRequest(asyncId, requestMap, params, nodeName);
 
-    sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+    sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
 
     collectShardResponses(results, true, "MIGRATE failed to request node to buffer updates",
         shardHandler);
@@ -2110,7 +2102,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     cmd.setState(ZkStateReader.ACTIVE);
     cmd.setCheckLive(true);
     cmd.setOnlyIfLeader(true);
-    sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()), shardHandler);
+    // we don't want this to happen asynchronously
+    sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()), shardHandler, null, null);
 
     collectShardResponses(results, true,
         "MIGRATE failed to create temp collection leader or timed out waiting for it to come up",
@@ -2126,9 +2119,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     String tempNodeName = sourceLeader.getNodeName();
 
-    setupAsyncRequest(asyncId, requestMap, params, tempNodeName);
-
-    sendShardRequest(tempNodeName, params, shardHandler);
+    sendShardRequest(tempNodeName, params, shardHandler, asyncId, requestMap);
     collectShardResponses(results, true, "MIGRATE failed to invoke SPLIT core admin command", shardHandler);
     completeAsyncRequest(asyncId, requestMap, results);
 
@@ -2172,9 +2163,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     cmd.setOnlyIfLeader(true);
     params = new ModifiableSolrParams(cmd.getParams());
 
-    setupAsyncRequest(asyncId, requestMap, params, tempSourceLeader.getNodeName());
-
-    sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler);
+    sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
 
     collectShardResponses(results, true,
         "MIGRATE failed to create temp collection replica or timed out waiting for them to come up",
@@ -2189,9 +2178,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     params.set(CoreAdminParams.CORE, targetLeader.getStr("core"));
     params.set(CoreAdminParams.SRC_CORE, tempCollectionReplica2);
 
-    setupAsyncRequest(asyncId, requestMap, params, sourceLeader.getNodeName());
-
-    sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+    sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
     collectShardResponses(results, true,
         "MIGRATE failed to merge " + tempCollectionReplica2 +
             " to " + targetLeader.getStr("core") + " on node: " + targetLeader.getNodeName(),
@@ -2203,9 +2190,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTAPPLYUPDATES.toString());
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
-    setupAsyncRequest(asyncId, requestMap, params, targetLeader.getNodeName());
 
-    sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+    sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
     collectShardResponses(results, true,
         "MIGRATE failed to request node to apply buffered updates",
         shardHandler);
@@ -2231,14 +2217,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
   }
 
-  private void setupAsyncRequest(String asyncId, HashMap<String, String> requestMap, ModifiableSolrParams params, String nodeName) {
-    if(asyncId != null) {
-      String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
-      params.set(ASYNC, coreAdminAsyncId);
-      requestMap.put(nodeName, coreAdminAsyncId);
-    }
-  }
-
   private DocRouter.Range intersect(DocRouter.Range a, DocRouter.Range b) {
     if (a == null || b == null || !a.overlaps(b)) {
       return null;
@@ -2253,7 +2231,13 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
   }
 
-  private void sendShardRequest(String nodeName, ModifiableSolrParams params, ShardHandler shardHandler) {
+  private void sendShardRequest(String nodeName, ModifiableSolrParams params, ShardHandler shardHandler, String asyncId, Map<String, String> requestMap) {
+    if (asyncId != null) {
+      String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
+      params.set(ASYNC, coreAdminAsyncId);
+      requestMap.put(nodeName, coreAdminAsyncId);
+    }
+
     ShardRequest sreq = new ShardRequest();
     params.set("qt", adminPath);
     sreq.purpose = 1;
@@ -2431,8 +2415,11 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           params.set(CoreAdminParams.SHARD, sliceName);
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
 
-          setupAsyncRequest(async, requestMap, params, nodeName);
-
+          if (async != null)  {
+            String coreAdminAsyncId = async + Math.abs(System.nanoTime());
+            params.add(ASYNC, coreAdminAsyncId);
+            requestMap.put(nodeName, coreAdminAsyncId);
+          }
           addPropertyParams(message, params);
 
           ShardRequest sreq = new ShardRequest();
@@ -2593,8 +2580,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     // For tracking async calls.
     HashMap<String, String> requestMap = new HashMap<>();
-    setupAsyncRequest(asyncId, requestMap, params, node);
-    sendShardRequest(node, params, shardHandler);
+    sendShardRequest(node, params, shardHandler, asyncId, requestMap);
 
     collectShardResponses(results, true,
         "ADDREPLICA failed to create replica", shardHandler);
@@ -2779,7 +2765,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           NamedList results = new NamedList();
           processResponse(results, srsp);
           String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
-          if(r.equals("running")) {
+          if (r.equals("running")) {
             log.debug("The task is still RUNNING, continuing to wait.");
             try {
               Thread.sleep(1000);
@@ -2788,7 +2774,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             }
             continue;
 
-          } else if(r.equals("completed")) {
+          } else if (r.equals("completed")) {
             log.debug("The task is COMPLETED, returning");
             return srsp.getSolrResponse().getResponse();
           } else if (r.equals("failed")) {
@@ -2797,15 +2783,15 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             return srsp.getSolrResponse().getResponse();
           } else if (r.equals("notfound")) {
             log.debug("The task is notfound, retry");
-            if(counter++ < 5) {
+            if (counter++ < 5) {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
               }
               break;
             }
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request: " + srsp.getSolrResponse().getResponse().get("STATUS") +
-            "retried " + counter + "times");
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request for requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") +
+                "retried " + counter + "times");
           } else {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request " + srsp.getSolrResponse().getResponse().get("STATUS"));
           }

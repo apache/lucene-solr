@@ -50,25 +50,6 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     schemaString = "schema15.xml";      // we need a string id
   }
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-
-    System.clearProperty("zkHost");
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
-  }
-
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15);

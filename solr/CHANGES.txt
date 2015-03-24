@@ -289,6 +289,9 @@ Bug Fixes
 * SOLR-7248: In legacyCloud=false mode we should check if the core was hosted on the same node before registering it
   (Varun Thacker, Noble Paul, Mark Miller)
 
+* SOLR-7294: Migrate API fails with 'Invalid status request: notfoundretried 6times' message.
+  (Jessica Cheng Mallet, shalin)
+
 Optimizations
 ----------------------
 
