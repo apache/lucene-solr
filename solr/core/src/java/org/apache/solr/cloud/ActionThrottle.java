@@ -26,25 +26,45 @@ import org.slf4j.LoggerFactory;
 public class ActionThrottle {
   private static Logger log = LoggerFactory.getLogger(ActionThrottle.class);
   
-  private volatile long lastActionStartedAt;
-  private volatile long minMsBetweenActions;
+  private volatile Long lastActionStartedAt;
+  private volatile Long minMsBetweenActions;
 
   private final String name;
+
+  private final NanoTimeSource nanoTimeSource;
+  
+  public interface NanoTimeSource {
+    long getTime();
+  }
+  
+  private static class DefaultNanoTimeSource implements NanoTimeSource {
+    @Override
+    public long getTime() {
+      return System.nanoTime();
+    }
+  }
   
   public ActionThrottle(String name, long minMsBetweenActions) {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
+    this.nanoTimeSource = new DefaultNanoTimeSource();
+  }
+  
+  public ActionThrottle(String name, long minMsBetweenActions, NanoTimeSource nanoTimeSource) {
+    this.name = name;
+    this.minMsBetweenActions = minMsBetweenActions;
+    this.nanoTimeSource = nanoTimeSource;
   }
   
   public void markAttemptingAction() {
-    lastActionStartedAt = System.nanoTime();
+    lastActionStartedAt = nanoTimeSource.getTime();
   }
   
   public void minimumWaitBetweenActions() {
-    if (lastActionStartedAt == 0) {
+    if (lastActionStartedAt == null) {
       return;
     }
-    long diff = System.nanoTime() - lastActionStartedAt;
+    long diff = nanoTimeSource.getTime() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
     log.info("The last {} attempt started {}ms ago.", name, diffMs);
@@ -53,7 +73,7 @@ public class ActionThrottle {
     if (diffMs > 0 && diff < minNsBetweenActions) {
       sleep = (int) TimeUnit.MILLISECONDS.convert(minNsBetweenActions - diff, TimeUnit.NANOSECONDS);
     } else if (diffMs == 0) {
-      sleep = (int) minMsBetweenActions;
+      sleep = minMsBetweenActions.intValue();
     }
     
     if (sleep > 0) {
