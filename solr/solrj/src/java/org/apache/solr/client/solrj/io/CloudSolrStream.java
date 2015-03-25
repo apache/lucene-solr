@@ -27,28 +27,24 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.zookeeper.KeeperException;
 
 /**
 * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
-* SolrStream instances are used to send the query to the replicas.
-* SolrStreams are opened using a Thread pool, but a single thread is used to iterate through each stream's tuples.* *
+* Under the covers SolrStream instances are used to send the query to the replicas.
+* SolrStreams are opened using a Thread pool, but a single thread is used to iterate through each stream's tuples.
 **/
 
 public class CloudSolrStream extends TupleStream {
@@ -59,24 +55,25 @@ public class CloudSolrStream extends TupleStream {
   protected String collection;
   protected Map params;
   private Map<String, String> fieldMappings;
-  protected TreeSet<TupleWrapper> tuples;
   protected Comparator<Tuple> comp;
-  protected List<TupleStream> solrStreams = new ArrayList();
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
   private int numWorkers;
   private int workerID;
-  protected Map<String, Tuple> eofTuples = new HashMap();
+  private boolean trace;
+  protected transient Map<String, Tuple> eofTuples;
+  protected transient SolrClientCache cache;
+  protected transient CloudSolrClient cloudSolrClient;
+  protected transient List<TupleStream> solrStreams;
+  protected transient TreeSet<TupleWrapper> tuples;
+  protected transient StreamContext streamContext;
 
-  public CloudSolrStream(String zkHost, String collection, Map params) {
+  public CloudSolrStream(String zkHost, String collection, Map params) throws IOException {
     this.zkHost = zkHost;
     this.collection = collection;
     this.params = params;
-    this.tuples = new TreeSet();
     String sort = (String)params.get("sort");
-    this.comp = parseComp(sort);
+    this.comp = parseComp(sort, params);
   }
 
   //Used by the ParallelStream
@@ -92,13 +89,21 @@ public class CloudSolrStream extends TupleStream {
     this.fieldMappings = fieldMappings;
   }
 
+  public void setTrace(boolean trace) {
+    this.trace = trace;
+  }
+
   public void setStreamContext(StreamContext context) {
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
-    this.cache = context.clientCache;
+    this.cache = context.getSolrClientCache();
+    this.streamContext = context;
   }
 
   public void open() throws IOException {
+    this.tuples = new TreeSet();
+    this.solrStreams = new ArrayList();
+    this.eofTuples = new HashMap();
     if(this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
@@ -110,17 +115,33 @@ public class CloudSolrStream extends TupleStream {
   }
 
 
+  public Map getEofTuples() {
+    return this.eofTuples;
+  }
 
   public List<TupleStream> children() {
     return solrStreams;
   }
 
-  private Comparator<Tuple> parseComp(String sort) {
+  private Comparator<Tuple> parseComp(String sort, Map params) throws IOException {
+
+    String fl = (String)params.get("fl");
+    String[] fls = fl.split(",");
+    HashSet fieldSet = new HashSet();
+    for(String f : fls) {
+      fieldSet.add(f.trim()); //Handle spaces in the field list.
+    }
+
     String[] sorts = sort.split(",");
     Comparator[] comps = new Comparator[sorts.length];
     for(int i=0; i<sorts.length; i++) {
       String s = sorts[i];
-      String[] spec = s.split(" ");
+      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+
+      if(!fieldSet.contains(spec[0])) {
+        throw new IOException("Fields in the sort spec must be included in the field list:"+spec[0]);
+      }
+
       if(spec[1].trim().equalsIgnoreCase("asc")) {
         comps[i] = new AscFieldComp(spec[0]);
       } else {
@@ -159,10 +180,9 @@ public class CloudSolrStream extends TupleStream {
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();
         SolrStream solrStream = new SolrStream(url, params);
-        StreamContext context = new StreamContext();
-        context.numWorkers = this.numWorkers;
-        context.workerID = this.workerID;
-        solrStream.setStreamContext(context);
+        if(streamContext != null) {
+          solrStream.setStreamContext(streamContext);
+        }
         solrStream.setFieldMappings(this.fieldMappings);
         solrStreams.add(solrStream);
       }
@@ -173,25 +193,27 @@ public class CloudSolrStream extends TupleStream {
 
   private void openStreams() throws IOException {
     ExecutorService service = Executors.newCachedThreadPool(new SolrjNamedThreadFactory("CloudSolrStream"));
-    List<Future<TupleWrapper>> futures = new ArrayList();
-    for(TupleStream solrStream : solrStreams) {
-      StreamOpener so = new StreamOpener((SolrStream)solrStream, comp);
-      Future<TupleWrapper> future =  service.submit(so);
-      futures.add(future);
-    }
-
     try {
-      for(Future<TupleWrapper> f : futures) {
-        TupleWrapper w = f.get();
-        if(w != null) {
-          tuples.add(w);
-        }
+      List<Future<TupleWrapper>> futures = new ArrayList();
+      for (TupleStream solrStream : solrStreams) {
+        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
+        Future<TupleWrapper> future = service.submit(so);
+        futures.add(future);
       }
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
 
-    service.shutdown();
+      try {
+        for (Future<TupleWrapper> f : futures) {
+          TupleWrapper w = f.get();
+          if (w != null) {
+            tuples.add(w);
+          }
+        }
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+    } finally {
+      service.shutdown();
+    }
   }
 
   public void close() throws IOException {
@@ -212,12 +234,21 @@ public class CloudSolrStream extends TupleStream {
     TupleWrapper tw = tuples.pollFirst();
     if(tw != null) {
       Tuple t = tw.getTuple();
+
+      if (trace) {
+        t.put("_COLLECTION_", this.collection);
+      }
+
       if(tw.next()) {
         tuples.add(tw);
       }
       return t;
     } else {
       Map m = new HashMap();
+      if(trace) {
+        m.put("_COLLECTION_", this.collection);
+      }
+
       m.put("EOF", true);
 
       return new Tuple(m);

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
-* Unions streamA with streamB based on a Comparator.
+* Unions streamA with streamB ordering the Tuples based on a Comparator.
 * Both streams must be sorted by the fields being compared.
 **/
 

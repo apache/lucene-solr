@@ -20,6 +20,11 @@ package org.apache.solr.client.solrj.io;
 import java.io.Serializable;
 import java.util.Comparator;
 
+/**
+ *  An descending field Comparator which compares a field of two Tuples and determines sort order.
+ **/
+
+
 public class DescFieldComp implements Comparator<Tuple>, Serializable {
 
   private static final long serialVersionUID = 1;
@@ -33,11 +38,11 @@ public class DescFieldComp implements Comparator<Tuple>, Serializable {
   public int compare(Tuple t1, Tuple t2) {
     Comparable o1 = (Comparable)t1.get(field);
     Comparable o2 = (Comparable)t2.get(field);
-    int i = o1.compareTo(o2);
-    if(i == 0) {
-      return i;
+    int c = o1.compareTo(o2);
+    if(c == 0) {
+      return 0;
     } else {
-      return -i;
+      return -c;
     }
   }
 }

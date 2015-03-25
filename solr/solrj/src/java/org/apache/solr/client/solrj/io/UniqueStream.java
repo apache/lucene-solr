@@ -22,6 +22,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
+
+/**
+ * The UniqueStream emits a unique stream of Tuples based on a Comparator.
+ *
+ * Note: The sort order of the underlying stream must match the Comparator.
+ **/
+
 public class UniqueStream extends TupleStream {
 
   private static final long serialVersionUID = 1;

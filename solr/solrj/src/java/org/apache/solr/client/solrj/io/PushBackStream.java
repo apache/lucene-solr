@@ -29,10 +29,11 @@ public class PushBackStream extends TupleStream {
   private TupleStream stream;
   private Tuple tuple;
 
-  /*
-  * A TupleStream that allows a single Tuple to be pushed back into Stream after it's been read.
-  *
-  **/
+  /**
+   * A TupleStream that allows a single Tuple to be pushed back into Stream after it's been read.
+   * This is a useful class when building streams that maintain the order of the tuples from two or
+   * more substreams.
+   **/
 
   public PushBackStream(TupleStream stream) {
     this.stream = stream;

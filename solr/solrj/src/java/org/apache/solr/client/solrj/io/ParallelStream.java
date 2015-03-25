@@ -52,7 +52,6 @@ public class ParallelStream extends CloudSolrStream {
   private int workers;
   private String encoded;
 
-
   public ParallelStream(String zkHost,
                         String collection,
                         TupleStream tupleStream,
@@ -78,30 +77,10 @@ public class ParallelStream extends CloudSolrStream {
     return l;
   }
 
-  public void merge(List<MetricStream> metricStreams) {
-    for(MetricStream metricStream : metricStreams) {
-      String outKey = metricStream.getOutKey();
-      Iterator<Tuple> it = eofTuples.values().iterator();
-      List values = new ArrayList();
-
-      while(it.hasNext()) {
-        Tuple t = it.next();
-        Map top = (Map)t.get(outKey);
-        values.add(top);
-      }
-
-      BucketMetrics[] bucketMetrics = metricStream.merge(values);
-      metricStream.setBucketMetrics(bucketMetrics);
-    }
-  }
-
   public Tuple read() throws IOException {
     Tuple tuple = _read();
 
     if(tuple.EOF) {
-      List<MetricStream> metricStreams = new ArrayList();
-      getMetricStreams(this, metricStreams);
-      this.merge(metricStreams);
       Map m = new HashMap();
       m.put("EOF", true);
       return new Tuple(m);
@@ -110,16 +89,10 @@ public class ParallelStream extends CloudSolrStream {
     return tuple;
   }
 
-  private void getMetricStreams(TupleStream tupleStream,
-                                List<MetricStream> metricStreams) {
-    if(tupleStream instanceof MetricStream) {
-      metricStreams.add((MetricStream)tupleStream);
-    }
-
-    List<TupleStream> children = tupleStream.children();
-    for(TupleStream ts : children) {
-      getMetricStreams(ts, metricStreams);
-    }
+  public void setStreamContext(StreamContext streamContext) {
+    //Note the parallel stream does not set the StreamContext on it's substream.
+    //This is because the substream is not actually opened by the ParallelStream.
+    this.streamContext = streamContext;
   }
 
   protected void constructStreams() throws IOException {

@@ -20,6 +20,12 @@ package org.apache.solr.client.solrj.io;
 import java.io.Serializable;
 import java.util.Comparator;
 
+
+/**
+ *  An ascending field Comparator which compares a field of two Tuples and determines sort order.
+ **/
+
+
 public class AscFieldComp implements Comparator<Tuple>, Serializable {
 
   private static final long serialVersionUID = 1;

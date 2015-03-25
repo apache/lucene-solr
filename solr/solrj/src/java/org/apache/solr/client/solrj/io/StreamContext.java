@@ -17,24 +17,26 @@
 
 package org.apache.solr.client.solrj.io;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StreamContext {
+/**
+ *  The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
+ *  The StreamContext is used pass shared context info from to concentrically wrapped TupleStreams.
+ *
+ *  Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for reuse
+ *  across multiple TupleStreams.
+ **/
+
+
+public class StreamContext implements Serializable{
 
   private Map entries = new HashMap();
   public int workerID;
   public int numWorkers;
-  public SolrClientCache clientCache;
-
-  public SolrClientCache getClientCache() {
-    return this.clientCache;
-  }
-
-  public void setSolrClientCache(SolrClientCache clientCache) {
-    this.clientCache = clientCache;
-  }
+  private SolrClientCache clientCache;
 
   public Object get(Object key) {
     return entries.get(key);
@@ -42,5 +44,13 @@ public class StreamContext {
 
   public void put(Object key, Object value) {
     this.entries.put(key, value);
+  }
+
+  public void setSolrClientCache(SolrClientCache clientCache) {
+    this.clientCache = clientCache;
+  }
+
+  public SolrClientCache getSolrClientCache() {
+    return this.clientCache;
   }
 }

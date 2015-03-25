@@ -1,5 +1,4 @@
-package org.apache.solr.client.solrj.io;
-
+package  org.apache.solr.client.solrj.io;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,23 +16,46 @@ package org.apache.solr.client.solrj.io;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 
-public class DescMetricComp implements Comparator<Tuple>, Serializable {
+public class CountStream extends TupleStream implements Serializable {
 
-  private static final long serialVersionUID = 1;
+  private TupleStream stream;
+  private int count;
 
-  private int ord;
-
-  public DescMetricComp(int ord) {
-    this.ord = ord;
+  public CountStream(TupleStream stream) {
+    this.stream = stream;
   }
 
-  public int compare(Tuple t1, Tuple t2) {
-    List<Double> values1 = (List<Double>)t1.get("metricValues");
-    List<Double> values2 = (List<Double>)t2.get("metricValues");
-    return values1.get(ord).compareTo(values2.get(ord))*-1;
+  public void close() throws IOException {
+    this.stream.close();
+  }
+
+  public void open() throws IOException {
+    this.stream.open();
+  }
+
+  public List<TupleStream> children() {
+    List<TupleStream> l = new ArrayList();
+    l.add(stream);
+    return l;
+  }
+
+  public void setStreamContext(StreamContext streamContext) {
+    stream.setStreamContext(streamContext);
+  }
+
+  public Tuple read() throws IOException {
+    Tuple t = stream.read();
+    if(t.EOF) {
+      t.put("count", count);
+      return t;
+    } else {
+      ++count;
+      return t;
+    }
   }
 }

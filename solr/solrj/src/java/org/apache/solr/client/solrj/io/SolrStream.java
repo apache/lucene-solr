@@ -40,6 +40,7 @@ public class SolrStream extends TupleStream {
   private Map params;
   private int numWorkers;
   private int workerID;
+  private boolean trace;
   private Map<String, String> fieldMappings;
   private transient JSONTupleStream jsonTupleStream;
   private transient HttpSolrClient client;
@@ -65,7 +66,7 @@ public class SolrStream extends TupleStream {
   public void setStreamContext(StreamContext context) {
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
-    this.cache = context.clientCache;
+    this.cache = context.getSolrClientCache();
   }
 
   /**
@@ -87,11 +88,21 @@ public class SolrStream extends TupleStream {
     }
   }
 
-  private SolrParams loadParams(Map params) {
+  public void setTrace(boolean trace) {
+    this.trace = trace;
+  }
+
+  private SolrParams loadParams(Map params) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    if(this.numWorkers > 0) {
-      String partitionFilter = getPartitionFilter();
-      solrParams.add("fq", partitionFilter);
+    if(params.containsKey("partitionKeys")) {
+      if(!params.get("partitionKeys").equals("none")) {
+        String partitionFilter = getPartitionFilter();
+        solrParams.add("fq", partitionFilter);
+      }
+    } else {
+      if(numWorkers > 1) {
+        throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
+      }
     }
 
     Iterator<Map.Entry> it = params.entrySet().iterator();
@@ -129,6 +140,11 @@ public class SolrStream extends TupleStream {
 
   public Tuple read() throws IOException {
     Map fields = jsonTupleStream.next();
+
+    if(trace) {
+      fields.put("_CORE_", this.baseUrl);
+    }
+
     if(fields == null) {
       //Return the EOF tuple.
       Map m = new HashMap();

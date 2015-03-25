@@ -69,7 +69,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     StreamContext context = new StreamContext();
     context.workerID = worker;
     context.numWorkers = numWorkers;
-    context.clientCache = clientCache;
+    context.setSolrClientCache(clientCache);
     tupleStream.setStreamContext(context);
     rsp.add("tuples", tupleStream);
   }

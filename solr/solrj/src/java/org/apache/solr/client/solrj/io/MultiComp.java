@@ -20,6 +20,11 @@ package org.apache.solr.client.solrj.io;
 import java.io.Serializable;
 import java.util.Comparator;
 
+
+/**
+ *  Wraps multiple Comparators to provide sub sorting.
+ **/
+
 public class MultiComp implements Comparator<Tuple>, Serializable {
 
   private static final long serialVersionUID = 1;

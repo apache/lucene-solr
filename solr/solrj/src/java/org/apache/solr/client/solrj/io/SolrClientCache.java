@@ -28,6 +28,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ *  The SolrClientCache caches SolrClients that they can be reused by different TupleStreams.
+ **/
+
 public class SolrClientCache implements Serializable {
 
   protected static final Logger log = LoggerFactory.getLogger(SolrClientCache.class);
