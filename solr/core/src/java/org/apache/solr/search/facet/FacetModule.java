@@ -192,7 +192,7 @@ public class FacetModule extends SearchComponent {
 
   @Override
   public String getDescription() {
-    return "Heliosearch Faceting";
+    return "Facet Module";
   }
 
   @Override
