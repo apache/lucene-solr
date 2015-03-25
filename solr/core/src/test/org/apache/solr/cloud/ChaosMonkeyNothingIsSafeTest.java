@@ -115,11 +115,15 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
     }
     fixShardCount(numShards);
+
+    // None of the operations used here are particularly costly, so this should work.
+    // Using this low timeout will also help us catch index stalling.
+    clientSoTimeout = 5000;
   }
 
   @Test
   public void test() throws Exception {
-    boolean testsSuccesful = false;
+    boolean testSuccessful = false;
     try {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
@@ -133,14 +137,14 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       
       // we cannot do delete by query
       // as it's not supported for recovery
-       del("*:*");
+      del("*:*");
       
-      List<StopableThread> threads = new ArrayList<>();
-      List<StopableIndexingThread> indexTreads = new ArrayList<>();
+      List<StoppableThread> threads = new ArrayList<>();
+      List<StoppableIndexingThread> indexTreads = new ArrayList<>();
       int threadCount = TEST_NIGHTLY ? 3 : 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
-        StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
+        StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
         threads.add(indexThread);
         indexTreads.add(indexThread);
         indexThread.start();
@@ -149,7 +153,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       threadCount = 1;
       i = 0;
       for (i = 0; i < threadCount; i++) {
-        StopableSearchThread searchThread = new StopableSearchThread();
+        StoppableSearchThread searchThread = new StoppableSearchThread(cloudClient);
         threads.add(searchThread);
         searchThread.start();
       }
@@ -158,7 +162,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
-        FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
+        FullThrottleStoppableIndexingThread ftIndexThread = new FullThrottleStoppableIndexingThread(
             clients, "ft1", true);
         threads.add(ftIndexThread);
         ftIndexThread.start();
@@ -184,15 +188,18 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       } finally {
         chaosMonkey.stopTheMonkey();
       }
-      
-      for (StopableThread indexThread : threads) {
+
+      // ideally this should go into chaosMonkey
+      restartZk(1000 * (5 + random().nextInt(4)));
+
+      for (StoppableThread indexThread : threads) {
         indexThread.safeStop();
       }
       
       // start any downed jetties to be sure we still will end up with a leader per shard...
       
       // wait for stop...
-      for (StopableThread indexThread : threads) {
+      for (StoppableThread indexThread : threads) {
         indexThread.join();
       }
       
@@ -217,9 +224,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       
       
       // we expect full throttle fails, but cloud client should not easily fail
-      for (StopableThread indexThread : threads) {
-        if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > FAIL_TOLERANCE);
+      for (StoppableThread indexThread : threads) {
+        if (indexThread instanceof StoppableIndexingThread && !(indexThread instanceof FullThrottleStoppableIndexingThread)) {
+          int failCount = ((StoppableIndexingThread) indexThread).getFailCount();
+          assertFalse("There were too many update fails (" + failCount + " > " + FAIL_TOLERANCE
+              + ") - we expect it can happen, but shouldn't easily", failCount > FAIL_TOLERANCE);
         }
       }
       
@@ -247,11 +256,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
       // sometimes we restart zookeeper as well
       if (random().nextBoolean()) {
-        zkServer.shutdown();
-        zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
-        zkServer.run();
+        restartZk(1000 * (5 + random().nextInt(4)));
       }
-      
 
       try (CloudSolrClient client = createCloudClient("collection1")) {
           createCollection(null, "testcollection",
@@ -263,31 +269,31 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       numShardsNumReplicas.add(1);
       checkForCollection("testcollection", numShardsNumReplicas, null);
       
-      testsSuccesful = true;
+      testSuccessful = true;
     } finally {
-      if (!testsSuccesful) {
+      if (!testSuccessful) {
         printLayout();
       }
     }
   }
 
-  private Set<String> getAddFails(List<StopableIndexingThread> threads) {
+  private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
     Set<String> addFails = new HashSet<String>();
-    for (StopableIndexingThread thread : threads)   {
+    for (StoppableIndexingThread thread : threads)   {
       addFails.addAll(thread.getAddFails());
     }
     return addFails;
   }
   
-  private Set<String> getDeleteFails(List<StopableIndexingThread> threads) {
+  private Set<String> getDeleteFails(List<StoppableIndexingThread> threads) {
     Set<String> deleteFails = new HashSet<String>();
-    for (StopableIndexingThread thread : threads)   {
+    for (StoppableIndexingThread thread : threads)   {
       deleteFails.addAll(thread.getDeleteFails());
     }
     return deleteFails;
   }
 
-  class FullThrottleStopableIndexingThread extends StopableIndexingThread {
+  class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
@@ -295,14 +301,14 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     private List<SolrClient> clients;
     private AtomicInteger fails = new AtomicInteger();
     
-    public FullThrottleStopableIndexingThread(List<SolrClient> clients,
-        String id, boolean doDeletes) {
+    public FullThrottleStoppableIndexingThread(List<SolrClient> clients,
+                                               String id, boolean doDeletes) {
       super(controlClient, cloudClient, id, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
-      HttpClientUtil.setConnectionTimeout(httpClient, 15000);
-      HttpClientUtil.setSoTimeout(httpClient, 15000);
+      HttpClientUtil.setConnectionTimeout(httpClient, clientConnectionTimeout);
+      HttpClientUtil.setSoTimeout(httpClient, clientSoTimeout);
       cusc = new ConcurrentUpdateSolrClient(
           ((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {

@@ -110,7 +110,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     tryDelete();
     
-    List<StopableIndexingThread> threads = new ArrayList<>();
+    List<StoppableIndexingThread> threads = new ArrayList<>();
     int threadCount = 2;
     int batchSize = 1;
     if (random().nextBoolean()) {
@@ -126,7 +126,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxUpdates, batchSize, pauseBetweenUpdates); // random().nextInt(999) + 1
+      StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxUpdates, batchSize, pauseBetweenUpdates); // random().nextInt(999) + 1
       threads.add(indexThread);
       indexThread.start();
     }
@@ -152,16 +152,16 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       chaosMonkey.stopTheMonkey();
     }
     
-    for (StopableIndexingThread indexThread : threads) {
+    for (StoppableIndexingThread indexThread : threads) {
       indexThread.safeStop();
     }
     
     // wait for stop...
-    for (StopableIndexingThread indexThread : threads) {
+    for (StoppableIndexingThread indexThread : threads) {
       indexThread.join();
     }
     
-    for (StopableIndexingThread indexThread : threads) {
+    for (StoppableIndexingThread indexThread : threads) {
       assertEquals(0, indexThread.getFailCount());
     }
     

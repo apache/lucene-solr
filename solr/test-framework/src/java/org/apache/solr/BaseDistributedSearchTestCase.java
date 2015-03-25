@@ -230,6 +230,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected boolean verifyStress = true;
   protected int nThreads = 3;
 
+  protected int clientConnectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+  protected int clientSoTimeout = 90000;
 
   public static int ORDERED = 1;
   public static int SKIP = 2;
@@ -435,8 +437,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     try {
       // setup the client...
       HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
-      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setSoTimeout(90000);
+      client.setConnectionTimeout(clientConnectionTimeout);
+      client.setSoTimeout(clientSoTimeout);
       client.setDefaultMaxConnectionsPerHost(100);
       client.setMaxTotalConnections(100);
       return client;

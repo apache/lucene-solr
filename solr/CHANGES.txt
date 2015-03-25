@@ -387,12 +387,14 @@ Other Changes
 * SOLR-6673: MDC based logging of collection, shard, replica, core
   (Ishan Chattopadhyaya , Noble Paul)
 
+* SOLR-7291: Test indexing on ZK disconnect with ChaosMonkey tests (Ramkumar Aiyengar)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 NOTE: Solr 5.0 only supports creating and removing SolrCloud collections through
-      the collections API, unlike previous versions. While not using the 
+      the collections API, unlike previous versions. While not using the
       collections API may still work in 5.0, it is unsupported, not recommended,
       and the behavior will change in a 5.x release.
 

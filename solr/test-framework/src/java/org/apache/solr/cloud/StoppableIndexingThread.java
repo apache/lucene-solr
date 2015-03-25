@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
  * limitations under the License.
  */
 
-public class StopableIndexingThread extends AbstractFullDistribZkTestBase.StopableThread {
+public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.StoppableThread {
   static String t1 = "a_t";
   static String i1 = "a_i";
   private volatile boolean stop = false;
@@ -46,12 +46,12 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
   private int batchSize;
   private boolean pauseBetweenUpdates;
   
-  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
+  public StoppableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
     this(controlClient, cloudClient, id, doDeletes, -1, 1, true);
   }
   
-  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes, int numCycles, int batchSize, boolean pauseBetweenUpdates) {
-    super("StopableIndexingThread");
+  public StoppableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes, int numCycles, int batchSize, boolean pauseBetweenUpdates) {
+    super("StoppableIndexingThread");
     this.controlClient = controlClient;
     this.cloudClient = cloudClient;
     this.id = id;
