@@ -11,10 +11,9 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.logging.MDCUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.MDC;
@@ -371,14 +370,17 @@ public class SolrLogLayout extends Layout {
 
 
   private void appendMDC(StringBuilder sb) {
-    sb.append(" [" + getMDCValueOrEmpty(COLLECTION_PROP) + "] ");
-    sb.append("[" + getMDCValueOrEmpty(SHARD_ID_PROP) + "] ");
-    sb.append("[" + getMDCValueOrEmpty(REPLICA_PROP) + "] ");
-    sb.append("[" + getMDCValueOrEmpty(CORE_NAME_PROP)+"] ");
-  }
-
-  private String getMDCValueOrEmpty(String key) {
-    String val = MDC.get(key);
-    return val==null? "": val;
+    if (!StringUtils.isEmpty(MDC.get(COLLECTION_PROP)))  {
+      sb.append(" C:").append(MDC.get(COLLECTION_PROP));
+    }
+    if (!StringUtils.isEmpty(MDC.get(SHARD_ID_PROP))) {
+      sb.append(" S:").append(MDC.get(SHARD_ID_PROP));
+    }
+    if (!StringUtils.isEmpty(MDC.get(REPLICA_PROP))) {
+      sb.append(" R:").append(MDC.get(REPLICA_PROP));
+    }
+    if (!StringUtils.isEmpty(MDC.get(CORE_NAME_PROP))) {
+      sb.append(" c:").append(MDC.get(CORE_NAME_PROP));
+    }
   }
 }
