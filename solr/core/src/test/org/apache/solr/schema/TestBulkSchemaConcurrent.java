@@ -152,7 +152,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     payload = payload.replace("replaceFieldA", aField);
     payload = payload.replace("replaceDynamicField", dynamicFldName);
-    payload = payload.replace("replaceDynamicCopyFieldDest",dynamicCopyFldDest);
+    payload = payload.replace("replaceDynamicCopyFieldDest", dynamicCopyFldDest);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
     RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
@@ -269,12 +269,12 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
   private void invokeBulkDeleteCall(int seed, ArrayList<String> errs) throws Exception {
     String payload = "{\n" +
-        "          'delete-field' : {'name':'replaceFieldA'},\n" +
-        "          'delete-dynamic-field' : {'name' :'replaceDynamicField'},\n" +
         "          'delete-copy-field' : {\n" +
         "                       'source' :'replaceFieldA',\n" +
         "                       'dest':['replaceDynamicCopyFieldDest']\n" +
         "                       },\n" +
+        "          'delete-field' : {'name':'replaceFieldA'},\n" +
+        "          'delete-dynamic-field' : {'name' :'replaceDynamicField'},\n" +
         "          'delete-field-type' : {'name' :'myNewFieldTypeName'}\n" +
         " }";
     String aField = "a" + seed;

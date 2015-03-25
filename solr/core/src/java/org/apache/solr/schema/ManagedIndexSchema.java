@@ -449,9 +449,16 @@ public final class ManagedIndexSchema extends IndexSchema {
       for (String name : names) {
         SchemaField field = getFieldOrNull(name); 
         if (null != field) {
-          if (copyFieldsMap.containsKey(name) || isCopyFieldTarget(field)) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Can't delete '" + name
-                + "' because it's referred to by at least one copy field directive.");
+          String message = "Can't delete field '" + name
+              + "' because it's referred to by at least one copy field directive.";
+          if (newSchema.copyFieldsMap.containsKey(name) || newSchema.isCopyFieldTarget(field)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, message);
+          }
+          for (int i = 0 ; i < newSchema.dynamicCopyFields.length ; ++i) {
+            DynamicCopy dynamicCopy = newSchema.dynamicCopyFields[i];
+            if (name.equals(dynamicCopy.getRegex())) {
+              throw new SolrException(ErrorCode.BAD_REQUEST, message);
+            }
           }
           newSchema.fields.remove(name);
           newSchema.fieldsWithDefaultValue.remove(field);
@@ -844,7 +851,10 @@ public final class ManagedIndexSchema extends IndexSchema {
           DynamicCopy dynamicCopy = dynamicCopyFields[i];
           if (source.equals(dynamicCopy.getRegex()) && dest.equals(dynamicCopy.getDestFieldName())) {
             found = true;
-            decrementCopyFieldTargetCount(dynamicCopy.getDestination().getPrototype());
+            SchemaField destinationPrototype = dynamicCopy.getDestination().getPrototype();
+            if (copyFieldTargetCounts.containsKey(destinationPrototype)) {
+              decrementCopyFieldTargetCount(destinationPrototype);
+            }
             if (dynamicCopyFields.length > 1) {
               DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length - 1];
               System.arraycopy(dynamicCopyFields, 0, temp, 0, i);
@@ -1126,7 +1136,9 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (typeName.equals(destinationPrototype.getType().getTypeName())
             || (null != sourceDynamicBase && typeName.equals(sourceDynamicBase.getPrototype().getType().getTypeName()))) {
           dynamicCopyFieldsToRebuild.add(dynamicCopy);
-          newSchema.decrementCopyFieldTargetCount(destinationPrototype);
+          if (newSchema.copyFieldTargetCounts.containsKey(destinationPrototype)) {
+            newSchema.decrementCopyFieldTargetCount(destinationPrototype);
+          }
           // don't add this dynamic copy field to newDynamicCopyFields - effectively removing it
         } else {
           newDynamicCopyFields.add(dynamicCopy);
