@@ -45,6 +45,7 @@ import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
 import org.apache.solr.search.facet.MaxAgg;
 import org.apache.solr.search.facet.MinAgg;
+import org.apache.solr.search.facet.PercentileAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
@@ -868,7 +869,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
-
+    addParser("agg_percentile", new PercentileAgg.Parser());
 
   }
 
