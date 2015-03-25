@@ -268,6 +268,19 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+
+  public void testHash() throws Exception {
+    SolrQueryRequest req = req("partitionKeys","foo_s");
+
+    try {
+      assertQueryEquals("hash", req,
+          "{!hash workers=3 worker=0}");
+
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
     try {
