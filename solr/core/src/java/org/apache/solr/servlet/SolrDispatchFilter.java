@@ -36,6 +36,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -307,14 +308,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
             if (core != null) {
               path = path.substring( idx );
-              MDCUtils.setCore(core.getName());
+              addMDCValues(cores, core);
             }
           }
           if (core == null) {
             if (!cores.isZooKeeperAware() ) {
               core = cores.getCore("");
-              if (core != null)
-                MDCUtils.setCore(core.getName());
+              if (core != null) {
+                addMDCValues(cores, core);
+              }
             }
           }
         }
@@ -326,7 +328,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           if (core != null) {
             // we found a core, update the path
             path = path.substring( idx );
-            MDCUtils.setCore(core.getName());
+            addMDCValues(cores, core);
           }
           
           // if we couldn't find it locally, look on other nodes
@@ -361,7 +363,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           // try the default core
           if (core == null) {
             core = cores.getCore("");
-            MDCUtils.setCore(core.getName());
+            addMDCValues(cores, core);
           }
         }
 
@@ -489,6 +491,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
+  }
+
+  private void addMDCValues(CoreContainer cores, SolrCore core) {
+    MDCUtils.setCore(core.getName());
+    if (cores.isZooKeeperAware()) {
+      CloudDescriptor cloud = core.getCoreDescriptor().getCloudDescriptor();
+      MDCUtils.setCollection(cloud.getCollectionName());
+      MDCUtils.setShard(cloud.getShardId());
+      MDCUtils.setReplica(cloud.getCoreNodeName());
+    }
   }
 
   private Map<String , Integer> checkStateIsValid(CoreContainer cores, String stateVer) {
