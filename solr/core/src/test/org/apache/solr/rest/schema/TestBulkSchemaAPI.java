@@ -390,7 +390,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     errors = map.get("errors");
     assertNotNull(errors);
     assertTrue(errors.toString().contains
-        ("Can't delete 'NewField1' because it's referred to by at least one copy field directive"));
+        ("Can't delete field 'NewField1' because it's referred to by at least one copy field directive"));
 
     cmds = "{'delete-field' : {'name':'NewField2'}}";
     response = harness.post("/schema?wt=json", json(cmds));
@@ -398,7 +398,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     errors = map.get("errors");
     assertNotNull(errors);
     assertTrue(errors.toString().contains
-        ("Can't delete 'NewField2' because it's referred to by at least one copy field directive"));
+        ("Can't delete field 'NewField2' because it's referred to by at least one copy field directive"));
 
     cmds = "{'replace-field' : {'name':'NewField1', 'type':'string'}}";
     response = harness.post("/schema?wt=json", json(cmds));
