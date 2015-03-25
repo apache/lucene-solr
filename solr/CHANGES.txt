@@ -200,6 +200,14 @@ New Features
 
 * SOLR-6350: StatsComponent now supports Percentiles (Xu Zhang, hossman)
 
+* SOLR-7306: Percentiles support for the new facet module.  Percentiles
+  can be calculated for all facet buckets and field faceting can sort
+  by percentile values.
+  Examples:
+    json.facet={ median_age : "percentile(age,50)" }
+    json.facet={ salary_percentiles : "percentile(salary,25,50,75)" }
+  (yonik)
+
 Bug Fixes
 ----------------------
 

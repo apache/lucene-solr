@@ -17,6 +17,7 @@ package org.apache.solr.search.facet;
  * limitations under the License.
  */
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
@@ -366,6 +368,30 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
     );
 
+    // percentiles 0,10,50,90,100
+    // catA: 2.0 2.2 3.0 3.8 4.0
+    // catB: -9.0 -8.2 -5.0 7.800000000000001 11.0
+    // all: -9.0 -7.3999999999999995 2.0 8.200000000000001 11.0
+    // test sorting by single percentile
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_d},50)'}  }}" +
+                " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},50)'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, n1:3.0 }, { val:'B', count:3, n1:-5.0}]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:-5.0}, { val:'A', count:2, n1:3.0 }]} }"
+    );
+
+    // test sorting by multiple percentiles (sort is by first)
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_d},50,0,100)'}  }}" +
+                " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},50,0,100)'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, n1:[3.0,2.0,4.0] }, { val:'B', count:3, n1:[-5.0,-9.0,11.0] }]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:[-5.0,-9.0,11.0]}, { val:'A', count:2, n1:[3.0,2.0,4.0] }]} }"
+    );
+
     // test sorting by count/index order
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'count desc' }  }" +
@@ -557,15 +583,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={ 'count':6, " +
-            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0, numwhere:2  }"
+            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0, numwhere:2, med:2.0, perc:[-9.0,2.0,11.0]  }"
     );
 
     // stats at top level, no matches
     client.testJQ(params(p, "q", "id:DOESNOTEXIST"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={count:0 " +
             "/* ,sum1:0.0, sumsq1:0.0, avg1:0.0, min1:'NaN', max1:'NaN', numwhere:0 */ }"
@@ -671,4 +697,87 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStats( client, params() );
   }
 
+  /***
+  public void testPercentiles() {
+    AVLTreeDigest catA = new AVLTreeDigest(100);
+    catA.add(4);
+    catA.add(2);
+
+    AVLTreeDigest catB = new AVLTreeDigest(100);
+    catB.add(-9);
+    catB.add(11);
+    catB.add(-5);
+
+    AVLTreeDigest all = new AVLTreeDigest(100);
+    all.add(catA);
+    all.add(catB);
+
+    System.out.println(str(catA));
+    System.out.println(str(catB));
+    System.out.println(str(all));
+
+    // 2.0 2.2 3.0 3.8 4.0
+    // -9.0 -8.2 -5.0 7.800000000000001 11.0
+    // -9.0 -7.3999999999999995 2.0 8.200000000000001 11.0
+  }
+
+  private static String str(AVLTreeDigest digest) {
+    StringBuilder sb = new StringBuilder();
+    for (double d : new double[] {0,.1,.5,.9,1}) {
+      sb.append(" ").append(digest.quantile(d));
+    }
+    return sb.toString();
+  }
+   ***/
+
+  /*** test code to ensure TDigest is working as we expect.
+  @Test
+  public void testTDigest() throws Exception {
+    AVLTreeDigest t1 = new AVLTreeDigest(100);
+    t1.add(10, 1);
+    t1.add(90, 1);
+    t1.add(50, 1);
+
+    System.out.println(t1.quantile(0.1));
+    System.out.println(t1.quantile(0.5));
+    System.out.println(t1.quantile(0.9));
+
+    assertEquals(t1.quantile(0.5), 50.0, 0.01);
+
+    AVLTreeDigest t2 = new AVLTreeDigest(100);
+    t2.add(130, 1);
+    t2.add(170, 1);
+    t2.add(90, 1);
+
+    System.out.println(t2.quantile(0.1));
+    System.out.println(t2.quantile(0.5));
+    System.out.println(t2.quantile(0.9));
+
+    AVLTreeDigest top = new AVLTreeDigest(100);
+
+    t1.compress();
+    ByteBuffer buf = ByteBuffer.allocate(t1.byteSize()); // upper bound
+    t1.asSmallBytes(buf);
+    byte[] arr1 = Arrays.copyOf(buf.array(), buf.position());
+
+    ByteBuffer rbuf = ByteBuffer.wrap(arr1);
+    top.add(AVLTreeDigest.fromBytes(rbuf));
+
+    System.out.println(top.quantile(0.1));
+    System.out.println(top.quantile(0.5));
+    System.out.println(top.quantile(0.9));
+
+    t2.compress();
+    ByteBuffer buf2 = ByteBuffer.allocate(t2.byteSize()); // upper bound
+    t2.asSmallBytes(buf2);
+    byte[] arr2 = Arrays.copyOf(buf2.array(), buf2.position());
+
+    ByteBuffer rbuf2 = ByteBuffer.wrap(arr2);
+    top.add(AVLTreeDigest.fromBytes(rbuf2));
+
+    System.out.println(top.quantile(0.1));
+    System.out.println(top.quantile(0.5));
+    System.out.println(top.quantile(0.9));
+  }
+  ******/
 }
