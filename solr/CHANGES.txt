@@ -306,6 +306,9 @@ Bug Fixes
 * SOLR-7305: BlendedInfixLookupFactory swallows root IOException when it occurs.
   (Stephan Lagraulet via shalin)
 
+* SOLR-7293: Fix bug that Solr server does not listen on IPv6 interfaces by default.
+  (Uwe Schindler, Sebastian Pesman)
+
 Optimizations
 ----------------------
 

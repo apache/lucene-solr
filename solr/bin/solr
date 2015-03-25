@@ -1335,7 +1335,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 -Dsolr.solr.home=$SOLR_HOME \
 -Dsolr.install.dir=$SOLR_TIP \
 -Duser.timezone=$SOLR_TIMEZONE \
--Djava.net.preferIPv4Stack=true $LOG4J_CONFIG \
+$LOG4J_CONFIG \
 $SOLR_OPTS"
   
   if [ "$SOLR_MODE" == "solrcloud" ]; then
