@@ -391,6 +391,11 @@ public class ClusterState implements JSONWriter.Writable {
     }
 
     public boolean isLazilyLoaded() { return false; }
+    
+    @Override
+    public String toString() {
+      return coll.toString();
+    }
 
   }
 
