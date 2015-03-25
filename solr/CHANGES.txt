@@ -294,7 +294,9 @@ Bug Fixes
 
 * SOLR-7254: Make an invalid negative start/rows throw a HTTP 400 error (Bad Request) instead
   of causing a 500 error.  (Ramkumar Aiyengar, Hrishikesh Gadre, yonik)
- 
+
+* SOLR-7305: BlendedInfixLookupFactory swallows root IOException when it occurs.
+  (Stephan Lagraulet via shalin)
 
 Optimizations
 ----------------------
