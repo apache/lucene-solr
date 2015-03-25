@@ -213,22 +213,16 @@ public final class DocValuesRangeQuery extends Query {
 
   private static class TwoPhaseNumericRange extends TwoPhaseIterator {
 
-    private final DocIdSetIterator approximation;
     private final SortedNumericDocValues values;
     private final long min, max;
     private final Bits acceptDocs;
 
     TwoPhaseNumericRange(SortedNumericDocValues values, long min, long max, DocIdSetIterator approximation, Bits acceptDocs) {
+      super(approximation);
       this.values = values;
       this.min = min;
       this.max = max;
-      this.approximation = approximation;
       this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public DocIdSetIterator approximation() {
-      return approximation;
     }
 
     @Override
@@ -251,22 +245,16 @@ public final class DocValuesRangeQuery extends Query {
 
   private static class TwoPhaseOrdRange extends TwoPhaseIterator {
 
-    private final DocIdSetIterator approximation;
     private final SortedSetDocValues values;
     private final long minOrd, maxOrd;
     private final Bits acceptDocs;
 
     TwoPhaseOrdRange(SortedSetDocValues values, long minOrd, long maxOrd, DocIdSetIterator approximation, Bits acceptDocs) {
+      super(approximation);
       this.values = values;
       this.minOrd = minOrd;
       this.maxOrd = maxOrd;
-      this.approximation = approximation;
       this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public DocIdSetIterator approximation() {
-      return approximation;
     }
 
     @Override

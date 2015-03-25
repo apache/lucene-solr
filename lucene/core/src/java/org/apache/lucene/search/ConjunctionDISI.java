@@ -140,18 +140,12 @@ class ConjunctionDISI extends DocIdSetIterator {
    */
   private static class TwoPhaseConjunctionDISI extends TwoPhaseIterator {
 
-    private final ConjunctionDISI approximation;
     private final TwoPhaseIterator[] twoPhaseIterators;
 
     private TwoPhaseConjunctionDISI(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
-      approximation = new ConjunctionDISI(iterators);
+      super(new ConjunctionDISI(iterators));
       assert twoPhaseIterators.size() > 0;
-      this.twoPhaseIterators = twoPhaseIterators.toArray(new TwoPhaseIterator[0]);
-    }
-
-    @Override
-    public DocIdSetIterator approximation() {
-      return approximation;
+      this.twoPhaseIterators = twoPhaseIterators.toArray(new TwoPhaseIterator[twoPhaseIterators.size()]);
     }
 
     @Override

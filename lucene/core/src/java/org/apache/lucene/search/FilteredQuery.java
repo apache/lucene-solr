@@ -216,11 +216,7 @@ public class FilteredQuery extends Query {
       TwoPhaseIterator inner = scorer.asTwoPhaseIterator();
       if (inner != null) {
         // we are like a simplified conjunction here, handle the nested case:
-        return new TwoPhaseIterator() {
-          @Override
-          public DocIdSetIterator approximation() {
-            return inner.approximation();
-          }
+        return new TwoPhaseIterator(inner.approximation()) {
           @Override
           public boolean matches() throws IOException {
             // check the approximation matches first, then check bits last.
@@ -229,12 +225,7 @@ public class FilteredQuery extends Query {
         };
       } else {
         // scorer doesnt have an approximation, just use it, to force bits applied last.
-        return new TwoPhaseIterator() {
-          @Override
-          public DocIdSetIterator approximation() {
-            return scorer;
-          }
-          
+        return new TwoPhaseIterator(scorer) {
           @Override
           public boolean matches() throws IOException {
             return filterBits.get(scorer.docID());

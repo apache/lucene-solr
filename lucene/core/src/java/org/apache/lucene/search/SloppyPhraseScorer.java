@@ -590,12 +590,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
-    return new TwoPhaseIterator() {
-      @Override
-      public DocIdSetIterator approximation() {
-        return conjunction;
-      }
-
+    return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
         sloppyFreq = phraseFreq(); // check for phrase

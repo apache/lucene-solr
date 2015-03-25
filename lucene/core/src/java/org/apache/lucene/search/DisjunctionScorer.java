@@ -119,15 +119,10 @@ abstract class DisjunctionScorer extends Scorer {
       return null;
     }
 
-    return new TwoPhaseIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        // note it is important to share the same pq as this scorer so that
-        // rebalancing the pq through the approximation will also rebalance
-        // the pq in this scorer.
-        return new DisjunctionDISIApproximation(subScorers);
-      }
+    // note it is important to share the same pq as this scorer so that
+    // rebalancing the pq through the approximation will also rebalance
+    // the pq in this scorer.
+    return new TwoPhaseIterator(new DisjunctionDISIApproximation(subScorers)) {
 
       @Override
       public boolean matches() throws IOException {
