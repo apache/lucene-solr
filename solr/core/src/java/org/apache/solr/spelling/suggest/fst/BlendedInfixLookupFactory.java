@@ -132,7 +132,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
         }
       };
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
 
