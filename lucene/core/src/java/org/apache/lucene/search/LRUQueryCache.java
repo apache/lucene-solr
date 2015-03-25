@@ -586,17 +586,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
         twoPhaseView = null;
         disi = approximation;
       } else {
-        twoPhaseView = new TwoPhaseIterator() {
-
+        twoPhaseView = new TwoPhaseIterator(approximation) {
           @Override
           public boolean matches() throws IOException {
             final int doc = approximation.docID();
             return acceptDocs.get(doc);
-          }
-
-          @Override
-          public DocIdSetIterator approximation() {
-            return approximation;
           }
         };
         disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);

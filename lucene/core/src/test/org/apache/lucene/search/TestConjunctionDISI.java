@@ -28,12 +28,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestConjunctionDISI extends LuceneTestCase {
 
   private static TwoPhaseIterator approximation(final DocIdSetIterator iterator, final FixedBitSet confirmed) {
-    return new TwoPhaseIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return iterator;
-      }
+    return new TwoPhaseIterator(iterator) {
 
       @Override
       public boolean matches() throws IOException {

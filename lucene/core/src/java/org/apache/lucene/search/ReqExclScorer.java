@@ -136,12 +136,7 @@ class ReqExclScorer extends Scorer {
     if (reqTwoPhaseIterator == null) {
       return null;
     }
-    return new TwoPhaseIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return reqApproximation;
-      }
+    return new TwoPhaseIterator(reqApproximation) {
 
       @Override
       public boolean matches() throws IOException {
