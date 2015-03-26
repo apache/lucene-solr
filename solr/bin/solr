@@ -148,6 +148,8 @@ if [ -n "$SOLR_SSL_OPTS" ]; then
   SOLR_JETTY_CONFIG=$SOLR_TIP/server/etc/jetty-https-ssl.xml
 fi
 
+SOLR_JETTY_CONFIG="$SOLR_JETTY_CONFIG OPTIONS=default,rewrite"
+
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
