@@ -57,7 +57,6 @@
     <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" conf="compile"/>
     <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" conf="compile"/>
     <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" conf="compile"/>
-    <dependency org="com.uwyn" name="jhighlight" rev="${/com.uwyn/jhighlight}" conf="compile"/>
     <dependency org="com.pff" name="java-libpst" rev="${/com.pff/java-libpst}" conf="compile"/>
     <dependency org="net.sourceforge.jmatio" name="jmatio" rev="${/net.sourceforge.jmatio/jmatio}" conf="compile"/>
 

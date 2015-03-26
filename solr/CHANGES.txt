@@ -78,7 +78,7 @@ Upgrading from Solr 5.0
   addition to SolrServerException, to bring them in line with the update
   functions.
 
-* SolrRequest.process() is now final.  Subclasses should instead be parametrized
+* SolrRequest.process() is now final.  Subclasses should instead be parameterized
   by their corresponding SolrResponse type, and implement createResponse()
 
 * The signature of SolrDispatchFilter.createCoreContainer() has changed to take
@@ -86,6 +86,10 @@ Upgrading from Solr 5.0
 
 * Deprecated the 'lib' option added to create-requesthandler as part of SOLR-6801 in 5.0 release.
   Please use the add-runtimelib command
+  
+* Tika's runtime dependency of 'jhighlight' was removed as the latter was found to 
+  contain some LGPL-only code. Until that's resolved by Tika, you can download the
+  .jar yourself and place it under contrib/extraction/lib.  
 
 Detailed Change List
 ----------------------
