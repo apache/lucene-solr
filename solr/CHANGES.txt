@@ -208,6 +208,9 @@ New Features
     json.facet={ salary_percentiles : "percentile(salary,25,50,75)" }
   (yonik)
 
+* SOLR-7307: EmbeddedSolrServer can now be started up by passing a path to a
+  solr home directory, or a NodeConfig object (Alan Woodward, Mike Drob)
+
 Bug Fixes
 ----------------------
 

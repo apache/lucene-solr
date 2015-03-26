@@ -17,12 +17,9 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -31,6 +28,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
@@ -138,7 +138,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
 
   protected SolrClient getSolrCore() {
-    return new EmbeddedSolrServer(h.getCore());
+    return new EmbeddedSolrServer(h.getCoreContainer(), collection);
   }
 
 }

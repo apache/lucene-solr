@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -135,6 +136,11 @@ public class SolrXmlConfig {
 
   public static NodeConfig fromSolrHome(SolrResourceLoader loader, String solrHome) {
     return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
+  }
+
+  public static NodeConfig fromSolrHome(Path solrHome) {
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome.toString());
+    return fromSolrHome(loader, solrHome.toString());
   }
 
   private static void checkForIllegalConfig(Config config) {
