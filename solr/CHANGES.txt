@@ -221,6 +221,11 @@ New Features
   Example: q=price:[ ${low:0} TO ${high} ]&low=100&high=200
   (yonik)
 
+* SOLR-7226: Make /query/* jmx/* , requestDispatcher/*, <listener> <initParams>
+  properties in solrconfig.xml editable (Noble Paul)
+
+
+
 
 Bug Fixes
 ----------------------

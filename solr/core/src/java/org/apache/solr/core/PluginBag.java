@@ -20,7 +20,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,7 +56,9 @@ public class PluginBag<T> implements AutoCloseable {
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
 
-  /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
+  /**
+   * Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups.
+   */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     this.core = core;
     this.klass = klass;
@@ -72,12 +73,14 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
-  /** Constructs a non-threadsafe plugin registry */
+  /**
+   * Constructs a non-threadsafe plugin registry
+   */
   public PluginBag(Class<T> klass, SolrCore core) {
     this(klass, core, false);
   }
 
-  static void initInstance(Object inst, PluginInfo info, SolrCore core) {
+  static void initInstance(Object inst, PluginInfo info) {
     if (inst instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) inst).init(info);
     } else if (inst instanceof NamedListInitializedPlugin) {
@@ -94,16 +97,16 @@ public class PluginBag<T> implements AutoCloseable {
 
   }
 
-  PluginHolder<T> createPlugin(PluginInfo info, SolrCore core) {
+  PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
-      log.info(" {} : '{}'  created with runtimeLib=true ", meta.tag, info.name);
+      log.info(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<>(meta, info, core, core.getMemClassLoader());
     } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
-      log.info("{} : '{}' created with startup=lazy ", meta.tag, info.name);
+      log.info("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
     } else {
-      T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.tag, null, core.getResourceLoader());
-      initInstance(inst, info, core);
+      T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
+      initInstance(inst, info);
       return new PluginHolder<>(info, inst);
     }
   }
@@ -164,7 +167,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   void setDefault(String def) {
     if (!registry.containsKey(def)) return;
-    if (this.def != null) log.warn("Multiple defaults for : " + meta.tag);
+    if (this.def != null) log.warn("Multiple defaults for : " + meta.getCleanTag());
     this.def = def;
   }
 
@@ -197,11 +200,11 @@ public class PluginBag<T> implements AutoCloseable {
   void init(Map<String, T> defaults, SolrCore solrCore, List<PluginInfo> infos) {
     core = solrCore;
     for (PluginInfo info : infos) {
-      PluginHolder<T> o = createPlugin(info, solrCore);
+      PluginHolder<T> o = createPlugin(info);
       String name = info.name;
       if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
       PluginHolder<T> old = put(name, o);
-      if (old != null) log.warn("Multiple entries of {} with name {}", meta.tag, name);
+      if (old != null) log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {
       if (!contains(e.getKey())) {
@@ -238,7 +241,7 @@ public class PluginBag<T> implements AutoCloseable {
       try {
         e.getValue().close();
       } catch (Exception exp) {
-        log.error("Error closing plugin " + e.getKey() + " of type : " + meta.tag, exp);
+        log.error("Error closing plugin " + e.getKey() + " of type : " + meta.getCleanTag(), exp);
       }
     }
   }
@@ -331,14 +334,14 @@ public class PluginBag<T> implements AutoCloseable {
 
     private synchronized boolean createInst() {
       if (lazyInst != null) return false;
-      log.info("Going to create a new {} with {} ", pluginMeta.tag, pluginInfo.toString());
+      log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo.toString());
       if (resourceLoader instanceof MemClassLoader) {
         MemClassLoader loader = (MemClassLoader) resourceLoader;
         loader.loadJars();
       }
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
-      T localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.tag, null, resourceLoader);
-      initInstance(localInst, pluginInfo, core);
+      T localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+      initInstance(localInst, pluginInfo);
       if (localInst instanceof SolrCoreAware) {
         SolrResourceLoader.assertAwareCompatibility(SolrCoreAware.class, localInst);
         ((SolrCoreAware) localInst).inform(core);
