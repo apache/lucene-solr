@@ -343,6 +343,9 @@ Other Changes
 * SOLR-6673: MDC based logging of collection, shard, replica, core
   (Ishan Chattopadhyaya , Noble Paul)
 
+* SOLR-7203: Remove buggy no-op retry code in HttpSolrClient (Alan Woodward,
+  Mark Miller, Greg Solovyev)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
