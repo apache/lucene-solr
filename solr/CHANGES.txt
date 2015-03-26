@@ -214,7 +214,13 @@ New Features
 * SOLR-1387: Add facet.contains and facet.contains.ignoreCase options (Tom Winch
   via Alan Woodward)
 
-* SOLR-7082: Streaming Aggregation for SolrCloud (Joel bernstein, Yonik Seely)
+* SOLR-7082: Streaming Aggregation for SolrCloud (Joel bernstein, Yonik Seeley)
+
+* SOLR-7212: Parameter substitution / macro expansion across entire request.
+  Substitution can contain further expansions and default values are supported.
+  Example: q=price:[ ${low:0} TO ${high} ]&low=100&high=200
+  (yonik)
+
 
 Bug Fixes
 ----------------------
