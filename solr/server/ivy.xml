@@ -37,6 +37,7 @@
     <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-jmx" rev="${/org.eclipse.jetty/jetty-jmx}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-rewrite" rev="${/org.eclipse.jetty/jetty-rewrite}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-security" rev="${/org.eclipse.jetty/jetty-security}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${/org.eclipse.jetty/jetty-server}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${/org.eclipse.jetty/jetty-servlet}" conf="jetty"/>
