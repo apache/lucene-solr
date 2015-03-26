@@ -363,7 +363,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           // try the default core
           if (core == null) {
             core = cores.getCore("");
-            addMDCValues(cores, core);
+            if (core != null) {
+              addMDCValues(cores, core);
+            }
           }
         }
 
