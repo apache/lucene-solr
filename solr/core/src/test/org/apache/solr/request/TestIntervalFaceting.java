@@ -17,9 +17,6 @@
 
 package org.apache.solr.request;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,6 +35,9 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
@@ -905,7 +905,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     
     // Don't close this client, it would shutdown the CoreContainer
     @SuppressWarnings("resource")
-    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    SolrClient client = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
     
     SolrQuery q = new SolrQuery();
     q.setQuery("*:*");
