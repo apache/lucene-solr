@@ -149,6 +149,16 @@ public interface FacetParams {
    */
   public static final String FACET_PREFIX = FACET + ".prefix";
 
+  /**
+   * Only return constraints of a facet field containing the given string.
+   */
+  public static final String FACET_CONTAINS = FACET + ".contains";
+
+  /**
+   * If using facet contains, ignore case when comparing values.
+   */
+  public static final String FACET_CONTAINS_IGNORE_CASE = FACET_CONTAINS + ".ignoreCase";
+
  /**
    * When faceting by enumerating the terms in a field,
    * only use the filterCache for terms with a df &gt;= to this parameter.
@@ -165,7 +175,7 @@ public interface FacetParams {
    */
   public static final String FACET_DATE_START = FACET_DATE + ".start";
   /**
-   * Date string indicating the endinging point for a date facet range.
+   * Date string indicating the ending point for a date facet range.
    * Can be overriden on a per field basis.
    */
   public static final String FACET_DATE_END = FACET_DATE + ".end";

@@ -211,6 +211,9 @@ New Features
 * SOLR-7307: EmbeddedSolrServer can now be started up by passing a path to a
   solr home directory, or a NodeConfig object (Alan Woodward, Mike Drob)
 
+* SOLR-1387: Add facet.contains and facet.contains.ignoreCase options (Tom Winch
+  via Alan Woodward)
+
 Bug Fixes
 ----------------------
 

@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -58,7 +59,7 @@ import org.apache.solr.util.LongPriorityQueue;
 public class DocValuesFacets {
   private DocValuesFacets() {}
   
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix) throws IOException {
+  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase) throws IOException {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
@@ -97,6 +98,8 @@ public class DocValuesFacets {
       prefixRef = new BytesRefBuilder();
       prefixRef.copyChars(prefix);
     }
+    
+    final BytesRef containsBR = contains != null ? new BytesRef(contains) : null;
 
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
@@ -170,6 +173,12 @@ public class DocValuesFacets {
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
           int c = counts[i];
+          if (containsBR != null) {
+            final BytesRef term = si.lookupOrd(startTermIndex+i);
+            if (!StringHelper.contains(term, containsBR, ignoreCase)) {
+              continue;
+            }
+          }
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
             // index order, so we already know that the keys are ordered.  This can be very
@@ -203,18 +212,28 @@ public class DocValuesFacets {
       } else {
         // add results in index order
         int i=(startTermIndex==-1)?1:0;
-        if (mincount<=0) {
-          // if mincount<=0, then we won't discard any terms and we know exactly
-          // where to start.
+        if (mincount<=0 && containsBR == null) {
+          // if mincount<=0 and we're not examining the values for contains, then
+          // we won't discard any terms and we know exactly where to start.
           i+=off;
           off=0;
         }
 
         for (; i<nTerms; i++) {          
           int c = counts[i];
-          if (c<mincount || --off>=0) continue;
+          if (c<mincount) continue;
+          BytesRef term = null;
+          if (containsBR != null) {
+            term = si.lookupOrd(startTermIndex+i);
+            if (!StringHelper.contains(term, containsBR, ignoreCase)) {
+              continue;
+            }
+          }
+          if (--off>=0) continue;
           if (--lim<0) break;
-          final BytesRef term = si.lookupOrd(startTermIndex+i);
+          if (term == null) {
+            term = si.lookupOrd(startTermIndex+i);
+          }
           ft.indexedToReadable(term, charsRef);
           res.add(charsRef.toString(), c);
         }
