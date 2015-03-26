@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class TestEmbeddedSolrServer extends SolrTestCaseJ4 {
+public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
   @Test
   public void testPathConstructor() throws IOException {
