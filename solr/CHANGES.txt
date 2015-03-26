@@ -224,7 +224,7 @@ New Features
 * SOLR-7226: Make /query/* jmx/* , requestDispatcher/*, <listener> <initParams>
   properties in solrconfig.xml editable (Noble Paul)
 
-* SOLR-7240: '/' redirects to '/solr/' for convinience (Martijn Koster, hossman)
+* SOLR-7240: '/' redirects to '/solr/' for convenience (Martijn Koster, hossman)
 
 
 Bug Fixes
