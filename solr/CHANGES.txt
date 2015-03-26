@@ -328,6 +328,9 @@ Bug Fixes
 * SOLR-7293: Fix bug that Solr server does not listen on IPv6 interfaces by default.
   (Uwe Schindler, Sebastian Pesman)
 
+* SOLR-7298: Fix Collections API calls (SolrJ) to not add name parameter when not needed.
+  (Shai Erera, Anshum Gupta)
+
 Optimizations
 ----------------------
 
