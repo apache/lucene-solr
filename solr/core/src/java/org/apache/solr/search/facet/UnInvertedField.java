@@ -564,6 +564,8 @@ public class UnInvertedField extends DocTermOrds {
   // called from FieldFacetProcessor
   // TODO: do a callback version that can be specialized!
   public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
+    if (processor.accs.length==1 && processor.accs[0] instanceof CountSlotAcc)
+
     use.incrementAndGet();
 
     DocSet docs = processor.fcontext.base;
