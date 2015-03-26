@@ -57,12 +57,13 @@ public class CommandOperation {
     return o == null ? def : String.valueOf(o);
   }
 
-  public Map<String, Object> getDataMap() {
+  public Map<String,Object> getDataMap() {
     if (commandData instanceof Map) {
-      return (Map) commandData;
+      //noinspection unchecked
+      return (Map<String,Object>)commandData;
     }
     addError(StrUtils.formatString("The command ''{0}'' should have the values as a json object {key:val} format", name));
-    return Collections.EMPTY_MAP;
+    return Collections.emptyMap();
   }
 
   private Object getRootPrimitive() {
@@ -163,10 +164,11 @@ public class CommandOperation {
    * Get all the values from the metadata for the command
    * without the specified keys
    */
-  public Map getValuesExcluding(String... keys) {
+  public Map<String,Object> getValuesExcluding(String... keys) {
     getMapVal(null);
     if (hasError()) return emptyMap();//just to verify the type is Map
-    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
+    @SuppressWarnings("unchecked") 
+    LinkedHashMap<String,Object> cp = new LinkedHashMap<>((Map<String,Object>)commandData);
     if (keys == null) return cp;
     for (String key : keys) {
       cp.remove(key);

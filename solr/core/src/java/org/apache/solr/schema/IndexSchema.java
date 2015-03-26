@@ -756,7 +756,7 @@ public class IndexSchema {
   }
 
   /** Returns true if the given name has exactly one asterisk either at the start or end of the name */
-  private static boolean isValidFieldGlob(String name) {
+  protected static boolean isValidFieldGlob(String name) {
     if (name.startsWith("*") || name.endsWith("*")) {
       int count = 0;
       for (int pos = 0 ; pos < name.length() && -1 != (pos = name.indexOf('*', pos)) ; ++pos) ++count;
@@ -936,7 +936,7 @@ public class IndexSchema {
     }
   }
 
-  private void registerExplicitSrcAndDestFields(String source, int maxChars, SchemaField destSchemaField, SchemaField sourceSchemaField) {
+  protected void registerExplicitSrcAndDestFields(String source, int maxChars, SchemaField destSchemaField, SchemaField sourceSchemaField) {
     List<CopyField> copyFieldList = copyFieldsMap.get(source);
     if (copyFieldList == null) {
       copyFieldList = new ArrayList<>();
@@ -1108,6 +1108,8 @@ public class IndexSchema {
       this.sourceDynamicBase = sourceDynamicBase;
       this.destDynamicBase = destDynamicBase;
     }
+
+    public DynamicField getDestination() { return destination; }
 
     public String getDestFieldName() { return destination.getRegex(); }
 
@@ -1296,7 +1298,7 @@ public class IndexSchema {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
     return null;
-  };
+  }
 
 
   /**
@@ -1417,10 +1419,11 @@ public class IndexSchema {
     List<SimpleOrderedMap<Object>> copyFieldProperties = new ArrayList<>();
     SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
+      copyFields = new ArrayList<>(copyFields);
       Collections.sort(copyFields, new Comparator<CopyField>() {
         @Override
         public int compare(CopyField cf1, CopyField cf2) {
-          // sources are all be the same, just sorting by destination here
+          // sources are all the same, just sorting by destination here
           return cf1.getDestination().getName().compareTo(cf2.getDestination().getName());
         }
       });
@@ -1495,13 +1498,13 @@ public class IndexSchema {
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newField the SchemaField to add 
-   * @param persist to persist the schema or not or not
+   * @param persist to persist the schema or not
    * @return a new IndexSchema based on this schema with newField added
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, boolean persist) {
-    return addFields(Collections.singletonList(newField),Collections.EMPTY_MAP,persist );
-  }
+    return addFields(Collections.singletonList(newField), Collections.EMPTY_MAP, persist );
+  }                                                       
 
   public IndexSchema addField(SchemaField newField) {
     return addField(newField, true);
@@ -1553,13 +1556,51 @@ public class IndexSchema {
 
 
   /**
+   * Copies this schema, deletes the named fields from the copy.
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param names the names of the fields to delete
+   * @return a new IndexSchema based on this schema with the named fields deleted
+   */
+  public IndexSchema deleteFields(Collection<String> names) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, deletes the named field from the copy, creates a new field 
+   * with the same name using the given args, then rebinds any referring copy fields
+   * to the replacement field.
+   *
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
+   *
+   * @param fieldName The name of the field to be replaced
+   * @param replacementFieldType  The field type of the replacement field                                   
+   * @param replacementArgs Initialization params for the replacement field
+   * @return a new IndexSchema based on this schema with the named field replaced
+   */
+  public IndexSchema replaceField(String fieldName, FieldType replacementFieldType, Map<String,?> replacementArgs) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
    * Copies this schema, adds the given dynamic fields to the copy,
    * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newDynamicFields the SchemaFields to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
-   * @param persist to persist the schema or not or not
+   * @param persist to persist the schema or not
    * @return a new IndexSchema based on this schema with newDynamicFields added
    * @see #newDynamicField(String, String, Map)
    */
@@ -1573,19 +1614,77 @@ public class IndexSchema {
   }
 
   /**
-   * Copies this schema and adds the new copy fields to the copy
+   * Copies this schema, deletes the named dynamic fields from the copy.
+   * <p>
+   * The schema will not be persisted.
+   * <p>
    * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
-   * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
-   * @param persist to persist the schema or not or not
-   * @return The new Schema with the copy fields added
+   * @param fieldNamePatterns the names of the dynamic fields to delete
+   * @return a new IndexSchema based on this schema with the named dynamic fields deleted
    */
-  public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist){
+  public IndexSchema deleteDynamicFields(Collection<String> fieldNamePatterns) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
+
+  /**
+   * Copies this schema, deletes the named dynamic field from the copy, creates a new dynamic
+   * field with the same field name pattern using the given args, then rebinds any referring
+   * dynamic copy fields to the replacement dynamic field.
+   *
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
+   *
+   * @param fieldNamePattern The glob for the dynamic field to be replaced
+   * @param replacementFieldType  The field type of the replacement dynamic field                                   
+   * @param replacementArgs Initialization params for the replacement dynamic field
+   * @return a new IndexSchema based on this schema with the named dynamic field replaced
+   */
+  public ManagedIndexSchema replaceDynamicField
+      (String fieldNamePattern, FieldType replacementFieldType, Map<String,?> replacementArgs) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+    /**
+     * Copies this schema and adds the new copy fields to the copy
+     * Requires synchronizing on the object returned by
+     * {@link #getSchemaUpdateLock()}.
+     *
+     * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
+     * @param persist to persist the schema or not
+     * @return The new Schema with the copy fields added
+     */
+  public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema and deletes the given copy fields from the copy.
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @param copyFields Key is the name of the source field name, value is a collection of target field names. 
+   *                   Each corresponding copy field directives must exist.
+   * @return The new Schema with the copy fields deleted
+   */
+  public IndexSchema deleteCopyFields(Map<String, Collection<String>> copyFields) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
 
   /**
    * Returns a SchemaField if the given fieldName does not already 
@@ -1624,7 +1723,7 @@ public class IndexSchema {
   }
 
   /**
-   * Returns the schema update lock that should be synchronzied on
+   * Returns the schema update lock that should be synchronized on
    * to update the schema.  Only applicable to mutable schemas.
    *
    * @return the schema update lock object to synchronize on
@@ -1656,11 +1755,48 @@ public class IndexSchema {
    * {@link #getSchemaUpdateLock()}.
    *
    * @param fieldTypeList a list of FieldTypes to add
-   * @param persist to persist the schema or not or not
+   * @param persist to persist the schema or not
    * @return a new IndexSchema based on this schema with the new types added
    * @see #newFieldType(String, String, Map)
    */
   public IndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, deletes the named field types from the copy.
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
+   *
+   * @param names the names of the field types to delete
+   * @return a new IndexSchema based on this schema with the named field types deleted
+   */
+  public IndexSchema deleteFieldTypes(Collection<String> names) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema, deletes the named field type from the copy, creates a new field type 
+   * with the same name using the given args, rebuilds fields and dynamic fields of the given
+   * type, then rebinds any referring copy fields to the rebuilt fields.
+   * 
+   * <p>
+   * The schema will not be persisted.
+   * <p>
+   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
+   *  
+   * @param typeName The name of the field type to be replaced
+   * @param replacementClassName The class name of the replacement field type
+   * @param replacementArgs Initialization params for the replacement field type
+   * @return a new IndexSchema based on this schema with the named field type replaced
+   */
+  public IndexSchema replaceFieldType(String typeName, String replacementClassName, Map<String,Object> replacementArgs) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
