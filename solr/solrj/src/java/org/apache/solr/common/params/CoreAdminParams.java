@@ -74,6 +74,9 @@ public abstract class CoreAdminParams
   /** The collection name in solr cloud */
   public final static String COLLECTION = "collection";
 
+  /** The replica name in solr cloud */
+  public final static String REPLICA = "replica";
+  
   /** The shard id in solr cloud */
   public final static String SHARD = "shard";
   
