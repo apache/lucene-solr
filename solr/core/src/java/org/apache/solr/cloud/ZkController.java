@@ -2295,9 +2295,9 @@ public final class ZkController {
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();
 
   void watchZKConfDir(final String zkDir) {
-    log.info("watch zkdir " + zkDir);
+    log.info("watch zkdir {}" , zkDir);
     if (!confDirectoryListeners.containsKey(zkDir)) {
-      confDirectoryListeners.put(zkDir, new HashSet<Runnable>());
+      confDirectoryListeners.put(zkDir, new HashSet<>());
       setConfWatcher(zkDir, new WatcherImpl(zkDir), null);
     }
   }
@@ -2348,6 +2348,7 @@ public final class ZkController {
         new Thread() {
           //run these in a separate thread because this can be long running
           public void run() {
+            log.info("Running listeners for {}", zkDir);
             for (final Runnable listener : listenersCopy) {
               try {
                 listener.run();
@@ -2371,7 +2372,6 @@ public final class ZkController {
         //so fire the event listeners
         fireEventListeners(zkDir);
       }
-      zkClient.exists(zkDir, watcher, true);
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
     } catch (InterruptedException e) {
