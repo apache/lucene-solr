@@ -17,26 +17,6 @@
 
 package org.apache.solr.request;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -96,6 +76,26 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -289,7 +289,6 @@ public class SimpleFacets {
 
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
 
-    
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
         parseParams(FacetParams.FACET_QUERY, q);
@@ -382,8 +381,9 @@ public class SimpleFacets {
     boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting if there is a limit.
     String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
-    String prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
-
+    String prefix = params.getFieldParam(field, FacetParams.FACET_PREFIX);
+    String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
+    boolean ignoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
 
     NamedList<Integer> counts;
     SchemaField sf = searcher.getSchema().getField(field);
@@ -435,13 +435,13 @@ public class SimpleFacets {
     }
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
-      counts = getGroupedCounts(searcher, base, field, multiToken, offset,limit, mincount, missing, sort, prefix);
+      counts = getGroupedCounts(searcher, base, field, multiToken, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
     } else {
       assert method != null;
       switch (method) {
         case ENUM:
           assert TrieField.getMainValuePrefix(ft) == null;
-          counts = getFacetTermEnumCounts(searcher, base, field, offset, limit, mincount,missing,sort,prefix);
+          counts = getFacetTermEnumCounts(searcher, base, field, offset, limit, mincount, missing, sort, prefix, contains, ignoreCase);
           break;
         case FCS:
           assert !multiToken;
@@ -450,16 +450,19 @@ public class SimpleFacets {
             if (prefix != null && !prefix.isEmpty()) {
               throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
             }
+            if (contains != null && !contains.isEmpty()) {
+              throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_CONTAINS + " is not supported on numeric types");
+            }
             counts = NumericFacets.getCounts(searcher, base, field, offset, limit, mincount, missing, sort);
           } else {
-            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, base, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
             Executor executor = threads == 0 ? directExecutor : facetExecutor;
             ps.setNumThreads(threads);
             counts = ps.getFacetCounts(executor);
           }
           break;
         case FC:
-          counts = DocValuesFacets.getCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+          counts = DocValuesFacets.getCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
           break;
         default:
           throw new AssertionError();
@@ -478,7 +481,9 @@ public class SimpleFacets {
                                              int mincount,
                                              boolean missing,
                                              String sort,
-                                             String prefix) throws IOException {
+                                             String prefix,
+                                             String contains,
+                                             boolean ignoreCase) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
     if (groupField == null) {
@@ -488,8 +493,9 @@ public class SimpleFacets {
       );
     }
 
-    BytesRef prefixBR = prefix != null ? new BytesRef(prefix) : null;
-    final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBR, 128);
+    BytesRef prefixBytesRef = prefix != null ? new BytesRef(prefix) : null;
+    BytesRef containsRef = contains != null ? new BytesRef(contains) : null;
+    final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBytesRef, 128);
     
     SchemaField sf = searcher.getSchema().getFieldOrNull(groupField);
     
@@ -519,6 +525,10 @@ public class SimpleFacets {
     List<TermGroupFacetCollector.FacetEntry> scopedEntries 
       = result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+      //:TODO:can we do contains earlier than this to make it more efficient?
+      if (containsRef != null && !StringHelper.contains(facetEntry.getValue(), containsRef, ignoreCase)) {
+        continue;
+      }
       facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
       facetCounts.add(charsRef.toString(), facetEntry.getCount());
     }
@@ -683,7 +693,7 @@ public class SimpleFacets {
    * @see FacetParams#FACET_ZEROS
    * @see FacetParams#FACET_MISSING
    */
-  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, String sort, String prefix)
+  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase)
     throws IOException {
 
     /* :TODO: potential optimization...
@@ -715,10 +725,16 @@ public class SimpleFacets {
     int off=offset;
     int lim=limit>=0 ? limit : Integer.MAX_VALUE;
 
-    BytesRef startTermBytes = null;
+    BytesRef prefixTermBytes = null;
     if (prefix != null) {
       String indexedPrefix = ft.toInternal(prefix);
-      startTermBytes = new BytesRef(indexedPrefix);
+      prefixTermBytes = new BytesRef(indexedPrefix);
+    }
+    
+    BytesRef containsTermBytes = null;
+    if (contains != null) {
+      String indexedContains = ft.toInternal(contains);
+      containsTermBytes = new BytesRef(indexedContains);
     }
 
     Fields fields = r.fields();
@@ -732,8 +748,8 @@ public class SimpleFacets {
       // TODO: OPT: if seek(ord) is supported for this termsEnum, then we could use it for
       // facet.offset when sorting by index order.
 
-      if (startTermBytes != null) {
-        if (termsEnum.seekCeil(startTermBytes) == TermsEnum.SeekStatus.END) {
+      if (prefixTermBytes != null) {
+        if (termsEnum.seekCeil(prefixTermBytes) == TermsEnum.SeekStatus.END) {
           termsEnum = null;
         } else {
           term = termsEnum.term();
@@ -750,77 +766,77 @@ public class SimpleFacets {
     if (docs.size() >= mincount) {
       while (term != null) {
 
-        if (startTermBytes != null && !StringHelper.startsWith(term, startTermBytes))
+        if (prefixTermBytes != null && !StringHelper.startsWith(term, prefixTermBytes))
           break;
 
-        int df = termsEnum.docFreq();
+        if (containsTermBytes == null || StringHelper.contains(term, containsTermBytes, ignoreCase)) {
+          int df = termsEnum.docFreq();
 
-        // If we are sorting, we can use df>min (rather than >=) since we
-        // are going in index order.  For certain term distributions this can
-        // make a large difference (for example, many terms with df=1).
-        if (df>0 && df>min) {
-          int c;
+          // If we are sorting, we can use df>min (rather than >=) since we
+          // are going in index order.  For certain term distributions this can
+          // make a large difference (for example, many terms with df=1).
+          if (df > 0 && df > min) {
+            int c;
 
-          if (df >= minDfFilterCache) {
-            // use the filter cache
+            if (df >= minDfFilterCache) {
+              // use the filter cache
 
-            if (deState==null) {
-              deState = new SolrIndexSearcher.DocsEnumState();
-              deState.fieldName = field;
-              deState.liveDocs = r.getLiveDocs();
-              deState.termsEnum = termsEnum;
-              deState.postingsEnum = postingsEnum;
-            }
+              if (deState == null) {
+                deState = new SolrIndexSearcher.DocsEnumState();
+                deState.fieldName = field;
+                deState.liveDocs = r.getLiveDocs();
+                deState.termsEnum = termsEnum;
+                deState.postingsEnum = postingsEnum;
+              }
 
-            c = searcher.numDocs(docs, deState);
+              c = searcher.numDocs(docs, deState);
 
-            postingsEnum = deState.postingsEnum;
-          } else {
-            // iterate over TermDocs to calculate the intersection
+              postingsEnum = deState.postingsEnum;
+            } else {
+              // iterate over TermDocs to calculate the intersection
 
-            // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
-            // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
-            // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
-            c=0;
+              // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
+              // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
+              // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
+              postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
+              c = 0;
 
-            if (postingsEnum instanceof MultiPostingsEnum) {
-              MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
-              int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
-              for (int subindex = 0; subindex<numSubs; subindex++) {
-                MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
-                if (sub.postingsEnum == null) continue;
-                int base = sub.slice.start;
+              if (postingsEnum instanceof MultiPostingsEnum) {
+                MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
+                int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
+                for (int subindex = 0; subindex < numSubs; subindex++) {
+                  MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
+                  if (sub.postingsEnum == null) continue;
+                  int base = sub.slice.start;
+                  int docid;
+                  while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                    if (fastForRandomSet.exists(docid + base)) c++;
+                  }
+                }
+              } else {
                 int docid;
-                while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (fastForRandomSet.exists(docid+base)) c++;
+                while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  if (fastForRandomSet.exists(docid)) c++;
                 }
               }
-            } else {
-              int docid;
-              while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (fastForRandomSet.exists(docid)) c++;
+
+            }
+
+            if (sortByCount) {
+              if (c > min) {
+                BytesRef termCopy = BytesRef.deepCopyOf(term);
+                queue.add(new CountPair<>(termCopy, c));
+                if (queue.size() >= maxsize) min = queue.last().val;
               }
-            }
-            
-
-          }
-
-          if (sortByCount) {
-            if (c>min) {
-              BytesRef termCopy = BytesRef.deepCopyOf(term);
-              queue.add(new CountPair<>(termCopy, c));
-              if (queue.size()>=maxsize) min=queue.last().val;
-            }
-          } else {
-            if (c >= mincount && --off<0) {
-              if (--lim<0) break;
-              ft.indexedToReadable(term, charsRef);
-              res.add(charsRef.toString(), c);
+            } else {
+              if (c >= mincount && --off < 0) {
+                if (--lim < 0) break;
+                ft.indexedToReadable(term, charsRef);
+                res.add(charsRef.toString(), c);
+              }
             }
           }
         }
-
         term = termsEnum.next();
       }
     }
