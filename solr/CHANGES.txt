@@ -214,6 +214,8 @@ New Features
 * SOLR-1387: Add facet.contains and facet.contains.ignoreCase options (Tom Winch
   via Alan Woodward)
 
+* SOLR-7082: Streaming Aggregation for SolrCloud (Joel bernstein, Yonik Seely)
+
 Bug Fixes
 ----------------------
 
