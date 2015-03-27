@@ -103,6 +103,16 @@
       </analyzer>
     </fieldType>
 
+    <fieldtype name="text_payload_tv" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+        <filter class="org.apache.lucene.analysis.payloads.TokenOffsetPayloadTokenFilterFactory"/>
+      </analyzer>
+    </fieldtype>
 
     <fieldType name="nametext" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
@@ -478,6 +488,8 @@
    <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
    <field name="test_posofftv" type="text" termVectors="true"
      termPositions="true" termOffsets="true"/>
+   <field name="test_posoffpaytv" type="text_payload_tv" termVectors="true" 
+     termPositions="true" termOffsets="true" termPayloads="true"/>
 
    <!-- test highlit field settings -->
    <field name="test_hlt" type="highlittext" indexed="true"/>

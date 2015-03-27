@@ -17,6 +17,8 @@
 
 package org.apache.solr;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -26,18 +28,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext.Context;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.English;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -56,10 +50,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -539,6 +530,11 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     luf = f.createField("test", 0f);
     assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets());
     assertTrue(luf.fieldType().storeTermVectorOffsets() && luf.fieldType().storeTermVectorPositions());
+
+    f = ischema.getField("test_posoffpaytv");
+    luf = f.createField("test", 0f);
+    assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets() && f.storeTermPayloads());
+    assertTrue(luf.fieldType().storeTermVectorOffsets() && luf.fieldType().storeTermVectorPositions() && luf.fieldType().storeTermVectorPayloads());
 
   }
 

@@ -230,6 +230,9 @@ New Features
 
 * SOLR-7240: '/' redirects to '/solr/' for convenience (Martijn Koster, hossman)
 
+* SOLR-5911: Added payload support for term vectors. New "termPayloads" option for fields
+  / types in the schema, and "tv.payloads" param for the term vector component.
+  (Mike McCandless, David Smiley)
 
 Bug Fixes
 ----------------------

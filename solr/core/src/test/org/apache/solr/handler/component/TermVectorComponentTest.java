@@ -1,19 +1,13 @@
 package org.apache.solr.handler.component;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.TermVectorParams;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.TermVectorParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -42,6 +36,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
 
     assertU(adoc("id", "0",
+            "test_posoffpaytv", "This is a title and another title",
             "test_posofftv", "This is a title and another title",
             "test_basictv", "This is a title and another title",
             "test_notv", "This is a title and another title",
@@ -49,6 +44,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "This is a title and another title"
     ));
     assertU(adoc("id", "1",
+            "test_posoffpaytv", "The quick reb fox jumped over the lazy brown dogs.",
             "test_posofftv", "The quick reb fox jumped over the lazy brown dogs.",
             "test_basictv", "The quick reb fox jumped over the lazy brown dogs.",
             "test_notv", "The quick reb fox jumped over the lazy brown dogs.",
@@ -56,6 +52,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "The quick reb fox jumped over the lazy brown dogs."
     ));
     assertU(adoc("id", "2",
+            "test_posoffpaytv", "This is a document",
             "test_posofftv", "This is a document",
             "test_basictv", "This is a document",
             "test_notv", "This is a document",
@@ -63,6 +60,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "This is a document"
     ));
     assertU(adoc("id", "3",
+            "test_posoffpaytv", "another document",
             "test_posofftv", "another document",
             "test_basictv", "another document",
             "test_notv", "another document",
@@ -71,6 +69,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     ));
     //bunch of docs that are variants on blue
     assertU(adoc("id", "4",
+            "test_posoffpaytv", "blue",
             "test_posofftv", "blue",
             "test_basictv", "blue",
             "test_notv", "blue",
@@ -78,6 +77,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "blue"
     ));
     assertU(adoc("id", "5",
+            "test_posoffpaytv", "blud",
             "test_posofftv", "blud",
             "test_basictv", "blud",
             "test_notv", "blud",
@@ -85,6 +85,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "blud"
     ));
     assertU(adoc("id", "6",
+            "test_posoffpaytv", "boue",
             "test_posofftv", "boue",
             "test_basictv", "boue",
             "test_notv", "boue",
@@ -92,6 +93,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "boue"
     ));
     assertU(adoc("id", "7",
+            "test_posoffpaytv", "glue",
             "test_posofftv", "glue",
             "test_basictv", "glue",
             "test_notv", "glue",
@@ -99,6 +101,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "glue"
     ));
     assertU(adoc("id", "8",
+            "test_posoffpaytv", "blee",
             "test_posofftv", "blee",
             "test_basictv", "blee",
             "test_notv", "blee",
@@ -106,6 +109,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             "test_offtv", "blee"
     ));
     assertU(adoc("id", "9",
+            "test_posoffpaytv", "blah",
             "test_posofftv", "blah",
             "test_basictv", "blah",
             "test_notv", "blah",
@@ -125,6 +129,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_posoffpaytv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
     );
@@ -166,6 +171,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
+            " 'test_posoffpaytv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
             " 'uniqueKeyFieldName':'id'}"
     );
@@ -241,7 +247,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   public void testPerField() throws Exception {
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
         ,TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true"
-        ,TermVectorParams.FIELDS, "test_basictv,test_notv,test_postv,test_offtv,test_posofftv"
+        ,TermVectorParams.FIELDS, "test_basictv,test_notv,test_postv,test_offtv,test_posofftv,test_posoffpaytv"
+        ,"f.test_posoffpaytv." + TermVectorParams.PAYLOADS, "false"
         ,"f.test_posofftv." + TermVectorParams.POSITIONS, "false"
         ,"f.test_offtv." + TermVectorParams.OFFSETS, "false"
         ,"f.test_basictv." + TermVectorParams.DF, "false"
@@ -255,6 +262,17 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testPayloads() throws Exception {
+    // This field uses TokenOffsetPayloadTokenFilter, which
+    // stuffs start (20) and end offset (27) into the
+    // payload:
+    assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
+                 , TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true",
+                 TermVectorParams.PAYLOADS, "true")
+       ,"/termVectors/0/test_posoffpaytv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':5}, 'payloads':{'payload': 'AAAAFAAAABs='}, 'df':2, 'tf-idf':0.5}"
+    );
+  }
 }
 
 
