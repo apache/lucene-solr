@@ -260,7 +260,7 @@ public class TestTermsEnum extends LuceneTestCase {
         a = Automata.makeStringUnion(sortedAcceptTerms);
       }
       
-      final CompiledAutomaton c = new CompiledAutomaton(a, true, false, 1000000);
+      final CompiledAutomaton c = new CompiledAutomaton(a, true, false, 1000000, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
       final Set<BytesRef> acceptTermsSet = new HashSet<>();
