@@ -217,6 +217,9 @@ API Changes
   -> .totalMaxDoc and MergePolicy.OneMerge.totalDocCount ->
   .totalMaxDoc (Adrien Grand, Robert Muir, Mike McCandless)
 
+* LUCENE-6367: PrefixQuery now subclasses AutomatonQuery, removing the
+  specialized PrefixTermsEnum.  (Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
@@ -243,11 +246,6 @@ Changes in Runtime Behavior
 
 * LUCENE-6298: SimpleQueryParser returns an empty query rather than
   null, if e.g. the terms were all stopwords. (Lee Hinman via Robert Muir)
-
-* LUCENE-6367: PrefixQuery now subclasses AutomatonQuery, removing the
-  specialized PrefixTermsEnum.  PrefixQuery now operates in binary
-  term space, meaning any binary term (not just valid UTF-8 terms)
-  are accepted.  (Robert Muir, Mike McCandless)
 
 ======================= Lucene 5.0.0 =======================
 
