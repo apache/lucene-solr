@@ -53,6 +53,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
+  private volatile boolean lastReplicationSuccess = true;
 
   private RefCounted<IndexWriter> refCntWriter;
 
@@ -377,5 +378,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     return leaderThrottle;
   }
   
+  @Override
+  public boolean getLastReplicateIndexSuccess() {
+    return lastReplicationSuccess;
+  }
+
+  @Override
+  public void setLastReplicateIndexSuccess(boolean success) {
+    this.lastReplicationSuccess = success;
+  }
   
 }
