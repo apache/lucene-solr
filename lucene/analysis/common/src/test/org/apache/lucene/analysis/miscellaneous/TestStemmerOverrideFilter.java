@@ -19,9 +19,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -31,6 +32,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -79,7 +81,12 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
   
   public void testRandomRealisticWhiteSpace() throws IOException {
     Map<String,String> map = new HashMap<>();
+    Set<String> seen = new HashSet<>();
     int numTerms = atLeast(50);
+    boolean ignoreCase = random().nextBoolean();
+
+    CharacterUtils charUtils = CharacterUtils.getInstance();
+
     for (int i = 0; i < numTerms; i++) {
       String randomRealisticUnicodeString = TestUtil
           .randomRealisticUnicodeString(random());
@@ -93,16 +100,31 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
         j += Character.charCount(cp);
       }
       if (builder.length() > 0) {
-        String value = TestUtil.randomSimpleString(random());
-        map.put(builder.toString(),
-            value.isEmpty() ? "a" : value);
-        
+        String inputValue = builder.toString();
+
+        // Make sure we don't try to add two inputs that vary only by case:
+        String seenInputValue;
+        if (ignoreCase) {
+          // TODO: can we simply use inputValue.toLowerCase(Locale.ROOT)???
+          char[] buffer = inputValue.toCharArray();
+          charUtils.toLowerCase(buffer, 0, buffer.length);
+          seenInputValue = buffer.toString();
+        } else {
+          seenInputValue = inputValue;
+        }
+
+        if (seen.contains(seenInputValue) == false) {
+          seen.add(seenInputValue);
+          String value = TestUtil.randomSimpleString(random());
+          map.put(inputValue,
+              value.isEmpty() ? "a" : value);
+        }
       }
     }
     if (map.isEmpty()) {
       map.put("booked", "books");
     }
-    StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(random().nextBoolean());
+    StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(ignoreCase);
     Set<Entry<String,String>> entrySet = map.entrySet();
     StringBuilder input = new StringBuilder();
     List<String> output = new ArrayList<>();
