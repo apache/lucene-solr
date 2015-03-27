@@ -181,9 +181,9 @@ public final class StemmerOverrideFilter extends TokenFilter {
         charsSpare.grow(length);
         final char[] buffer = charsSpare.chars();
         for (int i = 0; i < length; ) {
-            i += Character.toChars(
-                    Character.toLowerCase(
-                        Character.codePointAt(input, i)), buffer, i);
+          i += Character.toChars(
+                  Character.toLowerCase(
+                      Character.codePointAt(input, i)), buffer, i);
         }
         spare.copyChars(buffer, 0, length);
       } else {
