@@ -78,7 +78,8 @@ public class CompiledAutomaton {
   /**
    * Shared common suffix accepted by the automaton. Only valid
    * for {@link AUTOMATON_TYPE#NORMAL}, and only when the
-   * automaton accepts an infinite language.
+   * automaton accepts an infinite language.  This will be null
+   * if the common prefix is length 0.
    */
   public final BytesRef commonSuffixRef;
 
@@ -202,7 +203,12 @@ public class CompiledAutomaton {
       commonSuffixRef = null;
     } else {
       // NOTE: this is a very costly operation!  We should test if it's really warranted in practice...
-      commonSuffixRef = Operations.getCommonSuffixBytesRef(binary, maxDeterminizedStates);
+      BytesRef suffix = Operations.getCommonSuffixBytesRef(binary, maxDeterminizedStates);
+      if (suffix.length == 0) {
+        commonSuffixRef = null;
+      } else {
+        commonSuffixRef = suffix;
+      }
     }
 
     // This will determinize the binary automaton for us:

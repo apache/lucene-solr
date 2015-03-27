@@ -1063,7 +1063,7 @@ final public class Operations {
    * Returns the longest string that is a prefix of all accepted strings and
    * visits each state at most once.  The automaton must be deterministic.
    * 
-   * @return common prefix
+   * @return common prefix, which can be an empty (length 0) String (never null)
    */
   public static String getCommonPrefix(Automaton a) {
     if (a.isDeterministic() == false) {
@@ -1097,7 +1097,7 @@ final public class Operations {
    * Returns the longest BytesRef that is a prefix of all accepted strings and
    * visits each state at most once.  The automaton must be deterministic.
    * 
-   * @return common prefix
+   * @return common prefix, which can be an empty (length 0) BytesRef (never null)
    */
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
     BytesRefBuilder builder = new BytesRefBuilder();
@@ -1159,7 +1159,7 @@ final public class Operations {
    * @param maxDeterminizedStates maximum number of states determinizing the
    *  automaton can result in.  Set higher to allow more complex queries and
    *  lower to prevent memory exhaustion.
-   * @return common suffix
+   * @return common suffix, which can be an empty (length 0) BytesRef (never null)
    */
   public static BytesRef getCommonSuffixBytesRef(Automaton a, int maxDeterminizedStates) {
     // reverse the language of the automaton, then reverse its common prefix.
