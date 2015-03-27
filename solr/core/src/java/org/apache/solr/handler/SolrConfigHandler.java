@@ -88,7 +88,11 @@ public class SolrConfigHandler extends RequestHandlerBase {
     if ("POST".equals(httpMethod)) {
       if (configEditing_disabled)
         throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled");
-      command.handlePOST();
+      try {
+        command.handlePOST();
+      } finally {
+        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+      }
     } else {
       command.handleGET();
     }

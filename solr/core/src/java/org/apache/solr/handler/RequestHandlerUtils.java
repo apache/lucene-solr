@@ -39,6 +39,15 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 public class RequestHandlerUtils
 {
   /**
+   * A common way to mark the response format as experimental
+   */
+  public static void addExperimentalFormatWarning( SolrQueryResponse rsp )
+  {
+    rsp.add( "WARNING", "This response format is experimental.  It is likely to change in the future." ); 
+  }
+
+
+  /**
    * Check the request parameters and decide if it should commit or optimize.
    * If it does, it will check other related parameters such as "waitFlush" and "waitSearcher"
    */
