@@ -283,6 +283,9 @@ Bug Fixes
 
 * SOLR-7134: Replication can still cause index corruption. (Mark Miller, shalin, Mike Drob)
 
+* SOLR-7309: Make bin/solr, bin/post work when Solr installation directory contains spaces
+  (Ramkumar Aiyengar, Martijn Koster)
+
 Optimizations
 ----------------------
 
