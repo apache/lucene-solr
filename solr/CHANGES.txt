@@ -176,6 +176,9 @@ New Features
   Example: q=price:[ ${low:0} TO ${high} ]&low=100&high=200
   (yonik)
 
+* SOLR-7226: Make /query/* jmx/* , requestDispatcher/*, <listener> <initParams>
+  properties in solrconfig.xml editable (Noble Paul)
+
 * SOLR-7240: '/' redirects to '/solr/' for convinience (Martijn Koster, hossman)
 
 * SOLR-5911: Added payload support for term vectors. New "termPayloads" option for fields

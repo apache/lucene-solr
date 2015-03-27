@@ -42,6 +42,21 @@ public class TestConfigOverlay extends LuceneTestCase {
     assertTrue(isEditableProp("updateHandler.autoCommit.maxTime", false, null));
     assertTrue(isEditableProp("updateHandler.commitWithin.softCommit", false, null));
     assertTrue(isEditableProp("updateHandler.indexWriter.closeWaitsForMerges", false, null));
+    assertTrue(isEditableProp("query.useFilterForSortedQuery", false, null));
+    assertTrue(isEditableProp("query.queryResultWindowSize", false, null));
+    assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
+    assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
+    assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
+    assertTrue(isEditableProp("jmx.agentId", false, null));
+    assertTrue(isEditableProp("jmx.serviceUrl", false, null));
+    assertTrue(isEditableProp("jmx.rootName", false, null));
+
+    assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
+    assertTrue(isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
+    assertTrue(isEditableProp("requestDispatcher.requestParsers.enableRemoteStreaming", false, null));
+    assertTrue(isEditableProp("requestDispatcher.requestParsers.addHttpRequestToContext", false, null));
+
+    assertTrue(isEditableProp("requestDispatcher.handleSelect", false, null));
 
     assertTrue(isEditableProp("updateHandler/commitIntervalLowerBound", true, null));
     assertFalse(isEditableProp("updateHandler/commitIntervalLowerBound1", true, null));
