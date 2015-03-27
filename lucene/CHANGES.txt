@@ -19,6 +19,9 @@ New Features
   for counting ranges that align with the underlying terms as defined by the
   NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
 
+* LUCENE-6339: Added Near-real time Document Suggester via custom postings format
+  (Areek Zillur, Mike McCandless, Simon Willnauer)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to
