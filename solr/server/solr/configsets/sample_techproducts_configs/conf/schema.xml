@@ -93,6 +93,8 @@
        This will increase storage costs.
      termOffsets: Store offset information with the term vector. This 
        will increase storage costs.
+     termPayloads: Store payload information with the term vector. This
+       will increase storage costs.
      required: The field is required.  It will throw an error if the
        value does not exist
      default: a value that should be used if no value is specified

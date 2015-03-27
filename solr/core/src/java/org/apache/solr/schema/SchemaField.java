@@ -17,19 +17,18 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.common.SolrException;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.SortField;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.search.QParser;
-
-import org.apache.solr.response.TextResponseWriter;
-
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
+
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.SortField;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 
 /**
  * Encapsulates all information about a Field in a Solr Schema
@@ -94,6 +93,7 @@ public final class SchemaField extends FieldProperties {
   public boolean storeTermVector() { return (properties & STORE_TERMVECTORS)!=0; }
   public boolean storeTermPositions() { return (properties & STORE_TERMPOSITIONS)!=0; }
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
+  public boolean storeTermPayloads() { return (properties & STORE_TERMPAYLOADS)!=0; }
   public boolean omitNorms() { return (properties & OMIT_NORMS)!=0; }
 
   public boolean omitTermFreqAndPositions() { return (properties & OMIT_TF_POSITIONS)!=0; }
@@ -236,7 +236,7 @@ public final class SchemaField extends FieldProperties {
 
     if (on(falseProps,INDEXED)) {
       int pp = (INDEXED 
-              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS);
+              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS | STORE_TERMPAYLOADS);
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed field:" + props);
       }
@@ -269,7 +269,7 @@ public final class SchemaField extends FieldProperties {
     }
 
     if (on(falseProps,STORE_TERMVECTORS)) {
-      int pp = (STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS);
+      int pp = (STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS | STORE_TERMPAYLOADS);
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting termvector field options:" + props);
       }
@@ -323,6 +323,7 @@ public final class SchemaField extends FieldProperties {
       properties.add(getPropertyName(STORE_TERMVECTORS), storeTermVector());
       properties.add(getPropertyName(STORE_TERMPOSITIONS), storeTermPositions());
       properties.add(getPropertyName(STORE_TERMOFFSETS), storeTermOffsets());
+      properties.add(getPropertyName(STORE_TERMPAYLOADS), storeTermPayloads());
       properties.add(getPropertyName(OMIT_NORMS), omitNorms());
       properties.add(getPropertyName(OMIT_TF_POSITIONS), omitTermFreqAndPositions());
       properties.add(getPropertyName(OMIT_POSITIONS), omitPositions());

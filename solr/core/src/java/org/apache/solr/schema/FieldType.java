@@ -17,8 +17,6 @@
 
 package org.apache.solr.schema;
 
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,6 +64,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -268,6 +268,7 @@ public abstract class FieldType extends FieldProperties {
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
+    newType.setStoreTermVectorPayloads(field.storeTermPayloads());
 
     return createField(field.getName(), val, newType, boost);
   }
