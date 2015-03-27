@@ -38,7 +38,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     }
     Collections.sort(terms);
     final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
-    return new CompiledAutomaton(a, true, false, maxDeterminizedStates);
+    return new CompiledAutomaton(a, true, false, maxDeterminizedStates, false);
   }
 
   private void testFloor(CompiledAutomaton c, String input, String expected) {
@@ -120,5 +120,44 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     testFloor(c, "", null);
     testFloor(c, "aa", null);
     testFloor(c, "zzz", "goo");
+  }
+  
+  // LUCENE-6367
+  public void testBinaryAll() throws Exception {
+    Automaton a = new Automaton();
+    int state = a.createState();
+    a.setAccept(state, true);
+    a.addTransition(state, state, 0, 0xff);
+    a.finishState();
+
+    CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, true);
+    assertEquals(CompiledAutomaton.AUTOMATON_TYPE.ALL, ca.type);
+  }
+
+  // LUCENE-6367
+  public void testUnicodeAll() throws Exception {
+    Automaton a = new Automaton();
+    int state = a.createState();
+    a.setAccept(state, true);
+    a.addTransition(state, state, 0, Character.MAX_CODE_POINT);
+    a.finishState();
+
+    CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, false);
+    assertEquals(CompiledAutomaton.AUTOMATON_TYPE.ALL, ca.type);
+  }
+
+  // LUCENE-6367
+  public void testBinarySingleton() throws Exception {
+    // This is just ascii so we can pretend it's binary:
+    Automaton a = Automata.makeString("foobar");
+    CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, true);
+    assertEquals(CompiledAutomaton.AUTOMATON_TYPE.SINGLE, ca.type);
+  }
+
+  // LUCENE-6367
+  public void testUnicodeSingleton() throws Exception {
+    Automaton a = Automata.makeString(TestUtil.randomRealisticUnicodeString(random()));
+    CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, false);
+    assertEquals(CompiledAutomaton.AUTOMATON_TYPE.SINGLE, ca.type);
   }
 }

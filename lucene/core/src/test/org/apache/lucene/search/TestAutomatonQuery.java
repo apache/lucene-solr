@@ -195,7 +195,6 @@ public class TestAutomatonQuery extends LuceneTestCase {
     Automaton prefixAutomaton = Operations.concatenate(pfx, Automata.makeAnyString());
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), prefixAutomaton);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
-    assertTrue(aq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertEquals(3, automatonQueryNrHits(aq));
   }
   

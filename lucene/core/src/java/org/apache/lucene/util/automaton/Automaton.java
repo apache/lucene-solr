@@ -347,6 +347,7 @@ public class Automaton implements Accountable {
   
   /** How many transitions this state has. */
   public int getNumTransitions(int state) {
+    assert state >= 0;
     int count = states[2*state+1];
     if (count == -1) {
       return 0;

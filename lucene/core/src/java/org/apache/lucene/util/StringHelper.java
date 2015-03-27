@@ -393,4 +393,20 @@ public abstract class StringHelper {
       return sb.toString();
     }
   }
+  
+  /** Just converts each int in the incoming {@link IntsRef} to each byte
+   *  in the returned {@link BytesRef}, throwing {@code IllegalArgumentException}
+   *  if any int value is out of bounds for a byte. */
+  public static BytesRef intsRefToBytesRef(IntsRef ints) {
+    byte[] bytes = new byte[ints.length];
+    for(int i=0;i<ints.length;i++) {
+      int x = ints.ints[ints.offset+i];
+      if (x < 0 || x > 255) {
+        throw new IllegalArgumentException("int at pos=" + i + " with value=" + x + " is out-of-bounds for byte");
+      }
+      bytes[i] = (byte) x;
+    }
+
+    return new BytesRef(bytes);
+  }
 }

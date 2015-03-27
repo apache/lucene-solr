@@ -834,11 +834,20 @@ final public class Operations {
    * Returns true if the given automaton accepts all strings.  The automaton must be minimized.
    */
   public static boolean isTotal(Automaton a) {
+    return isTotal(a, Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
+  }
+
+  /**
+   * Returns true if the given automaton accepts all strings for the specified min/max
+   * range of the alphabet.  The automaton must be minimized.
+   */
+  public static boolean isTotal(Automaton a, int minAlphabet, int maxAlphabet) {
     if (a.isAccept(0) && a.getNumTransitions(0) == 1) {
       Transition t = new Transition();
       a.getTransition(0, 0, t);
-      return t.dest == 0 && t.min == Character.MIN_CODE_POINT
-          && t.max == Character.MAX_CODE_POINT;
+      return t.dest == 0
+        && t.min == minAlphabet
+        && t.max == maxAlphabet;
     }
     return false;
   }
@@ -1110,6 +1119,37 @@ final public class Operations {
     } while (!done);
 
     return builder.get();
+  }
+
+  /** If this automaton accepts a single input, return it.  Else, return null.
+   *  The automaton must be deterministic. */
+  public static IntsRef getSingleton(Automaton a) {
+    if (a.isDeterministic() == false) {
+      throw new IllegalArgumentException("input automaton must be deterministic");
+    }
+    IntsRefBuilder builder = new IntsRefBuilder();
+    HashSet<Integer> visited = new HashSet<>();
+    int s = 0;
+    boolean done;
+    Transition t = new Transition();
+    while (true) {
+      visited.add(s);
+      if (a.isAccept(s) == false) {
+        if (a.getNumTransitions(s) == 1) {
+          a.getTransition(s, 0, t);
+          if (t.min == t.max && !visited.contains(t.dest)) {
+            builder.append(t.min);
+            s = t.dest;
+            continue;
+          }
+        }
+      } else if (a.getNumTransitions(s) == 0) {
+        return builder.get();
+      }
+
+      // Automaton accepts more than one string:
+      return null;
+    }
   }
 
   /**

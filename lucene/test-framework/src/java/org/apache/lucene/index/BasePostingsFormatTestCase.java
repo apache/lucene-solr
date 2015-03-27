@@ -1238,7 +1238,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     for(String field : fields.keySet()) {
       while (true) {
         Automaton a = AutomatonTestUtil.randomAutomaton(random());
-        CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE);
+        CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, false);
         if (ca.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
           // Keep retrying until we get an A that will really "use" the PF's intersect code:
           continue;

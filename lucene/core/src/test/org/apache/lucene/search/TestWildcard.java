@@ -127,11 +127,9 @@ public class TestWildcard
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
-    assertTrue(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
-    assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     reader.close();
     indexStore.close();

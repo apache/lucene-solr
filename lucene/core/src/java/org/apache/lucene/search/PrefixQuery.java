@@ -19,11 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.Automaton;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
  * is built by QueryParser for input like <code>app*</code>.
@@ -31,29 +33,38 @@ import org.apache.lucene.util.ToStringUtils;
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_REWRITE}
  * rewrite method. */
-public class PrefixQuery extends MultiTermQuery {
-  private Term prefix;
+public class PrefixQuery extends AutomatonQuery {
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
-    super(prefix.field());
-    this.prefix = prefix;
+    // It's OK to pass unlimited maxDeterminizedStates: the automaton is born small and determinized:
+    super(prefix, toAutomaton(prefix.bytes()), Integer.MAX_VALUE, true);
+    if (prefix == null) {
+      throw new NullPointerException("prefix cannot be null");
+    }
+  }
+
+  /** Build an automaton accepting all terms with the specified prefix. */
+  public static Automaton toAutomaton(BytesRef prefix) {
+    Automaton automaton = new Automaton();
+    int lastState = automaton.createState();
+    for(int i=0;i<prefix.length;i++) {
+      int state = automaton.createState();
+      automaton.addTransition(lastState, state, prefix.bytes[prefix.offset+i]&0xff);
+      lastState = state;
+    }
+    automaton.setAccept(lastState, true);
+    automaton.addTransition(lastState, lastState, 0, 255);
+    automaton.finishState();
+    assert automaton.isDeterministic();
+    return automaton;
   }
 
   /** Returns the prefix of this query. */
-  public Term getPrefix() { return prefix; }
-  
-  @Override  
-  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    TermsEnum tenum = terms.iterator(null);
-    
-    if (prefix.bytes().length == 0) {
-      // no prefix -- match all terms for this field:
-      return tenum;
-    }
-    return new PrefixTermsEnum(tenum, prefix.bytes());
+  public Term getPrefix() {
+    return term;
   }
-
+  
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
@@ -62,7 +73,7 @@ public class PrefixQuery extends MultiTermQuery {
       buffer.append(getField());
       buffer.append(":");
     }
-    buffer.append(prefix.text());
+    buffer.append(term.text());
     buffer.append('*');
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
@@ -72,25 +83,23 @@ public class PrefixQuery extends MultiTermQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((prefix == null) ? 0 : prefix.hashCode());
+    result = prime * result + term.hashCode();
     return result;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (!super.equals(obj))
+    }
+    if (!super.equals(obj)) {
       return false;
-    if (getClass() != obj.getClass())
-      return false;
+    }
+    // super.equals() ensures we are the same class
     PrefixQuery other = (PrefixQuery) obj;
-    if (prefix == null) {
-      if (other.prefix != null)
-        return false;
-    } else if (!prefix.equals(other.prefix))
+    if (!term.equals(other.term)) {
       return false;
+    }
     return true;
   }
-
 }
