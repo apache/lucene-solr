@@ -358,31 +358,22 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'delete-transformer' : 'mytrans'" +
-        "}";
-    runConfigCommand(writeHarness, "/config?wt=json", payload);
-    testForResponseElement(writeHarness,
-        testServerBaseUrl,
-        "/config?wt=json",
-        cloudSolrServer,
-        Arrays.asList("config", "transformer", "mytrans"),
-        null,
-        10);
-    payload = "{\n" +
+        "'delete-transformer' : 'mytrans'," +
         "'create-initparams' : { 'name' : 'hello', 'key':'val'}\n" +
         "}";
     runConfigCommand(writeHarness, "/config?wt=json", payload);
-    Map map =  testForResponseElement(writeHarness,
+    Map map = testForResponseElement(writeHarness,
         testServerBaseUrl,
         "/config?wt=json",
         cloudSolrServer,
         Arrays.asList("config", "transformer", "mytrans"),
         null,
         10);
-//    List l = (List) ConfigOverlay.getObjectByPath(map,false, Arrays.asList("config", "initParams"));
-//    assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
-//    assertEquals( 1, l.size());
-//    assertEquals( "val", ((Map)l.get(0)).get("key") );
+
+    List l = (List) ConfigOverlay.getObjectByPath(map,false, Arrays.asList("config", "initParams"));
+    assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
+    assertEquals( 1, l.size());
+    assertEquals( "val", ((Map)l.get(0)).get("key") );
   }
 
   public static Map testForResponseElement(RestTestHarness harness,
