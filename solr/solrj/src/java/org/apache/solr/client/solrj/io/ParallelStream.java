@@ -40,7 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Base64;
 
 /**
- * The ParallelStream decorates a TupleStream implementation and pushes it N workers for parallel execution.
+ * The ParallelStream decorates a TupleStream implementation and pushes it to N workers for parallel execution.
  * Workers are chosen from a SolrCloud collection.
  * Tuples that are streamed back from the workers are ordered by a Comparator.
  **/

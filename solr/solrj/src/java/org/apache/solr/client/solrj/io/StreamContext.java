@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *  The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
- *  The StreamContext is used pass shared context info from to concentrically wrapped TupleStreams.
+ *  The StreamContext is used to pass shared context to concentrically wrapped TupleStreams.
  *
  *  Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for reuse
  *  across multiple TupleStreams.

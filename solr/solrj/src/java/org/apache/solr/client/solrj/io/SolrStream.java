@@ -29,7 +29,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
-*  Queries a Solr instance, and maps SolrDocs to a Stream of Tuples.
+*  Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
 **/
 
 public class SolrStream extends TupleStream {
@@ -87,6 +87,10 @@ public class SolrStream extends TupleStream {
       throw new IOException(e);
     }
   }
+
+  /**
+   *  Setting trace to true will include the "_CORE_" field in each Tuple emitted by the stream.
+   **/
 
   public void setTrace(boolean trace) {
     this.trace = trace;

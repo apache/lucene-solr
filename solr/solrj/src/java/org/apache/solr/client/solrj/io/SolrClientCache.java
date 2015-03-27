@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- *  The SolrClientCache caches SolrClients that they can be reused by different TupleStreams.
+ *  The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
  **/
 
 public class SolrClientCache implements Serializable {

@@ -42,10 +42,11 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 /**
-* Connects to Zookeeper to pick replicas from a specific collection to send the query to.
-* Under the covers SolrStream instances are used to send the query to the replicas.
-* SolrStreams are opened using a Thread pool, but a single thread is used to iterate through each stream's tuples.
-**/
+ * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
+ * Under the covers the SolrStream instances send the query to the replicas.
+ * SolrStreams are opened using a thread pool, but a single thread is used
+ * to iterate and merge Tuples from each SolrStream.
+ **/
 
 public class CloudSolrStream extends TupleStream {
 
@@ -100,6 +101,10 @@ public class CloudSolrStream extends TupleStream {
     this.streamContext = context;
   }
 
+  /**
+  * Opens the CloudSolrStream
+  *
+  ***/
   public void open() throws IOException {
     this.tuples = new TreeSet();
     this.solrStreams = new ArrayList();
@@ -216,6 +221,9 @@ public class CloudSolrStream extends TupleStream {
     }
   }
 
+  /**
+   *  Closes the CloudSolrStream
+   **/
   public void close() throws IOException {
     for(TupleStream solrStream : solrStreams) {
       solrStream.close();
