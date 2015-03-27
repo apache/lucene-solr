@@ -17,7 +17,27 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FilenameUtils;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.*;
+import static org.apache.solr.common.cloud.ZkNodeProps.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -52,7 +72,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.CreateMode;
@@ -62,30 +81,6 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -632,31 +627,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   private File getRelativeSolrHomePath(File solrHome) {
-    String path = SolrResourceLoader.normalizeDir(new File(".").getAbsolutePath());
-    String base = new File(solrHome.getPath()).getAbsolutePath();
-
-    if (base.startsWith(".")) {
-      base = base.replaceFirst("\\.", new File(".").getName());
+    final Path solrHomePath = solrHome.toPath();
+    final Path curDirPath = new File("").getAbsoluteFile().toPath();
+    
+    if (!solrHomePath.getRoot().equals(curDirPath.getRoot())) {
+      // root of current directory and solrHome are not the same, therefore cannot relativize
+      return solrHome;
     }
-
-    if (path.endsWith(File.separator + ".")) {
-      path = path.substring(0, path.length() - 2);
-    }
-
-    int splits = path.split("\\" + File.separator).length;
-
-    StringBuilder p = new StringBuilder();
-    for (int i = 0; i < splits - 2; i++) {
-      p.append("..").append(File.separator);
-    }
-
-    String prefix = FilenameUtils.getPrefix(path);
-    if (base.startsWith(prefix)) {
-      base = base.substring(prefix.length());
-    }
-
-    solrHome = new File(p.toString() + base);
-    return solrHome;
+    
+    final Path root = solrHomePath.getRoot();
+    
+    // relativize current directory to root: /tmp/foo -> /tmp/foo/../..
+    final File relativizedCurDir = new File(curDirPath.toFile(), curDirPath.relativize(root).toString());
+    
+    // exclude the root from solrHome: /tmp/foo/solrHome -> tmp/foo/solrHome
+    final Path solrHomeRelativeToRoot = root.relativize(solrHomePath);
+    
+    // create the relative solrHome: /tmp/foo/../../tmp/foo/solrHome
+    return new File(relativizedCurDir, solrHomeRelativeToRoot.toString()).getAbsoluteFile();
   }
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients) throws Exception {
