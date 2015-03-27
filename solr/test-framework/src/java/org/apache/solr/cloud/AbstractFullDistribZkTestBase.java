@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -123,7 +122,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected boolean checkCreatedVsState;
   protected boolean useJettyDataDir = true;
 
-  protected Map<URI,SocketProxy> proxies = new HashMap<URI,SocketProxy>();
+  protected Map<URI,SocketProxy> proxies = new HashMap<>();
 
   public static class CloudJettyRunner {
     public JettySolrRunner jetty;
@@ -202,14 +201,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     if (isSSLMode()) {
       System.clearProperty("urlScheme");
-      ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
-          AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
-      try {
+      try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
+          AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT)) {
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-          ZkStateReader.toJSON(Collections.singletonMap("urlScheme","https")),
-          CreateMode.PERSISTENT, true);
-      } finally {
-        zkStateReader.close();
+            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")),
+            CreateMode.PERSISTENT, true);
       }
     }
   }
@@ -1374,16 +1370,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         .getNumFound();
 
     // do some really inefficient mapping...
-    ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), 10000,
-        AbstractZkTestCase.TIMEOUT);
     Map<String,Slice> slices = null;
     ClusterState clusterState;
-    try {
+    try (ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), 10000,
+        AbstractZkTestCase.TIMEOUT)) {
       zk.createClusterStateWatchersAndUpdate();
       clusterState = zk.getClusterState();
       slices = clusterState.getSlicesMap(DEFAULT_COLLECTION);
-    } finally {
-      zk.close();
     }
 
     if (slices == null) {
@@ -1433,66 +1426,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 
-    QueryResponse rsp = cloudClient.query(params);
-    return rsp;
+    return cloudClient.query(params);
   }
 
-  static abstract class StopableThread extends Thread {
-    public StopableThread(String name) {
+  static abstract class StoppableThread extends Thread {
+    public StoppableThread(String name) {
       super(name);
     }
     public abstract void safeStop();
   }
-
-  class StopableSearchThread extends StopableThread {
-    private volatile boolean stop = false;
-    protected final AtomicInteger queryFails = new AtomicInteger();
-    private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
-
-    public StopableSearchThread() {
-      super("StopableSearchThread");
-      setDaemon(true);
-    }
-
-    @Override
-    public void run() {
-      Random random = random();
-      int numSearches = 0;
-
-      while (true && !stop) {
-        numSearches++;
-        try {
-          //to come to the aid of their country.
-          cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
-        } catch (Exception e) {
-          System.err.println("QUERY REQUEST FAILED:");
-          e.printStackTrace();
-          if (e instanceof SolrServerException) {
-            System.err.println("ROOT CAUSE:");
-            ((SolrServerException) e).getRootCause().printStackTrace();
-          }
-          queryFails.incrementAndGet();
-        }
-        try {
-          Thread.sleep(random.nextInt(4000) + 300);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-
-      log.info("num searches done:" + numSearches + " with " + queryFails + " fails");
-    }
-
-    @Override
-    public void safeStop() {
-      stop = true;
-    }
-
-    public int getFails() {
-      return queryFails.get();
-    }
-
-  };
 
   public void waitForThingsToLevelOut(int waitForRecTimeSeconds) throws Exception {
     log.info("Wait for recoveries to finish - wait " + waitForRecTimeSeconds + " for each attempt");
@@ -1922,14 +1864,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         REPLICATION_FACTOR, replicationFactor,
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
-    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
   }
 
   protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
     long startMs = System.currentTimeMillis();
 
-    Map<String,Replica> notLeaders = new HashMap<String,Replica>();
+    Map<String,Replica> notLeaders = new HashMap<>();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
     zkr.updateClusterState(true); // force the state to be fresh
@@ -1989,7 +1931,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long diffMs = (System.currentTimeMillis() - startMs);
     log.info("Took " + diffMs + " ms to see all replicas become active.");
 
-    List<Replica> replicas = new ArrayList<Replica>();
+    List<Replica> replicas = new ArrayList<>();
     replicas.addAll(notLeaders.values());
     return replicas;
   }
@@ -2005,7 +1947,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String,DocCollection> map = new HashMap<String,DocCollection>();
+      Map<String,DocCollection> map = new HashMap<>();
       for (String coll : clusterState.getCollections())
         map.put(coll, clusterState.getCollection(coll));
       CharArr out = new CharArr();

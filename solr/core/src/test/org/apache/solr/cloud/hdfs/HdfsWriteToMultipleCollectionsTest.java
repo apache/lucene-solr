@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.cloud.StopableIndexingThread;
+import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -97,18 +97,18 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       waitForRecoveriesToFinish(ACOLLECTION + i, false);
     }
     List<CloudSolrClient> cloudClients = new ArrayList<>();
-    List<StopableIndexingThread> threads = new ArrayList<>();
+    List<StoppableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
       CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress());
       client.setDefaultCollection(ACOLLECTION + i);
       cloudClients.add(client);
-      StopableIndexingThread indexThread = new StopableIndexingThread(null, client, "1", true, docCount, 1, true);
+      StoppableIndexingThread indexThread = new StoppableIndexingThread(null, client, "1", true, docCount, 1, true);
       threads.add(indexThread);
       indexThread.start();
     }
     
     int addCnt = 0;
-    for (StopableIndexingThread thread : threads) {
+    for (StoppableIndexingThread thread : threads) {
       thread.join();
       addCnt += thread.getNumAdds() - thread.getNumDeletes();
     }
