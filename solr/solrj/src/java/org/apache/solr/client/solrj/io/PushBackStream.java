@@ -22,18 +22,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * A TupleStream that allows a single Tuple to be pushed back onto the stream after it's been read.
+ * This is a useful class when building streams that maintain the order of Tuples between multiple
+ * substreams.
+ **/
+
 public class PushBackStream extends TupleStream {
 
   private static final long serialVersionUID = 1;
 
   private TupleStream stream;
   private Tuple tuple;
-
-  /**
-   * A TupleStream that allows a single Tuple to be pushed back into Stream after it's been read.
-   * This is a useful class when building streams that maintain the order of the tuples from two or
-   * more substreams.
-   **/
 
   public PushBackStream(TupleStream stream) {
     this.stream = stream;

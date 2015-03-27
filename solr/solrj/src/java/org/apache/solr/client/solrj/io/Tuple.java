@@ -32,7 +32,13 @@ import java.util.Iterator;
 
 public class Tuple implements Cloneable {
 
-  public boolean EOF;
+  /**
+   *  When EOF field is true the Tuple marks the end of the stream.
+   *  The EOF Tuple will not contain a record from the stream, but it may contain
+   *  metrics/aggregates gathered by underlying streams.
+   * */
+
+   public boolean EOF;
   public Map fields = new HashMap();
 
   public Tuple(Map fields) {

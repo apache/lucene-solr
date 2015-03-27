@@ -22,7 +22,7 @@ import java.util.Comparator;
 
 
 /**
- *  Wraps multiple Comparators to provide sub sorting.
+ *  Wraps multiple Comparators to provide sub-sorting.
  **/
 
 public class MultiComp implements Comparator<Tuple>, Serializable {

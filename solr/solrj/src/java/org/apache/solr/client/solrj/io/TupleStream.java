@@ -20,12 +20,6 @@ package org.apache.solr.client.solrj.io;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-
 
 public abstract class TupleStream implements Serializable {
 
