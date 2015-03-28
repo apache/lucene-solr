@@ -94,9 +94,9 @@ public class JsonLoader extends ContentStreamLoader {
 
     @Override
     public void load(SolrQueryRequest req,
-        SolrQueryResponse rsp,
-        ContentStream stream,
-        UpdateRequestProcessor processor) throws Exception {
+                     SolrQueryResponse rsp,
+                     ContentStream stream,
+                     UpdateRequestProcessor processor) throws Exception {
 
       Reader reader = null;
       try {
@@ -116,7 +116,7 @@ public class JsonLoader extends ContentStreamLoader {
     @SuppressWarnings("fallthrough")
     void processUpdate(Reader reader) throws IOException {
       String path = (String) req.getContext().get("path");
-      if(UpdateRequestHandler.DOC_PATH.equals(path) ||   "false".equals( req.getParams().get("json.command"))){
+      if (UpdateRequestHandler.DOC_PATH.equals(path) || "false".equals(req.getParams().get("json.command"))) {
         String split = req.getParams().get("split");
         String[] f = req.getParams().getParams("f");
         handleSplitMode(split, f, reader);
@@ -124,68 +124,62 @@ public class JsonLoader extends ContentStreamLoader {
       }
       parser = new JSONParser(reader);
       int ev = parser.nextEvent();
-      while( ev != JSONParser.EOF ) {
+      while (ev != JSONParser.EOF) {
 
-        switch( ev )
-        {
+        switch (ev) {
           case JSONParser.ARRAY_START:
             handleAdds();
             break;
 
-        case JSONParser.STRING:
-          if( parser.wasKey() ) {
-            String v = parser.getString();
-            if( v.equals( UpdateRequestHandler.ADD ) ) {
-              int ev2 = parser.nextEvent();
-              if (ev2 == JSONParser.OBJECT_START) {
-                processor.processAdd( parseAdd() );
-              } else if (ev2 == JSONParser.ARRAY_START) {
-                handleAdds();
+          case JSONParser.STRING:
+            if (parser.wasKey()) {
+              String v = parser.getString();
+              if (v.equals(UpdateRequestHandler.ADD)) {
+                int ev2 = parser.nextEvent();
+                if (ev2 == JSONParser.OBJECT_START) {
+                  processor.processAdd(parseAdd());
+                } else if (ev2 == JSONParser.ARRAY_START) {
+                  handleAdds();
+                } else {
+                  assertEvent(ev2, JSONParser.OBJECT_START);
+                }
+              } else if (v.equals(UpdateRequestHandler.COMMIT)) {
+                CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+                cmd.waitSearcher = true;
+                parseCommitOptions(cmd);
+                processor.processCommit(cmd);
+              } else if (v.equals(UpdateRequestHandler.OPTIMIZE)) {
+                CommitUpdateCommand cmd = new CommitUpdateCommand(req, true);
+                cmd.waitSearcher = true;
+                parseCommitOptions(cmd);
+                processor.processCommit(cmd);
+              } else if (v.equals(UpdateRequestHandler.DELETE)) {
+                handleDeleteCommand();
+              } else if (v.equals(UpdateRequestHandler.ROLLBACK)) {
+                processor.processRollback(parseRollback());
               } else {
-                assertEvent(ev2, JSONParser.OBJECT_START);
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command '" + v + "' at [" + parser.getPosition() + "]");
               }
+              break;
             }
-            else if( v.equals( UpdateRequestHandler.COMMIT ) ) {
-              CommitUpdateCommand cmd = new CommitUpdateCommand(req,  false );
-              cmd.waitSearcher = true;
-              parseCommitOptions( cmd );
-              processor.processCommit( cmd );
-            }
-            else if( v.equals( UpdateRequestHandler.OPTIMIZE ) ) {
-              CommitUpdateCommand cmd = new CommitUpdateCommand(req, true );
-              cmd.waitSearcher = true;
-              parseCommitOptions( cmd );
-              processor.processCommit( cmd );
-            }
-            else if( v.equals( UpdateRequestHandler.DELETE ) ) {
-              handleDeleteCommand();
-            }
-            else if( v.equals( UpdateRequestHandler.ROLLBACK ) ) {
-              processor.processRollback( parseRollback() );
-            }
-            else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command '"+v+"' at ["+parser.getPosition()+"]" );
-            }
+            // fall through
+
+          case JSONParser.LONG:
+          case JSONParser.NUMBER:
+          case JSONParser.BIGNUMBER:
+          case JSONParser.BOOLEAN:
+          case JSONParser.NULL:
+            log.info("Can't have a value here. Unexpected "
+                + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "]");
+
+          case JSONParser.OBJECT_START:
+          case JSONParser.OBJECT_END:
+          case JSONParser.ARRAY_END:
             break;
-          }
-          // fall through
 
-        case JSONParser.LONG:
-        case JSONParser.NUMBER:
-        case JSONParser.BIGNUMBER:
-        case JSONParser.BOOLEAN:
-        case JSONParser.NULL:
-          log.info( "Can't have a value here. Unexpected "
-              +JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"]" );
-
-        case JSONParser.OBJECT_START:
-        case JSONParser.OBJECT_END:
-        case JSONParser.ARRAY_END:
-          break;
-
-        default:
-          log.info("Noggit UNKNOWN_EVENT_ID: "+ev);
-          break;
+          default:
+            log.info("Noggit UNKNOWN_EVENT_ID: " + ev);
+            break;
         }
         // read the next event
         ev = parser.nextEvent();
@@ -197,7 +191,7 @@ public class JsonLoader extends ContentStreamLoader {
       if (fields == null || fields.length == 0) fields = new String[]{"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
       final String srcField = req.getParams().get("srcField");
-      final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly",false);
+      final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly", false);
       if (srcField != null) {
         if (!"/".equals(split))
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
@@ -227,7 +221,7 @@ public class JsonLoader extends ContentStreamLoader {
             cmd.overwrite = overwrite;
             cmd.solrDoc = new SolrInputDocument();
             for (Map.Entry<String, Object> entry : copy.entrySet()) {
-              cmd.solrDoc.setField(entry.getKey(),entry.getValue());
+              cmd.solrDoc.setField(entry.getKey(), entry.getValue());
             }
             try {
               processor.processAdd(cmd);
@@ -241,23 +235,24 @@ public class JsonLoader extends ContentStreamLoader {
 
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
       Map result = record;
-      if(srcField != null && parser instanceof RecordingJSONParser){
+      if (srcField != null && parser instanceof RecordingJSONParser) {
         //if srcFIeld specified extract it out first
         result = new LinkedHashMap(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
       }
-      if(mapUniqueKeyOnly){
+      if (mapUniqueKeyOnly) {
         SchemaField sf = req.getSchema().getUniqueKeyField();
-        if(sf == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
+        if (sf == null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
         String df = req.getParams().get(CommonParams.DF);
-        if(df == null)throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
+        if (df == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
         Map copy = new LinkedHashMap();
         String uniqueField = (String) record.get(sf.getName());
-        if(uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
-        copy.put(sf.getName(),uniqueField);
-        if(srcField != null && result.containsKey(srcField)){
+        if (uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
+        copy.put(sf.getName(), uniqueField);
+        if (srcField != null && result.containsKey(srcField)) {
           copy.put(srcField, result.remove(srcField));
         }
         copy.put(df, result.values());
@@ -268,27 +263,6 @@ public class JsonLoader extends ContentStreamLoader {
       return result;
     }
 
-
-
-    /*private void handleStreamingSingleDocs() throws IOException
-    {
-      while( true ) {
-        int ev = parser.nextEvent();
-        if(ev == JSONParser.EOF) return;
-        if(ev == JSONParser.OBJECT_START) {
-          assertEvent(ev, JSONParser.OBJECT_START);
-          AddUpdateCommand cmd = new AddUpdateCommand(req);
-          cmd.commitWithin = commitWithin;
-          cmd.overwrite = overwrite;
-          cmd.solrDoc = parseDoc(ev);
-          processor.processAdd(cmd);
-        } else if(ev == JSONParser.ARRAY_START){
-          handleAdds();
-        } else{
-          throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected event :"+ev);
-        }
-      }
-    }*/
 
     //
     // "delete":"id"
@@ -325,8 +299,8 @@ public class JsonLoader extends ContentStreamLoader {
           return null;
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Expected primitive JSON value but got: "+JSONParser.getEventString( ev  )
-                  +" at ["+parser.getPosition()+"]" );
+              "Expected primitive JSON value but got: " + JSONParser.getEventString(ev)
+                  + " at [" + parser.getPosition() + "]");
       }
     }
 
@@ -345,7 +319,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     void handleDeleteArray(int ev) throws IOException {
       assert ev == JSONParser.ARRAY_START;
-      for (;;) {
+      for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) return;
         handleSingleDelete(ev);
@@ -358,60 +332,54 @@ public class JsonLoader extends ContentStreamLoader {
       DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
       cmd.commitWithin = commitWithin;
 
-      while( true ) {
+      while (true) {
         ev = parser.nextEvent();
-        if( ev == JSONParser.STRING ) {
+        if (ev == JSONParser.STRING) {
           String key = parser.getString();
-          if( parser.wasKey() ) {
-            if( "id".equals( key ) ) {
+          if (parser.wasKey()) {
+            if ("id".equals(key)) {
               cmd.setId(getString(parser.nextEvent()));
-            } else if( "query".equals(key) ) {
+            } else if ("query".equals(key)) {
               cmd.setQuery(parser.getString());
-            } else if( "commitWithin".equals(key) ) {
-              cmd.commitWithin = (int)parser.getLong();
-            } else if( "_version_".equals(key) ) {
+            } else if ("commitWithin".equals(key)) {
+              cmd.commitWithin = (int) parser.getLong();
+            } else if ("_version_".equals(key)) {
               cmd.setVersion(parser.getLong());
             } else if ("_route_".equals(key)) {
               cmd.setRoute(parser.getString());
             } else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '"+key+"' at ["+parser.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
-          }
-          else {
+          } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "invalid string: " + key
-                    +" at ["+parser.getPosition()+"]" );
+                    + " at [" + parser.getPosition() + "]");
           }
-        }
-        else if( ev == JSONParser.OBJECT_END ) {
-          if( cmd.getId() == null && cmd.getQuery() == null ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete at ["+parser.getPosition()+"]" );
+        } else if (ev == JSONParser.OBJECT_END) {
+          if (cmd.getId() == null && cmd.getQuery() == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete at [" + parser.getPosition() + "]");
           }
 
           processor.processDelete(cmd);
           return;
-        }
-        else {
+        } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Got: "+JSONParser.getEventString( ev  )
-                  +" at ["+parser.getPosition()+"]" );
+              "Got: " + JSONParser.getEventString(ev)
+                  + " at [" + parser.getPosition() + "]");
         }
       }
     }
 
 
-
-
     RollbackUpdateCommand parseRollback() throws IOException {
-      assertNextEvent( JSONParser.OBJECT_START );
-      assertNextEvent( JSONParser.OBJECT_END );
+      assertNextEvent(JSONParser.OBJECT_START);
+      assertNextEvent(JSONParser.OBJECT_END);
       return new RollbackUpdateCommand(req);
     }
 
-    void parseCommitOptions(CommitUpdateCommand cmd ) throws IOException
-    {
-      assertNextEvent( JSONParser.OBJECT_START );
-      final Map<String,Object> map = (Map)ObjectBuilder.getVal(parser);
+    void parseCommitOptions(CommitUpdateCommand cmd) throws IOException {
+      assertNextEvent(JSONParser.OBJECT_START);
+      final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
       SolrParams p = new SolrParams() {
@@ -437,65 +405,56 @@ public class JsonLoader extends ContentStreamLoader {
       RequestHandlerUtils.updateCommit(cmd, p);
     }
 
-    AddUpdateCommand parseAdd() throws IOException
-    {
+    AddUpdateCommand parseAdd() throws IOException {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.commitWithin = commitWithin;
       cmd.overwrite = overwrite;
 
       float boost = 1.0f;
 
-      while( true ) {
+      while (true) {
         int ev = parser.nextEvent();
-        if( ev == JSONParser.STRING ) {
-          if( parser.wasKey() ) {
+        if (ev == JSONParser.STRING) {
+          if (parser.wasKey()) {
             String key = parser.getString();
-            if( "doc".equals( key ) ) {
-              if( cmd.solrDoc != null ) {
+            if ("doc".equals(key)) {
+              if (cmd.solrDoc != null) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Multiple documents in same"
-                    + " add command at ["+parser.getPosition()+"]" );
+                    + " add command at [" + parser.getPosition() + "]");
               }
-              ev = assertNextEvent( JSONParser.OBJECT_START );
-              cmd.solrDoc = parseDoc( ev );
-            }
-            else if( UpdateRequestHandler.OVERWRITE.equals( key ) ) {
+              ev = assertNextEvent(JSONParser.OBJECT_START);
+              cmd.solrDoc = parseDoc(ev);
+            } else if (UpdateRequestHandler.OVERWRITE.equals(key)) {
               cmd.overwrite = parser.getBoolean(); // reads next boolean
+            } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(key)) {
+              cmd.commitWithin = (int) parser.getLong();
+            } else if ("boost".equals(key)) {
+              boost = Float.parseFloat(parser.getNumberChars().toString());
+            } else {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
-            else if( UpdateRequestHandler.COMMIT_WITHIN.equals( key ) ) {
-              cmd.commitWithin = (int)parser.getLong();
-            }
-            else if( "boost".equals( key ) ) {
-              boost = Float.parseFloat( parser.getNumberChars().toString() );
-            }
-            else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '"+key+"' at ["+parser.getPosition()+"]" );
-            }
-          }
-          else {
+          } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Should be a key "
-                +" at ["+parser.getPosition()+"]" );
+                    + " at [" + parser.getPosition() + "]");
           }
-        }
-        else if( ev == JSONParser.OBJECT_END ) {
-          if( cmd.solrDoc == null ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing solr document at ["+parser.getPosition()+"]" );
+        } else if (ev == JSONParser.OBJECT_END) {
+          if (cmd.solrDoc == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing solr document at [" + parser.getPosition() + "]");
           }
-          cmd.solrDoc.setDocumentBoost( boost );
+          cmd.solrDoc.setDocumentBoost(boost);
           return cmd;
-        }
-        else {
+        } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Got: "+JSONParser.getEventString( ev  )
-              +" at ["+parser.getPosition()+"]" );
+              "Got: " + JSONParser.getEventString(ev)
+                  + " at [" + parser.getPosition() + "]");
         }
       }
     }
 
 
-    void handleAdds() throws IOException
-    {
-      while( true ) {
+    void handleAdds() throws IOException {
+      while (true) {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.commitWithin = commitWithin;
         cmd.overwrite = overwrite;
@@ -510,19 +469,18 @@ public class JsonLoader extends ContentStreamLoader {
     }
 
 
-    int assertNextEvent(int expected ) throws IOException
-    {
+    int assertNextEvent(int expected) throws IOException {
       int got = parser.nextEvent();
       assertEvent(got, expected);
       return got;
     }
 
     void assertEvent(int ev, int expected) {
-      if( ev != expected ) {
+      if (ev != expected) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Expected: "+JSONParser.getEventString( expected  )
-            +" but got "+JSONParser.getEventString( ev )
-            +" at ["+parser.getPosition()+"]" );
+            "Expected: " + JSONParser.getEventString(expected)
+                + " but got " + JSONParser.getEventString(ev)
+                + " at [" + parser.getPosition() + "]");
       }
     }
 
@@ -531,17 +489,17 @@ public class JsonLoader extends ContentStreamLoader {
       assert ev == JSONParser.OBJECT_START;
 
       SolrInputDocument sdoc = new SolrInputDocument();
-      for (;;) {
+      for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.OBJECT_END) {
           return sdoc;
         }
         String fieldName = parser.getString();
 
-        if(fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+        if (fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
           ev = parser.nextEvent();
           assertEvent(ev, JSONParser.ARRAY_START);
-          while( (ev = parser.nextEvent()) != JSONParser.ARRAY_END ) {
+          while ((ev = parser.nextEvent()) != JSONParser.ARRAY_END) {
             assertEvent(ev, JSONParser.OBJECT_START);
 
             sdoc.addChildDocument(parseDoc(ev));
@@ -569,28 +527,28 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private void parseExtendedFieldValue(SolrInputField sif, int ev)  throws IOException {
+    private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
       float boost = 1.0f;
       Object normalFieldValue = null;
       Map<String, Object> extendedInfo = null;
 
-      for (;;) {
+      for (; ; ) {
         ev = parser.nextEvent();
         switch (ev) {
           case JSONParser.STRING:
             String label = parser.getString();
             if ("boost".equals(label)) {
               ev = parser.nextEvent();
-              if( ev != JSONParser.NUMBER &&
+              if (ev != JSONParser.NUMBER &&
                   ev != JSONParser.LONG &&
-                  ev != JSONParser.BIGNUMBER ) {
+                  ev != JSONParser.BIGNUMBER) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Boost should have number. "
-                    + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+sif.getName() );
+                    + "Unexpected " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "], field=" + sif.getName());
               }
 
-              boost = (float)parser.getDouble();
+              boost = (float) parser.getDouble();
             } else if ("value".equals(label)) {
               normalFieldValue = parseNormalFieldValue(parser.nextEvent(), sif.getName());
             } else {
@@ -608,7 +566,7 @@ public class JsonLoader extends ContentStreamLoader {
           case JSONParser.OBJECT_END:
             if (extendedInfo != null) {
               if (normalFieldValue != null) {
-                extendedInfo.put("value",normalFieldValue);
+                extendedInfo.put("value", normalFieldValue);
               }
               sif.setValue(extendedInfo, boost);
             } else {
@@ -618,7 +576,7 @@ public class JsonLoader extends ContentStreamLoader {
 
           default:
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON extended field value. "
-                + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+sif.getName() );
+                + "Unexpected " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "], field=" + sif.getName());
         }
       }
     }
@@ -654,7 +612,7 @@ public class JsonLoader extends ContentStreamLoader {
           return parseArrayFieldValue(ev, fieldName);
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. "
-              + "Unexpected "+JSONParser.getEventString(ev)+" at ["+parser.getPosition()+"], field="+fieldName );
+              + "Unexpected " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "], field=" + fieldName);
       }
     }
 
@@ -663,7 +621,7 @@ public class JsonLoader extends ContentStreamLoader {
       assert ev == JSONParser.ARRAY_START;
 
       ArrayList lst = new ArrayList(2);
-      for (;;) {
+      for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) {
           return lst;
