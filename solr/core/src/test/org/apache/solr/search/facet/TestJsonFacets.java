@@ -27,6 +27,8 @@ import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.packed.GrowableWriter;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
@@ -619,6 +621,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " }"
     );
 
+    // test allBucket multi-valued
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{x:{terms:{field:'${multi_ss}',allBuckets:true}}}"
+        )
+        , "facets=={ count:6, " +
+            "x:{ buckets:[{val:a, count:3}, {val:b, count:3}] , allBuckets:{count:6} } }"
+    );
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // test converting legacy facets
@@ -697,8 +707,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStats( client, params() );
   }
 
-  /***
-  public void testPercentiles() {
+
+  public void XtestPercentiles() {
     AVLTreeDigest catA = new AVLTreeDigest(100);
     catA.add(4);
     catA.add(2);
@@ -728,11 +738,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
     return sb.toString();
   }
-   ***/
 
-  /*** test code to ensure TDigest is working as we expect.
-  @Test
-  public void testTDigest() throws Exception {
+  /*** test code to ensure TDigest is working as we expect. */
+
+  public void XtestTDigest() throws Exception {
     AVLTreeDigest t1 = new AVLTreeDigest(100);
     t1.add(10, 1);
     t1.add(90, 1);
@@ -779,5 +788,4 @@ public class TestJsonFacets extends SolrTestCaseHS {
     System.out.println(top.quantile(0.5));
     System.out.println(top.quantile(0.9));
   }
-  ******/
 }

@@ -290,6 +290,11 @@ class CountSlotAcc extends IntSlotAcc {
     return result[slot];
   }
 
+  // internal and expert
+  int[] getCountArray() {
+    return result;
+  }
+
   @Override
   public void reset() {
     super.reset();

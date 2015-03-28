@@ -134,10 +134,12 @@ public class FacetField extends FacetRequest {
 abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SchemaField sf;
   SlotAcc sortAcc;
+  int effectiveMincount;
 
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
+    this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
   }
 
   @Override
@@ -252,7 +254,6 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     };
 
     Slot bottom = null;
-    int effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
     for (int i = (startTermIndex == -1) ? 1 : 0; i < nTerms; i++) {
       if (countAcc.getCount(i) < effectiveMincount) {
         continue;
@@ -304,8 +305,8 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
     if (freq.allBuckets) {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
+      countAcc.setValues(allBuckets, allBucketsSlot);
       for (SlotAcc acc : accs) {
-        countAcc.setValues(allBuckets, allBucketsSlot);
         acc.setValues(allBuckets, allBucketsSlot);
       }
       res.add("allBuckets", allBuckets);
@@ -648,7 +649,6 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
   }
 
   public SimpleOrderedMap<Object> _nextBucket() throws IOException {
-    int effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
     DocSet termSet = null;
 
     try {
