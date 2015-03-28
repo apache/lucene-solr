@@ -1242,6 +1242,10 @@ Other Changes
 * SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
   at least one jetty to kill. (shalin)
 
+* SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
+  "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
+  (Varun Thacker, shalin)
+
 ==================  4.10.4 ==================
 
 Bug Fixes
