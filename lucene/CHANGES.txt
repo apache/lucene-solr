@@ -30,6 +30,9 @@ New Features
 * LUCENE-6355: IndexWriter's infoStream now also logs time to write FieldInfos
   during merge (Lee Hinman via Mike McCandless)
 
+* LUCENE-6339: Added Near-real time Document Suggester via custom postings format
+  (Areek Zillur, Mike McCandless, Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-6368: FST.save can truncate output (BufferedOutputStream may be closed 

@@ -49,7 +49,7 @@ public class FSTUtil {
     public final FST.Arc<T> fstNode;
 
     /** Output of the path so far: */
-    T output;
+    public final T output;
 
     /** Input of the path so far: */
     public final IntsRefBuilder input;
