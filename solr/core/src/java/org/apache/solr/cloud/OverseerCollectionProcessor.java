@@ -130,24 +130,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
   public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
   public static final String CREATE_NODE_SET = "createNodeSet";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETE}
-   */
-  @Deprecated
-  public static final String DELETECOLLECTION = "deletecollection";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#CREATE}
-   */
-  @Deprecated
-  public static final String CREATECOLLECTION = "createcollection";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#RELOAD}
-   */
-  @Deprecated
-  public static final String RELOADCOLLECTION = "reloadcollection";
   
   public static final String ROUTER = "router";
 
@@ -586,88 +568,71 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       zkStateReader.updateClusterState(true);
       CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
       if (action == null) {
-        // back-compat because we used strings different than enum values before SOLR-6115
-        switch (operation) {
-          case CREATECOLLECTION:
-            createCollection(zkStateReader.getClusterState(), message, results);
-            break;
-          case DELETECOLLECTION:
-            deleteCollection(message, results);
-            break;
-          case RELOADCOLLECTION:
-            ModifiableSolrParams params = new ModifiableSolrParams();
-            params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-            collectionCmd(zkStateReader.getClusterState(), message, params, results, ZkStateReader.ACTIVE);
-            break;
-          default:
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
-                + operation);
-        }
-      } else  {
-        switch (action) {
-          case CREATE:
-            createCollection(zkStateReader.getClusterState(), message, results);
-            break;
-          case DELETE:
-            deleteCollection(message, results);
-            break;
-          case RELOAD:
-            ModifiableSolrParams params = new ModifiableSolrParams();
-            params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-            collectionCmd(zkStateReader.getClusterState(), message, params, results, ZkStateReader.ACTIVE);
-            break;
-          case CREATEALIAS:
-            createAlias(zkStateReader.getAliases(), message);
-            break;
-          case DELETEALIAS:
-            deleteAlias(zkStateReader.getAliases(), message);
-            break;
-          case SPLITSHARD:
-            splitShard(zkStateReader.getClusterState(), message, results);
-            break;
-          case DELETESHARD:
-            deleteShard(zkStateReader.getClusterState(), message, results);
-            break;
-          case CREATESHARD:
-            createShard(zkStateReader.getClusterState(), message, results);
-            break;
-          case DELETEREPLICA:
-            deleteReplica(zkStateReader.getClusterState(), message, results);
-            break;
-          case MIGRATE:
-            migrate(zkStateReader.getClusterState(), message, results);
-            break;
-          case ADDROLE:
-            processRoleCommand(message, operation);
-            break;
-          case REMOVEROLE:
-            processRoleCommand(message, operation);
-            break;
-          case ADDREPLICA:
-            addReplica(zkStateReader.getClusterState(), message, results);
-            break;
-          case OVERSEERSTATUS:
-            getOverseerStatus(message, results);
-            break;
-          case CLUSTERSTATUS:
-            getClusterStatus(zkStateReader.getClusterState(), message, results);
-            break;
-          case ADDREPLICAPROP:
-            processReplicaAddPropertyCommand(message);
-            break;
-          case DELETEREPLICAPROP:
-            processReplicaDeletePropertyCommand(message);
-            break;
-          case BALANCESHARDUNIQUE:
-            balanceProperty(message);
-            break;
-          case REBALANCELEADERS:
-            processRebalanceLeaders(message);
-            break;
-          default:
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
-                + operation);
-        }
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
+      }
+      switch (action) {
+        case CREATE:
+          createCollection(zkStateReader.getClusterState(), message, results);
+          break;
+        case DELETE:
+          deleteCollection(message, results);
+          break;
+        case RELOAD:
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
+          collectionCmd(zkStateReader.getClusterState(), message, params, results, ZkStateReader.ACTIVE);
+          break;
+        case CREATEALIAS:
+          createAlias(zkStateReader.getAliases(), message);
+          break;
+        case DELETEALIAS:
+          deleteAlias(zkStateReader.getAliases(), message);
+          break;
+        case SPLITSHARD:
+          splitShard(zkStateReader.getClusterState(), message, results);
+          break;
+        case DELETESHARD:
+          deleteShard(zkStateReader.getClusterState(), message, results);
+          break;
+        case CREATESHARD:
+          createShard(zkStateReader.getClusterState(), message, results);
+          break;
+        case DELETEREPLICA:
+          deleteReplica(zkStateReader.getClusterState(), message, results);
+          break;
+        case MIGRATE:
+          migrate(zkStateReader.getClusterState(), message, results);
+          break;
+        case ADDROLE:
+          processRoleCommand(message, operation);
+          break;
+        case REMOVEROLE:
+          processRoleCommand(message, operation);
+          break;
+        case ADDREPLICA:
+          addReplica(zkStateReader.getClusterState(), message, results);
+          break;
+        case OVERSEERSTATUS:
+          getOverseerStatus(message, results);
+          break;
+        case CLUSTERSTATUS:
+          getClusterStatus(zkStateReader.getClusterState(), message, results);
+          break;
+        case ADDREPLICAPROP:
+          processReplicaAddPropertyCommand(message);
+          break;
+        case DELETEREPLICAPROP:
+          processReplicaDeletePropertyCommand(message);
+          break;
+        case BALANCESHARDUNIQUE:
+          balanceProperty(message);
+          break;
+        case REBALANCELEADERS:
+          processRebalanceLeaders(message);
+          break;
+        default:
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
+              + operation);
       }
     } catch (Exception e) {
       String collName = message.getStr("collection");

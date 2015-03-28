@@ -74,18 +74,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.BA
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
 
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETE}
-   */
-  @Deprecated
-  public static final String REMOVECOLLECTION = "removecollection";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETESHARD}
-   */
-  @Deprecated
-  public static final String REMOVESHARD = "removeshard";
-
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
@@ -375,47 +363,33 @@ public class Overseer implements Closeable {
         }
       } else {
         OverseerAction overseerAction = OverseerAction.get(operation);
-        if (overseerAction != null) {
-          switch (overseerAction) {
-            case STATE:
-              return new ReplicaMutator(getZkStateReader()).setState(clusterState, message);
-            case LEADER:
-              return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
-            case DELETECORE:
-              return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
-            case ADDROUTINGRULE:
-              return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
-            case REMOVEROUTINGRULE:
-              return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
-            case UPDATESHARDSTATE:
-              return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
-            case QUIT:
-              if (myId.equals(message.get("id"))) {
-                log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-                overseerCollectionProcessor.close();
-                close();
-              } else {
-                log.warn("Overseer received wrong QUIT message {}", message);
-              }
-              break;
-            default:
-              throw new RuntimeException("unknown operation:" + operation
-                  + " contents:" + message.getProperties());
-          }
-        } else  {
-          // merely for back-compat where overseer action names were different from the ones
-          // specified in CollectionAction. See SOLR-6115. Remove this in 5.0
-          switch (operation) {
-            case OverseerCollectionProcessor.CREATECOLLECTION:
-              return new ClusterStateMutator(getZkStateReader()).createCollection(clusterState, message);
-            case REMOVECOLLECTION:
-              return new ClusterStateMutator(getZkStateReader()).deleteCollection(clusterState, message);
-            case REMOVESHARD:
-              return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
-            default:
-              throw new RuntimeException("unknown operation:" + operation
-                  + " contents:" + message.getProperties());
-          }
+        if (overseerAction == null) {
+          throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
+        }
+        switch (overseerAction) {
+          case STATE:
+            return new ReplicaMutator(getZkStateReader()).setState(clusterState, message);
+          case LEADER:
+            return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
+          case DELETECORE:
+            return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
+          case ADDROUTINGRULE:
+            return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
+          case REMOVEROUTINGRULE:
+            return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
+          case UPDATESHARDSTATE:
+            return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
+          case QUIT:
+            if (myId.equals(message.get("id"))) {
+              log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+              overseerCollectionProcessor.close();
+              close();
+            } else {
+              log.warn("Overseer received wrong QUIT message {}", message);
+            }
+            break;
+          default:
+            throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }
       }
 
