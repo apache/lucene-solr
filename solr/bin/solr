@@ -1305,17 +1305,17 @@ function launch_solr() {
     echo -e "    SOLR_HOST       = $SOLR_HOST"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    SOLR_JAVA_MEM   = $SOLR_JAVA_MEM"
-    echo -e "    GC_TUNE         = $GC_TUNE"
-    echo -e "    GC_LOG_OPTS     = $GC_LOG_OPTS"
+    echo -e "    SOLR_JAVA_MEM   = ${SOLR_JAVA_MEM[@]}"
+    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
+    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = $CLOUD_MODE_OPTS"
+      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
     fi
 
     if [ "$SOLR_OPTS" != "" ]; then
-      echo -e "    SOLR_OPTS        = $SOLR_OPTS"
+      echo -e "    SOLR_OPTS        = ${SOLR_OPTS[@]}"
     fi
 
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
@@ -1324,7 +1324,7 @@ function launch_solr() {
 
     if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
       echo -e "    RMI_PORT        = $RMI_PORT"
-      echo -e "    REMOTE_JMX_OPTS = $REMOTE_JMX_OPTS"
+      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
     fi
     echo -e "\n"
   fi
