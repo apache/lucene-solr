@@ -83,7 +83,9 @@ public class ParallelStream extends CloudSolrStream {
     if(tuple.EOF) {
       Map m = new HashMap();
       m.put("EOF", true);
-      return new Tuple(m);
+      Tuple t = new Tuple(m);
+      t.setMetrics(this.eofTuples);
+      return t;
     }
 
     return tuple;
