@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -269,10 +270,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
   synchronized void evictIfNecessary() {
     // under a lock to make sure that mostRecentlyUsedQueries and cache keep sync'ed
     if (requiresEviction()) {
+      
       Iterator<Query> iterator = mostRecentlyUsedQueries.iterator();
       do {
         final Query query = iterator.next();
+        final int size = mostRecentlyUsedQueries.size();
         iterator.remove();
+        if (size == mostRecentlyUsedQueries.size()) {
+          // size did not decrease, because the hash of the query changed since it has been
+          // put into the cache
+          throw new ConcurrentModificationException("Removal from the cache failed! This " +
+              "is probably due to a query which has been modified after having been put into " +
+              " the cache or a badly implemented clone(). Query class: [" + query.getClass() +
+              "], query: [" + query + "]");
+        }
         onEviction(query);
       } while (iterator.hasNext() && requiresEviction());
     }

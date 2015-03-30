@@ -21,24 +21,23 @@ import java.util.Random;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 /**
  * random sloppy phrase query tests
  */
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-6369")
 public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A B"~N ⊆ "A B"~N+1 */
   public void testIncreasingSloppiness() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t1);
-    q1.add(t2);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t1);
-    q2.add(t2);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t1); 
+      q1.add(t2);
+      q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t1); 
+      q2.add(t2);
       q1.setSlop(i);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
@@ -49,14 +48,14 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   public void testIncreasingSloppinessWithHoles() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t1);
-    q1.add(t2, 2);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t1);
-    q2.add(t2, 2);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t1); 
+      q1.add(t2, 2);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t1);
+      q2.add(t2, 2);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -67,16 +66,16 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     Term t3 = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t1);
-    q1.add(t2);
-    q1.add(t3);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t1);
-    q2.add(t2);
-    q2.add(t3);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t1); 
+      q1.add(t2); 
+      q1.add(t3);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t1);
+      q2.add(t2);
+      q2.add(t3);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -89,16 +88,16 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
     Term t3 = randomTerm();
     int pos1 = 1 + random().nextInt(3);
     int pos2 = pos1 + 1 + random().nextInt(3);
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t1);
-    q1.add(t2, pos1);
-    q1.add(t3, pos2);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t1);
-    q2.add(t2, pos1);
-    q2.add(t3, pos2);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t1);
+      q1.add(t2, pos1);
+      q1.add(t3, pos2);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t1);
+      q2.add(t2, pos1);
+      q2.add(t3, pos2);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -107,14 +106,14 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A A"~N ⊆ "A A"~N+1 */
   public void testRepetitiveIncreasingSloppiness() throws Exception {
     Term t = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t);
-    q1.add(t);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t);
-    q2.add(t);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t);
+      q1.add(t);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t);
+      q2.add(t);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -123,14 +122,14 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** same as the above with posincr */
   public void testRepetitiveIncreasingSloppinessWithHoles() throws Exception {
     Term t = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t);
-    q1.add(t, 2);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t);
-    q2.add(t, 2);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t);
+      q1.add(t, 2);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t);
+      q2.add(t, 2);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -139,16 +138,16 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A A A"~N ⊆ "A A A"~N+1 */
   public void testRepetitiveIncreasingSloppiness3() throws Exception {
     Term t = randomTerm();
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t);
-    q1.add(t);
-    q1.add(t);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t);
-    q2.add(t);
-    q2.add(t);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t);
+      q1.add(t);
+      q1.add(t);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t);
+      q2.add(t);
+      q2.add(t);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -159,16 +158,16 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
     Term t = randomTerm();
     int pos1 = 1 + random().nextInt(3);
     int pos2 = pos1 + 1 + random().nextInt(3);
-    PhraseQuery q1 = new PhraseQuery();
-    q1.add(t);
-    q1.add(t, pos1);
-    q1.add(t, pos2);
-    PhraseQuery q2 = new PhraseQuery();
-    q2.add(t);
-    q2.add(t, pos1);
-    q2.add(t, pos2);
     for (int i = 0; i < 10; i++) {
+      PhraseQuery q1 = new PhraseQuery();
+      q1.add(t);
+      q1.add(t, pos1);
+      q1.add(t, pos2);
       q1.setSlop(i);
+      PhraseQuery q2 = new PhraseQuery();
+      q2.add(t);
+      q2.add(t, pos1);
+      q2.add(t, pos2);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);
     }
@@ -177,9 +176,9 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** MultiPhraseQuery~N ⊆ MultiPhraseQuery~N+1 */
   public void testRandomIncreasingSloppiness() throws Exception {
     long seed = random().nextLong();
-    MultiPhraseQuery q1 = randomPhraseQuery(seed);
-    MultiPhraseQuery q2 = randomPhraseQuery(seed);
     for (int i = 0; i < 10; i++) {
+      MultiPhraseQuery q1 = randomPhraseQuery(seed);
+      MultiPhraseQuery q2 = randomPhraseQuery(seed);
       q1.setSlop(i);
       q2.setSlop(i+1);
       assertSubsetOf(q1, q2);

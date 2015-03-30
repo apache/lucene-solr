@@ -74,8 +74,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class IndexSearcher {
 
-  // 32MB and at most 10,000 queries
-  private static QueryCache DEFAULT_QUERY_CACHE = new LRUQueryCache(10000, 1 << 25);
+  // disabled by default
+  private static QueryCache DEFAULT_QUERY_CACHE = null;
   private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
 
   final IndexReader reader; // package private for testing!
@@ -187,7 +187,10 @@ public class IndexSearcher {
    * A value of {@code null} indicates that query matches should never be
    * cached. This method should be called <b>before</b> starting using this
    * {@link IndexSearcher}.
+   * <p>NOTE: When using a query cache, queries should not be modified after
+   * they have been passed to IndexSearcher.
    * @see QueryCache
+   * @lucene.experimental
    */
   public void setQueryCache(QueryCache queryCache) {
     this.queryCache = queryCache;
@@ -198,6 +201,7 @@ public class IndexSearcher {
    * This method should be called <b>before</b> starting using this
    * {@link IndexSearcher}.
    * @see QueryCachingPolicy
+   * @lucene.experimental
    */
   public void setQueryCachingPolicy(QueryCachingPolicy queryCachingPolicy) {
     this.queryCachingPolicy = Objects.requireNonNull(queryCachingPolicy);
