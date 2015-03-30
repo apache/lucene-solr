@@ -51,7 +51,7 @@ New Features
 * LUCENE-6294: Added oal.search.CollectorManager to allow for parallelization
   of the document collection process on IndexSearcher. (Adrien Grand)
 
-* LUCENE-6303: Added filter caching baked into IndexSearcher and enabled by
+* LUCENE-6303: Added filter caching baked into IndexSearcher, disabled by
   default. (Adrien Grand)
 
 * LUCENE-6304: Added a new MatchNoDocsQuery that matches no documents.
