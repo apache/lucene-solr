@@ -163,7 +163,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     String zkHost = zkServer.getZkAddress();
 
-    Map paramsA = mapParams("q","*:*","fl","id,a_s,a_i,a_f","sort", "a_s asc,a_f asc", "partitionKeys", "none");
+    Map paramsA = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "none");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", stream, 2, new AscFieldComp("a_s"));
 
@@ -723,8 +723,17 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList();
-    for(Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-      tuples.add(t);
+    for(;;) {
+      Tuple t = tupleStream.read();
+      if(t.EOF) {
+        if(tupleStream instanceof ParallelStream) {
+          ParallelStream p = (ParallelStream) tupleStream;
+          assert(t.getMetrics() == p.getEofTuples()); // Make sure the EOF tuples are properly set on the final EOF tuple
+        }
+        break;
+      } else {
+        tuples.add(t);
+      }
     }
     tupleStream.close();
     return tuples;
