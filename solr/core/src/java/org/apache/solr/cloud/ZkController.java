@@ -2175,9 +2175,10 @@ public final class ZkController {
    *
    * @return true on success
    */
-  public static boolean persistConfigResourceToZooKeeper(ZkSolrResourceLoader zkLoader, int znodeVersion,
+  public static int persistConfigResourceToZooKeeper(ZkSolrResourceLoader zkLoader, int znodeVersion,
                                                          String resourceName, byte[] content,
                                                          boolean createIfNotExists) {
+    int latestVersion = znodeVersion;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
@@ -2185,17 +2186,19 @@ public final class ZkController {
     try {
       try {
         zkClient.setData(resourceLocation, content, znodeVersion, true);
+        latestVersion = znodeVersion + 1;// if the set succeeded , it should have incremented the version by one always
         log.info("Persisted config data to node {} ", resourceLocation);
         touchConfDir(zkLoader);
       } catch (NoNodeException e) {
         if (createIfNotExists) {
           try {
             zkClient.create(resourceLocation, content, CreateMode.PERSISTENT, true);
+            latestVersion = 0;//just created so version must be zero
             touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
-              log.info("failed to set data version in zk is {0} and expected version is {1} ", stat.getVersion(), znodeVersion);
+              log.info("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(), znodeVersion);
             } catch (Exception e1) {
               log.warn("could not get stat");
             }
@@ -2227,7 +2230,7 @@ public final class ZkController {
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
-    return true;
+    return latestVersion;
   }
 
   public static void touchConfDir(ZkSolrResourceLoader zkLoader) {

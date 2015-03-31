@@ -344,6 +344,9 @@ Bug Fixes
 * SOLR-7309: Make bin/solr, bin/post work when Solr installation directory contains spaces
   (Ramkumar Aiyengar, Martijn Koster)
 
+* SOLR-6924: The config API forcefully refreshes all replicas in the collection to ensure all are
+  updated (Noble Paul)
+
 Optimizations
 ----------------------
 
