@@ -368,6 +368,9 @@ Optimizations
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
    where local params disable all stats (hossman)
 
+ * SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
+   (Stephan Lagraulet via Varun Thacker)
+
 Other Changes
 ----------------------
 

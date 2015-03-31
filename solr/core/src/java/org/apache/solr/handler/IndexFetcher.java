@@ -362,8 +362,10 @@ public class IndexFetcher {
       indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       try {
-        
-        if (isIndexStale(indexDir)) {
+
+        //We will compare all the index files from the master vs the index files on disk to see if there is a mismatch
+        //in the metadata. If there is a mismatch for the same index file then we download the entire index again.
+        if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
         
