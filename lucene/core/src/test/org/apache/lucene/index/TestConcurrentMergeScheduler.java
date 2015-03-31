@@ -217,9 +217,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoWaitClose() throws IOException {
     Directory directory = newDirectory();
-    if (directory instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) directory).setPreventDoubleWrite(false);
-    }
     Document doc = new Document();
     Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
@@ -251,6 +248,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       // stress out aborting them on close:
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
       writer.addDocument(doc);
+      writer.commit();
 
       try {
         writer.commit();
@@ -269,8 +267,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
               setOpenMode(OpenMode.APPEND).
               setMergePolicy(newLogMergePolicy(100)).
               // Force excessive merging:
-              setMaxBufferedDocs(2).
-              setCommitOnClose(false)
+              setMaxBufferedDocs(2)
       );
     }
     writer.close();
