@@ -30,7 +30,7 @@ import org.apache.lucene.util.ToStringUtils;
  * A query that matches all documents.
  *
  */
-public class MatchAllDocsQuery extends Query {
+public final class MatchAllDocsQuery extends Query {
 
   private class MatchAllScorer extends Scorer {
     final float score;
@@ -88,7 +88,7 @@ public class MatchAllDocsQuery extends Query {
     private float queryWeight;
     private float queryNorm;
 
-    public MatchAllDocsWeight(IndexSearcher searcher) {
+    public MatchAllDocsWeight() {
       super(MatchAllDocsQuery.this);
     }
 
@@ -130,7 +130,7 @@ public class MatchAllDocsQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
-    return new MatchAllDocsWeight(searcher);
+    return new MatchAllDocsWeight();
   }
 
   @Override
