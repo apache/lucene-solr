@@ -487,6 +487,28 @@ public class SortingLeafReader extends FilterLeafReader {
     PostingsEnum getWrapped() {
       return in;
     }
+    
+    // we buffer up docs/freqs only, don't forward any positions requests to underlying enum
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
   }
 
   static class SortingPostingsEnum extends FilterPostingsEnum {
