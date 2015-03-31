@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +47,7 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -1315,6 +1316,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public void deleteDocuments(Query... queries) throws IOException {
     ensureOpen();
+
+    // LUCENE-6379: Specialize MatchAllDocsQuery
+    for(Query query : queries) {
+      if (query.getClass() == MatchAllDocsQuery.class) {
+        deleteAll();
+        return;
+      }
+    }
+
     try {
       if (docWriter.deleteQueries(queries)) {
         processEvents(true, false);
