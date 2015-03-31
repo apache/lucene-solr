@@ -453,15 +453,12 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
       bits.clear(0);
       PostingsEnum docsAndPositionsEnum = termsEnum.postings(bits, random().nextBoolean() ? null : this.docsEnum.get(), PostingsEnum.POSITIONS);
-      assertEquals(ft.storeTermVectorOffsets() || ft.storeTermVectorPositions(), docsAndPositionsEnum != null);
-      // nocommit: check
-      if (docsAndPositionsEnum != null) {
+      if (terms.hasPositions()) {
         assertEquals(PostingsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
       }
       bits.set(0);
 
       docsAndPositionsEnum = termsEnum.postings(random().nextBoolean() ? bits : null, random().nextBoolean() ? null : docsAndPositionsEnum, PostingsEnum.POSITIONS);
-      assertEquals(ft.storeTermVectorOffsets() || ft.storeTermVectorPositions(), docsAndPositionsEnum != null);
       if (terms.hasPositions() || terms.hasOffsets()) {
         assertEquals(0, docsAndPositionsEnum.nextDoc());
         final int freq = docsAndPositionsEnum.freq();

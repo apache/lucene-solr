@@ -292,8 +292,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       //System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
       assertNotNull(termsEnum.postings(null, null));
-      // nocommit: check
-      assertNull(termsEnum.postings(null, null, PostingsEnum.ALL)); // no pos
+      assertNotNull(termsEnum.postings(null, null, PostingsEnum.ALL));
     }
     reader.close();
   }
