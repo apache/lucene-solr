@@ -227,7 +227,7 @@ public class FilterLeafReader extends LeafReader {
     protected final PostingsEnum in;
 
     /**
-     * Create a new FilterDocsEnum
+     * Create a new FilterPostingsEnum
      * @param in the underlying PostingsEnum instance.
      */
     public FilterPostingsEnum(PostingsEnum in) {
