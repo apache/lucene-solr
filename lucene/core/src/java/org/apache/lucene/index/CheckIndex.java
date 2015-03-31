@@ -1898,12 +1898,15 @@ public class CheckIndex implements Closeable {
                 BytesRef term = null;
                 while ((term = termsEnum.next()) != null) {
 
+                  // This is the term vectors:
                   postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
                   assert postings != null;
 
                   if (!postingsTermsEnum.seekExact(term)) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                   }
+
+                  // This is the inverted index ("real" postings):
                   postingsDocs2 = postingsTermsEnum.postings(null, postingsDocs2, PostingsEnum.ALL);
                   assert postingsDocs2 != null;
 
@@ -1924,7 +1927,8 @@ public class CheckIndex implements Closeable {
                     if (postingsHasFreq && postingsDocs2.freq() != tf) {
                       throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
                     }
-                    
+
+                    // Term vectors has prox?
                     if (hasProx) {
                       for (int i = 0; i < tf; i++) {
                         int pos = postings.nextPosition();
@@ -1950,15 +1954,17 @@ public class CheckIndex implements Closeable {
                         lastStartOffset = startOffset;
                          */
 
-                        final int postingsStartOffset = postingsDocs2.startOffset();
-                        final int postingsEndOffset = postingsDocs2.endOffset();
-                        if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
+                        if (startOffset != -1 && endOffset != -1 && postingsTerms.hasOffsets()) {
+                          int postingsStartOffset = postingsDocs2.startOffset();
+                          int postingsEndOffset = postingsDocs2.endOffset();
+                          if (startOffset != postingsStartOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
+                          }
+                          if (endOffset != postingsEndOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
+                          }
                         }
-                        if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
-                        }
-                        
+
                         BytesRef payload = postings.getPayload();
                         
                         if (payload != null) {
