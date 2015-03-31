@@ -308,10 +308,11 @@ public class WeightedSpanTermExtractor {
       final Spans spans = q.getSpans(context, acceptDocs, termContexts);
 
       // collect span positions
-      while (spans.next()) {
-        spanPositions.add(new PositionSpan(spans.start(), spans.end() - 1));
+      while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
+        while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+          spanPositions.add(new PositionSpan(spans.startPosition(), spans.endPosition() - 1));
+        }
       }
-      
     }
 
     if (spanPositions.size() == 0) {

@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
@@ -42,27 +41,32 @@ final class JustCompileSearchSpans {
   static final class JustCompileSpans extends Spans {
 
     @Override
-    public int doc() {
+    public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public int end() {
+    public int nextDoc() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public boolean next() {
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    @Override
+    public int startPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public boolean skipTo(int target) {
+    public int endPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
+    
     @Override
-    public int start() {
+    public int nextStartPosition() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -104,37 +108,42 @@ final class JustCompileSearchSpans {
   static final class JustCompilePayloadSpans extends Spans {
 
     @Override
+    public int docID() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int startPosition() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int endPosition() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    @Override
+    public int nextStartPosition() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public Collection<byte[]> getPayload() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
     public boolean isPayloadAvailable() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int doc() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int end() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public boolean next() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public boolean skipTo(int target) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int start() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -147,7 +156,7 @@ final class JustCompileSearchSpans {
   
   static final class JustCompileSpanScorer extends SpanScorer {
 
-    protected JustCompileSpanScorer(Spans spans, Weight weight,
+    protected JustCompileSpanScorer(Spans spans, SpanWeight weight,
         Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
     }

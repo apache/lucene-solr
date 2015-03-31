@@ -21,9 +21,9 @@ import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
-/** 
+/**
  * Matches spans near the beginning of a field.
- * <p> 
+ * <p>
  * This class is a simple extension of {@link SpanPositionRangeQuery} in that it assumes the
  * start to be zero and only checks the end boundary.
  */
@@ -37,10 +37,10 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
 
   @Override
   protected AcceptStatus acceptPosition(Spans spans) throws IOException {
-    assert spans.start() != spans.end() : "start equals end: " + spans.start();
-    if (spans.start() >= end)
-      return AcceptStatus.NO_AND_ADVANCE;
-    else if (spans.end() <= end)
+    assert spans.startPosition() != spans.endPosition() : "start equals end: " + spans.startPosition();
+    if (spans.startPosition() >= end)
+      return AcceptStatus.NO_MORE_IN_CURRENT_DOC;
+    else if (spans.endPosition() <= end)
       return AcceptStatus.YES;
     else
       return AcceptStatus.NO;

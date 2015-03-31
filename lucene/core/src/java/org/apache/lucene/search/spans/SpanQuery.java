@@ -25,16 +25,17 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
-  /** Expert: Returns the matches for this query in an index.  Used internally
-   * to search for spans. */
+  /** Expert: Returns the matches for this query in an index.  
+   *  Used internally to search for spans.
+   *  This may return null to indicate that the SpanQuery has no results.
+   */
   public abstract Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException;
 
-  /** 
+  /**
    * Returns the name of the field matched by this query.
    * <p>
    * Note that this may return null if the query matches no terms.
@@ -42,7 +43,7 @@ public abstract class SpanQuery extends Query {
   public abstract String getField();
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new SpanWeight(this, searcher);
   }
 

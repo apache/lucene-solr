@@ -37,7 +37,8 @@ import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
- * matches are required to be in-order. */
+ * matches are required to be in-order.
+ */
 public class SpanNearQuery extends SpanQuery implements Cloneable {
   protected List<SpanQuery> clauses;
   protected int slop;
@@ -53,22 +54,19 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
    * must be in the same order as in <code>clauses</code> and must be non-overlapping.
    * <br>When <code>inOrder</code> is false, the spans from each clause
    * need not be ordered and may overlap.
-   * @param clauses the clauses to find near each other
+   * @param clauses the clauses to find near each other, in the same field, at least 2.
    * @param slop The slop value
    * @param inOrder true if order is important
    */
   public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
-    this(clauses, slop, inOrder, true);     
+    this(clauses, slop, inOrder, true);
   }
-  
-  public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder, boolean collectPayloads) {
 
-    // copy clauses array into an ArrayList
-    this.clauses = new ArrayList<>(clauses.length);
-    for (int i = 0; i < clauses.length; i++) {
-      SpanQuery clause = clauses[i];
-      if (field == null) {                               // check field
-        field = clause.getField();
+  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder, boolean collectPayloads) {
+    this.clauses = new ArrayList<>(clausesIn.length);
+    for (SpanQuery clause : clausesIn) {
+      if (this.field == null) {                               // check field
+        this.field = clause.getField();
       } else if (clause.getField() != null && !clause.getField().equals(field)) {
         throw new IllegalArgumentException("Clauses must have same field.");
       }
@@ -92,14 +90,13 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public String getField() { return field; }
-  
+
   @Override
   public void extractTerms(Set<Term> terms) {
     for (final SpanQuery clause : clauses) {
       clause.extractTerms(terms);
     }
-  }  
-  
+  }
 
   @Override
   public String toString(String field) {
@@ -124,15 +121,21 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    if (clauses.size() == 0)                      // optimize 0-clause case
-      return new SpanOrQuery(getClauses()).getSpans(context, acceptDocs, termContexts);
+    ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
-    if (clauses.size() == 1)                      // optimize 1-clause case
-      return clauses.get(0).getSpans(context, acceptDocs, termContexts);
-
-    return inOrder
-            ? (Spans) new NearSpansOrdered(this, context, acceptDocs, termContexts, collectPayloads)
-            : (Spans) new NearSpansUnordered(this, context, acceptDocs, termContexts);
+    for (SpanQuery seq : clauses) {
+      Spans subSpan = seq.getSpans(context, acceptDocs, termContexts);
+      if (subSpan != null) {
+        subSpans.add(subSpan);
+      } else {
+        return null; // all required
+      }
+    }
+    
+    // all NearSpans require at least two subSpans
+    return (! inOrder) ? new NearSpansUnordered(this, subSpans)
+          : collectPayloads ? new NearSpansPayloadOrdered(this, subSpans)
+          : new NearSpansOrdered(this, subSpans);
   }
 
   @Override
@@ -148,12 +151,12 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
     }
     if (clone != null) {
-      return clone;                        // some clauses rewrote
+      return clone; // some clauses rewrote
     } else {
-      return this;                         // no clauses rewrote
+      return this; // no clauses rewrote
     }
   }
-  
+
   @Override
   public SpanNearQuery clone() {
     int sz = clauses.size();

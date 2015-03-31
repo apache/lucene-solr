@@ -18,9 +18,9 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
@@ -29,58 +29,68 @@ import org.apache.lucene.search.similarities.Similarity;
 public class SpanScorer extends Scorer {
   protected Spans spans;
 
-  protected boolean more = true;
-
   protected int doc;
   protected float freq;
   protected int numMatches;
   protected final Similarity.SimScorer docScorer;
-  
-  protected SpanScorer(Spans spans, Weight weight, Similarity.SimScorer docScorer)
+
+  protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer)
   throws IOException {
     super(weight);
-    this.docScorer = docScorer;
-    this.spans = spans;
-
-    doc = -1;
-    more = spans.next();
+    this.docScorer = Objects.requireNonNull(docScorer);
+    this.spans = Objects.requireNonNull(spans);
+    this.doc = -1;
   }
 
   @Override
   public int nextDoc() throws IOException {
-    if (!setFreqCurrentDoc()) {
-      doc = NO_MORE_DOCS;
+    int prevDoc = doc;
+    doc = spans.nextDoc();
+    if (doc != NO_MORE_DOCS) {
+      setFreqCurrentDoc();
     }
     return doc;
   }
 
   @Override
   public int advance(int target) throws IOException {
-    if (!more) {
-      return doc = NO_MORE_DOCS;
-    }
-    if (spans.doc() < target) { // setFreqCurrentDoc() leaves spans.doc() ahead
-      more = spans.skipTo(target);
-    }
-    if (!setFreqCurrentDoc()) {
-      doc = NO_MORE_DOCS;
+    int prevDoc = doc;
+    doc = spans.advance(target);
+    if (doc != NO_MORE_DOCS) {
+      setFreqCurrentDoc();
     }
     return doc;
   }
-  
+
   protected boolean setFreqCurrentDoc() throws IOException {
-    if (!more) {
-      return false;
-    }
-    doc = spans.doc();
     freq = 0.0f;
     numMatches = 0;
+
+    assert spans.startPosition() == -1 : "incorrect initial start position, spans="+spans;
+    assert spans.endPosition() == -1 : "incorrect initial end position, spans="+spans;
+    int prevStartPos = -1;
+    int prevEndPos = -1;
+
+    int startPos = spans.nextStartPosition();
+    assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
     do {
-      int matchLength = spans.end() - spans.start();
-      freq += docScorer.computeSlopFactor(matchLength);
+      assert startPos >= prevStartPos;
+      int endPos = spans.endPosition();
+      assert endPos != Spans.NO_MORE_POSITIONS;
+      // This assertion can fail for Or spans on the same term:
+      // assert (startPos != prevStartPos) || (endPos > prevEndPos) : "non increased endPos="+endPos;
+      assert (startPos != prevStartPos) || (endPos >= prevEndPos) : "decreased endPos="+endPos;
       numMatches++;
-      more = spans.next();
-    } while (more && (doc == spans.doc()));
+      int matchLength = endPos - startPos;
+      freq += docScorer.computeSlopFactor(matchLength);
+      prevStartPos = startPos;
+      prevEndPos = endPos;
+      startPos = spans.nextStartPosition();
+    } while (startPos != Spans.NO_MORE_POSITIONS);
+
+    assert spans.startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, spans="+spans;
+    assert spans.endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, spans="+spans;
+
     return true;
   }
 
@@ -89,15 +99,16 @@ public class SpanScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    return docScorer.score(doc, freq);
+    float s = docScorer.score(doc, freq);
+    return s;
   }
-  
+
   @Override
   public int freq() throws IOException {
     return numMatches;
   }
 
-  /** Returns the intermediate "sloppy freq" adjusted for edit distance 
+  /** Returns the intermediate "sloppy freq" adjusted for edit distance
    *  @lucene.internal */
   // only public so .payloads can see it.
   public float sloppyFreq() throws IOException {

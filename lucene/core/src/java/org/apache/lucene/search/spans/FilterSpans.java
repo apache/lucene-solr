@@ -19,10 +19,13 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
+
+import org.apache.lucene.search.TwoPhaseIterator;
 
 /**
- * A {@link Spans} implementation which allows wrapping another spans instance
- * and override some selected methods.
+ * A {@link Spans} implementation wrapping another spans instance,
+ * allowing to override selected methods in a subclass.
  */
 public class FilterSpans extends Spans {
  
@@ -31,32 +34,37 @@ public class FilterSpans extends Spans {
   
   /** Wrap the given {@link Spans}. */
   public FilterSpans(Spans in) {
-    this.in = in;
+    this.in = Objects.requireNonNull(in);
   }
   
   @Override
-  public boolean next() throws IOException {
-    return in.next();
+  public int nextDoc() throws IOException {
+    return in.nextDoc();
   }
 
   @Override
-  public boolean skipTo(int target) throws IOException {
-    return in.skipTo(target);
+  public int advance(int target) throws IOException {
+    return in.advance(target);
   }
 
   @Override
-  public int doc() {
-    return in.doc();
+  public int docID() {
+    return in.docID();
   }
 
   @Override
-  public int start() {
-    return in.start();
+  public int nextStartPosition() throws IOException {
+    return in.nextStartPosition();
   }
 
   @Override
-  public int end() {
-    return in.end();
+  public int startPosition() {
+    return in.startPosition();
+  }
+  
+  @Override
+  public int endPosition() {
+    return in.endPosition();
   }
   
   @Override
@@ -79,4 +87,8 @@ public class FilterSpans extends Spans {
     return "Filter(" + in.toString() + ")";
   }
   
+  @Override
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return in.asTwoPhaseIterator();
+  }
 }

@@ -35,18 +35,19 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.Query;
 
-/** Matches the union of its clauses.*/
+/** Matches the union of its clauses.
+ */
 public class SpanOrQuery extends SpanQuery implements Cloneable {
   private List<SpanQuery> clauses;
   private String field;
 
-  /** Construct a SpanOrQuery merging the provided clauses. */
+  /** Construct a SpanOrQuery merging the provided clauses.
+   * All clauses must have the same field. 
+   */
   public SpanOrQuery(SpanQuery... clauses) {
-
-    // copy clauses array into an ArrayList
     this.clauses = new ArrayList<>(clauses.length);
-    for (int i = 0; i < clauses.length; i++) {
-      addClause(clauses[i]);
+    for (SpanQuery seq : clauses) {
+      addClause(seq);
     }
   }
 
@@ -59,7 +60,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
     this.clauses.add(clause);
   }
-  
+
   /** Return the clauses whose spans are matched. */
   public SpanQuery[] getClauses() {
     return clauses.toArray(new SpanQuery[clauses.size()]);
@@ -74,7 +75,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       clause.extractTerms(terms);
     }
   }
-  
+
   @Override
   public SpanOrQuery clone() {
     int sz = clauses.size();
@@ -152,90 +153,120 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
     @Override
     protected final boolean lessThan(Spans spans1, Spans spans2) {
-      if (spans1.doc() == spans2.doc()) {
-        if (spans1.start() == spans2.start()) {
-          return spans1.end() < spans2.end();
+      if (spans1.docID() == spans2.docID()) {
+        if (spans1.startPosition() == spans2.startPosition()) {
+          return spans1.endPosition() < spans2.endPosition();
         } else {
-          return spans1.start() < spans2.start();
+          return spans1.startPosition() < spans2.startPosition();
         }
       } else {
-        return spans1.doc() < spans2.doc();
+        return spans1.docID() < spans2.docID();
       }
     }
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
-    if (clauses.size() == 1)                      // optimize 1-clause case
-      return (clauses.get(0)).getSpans(context, acceptDocs, termContexts);
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts)
+  throws IOException {
+
+    final ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
+
+    for (SpanQuery seq : clauses) {
+      Spans subSpan = seq.getSpans(context, acceptDocs, termContexts);
+      if (subSpan != null) {
+        subSpans.add(subSpan);
+      }
+    }
+
+    if (subSpans.size() == 0) {
+      return null;
+    } else if (subSpans.size() == 1) {
+      return subSpans.get(0);
+    }
+
+    final SpanQueue queue = new SpanQueue(clauses.size());
+    for (Spans spans : subSpans) {
+      queue.add(spans);
+    }
 
     return new Spans() {
-        private SpanQueue queue = null;
-        private long cost;
 
-        private boolean initSpanQueue(int target) throws IOException {
-          queue = new SpanQueue(clauses.size());
-          Iterator<SpanQuery> i = clauses.iterator();
-          while (i.hasNext()) {
-            Spans spans = i.next().getSpans(context, acceptDocs, termContexts);
-            cost += spans.cost();
-            if (   ((target == -1) && spans.next())
-                || ((target != -1) && spans.skipTo(target))) {
-              queue.add(spans);
-            }
-          }
-          return queue.size() != 0;
+      @Override
+      public int nextDoc() throws IOException {
+        if (queue.size() == 0) { // all done
+          return NO_MORE_DOCS;
         }
 
-        @Override
-        public boolean next() throws IOException {
-          if (queue == null) {
-            return initSpanQueue(-1);
-          }
+        int currentDoc = top().docID();
 
-          if (queue.size() == 0) { // all done
-            return false;
-          }
+        if (currentDoc == -1) { // initially
+          return advance(0);
+        }
 
-          if (top().next()) { // move to next
+        do {
+          if (top().nextDoc() != NO_MORE_DOCS) { // move top to next doc
             queue.updateTop();
-            return true;
-          }
-
-          queue.pop();  // exhausted a clause
-          return queue.size() != 0;
-        }
-
-        private Spans top() { return queue.top(); }
-
-        @Override
-        public boolean skipTo(int target) throws IOException {
-          if (queue == null) {
-            return initSpanQueue(target);
-          }
-  
-          boolean skipCalled = false;
-          while (queue.size() != 0 && top().doc() < target) {
-            if (top().skipTo(target)) {
-              queue.updateTop();
-            } else {
-              queue.pop();
+          } else {
+            queue.pop(); // exhausted a clause
+            if (queue.size() == 0) {
+              return NO_MORE_DOCS;
             }
-            skipCalled = true;
           }
-  
-          if (skipCalled) {
-            return queue.size() != 0;
+          // assert queue.size() > 0;
+          int doc = top().docID();
+          if (doc > currentDoc) {
+            return doc;
           }
-          return next();
+        } while (true);
+      }
+
+      private Spans top() {
+        return queue.top();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+
+        while ((queue.size() > 0) && (top().docID() < target)) {
+          if (top().advance(target) != NO_MORE_DOCS) {
+            queue.updateTop();
+          } else {
+            queue.pop();
+          }
         }
 
-        @Override
-        public int doc() { return top().doc(); }
-        @Override
-        public int start() { return top().start(); }
-        @Override
-        public int end() { return top().end(); }
+        return (queue.size() > 0) ? top().docID() : NO_MORE_DOCS;
+      }
+
+      @Override
+      public int docID() {
+        return (queue == null) ? -1
+              : (queue.size() > 0) ? top().docID()
+              : NO_MORE_DOCS;
+      }
+
+      @Override
+      public int nextStartPosition() throws IOException {
+        top().nextStartPosition();
+        queue.updateTop();
+        int startPos = top().startPosition();
+        while (startPos == -1) { // initially at this doc
+          top().nextStartPosition();
+          queue.updateTop();
+          startPos = top().startPosition();
+        }
+        return startPos;
+      }
+
+      @Override
+      public int startPosition() {
+        return top().startPosition();
+      }
+
+      @Override
+      public int endPosition() {
+        return top().endPosition();
+      }
 
       @Override
       public Collection<byte[]> getPayload() throws IOException {
@@ -257,15 +288,23 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       public String toString() {
           return "spans("+SpanOrQuery.this+")@"+
             ((queue == null)?"START"
-             :(queue.size()>0?(doc()+":"+start()+"-"+end()):"END"));
-        }
+             :(queue.size()>0?(docID()+": "+top().startPosition()+" - "+top().endPosition()):"END"));
+      }
+
+      private long cost = -1;
 
       @Override
       public long cost() {
+        if (cost == -1) {
+          cost = 0;
+          for (Spans spans : subSpans) {
+            cost += spans.cost();
+          }
+        }
         return cost;
       }
-      
-      };
+
+    };
   }
 
 }
