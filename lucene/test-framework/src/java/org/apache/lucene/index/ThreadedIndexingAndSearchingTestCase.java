@@ -309,7 +309,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
             doAfterIndexingThreadDone();
           }
         };
-      threads[thread].setDaemon(true);
       threads[thread].start();
     }
 
@@ -399,7 +398,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
             }
           }
         };
-      searchThreads[thread].setDaemon(true);
       searchThreads[thread].start();
     }
 

@@ -146,7 +146,8 @@ public class LineFileDocs implements Closeable {
   }
 
   public synchronized void reset(Random random) throws IOException {
-    close();
+    reader.close();
+    reader = null;
     open(random);
     id.set(0);
   }
@@ -215,7 +216,8 @@ public class LineFileDocs implements Closeable {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("TEST: LineFileDocs: now rewind file...");
         }
-        close();
+        reader.close();
+        reader = null;
         open(null);
         line = reader.readLine();
       }
