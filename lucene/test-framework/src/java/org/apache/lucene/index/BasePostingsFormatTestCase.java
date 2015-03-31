@@ -1620,13 +1620,13 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                     PostingsEnum docs = null;
                     while(termsEnum.next() != null) {
                       BytesRef term = termsEnum.term();
+                      // TODO: also sometimes ask for payloads/offsets?
                       boolean noPositions = random().nextBoolean();
                       if (noPositions) {
                         docs = termsEnum.postings(null, docs, PostingsEnum.FREQS);
                       } else {
                         docs = termsEnum.postings(null, null, PostingsEnum.POSITIONS);
                       }
-                      // nocommit: can we remove the noPositions and always ask for positions here?
                       int docFreq = 0;
                       long totalTermFreq = 0;
                       while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
@@ -1669,6 +1669,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                     // Also test seeking the TermsEnum:
                     for(String term : termFreqs.keySet()) {
                       if (termsEnum.seekExact(new BytesRef(term))) {
+                        // TODO: also sometimes ask for payloads/offsets?
                         boolean noPositions = random().nextBoolean();
                         if (noPositions) {
                           docs = termsEnum.postings(null, docs, PostingsEnum.FREQS);
