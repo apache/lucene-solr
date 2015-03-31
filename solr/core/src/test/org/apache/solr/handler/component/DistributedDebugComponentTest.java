@@ -18,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -63,7 +64,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @BeforeClass
   public static void createThings() throws Exception {
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath(), null, null);
+    createJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
 
     collection1 = new HttpSolrClient(url + "/collection1");
@@ -263,7 +264,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     
   }
   
-  private void verifyDebugSections(SolrQuery query, SolrClient client) throws SolrServerException {
+  private void verifyDebugSections(SolrQuery query, SolrClient client) throws SolrServerException, IOException {
     query.set("debugQuery", "true");
     query.remove("debug");
     QueryResponse response = client.query(query);
@@ -343,7 +344,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNull(response.getDebugMap());
   }
   
-  public void testCompareWithNonDistributedRequest() throws SolrServerException {
+  public void testCompareWithNonDistributedRequest() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1");
     query.setFilterQueries("id:[0 TO 10]");
@@ -375,7 +376,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertSameKeys((NamedList<?>)nonDistribResponse.getDebugMap().get("timing"), (NamedList<?>)distribResponse.getDebugMap().get("timing"));
   }
   
-  public void testTolerantSearch() throws SolrServerException {
+  public void testTolerantSearch() throws SolrServerException, IOException {
     String badShard = "[ff01::0083]:3334";
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");

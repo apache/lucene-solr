@@ -336,6 +336,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         new String[] { "bankueberfall", "fall" },
         new int[] { 0,  0 },
         new int[] { 12, 12 });
+    analyzer.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -350,6 +351,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
     
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     final HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
@@ -363,6 +365,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    b.close();
   }
   
   public void testEmptyTerm() throws Exception {
@@ -376,6 +379,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
     
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     final HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
@@ -389,5 +393,6 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(b, "", "");
+    b.close();
   }
 }

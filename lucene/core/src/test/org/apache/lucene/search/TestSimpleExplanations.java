@@ -105,28 +105,28 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   
   public void testFQ1() throws Exception {
     qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "w1")),
-                            new ItemizedFilter(new int[] {0,1,2,3})),
+                            new QueryWrapperFilter(new ItemizedQuery(new int[] {0,1,2,3}))),
           new int[] {0,1,2,3});
   }
   public void testFQ2() throws Exception {
     qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "w1")),
-                            new ItemizedFilter(new int[] {0,2,3})),
+                            new QueryWrapperFilter(new ItemizedQuery(new int[] {0,2,3}))),
           new int[] {0,2,3});
   }
   public void testFQ3() throws Exception {
     qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                            new ItemizedFilter(new int[] {1,3})),
+                            new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3}))),
           new int[] {3});
   }
   public void testFQ4() throws Exception {
     TermQuery termQuery = new TermQuery(new Term(FIELD, "xx"));
     termQuery.setBoost(1000);
-    qtest(new FilteredQuery(termQuery, new ItemizedFilter(new int[] {1,3})),
+    qtest(new FilteredQuery(termQuery, new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3}))),
           new int[] {3});
   }
   public void testFQ6() throws Exception {
     Query q = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new ItemizedFilter(new int[] {1,3}));
+                                new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3})));
     q.setBoost(1000);
     qtest(q, new int[] {3});
   }
@@ -134,15 +134,15 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   /* ConstantScoreQueries */
   
   public void testCSQ1() throws Exception {
-    Query q = new ConstantScoreQuery(new ItemizedFilter(new int[] {0,1,2,3}));
+    Query q = new ConstantScoreQuery(new ItemizedQuery(new int[] {0,1,2,3}));
     qtest(q, new int[] {0,1,2,3});
   }
   public void testCSQ2() throws Exception {
-    Query q = new ConstantScoreQuery(new ItemizedFilter(new int[] {1,3}));
+    Query q = new ConstantScoreQuery(new ItemizedQuery(new int[] {1,3}));
     qtest(q, new int[] {1,3});
   }
   public void testCSQ3() throws Exception {
-    Query q = new ConstantScoreQuery(new ItemizedFilter(new int[] {0,2}));
+    Query q = new ConstantScoreQuery(new ItemizedQuery(new int[] {0,2}));
     q.setBoost(1000);
     qtest(q, new int[] {0,2});
   }
@@ -481,6 +481,34 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     
     qtest(q, new int[] { 0,3 });
     
+  }
+
+  public void testBQ23() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.FILTER);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ24() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ25() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST);
+    qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  public void testBQ26() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
+    query.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
+    qtest(query, new int[] { 0,1 });
   }
 
   /* BQ of TQ: using alt so some fields have zero boost and some don't */

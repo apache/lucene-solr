@@ -22,7 +22,7 @@ import org.apache.lucene.facet.DrillSideways; // javadocs
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery; // javadocs
-import org.apache.lucene.search.NumericRangeFilter; // javadocs
+import org.apache.lucene.search.NumericRangeQuery;
 
 /** Base class for a single labeled range.
  *
@@ -48,7 +48,7 @@ public abstract class Range {
    *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
    *  {@link ValueSource} is static, e.g. an indexed numeric
    *  field, then it may be more efficient to use {@link
-   *  NumericRangeFilter}.  The provided fastMatchFilter,
+   *  NumericRangeQuery}.  The provided fastMatchFilter,
    *  if non-null, will first be consulted, and only if
    *  that is set for each document will the range then be
    *  checked. */
@@ -61,7 +61,7 @@ public abstract class Range {
    *  {@link FilteredQuery} using its {@link
    *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
    *  {@link ValueSource} is static, e.g. an indexed numeric
-   *  field, then it may be more efficient to use {@link NumericRangeFilter}. */
+   *  field, then it may be more efficient to use {@link NumericRangeQuery}. */
   public Filter getFilter(ValueSource valueSource) {
     return getFilter(null, valueSource);
   }

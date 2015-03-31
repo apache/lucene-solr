@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -87,7 +88,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Map<String,Float> originalValues = getOriginalValues();
     
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -116,12 +118,14 @@ public class TestMoreLikeThis extends LuceneTestCase {
           + tq.getTerm().text() + "' got " + tq.getBoost(), totalBoost, tq
           .getBoost(), 0.0001);
     }
+    analyzer.close();
   }
   
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -135,24 +139,28 @@ public class TestMoreLikeThis extends LuceneTestCase {
       TermQuery tq = (TermQuery) clause.getQuery();
       originalValues.put(tq.getTerm().text(), tq.getBoost());
     }
+    analyzer.close();
     return originalValues;
   }
   
   // LUCENE-3326
   public void testMultiFields() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text", "foobar"});
     mlt.like("foobar", new StringReader("this is a test"));
+    analyzer.close();
   }
 
   // LUCENE-5725
   public void testMultiValues() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -167,12 +175,15 @@ public class TestMoreLikeThis extends LuceneTestCase {
       Term term = ((TermQuery) clause.getQuery()).getTerm();
       assertTrue(Arrays.asList(new Term("text", "lucene"), new Term("text", "apache")).contains(term));
     }
+    analyzer.close();
   }
 
   // just basic equals/hashcode etc
   public void testMoreLikeThisQuery() throws Exception {
-    Query query = new MoreLikeThisQuery("this is a test", new String[] { "text" }, new MockAnalyzer(random()), "text");
+    Analyzer analyzer = new MockAnalyzer(random());
+    Query query = new MoreLikeThisQuery("this is a test", new String[] { "text" }, analyzer, "text");
     QueryUtils.check(random(), query, searcher);
+    analyzer.close();
   }
 
   public void testTopN() throws Exception {
@@ -190,7 +201,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     // setup MLT query
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
     mlt.setMaxQueryTerms(topN);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
@@ -221,6 +233,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     // clean up
     reader.close();
     dir.close();
+    analyzer.close();
   }
 
   private String[] generateStrSeq(int from, int size) {

@@ -94,8 +94,7 @@ import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 public class CoreAdminHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
-  protected static HashMap<String, Map<String, TaskObject>> requestStatusMap =
-      new HashMap<String,Map<String, TaskObject>>();
+  protected final Map<String, Map<String, TaskObject>> requestStatusMap;
 
   protected final ExecutorService parallelExecutor = Executors.newFixedThreadPool(50,
       new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
@@ -108,17 +107,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
   public static String RESPONSE_STATUS = "STATUS";
   public static String RESPONSE_MESSAGE = "msg";
 
-  static {
-    requestStatusMap.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    requestStatusMap.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-    requestStatusMap.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
-  }
-
   public CoreAdminHandler() {
     super();
     // Unlike most request handlers, CoreContainer initialization 
     // should happen in the constructor...  
     this.coreContainer = null;
+    HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
+    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    requestStatusMap = Collections.unmodifiableMap(map);
   }
 
 
@@ -129,6 +127,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+    HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
+    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
+    requestStatusMap = Collections.unmodifiableMap(map);
   }
 
 
@@ -832,7 +835,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               searchHolder.decref();
             }
           } catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+            log.debug("Error in solrcloud_debug block", e);
           }
         }
         if (!success) {
@@ -1011,7 +1014,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               searchHolder.decref();
             }
           } catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+            log.debug("Error in solrcloud_debug block", e);
           }
         }
       }

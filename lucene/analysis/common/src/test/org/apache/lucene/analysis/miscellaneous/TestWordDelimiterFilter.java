@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -292,6 +293,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 4, 4, 11 }, 
         new int[] { 10, 15, 15 },
         new int[] { 2, 0, 1 });
+    IOUtils.close(a, a2, a3);
   }
   
   /** concat numbers + words + all */
@@ -312,6 +314,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 0, 4, 8, 8, 12 }, 
         new int[] { 3, 7, 15, 7, 11, 15, 15 },
         new int[] { 1, 0, 0, 1, 1, 0, 1 });
+    a.close();
   }
   
   /** concat numbers + words + all + preserve original */
@@ -332,6 +335,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 0, 0, 4, 8, 8, 12 }, 
         new int[] { 15, 3, 7, 15, 7, 11, 15, 15 },
         new int[] { 1, 0, 0, 0, 1, 1, 0, 1 });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -356,6 +360,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       };
       // TODO: properly support positionLengthAttribute
       checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20, false, false);
+      a.close();
     }
   }
   
@@ -381,6 +386,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       };
       // TODO: properly support positionLengthAttribute
       checkRandomData(random(), a, 20*RANDOM_MULTIPLIER, 8192, false, false);
+      a.close();
     }
   }
   
@@ -404,6 +410,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       };
       // depending upon options, this thing may or may not preserve the empty term
       checkAnalysisConsistency(random, a, random.nextBoolean(), "");
+      a.close();
     }
   }
 }

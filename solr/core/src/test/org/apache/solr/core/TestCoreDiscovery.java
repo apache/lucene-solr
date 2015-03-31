@@ -52,7 +52,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     if (alternateCoreDir != null) {
       xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
     }
-    File tmpFile = new File(solrHomeDirectory, ConfigSolr.SOLR_XML_FILE);
+    File tmpFile = new File(solrHomeDirectory, SolrXmlConfig.SOLR_XML_FILE);
     FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
 
   }
@@ -400,10 +400,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
 
-    ConfigSolr config = ConfigSolr.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
+    NodeConfig config = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
     assertThat(config.getCoreRootDirectory(), containsString(solrHomeDirectory.getAbsolutePath()));
 
-    ConfigSolr absConfig = ConfigSolr.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
+    NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
     assertThat(absConfig.getCoreRootDirectory(), not(containsString(solrHomeDirectory.getAbsolutePath())));
   }
 }

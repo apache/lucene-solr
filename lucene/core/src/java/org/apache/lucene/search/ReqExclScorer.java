@@ -27,22 +27,22 @@ import java.util.Collections;
  * This <code>Scorer</code> implements {@link Scorer#advance(int)},
  * and it uses the advance() on the given scorers.
  */
-class ReqExclScorer extends FilterScorer {
+class ReqExclScorer extends Scorer {
 
   private final Scorer reqScorer;
   // approximations of the scorers, or the scorers themselves if they don't support approximations
   private final DocIdSetIterator reqApproximation;
   private final DocIdSetIterator exclApproximation;
   // two-phase views of the scorers, or null if they do not support approximations
-  private final TwoPhaseDocIdSetIterator reqTwoPhaseIterator;
-  private final TwoPhaseDocIdSetIterator exclTwoPhaseIterator;
+  private final TwoPhaseIterator reqTwoPhaseIterator;
+  private final TwoPhaseIterator exclTwoPhaseIterator;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
    * @param exclScorer indicates exclusion.
    */
   public ReqExclScorer(Scorer reqScorer, Scorer exclScorer) {
-    super(reqScorer);
+    super(reqScorer.weight);
     this.reqScorer = reqScorer;
     reqTwoPhaseIterator = reqScorer.asTwoPhaseIterator();
     if (reqTwoPhaseIterator == null) {
@@ -63,9 +63,9 @@ class ReqExclScorer extends FilterScorer {
     return toNonExcluded(reqApproximation.nextDoc());
   }
 
-  /** Confirms whether or not the given {@link TwoPhaseDocIdSetIterator}
+  /** Confirms whether or not the given {@link TwoPhaseIterator}
    *  matches on the current document. */
-  private static boolean matches(TwoPhaseDocIdSetIterator it) throws IOException {
+  private static boolean matches(TwoPhaseIterator it) throws IOException {
     return it == null || it.matches();
   }
 
@@ -76,8 +76,8 @@ class ReqExclScorer extends FilterScorer {
    *   - it does NOT call matches() on req if the excl approximation is exact
    *     and is on the same doc ID as the req approximation */
   private static boolean matches(int doc, int exclDoc,
-      TwoPhaseDocIdSetIterator reqTwoPhaseIterator,
-      TwoPhaseDocIdSetIterator exclTwoPhaseIterator) throws IOException {
+      TwoPhaseIterator reqTwoPhaseIterator,
+      TwoPhaseIterator exclTwoPhaseIterator) throws IOException {
     assert exclDoc >= doc;
     if (doc == exclDoc && matches(exclTwoPhaseIterator)) {
       return false;
@@ -106,10 +106,16 @@ class ReqExclScorer extends FilterScorer {
     return reqScorer.docID();
   }
 
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #nextDoc()} is called the first time.
-   * @return The score of the required scorer.
-   */
+  @Override
+  public int freq() throws IOException {
+    return reqScorer.freq();
+  }
+
+  @Override
+  public long cost() {
+    return reqScorer.cost();
+  }
+
   @Override
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
@@ -126,16 +132,11 @@ class ReqExclScorer extends FilterScorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     if (reqTwoPhaseIterator == null) {
       return null;
     }
-    return new TwoPhaseDocIdSetIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return reqApproximation;
-      }
+    return new TwoPhaseIterator(reqApproximation) {
 
       @Override
       public boolean matches() throws IOException {

@@ -78,19 +78,18 @@ public final class FST<T> implements Accountable {
   /** Specifies allowed range of each int input label for
    *  this FST. */
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
-  public final INPUT_TYPE inputType;
 
-  final static int BIT_FINAL_ARC = 1 << 0;
-  final static int BIT_LAST_ARC = 1 << 1;
-  final static int BIT_TARGET_NEXT = 1 << 2;
+  static final int BIT_FINAL_ARC = 1 << 0;
+  static final int BIT_LAST_ARC = 1 << 1;
+  static final int BIT_TARGET_NEXT = 1 << 2;
 
   // TODO: we can free up a bit if we can nuke this:
-  final static int BIT_STOP_NODE = 1 << 3;
+  static final int BIT_STOP_NODE = 1 << 3;
 
   /** This flag is set if the arc has an output. */
-  public final static int BIT_ARC_HAS_OUTPUT = 1 << 4;
+  public static final int BIT_ARC_HAS_OUTPUT = 1 << 4;
 
-  final static int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
+  static final int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
 
   // Arcs are stored as fixed-size (per entry) array, so
   // that we can find an arc using binary search.  We do
@@ -98,56 +97,61 @@ public final class FST<T> implements Accountable {
 
   // If set, the target node is delta coded vs current
   // position:
-  private final static int BIT_TARGET_DELTA = 1 << 6;
+  private static final int BIT_TARGET_DELTA = 1 << 6;
 
   // We use this as a marker (because this one flag is
   // illegal by itself ...):
-  private final static byte ARCS_AS_FIXED_ARRAY = BIT_ARC_HAS_FINAL_OUTPUT;
+  private static final byte ARCS_AS_FIXED_ARRAY = BIT_ARC_HAS_FINAL_OUTPUT;
 
   /**
    * @see #shouldExpand(UnCompiledNode)
    */
-  final static int FIXED_ARRAY_SHALLOW_DISTANCE = 3; // 0 => only root node.
+  static final int FIXED_ARRAY_SHALLOW_DISTANCE = 3; // 0 => only root node.
 
   /**
    * @see #shouldExpand(UnCompiledNode)
    */
-  final static int FIXED_ARRAY_NUM_ARCS_SHALLOW = 5;
+  static final int FIXED_ARRAY_NUM_ARCS_SHALLOW = 5;
 
   /**
    * @see #shouldExpand(UnCompiledNode)
    */
-  final static int FIXED_ARRAY_NUM_ARCS_DEEP = 10;
+  static final int FIXED_ARRAY_NUM_ARCS_DEEP = 10;
 
   // Reused temporarily while building the FST:
   private int[] reusedBytesPerArc = new int[0];
 
   // Increment version to change it
-  private final static String FILE_FORMAT_NAME = "FST";
-  private final static int VERSION_START = 0;
+  private static final String FILE_FORMAT_NAME = "FST";
+  private static final int VERSION_START = 0;
 
   /** Changed numBytesPerArc for array'd case from byte to int. */
-  private final static int VERSION_INT_NUM_BYTES_PER_ARC = 1;
+  private static final int VERSION_INT_NUM_BYTES_PER_ARC = 1;
 
   /** Write BYTE2 labels as 2-byte short, not vInt. */
-  private final static int VERSION_SHORT_BYTE2_LABELS = 2;
+  private static final int VERSION_SHORT_BYTE2_LABELS = 2;
 
   /** Added optional packed format. */
-  private final static int VERSION_PACKED = 3;
+  private static final int VERSION_PACKED = 3;
 
   /** Changed from int to vInt for encoding arc targets. 
    *  Also changed maxBytesPerArc from int to vInt in the array case. */
-  private final static int VERSION_VINT_TARGET = 4;
+  private static final int VERSION_VINT_TARGET = 4;
 
-  private final static int VERSION_CURRENT = VERSION_VINT_TARGET;
+  private static final int VERSION_CURRENT = VERSION_VINT_TARGET;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
-  private final static long FINAL_END_NODE = -1;
+  private static final long FINAL_END_NODE = -1;
 
   // Never serialized; just used to represent the virtual
   // non-final node w/ no arcs:
-  private final static long NON_FINAL_END_NODE = 0;
+  private static final long NON_FINAL_END_NODE = 0;
+
+  /** If arc has this label then that arc is final/accepted */
+  public static final int END_LABEL = -1;
+
+  public final INPUT_TYPE inputType;
 
   // if non-null, this FST accepts the empty string and
   // produces this output
@@ -174,15 +178,12 @@ public final class FST<T> implements Accountable {
   private final boolean packed;
   private PackedInts.Reader nodeRefToAddress;
 
-  /** If arc has this label then that arc is final/accepted */
-  public static final int END_LABEL = -1;
-
   private final boolean allowArrayArcs;
 
   private Arc<T> cachedRootArcs[];
 
   /** Represents a single arc. */
-  public final static class Arc<T> {
+  public static final class Arc<T> {
     public int label;
     public T output;
 
@@ -604,8 +605,8 @@ public final class FST<T> implements Accountable {
    * Writes an automaton to a file. 
    */
   public void save(final Path path) throws IOException {
-    try (OutputStream os = Files.newOutputStream(path)) {
-      save(new OutputStreamDataOutput(new BufferedOutputStream(os)));
+    try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))) {
+      save(new OutputStreamDataOutput(os));
     }
   }
 

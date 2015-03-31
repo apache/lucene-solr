@@ -27,13 +27,8 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestConjunctionDISI extends LuceneTestCase {
 
-  private static TwoPhaseDocIdSetIterator approximation(final DocIdSetIterator iterator, final FixedBitSet confirmed) {
-    return new TwoPhaseDocIdSetIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return iterator;
-      }
+  private static TwoPhaseIterator approximation(final DocIdSetIterator iterator, final FixedBitSet confirmed) {
+    return new TwoPhaseIterator(iterator) {
 
       @Override
       public boolean matches() throws IOException {
@@ -42,23 +37,23 @@ public class TestConjunctionDISI extends LuceneTestCase {
     };
   }
 
-  private static Scorer scorer(TwoPhaseDocIdSetIterator twoPhaseIterator) {
-    return scorer(TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator), twoPhaseIterator);
+  private static Scorer scorer(TwoPhaseIterator twoPhaseIterator) {
+    return scorer(TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator), twoPhaseIterator);
   }
 
   /**
    * Create a {@link Scorer} that wraps the given {@link DocIdSetIterator}. It
-   * also accepts a {@link TwoPhaseDocIdSetIterator} view, which is exposed in
+   * also accepts a {@link TwoPhaseIterator} view, which is exposed in
    * {@link Scorer#asTwoPhaseIterator()}. When the two-phase view is not null,
    * then {@link Scorer#nextDoc()} and {@link Scorer#advance(int)} will raise
    * an exception in order to make sure that {@link ConjunctionDISI} takes
-   * advantage of the {@link TwoPhaseDocIdSetIterator} view.
+   * advantage of the {@link TwoPhaseIterator} view.
    */
-  private static Scorer scorer(DocIdSetIterator it, TwoPhaseDocIdSetIterator twoPhaseIterator) {
+  private static Scorer scorer(DocIdSetIterator it, TwoPhaseIterator twoPhaseIterator) {
     return new Scorer(null) {
 
       @Override
-      public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+      public TwoPhaseIterator asTwoPhaseIterator() {
         return twoPhaseIterator;
       }
 
@@ -162,7 +157,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
           // scorer with approximation
           final FixedBitSet confirmed = clearRandomBits(set);
           sets[i] = confirmed;
-          final TwoPhaseDocIdSetIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
+          final TwoPhaseIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
           iterators[i] = scorer(approximation);
         }
       }
@@ -191,17 +186,17 @@ public class TestConjunctionDISI extends LuceneTestCase {
           // scorer with approximation
           final FixedBitSet confirmed = clearRandomBits(set);
           sets[i] = confirmed;
-          final TwoPhaseDocIdSetIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
+          final TwoPhaseIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
           iterators[i] = scorer(approximation);
           hasApproximation = true;
         }
       }
 
       final ConjunctionDISI conjunction = ConjunctionDISI.intersect(Arrays.asList(iterators));
-      TwoPhaseDocIdSetIterator twoPhaseIterator = conjunction.asTwoPhaseIterator();
+      TwoPhaseIterator twoPhaseIterator = conjunction.asTwoPhaseIterator();
       assertEquals(hasApproximation, twoPhaseIterator != null);
       if (hasApproximation) {
-        assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator)));
+        assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator)));
       }
     }
   }
@@ -226,7 +221,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
           // scorer with approximation
           final FixedBitSet confirmed = clearRandomBits(set);
           sets[i] = confirmed;
-          final TwoPhaseDocIdSetIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
+          final TwoPhaseIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
           newIterator = scorer(approximation);
           hasApproximation = true;
         }
@@ -239,10 +234,10 @@ public class TestConjunctionDISI extends LuceneTestCase {
         }
       }
 
-      TwoPhaseDocIdSetIterator twoPhaseIterator = ((Scorer) conjunction).asTwoPhaseIterator();
+      TwoPhaseIterator twoPhaseIterator = ((Scorer) conjunction).asTwoPhaseIterator();
       assertEquals(hasApproximation, twoPhaseIterator != null);
       if (hasApproximation) {
-        assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator)));
+        assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator)));
       } else {
         assertEquals(intersect(sets), toBitSet(maxDoc, conjunction));
       }

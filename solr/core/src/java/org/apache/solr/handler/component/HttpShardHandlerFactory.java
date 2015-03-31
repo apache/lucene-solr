@@ -29,8 +29,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +69,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected HttpClient defaultClient;
   private LBHttpSolrClient loadbalancer;
   //default values:
-  int soTimeout = ConfigSolr.DEFAULT_DISTRIBUPDATESOTIMEOUT;
-  int connectionTimeout = ConfigSolr.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+  int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
+  int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
   int maxConnectionsPerHost = 20;
   int maxConnections = 10000;
   int corePoolSize = 0;

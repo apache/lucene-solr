@@ -138,7 +138,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       };
     }
 
-    try {
+    try (Analyzer a = analyzer) {
       String formatClass = format;
       if (format == null || format.equals("solr")) {
         formatClass = SolrSynonymParser.class.getName();
@@ -146,7 +146,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
         formatClass = WordnetSynonymParser.class.getName();
       }
       // TODO: expose dedup as a parameter?
-      map = loadSynonyms(loader, formatClass, true, analyzer);
+      map = loadSynonyms(loader, formatClass, true, a);
     } catch (ParseException e) {
       throw new IOException("Error parsing synonyms file:", e);
     }

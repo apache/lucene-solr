@@ -19,30 +19,32 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
-
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.request.SolrQueryRequest; // jdocs
 import org.apache.solr.request.DocValuesStats;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -60,6 +62,106 @@ import org.apache.solr.search.SyntaxError;
  * @see StatsComponent
  */
 public class StatsField {
+  
+  /**
+   * An enumeration representing the sumer set of all possible stat values that can be computed.
+   * Each of these enum values can be specified as a local param in a <code>stats.field</code> 
+   * (eg: <code>stats.field={!min=true mean=true}my_field_name</code>) but not all enum values 
+   * are valid for all field types (eg: <code>mean</code> is meaningless for String fields)
+   *
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public static enum Stat {
+    min(true),
+    max(true),
+    missing(true),
+    sum(true),
+    count(true),
+    mean(false, sum, count),
+    sumOfSquares(true),
+    stddev(false, sum, count, sumOfSquares),
+    calcdistinct(true),
+    percentiles(true){
+      /** special for percentiles **/
+      boolean parseParams(StatsField sf) {
+        String percentileParas = sf.localParams.get(this.name());
+        if (percentileParas != null) {
+          List<Double> percentiles = new ArrayList<Double>();
+          try {
+            for (String percentile : StrUtils.splitSmart(percentileParas, ',')) {
+              percentiles.add(Double.parseDouble(percentile));
+            }
+            if (!percentiles.isEmpty()) {
+              sf.percentilesList.addAll(percentiles);
+              sf.tdigestCompression = sf.localParams.getDouble("tdigestCompression", 
+                                                               sf.tdigestCompression);
+              return true;
+            }
+          } catch (NumberFormatException e) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to parse "
+                + StatsParams.STATS_FIELD + " local params: " + sf.localParams + " due to: "
+                + e.getMessage(), e);
+          }
+
+        }
+        return false;
+      }
+    };
+
+    private final List<Stat> distribDeps;
+    
+    /**
+     * Sole constructor for Stat enum values
+     * @param deps the set of stat values, other then this one, which are a distributed 
+     *        dependency and must be computed and returned by each individual shards in 
+     *        order to compute <i>this</i> stat over the entire distributed result set.
+     * @param selfDep indicates that when computing this stat across a distributed result 
+     *        set, each shard must compute this stat <i>in addition to</i> any other 
+     *        distributed dependences.
+     * @see #getDistribDeps
+     */
+    Stat(boolean selfDep, Stat... deps) {
+      distribDeps = new ArrayList<Stat>(deps.length+1);
+      distribDeps.addAll(Arrays.asList(deps));
+      if (selfDep) { 
+        distribDeps.add(this);
+      }
+    }
+    
+    /**
+     * Given a String, returns the corrisponding Stat enum value if any, otherwise returns null.
+     */
+    public static Stat forName(String paramKey) {
+      try {
+        return Stat.valueOf(paramKey);
+      } catch (IllegalArgumentException e) {
+        return null;
+      }
+    }
+    
+    /**
+     * The stats that must be computed and returned by each shard involved in a distributed 
+     * request in order to compute the overall value for this stat across the entire distributed 
+     * result set.  A Stat instance may include itself in the <code>getDistribDeps()</code> result,
+     * but that is not always the case.
+     */
+    public EnumSet<Stat> getDistribDeps() {
+      return EnumSet.copyOf(this.distribDeps);
+    }
+    
+    /** return value of true means user is requesting this stat */
+    boolean parseParams(StatsField sf) {
+      return sf.localParams.getBool(this.name(), false);
+    }
+    
+  }
+
+  /**
+   * The set of stats computed by default when no localparams are used to specify explicit stats 
+   */
+  public final static Set<Stat> DEFAULT_STATS = Collections.<Stat>unmodifiableSet
+    (EnumSet.of(Stat.min, Stat.max, Stat.missing, Stat.sum, Stat.count, Stat.mean, Stat.sumOfSquares, Stat.stddev));
 
   private final SolrIndexSearcher searcher;
   private final ResponseBuilder rb;
@@ -68,11 +170,18 @@ public class StatsField {
   private final ValueSource valueSource; // may be null if simple field stats
   private final SchemaField schemaField; // may be null if function/query stats
   private final String key;
-  private final boolean calcDistinct; // TODO: put this inside localParams ? SOLR-6349 ?
+  private final boolean  topLevelCalcDistinct;
   private final String[] facets;
   private final List<String> tagList;
   private final List<String> excludeTagList;
-
+  private final EnumSet<Stat> statsToCalculate = EnumSet.noneOf(Stat.class);
+  private final EnumSet<Stat> statsInResponse = EnumSet.noneOf(Stat.class);
+  private final List<Double> percentilesList= new ArrayList<Double>();
+  private final boolean isShard;
+  
+  private double tdigestCompression = 100.0D;
+  
+  
   /**
    * @param rb the current request/response
    * @param statsParam the raw {@link StatsParams#STATS_FIELD} string
@@ -84,6 +193,7 @@ public class StatsField {
 
     SolrParams params = rb.req.getParams();
     try {
+      isShard = params.getBool("isShard", false);
       SolrParams localParams = QueryParsing.getLocalParams(originalParam, params);
       if (null == localParams) {
         // simplest possible input: bare string (field name)
@@ -91,8 +201,9 @@ public class StatsField {
         customParams.add(QueryParsing.V, originalParam);
         localParams = customParams;
       }
-      this.localParams = localParams;
 
+      this.localParams = localParams;
+      
       String parserName = localParams.get(QueryParsing.TYPE);
       SchemaField sf = null;
       ValueSource vs = null;
@@ -141,11 +252,12 @@ public class StatsField {
                                                // default to entire original param str.
                                                originalParam));
 
-    
-    this.calcDistinct = null == schemaField
-      ? params.getBool(StatsParams.STATS_CALC_DISTINCT, false) 
-      : params.getFieldBool(schemaField.getName(), StatsParams.STATS_CALC_DISTINCT, false);
+    this.topLevelCalcDistinct = null == schemaField
+        ? params.getBool(StatsParams.STATS_CALC_DISTINCT, false) 
+        : params.getFieldBool(schemaField.getName(), StatsParams.STATS_CALC_DISTINCT, false);
 
+    populateStatsSets();
+        
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
     this.facets = (null == facets) ? new String[0] : facets;
     String tagStr = localParams.get(CommonParams.TAG);
@@ -269,6 +381,12 @@ public class StatsField {
    */
   public StatsValues computeLocalStatsValues(DocSet base) throws IOException {
 
+    if (statsToCalculate.isEmpty()) { 
+      // perf optimization for the case where we compute nothing
+      // ie: stats.field={!min=$domin}myfield&domin=false
+      return StatsValuesFactory.createStatsValues(this);
+    }
+
     if (null != schemaField 
         && (schemaField.multiValued() || schemaField.getType().multiValuedFieldCache())) {
 
@@ -360,15 +478,6 @@ public class StatsField {
     return valueSource;
   }
 
-  /**
-   * Whether or not the effective value of the {@link StatsParams#STATS_CALC_DISTINCT} param
-   * is true or false for this StatsField
-   */
-  public boolean getCalcDistinct() {
-    return calcDistinct;
-  }
-
-
   public List<String> getTagList() {
     return tagList;
   }
@@ -377,4 +486,67 @@ public class StatsField {
     return "StatsField<" + originalParam + ">";
   }
 
+  /**
+   * A helper method which inspects the {@link #localParams} associated with this StatsField, 
+   * and uses them to populate the {@link #statsInResponse} and {@link #statsToCalculate} data 
+   * structures
+   */
+  private void populateStatsSets() {
+    boolean statSpecifiedByLocalParam = false;
+    // local individual stat
+    Iterator<String> itParams = localParams.getParameterNamesIterator();
+    
+    while (itParams.hasNext()) {
+      String paramKey = itParams.next();
+      Stat stat = Stat.forName(paramKey);
+      if (stat != null) {
+        statSpecifiedByLocalParam = true;
+        if (stat.parseParams(this)) {
+          statsInResponse.add(stat);
+          statsToCalculate.addAll(stat.getDistribDeps());
+        }
+      }
+    }
+
+    // if no individual stat setting. 
+    if ( ! statSpecifiedByLocalParam ) {
+      statsInResponse.addAll(DEFAULT_STATS);
+      for (Stat stat : statsInResponse) {
+        statsToCalculate.addAll(stat.getDistribDeps());
+      }
+    }
+
+    // calcDistinct has special "default" behavior using top level CalcDistinct param
+    if (topLevelCalcDistinct && localParams.getBool(Stat.calcdistinct.toString(), true)) {
+      statsInResponse.add(Stat.calcdistinct);
+      statsToCalculate.addAll(Stat.calcdistinct.getDistribDeps());
+    }
+  }
+
+  public boolean calculateStats(Stat stat) {
+    return statsToCalculate.contains(stat);
+  }
+  
+  public boolean includeInResponse(Stat stat) {
+    if (isShard) {
+      return statsToCalculate.contains(stat);
+    }
+   
+    if (statsInResponse.contains(stat)) {
+      return true;
+    }
+    return false;
+  }
+
+  public List<Double> getPercentilesList() {
+    return percentilesList;
+  }
+  
+  public boolean getIsShard() {
+    return isShard;
+  }
+  
+  public double getTdigestCompression() {
+    return tdigestCompression;
+  }
 }

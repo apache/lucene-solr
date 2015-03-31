@@ -63,7 +63,7 @@ public abstract class Filter extends Query {
 
   @Override
   public boolean equals(Object that) {
-    // Query's default impl only compares boots but they do not matter in the
+    // Query's default impl only compares boost but they do not matter in the
     // case of filters since it does not influence scores
     return this == that;
   }

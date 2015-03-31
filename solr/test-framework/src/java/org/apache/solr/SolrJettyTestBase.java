@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
@@ -56,12 +57,46 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
                                             boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) 
       throws Exception { 
     // creates the data dir
+
+    context = context==null ? "/solr" : context;
+    SolrJettyTestBase.context = context;
+
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .setContext(context)
+        .stopAtShutdown(stopAtShutdown)
+        .withServlets(extraServlets)
+        .withSSLConfig(sslConfig)
+        .build();
+
+    Properties nodeProps = new Properties();
+    if (configFile != null)
+      nodeProps.setProperty("solrconfig", configFile);
+    if (schemaFile != null)
+      nodeProps.setProperty("schema", schemaFile);
+    if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
+      nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+    }
+
+    return createJetty(solrHome, nodeProps, jettyConfig);
+  }
+
+  public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
+    return createJetty(solrHome, configFile, null, context, true, null);
+  }
+
+  public static JettySolrRunner createJetty(String solrHome, JettyConfig jettyConfig) throws Exception {
+    return createJetty(solrHome, new Properties(), jettyConfig);
+  }
+
+  public static JettySolrRunner createJetty(String solrHome) throws Exception {
+    return createJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).build());
+  }
+
+  public static JettySolrRunner createJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+
     initCore(null, null, solrHome);
 
     Path coresDir = createTempDir().resolve("cores");
-
-    System.setProperty("coreRootDirectory", coresDir.toString());
-    System.setProperty("configSetBaseDir", solrHome);
 
     Properties props = new Properties();
     props.setProperty("name", DEFAULT_TEST_CORENAME);
@@ -71,25 +106,17 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
 
+    Properties nodeProps = new Properties(nodeProperties);
+    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome);
+
     ignoreException("maxWarmingSearchers");
 
-    context = context==null ? "/solr" : context;
-    SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner(solrHome, context, 0, configFile, schemaFile, stopAtShutdown, extraServlets, sslConfig);
-
-    // this sets the property for jetty starting SolrDispatchFilter
-    if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
-      jetty.setDataDir(createTempDir().toFile().getCanonicalPath());
-    }
-    
+    jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
     jetty.start();
     port = jetty.getLocalPort();
     log.info("Jetty Assigned Port#" + port);
     return jetty;
-  }
-
-  public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
-    return createJetty(solrHome, configFile, null, context, true, null);
   }
 
 

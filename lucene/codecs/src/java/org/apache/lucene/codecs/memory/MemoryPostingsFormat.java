@@ -313,7 +313,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         TermsWriter termsWriter = new TermsWriter(out, fieldInfo,
                                                   doPackFST, acceptableOverheadRatio);
 
-        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
+        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.maxDoc());
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
         PostingsEnum postingsEnum = null;

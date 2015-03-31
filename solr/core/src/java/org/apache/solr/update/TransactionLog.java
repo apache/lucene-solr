@@ -168,9 +168,10 @@ public class TransactionLog {
         }
       } else {
         if (start > 0) {
-          log.error("New transaction log already exists:" + tlogFile + " size=" + raf.length());
+          log.warn("New transaction log already exists:" + tlogFile + " size=" + raf.length());
+          return;
         }
-        assert start==0;
+       
         if (start > 0) {
           raf.setLength(0);
         }

@@ -589,13 +589,8 @@ final class SloppyPhraseScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
-    return new TwoPhaseDocIdSetIterator() {
-      @Override
-      public DocIdSetIterator approximation() {
-        return conjunction;
-      }
-
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
         sloppyFreq = phraseFreq(); // check for phrase

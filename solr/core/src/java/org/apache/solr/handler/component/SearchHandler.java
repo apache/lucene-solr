@@ -35,6 +35,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -75,6 +76,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     ArrayList<String> names = new ArrayList<>(6);
     names.add( QueryComponent.COMPONENT_NAME );
     names.add( FacetComponent.COMPONENT_NAME );
+    names.add( FacetModule.COMPONENT_NAME );
     names.add( MoreLikeThisComponent.COMPONENT_NAME );
     names.add( HighlightComponent.COMPONENT_NAME );
     names.add( StatsComponent.COMPONENT_NAME );
@@ -168,17 +170,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   public List<SearchComponent> getComponents() {
     return components;
   }
-  
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    // int sleep = req.getParams().getInt("sleep",0);
-    // if (sleep > 0) {log.error("SLEEPING for " + sleep);  Thread.sleep(sleep);}
-    if (req.getContentStreams() != null && req.getContentStreams().iterator().hasNext()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Search requests cannot accept content streams");
-    }
-    
     ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
@@ -190,8 +185,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
-    final RTimer timer = rb.isDebug() ? new RTimer() : null;
-
+    final RTimer timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     ShardHandler shardHandler1 = shardHandlerFactory.getShardHandler();
     shardHandler1.checkDistributed(rb);
@@ -237,7 +231,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             rb.getTimer().stop();
           }
           subt.stop();
-          timer.stop();
 
           // add the timing info
           if (rb.isDebugTimings()) {
@@ -395,7 +388,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);
-      nl.add("time", rsp.getEndTime()-req.getStartTime()); // elapsed time of this request so far
+      nl.add("time", req.getRequestTimer().getTime()); // elapsed time of this request so far
       
       int pos = rb.shortCircuitedURL.indexOf("://");        
       String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;

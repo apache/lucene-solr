@@ -18,8 +18,10 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -63,6 +65,32 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     assertFalse(infos2.fieldInfo("field").omitsNorms());
     assertFalse(infos2.fieldInfo("field").hasPayloads());
     assertFalse(infos2.fieldInfo("field").hasVectors());
+    dir.close();
+  }
+  
+  /** Test field infos attributes coming back are not mutable */
+  public void testImmutableAttributes() throws Exception {
+    Directory dir = newDirectory();
+    Codec codec = getCodec();
+    SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    addAttributes(fi);
+    fi.putAttribute("foo", "bar");
+    fi.putAttribute("bar", "baz");
+    FieldInfos infos = builder.finish();
+    codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
+    FieldInfos infos2 = codec.fieldInfosFormat().read(dir, segmentInfo, "", IOContext.DEFAULT);
+    assertEquals(1, infos2.size());
+    assertNotNull(infos2.fieldInfo("field"));
+    Map<String,String> attributes = infos2.fieldInfo("field").attributes();
+    try {
+      attributes.put("bogus", "bogus");
+      fail("shouldn't be able to modify attributes");
+    } catch (UnsupportedOperationException expected) {
+      // ok
+    }
     dir.close();
   }
   
@@ -176,7 +204,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
-    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId(), new HashMap<>());
+    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
   }
   
   @Override

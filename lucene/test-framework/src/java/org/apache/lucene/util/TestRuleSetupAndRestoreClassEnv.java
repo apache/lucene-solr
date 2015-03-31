@@ -20,10 +20,8 @@ package org.apache.lucene.util;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
@@ -38,7 +36,6 @@ import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -68,11 +65,6 @@ import static org.apache.lucene.util.LuceneTestCase.randomTimeZone;
  * doesn't fit anywhere else).
  */
 final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
-  /**
-   * Restore these system property values.
-   */
-  private HashMap<String, String> restoreProperties = new HashMap<>();
-
   private Codec savedCodec;
   private Locale savedLocale;
   private TimeZone savedTimeZone;
@@ -116,14 +108,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     // enable this by default, for IDE consistency with ant tests (as it's the default from ant)
     // TODO: really should be in solr base classes, but some extend LTC directly.
     // we do this in beforeClass, because some tests currently disable it
-    restoreProperties.put("solr.directoryFactory", System.getProperty("solr.directoryFactory"));
     if (System.getProperty("solr.directoryFactory") == null) {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
-
-    // Restore more Solr properties. 
-    restoreProperties.put("solr.solr.home", System.getProperty("solr.solr.home"));
-    restoreProperties.put("solr.data.dir", System.getProperty("solr.data.dir"));
 
     // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
@@ -224,9 +211,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     locale = testLocale.equals("random") ? randomLocale : localeForName(testLocale);
     Locale.setDefault(locale);
 
-    // TimeZone.getDefault will set user.timezone to the default timezone of the user's locale.
-    // So store the original property value and restore it at end.
-    restoreProperties.put("user.timezone", System.getProperty("user.timezone"));
     savedTimeZone = TimeZone.getDefault();
     TimeZone randomTimeZone = randomTimeZone(random());
     timeZone = testTimeZone.equals("random") ? randomTimeZone : TimeZone.getTimeZone(testTimeZone);
@@ -291,15 +275,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
    */
   @Override
   protected void after() throws Exception {
-    for (Map.Entry<String,String> e : restoreProperties.entrySet()) {
-      if (e.getValue() == null) {
-        System.clearProperty(e.getKey());
-      } else {
-        System.setProperty(e.getKey(), e.getValue());
-      }
-    }
-    restoreProperties.clear();
-
     Codec.setDefault(savedCodec);
     InfoStream.setDefault(savedInfoStream);
     if (savedLocale != null) Locale.setDefault(savedLocale);

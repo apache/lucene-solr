@@ -39,6 +39,7 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
   public LogByteSizeMergePolicy() {
     minMergeSize = (long) (DEFAULT_MIN_MERGE_MB*1024*1024);
     maxMergeSize = (long) (DEFAULT_MAX_MERGE_MB*1024*1024);
+    // NOTE: in Java, if you cast a too-large double to long, as we are doing here, then it becomes Long.MAX_VALUE
     maxMergeSizeForForcedMerge = (long) (DEFAULT_MAX_MERGE_MB_FOR_FORCED_MERGE*1024*1024);
   }
   

@@ -27,6 +27,8 @@ import java.util.WeakHashMap;
 
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
+  
+  // TODO: add asserts for two-phase intersection
 
   static enum IteratorState { START, ITERATING, FINISHED };
 
@@ -91,8 +93,7 @@ public class AssertingScorer extends Scorer {
   public float score() throws IOException {
     assert iterating();
     final float score = in.score();
-    assert !Float.isNaN(score);
-    assert !Float.isNaN(score);
+    assert !Float.isNaN(score) : "NaN score for in="+in;
     return score;
   }
 

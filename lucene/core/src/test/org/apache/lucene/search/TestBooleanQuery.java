@@ -166,7 +166,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     BooleanQuery query = new BooleanQuery(); // Query: +foo -ba*
     query.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
     WildcardQuery wildcardQuery = new WildcardQuery(new Term("field", "ba*"));
-    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     query.add(wildcardQuery, BooleanClause.Occur.MUST_NOT);
 
     MultiReader multireader = new MultiReader(reader1, reader2);
@@ -602,7 +602,8 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.commit();
 
     DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
@@ -613,7 +614,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
     assertTrue(scorer instanceof ConjunctionScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -633,6 +634,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
@@ -662,7 +664,8 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.commit();
 
     DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
@@ -673,8 +676,8 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
-    assertTrue(scorer instanceof BoostedScorer);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
+    assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
     reader.close();
@@ -693,6 +696,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
@@ -723,6 +727,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
@@ -740,5 +745,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+  
+  public void testToString() {
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "a")), Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "b")), Occur.MUST);
+    bq.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
+    bq.add(new TermQuery(new Term("field", "d")), Occur.FILTER);
+    assertEquals("a +b -c #d", bq.toString("field"));
   }
 }

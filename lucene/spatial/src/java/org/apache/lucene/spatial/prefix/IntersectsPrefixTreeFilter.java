@@ -39,8 +39,8 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
 
   public IntersectsPrefixTreeFilter(Shape queryShape, String fieldName,
                                     SpatialPrefixTree grid, int detailLevel,
-                                    int prefixGridScanLevel, boolean hasIndexedLeaves) {
-    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel, hasIndexedLeaves);
+                                    int prefixGridScanLevel) {
+    super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
   }
 
   @Override
@@ -68,7 +68,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
       }
 
       @Override
-      protected boolean visit(Cell cell) throws IOException {
+      protected boolean visitPrefix(Cell cell) throws IOException {
         if (cell.getShapeRel() == SpatialRelation.WITHIN || cell.getLevel() == detailLevel) {
           collectDocs(results);
           return false;
@@ -87,11 +87,10 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
   @Override
   public String toString(String field) {
     return "IntersectsPrefixTreeFilter(" +
-        // TODO: print something about the shape?
         "fieldName=" + fieldName + "," +
+        "queryShape=" + queryShape + "," +
         "detailLevel=" + detailLevel + "," +
-        "prefixGridScanLevel=" + prefixGridScanLevel + "," +
-        "hasIndexedLeaves=" + hasIndexedLeaves +
+        "prefixGridScanLevel=" + prefixGridScanLevel +
         ")";
   }
 

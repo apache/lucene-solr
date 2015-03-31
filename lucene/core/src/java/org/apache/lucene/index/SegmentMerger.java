@@ -62,7 +62,7 @@ final class SegmentMerger {
   
   /** True if any merging should happen */
   boolean shouldMerge() {
-    return mergeState.segmentInfo.getDocCount() > 0;
+    return mergeState.segmentInfo.maxDoc() > 0;
   }
 
   /**
@@ -85,7 +85,7 @@ final class SegmentMerger {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge stored fields [" + numMerged + " docs]");
     }
-    assert numMerged == mergeState.segmentInfo.getDocCount(): "numMerged=" + numMerged + " vs mergeState.segmentInfo.getDocCount()=" + mergeState.segmentInfo.getDocCount();
+    assert numMerged == mergeState.segmentInfo.maxDoc(): "numMerged=" + numMerged + " vs mergeState.segmentInfo.maxDoc()=" + mergeState.segmentInfo.maxDoc();
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.mergeFieldInfos, null, context);
@@ -129,11 +129,18 @@ final class SegmentMerger {
         long t1 = System.nanoTime();
         mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge vectors [" + numMerged + " docs]");
       }
-      assert numMerged == mergeState.segmentInfo.getDocCount();
+      assert numMerged == mergeState.segmentInfo.maxDoc();
     }
     
     // write the merged infos
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     codec.fieldInfosFormat().write(directory, mergeState.segmentInfo, "", mergeState.mergeFieldInfos, context);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to write field infos [" + numMerged + " docs]");
+    }
 
     return mergeState;
   }

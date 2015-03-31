@@ -17,7 +17,6 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.util.BytesRef;
@@ -25,17 +24,24 @@ import org.apache.lucene.util.BytesRef;
 import java.text.Collator;
 import java.util.Locale;
 
-public class TestCollationKeyAnalyzer extends CollationTestBase {
-  // the sort order of Ø versus U depends on the version of the rules being used
-  // for the inherited root locale: Ø's order isnt specified in Locale.US since 
-  // it's not used in english.
-  private boolean oStrokeFirst = Collator.getInstance(new Locale("")).compare("Ø", "U") < 0;
-  
+public class TestCollationKeyAnalyzer extends CollationTestBase { 
   // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
   // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
   // characters properly.
   private Collator collator = Collator.getInstance(new Locale("ar"));
-  private Analyzer analyzer = new CollationKeyAnalyzer(collator);
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new CollationKeyAnalyzer(collator);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
 
   private BytesRef firstRangeBeginning = new BytesRef(collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
   private BytesRef firstRangeEnd = new BytesRef(collator.getCollationKey(firstRangeEndOriginal).toByteArray());
@@ -65,7 +71,9 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
     for (int i = 0; i < iters; i++) {
       Collator collator = Collator.getInstance(Locale.GERMAN);
       collator.setStrength(Collator.PRIMARY);
-      assertThreadSafe(new CollationKeyAnalyzer(collator));
+      Analyzer analyzer = new CollationKeyAnalyzer(collator);
+      assertThreadSafe(analyzer);
+      analyzer.close();
     }
   }
 }

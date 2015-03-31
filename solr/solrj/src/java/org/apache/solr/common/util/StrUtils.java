@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.util;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -305,5 +306,9 @@ public class StrUtils {
     }
   }
 
-
+  /**Format using MesssageFormat but with the ROOT locale
+   */
+  public static String formatString(String pattern, Object... args)  {
+    return new MessageFormat(pattern, Locale.ROOT).format(args);
+  }
 }

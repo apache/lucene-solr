@@ -160,7 +160,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     // TODO: should we try skipping every 2/4 blocks...?
     skipWriter = new Lucene50SkipWriter(MAX_SKIP_LEVELS,
                                         BLOCK_SIZE, 
-                                        state.segmentInfo.getDocCount(),
+                                        state.segmentInfo.maxDoc(),
                                         docOut,
                                         posOut,
                                         payOut);

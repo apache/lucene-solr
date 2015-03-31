@@ -17,12 +17,6 @@
 
 package org.apache.solr.request;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -31,6 +25,12 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
@@ -85,6 +85,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     indexFacetSingleValued();
     indexFacetPrefixMultiValued();
     indexFacetPrefixSingleValued();
+    indexFacetContains();
     indexSimpleGroupedFacetCounts();
 
     Collections.shuffle(pendingDocs, random());
@@ -1866,54 +1867,74 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
 
   static void indexFacetPrefixMultiValued() {
-    indexFacetPrefix("50","t_s");
+    indexFacetPrefix("50","t_s","","ignore_s");
   }
 
   @Test
   public void testFacetPrefixMultiValued() {
-    doFacetPrefix("t_s", null, "facet.method","enum");
-    doFacetPrefix("t_s", null, "facet.method", "enum", "facet.enum.cache.minDf", "3");
-    doFacetPrefix("t_s", null, "facet.method", "enum", "facet.enum.cache.minDf", "100");
-    doFacetPrefix("t_s", null, "facet.method", "fc");
+    doFacetPrefix("t_s", null, "", "facet.method","enum");
+    doFacetPrefix("t_s", null, "", "facet.method", "enum", "facet.enum.cache.minDf", "3");
+    doFacetPrefix("t_s", null, "", "facet.method", "enum", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", null, "", "facet.method", "fc");
   }
 
   static void indexFacetPrefixSingleValued() {
-    indexFacetPrefix("60","tt_s1");
+    indexFacetPrefix("60","tt_s1","","ignore_s");
   }
 
   @Test
   public void testFacetPrefixSingleValued() {
-    doFacetPrefix("tt_s1", null);
+    doFacetPrefix("tt_s1", null, "");
   }
+  
   @Test
   public void testFacetPrefixSingleValuedFcs() {
-    doFacetPrefix("tt_s1", null, "facet.method","fcs");
-    doFacetPrefix("tt_s1", "{!threads=0}", "facet.method","fcs");   // direct execution
-    doFacetPrefix("tt_s1", "{!threads=-1}", "facet.method","fcs");  // default / unlimited threads
-    doFacetPrefix("tt_s1", "{!threads=2}", "facet.method","fcs");   // specific number of threads
+    doFacetPrefix("tt_s1", null, "", "facet.method","fcs");
+    doFacetPrefix("tt_s1", "{!threads=0}", "", "facet.method","fcs");   // direct execution
+    doFacetPrefix("tt_s1", "{!threads=-1}", "", "facet.method","fcs");  // default / unlimited threads
+    doFacetPrefix("tt_s1", "{!threads=2}", "", "facet.method","fcs");   // specific number of threads
   }
 
+  static void indexFacetContains() {
+    indexFacetPrefix("70","contains_s1","","contains_group_s1");
+    indexFacetPrefix("80","contains_s1","Astra","contains_group_s1");
+  }
+  
+  @Test
+  public void testFacetContains() {
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "BAst", "Ast", "facet.method", "enum");
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "BAst", "Ast", "facet.method", "fcs");
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "BAst", "Ast", "facet.method", "fc");
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "bAst", "ast", "facet.method", "enum", "facet.contains.ignoreCase", "true");
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "baSt", "ast", "facet.method", "fcs", "facet.contains.ignoreCase", "true");
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "basT", "ast", "facet.method", "fc", "facet.contains.ignoreCase", "true");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "enum", "facet.contains", "Ast");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fcs", "facet.contains", "Ast");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fc", "facet.contains", "Ast");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "enum", "facet.contains", "aSt", "facet.contains.ignoreCase", "true");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fcs", "facet.contains", "asT", "facet.contains.ignoreCase", "true");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fc", "facet.contains", "aST", "facet.contains.ignoreCase", "true");
+  }
 
-  static void indexFacetPrefix(String idPrefix, String f) {
-    add_doc("id", idPrefix+"1",  f, "AAA");
-    add_doc("id", idPrefix+"2",  f, "B");
-    add_doc("id", idPrefix+"3",  f, "BB");
-    add_doc("id", idPrefix+"4",  f, "BB");
-    add_doc("id", idPrefix+"5",  f, "BBB");
-    add_doc("id", idPrefix+"6",  f, "BBB");
-    add_doc("id", idPrefix+"7",  f, "BBB");
-    add_doc("id", idPrefix+"8",  f, "CC");
-    add_doc("id", idPrefix+"9",  f, "CC");
-    add_doc("id", idPrefix+"10", f, "CCC");
-    add_doc("id", idPrefix+"11", f, "CCC");
-    add_doc("id", idPrefix+"12", f, "CCC");
+  static void indexFacetPrefix(String idPrefix, String f, String termSuffix, String g) {
+    add_doc("id", idPrefix+"1",  f, "AAA"+termSuffix, g, "A");
+    add_doc("id", idPrefix+"2",  f, "B"+termSuffix,   g, "A");
+    add_doc("id", idPrefix+"3",  f, "BB"+termSuffix,  g, "B");
+    add_doc("id", idPrefix+"4",  f, "BB"+termSuffix,  g, "B");
+    add_doc("id", idPrefix+"5",  f, "BBB"+termSuffix, g, "B");
+    add_doc("id", idPrefix+"6",  f, "BBB"+termSuffix, g, "B");
+    add_doc("id", idPrefix+"7",  f, "BBB"+termSuffix, g, "C");
+    add_doc("id", idPrefix+"8",  f, "CC"+termSuffix,  g, "C");
+    add_doc("id", idPrefix+"9",  f, "CC"+termSuffix,  g, "C");
+    add_doc("id", idPrefix+"10", f, "CCC"+termSuffix, g, "C");
+    add_doc("id", idPrefix+"11", f, "CCC"+termSuffix, g, "D");
+    add_doc("id", idPrefix+"12", f, "CCC"+termSuffix, g, "E");
     assertU(commit());
   }
 
-  public void doFacetPrefix(String f, String local, String... params) {
+  public void doFacetPrefix(String f, String local, String termSuffix, String... params) {
     String indent="on";
     String pre = "//lst[@name='"+f+"']";
-    String notc = "id:[* TO *] -"+f+":C";
     String lf = local==null ? f : local+f;
 
 
@@ -1929,9 +1950,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","B"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
-            ,pre+"/int[1][@name='BBB'][.='3']"
-            ,pre+"/int[2][@name='BB'][.='2']"
-            ,pre+"/int[3][@name='B'][.='1']"
+            ,pre+"/int[1][@name='BBB"+termSuffix+"'][.='3']"
+            ,pre+"/int[2][@name='BB"+termSuffix+"'][.='2']"
+            ,pre+"/int[3][@name='B"+termSuffix+"'][.='1']"
     );
 
     assertQ("test facet.prefix middle, exact match first term, unsorted",
@@ -1946,29 +1967,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","B"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
-            ,pre+"/int[1][@name='B'][.='1']"
-            ,pre+"/int[2][@name='BB'][.='2']"
-            ,pre+"/int[3][@name='BBB'][.='3']"
+            ,pre+"/int[1][@name='B"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='BB"+termSuffix+"'][.='2']"
+            ,pre+"/int[3][@name='BBB"+termSuffix+"'][.='3']"
     );
-
-
-     assertQ("test facet.prefix middle, exact match first term, unsorted",
-            req(params, "q", "id:[* TO *]"
-                    ,"indent",indent
-                    ,"facet","true"
-                    ,"facet.field", lf
-                    ,"facet.mincount","0"
-                    ,"facet.offset","0"
-                    ,"facet.limit","100"
-                    ,"facet.sort","index"
-                    ,"facet.prefix","B"
-            )
-            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
-            ,pre+"/int[1][@name='B'][.='1']"
-            ,pre+"/int[2][@name='BB'][.='2']"
-            ,pre+"/int[3][@name='BBB'][.='3']"
-    );
-
 
     assertQ("test facet.prefix middle, paging",
             req(params, "q", "id:[* TO *]"
@@ -1982,8 +1984,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","B"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
-            ,pre+"/int[1][@name='BB'][.='2']"
-            ,pre+"/int[2][@name='B'][.='1']"
+            ,pre+"/int[1][@name='BB"+termSuffix+"'][.='2']"
+            ,pre+"/int[2][@name='B"+termSuffix+"'][.='1']"
     );
 
     assertQ("test facet.prefix middle, paging",
@@ -1998,7 +2000,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","B"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
-            ,pre+"/int[1][@name='BB'][.='2']"
+            ,pre+"/int[1][@name='BB"+termSuffix+"'][.='2']"
     );
 
     assertQ("test facet.prefix middle, paging",
@@ -2013,7 +2015,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","B"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
-            ,pre+"/int[1][@name='BB'][.='2']"
+            ,pre+"/int[1][@name='BB"+termSuffix+"'][.='2']"
     );
 
     assertQ("test facet.prefix end, not exact match",
@@ -2028,8 +2030,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","C"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
-            ,pre+"/int[1][@name='CCC'][.='3']"
-            ,pre+"/int[2][@name='CC'][.='2']"
+            ,pre+"/int[1][@name='CCC"+termSuffix+"'][.='3']"
+            ,pre+"/int[2][@name='CC"+termSuffix+"'][.='2']"
     );
 
     assertQ("test facet.prefix end, exact match",
@@ -2044,8 +2046,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","CC"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
-            ,pre+"/int[1][@name='CCC'][.='3']"
-            ,pre+"/int[2][@name='CC'][.='2']"
+            ,pre+"/int[1][@name='CCC"+termSuffix+"'][.='3']"
+            ,pre+"/int[2][@name='CC"+termSuffix+"'][.='2']"
     );
 
     assertQ("test facet.prefix past end",
@@ -2088,7 +2090,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","AAA"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
-            ,pre+"/int[1][@name='AAA'][.='1']"
+            ,pre+"/int[1][@name='AAA"+termSuffix+"'][.='1']"
     );
     assertQ("test facet.prefix at Start, not exact match",
             req(params, "q", "id:[* TO *]"
@@ -2102,7 +2104,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","AA"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
-            ,pre+"/int[1][@name='AAA'][.='1']"
+            ,pre+"/int[1][@name='AAA"+termSuffix+"'][.='1']"
     );
     assertQ("test facet.prefix at Start, not exact match",
             req(params, "q", "id:[* TO *]"
@@ -2116,7 +2118,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                     ,"facet.prefix","AA"
             )
             ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
-            ,pre+"/int[1][@name='AAA'][.='1']"
+            ,pre+"/int[1][@name='AAA"+termSuffix+"'][.='1']"
     );    
     assertQ("test facet.prefix before start",
             req(params, "q", "id:[* TO *]"
@@ -2162,9 +2164,54 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     );
   }
 
+  public void doFacetContains(String f, String g, String termSuffix, String contains, String groupContains, String... params) {
+    String indent="on";
+    String pre = "//lst[@name='"+f+"']";
+
+    assertQ("test facet.contains",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.contains",contains
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='BBB"+termSuffix+"'][.='3']"
+            ,pre+"/int[2][@name='BB"+termSuffix+"'][.='2']"
+            ,pre+"/int[3][@name='B"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.contains for grouped facets",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.contains",groupContains
+                    ,"group","true"
+                    ,"group.field",g
+                    ,"group.facet","true"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=6]"
+            ,pre+"/int[1][@name='CCC"+termSuffix+"'][.='3']"
+            ,pre+"/int[2][@name='BBB"+termSuffix+"'][.='2']"
+            ,pre+"/int[3][@name='AAA"+termSuffix+"'][.='1']"
+            ,pre+"/int[4][@name='B"+termSuffix+"'][.='1']"
+            ,pre+"/int[5][@name='BB"+termSuffix+"'][.='1']"
+            ,pre+"/int[6][@name='CC"+termSuffix+"'][.='1']"
+    );
+  }
+
   /** 
-   * kind of an absurd tests because if there is an inifnite loop, it 
-   * would ver finish -- but at least it ensures that <i>if</i> one of 
+   * kind of an absurd test because if there is an infinite loop, it 
+   * would never finish -- but at least it ensures that <i>if</i> one of 
    * these requests return, they return an error 
    */
   public void testRangeFacetInfiniteLoopDetection() {

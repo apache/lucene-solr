@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -51,6 +52,7 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   protected static IndexSearcher searcher;
   protected static IndexReader reader;
   protected static Directory directory;
+  protected static Analyzer analyzer;
   
   public static final String KEY = "KEY";
   // boost on this field is the same as the iterator for the doc
@@ -65,12 +67,15 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
     reader = null;
     directory.close();
     directory = null;
+    analyzer.close();
+    analyzer = null;
   }
   
   @BeforeClass
   public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    analyzer = new MockAnalyzer(random());
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newStringField(KEY, ""+i, Field.Store.NO));
@@ -112,7 +117,7 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   /** 
    * Convenience subclass of FieldCacheTermsFilter
    */
-  public static class ItemizedFilter extends DocValuesTermsFilter {
+  public static class ItemizedQuery extends DocValuesTermsQuery {
     private static String[] int2str(int [] terms) {
       String [] out = new String[terms.length];
       for (int i = 0; i < terms.length; i++) {
@@ -120,7 +125,7 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
       }
       return out;
     }
-    public ItemizedFilter(int [] keys) {
+    public ItemizedQuery(int [] keys) {
       super(KEY, int2str(keys));
     }
   }

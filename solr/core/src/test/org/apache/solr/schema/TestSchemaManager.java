@@ -35,44 +35,40 @@ public class TestSchemaManager extends SolrTestCaseJ4 {
   @Test
   public void testParsing() throws IOException {
     String x = "{\n" +
-        " \"add-field\" : {\n" +
-        "              \"name\":\"a\",\n" +
-        "              \"type\": \"string\",\n" +
-        "              \"stored\":true,\n" +
-        "              \"indexed\":false\n" +
+        " 'add-field' : {\n" +
+        "              'name':'a',\n" +
+        "              'type': 'string',\n" +
+        "              'stored':true,\n" +
+        "              'indexed':false\n" +
         "              },\n" +
-        " \"add-field\" : {\n" +
-        "              \"name\":\"b\",\n" +
-        "              \"type\": \"string\",\n" +
-        "              \"stored\":true,\n" +
-        "              \"indexed\":false\n" +
+        " 'add-field' : {\n" +
+        "              'name':'b',\n" +
+        "              'type': 'string',\n" +
+        "              'stored':true,\n" +
+        "              'indexed':false\n" +
         "              }\n" +
         "\n" +
         "}";
 
-    List<CommandOperation> ops = CommandOperation.parse(new StringReader(x));
+    List<CommandOperation> ops = CommandOperation.parse(new StringReader(json(x)));
     assertEquals(2,ops.size());
     assertTrue( CommandOperation.captureErrors(ops).isEmpty());
 
-    x = " {\"add-field\" : [{\n" +
-        "                                 \"name\":\"a1\",\n" +
-        "                                 \"type\": \"string\",\n" +
-        "                                 \"stored\":true,\n" +
-        "                                 \"indexed\":false\n" +
-        "                                 },\n" +
-        "                            {\n" +
-        "                            \"name\":\"a2\",\n" +
-        "                             \"type\": \"string\",\n" +
-        "                             \"stored\":true,\n" +
-        "                             \"indexed\":true\n" +
-        "                             }]\n" +
-        "           }";
-    ops = CommandOperation.parse(new StringReader(x));
+    x = " {'add-field' : [{\n" +
+        "                       'name':'a1',\n" +
+        "                       'type': 'string',\n" +
+        "                       'stored':true,\n" +
+        "                       'indexed':false\n" +
+        "                      },\n" +
+        "                      {\n" +
+        "                       'name':'a2',\n" +
+        "                       'type': 'string',\n" +
+        "                       'stored':true,\n" +
+        "                       'indexed':true\n" +
+        "                      }]\n" +
+        "      }";
+    ops = CommandOperation.parse(new StringReader(json(x)));
     assertEquals(2,ops.size());
-    assertTrue( CommandOperation.captureErrors(ops).isEmpty());
-
+    assertTrue(CommandOperation.captureErrors(ops).isEmpty());
   }
-
-
-
 }

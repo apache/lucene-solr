@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -38,12 +39,12 @@ public class MismatchedDirectoryReader extends FilterDirectoryReader {
     }
   }
 
-  public MismatchedDirectoryReader(DirectoryReader in, Random random) {
+  public MismatchedDirectoryReader(DirectoryReader in, Random random) throws IOException {
     super(in, new MismatchedSubReaderWrapper(random));
   }
 
   @Override
-  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
     return new AssertingDirectoryReader(in);
   }
 }

@@ -53,6 +53,7 @@ import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -71,7 +72,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new Input("barbara", 1)
     );
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
     suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
@@ -104,6 +106,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
+    
+    analyzer.close();
   }
   
   public void testKeywordWithPayloads() throws Exception {
@@ -115,7 +119,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       new Input("bar", 8, new BytesRef("should also be deduplicated")),
       new Input("barbara", 6, new BytesRef("for all the fish")));
     
-    AnalyzingSuggester suggester = new AnalyzingSuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
     suggester.build(new InputArrayIterator(keys));
     for (int i = 0; i < 2; i++) {
       // top N of 2, but only foo is available
@@ -156,6 +161,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       assertEquals(6, results.get(2).value, 0.01F);
       assertEquals(new BytesRef("for all the fish"), results.get(2).payload);
     }
+    analyzer.close();
   }
   
   public void testRandomRealisticKeys() throws IOException {
@@ -173,7 +179,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           mapping.put(title, Long.valueOf(randomWeight));
       }
     }
-    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(new MockAnalyzer(random()), new MockAnalyzer(random()),
+    Analyzer indexAnalyzer = new MockAnalyzer(random());
+    Analyzer queryAnalyzer = new MockAnalyzer(random());
+    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(indexAnalyzer, queryAnalyzer,
         AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, random().nextBoolean());
     boolean doPayloads = random().nextBoolean();
     if (doPayloads) {
@@ -198,7 +206,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     }
     
-    lineFile.close();
+    IOUtils.close(lineFile, indexAnalyzer, queryAnalyzer);
   }
   
   // TODO: more tests
@@ -232,6 +240,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
+    
+    standard.close();
   }
 
   public void testEmpty() throws Exception {
@@ -241,6 +251,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
+    standard.close();
   }
 
   public void testNoSeps() throws Exception {
@@ -265,6 +276,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     // complete to "abcd", which has higher weight so should
     // appear first:
     assertEquals("abcd", r.get(0).key.toString());
+    a.close();
   }
 
   public void testGraphDups() throws Exception {
@@ -330,6 +342,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value);
     assertEquals("wi fi network is fast", results.get(1).key);
     assertEquals(10, results.get(1).value);
+    analyzer.close();
   }
 
   public void testInputPathRequired() throws Exception {
@@ -388,6 +401,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("ab x", false, 1);
     assertTrue(results.size() == 1);
+    analyzer.close();
   }
 
   private static Token token(String term, int posInc, int posLength) {
@@ -492,6 +506,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
+    a.close();
   }
 
   public void testNonExactFirst() throws Exception {
@@ -529,6 +544,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
+    a.close();
   }
   
   // Holds surface form separately:
@@ -867,6 +883,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
+    a.close();
   }
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
@@ -881,6 +898,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(60, results.get(0).value);
     assertEquals("a ", results.get(1).key);
     assertEquals(50, results.get(1).value);
+    a.close();
   }
 
   public void testQueueExhaustion() throws Exception {
@@ -895,6 +913,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }));
 
     suggester.lookup("a", false, 4);
+    a.close();
   }
 
   public void testExactFirstMissingResult() throws Exception {
@@ -941,6 +960,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(4, results.get(1).value);
     assertEquals("a b", results.get(2).key);
     assertEquals(3, results.get(2).value);
+    a.close();
   }
 
   public void testDupSurfaceFormsMissingResults() throws Exception {
@@ -999,6 +1019,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value);
     assertEquals("nellie", results.get(1).key);
     assertEquals(5, results.get(1).value);
+    a.close();
   }
 
   public void testDupSurfaceFormsMissingResults2() throws Exception {
@@ -1068,6 +1089,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value);
     assertEquals("b", results.get(1).key);
     assertEquals(5, results.get(1).value);
+    a.close();
   }
 
   public void test0ByteKeys() throws Exception {
@@ -1113,6 +1135,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new Input("a a", 50),
           new Input("a b", 50),
         }));
+    
+    a.close();
   }
 
   public void testDupSurfaceFormsMissingResults3() throws Exception {
@@ -1126,6 +1150,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new Input("a b", 5),
         }));
     assertEquals("[a a/7, a c/6, a b/5]", suggester.lookup("a", false, 3).toString());
+    a.close();
   }
 
   public void testEndingSpace() throws Exception {
@@ -1137,6 +1162,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }));
     assertEquals("[isla de muerta/8, i love lucy/7]", suggester.lookup("i", false, 3).toString());
     assertEquals("[i love lucy/7]", suggester.lookup("i ", false, 3).toString());
+    a.close();
   }
 
   public void testTooManyExpansions() throws Exception {
@@ -1166,6 +1192,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, 1, true);
     suggester.build(new InputArrayIterator(new Input[] {new Input("a", 1)}));
     assertEquals("[a/1]", suggester.lookup("a", false, 1).toString());
+    a.close();
   }
   
   public void testIllegalLookupArgument() throws Exception {
@@ -1186,6 +1213,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     }
+    a.close();
   }
 
   static final Iterable<Input> shuffle(Input...values) {
@@ -1209,5 +1237,6 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+    a.close();
   }
 }

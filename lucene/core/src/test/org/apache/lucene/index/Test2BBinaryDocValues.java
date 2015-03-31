@@ -25,12 +25,12 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
@@ -38,6 +38,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 // The six hour time was achieved on a Linux 3.13 system with these specs:
 // 3-core AMD at 2.5Ghz, 12 GB RAM, 5GB test heap, 2 test JVMs, 2TB SATA.
 @Monster("takes ~ 6 hours if the heap is 5gb")
+@SuppressSysoutChecks(bugUrl = "Stuff gets printed.")
 public class Test2BBinaryDocValues extends LuceneTestCase {
   
   // indexes IndexWriter.MAX_DOCS docs with a fixed binary field

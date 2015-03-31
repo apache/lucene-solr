@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,28 +42,25 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.PluginsRegistry;
+import org.apache.solr.core.ImplicitPlugins;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.SchemaManager;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 public class SolrConfigHandler extends RequestHandlerBase {
@@ -75,9 +71,8 @@ public class SolrConfigHandler extends RequestHandlerBase {
   static {
     Map<String, SolrConfig.SolrPluginInfo> map = new HashMap<>();
     for (SolrConfig.SolrPluginInfo plugin : SolrConfig.plugins) {
-      if (plugin.options.contains(REQUIRE_NAME)) {
-        map.put(plugin.tag.toLowerCase(Locale.ROOT), plugin);
-
+      if (plugin.options.contains(REQUIRE_NAME) || plugin.options.contains(REQUIRE_NAME_IN_OVERLAY)) {
+        map.put(plugin.getCleanTag().toLowerCase(Locale.ROOT), plugin);
       }
     }
     namedPlugins = Collections.unmodifiableMap(map);
@@ -93,7 +88,11 @@ public class SolrConfigHandler extends RequestHandlerBase {
     if ("POST".equals(httpMethod)) {
       if (configEditing_disabled)
         throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled");
-      command.handlePOST();
+      try {
+        command.handlePOST();
+      } finally {
+        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+      }
     } else {
       command.handleGET();
     }
@@ -152,7 +151,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       Map<String, Object> map = req.getCore().getSolrConfig().toMap();
       Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
       if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
-      List<PluginInfo> plugins = PluginsRegistry.getHandlers(req.getCore());
+      List<PluginInfo> plugins = ImplicitPlugins.getHandlers(req.getCore());
       for (PluginInfo plugin : plugins) {
         if (SolrRequestHandler.TYPE.equals(plugin.type)) {
           if (!reqHandlers.containsKey(plugin.name)) {
@@ -257,7 +256,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
             if (op.hasError()) break;
             for (String s : name) {
               if (params.getParams(s) == null) {
-                op.addError(MessageFormat.format("can't delete . No such params ''{0}'' exist", s));
+                op.addError(formatString("can't delete . No such params ''{0}'' exist", s));
               }
               params = params.setParams(s, null);
             }
@@ -307,19 +306,19 @@ public class SolrConfigHandler extends RequestHandlerBase {
           default: {
             List<String> pcs = StrUtils.splitSmart(op.name.toLowerCase(Locale.ROOT), '-');
             if (pcs.size() != 2) {
-              op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+              op.addError(formatString("Unknown operation ''{0}'' ", op.name));
             } else {
               String prefix = pcs.get(0);
               String name = pcs.get(1);
               if (cmdPrefixes.contains(prefix) && namedPlugins.containsKey(name)) {
                 SolrConfig.SolrPluginInfo info = namedPlugins.get(name);
                 if ("delete".equals(prefix)) {
-                  overlay = deleteNamedComponent(op, overlay, info.tag);
+                  overlay = deleteNamedComponent(op, overlay, info.getCleanTag());
                 } else {
-                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create"));
+                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
                 }
               } else {
-                op.addError(MessageFormat.format("Unknown operation ''{0}'' ", op.name));
+                op.addError(formatString("Unknown operation ''{0}'' ", op.name));
               }
             }
           }
@@ -352,41 +351,42 @@ public class SolrConfigHandler extends RequestHandlerBase {
       if (overlay.getNamedPlugins(typ).containsKey(name)) {
         return overlay.deleteNamedPlugin(name, typ);
       } else {
-        op.addError(MessageFormat.format("NO such {0} ''{1}'' ", typ, name));
+        op.addError(formatString("NO such {0} ''{1}'' ", typ, name));
         return overlay;
       }
     }
 
     private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info, CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
       String name = op.getStr(NAME);
-      String clz = op.getStr(CLASS_NAME);
+      String clz = info.options.contains(REQUIRE_CLASS) ? op.getStr(CLASS_NAME) : op.getStr(CLASS_NAME, null);
       op.getMap(PluginInfo.DEFAULTS, null);
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
       if (!verifyClass(op, clz, info.clazz)) return overlay;
-      if (overlay.getNamedPlugins(info.tag).containsKey(name)) {
+      if (overlay.getNamedPlugins(info.getCleanTag()).containsKey(name)) {
         if (isCeate) {
-          op.addError(MessageFormat.format(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.tag.toLowerCase(Locale.ROOT)));
+          op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
           return overlay;
         } else {
-          return overlay.addNamedPlugin(op.getDataMap(), info.tag);
+          return overlay.addNamedPlugin(op.getDataMap(), info.getCleanTag());
         }
       } else {
         if (isCeate) {
-          return overlay.addNamedPlugin(op.getDataMap(), info.tag);
+          return overlay.addNamedPlugin(op.getDataMap(), info.getCleanTag());
         } else {
-          op.addError(MessageFormat.format(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, "create-" + info.tag.toLowerCase(Locale.ROOT)));
+          op.addError(formatString(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, "create-" + info.getTagCleanLower()));
           return overlay;
         }
       }
     }
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {
-      if (op.getStr("lib", null) == null) {
+      if (clz == null) return true;
+      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
-          SolrCore.createInstance(clz, expected, expected.getSimpleName(), req.getCore());
+          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
         } catch (Exception e) {
           op.addError(e.getMessage());
           return false;
@@ -412,7 +412,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       if (op.hasError()) return overlay;
       for (String o : name) {
         if (!overlay.getUserProps().containsKey(o)) {
-          op.addError(format("No such property ''{0}''", name));
+          op.addError(formatString("No such property ''{0}''", name));
         } else {
           overlay = overlay.unsetUserProperty(o);
         }
@@ -427,7 +427,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
       for (String o : name) {
         if (!ConfigOverlay.isEditableProp(o, false, null)) {
-          op.addError(format(NOT_EDITABLE, name));
+          op.addError(formatString(NOT_EDITABLE, name));
         } else {
           overlay = overlay.unsetProperty(o);
         }
@@ -441,10 +441,42 @@ public class SolrConfigHandler extends RequestHandlerBase {
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
-        if (!ConfigOverlay.isEditableProp(name, false, null)) {
-          op.addError(format(NOT_EDITABLE, name));
+        Class typ = ConfigOverlay.checkEditable(name, false, null);
+        if (typ == null) {
+          op.addError(formatString(NOT_EDITABLE, name));
           continue;
         }
+
+        if (val != null) {
+          if (typ == String.class) val = val.toString();
+          String typeErr = "Property {0} must be of {1} type ";
+          if (typ == Boolean.class) {
+            try {
+              val = Boolean.parseBoolean(val.toString());
+            } catch (Exception exp) {
+              op.addError(formatString(typeErr, name, typ.getSimpleName()));
+              continue;
+            }
+          } else if (typ == Integer.class) {
+            try {
+              val = Integer.parseInt(val.toString());
+            } catch (Exception exp) {
+              op.addError(formatString(typeErr, typ.getSimpleName()));
+              continue;
+            }
+
+          } else if (typ == Float.class) {
+            try {
+              val = Float.parseFloat(val.toString());
+            } catch (Exception exp) {
+              op.addError(formatString(typeErr, typ.getSimpleName()));
+              continue;
+            }
+
+          }
+        }
+
+
         overlay = overlay.setProperty(name, val);
       }
       return overlay;
@@ -463,7 +495,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
           c == '.'
           ) continue;
       else {
-        return MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
+        return formatString("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
       }
     }
     return null;
@@ -491,7 +523,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
   static {
     for (SolrConfig.SolrPluginInfo solrPluginInfo : SolrConfig.plugins)
-      subPaths.add("/" + solrPluginInfo.tag.replaceAll("/", ""));
+      subPaths.add("/" + solrPluginInfo.getCleanTag());
 
   }
 
@@ -522,6 +554,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
   public static final String SET = "set";
   public static final String UPDATE = "update";
   public static final String CREATE = "create";
-  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete");
+  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
 
 }

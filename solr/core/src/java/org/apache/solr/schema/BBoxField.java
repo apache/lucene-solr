@@ -44,6 +44,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
 
   private String numberTypeName;//required
   private String booleanTypeName = "boolean";
+  private boolean storeSubFields = false;
 
   private IndexSchema schema;
 
@@ -65,6 +66,11 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     v = args.remove("booleanType");
     if (v != null) {
       booleanTypeName = v;
+    }
+    
+    v = args.remove("storeSubFields");
+    if (v != null) {
+      storeSubFields = Boolean.valueOf(v);
     }
   }
 
@@ -108,7 +114,14 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   // note: Registering the field is probably optional; it makes it show up in the schema browser and may have other
   //  benefits.
   private void register(IndexSchema schema, String name, FieldType fieldType) {
-    SchemaField sf = new SchemaField(name, fieldType);
+    int props = fieldType.properties;
+    if(storeSubFields) {
+      props |= STORED;
+    }
+    else {
+      props &= ~STORED;
+    }
+    SchemaField sf = new SchemaField(name, fieldType, props, null);
     schema.getFields().put(sf.getName(), sf);
   }
 

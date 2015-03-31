@@ -81,7 +81,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
@@ -93,10 +93,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AssertingIndexSearcher;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterCachingPolicy;
+import org.apache.lucene.search.LRUQueryCache;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -110,6 +110,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RawDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -416,16 +417,6 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
-  /**
-   * These property keys will be ignored in verification of altered properties.
-   * @see SystemPropertiesInvariantRule
-   * @see #ruleChain
-   * @see #classRules
-   */
-  private static final String [] IGNORED_INVARIANT_PROPERTIES = {
-    "user.timezone", "java.rmi.server.randomIDs"
-  };
-
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
     "SimpleFSDirectory",
@@ -440,14 +431,14 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES.add("RAMDirectory");
   }
 
-  /** A {@link org.apache.lucene.search.FilterCachingPolicy} that randomly caches. */
-  public static final FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
+  /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
+  public static final QueryCachingPolicy MAYBE_CACHE_POLICY = new QueryCachingPolicy() {
 
     @Override
-    public void onUse(Filter filter) {}
+    public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       return random().nextBoolean();
     }
 
@@ -580,8 +571,20 @@ public abstract class LuceneTestCase extends Assert {
         return !(name.equals("setUp") || name.equals("tearDown"));
       }
     })
-    .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(classNameRule = new TestRuleStoreClassName())
+    .around(new TestRuleRestoreSystemProperties(
+        // Enlist all properties to which we have write access (security manager);
+        // these should be restored to previous state, no matter what the outcome of the test.
+
+        // We reset the default locale and timezone; these properties change as a side-effect
+        "user.language",
+        "user.timezone",
+        
+        // TODO: these should, ideally, be moved to Solr's base class.
+        "solr.directoryFactory",
+        "solr.solr.home",
+        "solr.data.dir"
+        ))
     .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
 
 
@@ -608,7 +611,6 @@ public abstract class LuceneTestCase extends Assert {
     .outerRule(testFailureMarker)
     .around(ignoreAfterMaxFailures)
     .around(threadAndTestNameRule)
-    .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
     .around(parentChainCallRule);
 
@@ -1317,7 +1319,7 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     if (bare) {
-      BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
+      BaseDirectoryWrapper base = new RawDirectoryWrapper(directory);
       closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));
       return base;
     } else {
@@ -1436,7 +1438,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** 
    * Return a random Locale from the available locales on the system.
-   * see "https://issues.apache.org/jira/browse/LUCENE-4020"
+   * @see <a href="http://issues.apache.org/jira/browse/LUCENE-4020">LUCENE-4020</a>
    */
   public static Locale randomLocale(Random random) {
     Locale locales[] = Locale.getAvailableLocales();
@@ -1445,7 +1447,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** 
    * Return a random TimeZone from the available timezones on the system
-   * see "https://issues.apache.org/jira/browse/LUCENE-4020"
+   * @see <a href="http://issues.apache.org/jira/browse/LUCENE-4020">LUCENE-4020</a>
    */
   public static TimeZone randomTimeZone(Random random) {
     String tzIds[] = TimeZone.getAvailableIDs();
@@ -1648,6 +1650,20 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  @Before
+  public void resetTestDefaultQueryCache() {
+    // Make sure each test method has its own cache
+    resetDefaultQueryCache();
+  }
+
+  @BeforeClass
+  public static void resetDefaultQueryCache() {
+    // we need to reset the query cache in an @BeforeClass so that tests that
+    // instantiate an IndexSearcher in an @BeforeClass method use a fresh new cache
+    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25));
+    IndexSearcher.setDefaultQueryCachingPolicy(MAYBE_CACHE_POLICY);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads.
@@ -1735,6 +1751,7 @@ public abstract class LuceneTestCase extends Assert {
             : new IndexSearcher(r.getContext(), ex);
       }
       ret.setSimilarity(classEnvRule.similarity);
+      ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
       return ret;
     }
   }

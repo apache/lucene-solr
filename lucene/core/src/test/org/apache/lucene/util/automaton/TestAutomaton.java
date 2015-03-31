@@ -1104,4 +1104,51 @@ public class TestAutomaton extends LuceneTestCase {
       throw ae;
     }
   }
+
+  private static IntsRef toIntsRef(String s) {
+    IntsRefBuilder b = new IntsRefBuilder();
+    for (int i = 0, cp = 0; i < s.length(); i += Character.charCount(cp)) {
+      cp = s.codePointAt(i);
+      b.append(cp);
+    }
+
+    return b.get();
+  }
+
+  public void testGetSingleton() {
+    int iters = atLeast(10000);
+    for(int iter=0;iter<iters;iter++) {
+      String s = TestUtil.randomRealisticUnicodeString(random());
+      Automaton a = Automata.makeString(s);
+      assertEquals(toIntsRef(s), Operations.getSingleton(a));
+    }
+  }
+
+  public void testGetSingletonEmptyString() {
+    Automaton a = new Automaton();
+    int s = a.createState();
+    a.setAccept(s, true);
+    a.finishState();
+    assertEquals(new IntsRef(), Operations.getSingleton(a));
+  }
+
+  public void testGetSingletonNothing() {
+    Automaton a = new Automaton();
+    a.createState();
+    a.finishState();
+    assertNull(Operations.getSingleton(a));
+  }
+
+  public void testGetSingletonTwo() {
+    Automaton a = new Automaton();
+    int s = a.createState();
+    int x = a.createState();
+    a.setAccept(x, true);
+    a.addTransition(s, x, 55);
+    int y = a.createState();
+    a.setAccept(y, true);
+    a.addTransition(s, y, 58);
+    a.finishState();
+    assertNull(Operations.getSingleton(a));
+  }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.NumericTokenStream; // javadocs
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
 
@@ -52,8 +51,8 @@ import org.apache.lucene.util.NumericUtils;
  * FloatField}.
  *
  * <p>To perform range querying or filtering against a
- * <code>DoubleField</code>, use {@link NumericRangeQuery} or {@link
- * NumericRangeFilter}.  To sort according to a
+ * <code>DoubleField</code>, use {@link NumericRangeQuery}.
+ * To sort according to a
  * <code>DoubleField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#DOUBLE}. <code>DoubleField</code> 
  * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.</p>
@@ -86,7 +85,7 @@ import org.apache.lucene.util.NumericUtils;
  * FieldType#setNumericPrecisionStep} method if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
- * NumericRangeQuery} or {@link NumericRangeFilter}.
+ * NumericRangeQuery}.
  * For low cardinality fields larger precision steps are good.
  * If the cardinality is &lt; 100, it is fair
  * to use {@link Integer#MAX_VALUE}, which produces one

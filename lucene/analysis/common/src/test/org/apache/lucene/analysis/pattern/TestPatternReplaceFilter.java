@@ -27,8 +27,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
-/**
- */
 public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
   
   public void testReplaceAll() throws Exception {
@@ -92,6 +90,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
       }    
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
     
     Analyzer b = new Analyzer() {
       @Override
@@ -102,6 +101,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
       }    
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    b.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -113,6 +113,7 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

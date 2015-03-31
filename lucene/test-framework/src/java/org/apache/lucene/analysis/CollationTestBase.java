@@ -34,13 +34,14 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -77,12 +78,16 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // index Term below should NOT be returned by a TermRangeFilter with a Farsi
     // Collator (or an Arabic one for the case when Farsi searcher not
     // supported).
-    ScoreDoc[] result = searcher.search
-      (new FilteredQuery(query, new TermRangeFilter("content", firstBeg, firstEnd, true, true)), 1).scoreDocs;
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(query, Occur.MUST);
+    bq.add(new TermRangeQuery("content", firstBeg, firstEnd, true, true), Occur.FILTER);
+    ScoreDoc[] result = searcher.search(bq, 1).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
-    result = searcher.search
-      (new FilteredQuery(query, new TermRangeFilter("content", secondBeg, secondEnd, true, true)), 1).scoreDocs;
+    bq = new BooleanQuery();
+    bq.add(query, Occur.MUST);
+    bq.add(new TermRangeQuery("content", secondBeg, secondEnd, true, true), Occur.FILTER);
+    result = searcher.search(bq, 1).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
 
     reader.close();

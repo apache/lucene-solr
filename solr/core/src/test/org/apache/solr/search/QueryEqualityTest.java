@@ -55,11 +55,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public static void afterClassParserCoverageTest() {
 
     if ( ! doAssertParserCoverage) return;
-
-    for (int i=0; i < QParserPlugin.standardPlugins.length; i+=2) {
-      assertTrue("qparser #"+i+" name not a string", 
-                 QParserPlugin.standardPlugins[i] instanceof String);
-      final String name = (String)QParserPlugin.standardPlugins[i];
+    for (String name : QParserPlugin.standardPlugins.keySet()) {
       assertTrue("testParserCoverage was run w/o any other method explicitly testing qparser: " + name, qParsersTested.contains(name));
     }
 
@@ -266,6 +262,19 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!collapse field=$myField min=a}",
           "{!collapse field=$myField min=a nullPolicy=ignore}");
 
+
+    } finally {
+      req.close();
+    }
+  }
+
+
+  public void testHash() throws Exception {
+    SolrQueryRequest req = req("partitionKeys","foo_s");
+
+    try {
+      assertQueryEquals("hash", req,
+          "{!hash workers=3 worker=0}");
 
     } finally {
       req.close();
@@ -936,5 +945,20 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
 
+  public void testAggs() throws Exception {
+    assertFuncEquals("agg(avg(foo_i))", "agg(avg(foo_i))");
+    assertFuncEquals("agg(avg(foo_i))", "agg_avg(foo_i)");
+    assertFuncEquals("agg_min(foo_i)", "agg(min(foo_i))");
+    assertFuncEquals("agg_max(foo_i)", "agg(max(foo_i))");
+
+    assertFuncEquals("agg_avg(foo_i)", "agg_avg(foo_i)");
+    assertFuncEquals("agg_sum(foo_i)", "agg_sum(foo_i)");
+    assertFuncEquals("agg_count()", "agg_count()");
+    assertFuncEquals("agg_unique(foo_i)", "agg_unique(foo_i)");
+    assertFuncEquals("agg_sumsq(foo_i)", "agg_sumsq(foo_i)");
+    assertFuncEquals("agg_percentile(foo_i,50)", "agg_percentile(foo_i,50)");
+    // assertFuncEquals("agg_stdev(foo_i)", "agg_stdev(foo_i)");
+    // assertFuncEquals("agg_multistat(foo_i)", "agg_multistat(foo_i)");
+  }
 
 }

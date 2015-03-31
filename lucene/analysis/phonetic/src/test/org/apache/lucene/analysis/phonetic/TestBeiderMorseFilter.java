@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.phonetic;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashSet;
 import java.util.regex.Pattern;
@@ -35,18 +34,29 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.PatternKeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.junit.Ignore;
 
 /** Tests {@link BeiderMorseFilter} */
 public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(tokenizer, 
-          new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, 
+            new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /** generic, "exact" configuration */
   public void testBasicUsage() throws Exception {    
@@ -83,6 +93,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 0, },
         new int[] { 6, 6, 6, },
         new int[] { 1, 0, 0, });
+    analyzer.close();
   }
   
   /** for convenience, if the input yields no output, we pass it thru as-is */
@@ -107,6 +118,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
   
   public void testCustomAttribute() throws IOException {

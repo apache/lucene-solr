@@ -17,9 +17,11 @@
 
 package org.apache.solr;
 
+import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.util.StrUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +33,7 @@ public class JSONTestUtil {
    * Default delta used in numeric equality comparisons for floats and doubles.
    */
   public final static double DEFAULT_DELTA = 1e-5;
+  public static boolean failRepeatedKeys = false;
 
   /**
    * comparison using default delta
@@ -78,9 +81,23 @@ public class JSONTestUtil {
    * @param delta tollerance allowed in comparing float/double values
    */
   public static String match(String path, String input, String expected, double delta) throws Exception {
-    Object inputObj = ObjectBuilder.fromJSON(input);
-    Object expectObj = ObjectBuilder.fromJSON(expected);
+    Object inputObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(input)).getVal() : ObjectBuilder.fromJSON(input);
+    Object expectObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(expected)).getVal() : ObjectBuilder.fromJSON(expected);
     return matchObj(path, inputObj, expectObj, delta);
+  }
+
+  static class NoDupsObjectBuilder extends ObjectBuilder {
+    public NoDupsObjectBuilder(JSONParser parser) throws IOException {
+      super(parser);
+    }
+
+    @Override
+    public void addKeyVal(Object map, Object key, Object val) throws IOException {
+      Object prev = ((Map<Object, Object>) map).put(key, val);
+      if (prev != null) {
+        throw new RuntimeException("REPEATED JSON OBJECT KEY: key=" + key + " prevValue=" + prev + " thisValue" + val);
+      }
+    }
   }
 
   /**

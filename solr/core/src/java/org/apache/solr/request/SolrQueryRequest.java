@@ -20,6 +20,7 @@ package org.apache.solr.request;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
@@ -63,8 +64,14 @@ public interface SolrQueryRequest {
    */
   public void close();
 
-  /** The start time of this request in milliseconds */
+  /** The start time of this request in milliseconds.
+   * Use this only if you need the absolute system time at the start of the request,
+   * getRequestTimer() provides a more accurate mechanism for timing purposes.
+   */
   public long getStartTime();
+
+  /** The timer for this request, created when the request started being processed */
+  public RTimer getRequestTimer();
 
   /** The index searcher associated with this request */
   public SolrIndexSearcher getSearcher();
@@ -90,6 +97,13 @@ public interface SolrQueryRequest {
    * @param params The new set of parameter
    */
   public void forward(String handler, SolrParams params,  SolrQueryResponse rsp);
+
+  /** Returns any associated JSON (or null if none) in deserialized generic form.
+   * Java classes used to represent the JSON are as follows: Map, List, String, Long, Double, Boolean
+   */
+  public Map<String,Object> getJSON();
+
+  public void setJSON(Map<String,Object> json);
 }
 
 

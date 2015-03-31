@@ -16,20 +16,46 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
+
+  // a filter for which other queries don't have special rewrite rules
+  private static class FilterWrapper extends Filter {
+
+    private final Filter in;
+    
+    FilterWrapper(Filter in) {
+      this.in = in;
+    }
+    
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+  }
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
@@ -48,7 +74,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     TopDocs hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf)), 10);
+    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
     assertEquals(1, hits.totalHits);
 
     // should not throw exception with complex primitive query
@@ -60,7 +86,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf)), 10);
+    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
     assertEquals(1, hits.totalHits);
 
     // should not throw exception with non primitive Query (doesn't implement
@@ -69,7 +95,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf)), 10);
+    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
     assertEquals(1, hits.totalHits);
 
     // test a query with no hits
@@ -77,7 +103,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     qwf = new QueryWrapperFilter(termQuery);
     hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
     assertEquals(0, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf)), 10);
+    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
     assertEquals(0, hits.totalHits);
     reader.close();
     dir.close();
@@ -145,6 +171,43 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
       assertEquals(1, td.totalHits);
     }
     
+    reader.close();
+    dir.close();
+  }
+
+  public void testScore() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Query query = new QueryWrapperFilter(new TermQuery(new Term("foo", "bar")));
+    final TopDocs topDocs = searcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(0f, topDocs.scoreDocs[0].score, 0f);
+    reader.close();
+    dir.close();
+  }
+
+  public void testQueryWrapperFilterPropagatesApproximations() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // to still have approximations
+    final Query query = new QueryWrapperFilter(new RandomApproximationQuery(new TermQuery(new Term("foo", "bar")), random()));
+    final Weight weight = searcher.createNormalizedWeight(query, random().nextBoolean());
+    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    assertNotNull(scorer.asTwoPhaseIterator());
     reader.close();
     dir.close();
   }

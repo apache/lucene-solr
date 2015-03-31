@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
@@ -46,7 +47,11 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, 30000, "dummy.host.com", "8984", "/solr", 180000, 180000, true, new CurrentCoreDescriptorProvider() {
+      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
+          .setLeaderConflictResolveWait(180000)
+          .setLeaderVoteWait(180000)
+          .build();
+      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, new CurrentCoreDescriptorProvider() {
         @Override
         public List<CoreDescriptor> getCurrentDescriptors() {
           return Collections.EMPTY_LIST;

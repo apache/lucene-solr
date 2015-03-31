@@ -33,10 +33,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoresLocator;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -73,23 +70,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private UpdateShardHandler updateShardHandler;
   
   public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {
-    updateShardHandler = new UpdateShardHandler(new ConfigSolr(null, null) {
-
-      @Override
-      public CoresLocator getCoresLocator() {
-        return null;
-      }
-
-      @Override
-      public PluginInfo getShardHandlerFactoryPluginInfo() {
-        return null;
-      }
-
-      @Override
-      protected String getProperty(CfgProp key) {
-        return null;
-      }
-    });
+    updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     
     stress = 0;
   }
@@ -109,9 +90,12 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   protected void createServers(int numShards) throws Exception {
 
     System.setProperty("configSetBaseDir", TEST_HOME());
-    System.setProperty("coreRootDirectory", testDir.toPath().resolve("control").toString());
-    writeCoreProperties(testDir.toPath().resolve("control/cores"), DEFAULT_TEST_CORENAME);
-    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+
+    File controlHome = testDir.toPath().resolve("control").toFile();
+
+    seedSolrHome(controlHome);
+    writeCoreProperties(controlHome.toPath().resolve("cores").resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
+    controlJetty = createJetty(controlHome, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
 
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
@@ -120,10 +104,11 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       String shardname = "shard" + i;
-      Path coresPath = testDir.toPath().resolve(shardname).resolve("cores");
-      writeCoreProperties(coresPath, DEFAULT_TEST_CORENAME);
-      System.setProperty("coreRootDirectory", testDir.toPath().resolve(shardname).toString());
-      JettySolrRunner j = createJetty(new File(getSolrHome()),
+      Path shardHome = testDir.toPath().resolve(shardname);
+      seedSolrHome(shardHome.toFile());
+      Path coresPath = shardHome.resolve("cores");
+      writeCoreProperties(coresPath.resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
+      JettySolrRunner j = createJetty(shardHome.toFile(),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
       jettys.add(j);

@@ -367,7 +367,7 @@ public class LBHttpSolrClient extends SolrClient {
       boolean isZombie, String zombieKey) throws SolrServerException, IOException {
     Exception ex = null;
     try {
-      rsp.rsp = client.request(req.getRequest());
+      rsp.rsp = client.request(req.getRequest(), (String) null);
       if (isZombie) {
         zombieServers.remove(zombieKey);
       }
@@ -491,7 +491,7 @@ public class LBHttpSolrClient extends SolrClient {
    * @throws IOException If there is a low-level I/O error.
    */
   @Override
-  public NamedList<Object> request(final SolrRequest request)
+  public NamedList<Object> request(final SolrRequest request, String collection)
           throws SolrServerException, IOException {
     Exception ex = null;
     ServerWrapper[] serverList = aliveServerList;
@@ -511,7 +511,7 @@ public class LBHttpSolrClient extends SolrClient {
       wrapper.lastUsed = System.currentTimeMillis();
 
       try {
-        return wrapper.client.request(request);
+        return wrapper.client.request(request, collection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -537,7 +537,7 @@ public class LBHttpSolrClient extends SolrClient {
       
       if (wrapper.standard==false || justFailed!=null && justFailed.containsKey(wrapper.getKey())) continue;
       try {
-        NamedList<Object> rsp = wrapper.client.request(request);
+        NamedList<Object> rsp = wrapper.client.request(request, collection);
         // remove from zombie list *before* adding to alive to avoid a race that could lose a server
         zombieServers.remove(wrapper.getKey());
         addToAlive(wrapper);

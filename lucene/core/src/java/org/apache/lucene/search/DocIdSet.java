@@ -36,11 +36,6 @@ public abstract class DocIdSet implements Accountable {
       return DocIdSetIterator.empty();
     }
     
-    @Override
-    public boolean isCacheable() {
-      return true;
-    }
-    
     // we explicitly provide no random access, as this filter is 100% sparse and iterator exits faster
     @Override
     public Bits bits() {
@@ -82,14 +77,4 @@ public abstract class DocIdSet implements Accountable {
     return null;
   }
 
-  /**
-   * This method is a hint for {@link CachingWrapperFilter}, if this <code>DocIdSet</code>
-   * should be cached without copying it. The default is to return
-   * <code>false</code>. If you have an own <code>DocIdSet</code> implementation
-   * that does its iteration very effective and fast without doing disk I/O,
-   * override this method and return <code>true</code>.
-   */
-  public boolean isCacheable() {
-    return false;
-  }
 }

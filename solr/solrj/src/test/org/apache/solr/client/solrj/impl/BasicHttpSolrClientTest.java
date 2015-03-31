@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -36,6 +37,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SSLTestConfig;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -147,13 +149,13 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
-    jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(RedirectServlet.class, "/redirect/*");
-    jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(SlowServlet.class, "/slow/*");
-    jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(DebugServlet.class, "/debug/*");
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .withServlet(new ServletHolder(RedirectServlet.class), "/redirect/*")
+        .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
+        .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+        .withSSLConfig(sslConfig)
+        .build();
+    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
   
   @Test
@@ -506,6 +508,24 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       QueryResponse response = client.query(q);
       assertEquals(0, response.getStatus());
     }
+  }
+
+  @Test
+  public void testCollectionParameters() throws IOException, SolrServerException {
+
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString())) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "collection");
+      client.add("collection1", doc);
+      client.commit("collection1");
+
+      assertEquals(1, client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1")) {
+      assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
   }
   
   @Test

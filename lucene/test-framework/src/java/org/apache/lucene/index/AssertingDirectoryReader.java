@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 /**
  * A {@link DirectoryReader} that wraps all its subreaders with
  * {@link AssertingLeafReader}
@@ -30,12 +32,12 @@ public class AssertingDirectoryReader extends FilterDirectoryReader {
     }
   }
 
-  public AssertingDirectoryReader(DirectoryReader in) {
+  public AssertingDirectoryReader(DirectoryReader in) throws IOException {
     super(in, new AssertingSubReaderWrapper());
   }
 
   @Override
-  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
     return new AssertingDirectoryReader(in);
   }
 

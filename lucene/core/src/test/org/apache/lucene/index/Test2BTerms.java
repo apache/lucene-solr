@@ -41,6 +41,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
@@ -55,6 +56,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 @Monster("very slow, use 5g minimum heap")
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
+@SuppressSysoutChecks(bugUrl = "Stuff gets printed")
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 5;

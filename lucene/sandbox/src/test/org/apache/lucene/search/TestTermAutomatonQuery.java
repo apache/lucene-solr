@@ -48,6 +48,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
@@ -578,6 +579,9 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       Query q1 = q;
       Query q2 = bq;
       if (random().nextInt(5) == 1) {
+        if (VERBOSE) {
+          System.out.println("  use random filter");
+        }
         RandomFilter filter = new RandomFilter(random().nextLong(), random().nextFloat());
         q1 = new FilteredQuery(q1, filter);
         q2 = new FilteredQuery(q2, filter);
@@ -607,9 +611,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       }
     }
 
-    w.close();
-    r.close();
-    dir.close();
+    IOUtils.close(w, r, dir, analyzer);
   }
 
   private Set<String> toDocIDs(IndexSearcher s, TopDocs hits) throws IOException {

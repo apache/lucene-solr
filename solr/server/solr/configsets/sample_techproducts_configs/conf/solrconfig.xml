@@ -905,6 +905,18 @@
   </requestHandler>
 
 
+  <!--
+  Distributed Stream processing.
+  -->
+
+  <requestHandler name="/stream" class="solr.StreamHandler">
+    <lst name="invariants">
+      <str name="wt">json</str>
+      <str name="distrib">false</str>
+    </lst>
+  </requestHandler>
+
+
 
 
 
@@ -1349,10 +1361,14 @@
     </arr>
   </requestHandler>
 
-  <!-- This is disabled by default because it currently causes long startup times on 
-       big indexes, even when never used.  See SOLR-6679 for background.
-
-       To use this suggester, set the "solr.suggester.enabled=true" system property
+  <!-- The SuggestComponent in Solr provides users with automatic suggestions for query terms. 
+       You can use this to implement a powerful auto-suggest feature in your search application.
+       As with the rest of this solrconfig.xml file, the configuration of this component is purely
+       an example that applies specifically to this configset and example documents. 
+       
+       More information about this component and other configuration options are described in the
+       "Suggester" section of the reference guide available at 
+       http://archive.apache.org/dist/lucene/solr/ref-guide
     -->
   <searchComponent name="suggest" class="solr.SuggestComponent">
     <lst name="suggester">
@@ -1376,7 +1392,6 @@
       <str>suggest</str>
     </arr>
   </requestHandler>
-  -->
 
 
   <!-- Term Vector Component

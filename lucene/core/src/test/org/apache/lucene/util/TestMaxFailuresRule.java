@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.util.junitcompat.WithNestedTests;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
@@ -37,17 +36,11 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * @see TestRuleIgnoreAfterMaxFailures
- * @see SystemPropertiesInvariantRule
  */
 public class TestMaxFailuresRule extends WithNestedTests {
-  @Rule
-  public SystemPropertiesRestoreRule restoreSysProps = new SystemPropertiesRestoreRule();
-
   public TestMaxFailuresRule() {
     super(true);
   }

@@ -129,6 +129,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         ulog.clearLog(core, ulogPluginInfo);
       }
       
+      log.info("Using UpdateLog implementation: " + ulog.getClass().getName());
+      
       ulog.init(ulogPluginInfo);
 
       ulog.init(this, core);

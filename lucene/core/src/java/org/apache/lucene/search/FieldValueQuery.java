@@ -46,7 +46,7 @@ public final class FieldValueQuery extends Query {
       return false;
     }
     final FieldValueQuery that = (FieldValueQuery) obj;
-    return field.equals(that.field) && getBoost() == that.getBoost();
+    return super.equals(obj) && field.equals(that.field);
   }
 
   @Override
@@ -61,52 +61,17 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new Weight(this) {
-
-      private float queryNorm;
-      private float queryWeight;
+    return new ConstantScoreWeight(this) {
 
       @Override
-      public float getValueForNormalization() throws IOException {
-        queryWeight = getBoost();
-        return queryWeight * queryWeight;
-      }
-
-      @Override
-      public void normalize(float norm, float topLevelBoost) {
-        queryNorm = norm * topLevelBoost;
-        queryWeight *= queryNorm;
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context, context.reader().getLiveDocs());
-        final boolean exists = (s != null && s.advance(doc) == doc);
-
-        final ComplexExplanation result = new ComplexExplanation();
-        if (exists) {
-          result.setDescription(FieldValueQuery.this.toString() + ", product of:");
-          result.setValue(queryWeight);
-          result.setMatch(Boolean.TRUE);
-          result.addDetail(new Explanation(getBoost(), "boost"));
-          result.addDetail(new Explanation(queryNorm, "queryNorm"));
-        } else {
-          result.setDescription(FieldValueQuery.this.toString() + " doesn't match id " + doc);
-          result.setValue(0);
-          result.setMatch(Boolean.FALSE);
-        }
-        return result;
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
         final Bits docsWithField = context.reader().getDocsWithField(field);
         if (docsWithField == null || docsWithField instanceof MatchNoBits) {
           return null;
         }
 
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseDocIdSetIterator twoPhaseIterator = new TwoPhaseDocIdSetIterator() {
+        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approximation) {
 
           @Override
           public boolean matches() throws IOException {
@@ -120,17 +85,13 @@ public final class FieldValueQuery extends Query {
             return true;
           }
 
-          @Override
-          public DocIdSetIterator approximation() {
-            return approximation;
-          }
         };
-        final DocIdSetIterator disi = TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseIterator);
+        final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
 
         return new Scorer(this) {
 
           @Override
-          public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+          public TwoPhaseIterator asTwoPhaseIterator() {
             return twoPhaseIterator;
           }
 
@@ -161,7 +122,7 @@ public final class FieldValueQuery extends Query {
 
           @Override
           public float score() throws IOException {
-            return queryWeight;
+            return score;
           }
         };
       }

@@ -25,6 +25,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.util.Locale;
@@ -158,18 +159,16 @@ public class MMapDirectory extends FSDirectory {
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
-  public static final boolean UNMAP_SUPPORTED;
-  static {
-    boolean v;
+  public static final boolean UNMAP_SUPPORTED =
+      AccessController.doPrivileged((PrivilegedAction<Boolean>) MMapDirectory::checkUnmapSupported);
+  
+  private static boolean checkUnmapSupported() {
     try {
-      Class.forName("sun.misc.Cleaner");
-      Class.forName("java.nio.DirectByteBuffer")
-        .getMethod("cleaner");
-      v = true;
+      Class.forName("java.nio.DirectByteBuffer").getMethod("cleaner");
+      return true;
     } catch (Exception e) {
-      v = false;
+      return false;
     }
-    UNMAP_SUPPORTED = v;
   }
   
   /**
@@ -280,27 +279,19 @@ public class MMapDirectory extends FSDirectory {
     return newIoe;
   }
   
-  private static final BufferCleaner CLEANER = new BufferCleaner() {
-    @Override
-    public void freeBuffer(final ByteBufferIndexInput parent, final ByteBuffer buffer) throws IOException {
-      try {
-        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-          @Override
-          public Void run() throws Exception {
-            final Method getCleanerMethod = buffer.getClass()
-              .getMethod("cleaner");
-            getCleanerMethod.setAccessible(true);
-            final Object cleaner = getCleanerMethod.invoke(buffer);
-            if (cleaner != null) {
-              cleaner.getClass().getMethod("clean")
-                .invoke(cleaner);
-            }
-            return null;
-          }
-        });
-      } catch (PrivilegedActionException e) {
-        throw new IOException("Unable to unmap the mapped buffer: " + parent.toString(), e.getCause());
-      }
+  private static final BufferCleaner CLEANER = (ByteBufferIndexInput parent, ByteBuffer buffer) -> {
+    try {
+      AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+        final Method getCleanerMethod = buffer.getClass().getMethod("cleaner");
+        getCleanerMethod.setAccessible(true);
+        final Object cleaner = getCleanerMethod.invoke(buffer);
+        if (cleaner != null) {
+          cleaner.getClass().getMethod("clean").invoke(cleaner);
+        }
+        return null;
+      });
+    } catch (PrivilegedActionException e) {
+      throw new IOException("Unable to unmap the mapped buffer: " + parent.toString(), e.getCause());
     }
   };
 }

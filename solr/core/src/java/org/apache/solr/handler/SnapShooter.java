@@ -144,7 +144,7 @@ public class SnapShooter {
       details.add("snapshotName", snapshotName);
       LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
     } catch (Exception e) {
-      SnapPuller.delTree(snapShotDir);
+      IndexFetcher.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
@@ -170,7 +170,7 @@ public class SnapShooter {
     int i=1;
     for (OldBackupDirectory dir : dirs) {
       if (i++ > numberToKeep) {
-        SnapPuller.delTree(dir.dir);
+        IndexFetcher.delTree(dir.dir);
       }
     }
   }
@@ -181,7 +181,7 @@ public class SnapShooter {
     NamedList<Object> details = new NamedList<>();
     boolean isSuccess;
     File f = new File(snapDir, "snapshot." + snapshotName);
-    isSuccess = SnapPuller.delTree(f);
+    isSuccess = IndexFetcher.delTree(f);
 
     if(isSuccess) {
       details.add("status", "success");

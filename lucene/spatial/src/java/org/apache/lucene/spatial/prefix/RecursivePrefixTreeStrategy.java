@@ -18,11 +18,11 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
@@ -116,13 +116,13 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  protected TokenStream createTokenStream(Shape shape, int detailLevel) {
+  protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
     if (shape instanceof Point || !pruneLeafyBranches)
-      return super.createTokenStream(shape, detailLevel);
+      return super.createCellIteratorToIndex(shape, detailLevel, reuse);
 
     List<Cell> cells = new ArrayList<>(4096);
     recursiveTraverseAndPrune(grid.getWorldCell(), shape, detailLevel, cells);
-    return new CellTokenStream().setCells(cells.iterator());
+    return cells.iterator();
   }
 
   /** Returns true if cell was added as a leaf. If it wasn't it recursively descends. */
@@ -174,10 +174,10 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
     if (op == SpatialOperation.Intersects) {
       return new IntersectsPrefixTreeFilter(
-          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly);
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel);
     } else if (op == SpatialOperation.IsWithin) {
       return new WithinPrefixTreeFilter(
-          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly,
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
           -1);//-1 flag is slower but ensures correct results
     } else if (op == SpatialOperation.Contains) {
       return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel,

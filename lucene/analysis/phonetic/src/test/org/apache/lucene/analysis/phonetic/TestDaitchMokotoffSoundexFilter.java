@@ -58,6 +58,7 @@ public class TestDaitchMokotoffSoundexFilter extends BaseTokenStreamTestCase {
     };
 
     checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
+    a.close();
 
     Analyzer b = new Analyzer() {
       @Override
@@ -68,6 +69,7 @@ public class TestDaitchMokotoffSoundexFilter extends BaseTokenStreamTestCase {
     };
 
     checkRandomData(random(), b, 1000 * RANDOM_MULTIPLIER);
+    b.close();
   }
 
   public void testEmptyTerm() throws IOException {
@@ -79,6 +81,7 @@ public class TestDaitchMokotoffSoundexFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

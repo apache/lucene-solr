@@ -119,7 +119,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
-    numDocs = si.getDocCount();
+    numDocs = si.maxDoc();
     
     int version = -1;
     long maxPointer = -1;

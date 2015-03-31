@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.PostingsEnum;
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
 
 /** 
  * Constrains search results to only match those which also match a provided
@@ -42,6 +42,13 @@ public class QueryWrapperFilter extends Filter {
     if (query == null)
       throw new NullPointerException("Query may not be null");
     this.query = query;
+  }
+  
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    ConstantScoreQuery rewritten = new ConstantScoreQuery(query);
+    rewritten.setBoost(0);
+    return rewritten;
   }
   
   /** returns the inner Query */

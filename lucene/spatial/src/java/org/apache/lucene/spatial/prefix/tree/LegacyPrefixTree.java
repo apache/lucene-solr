@@ -17,13 +17,13 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.util.BytesRef;
-
-import java.util.Arrays;
 
 /** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
  * @lucene.internal */
@@ -69,7 +69,7 @@ abstract class LegacyPrefixTree extends SpatialPrefixTree {
     // subcells from the bytesRef in a loop. This avoids an O(N^2) encode, and we have O(N) instead.
 
     Cell cell = getCell((Point) shape, detailLevel);
-    assert !cell.isLeaf() && cell instanceof LegacyCell;
+    assert cell instanceof LegacyCell;
     BytesRef fullBytes = cell.getTokenBytesNoLeaf(null);
     //fill in reverse order to be sorted
     Cell[] cells = new Cell[detailLevel];

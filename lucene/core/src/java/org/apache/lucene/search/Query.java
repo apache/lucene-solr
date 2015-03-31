@@ -97,7 +97,7 @@ public abstract class Query implements Cloneable {
    */
   public void extractTerms(Set<Term> terms) {
     // needs to be implemented by query subclasses
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(getClass().getName());
   }
 
   /** Returns a clone of this query. */
@@ -112,10 +112,7 @@ public abstract class Query implements Cloneable {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + Float.floatToIntBits(boost);
-    return result;
+    return Float.floatToIntBits(getBoost()) ^ getClass().hashCode();
   }
 
   @Override

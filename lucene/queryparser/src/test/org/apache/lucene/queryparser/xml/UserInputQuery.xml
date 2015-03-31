@@ -15,12 +15,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<FilteredQuery>
-	<Query>
+<BooleanQuery>
+	<Clause occurs="must">
 		<UserQuery>"Bank of England"</UserQuery>
-	</Query>
-	<Filter>
-		<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
-	</Filter>
-	
-</FilteredQuery>
+	</Clause>
+	<Clause occurs="filter">
+		<RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+	</Clause>
+</BooleanQuery>

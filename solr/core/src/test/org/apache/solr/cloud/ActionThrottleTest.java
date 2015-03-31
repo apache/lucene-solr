@@ -17,9 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ActionThrottle.NanoTimeSource;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,21 @@ import org.slf4j.LoggerFactory;
 public class ActionThrottleTest extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(ActionThrottleTest.class);
   
+  static class TestNanoTimeSource implements NanoTimeSource {
+    
+    private List<Long> returnValues;
+    private int index = 0;
+
+    public TestNanoTimeSource(List<Long> returnValues) {
+      this.returnValues = returnValues;
+    }
+
+    @Override
+    public long getTime() {
+      return returnValues.get(index++);
+    }
+    
+  }
   
   @Test
   public void testBasics() throws Exception {
@@ -58,6 +76,22 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
     elaspsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
     
     assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
+  }
+  
+  @Test
+  public void testAZeroNanoTimeReturnInWait() throws Exception {
+
+    ActionThrottle at = new ActionThrottle("test", 1000, new TestNanoTimeSource(Arrays.asList(new Long[]{0L, 10L})));
+    long start = System.nanoTime();
+    
+    at.markAttemptingAction();
+    
+    at.minimumWaitBetweenActions();
+    
+    long elaspsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+    
+    assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
+
   }
 
 }

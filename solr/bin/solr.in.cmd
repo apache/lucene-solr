@@ -40,6 +40,7 @@ set GC_TUNE=-XX:NewRatio=3 ^
  -XX:+UseCMSInitiatingOccupancyOnly ^
  -XX:CMSInitiatingOccupancyFraction=50 ^
  -XX:CMSMaxAbortablePrecleanTime=6000 ^
+ -XX:+PerfDisableSharedMem ^
  -XX:+CMSParallelRemarkEnabled ^
  -XX:+ParallelRefProcEnabled
 

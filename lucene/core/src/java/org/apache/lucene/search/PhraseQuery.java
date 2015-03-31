@@ -429,7 +429,7 @@ public class PhraseQuery extends Query {
     if (!(o instanceof PhraseQuery))
       return false;
     PhraseQuery other = (PhraseQuery)o;
-    return (this.getBoost() == other.getBoost())
+    return super.equals(o)
       && (this.slop == other.slop)
       &&  this.terms.equals(other.terms)
       && this.positions.equals(other.positions);
@@ -438,7 +438,7 @@ public class PhraseQuery extends Query {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost())
+    return super.hashCode()
       ^ slop
       ^ terms.hashCode()
       ^ positions.hashCode();

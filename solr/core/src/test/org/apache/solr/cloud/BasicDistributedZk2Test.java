@@ -18,12 +18,14 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.google.common.collect.Lists;
+
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -417,9 +419,10 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
     }
-    ArrayList<Path> files = Lists.newArrayList(Files.newDirectoryStream(location, "snapshot*").iterator());
-
-    assertEquals(Arrays.asList(files).toString(), 1, files.size());
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(location, "snapshot*")) {
+      ArrayList<Path> files = Lists.newArrayList(stream.iterator());
+      assertEquals(Arrays.asList(files).toString(), 1, files.size());
+    }
 
   }
   

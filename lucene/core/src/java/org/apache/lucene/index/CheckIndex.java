@@ -31,7 +31,12 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -156,7 +161,7 @@ public class CheckIndex implements Closeable {
       public Codec codec;
 
       /** Document count (does not take deletions into account). */
-      public int docCount;
+      public int maxDoc;
 
       /** True if segment is compound file format. */
       public boolean compound;
@@ -174,7 +179,7 @@ public class CheckIndex implements Closeable {
       /** Current deletions generation. */
       public long deletionsGen;
 
-      /** True if we were able to open an LeafReader on this
+      /** True if we were able to open a CodecReader on this
        *  segment. */
       public boolean openReaderPassed;
 
@@ -406,6 +411,20 @@ public class CheckIndex implements Closeable {
   }
 
   private boolean verbose;
+  
+  /** See {@link #getChecksumsOnly}. */
+  public boolean getChecksumsOnly() {
+    return checksumsOnly;
+  }
+  
+  /** 
+   * If true, only validate physical integrity for all files. 
+   * Note that the returned nested status objects (e.g. storedFieldStatus) will be null.  */
+  public void setChecksumsOnly(boolean v) {
+    checksumsOnly = v;
+  }
+  
+  private boolean checksumsOnly;
 
   /** Set infoStream where messages should go.  If null, no
    *  messages are printed.  If verbose is true then more
@@ -586,16 +605,16 @@ public class CheckIndex implements Closeable {
       }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
+      msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " maxDoc=" + info.info.maxDoc());
       segInfoStat.name = info.info.name;
-      segInfoStat.docCount = info.info.getDocCount();
+      segInfoStat.maxDoc = info.info.maxDoc();
       
       final Version version = info.info.getVersion();
-      if (info.info.getDocCount() <= 0) {
-        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
+      if (info.info.maxDoc() <= 0) {
+        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.maxDoc());
       }
 
-      int toLoseDocCount = info.info.getDocCount();
+      int toLoseDocCount = info.info.maxDoc();
 
       SegmentReader reader = null;
 
@@ -620,8 +639,7 @@ public class CheckIndex implements Closeable {
         if (!info.hasDeletions()) {
           msg(infoStream, "    no deletions");
           segInfoStat.hasDeletions = false;
-        }
-        else{
+        } else {
           msg(infoStream, "    has deletions [delGen=" + info.getDelGen() + "]");
           segInfoStat.hasDeletions = true;
           segInfoStat.deletionsGen = info.getDelGen();
@@ -641,65 +659,68 @@ public class CheckIndex implements Closeable {
         reader.checkIntegrity();
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startIntegrityNS)));
 
-        if (reader.maxDoc() != info.info.getDocCount()) {
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
+        if (reader.maxDoc() != info.info.maxDoc()) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfo.maxDoc " + info.info.maxDoc());
         }
         
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         
         if (reader.hasDeletions()) {
-          if (reader.numDocs() != info.info.getDocCount() - info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + (info.info.getDocCount() - info.getDelCount()) + " vs reader=" + reader.numDocs());
+          if (reader.numDocs() != info.info.maxDoc() - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.info.maxDoc() - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.info.getDocCount() - reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount() - reader.numDocs()));
+          if ((info.info.maxDoc() - reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.maxDoc() - reader.numDocs()));
           }
-          if (info.info.getDocCount() - reader.numDocs() != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
+          if (info.info.maxDoc() - reader.numDocs() != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.maxDoc() - reader.numDocs()));
           }
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.maxDoc() - reader.numDocs()));
           }
         }
         
-        // Test Livedocs
-        segInfoStat.liveDocStatus = testLiveDocs(reader, infoStream, failFast);
+        if (checksumsOnly == false) {
+          // Test Livedocs
+          segInfoStat.liveDocStatus = testLiveDocs(reader, infoStream, failFast);
 
-        // Test Fieldinfos
-        segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
+          // Test Fieldinfos
+          segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
         
-        // Test Field Norms
-        segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
+          // Test Field Norms
+          segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
-        // Test the Term Index
-        segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
+          // Test the Term Index
+          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
 
-        // Test Stored Fields
-        segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
+          // Test Stored Fields
+          segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
 
-        // Test Term Vectors
-        segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
+          // Test Term Vectors
+          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
 
-        segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
+          // Test Docvalues
+          segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
 
-        // Rethrow the first exception we encountered
-        //  This will cause stats for failed segments to be incremented properly
-        if (segInfoStat.liveDocStatus.error != null) {
-          throw new RuntimeException("Live docs test failed");
-        } else if (segInfoStat.fieldInfoStatus.error != null) {
-          throw new RuntimeException("Field Info test failed");
-        } else if (segInfoStat.fieldNormStatus.error != null) {
-          throw new RuntimeException("Field Norm test failed");
-        } else if (segInfoStat.termIndexStatus.error != null) {
-          throw new RuntimeException("Term Index test failed");
-        } else if (segInfoStat.storedFieldStatus.error != null) {
-          throw new RuntimeException("Stored Field test failed");
-        } else if (segInfoStat.termVectorStatus.error != null) {
-          throw new RuntimeException("Term Vector test failed");
-        }  else if (segInfoStat.docValuesStatus.error != null) {
-          throw new RuntimeException("DocValues test failed");
+          // Rethrow the first exception we encountered
+          //  This will cause stats for failed segments to be incremented properly
+          if (segInfoStat.liveDocStatus.error != null) {
+            throw new RuntimeException("Live docs test failed");
+          } else if (segInfoStat.fieldInfoStatus.error != null) {
+            throw new RuntimeException("Field Info test failed");
+          } else if (segInfoStat.fieldNormStatus.error != null) {
+            throw new RuntimeException("Field Norm test failed");
+          } else if (segInfoStat.termIndexStatus.error != null) {
+            throw new RuntimeException("Term Index test failed");
+          } else if (segInfoStat.storedFieldStatus.error != null) {
+            throw new RuntimeException("Stored Field test failed");
+          } else if (segInfoStat.termVectorStatus.error != null) {
+            throw new RuntimeException("Term Vector test failed");
+          }  else if (segInfoStat.docValuesStatus.error != null) {
+            throw new RuntimeException("DocValues test failed");
+          }
         }
 
         msg(infoStream, "");
@@ -756,7 +777,7 @@ public class CheckIndex implements Closeable {
    * Test live docs.
    * @lucene.experimental
    */
-  public static Status.LiveDocStatus testLiveDocs(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.LiveDocStatus testLiveDocs(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.LiveDocStatus status = new Status.LiveDocStatus();
     
@@ -813,7 +834,7 @@ public class CheckIndex implements Closeable {
    * Test field infos.
    * @lucene.experimental
    */
-  public static Status.FieldInfoStatus testFieldInfos(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.FieldInfoStatus testFieldInfos(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.FieldInfoStatus status = new Status.FieldInfoStatus();
     
@@ -846,7 +867,7 @@ public class CheckIndex implements Closeable {
    * Test field norms.
    * @lucene.experimental
    */
-  public static Status.FieldNormStatus testFieldNorms(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.FieldNormStatus testFieldNorms(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
@@ -855,14 +876,14 @@ public class CheckIndex implements Closeable {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
+      NormsProducer normsReader = reader.getNormsReader();
+      if (normsReader != null) {
+        normsReader = normsReader.getMergeInstance();
+      }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          checkNorms(info, reader, infoStream);
+          checkNumericDocValues(info.name, reader.maxDoc(), normsReader.getNorms(info), new Bits.MatchAllBits(reader.maxDoc()));
           ++status.totFields;
-        } else {
-          if (reader.getNormValues(info.name) != null) {
-            throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
-          }
         }
       }
 
@@ -898,7 +919,6 @@ public class CheckIndex implements Closeable {
     int computedFieldCount = 0;
     
     PostingsEnum docs = null;
-    PostingsEnum docsAndFreqs = null;
     PostingsEnum postings = null;
     
     String lastField = null;
@@ -1176,20 +1196,20 @@ public class CheckIndex implements Closeable {
         // Re-count if there are deleted docs:
         if (liveDocs != null) {
           if (hasFreqs) {
-            final PostingsEnum docsNoDel = termsEnum.postings(null, docsAndFreqs);
+            docs = termsEnum.postings(null, docs);
             docCount = 0;
             totalTermFreq = 0;
-            while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(docsNoDel.docID());
+            while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              visitedDocs.set(docs.docID());
               docCount++;
-              totalTermFreq += docsNoDel.freq();
+              totalTermFreq += docs.freq();
             }
           } else {
-            final PostingsEnum docsNoDel = termsEnum.postings(null, docs, PostingsEnum.NONE);
+            docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
             docCount = 0;
             totalTermFreq = -1;
-            while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(docsNoDel.docID());
+            while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              visitedDocs.set(docs.docID());
               docCount++;
             }
           }
@@ -1461,7 +1481,7 @@ public class CheckIndex implements Closeable {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(LeafReader reader, PrintStream infoStream) throws IOException {
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream) throws IOException {
     return testPostings(reader, infoStream, false, false);
   }
   
@@ -1469,7 +1489,7 @@ public class CheckIndex implements Closeable {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(LeafReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -1483,7 +1503,7 @@ public class CheckIndex implements Closeable {
         infoStream.print("    test: terms, freq, prox...");
       }
 
-      final Fields fields = reader.fields();
+      final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
       status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true, false, infoStream, verbose);
       if (liveDocs != null) {
@@ -1511,7 +1531,7 @@ public class CheckIndex implements Closeable {
    * Test stored fields.
    * @lucene.experimental
    */
-  public static Status.StoredFieldStatus testStoredFields(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.StoredFieldStatus testStoredFields(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
@@ -1522,10 +1542,13 @@ public class CheckIndex implements Closeable {
 
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
+      StoredFieldsReader storedFields = reader.getFieldsReader().getMergeInstance();
       for (int j = 0; j < reader.maxDoc(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
-        StoredDocument doc = reader.document(j);
+        DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+        storedFields.visitDocument(j, visitor);
+        StoredDocument doc = visitor.getDocument();
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();
@@ -1559,7 +1582,7 @@ public class CheckIndex implements Closeable {
    * Test docvalues.
    * @lucene.experimental
    */
-  public static Status.DocValuesStatus testDocValues(LeafReader reader,
+  public static Status.DocValuesStatus testDocValues(CodecReader reader,
                                                      PrintStream infoStream,
                                                      boolean failFast) throws IOException {
     long startNS = System.nanoTime();
@@ -1568,18 +1591,14 @@ public class CheckIndex implements Closeable {
       if (infoStream != null) {
         infoStream.print("    test: docvalues...........");
       }
+      DocValuesProducer dvReader = reader.getDocValuesReader();
+      if (dvReader != null) {
+        dvReader = dvReader.getMergeInstance();
+      }
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.getDocValuesType() != DocValuesType.NONE) {
           status.totalValueFields++;
-          checkDocValues(fieldInfo, reader, infoStream, status);
-        } else {
-          if (reader.getBinaryDocValues(fieldInfo.name) != null ||
-              reader.getNumericDocValues(fieldInfo.name) != null ||
-              reader.getSortedDocValues(fieldInfo.name) != null || 
-              reader.getSortedSetDocValues(fieldInfo.name) != null || 
-              reader.getDocsWithField(fieldInfo.name) != null) {
-            throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
-          }
+          checkDocValues(fieldInfo, dvReader, reader.maxDoc(), infoStream, status);
         }
       }
 
@@ -1605,8 +1624,8 @@ public class CheckIndex implements Closeable {
     return status;
   }
   
-  private static void checkBinaryDocValues(String fieldName, LeafReader reader, BinaryDocValues dv, Bits docsWithField) {
-    for (int i = 0; i < reader.maxDoc(); i++) {
+  private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues dv, Bits docsWithField) {
+    for (int i = 0; i < maxDoc; i++) {
       final BytesRef term = dv.get(i);
       assert term.isValid();
       if (docsWithField.get(i) == false && term.length > 0) {
@@ -1615,12 +1634,12 @@ public class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedDocValues(String fieldName, LeafReader reader, SortedDocValues dv, Bits docsWithField) {
-    checkBinaryDocValues(fieldName, reader, dv, docsWithField);
+  private static void checkSortedDocValues(String fieldName, int maxDoc, SortedDocValues dv, Bits docsWithField) {
+    checkBinaryDocValues(fieldName, maxDoc, dv, docsWithField);
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
-    for (int i = 0; i < reader.maxDoc(); i++) {
+    for (int i = 0; i < maxDoc; i++) {
       int ord = dv.getOrd(i);
       if (ord == -1) {
         if (docsWithField.get(i)) {
@@ -1655,11 +1674,11 @@ public class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedSetDocValues(String fieldName, LeafReader reader, SortedSetDocValues dv, Bits docsWithField) {
+  private static void checkSortedSetDocValues(String fieldName, int maxDoc, SortedSetDocValues dv, Bits docsWithField) {
     final long maxOrd = dv.getValueCount()-1;
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
-    for (int i = 0; i < reader.maxDoc(); i++) {
+    for (int i = 0; i < maxDoc; i++) {
       dv.setDocument(i);
       long lastOrd = -1;
       long ord;
@@ -1725,8 +1744,8 @@ public class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedNumericDocValues(String fieldName, LeafReader reader, SortedNumericDocValues ndv, Bits docsWithField) {
-    for (int i = 0; i < reader.maxDoc(); i++) {
+  private static void checkSortedNumericDocValues(String fieldName, int maxDoc, SortedNumericDocValues ndv, Bits docsWithField) {
+    for (int i = 0; i < maxDoc; i++) {
       ndv.setDocument(i);
       int count = ndv.count();
       if (docsWithField.get(i)) {
@@ -1749,8 +1768,8 @@ public class CheckIndex implements Closeable {
     }
   }
 
-  private static void checkNumericDocValues(String fieldName, LeafReader reader, NumericDocValues ndv, Bits docsWithField) {
-    for (int i = 0; i < reader.maxDoc(); i++) {
+  private static void checkNumericDocValues(String fieldName, int maxDoc, NumericDocValues ndv, Bits docsWithField) {
+    for (int i = 0; i < maxDoc; i++) {
       long value = ndv.get(i);
       if (docsWithField.get(i) == false && value != 0) {
         throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has value=" + value + " for doc: " + i);
@@ -1758,72 +1777,36 @@ public class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkDocValues(FieldInfo fi, LeafReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
-    Bits docsWithField = reader.getDocsWithField(fi.name);
+  private static void checkDocValues(FieldInfo fi, DocValuesProducer dvReader, int maxDoc, PrintStream infoStream, DocValuesStatus status) throws Exception {
+    Bits docsWithField = dvReader.getDocsWithField(fi);
     if (docsWithField == null) {
       throw new RuntimeException(fi.name + " docsWithField does not exist");
-    } else if (docsWithField.length() != reader.maxDoc()) {
-      throw new RuntimeException(fi.name + " docsWithField has incorrect length: " + docsWithField.length() + ",expected: " + reader.maxDoc());
+    } else if (docsWithField.length() != maxDoc) {
+      throw new RuntimeException(fi.name + " docsWithField has incorrect length: " + docsWithField.length() + ",expected: " + maxDoc);
     }
     switch(fi.getDocValuesType()) {
       case SORTED:
         status.totalSortedFields++;
-        checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi), docsWithField);
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
-        checkSortedNumericDocValues(fi.name, reader, reader.getSortedNumericDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi), docsWithField);
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
-        checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi), docsWithField);
         break;
       case BINARY:
         status.totalBinaryFields++;
-        checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name), docsWithField);
-        if (reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi), docsWithField);
         break;
       case NUMERIC:
         status.totalNumericFields++;
-        checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkNumericDocValues(fi.name, maxDoc, dvReader.getNumeric(fi), docsWithField);
         break;
       default:
         throw new AssertionError();
-    }
-  }
-  
-  private static void checkNorms(FieldInfo fi, LeafReader reader, PrintStream infoStream) throws IOException {
-    if (fi.hasNorms()) {
-      checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name), new Bits.MatchAllBits(reader.maxDoc()));
     }
   }
 
@@ -1831,7 +1814,7 @@ public class CheckIndex implements Closeable {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(LeafReader reader, PrintStream infoStream) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream) throws IOException {
     return testTermVectors(reader, infoStream, false, false, false);
   }
 
@@ -1839,7 +1822,7 @@ public class CheckIndex implements Closeable {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(LeafReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
@@ -1862,139 +1845,143 @@ public class CheckIndex implements Closeable {
       final Fields postingsFields;
       // TODO: testTermsIndex
       if (crossCheckTermVectors) {
-        postingsFields = reader.fields();
+        postingsFields = reader.getPostingsReader().getMergeInstance();
       } else {
         postingsFields = null;
       }
 
       TermsEnum termsEnum = null;
       TermsEnum postingsTermsEnum = null;
+      
+      TermVectorsReader vectorsReader = reader.getTermVectorsReader();
 
-      for (int j = 0; j < reader.maxDoc(); ++j) {
-        // Intentionally pull/visit (but don't count in
-        // stats) deleted documents to make sure they too
-        // are not corrupt:
-        Fields tfv = reader.getTermVectors(j);
-
-        // TODO: can we make a IS(FIR) that searches just
-        // this term vector... to pass for searcher?
-
-        if (tfv != null) {
-          // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
-
-          if (j == 0) {
-            // Also test with the 1 doc deleted; we only do this for first doc because this really is just looking for a [slightly] buggy
-            // TermVectors impl that fails to respect the incoming live docs:
-            checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
-          }
-
-          // Only agg stats if the doc is live:
-          final boolean doStats = liveDocs == null || liveDocs.get(j);
-
-          if (doStats) {
-            status.docCount++;
-          }
-
-          for(String field : tfv) {
+      if (vectorsReader != null) {
+        vectorsReader = vectorsReader.getMergeInstance();
+        for (int j = 0; j < reader.maxDoc(); ++j) {
+          // Intentionally pull/visit (but don't count in
+          // stats) deleted documents to make sure they too
+          // are not corrupt:
+          Fields tfv = vectorsReader.get(j);
+          
+          // TODO: can we make a IS(FIR) that searches just
+          // this term vector... to pass for searcher?
+          
+          if (tfv != null) {
+            // First run with no deletions:
+            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
+            
+            if (j == 0) {
+              // Also test with the 1 doc deleted; we only do this for first doc because this really is just looking for a [slightly] buggy
+              // TermVectors impl that fails to respect the incoming live docs:
+              checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
+            }
+            
+            // Only agg stats if the doc is live:
+            final boolean doStats = liveDocs == null || liveDocs.get(j);
+            
             if (doStats) {
-              status.totVectors++;
+              status.docCount++;
             }
-
-            // Make sure FieldInfo thinks this field is vector'd:
-            final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-            if (!fieldInfo.hasVectors()) {
-              throw new RuntimeException("docID=" + j + " has term vectors for field=" + field + " but FieldInfo has storeTermVector=false");
-            }
-
-            if (crossCheckTermVectors) {
-              Terms terms = tfv.terms(field);
-              termsEnum = terms.iterator(termsEnum);
-              final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-              final boolean postingsHasPayload = fieldInfo.hasPayloads();
-              final boolean vectorsHasPayload = terms.hasPayloads();
-
-              Terms postingsTerms = postingsFields.terms(field);
-              if (postingsTerms == null) {
-                throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
+            
+            for(String field : tfv) {
+              if (doStats) {
+                status.totVectors++;
               }
-              postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
               
-              final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
-              BytesRef term = null;
-              while ((term = termsEnum.next()) != null) {
-
-                if (hasProx) {
-                  postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
-                  assert postings != null;
-                  docs = null;
-                } else {
-                  docs = termsEnum.postings(null, docs);
-                  assert docs != null;
-                  postings = null;
+              // Make sure FieldInfo thinks this field is vector'd:
+              final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+              if (!fieldInfo.hasVectors()) {
+                throw new RuntimeException("docID=" + j + " has term vectors for field=" + field + " but FieldInfo has storeTermVector=false");
+              }
+              
+              if (crossCheckTermVectors) {
+                Terms terms = tfv.terms(field);
+                termsEnum = terms.iterator(termsEnum);
+                final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+                final boolean postingsHasPayload = fieldInfo.hasPayloads();
+                final boolean vectorsHasPayload = terms.hasPayloads();
+                
+                Terms postingsTerms = postingsFields.terms(field);
+                if (postingsTerms == null) {
+                  throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
                 }
-
-                final PostingsEnum docs2;
-                if (hasProx) {
-                  assert postings != null;
-                  docs2 = postings;
-                } else {
-                  assert docs != null;
-                  docs2 = docs;
-                }
-
-                final PostingsEnum postingsDocs2;
-                if (!postingsTermsEnum.seekExact(term)) {
-                  throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                }
-                postingsPostings = postingsTermsEnum.postings(null, postingsPostings, PostingsEnum.ALL);
-                if (postingsPostings == null) {
-                  // Term vectors were indexed w/ pos but postings were not
-                  postingsDocs = postingsTermsEnum.postings(null, postingsDocs);
-                  if (postingsDocs == null) {
+                postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
+                
+                final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
+                BytesRef term = null;
+                while ((term = termsEnum.next()) != null) {
+                  
+                  if (hasProx) {
+                    postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
+                    assert postings != null;
+                    docs = null;
+                  } else {
+                    docs = termsEnum.postings(null, docs);
+                    assert docs != null;
+                    postings = null;
+                  }
+                  
+                  final PostingsEnum docs2;
+                  if (hasProx) {
+                    assert postings != null;
+                    docs2 = postings;
+                  } else {
+                    assert docs != null;
+                    docs2 = docs;
+                  }
+                  
+                  final PostingsEnum postingsDocs2;
+                  if (!postingsTermsEnum.seekExact(term)) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                   }
-                }
-
-                if (postingsPostings != null) {
-                  postingsDocs2 = postingsPostings;
-                } else {
-                  postingsDocs2 = postingsDocs;
-                }
-                  
-                final int advanceDoc = postingsDocs2.advance(j);
-                if (advanceDoc != j) {
-                  throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
-                }
-
-                final int doc = docs2.nextDoc();
-                  
-                if (doc != 0) {
-                  throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
-                }
-
-                if (postingsHasFreq) {
-                  final int tf = docs2.freq();
-                  if (postingsHasFreq && postingsDocs2.freq() != tf) {
-                    throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
+                  postingsPostings = postingsTermsEnum.postings(null, postingsPostings, PostingsEnum.ALL);
+                  if (postingsPostings == null) {
+                    // Term vectors were indexed w/ pos but postings were not
+                    postingsDocs = postingsTermsEnum.postings(null, postingsDocs);
+                    if (postingsDocs == null) {
+                      throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
+                    }
                   }
-                
-                  if (hasProx) {
-                    for (int i = 0; i < tf; i++) {
-                      int pos = postings.nextPosition();
-                      if (postingsPostings != null) {
-                        int postingsPos = postingsPostings.nextPosition();
-                        if (terms.hasPositions() && pos != postingsPos) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
+                  
+                  if (postingsPostings != null) {
+                    postingsDocs2 = postingsPostings;
+                  } else {
+                    postingsDocs2 = postingsDocs;
+                  }
+                  
+                  final int advanceDoc = postingsDocs2.advance(j);
+                  if (advanceDoc != j) {
+                    throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
+                  }
+                  
+                  final int doc = docs2.nextDoc();
+                  
+                  if (doc != 0) {
+                    throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
+                  }
+                  
+                  if (postingsHasFreq) {
+                    final int tf = docs2.freq();
+                    if (postingsHasFreq && postingsDocs2.freq() != tf) {
+                      throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
+                    }
+                    
+                    if (hasProx) {
+                      for (int i = 0; i < tf; i++) {
+                        int pos = postings.nextPosition();
+                        if (postingsPostings != null) {
+                          int postingsPos = postingsPostings.nextPosition();
+                          if (terms.hasPositions() && pos != postingsPos) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
+                          }
                         }
-                      }
-
-                      // Call the methods to at least make
-                      // sure they don't throw exc:
-                      final int startOffset = postings.startOffset();
-                      final int endOffset = postings.endOffset();
-                      // TODO: these are too anal...?
-                      /*
+                        
+                        // Call the methods to at least make
+                        // sure they don't throw exc:
+                        final int startOffset = postings.startOffset();
+                        final int endOffset = postings.endOffset();
+                        // TODO: these are too anal...?
+                        /*
                         if (endOffset < startOffset) {
                         throw new RuntimeException("vector startOffset=" + startOffset + " is > endOffset=" + endOffset);
                         }
@@ -2002,44 +1989,45 @@ public class CheckIndex implements Closeable {
                         throw new RuntimeException("vector startOffset=" + startOffset + " is < prior startOffset=" + lastStartOffset);
                         }
                         lastStartOffset = startOffset;
-                      */
-
-                      if (postingsPostings != null) {
-                        final int postingsStartOffset = postingsPostings.startOffset();
-
-                        final int postingsEndOffset = postingsPostings.endOffset();
-                        if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
-                        }
-                        if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
-                        }
-                      }
-                      
-                      BytesRef payload = postings.getPayload();
-           
-                      if (payload != null) {
-                        assert vectorsHasPayload;
-                      }
-                      
-                      if (postingsHasPayload && vectorsHasPayload) {
-                        assert postingsPostings != null;
+                         */
                         
-                        if (payload == null) {
-                          // we have payloads, but not at this position. 
-                          // postings has payloads too, it should not have one at this position
-                          if (postingsPostings.getPayload() != null) {
-                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsPostings.getPayload());
+                        if (postingsPostings != null) {
+                          final int postingsStartOffset = postingsPostings.startOffset();
+                          
+                          final int postingsEndOffset = postingsPostings.endOffset();
+                          if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
                           }
-                        } else {
-                          // we have payloads, and one at this position
-                          // postings should also have one at this position, with the same bytes.
-                          if (postingsPostings.getPayload() == null) {
-                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but postings does not.");
+                          if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
                           }
-                          BytesRef postingsPayload = postingsPostings.getPayload();
-                          if (!payload.equals(postingsPayload)) {
-                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but differs from postings payload=" + postingsPayload);
+                        }
+                        
+                        BytesRef payload = postings.getPayload();
+                        
+                        if (payload != null) {
+                          assert vectorsHasPayload;
+                        }
+                        
+                        if (postingsHasPayload && vectorsHasPayload) {
+                          assert postingsPostings != null;
+                          
+                          if (payload == null) {
+                            // we have payloads, but not at this position. 
+                            // postings has payloads too, it should not have one at this position
+                            if (postingsPostings.getPayload() != null) {
+                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsPostings.getPayload());
+                            }
+                          } else {
+                            // we have payloads, and one at this position
+                            // postings should also have one at this position, with the same bytes.
+                            if (postingsPostings.getPayload() == null) {
+                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but postings does not.");
+                            }
+                            BytesRef postingsPayload = postingsPostings.getPayload();
+                            if (!payload.equals(postingsPayload)) {
+                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but differs from postings payload=" + postingsPayload);
+                            }
                           }
                         }
                       }
@@ -2142,13 +2130,16 @@ public class CheckIndex implements Closeable {
     boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
+    boolean doChecksumsOnly = false;
     List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
     int i = 0;
     while(i < args.length) {
       String arg = args[i];
-      if ("-exorcise".equals(arg)) {
+      if ("-fast".equals(arg)) {
+        doChecksumsOnly = true;
+      } else if ("-exorcise".equals(arg)) {
         doExorcise = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
@@ -2183,6 +2174,7 @@ public class CheckIndex implements Closeable {
       System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -fast: just verify file checksums, omitting logical integrity checks\n" + 
                          "  -crossCheckTermVectors: verifies that term vectors match postings; THIS IS VERY SLOW!\n" +
                          "  -codec X: when exorcising, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
@@ -2217,6 +2209,11 @@ public class CheckIndex implements Closeable {
       System.out.println("ERROR: cannot specify both -exorcise and -segment");
       return 1;
     }
+    
+    if (doChecksumsOnly && doCrossCheckTermVectors) {
+      System.out.println("ERROR: cannot specify both -fast and -crossCheckTermVectors");
+      return 1;
+    }
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory directory = null;
@@ -2236,6 +2233,7 @@ public class CheckIndex implements Closeable {
     try (Directory dir = directory;
          CheckIndex checker = new CheckIndex(dir)) {
       checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
+      checker.setChecksumsOnly(doChecksumsOnly);
       checker.setInfoStream(System.out, verbose);
       
       Status result = checker.checkIndex(onlySegments);

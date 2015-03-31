@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.de;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -31,14 +30,26 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Tests {@link GermanNormalizationFilter}
  */
 public class TestGermanNormalizationFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String field) {
-      final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      final TokenStream stream = new GermanNormalizationFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, stream);
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String field) {
+        final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        final TokenStream stream = new GermanNormalizationFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /**
    * Tests that a/o/u + e is equivalent to the umlaut form
@@ -76,5 +87,6 @@ public class TestGermanNormalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

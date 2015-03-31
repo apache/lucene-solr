@@ -1441,7 +1441,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
   @Test
-  public void testQueryWithParams() throws SolrServerException {
+  public void testQueryWithParams() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     SolrQuery q = new SolrQuery("query");
     q.setParam("debug", true);

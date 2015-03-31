@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -45,6 +46,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -308,8 +310,14 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public void startJetty() throws Exception {
-      jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null, true, null, sslConfig);
-      jetty.setDataDir(getDataDir());
+
+      Properties props = new Properties();
+      props.setProperty("solrconfig", "bad_solrconfig.xml");
+      props.setProperty("solr.data.dir", getDataDir());
+
+      JettyConfig jettyConfig = JettyConfig.builder(buildJettyConfig("/solr")).setPort(port).build();
+
+      jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();
       int newPort = jetty.getLocalPort();
       if (port != 0 && newPort != port) {

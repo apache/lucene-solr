@@ -128,8 +128,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     if (offset < 0 || length < 0 || offset + length > this.length) {
       throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
     }
-    final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
-    return new RAMInputStream(newResourceDescription, file, offset + length) {
+    return new RAMInputStream(getFullSliceDescription(sliceDescription), file, offset + length) {
       {
         seek(0L);
       }

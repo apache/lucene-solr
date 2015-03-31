@@ -44,7 +44,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
+    createJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override

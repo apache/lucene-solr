@@ -340,7 +340,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0, null, null, true, null, sslConfig);
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), buildJettyConfig("/solr"));
     jetty.setDataDir(instance.getDataDir());
     jetty.start();
     return jetty;

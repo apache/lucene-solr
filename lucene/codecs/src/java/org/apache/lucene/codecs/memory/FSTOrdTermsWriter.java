@@ -166,7 +166,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
 
     this.postingsWriter = postingsWriter;
     this.fieldInfos = state.fieldInfos;
-    this.maxDoc = state.segmentInfo.getDocCount();
+    this.maxDoc = state.segmentInfo.maxDoc();
 
     boolean success = false;
     try {

@@ -17,6 +17,8 @@
 
 package org.apache.solr.search;
 
+import java.io.Closeable;
+
 import org.apache.lucene.search.Filter;
 import org.apache.solr.common.SolrException;
 
@@ -30,7 +32,7 @@ import org.apache.solr.common.SolrException;
  *
  * @since solr 0.9
  */
-public interface DocSet /* extends Collection<Integer> */ {
+public interface DocSet extends Closeable /* extends Collection<Integer> */ {
   
   /**
    * Adds the specified document if it is not currently in the DocSet

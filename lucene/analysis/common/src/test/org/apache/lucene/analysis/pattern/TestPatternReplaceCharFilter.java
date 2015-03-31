@@ -324,6 +324,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
       /* ASCII only input?: */
       final boolean asciiOnly = true;
       checkRandomData(random, a, 250 * RANDOM_MULTIPLIER, maxInputLength, asciiOnly);
+      a.close();
     }
   }
  }

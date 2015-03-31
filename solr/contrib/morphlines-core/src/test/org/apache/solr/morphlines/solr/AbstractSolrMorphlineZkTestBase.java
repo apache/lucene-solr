@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Properties;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
   private static File solrHomeDirectory;
@@ -144,18 +145,22 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
       throws Exception {
 
     writeCoreProperties(solrHome.toPath(), DEFAULT_TEST_CORENAME);
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
-        context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
 
-    jetty.setShards(shardList);
-    
-    if (System.getProperty("collection") == null) {
-      System.setProperty("collection", "collection1");
-    }
-    
+    Properties props = new Properties();
+    if (solrConfigOverride != null)
+      props.setProperty("solrconfig", solrConfigOverride);
+    if (schemaOverride != null)
+      props.setProperty("schema", schemaOverride);
+    if (shardList != null)
+      props.setProperty("shards", shardList);
+
+    String collection = System.getProperty("collection");
+    if (collection == null)
+      collection = "collection1";
+    props.setProperty("collection", collection);
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), props, buildJettyConfig(context));
     jetty.start();
-    
-    System.clearProperty("collection");
     
     return jetty;
   }

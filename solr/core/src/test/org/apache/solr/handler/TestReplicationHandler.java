@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -172,18 +171,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return s.add(doc).getStatus();
   }
 
-  NamedList query(String query, SolrClient s) throws SolrServerException {
-    NamedList res = new SimpleOrderedMap();
+  NamedList query(String query, SolrClient s) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.add("q", query);
     params.add("sort","id desc");
 
     QueryResponse qres = s.query(params);
-
-    res = qres.getResponse();
-
-    return res;
+    return qres.getResponse();
   }
 
   /** will sleep up to 30 seconds, looking for expectedDocCount */
@@ -305,9 +300,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertNotNull("slave has slave section", 
                     details.get("slave"));
       // SOLR-2677: assert not false negatives
-      Object timesFailed = ((NamedList)details.get("slave")).get(SnapPuller.TIMES_FAILED);
-      assertEquals("slave has fetch error count",
-                   null, timesFailed);
+      Object timesFailed = ((NamedList)details.get("slave")).get(IndexFetcher.TIMES_FAILED);
+      // SOLR-7134: we can have a fail because some mock index files have no checksum, will
+      // always be downloaded, and may not be able to be moved into the existing index
+      assertTrue("slave has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
 
       if (3 != i) {
         // index & fetch
@@ -514,7 +510,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
-    //add a doc with new field and commit on master to trigger snappull from slave.
+    //add a doc with new field and commit on master to trigger index fetch from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
 
@@ -582,7 +578,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void doTestSnapPullWithMasterUrl() throws Exception {
+  public void doTestIndexFetchWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
@@ -609,7 +605,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
-    // snappull
+    // index fetch
     String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=fetchindex&masterUrl=";
     masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication";
     URL url = new URL(masterUrl);
@@ -624,7 +620,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
 
-    // snappull from the slave to the master
+    // index fetch from the slave to the master
     
     for (int i = nDocs; i < nDocs + 3; i++)
       index(slaveClient, "id", i, "name", "name = " + i);
@@ -766,7 +762,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             .get("response");
         assertEquals(totalDocs, masterQueryResult.getNumFound());
         
-        // snappull
+        // index fetch
         Date slaveCoreStart = watchCoreStartAt(slaveClient, 30*1000, null);
         pullFromMasterToSlave();
         if (confCoreReload) {
@@ -1055,7 +1051,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // tries to
       // replicate
       masterJetty.stop();
-      masterJetty.start(true);
+      masterJetty.start();
       
       // masterClient = createNewSolrClient(masterJetty.getLocalPort());
       
@@ -1220,7 +1216,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // record collection1's start time on slave
     final Date slaveStartTime = watchCoreStartAt(slaveClient, 30*1000, null);
 
-    //add a doc with new field and commit on master to trigger snappull from slave.
+    //add a doc with new field and commit on master to trigger index fetch from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
     masterClient.commit();
     rQuery(1, "newname:n2000", masterClient);  // sanity check

@@ -216,6 +216,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     
     int numRounds = RANDOM_MULTIPLIER * 10000;
     checkRandomData(random(), analyzer, numRounds);
+    analyzer.close();
   }
 
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
@@ -242,6 +243,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     
     String text = "gzw f quaxot";
     checkAnalysisConsistency(random(), analyzer, false, text);
+    analyzer.close();
   }
   
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
@@ -263,6 +265,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
       };
       int numRounds = 100;
       checkRandomData(random(), analyzer, numRounds);
+      analyzer.close();
     }
   }
   

@@ -40,7 +40,7 @@ public abstract class TimSorter extends Sorter {
 
   static final int MINRUN = 32;
   static final int THRESHOLD = 64;
-  static final int STACKSIZE = 40; // depends on MINRUN
+  static final int STACKSIZE = 49; // depends on MINRUN
   static final int MIN_GALLOP = 7;
 
   final int maxTempSlots;

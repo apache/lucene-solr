@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -80,5 +79,6 @@ public class TestSnowballVocab extends LuceneTestCase {
     
     assertVocabulary(a, getDataPath("TestSnowballVocabData.zip"), 
         dataDirectory + "/voc.txt", dataDirectory + "/output.txt");
+    a.close();
   }
 }

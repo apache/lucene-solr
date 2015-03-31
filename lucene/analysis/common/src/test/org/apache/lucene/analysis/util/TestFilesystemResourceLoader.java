@@ -31,7 +31,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   
   private void assertNotFound(ResourceLoader rl) throws Exception {
     try {
-      IOUtils.closeWhileHandlingException(rl.openResource("/this-directory-really-really-really-should-not-exist/foo/bar.txt"));
+      IOUtils.closeWhileHandlingException(rl.openResource("this-directory-really-really-really-should-not-exist/foo/bar.txt"));
       fail("The resource does not exist, should fail!");
     } catch (IOException ioe) {
       // pass

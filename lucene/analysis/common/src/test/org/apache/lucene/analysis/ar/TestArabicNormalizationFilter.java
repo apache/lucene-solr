@@ -104,6 +104,7 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

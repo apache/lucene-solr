@@ -102,6 +102,8 @@ public class ZkStateReader implements Closeable {
   protected volatile ClusterState clusterState;
 
   private static final long SOLRCLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("solrcloud.update.delay", "5000"));
+  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
+  private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = 4000;
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -268,13 +270,13 @@ public class ZkStateReader implements Closeable {
     return aliases;
   }
 
-  public Boolean checkValid(String coll, int version) {
+  public Integer compareStateVersions(String coll, int version) {
     DocCollection collection = clusterState.getCollectionOrNull(coll);
     if (collection == null) return null;
     if (collection.getZNodeVersion() < version) {
       log.debug("server older than client {}<{}", collection.getZNodeVersion(), version);
       DocCollection nu = getCollectionLive(this, coll);
-      if (nu == null) return null;
+      if (nu == null) return -1 ;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         updateWatchedCollection(nu);
         collection = nu;
@@ -282,12 +284,12 @@ public class ZkStateReader implements Closeable {
     }
     
     if (collection.getZNodeVersion() == version) {
-      return Boolean.TRUE;
+      return null;
     }
     
     log.debug("wrong version from client {}!={} ", version, collection.getZNodeVersion());
     
-    return Boolean.FALSE;
+    return collection.getZNodeVersion();
   }
   
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
@@ -295,12 +297,10 @@ public class ZkStateReader implements Closeable {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-      cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
-      cmdExecutor.ensureExists(ALIASES, zkClient);
-      
+
       log.info("Updating cluster state from ZooKeeper... ");
       
-      zkClient.exists(CLUSTER_STATE, new Watcher() {
+      Stat stat = zkClient.exists(CLUSTER_STATE, new Watcher() {
         
         @Override
         public void process(WatchedEvent event) {
@@ -339,6 +339,10 @@ public class ZkStateReader implements Closeable {
         }
         
       }, true);
+
+      if (stat == null)
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+            "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
     }
    
     
@@ -640,12 +644,22 @@ public class ZkStateReader implements Closeable {
         shard, timeout));
     return props.getCoreUrl();
   }
-  
+
+  public Replica getLeader(String collection, String shard) throws InterruptedException {
+    if (clusterState != null) {
+      Replica replica = clusterState.getLeader(collection, shard);
+      if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
+        return replica;
+      }
+    }
+    return null;
+  }
+
   /**
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
-    return getLeaderRetry(collection, shard, 4000);
+    return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }
 
   /**
@@ -653,14 +667,11 @@ public class ZkStateReader implements Closeable {
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (System.nanoTime() < timeoutAt && !closed) {
-      if (clusterState != null) {    
-        Replica replica = clusterState.getLeader(collection, shard);
-        if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
-          return replica;
-        }
-      }
-      Thread.sleep(50);
+    while (true) {
+      Replica leader = getLeader(collection, shard);
+      if (leader != null) return leader;
+      if (System.nanoTime() >= timeoutAt || closed) break;
+      Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
         + timeout + "ms " + ", collection: " + collection + " slice: " + shard);

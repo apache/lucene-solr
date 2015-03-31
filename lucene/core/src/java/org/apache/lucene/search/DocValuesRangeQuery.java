@@ -85,7 +85,7 @@ public final class DocValuesRangeQuery extends Query {
         && Objects.equals(upperVal, that.upperVal)
         && includeLower == that.includeLower
         && includeUpper == that.includeUpper
-        && getBoost() == that.getBoost();
+        && super.equals(obj);
   }
 
   @Override
@@ -123,45 +123,10 @@ public final class DocValuesRangeQuery extends Query {
     if (lowerVal == null && upperVal == null) {
       throw new IllegalStateException("Both min and max values cannot be null, call rewrite first");
     }
-    return new Weight(DocValuesRangeQuery.this) {
-
-      private float queryNorm;
-      private float queryWeight;
+    return new ConstantScoreWeight(DocValuesRangeQuery.this) {
 
       @Override
-      public float getValueForNormalization() throws IOException {
-        queryWeight = getBoost();
-        return queryWeight * queryWeight;
-      }
-
-      @Override
-      public void normalize(float norm, float topLevelBoost) {
-        queryNorm = norm * topLevelBoost;
-        queryWeight *= queryNorm;
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context, context.reader().getLiveDocs());
-        final boolean exists = (s != null && s.advance(doc) == doc);
-
-        final ComplexExplanation result = new ComplexExplanation();
-        if (exists) {
-          result.setDescription(DocValuesRangeQuery.this.toString() + ", product of:");
-          result.setValue(queryWeight);
-          result.setMatch(Boolean.TRUE);
-          result.addDetail(new Explanation(getBoost(), "boost"));
-          result.addDetail(new Explanation(queryNorm, "queryNorm"));
-        } else {
-          result.setDescription(DocValuesRangeQuery.this.toString() + " doesn't match id " + doc);
-          result.setValue(0);
-          result.setMatch(Boolean.FALSE);
-        }
-        return result;
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
 
         final Bits docsWithField = context.reader().getDocsWithField(field);
         if (docsWithField == null || docsWithField instanceof MatchNoBits) {
@@ -169,7 +134,7 @@ public final class DocValuesRangeQuery extends Query {
         }
 
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseDocIdSetIterator twoPhaseRange;
+        final TwoPhaseIterator twoPhaseRange;
         if (lowerVal instanceof Long || upperVal instanceof Long) {
 
           final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
@@ -240,30 +205,24 @@ public final class DocValuesRangeQuery extends Query {
           throw new AssertionError();
         }
 
-        return new RangeScorer(this, twoPhaseRange, queryWeight);
+        return new RangeScorer(this, twoPhaseRange, score);
       }
 
     };
   }
 
-  private static class TwoPhaseNumericRange extends TwoPhaseDocIdSetIterator {
+  private static class TwoPhaseNumericRange extends TwoPhaseIterator {
 
-    private final DocIdSetIterator approximation;
     private final SortedNumericDocValues values;
     private final long min, max;
     private final Bits acceptDocs;
 
     TwoPhaseNumericRange(SortedNumericDocValues values, long min, long max, DocIdSetIterator approximation, Bits acceptDocs) {
+      super(approximation);
       this.values = values;
       this.min = min;
       this.max = max;
-      this.approximation = approximation;
       this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public DocIdSetIterator approximation() {
-      return approximation;
     }
 
     @Override
@@ -284,24 +243,18 @@ public final class DocValuesRangeQuery extends Query {
 
   }
 
-  private static class TwoPhaseOrdRange extends TwoPhaseDocIdSetIterator {
+  private static class TwoPhaseOrdRange extends TwoPhaseIterator {
 
-    private final DocIdSetIterator approximation;
     private final SortedSetDocValues values;
     private final long minOrd, maxOrd;
     private final Bits acceptDocs;
 
     TwoPhaseOrdRange(SortedSetDocValues values, long minOrd, long maxOrd, DocIdSetIterator approximation, Bits acceptDocs) {
+      super(approximation);
       this.values = values;
       this.minOrd = minOrd;
       this.maxOrd = maxOrd;
-      this.approximation = approximation;
       this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public DocIdSetIterator approximation() {
-      return approximation;
     }
 
     @Override
@@ -322,19 +275,19 @@ public final class DocValuesRangeQuery extends Query {
 
   private static class RangeScorer extends Scorer {
 
-    private final TwoPhaseDocIdSetIterator twoPhaseRange;
+    private final TwoPhaseIterator twoPhaseRange;
     private final DocIdSetIterator disi;
     private final float score;
 
-    RangeScorer(Weight weight, TwoPhaseDocIdSetIterator twoPhaseRange, float score) {
+    RangeScorer(Weight weight, TwoPhaseIterator twoPhaseRange, float score) {
       super(weight);
       this.twoPhaseRange = twoPhaseRange;
-      this.disi = TwoPhaseDocIdSetIterator.asDocIdSetIterator(twoPhaseRange);
+      this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseRange);
       this.score = score;
     }
 
     @Override
-    public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator asTwoPhaseIterator() {
       return twoPhaseRange;
     }
 

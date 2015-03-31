@@ -63,9 +63,16 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(TikaEntityProcessor.class);
   private String format = "text";
   private boolean done = false;
+  private boolean extractEmbedded = false;
   private String parser;
   static final String AUTO_PARSER = "org.apache.tika.parser.AutoDetectParser";
   private String htmlMapper;
+
+  @Override
+  public void init(Context context) {
+    super.init(context);
+    done = false;
+  }
 
   @Override
   protected void firstInit(Context context) {
@@ -86,6 +93,10 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       wrapAndThrow (SEVERE, e,"Unable to load Tika Config");
     }
 
+    String extractEmbeddedString = context.getResolvedEntityAttribute("extractEmbedded");
+    if ("true".equals(extractEmbeddedString)) {
+      extractEmbedded = true;
+    }
     format = context.getResolvedEntityAttribute("format");
     if(format == null)
       format = "text";
@@ -102,7 +113,6 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     if(parser == null) {
       parser = AUTO_PARSER;
     }
-    done = false;
   }
 
   @Override
@@ -137,6 +147,9 @@ public class TikaEntityProcessor extends EntityProcessorBase {
         ParseContext context = new ParseContext();
         if ("identity".equals(htmlMapper)){
           context.set(HtmlMapper.class, IdentityHtmlMapper.INSTANCE);
+        }
+        if (extractEmbedded) {
+          context.set(Parser.class, tikaParser);
         }
         tikaParser.parse(is, contentHandler, metadata , context);
     } catch (Exception e) {

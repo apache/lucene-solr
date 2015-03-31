@@ -62,17 +62,11 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
-    return new TwoPhaseDocIdSetIterator() {
-
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
         return phraseFreq() > 0;
-      }
-
-      @Override
-      public DocIdSetIterator approximation() {
-        return conjunction;
       }
     };
   }

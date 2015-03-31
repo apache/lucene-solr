@@ -58,6 +58,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Override
   public void tearDown() throws Exception {
+    appAnalyzer.close();
     reader.close();
     super.tearDown();
   }
@@ -70,12 +71,14 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
     protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "boring");
     assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
+    protectedAnalyzer.close();
   }
 
   public void testDefaultStopwordsAllFields() throws Exception {
     protectedAnalyzer = new QueryAutoStopWordAnalyzer( appAnalyzer, reader);
     TokenStream protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "boring");
     assertTokenStreamContents(protectedTokenStream, new String[0]); // Default stop word filtering will remove boring
+    protectedAnalyzer.close();
   }
 
   public void testStopwordsAllFieldsMaxPercentDocs() throws Exception {
@@ -88,11 +91,13 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "vaguelyboring");
      // A filter on terms in > half of docs should not remove vaguelyBoring
     assertTokenStreamContents(protectedTokenStream, new String[]{"vaguelyboring"});
+    protectedAnalyzer.close();
 
     protectedAnalyzer = new QueryAutoStopWordAnalyzer( appAnalyzer, reader, 1f / 4f);
     protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "vaguelyboring");
      // A filter on terms in > quarter of docs should remove vaguelyBoring
     assertTokenStreamContents(protectedTokenStream, new String[0]);
+    protectedAnalyzer.close();
   }
 
   public void testStopwordsPerFieldMaxPercentDocs() throws Exception {
@@ -100,21 +105,25 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     TokenStream protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "boring");
     // A filter on one Field should not affect queries on another
     assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
+    protectedAnalyzer.close();
 
     protectedAnalyzer = new QueryAutoStopWordAnalyzer( appAnalyzer, reader, Arrays.asList("variedField", "repetitiveField"), 1f / 2f);
     protectedTokenStream = protectedAnalyzer.tokenStream("repetitiveField", "boring");
     // A filter on the right Field should affect queries on it
     assertTokenStreamContents(protectedTokenStream, new String[0]);
+    protectedAnalyzer.close();
   }
 
   public void testStopwordsPerFieldMaxDocFreq() throws Exception {
     protectedAnalyzer = new QueryAutoStopWordAnalyzer( appAnalyzer, reader, Arrays.asList("repetitiveField"), 10);
     int numStopWords = protectedAnalyzer.getStopWords("repetitiveField").length;
     assertTrue("Should have identified stop words", numStopWords > 0);
+    protectedAnalyzer.close();
 
     protectedAnalyzer = new QueryAutoStopWordAnalyzer( appAnalyzer, reader, Arrays.asList("repetitiveField", "variedField"), 10);
     int numNewStopWords = protectedAnalyzer.getStopWords("repetitiveField").length + protectedAnalyzer.getStopWords("variedField").length;
     assertTrue("Should have identified more stop words", numNewStopWords > numStopWords);
+    protectedAnalyzer.close();
   }
 
   public void testNoFieldNamePollution() throws Exception {
@@ -127,6 +136,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     protectedTokenStream = protectedAnalyzer.tokenStream("variedField", "boring");
     // Filter should not prevent stopwords in one field being used in another
     assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
+    protectedAnalyzer.close();
   }
   
   public void testTokenStream() throws Exception {
@@ -134,5 +144,6 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", "this boring");
     assertTokenStreamContents(ts, new String[] { "this" });
+    a.close();
   }
 }

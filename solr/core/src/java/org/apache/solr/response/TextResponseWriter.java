@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
+import org.apache.solr.client.solrj.io.TupleStream;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
@@ -186,18 +187,22 @@ public abstract class TextResponseWriter {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
+    } else if (val instanceof TupleStream) {
+      writeTupleStream((TupleStream) val);
     } else if (val instanceof Iterable) {
       writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {
       writeArray(name,(Object[])val);
     } else if (val instanceof Iterator) {
-      writeArray(name,(Iterator)val);
+      writeArray(name, (Iterator) val);
     } else if (val instanceof byte[]) {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof BytesRef) {
       BytesRef arr = (BytesRef)val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
+    } else if (val instanceof EnumFieldValue) {
+      writeStr(name, val.toString(), true);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -308,6 +313,26 @@ public abstract class TextResponseWriter {
       writeStr(name,s,false);
     }
   }
+
+  public void writeTupleStream(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    writeStartDocumentList("response", -1, -1, -1, null);
+    boolean isFirst = true;
+    while(true) {
+      Tuple tuple = tupleStream.read();
+      if(!isFirst) {
+        writer.write(",");
+      }
+      writeMap(null, tuple.fields, false, true);
+      isFirst = false;
+      if(tuple.EOF) {
+        break;
+      }
+    }
+    writeEndDocumentList();
+    tupleStream.close();
+  }
+
 
   /** if this form of the method is called, val is the Java string form of a double */
   public abstract void writeDouble(String name, String val) throws IOException;

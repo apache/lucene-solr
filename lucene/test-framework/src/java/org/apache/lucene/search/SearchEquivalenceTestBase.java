@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -28,10 +29,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
@@ -140,7 +144,86 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * Returns a random filter over the document set
    */
   protected Filter randomFilter() {
-    return new QueryWrapperFilter(TermRangeQuery.newStringRange("field", "a", "" + randomChar(), true, true));
+    final Query query;
+    if (random().nextBoolean()) {
+      query = TermRangeQuery.newStringRange("field", "a", "" + randomChar(), true, true);
+    } else {
+      // use a query with a two-phase approximation
+      PhraseQuery phrase = new PhraseQuery();
+      phrase.add(new Term("field", "" + randomChar()));
+      phrase.add(new Term("field", "" + randomChar()));
+      phrase.setSlop(100);
+      query = phrase;
+    }
+    
+    // now wrap the query as a filter. QWF has its own codepath
+    if (random().nextBoolean()) {
+      return new QueryWrapperFilter(query);
+    } else {
+      return new SlowWrapperFilter(query, random().nextBoolean());
+    }
+  }
+  
+  static class SlowWrapperFilter extends Filter {
+    final Query query;
+    final boolean useBits;
+    
+    SlowWrapperFilter(Query query, boolean useBits) {
+      this.query = query;
+      this.useBits = useBits;
+    }
+    
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query q = query.rewrite(reader);
+      if (q != query) {
+        return new SlowWrapperFilter(q, useBits);
+      } else {
+        return this;
+      }
+    }
+
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      // get a private context that is used to rewrite, createWeight and score eventually
+      final LeafReaderContext privateContext = context.reader().getContext();
+      final Weight weight = new IndexSearcher(privateContext).createNormalizedWeight(query, false);
+      return new DocIdSet() {
+        @Override
+        public DocIdSetIterator iterator() throws IOException {
+          return weight.scorer(privateContext, acceptDocs);
+        }
+
+        @Override
+        public long ramBytesUsed() {
+          return 0L;
+        }
+
+        @Override
+        public Bits bits() throws IOException {
+          if (useBits) {
+            BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
+            DocIdSetIterator disi = iterator();
+            if (disi != null) {
+              builder.or(disi);
+            }
+            BitDocIdSet bitset = builder.build();
+            if (bitset == null) {
+              return new Bits.MatchNoBits(context.reader().maxDoc());
+            } else {
+              return bitset.bits();
+            }
+          } else {
+            return null;
+          }
+        }
+      };
+    }
+
+    @Override
+    public String toString(String field) {
+      return "SlowQWF(" + query + ")";
+    }
   }
 
   /**

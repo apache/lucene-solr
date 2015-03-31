@@ -19,14 +19,13 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
@@ -59,11 +58,9 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
   }
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
+  protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
     //levels doesn't actually matter; NumberRange based Shapes have their own "level".
-    TokenStream tokenStream = createTokenStream(shape, grid.getMaxLevels());
-    Field field = new Field(getFieldName(), tokenStream, FIELD_TYPE);
-    return new Field[]{field};
+    return super.createCellIteratorToIndex(shape, grid.getMaxLevels(), reuse);
   }
 
   /** Unsupported. */

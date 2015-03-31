@@ -156,6 +156,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
         new String[] { "s_s", "s_s" });
     assertAnalyzesTo(a, "of the of", 
         new String[] { "of_the", "the_of" });
+    a.close();
   }
   
   public void testCommonGramsFilter() throws Exception {
@@ -242,6 +243,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "of the of", 
         new String[] { "of", "of_the", "the", "the_of", "of" }, 
         new int[] { 1, 0, 1, 0, 1 });
+    a.close();
   }
   
   /**
@@ -330,6 +332,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     };
     
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
     
     Analyzer b = new Analyzer() {
 
@@ -342,5 +345,6 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     };
     
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    b.close();
   }
 }

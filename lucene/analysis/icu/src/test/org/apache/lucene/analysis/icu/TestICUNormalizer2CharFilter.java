@@ -129,6 +129,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
       }
       checkOneTerm(a, input, normalized);
     }
+    a.close();
   }
 
   public void testNFC() throws Exception {
@@ -187,6 +188,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
     // huge strings
     checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
+    a.close();
 
     // nfkd
     a = new Analyzer() {
@@ -203,6 +205,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
     // huge strings
     checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
+    a.close();
   }
   
   public void testCuriousString() throws Exception {
@@ -221,6 +224,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     for (int i = 0; i < 1000; i++) {
       checkAnalysisConsistency(random(), a, false, text);
     }
+    a.close();
   }
   
   public void testCuriousMassiveString() throws Exception {
@@ -411,5 +415,6 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     for (int i = 0; i < 25; i++) {
       checkAnalysisConsistency(random(), a, false, text);
     }
+    a.close();
   }
 }

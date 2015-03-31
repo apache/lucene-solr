@@ -287,6 +287,7 @@ limitations under the License.
 #core-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 #core-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
 #core-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
+#core-menu .segments a { background-image: url( ../../img/ico/construction.png ); }
 
 
 #content #navigation

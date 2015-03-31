@@ -52,6 +52,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     
       // equal to limit
       assertTokenStreamContents(a.tokenStream("dummy", "1  2  "), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 6 : null);
+      a.close();
     }
   }
 
@@ -86,6 +87,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       assertEquals(0, reader.docFreq(t));
       reader.close();
       dir.close();
+      a.close();
     }
   }
 

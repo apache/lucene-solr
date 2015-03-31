@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.cjk;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -39,7 +38,19 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * Most tests adopted from TestCJKTokenizer
  */
 public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new CJKAnalyzer();
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new CJKAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   public void testJa1() throws IOException {
     assertAnalyzesTo(analyzer, "一二三四五六七八九十",
@@ -228,6 +239,8 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
     // before bigramming, the 4 tokens look like:
     //   { 0, 0, 1, 1 },
     //   { 0, 1, 1, 2 }
+    
+    analyzer.close();
   }
 
   private static class FakeStandardTokenizer extends TokenFilter {
@@ -267,17 +280,21 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1 },
         new String[] { "<SINGLE>" },
         new int[] { 1 });
+    analyzer.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new CJKAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer a = new CJKAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Random random = random();
-    checkRandomData(random, new CJKAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    Analyzer a = new CJKAnalyzer();
+    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192);
+    a.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -289,5 +306,6 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

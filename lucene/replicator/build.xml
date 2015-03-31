@@ -21,6 +21,9 @@
     Files replication utility
   </description>
 
+  <!-- TODO: go fix this in jetty, its stupid -->
+  <property name="tests.policy" location="../tools/junit4/solr-tests.policy"/>
+
   <import file="../module-build.xml"/>
 
   <path id="classpath">

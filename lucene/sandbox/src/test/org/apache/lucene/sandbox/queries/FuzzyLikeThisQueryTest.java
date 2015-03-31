@@ -30,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 
     analyzer = new MockAnalyzer(random());
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
 
     //Add series of docs with misspelt names
     addDoc(writer, "jonathon smythe", "1");
@@ -63,8 +64,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
+    IOUtils.close(reader, directory, analyzer);
     super.tearDown();
   }
 

@@ -64,8 +64,6 @@ public class CoreParser implements QueryBuilder {
     this.analyzer = analyzer;
     this.parser = parser;
     filterFactory = new FilterBuilderFactory();
-    filterFactory.addBuilder("RangeFilter", new RangeFilterBuilder());
-    filterFactory.addBuilder("NumericRangeFilter", new NumericRangeFilterBuilder());
 
     queryFactory = new QueryBuilderFactory();
     queryFactory.addBuilder("TermQuery", new TermQueryBuilder());
@@ -73,6 +71,7 @@ public class CoreParser implements QueryBuilder {
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
     queryFactory.addBuilder("NumericRangeQuery", new NumericRangeQueryBuilder());
+    queryFactory.addBuilder("RangeQuery", new RangeQueryBuilder());
     queryFactory.addBuilder("DisjunctionMaxQuery", new DisjunctionMaxQueryBuilder(queryFactory));
     if (parser != null) {
       queryFactory.addBuilder("UserQuery", new UserInputQueryBuilder(parser));
@@ -80,7 +79,7 @@ public class CoreParser implements QueryBuilder {
       queryFactory.addBuilder("UserQuery", new UserInputQueryBuilder(defaultField, analyzer));
     }
     queryFactory.addBuilder("FilteredQuery", new FilteredQueryBuilder(filterFactory, queryFactory));
-    queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(filterFactory));
+    queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(queryFactory));
 
     filterFactory.addBuilder("CachedFilter", new CachedFilterBuilder(queryFactory,
         filterFactory, maxNumCachedFilters));

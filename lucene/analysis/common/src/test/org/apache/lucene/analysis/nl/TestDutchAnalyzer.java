@@ -117,6 +117,7 @@ public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "opheffen", "opheff");
     checkOneTerm(a, "opheffende", "opheff");
     checkOneTerm(a, "opheffing", "opheff");
+    a.close();
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -125,6 +126,7 @@ public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "lichamelijk", "licham");
     checkOneTerm(a, "lichamelijke", "licham");
     checkOneTerm(a, "lichamelijkheden", "licham");
+    a.close();
   }
   
   public void testExclusionTableViaCtor() throws IOException {
@@ -132,10 +134,11 @@ public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
     set.add("lichamelijk");
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
-    
+    a.close();
+
     a = new DutchAnalyzer( CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
-
+    a.close();
   }
   
   /** 
@@ -145,12 +148,14 @@ public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
   public void testStemOverrides() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiets");
+    a.close();
   }
   
   public void testEmptyStemDictionary() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer( CharArraySet.EMPTY_SET, 
         CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
     checkOneTerm(a, "fiets", "fiet");
+    a.close();
   }
   
   /**
@@ -159,15 +164,20 @@ public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
   public void testStopwordsCasing() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer();
     assertAnalyzesTo(a, "Zelf", new String[] { });
+    a.close();
   }
   
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new DutchAnalyzer(), input, expected); 
+    Analyzer analyzer = new DutchAnalyzer();
+    checkOneTerm(analyzer, input, expected);
+    analyzer.close();
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new DutchAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new DutchAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
 }

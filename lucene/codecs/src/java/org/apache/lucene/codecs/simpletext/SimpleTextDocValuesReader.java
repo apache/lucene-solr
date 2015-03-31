@@ -44,7 +44,6 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -86,7 +85,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   public SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
     // System.out.println("dir=" + state.directory + " seg=" + state.segmentInfo.name + " file=" + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext));
     data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
-    maxDoc = state.segmentInfo.getDocCount();
+    maxDoc = state.segmentInfo.maxDoc();
     while(true) {
       readLine();
       //System.out.println("READ field=" + scratch.utf8ToString());
@@ -520,10 +519,16 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     BytesRefBuilder scratch = new BytesRefBuilder();
     IndexInput clone = data.clone();
     clone.seek(0);
+    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included in SimpleTextUtil.CHECKSUM):
+    long footerStartPos = data.length() - (SimpleTextUtil.CHECKSUM.length + 21);
     ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
-    while(true) {
+    while (true) {
       SimpleTextUtil.readLine(input, scratch);
-      if (scratch.get().equals(END)) {
+      if (input.getFilePointer() >= footerStartPos) {
+        // Make sure we landed at precisely the right location:
+        if (input.getFilePointer() != footerStartPos) {
+          throw new CorruptIndexException("SimpleText failure: footer does not start at expected position current=" + input.getFilePointer() + " vs expected=" + footerStartPos, input);
+        }
         SimpleTextUtil.checkFooter(input);
         break;
       }

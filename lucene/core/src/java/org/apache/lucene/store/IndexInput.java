@@ -88,7 +88,17 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
    * The slice is seeked to the beginning.
    */
   public abstract IndexInput slice(String sliceDescription, long offset, long length) throws IOException;
-  
+
+  /** Subclasses call this to get the String for resourceDescription of a slice of this {@code IndexInput}. */
+  protected String getFullSliceDescription(String sliceDescription) {
+    if (sliceDescription == null) {
+      // Clones pass null sliceDescription:
+      return toString();
+    } else {
+      return toString() + " [slice=" + sliceDescription + "]";
+    }
+  }
+
   /**
    * Creates a random-access slice of this index input, with the given offset and length. 
    * <p>

@@ -105,7 +105,7 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseDocIdSetIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator asTwoPhaseIterator() {
     boolean hasApproximation = false;
     for (ScorerWrapper w : subScorers) {
       if (w.twoPhaseView != null) {
@@ -119,15 +119,10 @@ abstract class DisjunctionScorer extends Scorer {
       return null;
     }
 
-    return new TwoPhaseDocIdSetIterator() {
-
-      @Override
-      public DocIdSetIterator approximation() {
-        // note it is important to share the same pq as this scorer so that
-        // rebalancing the pq through the approximation will also rebalance
-        // the pq in this scorer.
-        return new DisjunctionDISIApproximation(subScorers);
-      }
+    // note it is important to share the same pq as this scorer so that
+    // rebalancing the pq through the approximation will also rebalance
+    // the pq in this scorer.
+    return new TwoPhaseIterator(new DisjunctionDISIApproximation(subScorers)) {
 
       @Override
       public boolean matches() throws IOException {
@@ -152,13 +147,16 @@ abstract class DisjunctionScorer extends Scorer {
               previous = w;
             }
           }
-
-          // We need to explicitely set the list of top scorers to avoid the
-          // laziness of DisjunctionScorer.score() that would take all scorers
-          // positioned on the same doc as the top of the pq, including
-          // non-matching scorers
-          DisjunctionScorer.this.topScorers = topScorers;
+        } else {
+          // since we don't need scores, let's pretend we have a single match
+          topScorers.next = null;
         }
+
+        // We need to explicitely set the list of top scorers to avoid the
+        // laziness of DisjunctionScorer.score() that would take all scorers
+        // positioned on the same doc as the top of the pq, including
+        // non-matching scorers
+        DisjunctionScorer.this.topScorers = topScorers;
         return true;
       }
     };

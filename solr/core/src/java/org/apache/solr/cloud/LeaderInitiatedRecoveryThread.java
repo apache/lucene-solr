@@ -226,8 +226,10 @@ public class LeaderInitiatedRecoveryThread extends Thread {
                         // so its state cannot be trusted and it needs to be told to recover again ... and we keep looping here
                         log.warn("Replica core={} coreNodeName={} set to active but the leader thinks it should be in recovery;"
                             + " forcing it back to down state to re-run the leader-initiated recovery process; props: "+replicaProps.get(0), coreNeedingRecovery, replicaCoreNodeName);
-                        zkController.ensureReplicaInLeaderInitiatedRecovery(collection,
-                            shardId, replicaUrl, nodeProps, true); // force republish state to "down"
+                        zkController.ensureReplicaInLeaderInitiatedRecovery(
+                            collection, shardId, nodeProps, leaderCoreNodeName,
+                            true /* forcePublishState */, true /* retryOnConnLoss */
+                        );
                       }
                     }
                     break;

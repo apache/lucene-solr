@@ -215,7 +215,7 @@ public class TestIOUtils extends LuceneTestCase {
     @Override
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
       // TODO: kinda screwed up how we do this, but it's easy to get lost. just unravel completely.
-      delegate.checkAccess(FilterPath.unwrap(path), modes);
+      delegate.checkAccess(maybeChroot(FilterPath.unwrap(path)), modes);
     }
 
     @Override

@@ -41,9 +41,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * numeric values using {@link IntField}, {@link
  * FloatField}, {@link LongField} or {@link DoubleField} (expert: {@link
  * NumericTokenStream}).  If your terms are instead textual,
- * you should use {@link TermRangeQuery}.  {@link
- * NumericRangeFilter} is the filter equivalent of this
- * query.</p>
+ * you should use {@link TermRangeQuery}.</p>
  *
  * <p>You create a new NumericRangeQuery with the static
  * factory methods, eg:
@@ -72,7 +70,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * details.
  *
  * <p>This query defaults to {@linkplain
- * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}.
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}.
  * With precision steps of &le;4, this query can be run with
  * one of the BooleanQuery rewrite methods without changing
  * BooleanQuery's default max clause count.

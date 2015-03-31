@@ -18,7 +18,6 @@ package org.apache.lucene.util.junitcompat;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;

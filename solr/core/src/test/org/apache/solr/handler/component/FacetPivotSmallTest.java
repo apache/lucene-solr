@@ -158,7 +158,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.add("facet", "true");
     params.add("facet.pivot", "{!stats=s1}place_t,company_t");
     params.add("stats", "true");
-    params.add("stats.field", "{!key=avg_price tag=s1 mean=true}price_ti");
+    params.add("stats.field", "{!key=avg_price tag=s1}price_ti");
 
     SolrQueryRequest req = req(params);
     final String statsPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
@@ -174,6 +174,8 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         dublinMicrosoftStats + "/double[@name='sumOfSquares'][.=1427.0]",
         dublinMicrosoftStats + "/double[@name='mean'][.=21.0]",
         dublinMicrosoftStats + "/double[@name='stddev'][.=7.211102550927978]",
+        // if new stats are supported, this will break - update test to assert values for each
+        "count(" + dublinMicrosoftStats + "/*)=8",
 
         cardiffPolecatStats + "/double[@name='min'][.=15.0]",
         cardiffPolecatStats + "/double[@name='max'][.=39.0]",
@@ -183,6 +185,8 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         cardiffPolecatStats + "/double[@name='sumOfSquares'][.=1746.0]",
         cardiffPolecatStats + "/double[@name='mean'][.=27.0]",
         cardiffPolecatStats + "/double[@name='stddev'][.=16.97056274847714]",
+        // if new stats are supported, this will break - update test to assert values for each
+        "count(" + cardiffPolecatStats + "/*)=8",
 
         krakowFujitsuStats + "/null[@name='min']",
         krakowFujitsuStats + "/null[@name='max']",
@@ -191,7 +195,10 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         krakowFujitsuStats + "/double[@name='sum'][.=0.0]",
         krakowFujitsuStats + "/double[@name='sumOfSquares'][.=0.0]",
         krakowFujitsuStats + "/double[@name='mean'][.='NaN']",
-        krakowFujitsuStats + "/double[@name='stddev'][.=0.0]"
+        krakowFujitsuStats + "/double[@name='stddev'][.=0.0]",
+        // if new stats are supported, this will break - update test to assert values for each
+        "count(" + krakowFujitsuStats + "/*)=8"
+
     );
   }
 

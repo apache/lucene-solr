@@ -103,10 +103,13 @@ public class ZkIndexSchemaReader implements OnReconnect {
       if (expectedZkVersion == -1 || oldSchema.schemaZkVersion < expectedZkVersion) {
         byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
         if (stat.getVersion() != oldSchema.schemaZkVersion) {
-          log.info("Retrieved schema version "+stat.getVersion()+" from ZooKeeper");
+          log.info("Retrieved schema version "+ stat.getVersion() + " from ZooKeeper");
           long start = System.nanoTime();
           InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
-          ManagedIndexSchema newSchema = oldSchema.reloadFields(inputSource, stat.getVersion());
+          String resourceName = managedIndexSchemaFactory.getManagedSchemaResourceName();
+          ManagedIndexSchema newSchema = new ManagedIndexSchema
+              (managedIndexSchemaFactory.getConfig(), resourceName, inputSource, managedIndexSchemaFactory.isMutable(), 
+                  resourceName, stat.getVersion(), oldSchema.getSchemaUpdateLock());
           managedIndexSchemaFactory.setSchema(newSchema);
           long stop = System.nanoTime();
           log.info("Finished refreshing schema in " + TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS) + " ms");

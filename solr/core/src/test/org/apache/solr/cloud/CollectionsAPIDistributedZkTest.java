@@ -100,7 +100,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
  */
 @Slow
 public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBase {
-  
+
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
 
@@ -139,7 +139,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       // for now, always upload the config and schema to the canonical names
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, getCloudSolrConfig(), "solrconfig.xml");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "schema.xml", "schema.xml");
-
+      AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "enumsConfig.xml", "enumsConfig.xml");
+      
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "stopwords.txt");
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "protwords.txt");
@@ -646,6 +647,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     if (random().nextBoolean()) {
       JettySolrRunner jetty = jettys.get(random().nextInt(jettys.size()));
       ChaosMonkey.stop(jetty);
+      log.info("============ Restarting jetty");
       ChaosMonkey.start(jetty);
       
       for (Entry<String,List<Integer>> entry : collectionInfosEntrySet) {
@@ -665,6 +667,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // sometimes we restart zookeeper
     if (random().nextBoolean()) {
       zkServer.shutdown();
+      log.info("============ Restarting zookeeper");
       zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
       zkServer.run();
     }
@@ -1144,7 +1147,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
 
     if (r.nextBoolean())
       return super.queryServer(params);

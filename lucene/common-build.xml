@@ -125,6 +125,7 @@
   <property name="tests.filterstacks" value="true"/>
   <property name="tests.luceneMatchVersion" value="${version.base}"/>
   <property name="tests.asserts" value="true" />
+  <property name="tests.policy" location="${common.dir}/tools/junit4/tests.policy"/>
 
   <condition property="tests.asserts.args" value="-ea -esa" else="">
     <istrue value="${tests.asserts}"/>
@@ -1012,11 +1013,12 @@
 
             <!-- Restrict access to certain Java features and install security manager: -->
             <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
+            <sysproperty key="common.dir" file="${common.dir}" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <syspropertyset>
                 <propertyref prefix="java.security.manager"/>
             </syspropertyset>
-            <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
+            <sysproperty key="java.security.policy" file="${tests.policy}" />
 
             <sysproperty key="tests.LUCENE_VERSION" value="${version.base}"/>
 
@@ -2501,7 +2503,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dversion=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
+        <property name="pitest.sysprops" value="-Dversion=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${tests.policy},-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

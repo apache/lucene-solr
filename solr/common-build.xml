@@ -38,6 +38,7 @@
   <property name="maven.dist.dir" location="${package.dir}/maven"/>
   <property name="lucene-libs" location="${dest}/lucene-libs" />
   <property name="tests.userdir" location="src/test-files"/>
+  <property name="tests.policy" location="${common-solr.dir}/../lucene/tools/junit4/solr-tests.policy"/>
   <property name="server.dir" location="${common-solr.dir}/server" />
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>

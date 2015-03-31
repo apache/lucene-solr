@@ -15,6 +15,7 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.RetryUtil.RetryCmd;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
@@ -24,10 +25,12 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -113,7 +116,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
-    
+
+    Map previousMDCContext = MDC.getCopyOfContextMap();
+    MDCUtils.setMDC(collection, shardId, null, null);
     try {
       new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
           .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
@@ -123,6 +128,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } finally {
+      MDCUtils.cleanupMDC(previousMDCContext);
     }
   }
   
@@ -305,7 +312,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             searchHolder.decref();
           }
         } catch (Exception e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+          log.error("Error in solrcloud_debug block", e);
         }
       }
       if (!success) {
@@ -402,8 +409,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                                                     120,
                                                     coreNodeName);
               zkController.ensureReplicaInLeaderInitiatedRecovery(
-                  collection, shardId, coreNodeProps.getCoreUrl(), coreNodeProps, false);
-              
+                  collection, shardId, coreNodeProps, coreNodeName,
+                  false /* forcePublishState */, true /* retryOnConnLoss */);
+
               ExecutorService executor = cc.getUpdateShardHandler().getUpdateExecutor();
               executor.execute(lirThread);
             }              

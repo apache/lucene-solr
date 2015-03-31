@@ -36,7 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.handler.SnapPuller;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
@@ -93,7 +93,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     assertU(adoc("id", String.valueOf(1),
         "name", "name"+String.valueOf(1)));
     //create a new index dir and index.properties file
-    File idxprops = new File(h.getCore().getDataDir() + SnapPuller.INDEX_PROPERTIES);
+    File idxprops = new File(h.getCore().getDataDir() + IndexFetcher.INDEX_PROPERTIES);
     Properties p = new Properties();
     File newDir = new File(h.getCore().getDataDir() + "index_temp");
     newDir.mkdirs();
@@ -104,7 +104,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
       p.store(os, "index properties");
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
+          "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
     } finally {
       IOUtils.closeWhileHandlingException(os);
     }

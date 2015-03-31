@@ -23,6 +23,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.QueryBuilder;
@@ -141,14 +142,18 @@ public class SimpleQueryParser extends QueryBuilder {
     this.flags = flags;
   }
 
-  /** Parses the query text and returns parsed query (or null if empty) */
+  /** Parses the query text and returns parsed query */
   public Query parse(String queryText) {
     char data[] = queryText.toCharArray();
     char buffer[] = new char[data.length];
 
     State state = new State(data, buffer, 0, data.length);
     parseSubQuery(state);
-    return state.top;
+    if (state.top == null) {
+      return new MatchNoDocsQuery();
+    } else {
+      return state.top;
+    }
   }
 
   private void parseSubQuery(State state) {

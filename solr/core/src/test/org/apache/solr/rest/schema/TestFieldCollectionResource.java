@@ -16,6 +16,7 @@ package org.apache.solr.rest.schema;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 

@@ -49,16 +49,18 @@ import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakScope(Scope.NONE) // hdfs mini cluster currently leaks threads
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 // TODO: longer term this should be combined with TestRecovery somehow ??
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
@@ -81,7 +83,9 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     
     try {
       URI uri = new URI(hdfsUri);
-      fs = FileSystem.newInstance(uri, new Configuration());
+      Configuration conf = new Configuration();
+      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+      fs = FileSystem.get(uri, conf);
     } catch (IOException | URISyntaxException e) {
       throw new RuntimeException(e);
     }

@@ -230,7 +230,7 @@ public class WeightedSpanTermExtractor {
           return;
         }
         MultiTermQuery copy = (MultiTermQuery) query.clone();
-        copy.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        copy.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         origQuery = copy;
       }
       final IndexReader reader = getLeafContext().reader();

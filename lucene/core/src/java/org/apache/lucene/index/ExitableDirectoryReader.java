@@ -185,13 +185,13 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
    * @param in DirectoryReader that this ExitableDirectoryReader wraps around to make it Exitable.
    * @param queryTimeout The object to periodically check if the query should time out.
    */
-  public ExitableDirectoryReader(DirectoryReader in, QueryTimeout queryTimeout) {
+  public ExitableDirectoryReader(DirectoryReader in, QueryTimeout queryTimeout) throws IOException {
     super(in, new ExitableSubReaderWrapper(queryTimeout));
     this.queryTimeout = queryTimeout;
   }
 
   @Override
-  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
     return new ExitableDirectoryReader(in, queryTimeout);
   }
 
@@ -200,7 +200,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on.
    */
-  public static DirectoryReader wrap(DirectoryReader in, QueryTimeout queryTimeout) {
+  public static DirectoryReader wrap(DirectoryReader in, QueryTimeout queryTimeout) throws IOException {
     return new ExitableDirectoryReader(in, queryTimeout);
   }
 

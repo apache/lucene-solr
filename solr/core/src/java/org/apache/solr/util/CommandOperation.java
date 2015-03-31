@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -52,21 +53,22 @@ public class CommandOperation {
       Object obj = getRootPrimitive();
       return obj == def ? null : String.valueOf(obj);
     }
-    String s = (String) getMapVal(key);
-    return s == null ? def : s;
+    Object o = getMapVal(key);
+    return o == null ? def : String.valueOf(o);
   }
 
-  public Map<String, Object> getDataMap() {
+  public Map<String,Object> getDataMap() {
     if (commandData instanceof Map) {
-      return (Map) commandData;
+      //noinspection unchecked
+      return (Map<String,Object>)commandData;
     }
-    addError(MessageFormat.format("The command ''{0}'' should have the values as a json object {key:val} format", name));
-    return Collections.EMPTY_MAP;
+    addError(StrUtils.formatString("The command ''{0}'' should have the values as a json object {key:val} format", name));
+    return Collections.emptyMap();
   }
 
   private Object getRootPrimitive() {
     if (commandData instanceof Map) {
-      errors.add(MessageFormat.format("The value has to be a string for command : ''{0}'' ", name));
+      errors.add(StrUtils.formatString("The value has to be a string for command : ''{0}'' ", name));
       return null;
     }
     return commandData;
@@ -91,7 +93,7 @@ public class CommandOperation {
   public List<String> getStrs(String key) {
     List<String> val = getStrs(key, null);
     if (val == null) {
-      errors.add(MessageFormat.format(REQD, key));
+      errors.add(StrUtils.formatString(REQD, key));
     }
     return val;
 
@@ -135,13 +137,13 @@ public class CommandOperation {
     if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();
       if (obj == null) {
-        errors.add(MessageFormat.format(REQD, name));
+        errors.add(StrUtils.formatString(REQD, name));
       }
       return obj == null ? null : String.valueOf(obj);
     }
 
     String s = getStr(key, null);
-    if (s == null) errors.add(MessageFormat.format(REQD, key));
+    if (s == null) errors.add(StrUtils.formatString(REQD, key));
     return s;
   }
 
@@ -162,10 +164,11 @@ public class CommandOperation {
    * Get all the values from the metadata for the command
    * without the specified keys
    */
-  public Map getValuesExcluding(String... keys) {
+  public Map<String,Object> getValuesExcluding(String... keys) {
     getMapVal(null);
     if (hasError()) return emptyMap();//just to verify the type is Map
-    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, ?>) commandData);
+    @SuppressWarnings("unchecked") 
+    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
     if (keys == null) return cp;
     for (String key : keys) {
       cp.remove(key);
@@ -230,7 +233,7 @@ public class CommandOperation {
     Object o = getMapVal(key);
     if (o == null) return def;
     if (!(o instanceof Map)) {
-      addError(MessageFormat.format("''{0}'' must be a map", key));
+      addError(StrUtils.formatString("''{0}'' must be a map", key));
       return def;
     } else {
       return (Map) o;

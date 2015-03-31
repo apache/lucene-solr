@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -24,7 +25,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -131,5 +134,26 @@ public class TestIndexSearcher extends LuceneTestCase {
       IOUtils.close(r, dir);
     }
   }
-  
+
+  public void testCount() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final int numDocs = atLeast(100);
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      if (random().nextBoolean()) {
+        doc.add(new StringField("foo", "bar", Store.NO));
+      }
+      w.addDocument(doc);
+    }
+    w.commit();
+    final IndexReader reader = w.getReader();
+    w.close();
+    final IndexSearcher searcher = newSearcher(reader);
+    final Query query = new TermQuery(new Term("foo", "bar"));
+    assertEquals(searcher.count(query), searcher.search(query, 1).totalHits);
+    reader.close();
+    dir.close();
+  }
+
 }

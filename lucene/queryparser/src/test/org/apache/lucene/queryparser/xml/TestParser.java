@@ -121,9 +121,9 @@ public class TestParser extends LuceneTestCase {
     assertEquals(1, ndq.getDisjuncts().size());
   }
 
-  public void testRangeFilterQueryXML() throws ParserException, IOException {
-    Query q = parse("RangeFilterQuery.xml");
-    dumpResults("RangeFilter", q, 5);
+  public void testRangeQueryXML() throws ParserException, IOException {
+    Query q = parse("RangeQuery.xml");
+    dumpResults("RangeQuery", q, 5);
   }
 
   public void testUserQueryXML() throws ParserException, IOException {
@@ -192,11 +192,6 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
-  }
-
-  public void testNumericRangeFilterQueryXML() throws ParserException, IOException {
-    Query q = parse("NumericRangeFilterQuery.xml");
-    dumpResults("NumericRangeFilter", q, 5);
   }
 
   public void testNumericRangeQueryQueryXML() throws ParserException, IOException {

@@ -40,7 +40,9 @@
 
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
-    
+
+    <ibiblio name="rr-snapshot" root="https://oss.sonatype.org/content/repositories/comcarrotsearch-1039" m2compatible="true" />
+
     <!--
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
@@ -57,6 +59,7 @@
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
       <resolver ref="releases.cloudera.com"/>
+      <resolver ref="rr-snapshot"/>
       <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
     </chain>

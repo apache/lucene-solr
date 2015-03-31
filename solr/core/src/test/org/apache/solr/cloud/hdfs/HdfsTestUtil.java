@@ -18,6 +18,8 @@ import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,12 +39,15 @@ import org.apache.solr.common.util.IOUtils;
  */
 
 public class HdfsTestUtil {
+  private static Logger log = LoggerFactory.getLogger(HdfsTestUtil.class);
   
   private static Locale savedLocale;
   
   private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
   private static FSDataOutputStream badTlogOutStream;
+
+  private static FileSystem badTlogOutStreamFs;
 
   public static MiniDFSCluster setupClass(String dir) throws Exception {
     return setupClass(dir, true);
@@ -64,7 +69,7 @@ public class HdfsTestUtil {
     conf.set("hadoop.security.authentication", "simple");
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
     conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
-    
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
     
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
@@ -94,12 +99,13 @@ public class HdfsTestUtil {
       
       timers.put(dfsCluster, timer);
     } else {
+      // TODO: we could do much better at testing this
       // force a lease recovery by creating a tlog file and not closing it
       URI uri = dfsCluster.getURI();
       Path hdfsDirPath = new Path(uri.toString() + "/solr/collection1/core_node1/data/tlog/tlog.0000000000000000000");
       // tran log already being created testing
-      FileSystem fs = FileSystem.newInstance(hdfsDirPath.toUri(), conf);
-      badTlogOutStream = fs.create(hdfsDirPath);
+      badTlogOutStreamFs = FileSystem.get(hdfsDirPath.toUri(), conf);
+      badTlogOutStream = badTlogOutStreamFs.create(hdfsDirPath);
     }
     
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
@@ -108,6 +114,15 @@ public class HdfsTestUtil {
   }
   
   public static void teardownClass(MiniDFSCluster dfsCluster) throws Exception {
+    
+    if (badTlogOutStream != null) {
+      IOUtils.closeQuietly(badTlogOutStream);
+    }
+    
+    if (badTlogOutStreamFs != null) {
+      IOUtils.closeQuietly(badTlogOutStreamFs);
+    }
+    
     SolrTestCaseJ4.resetFactory();
     System.clearProperty("solr.lock.type");
     System.clearProperty("test.build.data");
@@ -115,12 +130,19 @@ public class HdfsTestUtil {
     System.clearProperty("solr.hdfs.home");
     System.clearProperty("solr.hdfs.blockcache.global");
     if (dfsCluster != null) {
-      timers.remove(dfsCluster);
-      dfsCluster.shutdown();
-    }
-    
-    if (badTlogOutStream != null) {
-      IOUtils.closeQuietly(badTlogOutStream);
+      Timer timer = timers.remove(dfsCluster);
+      if (timer != null) {
+        timer.cancel();
+      }
+      try {
+        dfsCluster.shutdown();
+      } catch (Error e) {
+        // Added in SOLR-7134
+        // Rarely, this can fail to either a NullPointerException
+        // or a class not found exception. The later may fixable
+        // by adding test dependencies.
+        log.warn("Exception shutting down dfsCluster", e);
+      }
     }
     
     // TODO: we HACK around HADOOP-9643

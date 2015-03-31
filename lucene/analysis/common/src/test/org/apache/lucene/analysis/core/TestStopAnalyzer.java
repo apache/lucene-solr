@@ -30,7 +30,7 @@ import java.util.HashSet;
 
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
-  private StopAnalyzer stop = new StopAnalyzer();
+  private StopAnalyzer stop;
   private Set<Object> inValidTokens = new HashSet<>();
 
   @Override
@@ -41,6 +41,13 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     while(it.hasNext()) {
       inValidTokens.add(it.next());
     }
+    stop = new StopAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    stop.close();
+    super.tearDown();
   }
 
   public void testDefaults() throws IOException {
@@ -71,6 +78,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
       }
       stream.end();
     }
+    newStop.close();
   }
 
   public void testStopListPositions() throws IOException {
@@ -92,6 +100,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
       }
       stream.end();
     }
+    newStop.close();
   }
 
 }

@@ -57,44 +57,19 @@ public class ZkContainer {
     
   }
 
-  public void initZooKeeper(final CoreContainer cc, String solrHome, ConfigSolr config) {
-
-    if (config.getCoreLoadThreadCount() <= 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "SolrCloud requires a value of at least 2 in solr.xml for coreLoadThreads");
-    }
-
-    initZooKeeper(cc, solrHome,
-        config.getZkHost(), config.getZkClientTimeout(), config.getSolrHostPort(), config.getZkHostContext(),
-        config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
-  }
-    
-  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String solrHostPort,
-        String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
+  public void initZooKeeper(final CoreContainer cc, String solrHome, CloudConfig config) {
 
     ZkController zkController = null;
-    
-    // if zkHost sys property is not set, we are not using ZooKeeper
-    String zookeeperHost;
-    if(zkHost == null) {
-      zookeeperHost = System.getProperty("zkHost");
-    } else {
-      zookeeperHost = zkHost;
-    }
 
     String zkRun = System.getProperty("zkRun");
+
+    if (zkRun != null && config == null)
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot start Solr in cloud mode - no cloud config provided");
     
-    if (zkRun == null && zookeeperHost == null)
+    if (config == null)
         return;  // not in zk mode
 
-    if (null == solrHostPort) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                   "'hostPort' must be configured to run SolrCloud");
-    }
-    if (null == hostContext) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                   "'hostContext' must be configured to run SolrCloud");
-    }
+    String zookeeperHost = config.getZkHost();
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369
@@ -104,7 +79,7 @@ public class ZkContainer {
     if (zkRun != null) {
       String zkDataHome = System.getProperty("zkServerDataDir", solrHome + "zoo_data");
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
-      zkServer = new SolrZkServer(stripChroot(zkRun), stripChroot(zookeeperHost), zkDataHome, zkConfHome, solrHostPort);
+      zkServer = new SolrZkServer(stripChroot(zkRun), stripChroot(config.getZkHost()), zkDataHome, zkConfHome, config.getSolrHostPort());
       zkServer.parseConfig();
       zkServer.start();
       
@@ -134,9 +109,7 @@ public class ZkContainer {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
-        zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
-            zkClientConnectTimeout, host, solrHostPort, hostContext,
-            leaderVoteWait, leaderConflictResolveWait, genericCoreNodeNames,
+        zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config,
             new CurrentCoreDescriptorProvider() {
 
               @Override

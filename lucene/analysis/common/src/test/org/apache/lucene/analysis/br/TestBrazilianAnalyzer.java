@@ -135,12 +135,14 @@ public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
     checkReuse(a, "boainain", "boainain");
     checkReuse(a, "boas", "boas");
     checkReuse(a, "bôas", "boas"); // removes diacritic: different from snowball portugese
+    a.close();
   }
  
   public void testStemExclusionTable() throws Exception {
     BrazilianAnalyzer a = new BrazilianAnalyzer(
         CharArraySet.EMPTY_SET, new CharArraySet(asSet("quintessência"), false));
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
+    a.close();
   }
   
   public void testWithKeywordAttribute() throws IOException {
@@ -154,7 +156,9 @@ public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
   }
 
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new BrazilianAnalyzer(), input, expected);
+    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    checkOneTerm(a, input, expected);
+    a.close();
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {
@@ -163,7 +167,9 @@ public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new BrazilianAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -175,5 +181,6 @@ public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

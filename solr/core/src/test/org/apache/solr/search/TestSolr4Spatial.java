@@ -26,8 +26,14 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
+
+import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.BBoxField;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -366,4 +372,17 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
+
+  @Test
+  public void testSpatialConfig() throws Exception {
+    try (SolrCore core = h.getCoreInc())  {
+      IndexSchema schema = core.getLatestSchema();
+
+      // BBox Config
+      // Make sure the subfields are not stored
+      SchemaField sub = schema.getField("bbox"+BBoxStrategy.SUFFIX_MINX);
+      assertFalse(sub.stored());
+    }
+  }
+  
 }

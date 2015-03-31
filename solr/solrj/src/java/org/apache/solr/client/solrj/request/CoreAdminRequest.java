@@ -17,8 +17,8 @@
 
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,15 +32,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
  *
  * @since solr 1.3
  */
-public class CoreAdminRequest extends SolrRequest
-{
+public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
+
   protected String core = null;
   protected String other = null;
   protected boolean isIndexInfoNeeded = true;
@@ -48,6 +47,7 @@ public class CoreAdminRequest extends SolrRequest
   
   //a create core request
   public static class Create extends CoreAdminRequest {
+
     protected String instanceDir;
     protected String configName = null;
     protected String schemaName = null;
@@ -503,14 +503,8 @@ public class CoreAdminRequest extends SolrRequest
   }
 
   @Override
-  public CoreAdminResponse process(SolrClient client) throws SolrServerException, IOException
-  {
-    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    CoreAdminResponse res = new CoreAdminResponse();
-    res.setResponse(client.request(this));
-    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-    res.setElapsedTime(endTime - startTime);
-    return res;
+  protected CoreAdminResponse createResponse(SolrClient client) {
+    return new CoreAdminResponse();
   }
 
   //---------------------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -130,18 +131,18 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     //Validate
-    Path snapDir = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
-    verify(snapDir, nDocs);
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      Path snapDir = stream.iterator().next();
+      verify(snapDir, nDocs);
+    }
   }
 
   private void verify(Path backup, int nDocs) throws IOException {
-    try (Directory dir = new SimpleFSDirectory(backup)) {
-      IndexReader reader = DirectoryReader.open(dir);
+    try (Directory dir = new SimpleFSDirectory(backup);
+        IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
       assertEquals(nDocs, hits.totalHits);
-      reader.close();
-      dir.close();
     }
   }
 
@@ -167,7 +168,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     Path[] snapDir = new Path[5]; //One extra for the backup on commit
     //First snapshot location
-    snapDir[0] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      snapDir[0] = stream.iterator().next();
+    }
+
     boolean namedBackup = random().nextBoolean();
     String firstBackupTimestamp = null;
 
@@ -199,14 +203,19 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       }
 
       if (!namedBackup) {
-        snapDir[i+1] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator().next();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+          snapDir[i+1] = stream.iterator().next();
+        }
       } else {
-        snapDir[i+1] = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName).iterator().next();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName)) {
+          snapDir[i+1] = stream.iterator().next();
+        }
       }
       verify(snapDir[i+1], nDocs);
 
     }
 
+    
     //Test Deletion of named backup
     if (namedBackup) {
       testDeleteNamedBackup(backupNames);
@@ -214,10 +223,12 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       //5 backups got created. 4 explicitly and one because a commit was called.
       // Only the last two should still exist.
       int count =0;
-      Iterator<Path> iter = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*").iterator();
-      while (iter.hasNext()) {
-        iter.next();
-        count ++;
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+        Iterator<Path> iter = stream.iterator();
+        while (iter.hasNext()) {
+          iter.next();
+          count ++;
+        }
       }
 
       //There will be 2 backups, otherwise 1

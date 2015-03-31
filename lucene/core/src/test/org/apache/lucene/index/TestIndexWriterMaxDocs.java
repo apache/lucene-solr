@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,11 +30,13 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -93,7 +97,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.addDocument(new Document());
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -116,7 +120,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.addDocuments(Collections.singletonList(new Document()));
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -139,7 +143,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.updateDocument(new Term("field", "foo"), new Document());
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -162,7 +166,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.updateDocuments(new Term("field", "foo"), Collections.singletonList(new Document()));
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -201,7 +205,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.addDocument(new Document());
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -247,7 +251,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w.addDocument(new Document());
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w.close();
@@ -273,7 +277,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         w2.addIndexes(new Directory[] {dir});
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       assertEquals(1, w2.maxDoc());
@@ -281,7 +285,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       try {
         TestUtil.addIndexesSlowly(w2, ir);
         fail("didn't hit exception");
-      } catch (IllegalStateException ise) {
+      } catch (IllegalArgumentException iae) {
         // expected
       }
       w2.close();
@@ -369,6 +373,103 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     dir.close();
     dir2.close();
   }
+  
+  /** 
+   * LUCENE-6299: Test if addindexes(Dir[]) prevents exceeding max docs.
+   */
+  public void testAddTooManyIndexesDir() throws Exception {
+    // we cheat and add the same one over again... IW wants a write lock on each
+    Directory dir = newDirectory(random(), NoLockFactory.INSTANCE);
+    Document doc = new Document();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    for (int i = 0; i < 100000; i++) {
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+    w.commit();
+    w.close();
+    
+    // wrap this with disk full, so test fails faster and doesn't fill up real disks.
+    MockDirectoryWrapper dir2 = newMockDirectory();
+    w = new IndexWriter(dir2, new IndexWriterConfig(null));
+    w.commit(); // don't confuse checkindex
+    dir2.setMaxSizeInBytes(dir2.sizeInBytes() + 65536); // 64KB
+    Directory dirs[] = new Directory[1 + (IndexWriter.MAX_DOCS / 100000)];
+    for (int i = 0; i < dirs.length; i++) {
+      // bypass iw check for duplicate dirs
+      dirs[i] = new FilterDirectory(dir) {};
+    }
+
+    try {
+      w.addIndexes(dirs);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // pass
+    } catch (IOException fakeDiskFull) {
+      final Exception e;
+      if (fakeDiskFull.getMessage() != null && fakeDiskFull.getMessage().startsWith("fake disk full")) {
+        e = new RuntimeException("test failed: IW checks aren't working and we are executing addIndexes");
+        e.addSuppressed(fakeDiskFull);
+      } else {
+        e = fakeDiskFull;
+      }
+      throw e;
+    }
+    
+    w.close();
+    dir.close();
+    dir2.close();
+  }
+
+  /** 
+   * LUCENE-6299: Test if addindexes(CodecReader[]) prevents exceeding max docs.
+   */
+  public void testAddTooManyIndexesCodecReader() throws Exception {
+    // we cheat and add the same one over again... IW wants a write lock on each
+    Directory dir = newDirectory(random(), NoLockFactory.INSTANCE);
+    Document doc = new Document();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    for (int i = 0; i < 100000; i++) {
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+    w.commit();
+    w.close();
+    
+    // wrap this with disk full, so test fails faster and doesn't fill up real disks.
+    MockDirectoryWrapper dir2 = newMockDirectory();
+    w = new IndexWriter(dir2, new IndexWriterConfig(null));
+    w.commit(); // don't confuse checkindex
+    dir2.setMaxSizeInBytes(dir2.sizeInBytes() + 65536); // 64KB
+    IndexReader r = DirectoryReader.open(dir);
+    CodecReader segReader = (CodecReader) r.leaves().get(0).reader();
+
+    CodecReader readers[] = new CodecReader[1 + (IndexWriter.MAX_DOCS / 100000)];
+    for (int i = 0; i < readers.length; i++) {
+      readers[i] = segReader;
+    }
+
+    try {
+      w.addIndexes(readers);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // pass
+    } catch (IOException fakeDiskFull) {
+      final Exception e;
+      if (fakeDiskFull.getMessage() != null && fakeDiskFull.getMessage().startsWith("fake disk full")) {
+        e = new RuntimeException("test failed: IW checks aren't working and we are executing addIndexes");
+        e.addSuppressed(fakeDiskFull);
+      } else {
+        e = fakeDiskFull;
+      }
+      throw e;
+    }
+
+    r.close();
+    w.close();
+    dir.close();
+    dir2.close();
+  }
 
   public void testTooLargeMaxDocs() throws Exception {
     try {
@@ -377,5 +478,245 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+  }
+
+  // LUCENE-6299
+  public void testDeleteAll() throws Exception {
+    setIndexWriterMaxDocs(1);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.deleteAll();
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testDeleteAllAfterFlush() throws Exception {
+    setIndexWriterMaxDocs(2);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      w.getReader().close();
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.deleteAll();
+      w.addDocument(new Document());
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testDeleteAllAfterCommit() throws Exception {
+    setIndexWriterMaxDocs(2);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      w.commit();
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.deleteAll();
+      w.addDocument(new Document());
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testDeleteAllMultipleThreads() throws Exception {
+    int limit = TestUtil.nextInt(random(), 2, 10);
+    setIndexWriterMaxDocs(limit);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+
+      CountDownLatch startingGun = new CountDownLatch(1);
+      Thread[] threads = new Thread[limit];
+      for(int i=0;i<limit;i++) {
+        threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              w.addDocument(new Document());
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+          };
+        threads[i].start();
+      }
+
+      startingGun.countDown();
+
+      for(Thread thread : threads) {
+        thread.join();
+      }
+
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.deleteAll();
+      for(int i=0;i<limit;i++) {
+        w.addDocument(new Document());
+      }        
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testDeleteAllAfterClose() throws Exception {
+    setIndexWriterMaxDocs(2);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      w.close();
+      w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.deleteAll();
+      w.addDocument(new Document());
+      w.addDocument(new Document());
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testAcrossTwoIndexWriters() throws Exception {
+    setIndexWriterMaxDocs(1);
+    try {
+      Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      w.addDocument(new Document());
+      w.close();
+      w = new IndexWriter(dir, new IndexWriterConfig(null));
+      try {
+        w.addDocument(new Document());
+        fail("didn't hit exception");
+      } catch (IllegalArgumentException iae) {
+        // expected
+      }
+      w.close();
+      dir.close();
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+  }
+
+  // LUCENE-6299
+  public void testCorruptIndexExceptionTooLarge() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    w.addDocument(new Document());
+    w.addDocument(new Document());
+    w.close();
+
+    setIndexWriterMaxDocs(1);
+    try {       
+      DirectoryReader.open(dir);
+      fail("didn't hit exception");
+    } catch (CorruptIndexException cie) {
+      // expected
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+
+    dir.close();
+  }
+  
+  // LUCENE-6299
+  public void testCorruptIndexExceptionTooLargeWriter() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    w.addDocument(new Document());
+    w.addDocument(new Document());
+    w.close();
+
+    setIndexWriterMaxDocs(1);
+    try {       
+      new IndexWriter(dir, new IndexWriterConfig(null));
+      fail("didn't hit exception");
+    } catch (CorruptIndexException cie) {
+      // expected
+    } finally {
+      restoreIndexWriterMaxDocs();
+    }
+
+    dir.close();
   }
 }

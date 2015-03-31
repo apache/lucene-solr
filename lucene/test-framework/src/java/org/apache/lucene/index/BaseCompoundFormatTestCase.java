@@ -648,7 +648,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
-    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId(), new HashMap<>());
+    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
   }
   
   /** Creates a file of the specified size with random data. */
@@ -764,5 +764,22 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   @Override
   public void testMergeStability() throws Exception {
     assumeTrue("test does not work with CFS", true);
+  }
+
+  // LUCENE-6311: make sure the resource name inside a compound file confesses that it's inside a compound file
+  public void testResourceNameInsideCompoundFile() throws Exception {
+    Directory dir = newDirectory();
+    String subFile = "_123.xyz";
+    createSequenceFile(dir, subFile, (byte) 0, 10);
+    
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.setFiles(Collections.singletonList(subFile));
+    si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    IndexInput in = cfs.openInput(subFile, IOContext.DEFAULT);
+    String desc = in.toString();
+    assertTrue("resource description hides that it's inside a compound file: " + desc, desc.contains("[slice=" + subFile + "]"));
+    cfs.close();
+    dir.close();
   }
 }

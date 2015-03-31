@@ -17,8 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.cloud.StopableIndexingThread;
+import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -38,6 +38,7 @@ import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
 import org.apache.solr.store.blockcache.Cache;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +51,9 @@ import java.util.List;
 
 @Slow
 @Nightly
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String SOLR_HDFS_HOME = "solr.hdfs.home";
   private static final String SOLR_HDFS_BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";
@@ -97,18 +100,18 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       waitForRecoveriesToFinish(ACOLLECTION + i, false);
     }
     List<CloudSolrClient> cloudClients = new ArrayList<>();
-    List<StopableIndexingThread> threads = new ArrayList<>();
+    List<StoppableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
       CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress());
       client.setDefaultCollection(ACOLLECTION + i);
       cloudClients.add(client);
-      StopableIndexingThread indexThread = new StopableIndexingThread(null, client, "1", true, docCount);
+      StoppableIndexingThread indexThread = new StoppableIndexingThread(null, client, "1", true, docCount, 1, true);
       threads.add(indexThread);
       indexThread.start();
     }
     
     int addCnt = 0;
-    for (StopableIndexingThread thread : threads) {
+    for (StoppableIndexingThread thread : threads) {
       thread.join();
       addCnt += thread.getNumAdds() - thread.getNumDeletes();
     }

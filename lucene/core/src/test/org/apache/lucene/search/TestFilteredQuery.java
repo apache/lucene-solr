@@ -25,6 +25,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -300,17 +302,38 @@ public class TestFilteredQuery extends LuceneTestCase {
     tChainedFilters(false);
   }
   
+  // a filter for which other queries don't have special rewrite rules
+  private static class FilterWrapper extends Filter {
+
+    private final Filter in;
+    
+    FilterWrapper(Filter in) {
+      this.in = in;
+    }
+    
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+  }
+  
   private void tChainedFilters(final boolean useRandomAccess) throws Exception {
     Query query = new FilteredQuery(new FilteredQuery(
-      new MatchAllDocsQuery(), new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "three")))), randomFilterStrategy(random(), useRandomAccess)),
-      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), randomFilterStrategy(random(), useRandomAccess));
+      new MatchAllDocsQuery(), new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "three")))), randomFilterStrategy(random(), useRandomAccess)),
+      new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), randomFilterStrategy(random(), useRandomAccess));
     ScoreDoc[] hits = searcher.search(query, 10).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), query, searcher);    
 
     // one more:
     query = new FilteredQuery(query,
-      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), randomFilterStrategy(random(), useRandomAccess));
+      new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), randomFilterStrategy(random(), useRandomAccess));
     hits = searcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query, searcher);    
@@ -318,21 +341,21 @@ public class TestFilteredQuery extends LuceneTestCase {
   
   public void testEqualsHashcode() throws Exception {
     // some tests before, if the used queries and filters work:
-    assertEquals(new PrefixFilter(new Term("field", "o")), new PrefixFilter(new Term("field", "o")));
-    assertFalse(new PrefixFilter(new Term("field", "a")).equals(new PrefixFilter(new Term("field", "o"))));
+    assertEquals(new PrefixQuery(new Term("field", "o")), new PrefixQuery(new Term("field", "o")));
+    assertFalse(new PrefixQuery(new Term("field", "a")).equals(new PrefixQuery(new Term("field", "o"))));
     QueryUtils.checkHashEquals(new TermQuery(new Term("field", "one")));
     QueryUtils.checkUnequal(
       new TermQuery(new Term("field", "one")), new TermQuery(new Term("field", "two"))
     );
     // now test FilteredQuery equals/hashcode:
-    QueryUtils.checkHashEquals(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))));
+    QueryUtils.checkHashEquals(new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))));
     QueryUtils.checkUnequal(
-      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))), 
-      new FilteredQuery(new TermQuery(new Term("field", "two")), new PrefixFilter(new Term("field", "o")))
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), 
+      new FilteredQuery(new TermQuery(new Term("field", "two")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))))
     );
     QueryUtils.checkUnequal(
-      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "a"))), 
-      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")))
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "a")))), 
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))))
     );
   }
   
@@ -350,7 +373,7 @@ public class TestFilteredQuery extends LuceneTestCase {
       // pass
     }
     try {
-      new FilteredQuery(null, new PrefixFilter(new Term("field", "o")));
+      new FilteredQuery(null, new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))));
       fail("Should throw IllegalArgumentException");
     } catch (IllegalArgumentException iae) {
       // pass
@@ -388,13 +411,13 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   public void testRewrite() throws Exception {
-    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
-    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
   }
   
   public void testGetFilterStrategy() {
     FilterStrategy randomFilterStrategy = randomFilterStrategy();
-    FilteredQuery filteredQuery = new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy);
+    FilteredQuery filteredQuery = new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))), randomFilterStrategy);
     assertSame(randomFilterStrategy, filteredQuery.getFilterStrategy());
   }
   
@@ -586,6 +609,51 @@ public class TestFilteredQuery extends LuceneTestCase {
     TopDocs search = searcher.search(query, 10);
     assertEquals(totalDocsWithZero, search.totalHits);
     IOUtils.close(reader, directory);
+  }
+
+  public void testPreservesScores() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    writer.addDocument(doc);
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    writer.close();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Query query = new TermQuery(new Term("foo", "bar"));
+    query.setBoost(random().nextFloat());
+    FilteredQuery fq = new FilteredQuery(query, new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
+          throws IOException {
+        return new DocIdSet() {
+          
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
+          
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            return DocIdSetIterator.all(context.reader().maxDoc());
+          }
+        };
+      }
+      @Override
+      public String toString(String field) {
+        return "dummy";
+      }
+    });
+    assertEquals(searcher.search(query, 1).scoreDocs[0].score, searcher.search(fq, 1).scoreDocs[0].score, 0f);
+    fq.setBoost(random().nextFloat());
+    // QueryWrapperFilter has special rewrite rules
+    FilteredQuery fq2 = new FilteredQuery(query, new QueryWrapperFilter(new MatchAllDocsQuery()));
+    fq2.setBoost(fq.getBoost());
+    fq2.setBoost(42);
+    assertEquals(searcher.search(fq, 1).scoreDocs[0].score, searcher.search(fq2, 1).scoreDocs[0].score, 10e-5);
+    reader.close();
+    dir.close();
   }
 }
 

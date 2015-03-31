@@ -140,7 +140,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
-                                         isCompoundFile, null, diagnostics, id, Collections.unmodifiableMap(attributes));
+                                         isCompoundFile, null, Collections.unmodifiableMap(diagnostics), id, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
       return info;
     }
@@ -164,7 +164,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_DOCCOUNT);
-      SimpleTextUtil.write(output, Integer.toString(si.getDocCount()), scratch);
+      SimpleTextUtil.write(output, Integer.toString(si.maxDoc()), scratch);
       SimpleTextUtil.writeNewline(output);
     
       SimpleTextUtil.write(output, SI_USECOMPOUND);

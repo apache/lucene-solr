@@ -19,6 +19,7 @@ package org.apache.solr.common.params;
 
 import org.apache.solr.common.util.StrUtils;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.io.IOException;
@@ -30,17 +31,32 @@ public class MultiMapSolrParams extends SolrParams {
   protected final Map<String,String[]> map;
 
   public static void addParam(String name, String val, Map<String,String[]> map) {
-      String[] arr = map.get(name);
-      if (arr ==null) {
-        arr =new String[]{val};
-      } else {
-        String[] newarr = new String[arr.length+1];
-        System.arraycopy(arr,0,newarr,0,arr.length);
-        newarr[arr.length]=val;
-        arr =newarr;
-      }
-      map.put(name, arr);
+    String[] arr = map.get(name);
+    if (arr == null) {
+      arr = new String[]{val};
+    } else {
+      String[] newarr = new String[arr.length+1];
+      System.arraycopy(arr, 0, newarr, 0, arr.length);
+      newarr[arr.length] = val;
+      arr = newarr;
+    }
+    map.put(name, arr);
   }
+
+  public static void addParam(String name, String[] vals, Map<String,String[]> map) {
+    String[] arr = map.put(name, vals);
+    if (arr == null) {
+      return;
+    }
+
+    String[] newarr = new String[arr.length+vals.length];
+    System.arraycopy(arr, 0, newarr, 0, arr.length);
+    System.arraycopy(vals, 0, newarr, arr.length, vals.length);
+    arr = newarr;
+
+    map.put(name, arr);
+  }
+
 
   public MultiMapSolrParams(Map<String,String[]> map) {
     this.map = map;
@@ -86,6 +102,36 @@ public class MultiMapSolrParams extends SolrParams {
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen
 
     return sb.toString();
+  }
+
+  /** Returns a MultiMap view of the SolrParams as efficiently as possible.  The returned map may or may not be a backing implementation. */
+  public static Map<String,String[]> asMultiMap(SolrParams params) {
+    return asMultiMap(params, false);
+  }
+
+  /** Returns a MultiMap view of the SolrParams.  A new map will be created if newCopy==true */
+  public static Map<String,String[]> asMultiMap(SolrParams params, boolean newCopy) {
+    if (params instanceof MultiMapSolrParams) {
+      Map<String,String[]> map = ((MultiMapSolrParams)params).getMap();
+      if (newCopy) {
+        return new HashMap<>(map);
+      }
+      return map;
+    } else if (params instanceof ModifiableSolrParams) {
+      Map<String,String[]> map = ((ModifiableSolrParams)params).getMap();
+      if (newCopy) {
+        return new HashMap<>(map);
+      }
+      return map;
+    } else {
+      Map<String,String[]> map = new HashMap<>();
+      Iterator<String> iterator = params.getParameterNamesIterator();
+      while (iterator.hasNext()) {
+        String name = iterator.next();
+        map.put(name, params.getParams(name));
+      }
+      return map;
+    }
   }
 
 

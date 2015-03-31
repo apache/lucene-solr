@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -158,9 +159,27 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public final Iterator<BooleanClause> iterator() { return clauses().iterator(); }
 
+  private static BooleanQuery downgradeMustClauseToFilter(BooleanQuery bq) {
+    BooleanQuery clone = bq.clone();
+    clone.clauses.clear();
+    for (BooleanClause clause : bq.clauses()) {
+      if (clause.getOccur() == Occur.MUST) {
+        clone.add(clause.getQuery(), Occur.FILTER);
+      } else {
+        clone.add(clause);
+      }
+    }
+    return clone;
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BooleanWeight(this, searcher, needsScores, disableCoord);
+    BooleanQuery query = this;
+    if (needsScores == false) {
+      // we rewrite MUST clauses to FILTER for caching
+      query = downgradeMustClauseToFilter(query);
+    }
+    return new BooleanWeight(query, searcher, needsScores, disableCoord);
   }
 
   @Override
@@ -242,11 +261,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = clauses.get(i);
-      if (c.isProhibited()) {
-        buffer.append("-");
-      } else if (c.isRequired()) {
-        buffer.append("+");
-      }
+      buffer.append(c.getOccur().toString());
 
       Query subQuery = c.getQuery();
       if (subQuery != null) {
@@ -289,7 +304,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return false;
     }
     BooleanQuery other = (BooleanQuery)o;
-    return this.getBoost() == other.getBoost()
+    return super.equals(o)
         && this.clauses.equals(other.clauses)
         && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch()
         && this.disableCoord == other.disableCoord;
@@ -298,7 +313,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ clauses.hashCode()
+    return super.hashCode() ^ clauses.hashCode()
       + getMinimumNumberShouldMatch() + (disableCoord ? 17:0);
   }
   

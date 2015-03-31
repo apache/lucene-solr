@@ -75,19 +75,19 @@ public class TestWildcard
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
       assertMatches(searcher, wq, 1);
 
-      wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+      wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
       wq.setBoost(0.1F);
       Query q = searcher.rewrite(wq);
       assertTrue(q instanceof TermQuery);
       assertEquals(q.getBoost(), wq.getBoost(), 0);
       
-      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
       wq.setBoost(0.2F);
       q = searcher.rewrite(wq);
-      assertTrue(q instanceof ConstantScoreQuery);
+      assertTrue(q instanceof MultiTermQueryConstantScoreWrapper);
       assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       
-      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
       wq.setBoost(0.4F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
@@ -105,7 +105,7 @@ public class TestWildcard
     IndexSearcher searcher = newSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
-    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     assertMatches(searcher, wq, 0);
     Query q = searcher.rewrite(wq);
     assertTrue(q instanceof BooleanQuery);
@@ -127,11 +127,9 @@ public class TestWildcard
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
-    assertTrue(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
-    assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     reader.close();
     indexStore.close();

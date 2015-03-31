@@ -236,7 +236,6 @@ public class DocBuilder {
             cleanByQuery(delQuery, fullCleanDone);
           }
         }
-        statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
       }
 
       if (stop.get()) {

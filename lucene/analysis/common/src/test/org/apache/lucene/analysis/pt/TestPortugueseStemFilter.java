@@ -34,13 +34,25 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * Simple tests for {@link PortugueseStemFilter}
  */
 public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer source = new MockTokenizer(MockTokenizer.SIMPLE, true);
-      return new TokenStreamComponents(source, new PortugueseStemFilter(source));
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.SIMPLE, true);
+        return new TokenStreamComponents(source, new PortugueseStemFilter(source));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
   
   /**
    * Test the example from the paper "Assessing the impact of stemming accuracy
@@ -76,6 +88,7 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "quilométricas", "quilométricas");
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -92,5 +105,6 @@ public class TestPortugueseStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

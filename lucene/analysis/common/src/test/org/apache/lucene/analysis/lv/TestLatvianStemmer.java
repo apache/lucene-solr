@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.lv;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -30,13 +29,25 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
  * Basic tests for {@link LatvianStemmer}
  */
 public class TestLatvianStemmer extends BaseTokenStreamTestCase {
-  private Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
-    }
-  };
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
   
   public void testNouns1() throws IOException {
     // decl. I
@@ -279,5 +290,6 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

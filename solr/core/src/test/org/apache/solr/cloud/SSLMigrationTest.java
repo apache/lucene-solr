@@ -17,16 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import org.apache.lucene.util.LuceneTestCase.BadApple;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
@@ -39,9 +35,15 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 /**
  * We want to make sure that when migrating between http and https modes the
@@ -72,11 +74,24 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
     for(int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
-      JettySolrRunner newRunner = new JettySolrRunner(runner.getSolrHome(), 
-          context, runner.getLocalPort(), getSolrConfigFile(), getSchemaFile(), 
-          false, getExtraServlets(), sslConfig, getExtraRequestFilters());
-      newRunner.setDataDir(getDataDir(testDir + "/shard" + i + "/data"));
-      newRunner.start(true);
+      JettyConfig config = JettyConfig.builder()
+          .setContext(context)
+          .setPort(runner.getLocalPort())
+          .stopAtShutdown(false)
+          .withServlets(getExtraServlets())
+          .withFilters(getExtraRequestFilters())
+          .withSSLConfig(sslConfig)
+          .build();
+
+      Properties props = new Properties();
+      if (getSolrConfigFile() != null)
+        props.setProperty("solrconfig", getSolrConfigFile());
+      if (getSchemaFile() != null)
+        props.setProperty("schema", getSchemaFile());
+      props.setProperty("solr.data.dir", getDataDir(testDir + "/shard" + i + "/data"));
+
+      JettySolrRunner newRunner = new JettySolrRunner(runner.getSolrHome(), props, config);
+      newRunner.start();
       jettys.set(i, newRunner);
     }
     

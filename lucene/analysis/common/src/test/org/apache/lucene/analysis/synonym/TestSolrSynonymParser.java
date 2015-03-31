@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.io.StringReader;
 import java.text.ParseException;
 
@@ -27,7 +26,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.junit.Test;
 
 /**
  * Tests parser for the Solr synonyms format
@@ -43,11 +41,13 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     "foo => baz\n" +
     "this test, that testing";
     
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
     parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
+    analyzer.close();
     
-    Analyzer analyzer = new Analyzer() {
+    analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
@@ -70,46 +70,77 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     assertAnalyzesTo(analyzer, "this test",
         new String[] { "this", "that", "test", "testing" },
         new int[] { 1, 0, 1, 0 });
+    analyzer.close();
   }
   
   /** parse a syn file with bad syntax */
-  @Test(expected=ParseException.class)
   public void testInvalidDoubleMap() throws Exception {
-    String testFile = "a => b => c"; 
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
-    parser.parse(new StringReader(testFile));
+    String testFile = "a => b => c";
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    try {
+      parser.parse(new StringReader(testFile));
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
+      // expected exc
+    }
+    analyzer.close();
   }
   
   /** parse a syn file with bad syntax */
-  @Test(expected=ParseException.class)
   public void testInvalidAnalyzesToNothingOutput() throws Exception {
     String testFile = "a => 1"; 
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.SIMPLE, false));
-    parser.parse(new StringReader(testFile));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, false);
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    try {
+      parser.parse(new StringReader(testFile));
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
+      // expected exc
+    }
+    analyzer.close();
   }
   
   /** parse a syn file with bad syntax */
-  @Test(expected=ParseException.class)
   public void testInvalidAnalyzesToNothingInput() throws Exception {
-    String testFile = "1 => a"; 
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.SIMPLE, false));
-    parser.parse(new StringReader(testFile));
+    String testFile = "1 => a";
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, false);
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    try {
+      parser.parse(new StringReader(testFile));
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
+      // expected exc
+    }
+    analyzer.close();
   }
   
   /** parse a syn file with bad syntax */
-  @Test(expected=ParseException.class)
   public void testInvalidPositionsInput() throws Exception {
     String testFile = "testola => the test";
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer());
-    parser.parse(new StringReader(testFile));
+    Analyzer analyzer = new EnglishAnalyzer();
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    try {
+      parser.parse(new StringReader(testFile));
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
+      // expected exc
+    }
+    analyzer.close();
   }
   
   /** parse a syn file with bad syntax */
-  @Test(expected=ParseException.class)
   public void testInvalidPositionsOutput() throws Exception {
     String testFile = "the test => testola";
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new EnglishAnalyzer());
-    parser.parse(new StringReader(testFile));
+    Analyzer analyzer = new EnglishAnalyzer();
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    try {
+      parser.parse(new StringReader(testFile));
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
+      // expected exc
+    }
+    analyzer.close();
   }
   
   /** parse a syn file with some escaped syntax chars */
@@ -117,10 +148,12 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     String testFile = 
       "a\\=>a => b\\=>b\n" +
       "a\\,a => b\\,b";
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
     parser.parse(new StringReader(testFile));
     final SynonymMap map = parser.build();
-    Analyzer analyzer = new Analyzer() {
+    analyzer.close();
+    analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
@@ -139,5 +172,6 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     assertAnalyzesTo(analyzer, "a,a",
         new String[] { "b,b" },
         new int[] { 1 });
+    analyzer.close();
   }
 }

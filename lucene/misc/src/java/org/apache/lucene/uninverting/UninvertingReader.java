@@ -19,6 +19,7 @@ package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
@@ -146,14 +147,14 @@ public class UninvertingReader extends FilterLeafReader {
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on. 
    */
-  public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) {
+  public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
     return new UninvertingDirectoryReader(in, mapping);
   }
   
   static class UninvertingDirectoryReader extends FilterDirectoryReader {
     final Map<String,Type> mapping;
     
-    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) {
+    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
@@ -164,7 +165,7 @@ public class UninvertingReader extends FilterLeafReader {
     }
 
     @Override
-    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new UninvertingDirectoryReader(in, mapping);
     }
   }
@@ -215,7 +216,7 @@ public class UninvertingReader extends FilterLeafReader {
         }
       }
       filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
-                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, null));
+                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, Collections.emptyMap()));
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }

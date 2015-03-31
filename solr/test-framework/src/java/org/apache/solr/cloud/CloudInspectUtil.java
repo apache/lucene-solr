@@ -9,6 +9,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -161,7 +162,7 @@ public class CloudInspectUtil {
    * @return true if the compared results are illegal.
    */
   public static boolean compareResults(SolrClient controlClient, SolrClient cloudClient)
-      throws SolrServerException {
+      throws SolrServerException, IOException {
     return compareResults(controlClient, cloudClient, null, null);
   }
   
@@ -171,7 +172,7 @@ public class CloudInspectUtil {
    * @return true if the compared results are illegal.
    */
   public static boolean compareResults(SolrClient controlClient, SolrClient cloudClient, Set<String> addFails, Set<String> deleteFails)
-      throws SolrServerException {
+      throws SolrServerException, IOException {
     
     SolrParams q = SolrTestCaseJ4.params("q","*:*","rows","0", "tests","checkShardConsistency(vsControl)");    // add a tag to aid in debugging via logs
 

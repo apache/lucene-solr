@@ -105,9 +105,10 @@ solrconfig.xml.
 
 * Logging *
 
-By default, Jetty & Solr will log to the console a logs/solr.log. This can be convenient when 
-first getting started, but eventually you will want to log just to a file. To 
-configure logging, edit the log4j.properties file in "resources".
+By default, Jetty & Solr will log to the console and logs/solr.log. This can
+be convenient when first getting started, but eventually you will want to
+log just to a file. To configure logging, edit the log4j.properties file in
+"resources".
  
 It is also possible to setup log4j or other popular logging frameworks.
 

@@ -42,21 +42,38 @@ public class BooleanWeight extends Weight {
   protected int maxCoord;  // num optional + num required
   private final boolean disableCoord;
   private final boolean needsScores;
+  private final float coords[];
 
   public BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, boolean disableCoord) throws IOException {
     super(query);
     this.query = query;
     this.needsScores = needsScores;
     this.similarity = searcher.getSimilarity();
-    this.disableCoord = disableCoord;
     weights = new ArrayList<>(query.clauses().size());
     for (int i = 0 ; i < query.clauses().size(); i++) {
       BooleanClause c = query.clauses().get(i);
-      Weight w = c.getQuery().createWeight(searcher, needsScores && c.isScoring());
+      Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring());
       weights.add(w);
       if (c.isScoring()) {
         maxCoord++;
       }
+    }
+    
+    // precompute coords (0..N, N).
+    // set disableCoord when its explicit, scores are not needed, no scoring clauses, or the sim doesn't use it.
+    coords = new float[maxCoord+1];
+    Arrays.fill(coords, 1F);
+    coords[0] = 0f;
+    if (maxCoord > 0 && needsScores && disableCoord == false) {
+      // compute coords from the similarity, look for any actual ones.
+      boolean seenActualCoord = false;
+      for (int i = 1; i < coords.length; i++) {
+        coords[i] = coord(i, maxCoord);
+        seenActualCoord |= (coords[i] != 1F);
+      }
+      this.disableCoord = seenActualCoord == false;
+    } else {
+      this.disableCoord = true;
     }
   }
 
@@ -110,6 +127,7 @@ public class BooleanWeight extends Weight {
     int coord = 0;
     float sum = 0.0f;
     boolean fail = false;
+    int matchCount = 0;
     int shouldMatchCount = 0;
     Iterator<BooleanClause> cIter = query.clauses().iterator();
     for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
@@ -130,16 +148,19 @@ public class BooleanWeight extends Weight {
           sum += e.getValue();
           coord++;
         } else if (c.isRequired()) {
-          Explanation r =
-              new Explanation(0.0f, "match on required clause (" + c.getQuery().toString() + ")");
-            r.addDetail(e);
-            sumExpl.addDetail(r);
+          Explanation r = new Explanation(0f, "match on required clause, product of:");
+          r.addDetail(new Explanation(0f, Occur.FILTER + " clause"));
+          r.addDetail(e);
+          sumExpl.addDetail(r);
         } else if (c.isProhibited()) {
           Explanation r =
             new Explanation(0.0f, "match on prohibited clause (" + c.getQuery().toString() + ")");
           r.addDetail(e);
           sumExpl.addDetail(r);
           fail = true;
+        }
+        if (!c.isProhibited()) {
+          matchCount++;
         }
         if (c.getOccur() == Occur.SHOULD) {
           shouldMatchCount++;
@@ -165,7 +186,7 @@ public class BooleanWeight extends Weight {
       return sumExpl;
     }
     
-    sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
+    sumExpl.setMatch(0 < matchCount);
     sumExpl.setValue(sum);
     
     final float coordFactor = disableCoord ? 1.0f : coord(coord, maxCoord);
@@ -342,9 +363,9 @@ public class BooleanWeight extends Weight {
       }
     } else {
       if (minShouldMatch > 0) {
-        return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords(), req, requiredScoring.size(), opt);
+        return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords, req, requiredScoring.size(), opt);
       } else {
-        return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, requiredScoring.size(), coords()); 
+        return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, requiredScoring.size(), coords); 
       }
     }
   }
@@ -391,10 +412,11 @@ public class BooleanWeight extends Weight {
     } else {
       float coords[];
       if (disableCoord) {
+        // sneaky: when we do a mixed conjunction/disjunction, we need a fake for the disjunction part.
         coords = new float[optional.size()+1];
         Arrays.fill(coords, 1F);
       } else {
-        coords = coords();
+        coords = this.coords;
       }
       if (minShouldMatch > 1) {
         return new MinShouldMatchSumScorer(this, optional, minShouldMatch, coords);
@@ -402,14 +424,5 @@ public class BooleanWeight extends Weight {
         return new DisjunctionSumScorer(this, optional, coords, needsScores);
       }
     }
-  }
-  
-  private float[] coords() {
-    float[] coords = new float[maxCoord+1];
-    coords[0] = 0F;
-    for (int i = 1; i < coords.length; i++) {
-      coords[i] = coord(i, maxCoord);
-    }
-    return coords;
   }
 }

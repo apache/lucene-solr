@@ -372,7 +372,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                DocValuesType.NONE, -1, null);
+                                                DocValuesType.NONE, -1, new HashMap<>());
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -670,7 +670,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   // randomly index at lower IndexOption
   private FieldsProducer buildIndex(Directory dir, IndexOptions maxAllowed, boolean allowPayloads, boolean alwaysTestMax) throws IOException {
     Codec codec = getCodec();
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", maxDoc, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", maxDoc, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
     int maxIndexOption = Arrays.asList(IndexOptions.values()).indexOf(maxAllowed);
     if (VERBOSE) {
@@ -696,7 +696,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                    indexOptions,
                                                    DocValuesType.NONE,
                                                    -1,
-                                                   null);
+                                                   new HashMap<>());
     }
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);
@@ -1238,7 +1238,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     for(String field : fields.keySet()) {
       while (true) {
         Automaton a = AutomatonTestUtil.randomAutomaton(random());
-        CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE);
+        CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, false);
         if (ca.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
           // Keep retrying until we get an A that will really "use" the PF's intersect code:
           continue;

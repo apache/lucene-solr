@@ -48,10 +48,6 @@ import org.junit.rules.TestRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class HttpReplicatorTest extends ReplicatorTestCase {
-  @Rule
-  public TestRule testRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   private Path clientWorkDir;
   private Replicator serverReplicator;
   private IndexWriter writer;

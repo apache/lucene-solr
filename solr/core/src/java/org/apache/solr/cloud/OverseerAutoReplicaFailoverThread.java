@@ -28,7 +28,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +90,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private final int workLoopDelay;
   private final int waitAfterExpiration;
   
-  public OverseerAutoReplicaFailoverThread(ConfigSolr config, ZkStateReader zkStateReader,
+  public OverseerAutoReplicaFailoverThread(CloudConfig config, ZkStateReader zkStateReader,
       UpdateShardHandler updateShardHandler) {
     this.zkStateReader = zkStateReader;
     
@@ -152,7 +152,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       return;
     }
     if (clusterState != null) {
-      if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0 &&
+      if (clusterState.getZkClusterStateVersion() != null &&
+          clusterState.getZkClusterStateVersion().equals(lastClusterStateVersion) && baseUrlForBadNodes.size() == 0 &&
           liveNodes.equals(clusterState.getLiveNodes())) {
         // nothing has changed, no work to do
         return;

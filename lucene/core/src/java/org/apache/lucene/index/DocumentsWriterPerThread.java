@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -177,7 +178,7 @@ class DocumentsWriterPerThread {
     pendingUpdates.clear();
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
@@ -201,17 +202,18 @@ class DocumentsWriterPerThread {
 
   /** Anything that will add N docs to the index should reserve first to
    *  make sure it's allowed. */
-  private void reserveDoc() {
+  private void reserveOneDoc() {
     if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
-      // Reserve failed
+      // Reserve failed: put the one doc back and throw exc:
       pendingNumDocs.decrementAndGet();
-      throw new IllegalStateException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
+      throw new IllegalArgumentException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
     }
   }
 
   public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
+    reserveOneDoc();
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
@@ -224,7 +226,6 @@ class DocumentsWriterPerThread {
     // document, so the counter will be "wrong" in that case, but
     // it's very hard to fix (we can't easily distinguish aborting
     // vs non-aborting exceptions):
-    reserveDoc();
     boolean success = false;
     try {
       try {
@@ -261,7 +262,7 @@ class DocumentsWriterPerThread {
         // document, so the counter will be "wrong" in that case, but
         // it's very hard to fix (we can't easily distinguish aborting
         // vs non-aborting exceptions):
-        reserveDoc();
+        reserveOneDoc();
         docState.doc = doc;
         docState.docID = numDocsInRAM;
         docCount++;
@@ -387,7 +388,7 @@ class DocumentsWriterPerThread {
   FlushedSegment flush() throws IOException, AbortingException {
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
-    segmentInfo.setDocCount(numDocsInRAM);
+    segmentInfo.setMaxDoc(numDocsInRAM);
     final SegmentWriteState flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
         pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = bytesUsed() / 1024. / 1024.;
@@ -447,7 +448,7 @@ class DocumentsWriterPerThread {
         infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
                 " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
-                " docs/MB=" + nf.format(flushState.segmentInfo.getDocCount() / newSegmentSize));
+                " docs/MB=" + nf.format(flushState.segmentInfo.maxDoc() / newSegmentSize));
       }
 
       assert segmentInfo != null;
@@ -479,7 +480,7 @@ class DocumentsWriterPerThread {
 
     IndexWriter.setDiagnostics(newSegment.info, IndexWriter.SOURCE_FLUSH);
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.sizeInBytes()));
+    IOContext context = new IOContext(new FlushInfo(newSegment.info.maxDoc(), newSegment.sizeInBytes()));
 
     boolean success = false;
     try {

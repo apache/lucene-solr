@@ -50,7 +50,7 @@ import org.apache.lucene.store.IndexOutput;
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, IndexOptions, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
  *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
- *   <li>Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}</li>
  *   <li>DocValuesGen --&gt; {@link DataOutput#writeLong(long) Int64}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
@@ -112,13 +112,16 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkIndexHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
+        int format = CodecUtil.checkIndexHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
                                      Lucene50FieldInfosFormat.FORMAT_START, 
                                      Lucene50FieldInfosFormat.FORMAT_CURRENT,
                                      segmentInfo.getId(), segmentSuffix);
         
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];
+        
+        // previous field's attribute map, we share when possible:
+        Map<String,String> lastAttributes = Collections.emptyMap();
         
         for (int i = 0; i < size; i++) {
           String name = input.readString();
@@ -136,10 +139,20 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
           // DV Types are packed in one byte
           final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
           final long dvGen = input.readLong();
-          final Map<String,String> attributes = input.readStringStringMap();
+          Map<String,String> attributes;
+          if (format >= FORMAT_SAFE_MAPS) {
+            attributes = input.readMapOfStrings();
+          } else {
+            attributes = Collections.unmodifiableMap(input.readStringStringMap());
+          }
+          // just use the last field's map if its the same
+          if (attributes.equals(lastAttributes)) {
+            attributes = lastAttributes;
+          }
+          lastAttributes = attributes;
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(attributes));
+                                     indexOptions, docValuesType, dvGen, attributes);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -264,7 +277,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         // pack the DV type and hasNorms in one byte
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
-        output.writeStringStringMap(fi.attributes());
+        output.writeMapOfStrings(fi.attributes());
       }
       CodecUtil.writeFooter(output);
     }
@@ -276,7 +289,8 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   // Codec header
   static final String CODEC_NAME = "Lucene50FieldInfos";
   static final int FORMAT_START = 0;
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_SAFE_MAPS = 1;
+  static final int FORMAT_CURRENT = FORMAT_SAFE_MAPS;
   
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;

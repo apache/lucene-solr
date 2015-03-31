@@ -332,11 +332,6 @@ public class BitDocSet extends DocSetBase {
           }
 
           @Override
-          public boolean isCacheable() {
-            return true;
-          }
-
-          @Override
           public long ramBytesUsed() {
             return bs.ramBytesUsed();
           }

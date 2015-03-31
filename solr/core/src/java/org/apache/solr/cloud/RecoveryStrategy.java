@@ -39,7 +39,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -67,6 +66,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class RecoveryStrategy extends Thread implements ClosableThread {
+  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
   
@@ -146,9 +146,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     
     // use rep handler directly, so we can do this sync rather than async
     SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
-    if (handler instanceof LazyRequestHandlerWrapper) {
-      handler = ((LazyRequestHandlerWrapper) handler).getWrappedHandler();
-    }
     ReplicationHandler replicationHandler = (ReplicationHandler) handler;
     
     if (replicationHandler == null) {
@@ -163,8 +160,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     boolean success = replicationHandler.doFetch(solrParams, false);
     
     if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Replication for recovery failed.");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
     }
     
     // solrcloud_debug
@@ -182,7 +178,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               + " from "
               + leaderUrl
               + " gen:"
-              + core.getDeletionPolicy().getLatestCommit().getGeneration()
+              + core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration()
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()
@@ -192,7 +188,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           searchHolder.decref();
         }
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+        log.debug("Error in solrcloud_debug block", e);
       }
     }
 
@@ -263,7 +259,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     UpdateLog.RecentUpdates recentUpdates = null;
     try {
       recentUpdates = ulog.getRecentUpdates();
-      recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
+      recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, e);
       recentVersions = new ArrayList<>(0);
@@ -372,9 +368,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state 
-        // are sure to have finished
+        // are sure to have finished (see SOLR-7141 for
+        // discussion around current value)
         try {
-          Thread.sleep(2000);
+          Thread.sleep(WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -386,7 +383,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep, false, false);
+              Collections.singletonList(leaderUrl), ulog.getNumRecordsToKeep(), false, false);
           peerSync.setStartingVersions(recentVersions);
           boolean syncSuccess = peerSync.sync();
           if (syncSuccess) {
@@ -411,7 +408,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                   searchHolder.decref();
                 }
               } catch (Exception e) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+                log.debug("Error in solrcloud_debug block", e);
               }
             }
 
@@ -559,7 +556,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           searchHolder.decref();
         }
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+        log.debug("Error in solrcloud_debug block", e);
       }
     }
     

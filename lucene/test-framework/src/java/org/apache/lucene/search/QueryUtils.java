@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AllDeletedFilterReader;
@@ -133,7 +134,7 @@ public class QueryUtils {
   public static class FCInvisibleMultiReader extends MultiReader {
     private final Object cacheKey = new Object();
   
-    public FCInvisibleMultiReader(IndexReader... readers) {
+    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
       super(readers);
     }
     
@@ -213,7 +214,7 @@ public class QueryUtils {
     return new AllDeletedFilterReader(LuceneTestCase.getOnlySegmentReader(reader));
   }
 
-  /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
+  /** alternate scorer advance(),advance(),next(),next(),advance(),advance(), etc
    * and ensure a hitcollector receives same docs and scores
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
@@ -318,7 +319,7 @@ public class QueryUtils {
               Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-                Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+                Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but advance("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
               }
               leafPtr++;
             }
@@ -340,7 +341,7 @@ public class QueryUtils {
           Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-            Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+            Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but advance("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
         }
       }
@@ -369,11 +370,11 @@ public class QueryUtils {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = s.createNormalizedWeight(q, true);
             Scorer scorer = w.scorer(context.get(leafPtr), liveDocs);
-            Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
-            Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
-            float skipToScore = scorer.score();
-            Assert.assertEquals("unstable skipTo("+i+") score!",skipToScore,scorer.score(),maxDiff); 
-            Assert.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but skipTo("+i+") has <"+skipToScore+">!",score,skipToScore,maxDiff);
+            Assert.assertTrue("query collected "+doc+" but advance("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
+            Assert.assertEquals("query collected "+doc+" but advance("+i+") got to "+scorer.docID(),doc,scorer.docID());
+            float advanceScore = scorer.score();
+            Assert.assertEquals("unstable advance("+i+") score!",advanceScore,scorer.score(),maxDiff); 
+            Assert.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but advance("+i+") has <"+advanceScore+">!",score,advanceScore,maxDiff);
             
             // Hurry things along if they are going slow (eg
             // if you got SimpleText codec this will kick in):
@@ -404,7 +405,7 @@ public class QueryUtils {
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-            Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+            Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but advance("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
           leafPtr++;
         }
@@ -425,7 +426,7 @@ public class QueryUtils {
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-        Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+        Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but advance("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
       }
     }
   }

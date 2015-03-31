@@ -28,34 +28,38 @@ import org.apache.lucene.analysis.util.CharArraySet;
  */
 
 public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
-
-     /** Check that RussianAnalyzer doesnt discard any numbers */
-    public void testDigitsInRussianCharset() throws IOException
-    {
-      RussianAnalyzer ra = new RussianAnalyzer();
-      assertAnalyzesTo(ra, "text 1000", new String[] { "text", "1000" });
-    }
-    
-    public void testReusableTokenStream() throws Exception {
-      Analyzer a = new RussianAnalyzer();
-      assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
-          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
-      assertAnalyzesTo(a, "Но знание это хранилось в тайне",
-          new String[] { "знан", "эт", "хран", "тайн" });
-    }
-    
-    
-    public void testWithStemExclusionSet() throws Exception {
-      CharArraySet set = new CharArraySet( 1, true);
-      set.add("представление");
-      Analyzer a = new RussianAnalyzer( RussianAnalyzer.getDefaultStopSet() , set);
-      assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
-          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
-     
-    }
-    
-    /** blast some random strings through the analyzer */
-    public void testRandomStrings() throws Exception {
-      checkRandomData(random(), new RussianAnalyzer(), 1000*RANDOM_MULTIPLIER);
-    }
+  
+  /** Check that RussianAnalyzer doesnt discard any numbers */
+  public void testDigitsInRussianCharset() throws IOException
+  {
+    RussianAnalyzer ra = new RussianAnalyzer();
+    assertAnalyzesTo(ra, "text 1000", new String[] { "text", "1000" });
+    ra.close();
+  }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new RussianAnalyzer();
+    assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+        new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
+    assertAnalyzesTo(a, "Но знание это хранилось в тайне",
+        new String[] { "знан", "эт", "хран", "тайн" });
+    a.close();
+  }
+  
+  
+  public void testWithStemExclusionSet() throws Exception {
+    CharArraySet set = new CharArraySet( 1, true);
+    set.add("представление");
+    Analyzer a = new RussianAnalyzer( RussianAnalyzer.getDefaultStopSet() , set);
+    assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+        new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
+    a.close();
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer analyzer = new RussianAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
+  }
 }

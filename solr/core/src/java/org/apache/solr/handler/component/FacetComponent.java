@@ -126,75 +126,70 @@ public class FacetComponent extends SearchComponent {
     if (!rb.doFacets) {
       return ResponseBuilder.STAGE_DONE;
     }
-    
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      // overlap facet refinement requests (those shards that we need a count
-      // for particular facet values from), where possible, with
-      // the requests to get fields (because we know that is the
-      // only other required phase).
-      // We do this in distributedProcess so we can look at all of the
-      // requests in the outgoing queue at once.
 
-      for (int shardNum = 0; shardNum < rb.shards.length; shardNum++) {
-        List<String> distribFieldFacetRefinements = null;
-        
-        for (DistribFieldFacet dff : rb._facetInfo.facets.values()) {
-          if (!dff.needRefinements) continue;
-          List<String> refList = dff._toRefine[shardNum];
-          if (refList == null || refList.size() == 0) continue;
-          
-          String key = dff.getKey(); // reuse the same key that was used for the
-                                     // main facet
-          String termsKey = key + "__terms";
-          String termsVal = StrUtils.join(refList, ',');
-          
-          String facetCommand;
-          // add terms into the original facet.field command
-          // do it via parameter reference to avoid another layer of encoding.
-          
-          String termsKeyEncoded = QueryParsing.encodeLocalParamVal(termsKey);
-          if (dff.localParams != null) {
-            facetCommand = commandPrefix + termsKeyEncoded + " "
-                + dff.facetStr.substring(2);
-          } else {
-            facetCommand = commandPrefix + termsKeyEncoded + '}' + dff.field;
-          }
-          
-          if (distribFieldFacetRefinements == null) {
-            distribFieldFacetRefinements = new ArrayList<>();
-          }
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_DONE;
+    }
+    // Overlap facet refinement requests (those shards that we need a count
+    // for particular facet values from), where possible, with
+    // the requests to get fields (because we know that is the
+    // only other required phase).
+    // We do this in distributedProcess so we can look at all of the
+    // requests in the outgoing queue at once.
 
-          distribFieldFacetRefinements.add(facetCommand);
-          distribFieldFacetRefinements.add(termsKey);
-          distribFieldFacetRefinements.add(termsVal);
+    for (int shardNum = 0; shardNum < rb.shards.length; shardNum++) {
+      List<String> distribFieldFacetRefinements = null;
+
+      // FieldFacetAdditions
+      for (DistribFieldFacet dff : rb._facetInfo.facets.values()) {
+        if (!dff.needRefinements) continue;
+        List<String> refList = dff._toRefine[shardNum];
+        if (refList == null || refList.size() == 0) continue;
+
+        String key = dff.getKey(); // reuse the same key that was used for the
+                                   // main facet
+        String termsKey = key + "__terms";
+        String termsVal = StrUtils.join(refList, ',');
+
+        String facetCommand;
+        // add terms into the original facet.field command
+        // do it via parameter reference to avoid another layer of encoding.
+
+        String termsKeyEncoded = QueryParsing.encodeLocalParamVal(termsKey);
+        if (dff.localParams != null) {
+          facetCommand = commandPrefix + termsKeyEncoded + " "
+              + dff.facetStr.substring(2);
+        } else {
+          facetCommand = commandPrefix + termsKeyEncoded + '}' + dff.field;
         }
-        
-        boolean pivotFacetRefinementRequestsExistForShard = 
-          doAnyPivotFacetRefinementRequestsExistForShard(rb._facetInfo, shardNum);
 
-        if (distribFieldFacetRefinements == null
-            && !pivotFacetRefinementRequestsExistForShard) {
-          // nothing to refine, short circuit out
-          continue;
+        if (distribFieldFacetRefinements == null) {
+          distribFieldFacetRefinements = new ArrayList<>();
         }
-        
+
+        distribFieldFacetRefinements.add(facetCommand);
+        distribFieldFacetRefinements.add(termsKey);
+        distribFieldFacetRefinements.add(termsVal);
+      }
+
+      if (distribFieldFacetRefinements != null) {
         String shard = rb.shards[shardNum];
         ShardRequest shardsRefineRequest = null;
         boolean newRequest = false;
-        
+
         // try to find a request that is already going out to that shard.
-        // If nshards becomes to great, we way want to move to hashing for
+        // If nshards becomes too great, we may want to move to hashing for
         // better scalability.
         for (ShardRequest sreq : rb.outgoing) {
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0
-              && sreq.shards != null 
+              && sreq.shards != null
               && sreq.shards.length == 1
               && sreq.shards[0].equals(shard)) {
             shardsRefineRequest = sreq;
             break;
           }
         }
-        
+
         if (shardsRefineRequest == null) {
           // we didn't find any other suitable requests going out to that shard,
           // so create one ourselves.
@@ -206,47 +201,50 @@ public class FacetComponent extends SearchComponent {
           shardsRefineRequest.params.remove(CommonParams.START);
           shardsRefineRequest.params.set(CommonParams.ROWS, "0");
         }
-        
-        // FieldFacetAdditions
-        if (distribFieldFacetRefinements != null) {
-          shardsRefineRequest.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;
-          shardsRefineRequest.params.set(FacetParams.FACET, "true");
-          shardsRefineRequest.params.remove(FacetParams.FACET_FIELD);
-          shardsRefineRequest.params.remove(FacetParams.FACET_QUERY);
-          //TODO remove interval faceting, and ranges and heatmap too?
 
-          for (int i = 0; i < distribFieldFacetRefinements.size();) {
-            String facetCommand = distribFieldFacetRefinements.get(i++);
-            String termsKey = distribFieldFacetRefinements.get(i++);
-            String termsVal = distribFieldFacetRefinements.get(i++);
+        shardsRefineRequest.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;
+        shardsRefineRequest.params.set(FacetParams.FACET, "true");
+        removeMainFacetTypeParams(shardsRefineRequest);
 
-            shardsRefineRequest.params.add(FacetParams.FACET_FIELD,
-                facetCommand);
-            shardsRefineRequest.params.set(termsKey, termsVal);
-          }
+        for (int i = 0; i < distribFieldFacetRefinements.size();) {
+          String facetCommand = distribFieldFacetRefinements.get(i++);
+          String termsKey = distribFieldFacetRefinements.get(i++);
+          String termsVal = distribFieldFacetRefinements.get(i++);
+
+          shardsRefineRequest.params.add(FacetParams.FACET_FIELD,
+              facetCommand);
+          shardsRefineRequest.params.set(termsKey, termsVal);
         }
 
         if (newRequest) {
           rb.addRequest(this, shardsRefineRequest);
         }
-
-        // PivotFacetAdditions
-        if (pivotFacetRefinementRequestsExistForShard) {
-          if (newRequest) {
-            shardsRefineRequest.params.remove(FacetParams.FACET_PIVOT);
-            shardsRefineRequest.params.remove(FacetParams.FACET_PIVOT_MINCOUNT);
-          }
-          
-          enqueuePivotFacetShardRequests(rb, shardNum);
-        }
       }
-    }
-    
+
+
+      // PivotFacetAdditions
+      if (doAnyPivotFacetRefinementRequestsExistForShard(rb._facetInfo, shardNum)) {
+        enqueuePivotFacetShardRequests(rb, shardNum);
+      }
+
+    } // for shardNum
+
     return ResponseBuilder.STAGE_DONE;
   }
-  
+
+  public static String[] FACET_TYPE_PARAMS = {
+      FacetParams.FACET_FIELD, FacetParams.FACET_PIVOT, FacetParams.FACET_QUERY, FacetParams.FACET_DATE,
+      FacetParams.FACET_RANGE, FacetParams.FACET_INTERVAL, FacetParams.FACET_HEATMAP
+  };
+
+  private void removeMainFacetTypeParams(ShardRequest shardsRefineRequest) {
+    for (String param : FACET_TYPE_PARAMS) {
+      shardsRefineRequest.params.remove(param);
+    }
+  }
+
   private void enqueuePivotFacetShardRequests(ResponseBuilder rb, int shardNum) {
-    
+
     FacetInfo fi = rb._facetInfo;
     
     ShardRequest shardsRefineRequestPivot = new ShardRequest();
@@ -259,9 +257,8 @@ public class FacetComponent extends SearchComponent {
     
     shardsRefineRequestPivot.purpose |= ShardRequest.PURPOSE_REFINE_PIVOT_FACETS;
     shardsRefineRequestPivot.params.set(FacetParams.FACET, "true");
-    shardsRefineRequestPivot.params.remove(FacetParams.FACET_PIVOT_MINCOUNT);
+    removeMainFacetTypeParams(shardsRefineRequestPivot);
     shardsRefineRequestPivot.params.set(FacetParams.FACET_PIVOT_MINCOUNT, -1);
-    shardsRefineRequestPivot.params.remove(FacetParams.FACET_PIVOT);
     shardsRefineRequestPivot.params.remove(FacetParams.FACET_OFFSET);
     
     for (int pivotIndex = 0; pivotIndex < fi.pivotFacets.size(); pivotIndex++) {

@@ -139,7 +139,7 @@ public class MergeState {
       docBase += docMap.numDocs();
     }
 
-    segmentInfo.setDocCount(docBase);
+    segmentInfo.setMaxDoc(docBase);
   }
 
   /**

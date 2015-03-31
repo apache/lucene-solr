@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestRuleMarkFailure;
+import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Assert;
@@ -44,7 +45,6 @@ import org.junit.runner.notification.Failure;
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.SysGlobals;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
 /**
@@ -124,7 +124,7 @@ public abstract class WithNestedTests {
   {
     final TestRuleMarkFailure marker = new TestRuleMarkFailure();
     rules = RuleChain
-      .outerRule(new SystemPropertiesRestoreRule())
+      .outerRule(new TestRuleRestoreSystemProperties(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED))
       .around(new TestRuleAdapter() {
         @Override
         protected void afterAlways(List<Throwable> errors) throws Throwable {

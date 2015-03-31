@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.*;
+import java.nio.ByteBuffer;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -28,28 +29,36 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.schema.*;
 
+import com.tdunning.math.stats.AVLTreeDigest;
+
 /**
- * Factory class for creating instance of {@link org.apache.solr.handler.component.StatsValues}
+ * Factory class for creating instance of 
+ * {@link org.apache.solr.handler.component.StatsValues}
  */
 public class StatsValuesFactory {
 
   /**
-   * Creates an instance of StatsValues which supports values from the specified {@link StatsField}
+   * Creates an instance of StatsValues which supports values from the specified 
+   * {@link StatsField}
    *
-   * @param statsField {@link StatsField} whose statistics will be created by the resulting {@link StatsValues}
-   * @return Instance of {@link StatsValues} that will create statistics from values from the specified {@link StatsField}
+   * @param statsField
+   *          {@link StatsField} whose statistics will be created by the
+   *          resulting {@link StatsValues}
+   * @return Instance of {@link StatsValues} that will create statistics from
+   *         values from the specified {@link StatsField}
    */
   public static StatsValues createStatsValues(StatsField statsField) {
-
+    
     final SchemaField sf = statsField.getSchemaField();
-
+    
     if (null == sf) {
       // function stats
       return new NumericStatsValues(statsField);
-    } 
-
+    }
+    
     final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
     
     if (TrieDateField.class.isInstance(fieldType)) {
@@ -61,34 +70,41 @@ public class StatsValuesFactory {
     } else if (sf.getType().getClass().equals(EnumField.class)) {
       return new EnumStatsValues(statsField);
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field type " + fieldType + " is not currently supported");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Field type " + fieldType + " is not currently supported");
     }
   }
 }
 
 /**
- * Abstract implementation of {@link org.apache.solr.handler.component.StatsValues} 
- * that provides the default behavior for most StatsValues implementations.
+ * Abstract implementation of
+ * {@link org.apache.solr.handler.component.StatsValues} that provides the
+ * default behavior for most StatsValues implementations.
  *
- * There are very few requirements placed on what statistics concrete implementations 
- * should collect, with the only required statistics being the minimum and maximum values.
+ * There are very few requirements placed on what statistics concrete
+ * implementations should collect, with the only required statistics being the
+ * minimum and maximum values.
  */
 abstract class AbstractStatsValues<T> implements StatsValues {
   private static final String FACETS = "facets";
-
+  
   /** Tracks all data about tthe stats we need to collect */
   final protected StatsField statsField;
 
-  /** 
-   * local copy to save method dispatch in tight loops 
-   * @see StatsField#getCalcDistinct
-   */
-  final protected boolean calcDistinct;
-
   /** may be null if we are collecting stats directly from a function ValueSource */
   final protected SchemaField sf;
-  /** may be null if we are collecting stats directly from a function ValueSource */
+  /**
+   * may be null if we are collecting stats directly from a function ValueSource
+   */
   final protected FieldType ft;
+
+  // final booleans from StatsField to allow better inlining & JIT optimizing
+  final protected boolean computeCount;
+  final protected boolean computeMissing;
+  final protected boolean computeCalcDistinct;
+  final protected boolean computeMin;
+  final protected boolean computeMax;
+  final protected boolean computeMinOrMax;
 
   /** 
    * Either a function value source to collect from, or the ValueSource associated 
@@ -96,41 +112,48 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    * {@link #setNextReader} is called at least once
    */
   private ValueSource valueSource;
-  /** 
-   * Context to use when retrieving FunctionValues, will be null until/unless 
+  /**
+   * Context to use when retrieving FunctionValues, will be null until/unless
    * {@link #setNextReader} is called at least once
    */
   private Map vsContext;
-  /** 
-   * Values to collect, will be null until/unless {@link #setNextReader} is called 
-   * at least once 
+  /**
+   * Values to collect, will be null until/unless {@link #setNextReader} is
+   * called at least once
    */
   protected FunctionValues values;
-
+  
   protected T max;
   protected T min;
   protected long missing;
   protected long count;
   protected long countDistinct;
-  protected Set<T> distinctValues;
+  protected final Set<T> distinctValues;
   
-  // facetField   facetValue
-  protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
-
+  // facetField facetValue
+  protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
+  
   protected AbstractStatsValues(StatsField statsField) {
     this.statsField = statsField;
-    this.calcDistinct = statsField.getCalcDistinct();
-    this.distinctValues = new TreeSet<>();
+    this.computeCount = statsField.calculateStats(Stat.count);
+    this.computeMissing = statsField.calculateStats(Stat.missing);
+    this.computeCalcDistinct = statsField.calculateStats(Stat.calcdistinct);
+    this.computeMin = statsField.calculateStats(Stat.min);
+    this.computeMax = statsField.calculateStats(Stat.max);
+    this.computeMinOrMax = computeMin || computeMax;
+      
+    this.distinctValues = computeCalcDistinct ? new TreeSet<>() : null;
 
     // alternatively, we could refactor a common base class that doesn't know/care
     // about either SchemaField or ValueSource - but then there would be a lot of
     // duplicate code between "NumericSchemaFieldStatsValues" and 
     // "NumericValueSourceStatsValues" which would have diff parent classes
     //
-    // part of the complexity here being that the StatsValues API serves two 
-    // masters: collecting concrete Values from things like DocValuesStats and 
-    // the distributed aggregation logic, but also collecting docIds which it then
-    // uses to go out and pull concreate values from the ValueSource 
+    // part of the complexity here being that the StatsValues API serves two
+    // masters: collecting concrete Values from things like DocValuesStats and
+    // the distributed aggregation logic, but also collecting docIds which it
+    // then
+    // uses to go out and pull concreate values from the ValueSource
     // (from a func, or single valued field)
     if (null != statsField.getSchemaField()) {
       assert null == statsField.getValueSource();
@@ -143,27 +166,33 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       this.ft = null;
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void accumulate(NamedList stv) {
-    count += (Long) stv.get("count");
-    missing += (Long) stv.get("missing");
-    if (calcDistinct) {
+    if (computeCount) {
+      count += (Long) stv.get("count");
+    }
+    if (computeMissing) {
+      missing += (Long) stv.get("missing");
+    }
+    if (computeCalcDistinct) {
       distinctValues.addAll((Collection<T>) stv.get("distinctValues"));
       countDistinct = distinctValues.size();
     }
-
-    updateMinMax((T) stv.get("min"), (T) stv.get("max"));
+    
+    if (computeMinOrMax) {
+      updateMinMax((T) stv.get("min"), (T) stv.get("max"));
+    }
     updateTypeSpecificStats(stv);
-
+    
     NamedList f = (NamedList) stv.get(FACETS);
     if (f == null) {
       return;
     }
-
+    
     for (int i = 0; i < f.size(); i++) {
       String field = f.getName(i);
       NamedList vals = (NamedList) f.getVal(i);
@@ -183,37 +212,45 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       }
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void accumulate(BytesRef value, int count) {
     if (null == ft) {
-      throw new IllegalStateException("Can't collect & convert BytesRefs on stats that do't use a a FieldType: " + statsField);
+      throw new IllegalStateException(
+          "Can't collect & convert BytesRefs on stats that do't use a a FieldType: "
+              + statsField);
     }
-    T typedValue = (T)ft.toObject(sf, value);
+    T typedValue = (T) ft.toObject(sf, value);
     accumulate(typedValue, count);
   }
 
   public void accumulate(T value, int count) { 
-    this.count += count;
-    if (calcDistinct) {
+    if (computeCount) {
+      this.count += count;
+    }
+    if (computeCalcDistinct) {
       distinctValues.add(value);
       countDistinct = distinctValues.size();
     }
-    updateMinMax(value, value);
+    if (computeMinOrMax) {
+      updateMinMax(value, value);
+    }
     updateTypeSpecificStats(value, count);
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void missing() {
-    missing++;
+    if (computeMissing) {
+      missing++;
+    }
   }
-   
+  
   /**
    * {@inheritDoc}
    */
@@ -221,7 +258,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   public void addMissing(int count) {
     missing += count;
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -229,7 +266,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   public void addFacet(String facetName, Map<String, StatsValues> facetValues) {
     facets.put(facetName, facetValues);
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -237,151 +274,248 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   public NamedList<?> getStatsValues() {
     NamedList<Object> res = new SimpleOrderedMap<>();
 
-    res.add("min", min);
-    res.add("max", max);
-    res.add("count", count);
-    res.add("missing", missing);
-    if (calcDistinct) {
+    if (statsField.includeInResponse(Stat.min)) {
+      res.add("min", min);
+    }
+    if (statsField.includeInResponse(Stat.max)) {
+      res.add("max", max);
+    }
+    if (statsField.includeInResponse(Stat.count)) {
+      res.add("count", count);
+    }
+    if (statsField.includeInResponse(Stat.missing)) {
+      res.add("missing", missing);
+    }
+    if (statsField.includeInResponse(Stat.calcdistinct)) {
       res.add("distinctValues", distinctValues);
       res.add("countDistinct", countDistinct);
     }
-
+    
     addTypeSpecificStats(res);
-
-     // add the facet stats
-    NamedList<NamedList<?>> nl = new SimpleOrderedMap<>();
-    for (Map.Entry<String, Map<String, StatsValues>> entry : facets.entrySet()) {
-      NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<>();
-      nl.add(entry.getKey(), nl2);
-      for (Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet()) {
-        nl2.add(e2.getKey(), e2.getValue().getStatsValues());
+    
+    if (!facets.isEmpty()) {
+      
+      // add the facet stats
+      NamedList<NamedList<?>> nl = new SimpleOrderedMap<>();
+      for (Map.Entry<String,Map<String,StatsValues>> entry : facets.entrySet()) {
+        NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<>();
+        nl.add(entry.getKey(), nl2);
+        for (Map.Entry<String,StatsValues> e2 : entry.getValue().entrySet()) {
+          nl2.add(e2.getKey(), e2.getValue().getStatsValues());
+        }
       }
+
+      res.add(FACETS, nl);
     }
-    res.add(FACETS, nl);
+
     return res;
   }
-
+  
   /**
    * {@inheritDoc}
    */
-   public void setNextReader(LeafReaderContext ctx) throws IOException {
+  public void setNextReader(LeafReaderContext ctx) throws IOException {
     if (valueSource == null) {
       // first time we've collected local values, get the right ValueSource
       valueSource = (null == ft) 
-        ? statsField.getValueSource()
+        ? statsField.getValueSource() 
         : ft.getValueSource(sf, null);
       vsContext = ValueSource.newContext(statsField.getSearcher());
     }
     values = valueSource.getValues(vsContext, ctx);
   }
-
+  
   /**
    * Updates the minimum and maximum statistics based on the given values
    *
-   * @param min Value that the current minimum should be updated against
-   * @param max Value that the current maximum should be updated against
+   * @param min
+   *          Value that the current minimum should be updated against
+   * @param max
+   *          Value that the current maximum should be updated against
    */
   protected abstract void updateMinMax(T min, T max);
-
+  
   /**
    * Updates the type specific statistics based on the given value
    *
-   * @param value Value the statistics should be updated against
-   * @param count Number of times the value is being accumulated
+   * @param value
+   *          Value the statistics should be updated against
+   * @param count
+   *          Number of times the value is being accumulated
    */
   protected abstract void updateTypeSpecificStats(T value, int count);
-
+  
   /**
    * Updates the type specific statistics based on the values in the given list
    *
-   * @param stv List containing values the current statistics should be updated against
+   * @param stv
+   *          List containing values the current statistics should be updated
+   *          against
    */
   protected abstract void updateTypeSpecificStats(NamedList stv);
-
+  
   /**
    * Add any type specific statistics to the given NamedList
    *
-   * @param res NamedList to add the type specific statistics too
+   * @param res
+   *          NamedList to add the type specific statistics too
    */
   protected abstract void addTypeSpecificStats(NamedList<Object> res);
 }
 
- /**
+/**
  * Implementation of StatsValues that supports Double values
  */
 class NumericStatsValues extends AbstractStatsValues<Number> {
-
+  
   double sum;
   double sumOfSquares;
+  
+  AVLTreeDigest tdigest;
+
+  double minD; // perf optimization, only valid if (null != this.min)
+  double maxD; // perf optimization, only valid if (null != this.max)
+  
+  final protected boolean computeSum;
+  final protected boolean computeSumOfSquares;
+  final protected boolean computePercentiles;
 
   public NumericStatsValues(StatsField statsField) {
     super(statsField);
-  }
 
+    this.computeSum = statsField.calculateStats(Stat.sum);
+    this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
+    
+    this.computePercentiles = statsField.calculateStats(Stat.percentiles);
+    if ( computePercentiles ) {
+      
+      tdigest = new AVLTreeDigest(statsField.getTdigestCompression()); 
+    }
+  }
+  
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
-      accumulate((Number) values.objectVal(docID), 1);
+      Number value = (Number) values.objectVal(docID);
+      accumulate(value, 1);
     } else {
       missing();
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void updateTypeSpecificStats(NamedList stv) {
-    sum += ((Number)stv.get("sum")).doubleValue();
-    sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    if (computeSum) {
+      sum += ((Number) stv.get("sum")).doubleValue();
+    }
+    if (computeSumOfSquares) {
+      sumOfSquares += ((Number) stv.get("sumOfSquares")).doubleValue();
+    }
+    
+    if (computePercentiles) {      
+      byte[] data = (byte[]) stv.get("percentiles");
+      ByteBuffer buf = ByteBuffer.wrap(data);
+      tdigest.add(AVLTreeDigest.fromBytes(buf));
+    }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void updateTypeSpecificStats(Number v, int count) {
     double value = v.doubleValue();
-    sumOfSquares += (value * value * count); // for std deviation
-    sum += value * count;
+    if (computeSumOfSquares) {
+      sumOfSquares += (value * value * count); // for std deviation
+    }
+    if (computeSum) {
+      sum += value * count;
+    }
+    if (computePercentiles) {
+      tdigest.add(value, count);
+    }
   }
-
-   /**
+  
+  /**
    * {@inheritDoc}
    */
   @Override
   protected void updateMinMax(Number min, Number max) {
-    if (null == min) {
-      assert null == max : "min is null but max isn't ? ==> " + max;
-      return; // No-Op
-    }
-
-    assert null != max : "max is null but min isn't ? ==> " + min;
-
-    // we always use the double value, because that way the response Object class is 
+    // we always use the double values, because that way the response Object class is 
     // consistent regardless of whether we only have 1 value or many that we min/max
     //
     // TODO: would be nice to have subclasses for each type of Number ... breaks backcompat
-    double minD = min.doubleValue();
-    double maxD = max.doubleValue();
 
-    this.min = (null == this.min) ? minD : Math.min(this.min.doubleValue(), minD);
-    this.max = (null == this.max) ? maxD : Math.max(this.max.doubleValue(), maxD);
+    if (computeMin) { // nested if to encourage JIT to optimize aware final var?
+      if (null != min) {
+        double minD = min.doubleValue();
+        if (null == this.min || minD < this.minD) {
+          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          this.min = this.minD = minD;
+        }
+      }
+    }
+    if (computeMax) { // nested if to encourage JIT to optimize aware final var?
+      if (null != max) {
+        double maxD = max.doubleValue();
+        if (null == this.max || this.maxD < maxD) {
+          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          this.max = this.maxD = maxD;
+        }
+      }
+    }
   }
-
+  
   /**
-   * Adds sum, sumOfSquares, mean and standard deviation statistics to the given NamedList
+   * Adds sum, sumOfSquares, mean, stddev, and percentiles to the given
+   * NamedList
    *
-   * @param res NamedList to add the type specific statistics too
+   * @param res
+   *          NamedList to add the type specific statistics too
    */
   @Override
   protected void addTypeSpecificStats(NamedList<Object> res) {
-    res.add("sum", sum);
-    res.add("sumOfSquares", sumOfSquares);
-    res.add("mean", sum / count);
-    res.add("stddev", getStandardDeviation());
+    if (statsField.includeInResponse(Stat.sum)) {
+      res.add("sum", sum);
+    }
+    if (statsField.includeInResponse(Stat.sumOfSquares)) {
+      res.add("sumOfSquares", sumOfSquares);
+    }
+    if (statsField.includeInResponse(Stat.mean)) {
+      res.add("mean", sum / count);
+    }
+    if (statsField.includeInResponse(Stat.stddev)) {
+      res.add("stddev", getStandardDeviation());
+    }
+    if (statsField.includeInResponse(Stat.percentiles)) {
+      if (statsField.getIsShard()) {
+        // as of current t-digest version, smallByteSize() internally does a full conversion in 
+        // order to determine what the size is (can't be precomputed?) .. so rather then
+        // serialize to a ByteBuffer twice, allocate the max possible size buffer,
+        // serialize once, and then copy only the byte[] subset that we need, and free up the buffer
+        ByteBuffer buf = ByteBuffer.allocate(tdigest.byteSize()); // upper bound
+        tdigest.asSmallBytes(buf);
+        res.add("percentiles", Arrays.copyOf(buf.array(), buf.position()) );
+      } else {
+        NamedList<Object> percentileNameList = new NamedList<Object>();
+        for (Double percentile : statsField.getPercentilesList()) {
+          // Empty document set case
+          if (tdigest.size() == 0) {
+            percentileNameList.add(percentile.toString(), null);
+          } else {
+            Double cutoff = tdigest.quantile(percentile / 100);
+            percentileNameList.add(percentile.toString(), cutoff);
+          }
+        }
+        res.add("percentiles", percentileNameList);
+      }
+    }
   }
-
+  
+  
   /**
    * Calculates the standard deviation statistic
    *
@@ -391,8 +525,9 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if (count <= 1.0D) {
       return 0.0D;
     }
-
+    
     return Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (count * (count - 1.0D)));
+                     
   }
 }
 
@@ -400,11 +535,11 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
  * Implementation of StatsValues that supports EnumField values
  */
 class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
-
+  
   public EnumStatsValues(StatsField statsField) {
     super(statsField);
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -419,21 +554,27 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
       missing();
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
-    if (max != null) {
-      if (max.compareTo(this.max) > 0)
-        this.max = max;
+    if (computeMin) { // nested if to encourage JIT to optimize aware final var?
+      if (null != min) {
+        if (null == this.min || (min.compareTo(this.min) < 0)) {
+          this.min = min;
+        }
+      }
     }
-    if (this.min == null)
-      this.min = min;
-    else if (this.min.compareTo(min) > 0)
-      this.min = min;
+    if (computeMax) { // nested if to encourage JIT to optimize aware final var?
+      if (null != max) {
+        if (null == this.max || (max.compareTo(this.max) > 0)) {
+          this.max = max;
+        }
+      }
+    }
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -441,7 +582,7 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
   protected void updateTypeSpecificStats(NamedList stv) {
     // No type specific stats
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -449,7 +590,7 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
   protected void updateTypeSpecificStats(EnumFieldValue value, int count) {
     // No type specific stats
   }
-
+  
   /**
    * Adds no type specific statistics
    */
@@ -457,23 +598,26 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
   protected void addTypeSpecificStats(NamedList<Object> res) {
     // Add no statistics
   }
-
-
+  
 }
 
 /**
- * /**
- * Implementation of StatsValues that supports Date values
+ * /** Implementation of StatsValues that supports Date values
  */
 class DateStatsValues extends AbstractStatsValues<Date> {
-
+  
   private long sum = 0;
   double sumOfSquares = 0;
+  
+  final protected boolean computeSum;
+  final protected boolean computeSumOfSquares;
 
   public DateStatsValues(StatsField statsField) {
     super(statsField);
+    this.computeSum = statsField.calculateStats(Stat.sum);
+    this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
   }
-
+  
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
@@ -482,64 +626,76 @@ class DateStatsValues extends AbstractStatsValues<Date> {
       missing();
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   protected void updateTypeSpecificStats(NamedList stv) {
-    Date date = (Date) stv.get("sum");
-    if (date != null) {
-      sum += date.getTime();
-      sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    if (computeSum) {
+      sum += ((Date) stv.get("sum")).getTime();
+    }
+    if (computeSumOfSquares) {
+      sumOfSquares += ((Number) stv.get("sumOfSquares")).doubleValue();
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void updateTypeSpecificStats(Date v, int count) {
     long value = v.getTime();
-    sumOfSquares += (value * value * count); // for std deviation
-    sum += value * count;
+    if (computeSumOfSquares) {
+      sumOfSquares += (value * value * count); // for std deviation
+    }
+    if (computeSum) {
+      sum += value * count;
+    }
   }
-
-   /**
+  
+  /**
    * {@inheritDoc}
    */
   @Override
   protected void updateMinMax(Date min, Date max) {
-    if(null != min && (this.min==null || this.min.after(min))) {
-      this.min = min;
+    if (computeMin) { // nested if to encourage JIT to optimize aware final var?
+      if (null != min && (this.min==null || this.min.after(min))) {
+        this.min = min;
+      }
     }
-    if(null != max && (this.max==null || this.max.before(max))) {
-      this.max = max;
+    if (computeMax) { // nested if to encourage JIT to optimize aware final var?
+      if (null != max && (this.max==null || this.max.before(max))) {
+        this.max = max;
+      }
     }
   }
-
+  
   /**
    * Adds sum and mean statistics to the given NamedList
    *
-   * @param res NamedList to add the type specific statistics too
+   * @param res
+   *          NamedList to add the type specific statistics too
    */
   @Override
   protected void addTypeSpecificStats(NamedList<Object> res) {
-    if(sum<=0) {
-      return; // date==0 is meaningless
+    if (statsField.includeInResponse(Stat.sum)) {
+      res.add("sum", new Date(sum));
     }
-    res.add("sum", new Date(sum));
-    if (count > 0) {
-      res.add("mean", new Date(sum / count));
+    if (statsField.includeInResponse(Stat.mean)) {
+      res.add("mean", (count > 0) ? new Date(sum / count) : null);
     }
-    res.add("sumOfSquares", sumOfSquares);
-    res.add("stddev", getStandardDeviation());
+    if (statsField.includeInResponse(Stat.sumOfSquares)) {
+      res.add("sumOfSquares", sumOfSquares);
+    }
+    if (statsField.includeInResponse(Stat.stddev)) {
+      res.add("stddev", getStandardDeviation());
+    }
   }
   
-
-  
   /**
-   * Calculates the standard deviation.  For dates, this is really the MS deviation
+   * Calculates the standard deviation. For dates, this is really the MS
+   * deviation
    *
    * @return Standard deviation statistic
    */
@@ -547,7 +703,8 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     if (count <= 1) {
       return 0.0D;
     }
-    return Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (count * (count - 1.0D)));
+    return Math.sqrt(((count * sumOfSquares) - (sum * sum))
+        / (count * (count - 1.0D)));
   }
 }
 
@@ -555,24 +712,25 @@ class DateStatsValues extends AbstractStatsValues<Date> {
  * Implementation of StatsValues that supports String values
  */
 class StringStatsValues extends AbstractStatsValues<String> {
-
+  
   public StringStatsValues(StatsField statsField) {
     super(statsField);
   }
-
+  
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
       String value = values.strVal(docID);
-      if (value != null)
+      if (value != null) {
         accumulate(value, 1);
-      else
+      } else { 
         missing();
+      }
     } else {
       missing();
     }
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -580,7 +738,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
   protected void updateTypeSpecificStats(NamedList stv) {
     // No type specific stats
   }
-
+  
   /**
    * {@inheritDoc}
    */
@@ -588,16 +746,20 @@ class StringStatsValues extends AbstractStatsValues<String> {
   protected void updateTypeSpecificStats(String value, int count) {
     // No type specific stats
   }
-
-   /**
+  
+  /**
    * {@inheritDoc}
    */
   @Override
   protected void updateMinMax(String min, String max) {
-    this.max = max(this.max, max);
-    this.min = min(this.min, min);
+    if (computeMin) { // nested if to encourage JIT to optimize aware final var?
+      this.min = min(this.min, min);
+    }
+    if (computeMax) { // nested if to encourage JIT to optimize aware final var?
+      this.max = max(this.max, max);
+    }
   }
-
+  
   /**
    * Adds no type specific statistics
    */
@@ -605,13 +767,17 @@ class StringStatsValues extends AbstractStatsValues<String> {
   protected void addTypeSpecificStats(NamedList<Object> res) {
     // Add no statistics
   }
-
-  /** 
-   * Determines which of the given Strings is the maximum, as computed by {@link String#compareTo(String)}
+  
+  /**
+   * Determines which of the given Strings is the maximum, as computed by
+   * {@link String#compareTo(String)}
    *
-   * @param str1 String to compare against b
-   * @param str2 String compared against a
-   * @return str1 if it is considered greater by {@link String#compareTo(String)}, str2 otherwise
+   * @param str1
+   *          String to compare against b
+   * @param str2
+   *          String compared against a
+   * @return str1 if it is considered greater by
+   *         {@link String#compareTo(String)}, str2 otherwise
    */
   private static String max(String str1, String str2) {
     if (str1 == null) {
@@ -621,13 +787,17 @@ class StringStatsValues extends AbstractStatsValues<String> {
     }
     return (str1.compareTo(str2) > 0) ? str1 : str2;
   }
-
+  
   /**
-   * Determines which of the given Strings is the minimum, as computed by {@link String#compareTo(String)}
+   * Determines which of the given Strings is the minimum, as computed by
+   * {@link String#compareTo(String)}
    *
-   * @param str1 String to compare against b
-   * @param str2 String compared against a
-   * @return str1 if it is considered less by {@link String#compareTo(String)}, str2 otherwise
+   * @param str1
+   *          String to compare against b
+   * @param str2
+   *          String compared against a
+   * @return str1 if it is considered less by {@link String#compareTo(String)},
+   *         str2 otherwise
    */
   private static String min(String str1, String str2) {
     if (str1 == null) {

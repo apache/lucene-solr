@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.Assert;
@@ -31,7 +31,7 @@ import org.junit.Assert;
 /**
  *
  */
-public class TestUtils extends LuceneTestCase {
+public class TestUtils extends SolrTestCaseJ4 {
   
   public void testJoin() {
     assertEquals("a|b|c",   StrUtils.join(Arrays.asList("a","b","c"), '|'));
@@ -136,7 +136,7 @@ public class TestUtils extends LuceneTestCase {
       try {
         iter.remove();
         Assert.fail( "should be unsupported..." );
-      } catch( UnsupportedOperationException ex ) {}
+      } catch( UnsupportedOperationException ignored) {}
     }
     // the values should be bigger
     assertEquals( new Integer(10), map.get( "one" ) );

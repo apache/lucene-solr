@@ -305,11 +305,11 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * Subclasses of {@code DirectoryReader} should take care to not allow
    * modification of this internal array, e.g. {@link #doOpenIfChanged()}.
    */
-  protected DirectoryReader(Directory directory, LeafReader[] segmentReaders) {
+  protected DirectoryReader(Directory directory, LeafReader[] segmentReaders) throws IOException {
     super(segmentReaders);
     this.directory = directory;
   }
-  
+
   /** Returns the directory this index resides in. */
   public final Directory directory() {
     // Don't ensureOpen here -- in certain cases, when a

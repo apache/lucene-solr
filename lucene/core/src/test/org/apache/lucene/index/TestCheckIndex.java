@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
@@ -116,6 +118,54 @@ public class TestCheckIndex extends LuceneTestCase {
     iw.addDocument(doc);
     iw.close();
     dir.close(); // checkindex
+  }
+  
+  public void testChecksumsOnly() throws IOException {
+    LineFileDocs lf = new LineFileDocs(random());
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer));
+    for (int i = 0; i < 100; i++) {
+      iw.addDocument(lf.nextDoc());
+    }
+    iw.addDocument(new Document());
+    iw.commit();
+    iw.close();
+    lf.close();
+    
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
+    if (VERBOSE) checker.setInfoStream(System.out);
+    CheckIndex.Status indexStatus = checker.checkIndex();
+    assertTrue(indexStatus.clean);
+    checker.close();
+    dir.close();
+    analyzer.close();
+  }
+  
+  public void testChecksumsOnlyVerbose() throws IOException {
+    LineFileDocs lf = new LineFileDocs(random());
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer));
+    for (int i = 0; i < 100; i++) {
+      iw.addDocument(lf.nextDoc());
+    }
+    iw.addDocument(new Document());
+    iw.commit();
+    iw.close();
+    lf.close();
+    
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(new PrintStream(bos, true, IOUtils.UTF_8));
+    if (VERBOSE) checker.setInfoStream(System.out);
+    CheckIndex.Status indexStatus = checker.checkIndex();
+    assertTrue(indexStatus.clean);
+    checker.close();
+    dir.close();
+    analyzer.close();
   }
   
   public void testObtainsLock() throws IOException {

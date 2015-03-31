@@ -56,7 +56,6 @@ public class DocValuesStats {
   public static StatsValues getCounts(SolrIndexSearcher searcher, StatsField statsField, DocSet docs, String[] facet) throws IOException {
 
     final SchemaField schemaField = statsField.getSchemaField(); 
-    final boolean calcDistinct = statsField.getCalcDistinct();
 
     assert null != statsField.getSchemaField()
       : "DocValuesStats requires a StatsField using a SchemaField";

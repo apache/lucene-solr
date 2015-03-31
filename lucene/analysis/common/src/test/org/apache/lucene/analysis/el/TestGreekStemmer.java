@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.el;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -26,7 +25,19 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 public class TestGreekStemmer extends BaseTokenStreamTestCase {
-  Analyzer a = new GreekAnalyzer();
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new GreekAnalyzer();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
 
   public void testMasculineNouns() throws Exception {
     // -ος
@@ -537,5 +548,6 @@ public class TestGreekStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -27,6 +27,22 @@ interface CharStream {
    */
   char readChar() throws java.io.IOException;
 
+  @Deprecated
+  /**
+   * Returns the column position of the character last read.
+   * @deprecated
+   * @see #getEndColumn
+   */
+  int getColumn();
+
+  @Deprecated
+  /**
+   * Returns the line number of the character last read.
+   * @deprecated
+   * @see #getEndLine
+   */
+  int getLine();
+
   /**
    * Returns the column number of the last character for current token (being
    * matched after the last call to BeginTOken).
@@ -96,4 +112,4 @@ interface CharStream {
   void Done();
 
 }
-/* JavaCC - OriginalChecksum=a81c9280a3ec4578458c607a9d95acb4 (do not edit this line) */
+/* JavaCC - OriginalChecksum=48b70e7c01825c8f301c7362bf1028d8 (do not edit this line) */

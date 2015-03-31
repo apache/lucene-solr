@@ -17,8 +17,6 @@
 
 package org.apache.solr.schema;
 
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +38,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocTermOrdsRewriteMethod;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
@@ -67,6 +64,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -269,6 +268,7 @@ public abstract class FieldType extends FieldProperties {
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
+    newType.setStoreTermVectorPayloads(field.storeTermPayloads());
 
     return createField(field.getName(), val, newType, boost);
   }
@@ -732,9 +732,9 @@ public abstract class FieldType extends FieldProperties {
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
     if (!field.indexed() && field.hasDocValues()) {
-      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new DocValuesRewriteMethod();
+      return new DocValuesRewriteMethod();
     } else {
-      return MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE;
+      return MultiTermQuery.CONSTANT_SCORE_REWRITE;
     }
   }
 

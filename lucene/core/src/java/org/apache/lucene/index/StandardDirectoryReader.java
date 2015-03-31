@@ -38,7 +38,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   
   /** called only from static open() methods */
   StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
-    SegmentInfos sis, boolean applyAllDeletes) {
+    SegmentInfos sis, boolean applyAllDeletes) throws IOException {
     super(directory, readers);
     this.writer = writer;
     this.segmentInfos = sis;
@@ -52,18 +52,23 @@ final class StandardDirectoryReader extends DirectoryReader {
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
         SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
-        for (int i = sis.size()-1; i >= 0; i--) {
-          boolean success = false;
-          try {
+        boolean success = false;
+        try {
+          for (int i = sis.size()-1; i >= 0; i--) {
             readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
-            success = true;
-          } finally {
-            if (!success) {
-              IOUtils.closeWhileHandlingException(readers);
-            }
+          }
+
+          // This may throw CorruptIndexException if there are too many docs, so
+          // it must be inside try clause so we close readers in that case:
+          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, false);
+          success = true;
+
+          return reader;
+        } finally {
+          if (success == false) {
+            IOUtils.closeWhileHandlingException(readers);
           }
         }
-        return new StandardDirectoryReader(directory, readers, null, sis, false);
       }
     }.run(commit);
   }
@@ -179,7 +184,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
             // Make a best effort to detect when the app illegally "rm -rf" their
             // index while a reader was open, and then called openIfChanged:
-            boolean illegalDocCountChange = commitInfo.info.getDocCount() != oldReader.getSegmentInfo().info.getDocCount();
+            boolean illegalDocCountChange = commitInfo.info.maxDoc() != oldReader.getSegmentInfo().info.maxDoc();
             
             boolean hasNeitherDeletionsNorUpdates = commitInfo.hasDeletions()== false && commitInfo.hasFieldUpdates() == false;
 

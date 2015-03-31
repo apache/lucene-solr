@@ -18,9 +18,11 @@ package org.apache.lucene.analysis.icu;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import com.ibm.icu.text.Normalizer2;
@@ -29,13 +31,25 @@ import com.ibm.icu.text.Normalizer2;
  * Tests the ICUNormalizer2Filter
  */
 public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(tokenizer));
-    }
-  };
+  Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(tokenizer));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
 
   public void testDefaults() throws IOException {
     // case folding
@@ -72,6 +86,7 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
     
     // decompose EAcute into E + combining Acute
     assertAnalyzesTo(a, "\u00E9", new String[] { "\u0065\u0301" });
+    a.close();
   }
   
   /** blast some random strings through the analyzer */
@@ -88,5 +103,6 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

@@ -13,12 +13,33 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            --> 
+    <!-- RewriteHandle to redirect root to Solr                      -->
+    <!-- =========================================================== -->
+     <New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+      <Set name="rewriteRequestURI">true</Set>
+      <Set name="rewritePathInfo">false</Set>
+      <Set name="originalPathAttribute">requestedPath</Set>
+
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
+            <Set name="regex">^/$</Set>
+            <Set name="replacement">/solr/</Set>
+          </New>
+        </Arg>
+      </Call>
+     </New>
+
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
       <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <Ref id="RewriteHandler"/>
+           </Item>
            <Item>
              <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
            </Item>

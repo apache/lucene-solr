@@ -17,9 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import static org.apache.lucene.search.DocIdSet.EMPTY;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,37 +37,60 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BlockJoinComparatorSource;
-import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SparseFixedBitSet;
 
 public class TestBlockJoinSorter extends LuceneTestCase {
 
-  private static class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter {
+  private static class BitSetCachingWrapperFilter extends Filter {
 
-    public FixedBitSetCachingWrapperFilter(Filter filter) {
-      super(filter, FilterCachingPolicy.ALWAYS_CACHE);
+    private final Filter filter;
+    private final Map<Object,BitDocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,BitDocIdSet>());
+
+    public BitSetCachingWrapperFilter(Filter filter) {
+      this.filter = filter;
     }
 
     @Override
-    protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader)
-        throws IOException {
-      final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
-      cached.or(iterator);
-      return new BitDocIdSet(cached);
+    public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
+      final LeafReader reader = context.reader();
+      final Object key = reader.getCoreCacheKey();
+
+      BitDocIdSet docIdSet = cache.get(key);
+      if (docIdSet == null) {
+        final DocIdSet uncached = filter.getDocIdSet(context, null);
+        final DocIdSetIterator it = uncached == null ? null : uncached.iterator();
+        if (it != null) {
+          BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
+          builder.or(it);
+          docIdSet = builder.build();
+        }
+        if (docIdSet == null) {
+          docIdSet = new BitDocIdSet(new SparseFixedBitSet(context.reader().maxDoc()));
+        }
+        cache.put(key, docIdSet);
+      }
+
+      return docIdSet == EMPTY ? null : BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
     }
 
+    @Override
+    public String toString(String field) {
+      return getClass().getName() + "(" + filter.toString(field) + ")";
+    }
   }
 
   public void test() throws IOException {
@@ -92,7 +120,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     writer.close();
 
     final LeafReader reader = getOnlySegmentReader(indexReader);
-    final Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
+    final Filter parentsFilter = new BitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
     final FixedBitSet parentBits = (FixedBitSet) parentsFilter.getDocIdSet(reader.getContext(), null).bits();
     final NumericDocValues parentValues = reader.getNumericDocValues("parent_val");
     final NumericDocValues childValues = reader.getNumericDocValues("child_val");

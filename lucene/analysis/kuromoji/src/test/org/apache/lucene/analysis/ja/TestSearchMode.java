@@ -31,13 +31,25 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
   private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
-  private final Analyzer analyzer = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.SEARCH);
-      return new TokenStreamComponents(tokenizer, tokenizer);
-    }
-  };
+  private Analyzer analyzer;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    analyzer.close();
+    super.tearDown();
+  }
 
   /** Test search mode segmentation */
   public void testSearchSegmentation() throws IOException {

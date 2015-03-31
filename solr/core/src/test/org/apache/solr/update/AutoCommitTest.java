@@ -144,7 +144,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   {
     ArrayList<ContentStream> streams = new ArrayList<>();
     ContentStreamBase stream = new ContentStreamBase.StringStream( str );
-    stream.setContentType( contentType );
+    if (contentType != null) stream.setContentType( contentType );
     streams.add( stream );
     return streams;
   }

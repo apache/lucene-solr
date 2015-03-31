@@ -111,7 +111,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.getDocCount();
+    final int maxDoc = state.segmentInfo.maxDoc();
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
     dvConsumer.addBinaryField(fieldInfo,

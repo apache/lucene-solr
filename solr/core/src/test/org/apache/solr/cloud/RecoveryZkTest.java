@@ -34,8 +34,8 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
-  private StopableIndexingThread indexThread;
-  private StopableIndexingThread indexThread2;
+  private StoppableIndexingThread indexThread;
+  private StoppableIndexingThread indexThread2;
 
   public RecoveryZkTest() {
     super();
@@ -72,11 +72,11 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
       maxDoc = maxDocNightlyList[random().nextInt(maxDocList.length - 1)];
     }
     
-    indexThread = new StopableIndexingThread(controlClient, cloudClient, "1", true, maxDoc);
+    indexThread = new StoppableIndexingThread(controlClient, cloudClient, "1", true, maxDoc, 1, true);
     indexThread.start();
     
-    indexThread2 = new StopableIndexingThread(controlClient, cloudClient, "2", true, maxDoc);
-    
+    indexThread2 = new StoppableIndexingThread(controlClient, cloudClient, "2", true, maxDoc, 1, true);
+
     indexThread2.start();
 
     // give some time to index...

@@ -105,7 +105,7 @@ class Lucene50DocValuesConsumer extends DocValuesConsumer implements Closeable {
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
       CodecUtil.writeIndexHeader(meta, metaCodec, Lucene50DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-      maxDoc = state.segmentInfo.getDocCount();
+      maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
       if (!success) {

@@ -24,7 +24,8 @@ import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s that index points.
+ * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s that index points
+ * (AND ONLY POINTS!).
  *
  * @lucene.internal
  */
@@ -40,8 +41,8 @@ public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<P
 
   @Override
   protected Point readShape(BytesRef term) {
-    scanCell = grid.readCell(term, scanCell);;
-    if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())//points are never flagged as leaf
+    scanCell = grid.readCell(term, scanCell);
+    if (scanCell.getLevel() == grid.getMaxLevels())
       return scanCell.getShape().getCenter();
     return null;
   }

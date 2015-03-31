@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -33,11 +34,11 @@ public abstract class StringHelper {
 
   /**
    * Compares two {@link BytesRef}, element by element, and returns the
-   * number of elements common to both arrays.
+   * number of elements common to both arrays (from the start of each).
    *
    * @param left The first {@link BytesRef} to compare
    * @param right The second {@link BytesRef} to compare
-   * @return The number of common elements.
+   * @return The number of common elements (from the start of each).
    */
   public static int bytesDifference(BytesRef left, BytesRef right) {
     int len = left.length < right.length ? left.length : right.length;
@@ -132,6 +133,34 @@ public abstract class StringHelper {
    */
   public static boolean endsWith(BytesRef ref, BytesRef suffix) {
     return sliceEquals(ref, suffix, ref.length - suffix.length);
+  }
+  
+  /**
+   * Returns <code>true</code> iff the ref contains the given slice. Otherwise
+   * <code>false</code>.
+   * 
+   * @param ref
+   *          the {@link BytesRef} to test
+   * @param slice
+   *          the slice to look for
+   * @param ignoreCase
+   *          whether the comparison should be case-insensitive
+   * @return Returns <code>true</code> iff the ref contains the given slice.
+   *         Otherwise <code>false</code>.
+   */
+  public static boolean contains(BytesRef ref, BytesRef slice, boolean ignoreCase) {
+    if (ignoreCase) {
+      String s1 = ref.utf8ToString();
+      String s2 = slice.utf8ToString();
+      return s1.toLowerCase(Locale.ENGLISH).contains(s2.toLowerCase(Locale.ENGLISH));
+    } else {
+      for (int pos = 0; pos <= ref.length - slice.length; ++pos) {
+        if (sliceEquals(ref, slice, pos)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
   
   private static boolean sliceEquals(BytesRef sliceToTest, BytesRef other, int pos) {
@@ -363,5 +392,21 @@ public abstract class StringHelper {
       }
       return sb.toString();
     }
+  }
+  
+  /** Just converts each int in the incoming {@link IntsRef} to each byte
+   *  in the returned {@link BytesRef}, throwing {@code IllegalArgumentException}
+   *  if any int value is out of bounds for a byte. */
+  public static BytesRef intsRefToBytesRef(IntsRef ints) {
+    byte[] bytes = new byte[ints.length];
+    for(int i=0;i<ints.length;i++) {
+      int x = ints.ints[ints.offset+i];
+      if (x < 0 || x > 255) {
+        throw new IllegalArgumentException("int at pos=" + i + " with value=" + x + " is out-of-bounds for byte");
+      }
+      bytes[i] = (byte) x;
+    }
+
+    return new BytesRef(bytes);
   }
 }

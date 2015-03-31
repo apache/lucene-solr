@@ -4,7 +4,7 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.queryparser.xml.*;
-import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -48,7 +48,7 @@ public class CachedFilterBuilder implements FilterBuilder {
   private final QueryBuilderFactory queryFactory;
   private final FilterBuilderFactory filterFactory;
 
-  private LRUCache<Object, Filter> filterCache;
+  private LRUCache<Object, Query> filterCache;
 
   private final int cacheSize;
 
@@ -81,20 +81,20 @@ public class CachedFilterBuilder implements FilterBuilder {
       f = filterFactory.getFilter(childElement);
       cacheKey = f;
     }
-    Filter cachedFilter = filterCache.get(cacheKey);
+    Query cachedFilter = filterCache.get(cacheKey);
     if (cachedFilter != null) {
-      return cachedFilter; // cache hit
+      return new QueryWrapperFilter(cachedFilter); // cache hit
     }
 
     //cache miss
     if (qb != null) {
       cachedFilter = new QueryWrapperFilter(q);
     } else {
-      cachedFilter = new CachingWrapperFilter(f);
+      cachedFilter = new CachingWrapperQuery(f);
     }
 
     filterCache.put(cacheKey, cachedFilter);
-    return cachedFilter;
+    return new QueryWrapperFilter(cachedFilter);
   }
 
   static class LRUCache<K, V> extends java.util.LinkedHashMap<K, V> {

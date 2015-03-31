@@ -1127,7 +1127,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
 
     if (r.nextBoolean())
       return super.queryServer(params);

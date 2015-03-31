@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.en;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -36,13 +35,25 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Test the PorterStemFilter with Martin Porter's test data.
  */
 public class TestPorterStemFilter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer t = new MockTokenizer( MockTokenizer.KEYWORD, false);
-      return new TokenStreamComponents(t, new PorterStemFilter(t));
-    }
-  };
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer( MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(t, new PorterStemFilter(t));
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
   
   /**
    * Run the stemmer against all strings in voc.txt
@@ -75,5 +86,6 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

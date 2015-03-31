@@ -28,8 +28,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -46,8 +46,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,7 +56,9 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 @Nightly
 @Slow
 @SuppressSSL
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBase {
   
   private static final boolean DEBUG = true;

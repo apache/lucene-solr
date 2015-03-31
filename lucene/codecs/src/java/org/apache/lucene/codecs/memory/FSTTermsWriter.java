@@ -137,7 +137,7 @@ public class FSTTermsWriter extends FieldsConsumer {
     this.postingsWriter = postingsWriter;
     this.fieldInfos = state.fieldInfos;
     this.out = state.directory.createOutput(termsFileName, state.context);
-    this.maxDoc = state.segmentInfo.getDocCount();
+    this.maxDoc = state.segmentInfo.maxDoc();
 
     boolean success = false;
     try {

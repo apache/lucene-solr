@@ -228,7 +228,7 @@ public class ClusterState implements JSONWriter.Writable {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("live nodes:" + liveNodes);
-    sb.append(" collections:" + collectionStates);
+    sb.append("collections:" + collectionStates);
     return sb.toString();
   }
 
@@ -391,6 +391,15 @@ public class ClusterState implements JSONWriter.Writable {
     }
 
     public boolean isLazilyLoaded() { return false; }
+    
+    @Override
+    public String toString() {
+      if (coll != null) {
+        return coll.toString();
+      } else {
+        return "null DocCollection ref";
+      }
+    }
 
   }
 

@@ -404,4 +404,12 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.schema = schema;
     core.setLatestSchema(schema);
   }
+  
+  public boolean isMutable() {
+    return isMutable;
+  }
+
+  public SolrConfig getConfig() {
+    return config;
+  }
 }

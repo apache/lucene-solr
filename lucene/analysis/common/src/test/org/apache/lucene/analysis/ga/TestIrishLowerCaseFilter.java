@@ -48,5 +48,6 @@ public class TestIrishLowerCaseFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

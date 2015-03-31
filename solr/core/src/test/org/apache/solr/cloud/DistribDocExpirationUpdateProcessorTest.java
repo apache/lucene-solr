@@ -168,8 +168,8 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
    * Query is garunteed to be executed at least once.
    */
   private void waitForNoResults(int maxTimeLimitSeconds,
-                                SolrParams params) 
-    throws SolrServerException, InterruptedException {
+                                SolrParams params)
+      throws SolrServerException, InterruptedException, IOException {
 
     final long giveUpAfter = System.currentTimeMillis() + (1000L * maxTimeLimitSeconds);
     long numFound = cloudClient.query(params).getResults().getNumFound();

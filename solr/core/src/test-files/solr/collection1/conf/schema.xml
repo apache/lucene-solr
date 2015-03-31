@@ -86,6 +86,8 @@
     <fieldType name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true" multiValued="true"/>
 
     <fieldType name="dateRange" class="solr.DateRangeField" />
+    <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+        geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
 
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
@@ -101,6 +103,16 @@
       </analyzer>
     </fieldType>
 
+    <fieldtype name="text_payload_tv" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+        <filter class="org.apache.lucene.analysis.payloads.TokenOffsetPayloadTokenFilterFactory"/>
+      </analyzer>
+    </fieldtype>
 
     <fieldType name="nametext" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
@@ -410,6 +422,7 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory" />
     </analyzer>
   </fieldType>
+  <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
 </types>
 
@@ -475,6 +488,8 @@
    <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
    <field name="test_posofftv" type="text" termVectors="true"
      termPositions="true" termOffsets="true"/>
+   <field name="test_posoffpaytv" type="text_payload_tv" termVectors="true" 
+     termPositions="true" termOffsets="true" termPayloads="true"/>
 
    <!-- test highlit field settings -->
    <field name="test_hlt" type="highlittext" indexed="true"/>
@@ -548,6 +563,10 @@
 
    <field name="payloadDelimited" type="payloadDelimited" />
 
+   <!-- EnumType -->
+   <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+
+
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -620,6 +639,7 @@
    <dynamicField name="*_path"  type="path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
    <dynamicField name="*_ancestor"  type="ancestor_path" indexed="true" stored="true" omitNorms="true" multiValued="true" />
 
+   <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true" />
  </fields>
 
  <defaultSearchField>text</defaultSearchField>

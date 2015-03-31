@@ -17,6 +17,8 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
@@ -212,11 +214,6 @@ abstract class DocSetBase implements DocSet {
           }
 
           @Override
-          public boolean isCacheable() {
-            return true;
-          }
-
-          @Override
           public long ramBytesUsed() {
             return bs.ramBytesUsed();
           }
@@ -244,4 +241,9 @@ abstract class DocSetBase implements DocSet {
     }
   }
 
+
+  /** FUTURE: for off-heap */
+  @Override
+  public void close() throws IOException {
+  }
 }

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 public class EnumFieldTest extends SolrTestCaseJ4 {
 
-  private final static String FIELD_NAME = "severity";
+  private final String FIELD_NAME = random().nextBoolean() ? "severity" : "severity_dv";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -178,7 +178,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*"), "//doc[1]/str[@name='severity']/text()='Low'");
+    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*"), "//doc[1]/str[@name='" + FIELD_NAME + "']/text()='Low'");
   }
 
   @Test
@@ -198,17 +198,17 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*", "sort", FIELD_NAME + " desc"), "//doc[1]/str[@name='severity']/text()='Critical'",
-            "//doc[2]/str[@name='severity']/text()='High'", "//doc[3]/str[@name='severity']/text()='Medium'", "//doc[4]/str[@name='severity']/text()='Low'",
-            "//doc[5]/str[@name='severity']/text()='Not Available'");
+    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*", "sort", FIELD_NAME + " desc"), "//doc[1]/str[@name='" + FIELD_NAME + "']/text()='Critical'",
+            "//doc[2]/str[@name='" + FIELD_NAME + "']/text()='High'", "//doc[3]/str[@name='" + FIELD_NAME + "']/text()='Medium'", "//doc[4]/str[@name='" + FIELD_NAME + "']/text()='Low'",
+            "//doc[5]/str[@name='" + FIELD_NAME + "']/text()='Not Available'");
 
     //sort ascending - empty values will be first
-    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*", "sort", FIELD_NAME + " asc"), "//doc[3]/str[@name='severity']/text()='Not Available'");
+    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*", "sort", FIELD_NAME + " asc"), "//doc[3]/str[@name='" + FIELD_NAME + "']/text()='Not Available'");
 
     //q for not empty docs
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[* TO *]" , "sort", FIELD_NAME + " asc"), "//doc[1]/str[@name='severity']/text()='Not Available'",
-            "//doc[2]/str[@name='severity']/text()='Low'", "//doc[3]/str[@name='severity']/text()='Medium'", "//doc[4]/str[@name='severity']/text()='High'",
-            "//doc[5]/str[@name='severity']/text()='Critical'"
+    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[* TO *]" , "sort", FIELD_NAME + " asc"), "//doc[1]/str[@name='" + FIELD_NAME + "']/text()='Not Available'",
+            "//doc[2]/str[@name='" + FIELD_NAME + "']/text()='Low'", "//doc[3]/str[@name='" + FIELD_NAME + "']/text()='Medium'", "//doc[4]/str[@name='" + FIELD_NAME + "']/text()='High'",
+            "//doc[5]/str[@name='" + FIELD_NAME + "']/text()='Critical'"
     );
   }
 

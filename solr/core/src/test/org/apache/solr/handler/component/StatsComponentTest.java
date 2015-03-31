@@ -16,11 +16,14 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -29,21 +32,26 @@ import java.util.TimeZone;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.BeforeClass;
 
+import org.apache.commons.math3.util.Combinations;
+import com.tdunning.math.stats.AVLTreeDigest;
+
+import org.junit.BeforeClass;
 
 /**
  * Statistics Component Test
@@ -647,8 +655,20 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     args.put("indent", "true");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
-    assertQ("test string statistics values", req,
-        "//null[@name='active_i'][.='']");
+    assertQ("test string statistics values", req
+            ,"//lst[@name='active_i']/long[@name='count'][.='0']"
+            ,"//lst[@name='active_i']/long[@name='missing'][.='4']"
+
+            ,"//lst[@name='active_i']/null[@name='min']"
+            ,"//lst[@name='active_i']/null[@name='max']"
+            ,"//lst[@name='active_i']/double[@name='sum'][.='0.0']"
+            ,"//lst[@name='active_i']/double[@name='sumOfSquares'][.='0.0']"
+            ,"//lst[@name='active_i']/double[@name='stddev'][.='0.0']"
+            ,"//lst[@name='active_i']/double[@name='mean'][.='NaN']"
+            // if new stats are supported, this will break - update test to assert values for each
+            ,"count(//lst[@name='active_i']/*)=8"
+            
+            );
   }
 
   public void testFieldStatisticsResultsStringFieldAlwaysMissing() throws Exception {
@@ -667,8 +687,15 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     args.put("indent", "true");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
-    assertQ("test string statistics values", req,
-        "//null[@name='active_s'][.='']");
+    assertQ("test string statistics values", req
+            ,"//lst[@name='active_s']/long[@name='count'][.='0']"
+            ,"//lst[@name='active_s']/long[@name='missing'][.='4']"
+
+            ,"//lst[@name='active_s']/null[@name='min']"
+            ,"//lst[@name='active_s']/null[@name='max']"
+            // if new stats are supported, this will break - update test to assert values for each
+            ,"count(//lst[@name='active_s']/*)=4"
+         );
   }
 
   //SOLR-3160
@@ -688,8 +715,20 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     args.put("indent", "true");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
-    assertQ("test string statistics values", req,
-        "//null[@name='active_dt'][.='']");
+    assertQ("test string statistics values", req
+            ,"//lst[@name='active_dt']/long[@name='count'][.='0']"
+            ,"//lst[@name='active_dt']/long[@name='missing'][.='3']"
+
+            ,"//lst[@name='active_dt']/null[@name='min']"
+            ,"//lst[@name='active_dt']/null[@name='max']"
+            ,"//lst[@name='active_dt']/null[@name='mean']"
+            ,"//lst[@name='active_dt']/date[@name='sum'][.='1970-01-01T00:00:00Z']"
+            ,"//lst[@name='active_dt']/double[@name='sumOfSquares'][.='0.0']"
+            ,"//lst[@name='active_dt']/double[@name='stddev'][.='0.0']"
+
+            // if new stats are supported, this will break - update test to assert values for each
+            ,"count(//lst[@name='active_dt']/*)=8"
+            );
   }
 
   public void testStatsFacetMultivaluedErrorHandling() throws Exception {
@@ -813,8 +852,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       args.put(CommonParams.Q, "*:*");
       args.put(StatsParams.STATS, "true");
       args.put(StatsParams.STATS_FIELD, fieldName);
-      args.put("indent", "true");
       args.put(StatsParams.STATS_CALC_DISTINCT, "true");
+      args.put("indent", "true");
 
       SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
@@ -860,8 +899,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
        args.put(StatsParams.STATS, "true");
        args.put(StatsParams.STATS_FIELD, fieldName);
        args.put(StatsParams.STATS_FACET, fieldName);
-       args.put("indent", "true");
        args.put(StatsParams.STATS_CALC_DISTINCT, "true");
+       args.put("indent", "true");
 
        SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
@@ -987,27 +1026,107 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
     assertU(commit());
 
-    Map<String, String> args = new HashMap<>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, fieldName);
-    args.put(StatsParams.STATS_CALC_DISTINCT, "true");
-    args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    final SolrParams baseParams = params(CommonParams.Q, "*:*",
+                                         "indent", "true",
+                                         StatsParams.STATS, "true");
 
-    assertQ("test min/max on docValues and multiValued", req
-        , "//lst[@name='" + fieldName + "']/double[@name='min'][.='-3.0']"
-        , "//lst[@name='" + fieldName + "']/double[@name='max'][.='16.0']"
-        , "//lst[@name='" + fieldName + "']/long[@name='count'][.='12']"
-        , "//lst[@name='" + fieldName + "']/double[@name='sum'][.='38.0']"
-        , "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']"
-        , "//lst[@name='" + fieldName + "']/double[@name='mean'][.='3.1666666666666665']"
-        , "//lst[@name='" + fieldName + "']/double[@name='stddev'][.='5.638074031784151']"
-        , "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']"
-        , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']");
+    SolrQueryRequest req1 = req(baseParams, 
+                                StatsParams.STATS_CALC_DISTINCT, "true",
+                                StatsParams.STATS_FIELD, fieldName);
+    SolrQueryRequest req2 = req(baseParams, 
+                                StatsParams.STATS_FIELD,
+                                "{!min=true, max=true, count=true, sum=true, mean=true, stddev=true, sumOfSquares=true, missing=true, calcdistinct=true}" + fieldName);
 
+    for (SolrQueryRequest req : new SolrQueryRequest[] { req1, req2 }) {
+      assertQ("test status on docValues and multiValued: " + req.toString(), req
+              , "//lst[@name='" + fieldName + "']/double[@name='min'][.='-3.0']"
+              , "//lst[@name='" + fieldName + "']/double[@name='max'][.='16.0']"
+              , "//lst[@name='" + fieldName + "']/long[@name='count'][.='12']"
+              , "//lst[@name='" + fieldName + "']/double[@name='sum'][.='38.0']"
+              , "//lst[@name='" + fieldName + "']/double[@name='mean'][.='3.1666666666666665']"
+              , "//lst[@name='" + fieldName + "']/double[@name='stddev'][.='5.638074031784151']"
+              , "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']"
+              , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']"
+              , "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']"
+              // always comes along with countDistinct
+              , "count(//lst[@name='" + fieldName + "']/arr[@name='distinctValues']/float)=9"
+              // if new default stats are added, this will break - update test to assert values for each
+              ,"count(//lst[@name='" + fieldName + "']/*)=10"
+              );
+    }
   }
+  
+  public void testEnumFieldTypeStatus() throws Exception {
+    clearIndex();
+    
+    String fieldName = "severity";    
+    assertU(adoc("id", "0", fieldName, "Not Available"));
+    assertU(adoc("id", "1", fieldName, "Not Available"));
+    assertU(adoc("id", "2", fieldName, "Not Available"));
+    assertU(adoc("id", "3", fieldName, "Not Available"));
+    assertU(adoc("id", "4", fieldName, "Not Available"));
+    assertU(adoc("id", "5", fieldName, "Low"));
+    assertU(adoc("id", "6", fieldName, "Low"));
+    assertU(adoc("id", "7", fieldName, "Low"));
+    assertU(adoc("id", "8", fieldName, "Low"));
+    assertU(adoc("id", "9", fieldName, "Medium"));
+    assertU(adoc("id", "10", fieldName, "Medium"));
+    assertU(adoc("id", "11", fieldName, "Medium"));
+    assertU(adoc("id", "12", fieldName, "High"));
+    assertU(adoc("id", "13", fieldName, "High"));
+    assertU(adoc("id", "14", fieldName, "Critical"));
+    
+    
+    for (int i = 20; i <= 30; i++) {
+      assertU(adoc("id", "" + i));
+    }
 
+    assertU(commit());
+    
+    assertQ("enum", req("q","*:*", "stats", "true", "stats.field", fieldName)
+            , "//lst[@name='" + fieldName + "']/str[@name='min'][.='Not Available']"
+            , "//lst[@name='" + fieldName + "']/str[@name='max'][.='Critical']"
+            , "//lst[@name='" + fieldName + "']/long[@name='count'][.='15']"
+            , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='11']");
+    
+    
+    assertQ("enum calcdistinct", req("q","*:*", "stats", "true", "stats.field", fieldName, 
+                                     StatsParams.STATS_CALC_DISTINCT, "true")
+            , "//lst[@name='" + fieldName + "']/str[@name='min'][.='Not Available']"
+            , "//lst[@name='" + fieldName + "']/str[@name='max'][.='Critical']"
+            , "//lst[@name='" + fieldName + "']/long[@name='count'][.='15']"
+            , "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='5']"
+            , "count(//lst[@name='" + fieldName + "']/arr[@name='distinctValues']/*)=5"
+            , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='11']");
+    
+    
+    final String pre = "//lst[@name='stats_fields']/lst[@name='"+fieldName+"']/lst[@name='facets']/lst[@name='severity']";
+
+    assertQ("enum + stats.facet", req("q","*:*", "stats", "true", "stats.field", fieldName, 
+                                      "stats.facet", fieldName)
+            , pre + "/lst[@name='High']/str[@name='min'][.='High']"
+            , pre + "/lst[@name='High']/str[@name='max'][.='High']"
+            , pre + "/lst[@name='High']/long[@name='count'][.='2']"
+            , pre + "/lst[@name='High']/long[@name='missing'][.='0']"
+            , pre + "/lst[@name='Low']/str[@name='min'][.='Low']"
+            , pre + "/lst[@name='Low']/str[@name='max'][.='Low']"
+            , pre + "/lst[@name='Low']/long[@name='count'][.='4']"
+            , pre + "/lst[@name='Low']/long[@name='missing'][.='0']"
+            , pre + "/lst[@name='Medium']/str[@name='min'][.='Medium']"
+            , pre + "/lst[@name='Medium']/str[@name='max'][.='Medium']"
+            , pre + "/lst[@name='Medium']/long[@name='count'][.='3']"
+            , pre + "/lst[@name='Medium']/long[@name='missing'][.='0']"
+            , pre + "/lst[@name='Not Available']/str[@name='min'][.='Not Available']"
+            , pre + "/lst[@name='Not Available']/str[@name='max'][.='Not Available']"
+            , pre + "/lst[@name='Not Available']/long[@name='count'][.='5']"
+            , pre + "/lst[@name='Not Available']/long[@name='missing'][.='0']"
+            , pre + "/lst[@name='Critical']/str[@name='min'][.='Critical']"
+            , pre + "/lst[@name='Critical']/str[@name='max'][.='Critical']"
+            , pre + "/lst[@name='Critical']/long[@name='count'][.='1']"
+            , pre + "/lst[@name='Critical']/long[@name='missing'][.='0']"
+            );
+  }
+  
   private Doc createDocValuesDocument(List<FldType> types, String fieldName,  String id, Comparable... values) throws Exception {
     Doc doc = createDoc(types);
     doc.getValues("id").set(0, id);
@@ -1020,30 +1139,418 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     return cat_docValues;
   }
   
+  public void testIndividualStatLocalParams() throws Exception {
+    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
+    
+    assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "a_i", "9", "foo_t", "how now brown cow"));
+    assertU(commit());
+    
+    AVLTreeDigest tdigest = new AVLTreeDigest(100);
+    
+    // some quick sanity check assertions...
+    // trivial check that we only get the exact 2 we ask for
+    assertQ("ask for and get only 2 stats",
+            req("q","*:*", "stats", "true",
+                "stats.field", "{!key=k mean=true min=true}a_i")
+            , kpre + "double[@name='mean'][.='9.0']"
+            , kpre + "double[@name='min'][.='9.0']"
+            , "count(" + kpre + "*)=2"
+            );
+
+    // for stats that are true/false, sanity check false does it's job
+    assertQ("min=true & max=false: only min should come back",
+            req("q","*:*", "stats", "true",
+                "stats.field", "{!key=k max=false min=true}a_i")
+            , kpre + "double[@name='min'][.='9.0']"
+            , "count(" + kpre + "*)=1"
+            );
+    assertQ("min=false: localparam stat means ignore default set, "+
+            "but since only local param is false no stats should be returned",
+            req("q","*:*", "stats", "true",
+                "stats.field", "{!key=k min=false}a_i")
+            // section of stats for this field should exist ...
+            , XPRE + "lst[@name='stats_fields']/lst[@name='k']"
+            // ...but be empty 
+            , "count(" + kpre + "*)=0"
+            );
+
+    double sum = 0;
+    double sumOfSquares = 0;
+    final int count = 20;
+    for (int i = 0; i < count; i++) {
+      assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i",
+          String.valueOf(i % 10), "foo_t", "how now brown cow"));
+      tdigest.add(i % 10);
+      sum += i % 10;
+      sumOfSquares += (i % 10) * (i % 10);
+    }
+   
+    assertU(commit());
+    
+    ByteBuffer buf = ByteBuffer.allocate(tdigest.smallByteSize());
+    tdigest.asSmallBytes(buf);
+    EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
+    
+    Map<Stat,String> expectedStats = new HashMap<>();
+    expectedStats.put(Stat.min, "0.0");
+    expectedStats.put(Stat.max, "9.0");
+    expectedStats.put(Stat.missing, "0");
+    expectedStats.put(Stat.sum, String.valueOf(sum));
+    expectedStats.put(Stat.count, String.valueOf(count));
+    expectedStats.put(Stat.mean, String.valueOf(sum / count));
+    expectedStats.put(Stat.sumOfSquares, String.valueOf(sumOfSquares));
+    expectedStats.put(Stat.stddev, String.valueOf(Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (20 * (count - 1.0D)))));
+    expectedStats.put(Stat.calcdistinct, "10");
+    // NOTE: per shard expected value
+    expectedStats.put(Stat.percentiles, Base64.byteArrayToBase64(buf.array(), 0, buf.array().length));
+    
+    Map<Stat,String> expectedType = new HashMap<>();
+    expectedType.put(Stat.min, "double");
+    expectedType.put(Stat.max, "double");
+    expectedType.put(Stat.missing, "long");
+    expectedType.put(Stat.sum, "double");
+    expectedType.put(Stat.count, "long");
+    expectedType.put(Stat.mean, "double");
+    expectedType.put(Stat.sumOfSquares, "double");
+    expectedType.put(Stat.stddev, "double");
+    expectedType.put(Stat.calcdistinct, "long");
+    expectedType.put(Stat.percentiles, "str");
+   
+    Map<Stat,String> localParasInput = new HashMap<>();
+    localParasInput.put(Stat.min, "true");
+    localParasInput.put(Stat.max, "true");
+    localParasInput.put(Stat.missing, "true");
+    localParasInput.put(Stat.sum, "true");
+    localParasInput.put(Stat.count, "true");
+    localParasInput.put(Stat.mean, "true");
+    localParasInput.put(Stat.sumOfSquares, "true");
+    localParasInput.put(Stat.stddev, "true");
+    localParasInput.put(Stat.calcdistinct, "true");
+    localParasInput.put(Stat.percentiles, "'90, 99'");
+
+   // canary in the coal mine
+   assertEquals("size of expectedStats doesn't match all known stats; " + 
+                "enum was updated w/o updating test?",
+                expectedStats.size(), allStats.size());
+   assertEquals("size of expectedType doesn't match all known stats; " + 
+                "enum was updated w/o updating test?",
+                expectedType.size(), allStats.size());
+
+   // whitebox test: explicitly ask for isShard=true with an individual stat
+   for (Stat stat : expectedStats.keySet()) {
+     EnumSet<Stat> distribDeps = stat.getDistribDeps();
+
+     StringBuilder exclude = new StringBuilder();
+     List<String> testParas = new ArrayList<String>(distribDeps.size() + 2);
+     int calcdistinctFudge = 0;
+
+     for (Stat perShardStat : distribDeps ){
+       String key = perShardStat.toString();
+       if (perShardStat.equals(Stat.calcdistinct)) {
+         // this abomination breaks all the rules - uses a diff response key and triggers
+         // the additional "distinctValues" stat
+         key = "countDistinct";
+         calcdistinctFudge++;
+         testParas.add("count(" + kpre + "arr[@name='distinctValues']/*)=10");
+       }
+       testParas.add(kpre + expectedType.get(perShardStat) + 
+                     "[@name='" + key + "'][.='" + expectedStats.get(perShardStat) + "']");
+       // even if we go out of our way to exclude the dependent stats, 
+       // the shard should return them since they are a dependency for the requested stat
+       if (!stat.equals(Stat.percentiles)){
+         exclude.append(perShardStat + "=false ");
+       }
+     }
+     testParas.add("count(" + kpre + "*)=" + (distribDeps.size() + calcdistinctFudge));
+
+     assertQ("ask for only "+stat+", with isShard=true, and expect only deps: " + distribDeps,
+             req("q", "*:*", "isShard", "true", "stats", "true", 
+                 "stats.field", "{!key=k " + exclude + stat +"=" + localParasInput.get(stat) + "}a_i")
+             , testParas.toArray(new String[testParas.size()])
+             );
+   }
+   
+   // test all the possible combinations (of all possible sizes) of stats params
+   for (int numParams = 1; numParams <= allStats.size(); numParams++) {
+     for (EnumSet<Stat> set : new StatSetCombinations(numParams, allStats)) {
+
+       // EnumSets use natural ordering, we want to randomize the order of the params
+       List<Stat> combo = new ArrayList<Stat>(set);
+       Collections.shuffle(combo, random());
+
+       StringBuilder paras = new StringBuilder("{!key=k ");
+       List<String> testParas = new ArrayList<String>(numParams + 2);
+
+       int calcdistinctFudge = 0;
+       for (Stat stat : combo) {
+         String key = stat.toString();
+         if (stat.equals(Stat.calcdistinct)) {
+           // this abomination breaks all the rules - uses a diff response key and triggers
+           // the additional "distinctValues" stat
+           key = "countDistinct";
+           calcdistinctFudge++; 
+           testParas.add("count(" + kpre + "arr[@name='distinctValues']/*)=10");
+         }
+         paras.append(stat + "=" + localParasInput.get(stat)+ " ");
+         
+         if (!stat.equals(Stat.percentiles)){
+           testParas.add(kpre + expectedType.get(stat) + "[@name='" + key + "'][.='" + expectedStats.get(stat) + "']");
+         } else {
+           testParas.add("count(" + kpre + "lst[@name='percentiles']/*)=2");
+           String p90 = "" + tdigest.quantile(0.90D);
+           String p99 = "" + tdigest.quantile(0.99D);
+           testParas.add(kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]");
+           testParas.add(kpre + "lst[@name='percentiles']/double[@name='99.0'][.="+p99+"]");
+         }
+       }
+
+       paras.append("}a_i");
+       testParas.add("count(" + kpre + "*)=" + (combo.size() + calcdistinctFudge));
+
+       assertQ("ask for an get only: "+ combo,
+               req("q","*:*", "stats", "true",
+                   "stats.field", paras.toString())
+               , testParas.toArray(new String[testParas.size()])
+               );
+     }
+   }
+  }
   
-//  public void testOtherFacetStatsResult() throws Exception {
-//    
-//    assertU(adoc("id", "1", "stats_tls_dv", "10", "active_i", "1"));
-//    assertU(adoc("id", "2", "stats_tls_dv", "20", "active_i", "1"));
-//    assertU(commit());
-//    assertU(adoc("id", "3", "stats_tls_dv", "30", "active_i", "2"));
-//    assertU(adoc("id", "4", "stats_tls_dv", "40", "active_i", "2"));
-//    assertU(commit());
-//    
-//    final String pre = "//lst[@name='stats_fields']/lst[@name='stats_tls_dv']/lst[@name='facets']/lst[@name='active_i']";
-//
-//    assertQ("test value for active_s=true", req("q", "*:*", "stats", "true", "stats.field", "stats_tls_dv", "stats.facet", "active_i","indent", "true")
-//            , "*[count("+pre+")=1]"
-//            , pre+"/lst[@name='1']/double[@name='min'][.='10.0']"
-//            , pre+"/lst[@name='1']/double[@name='max'][.='20.0']"
-//            , pre+"/lst[@name='1']/double[@name='sum'][.='30.0']"
-//            , pre+"/lst[@name='1']/long[@name='count'][.='2']"
-//            , pre+"/lst[@name='1']/long[@name='missing'][.='0']"
-//            , pre + "/lst[@name='true']/long[@name='countDistinct'][.='2']"
-//            , "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2"
-//            , pre+"/lst[@name='1']/double[@name='sumOfSquares'][.='500.0']"
-//            , pre+"/lst[@name='1']/double[@name='mean'][.='15.0']"
-//            , pre+"/lst[@name='1']/double[@name='stddev'][.='7.0710678118654755']"
-//    );
-//  }
+  // Test for Solr-6349
+  public void testCalcDistinctStats() throws Exception {
+    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
+    final String min = "count(" + kpre +"/double[@name='min'])";
+    final String countDistinct = "count(" + kpre +"/long[@name='countDistinct'])";
+    final String distinctValues = "count(" + kpre +"/arr[@name='distinctValues'])";
+
+    final int count = 20;
+    for (int i = 0; i < count; i++) {
+      assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i",
+                   String.valueOf(i % 10), "foo_t", "how now brown cow"));
+    }
+    
+    assertU(commit());
+    
+    String[] baseParams = new String[] { "q", "*:*", "stats", "true","indent", "true" };
+
+    for (SolrParams p : new SolrParams[] { 
+        params("stats.field", "{!key=k}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k}a_i"),
+        params("f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "true", 
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k}a_i"),
+        params("stats.field", "{!key=k min='true'}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "true", 
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "true", 
+               "stats.field", "{!key=k min='true' calcdistinct='false'}a_i"),
+      }) {
+
+      assertQ("min is either default or explicitly requested; "+
+              "countDistinct & distinctValues either default or explicitly prevented"
+              , req(p, baseParams)
+              , min + "=1"
+              , countDistinct + "=0"
+              , distinctValues + "=0");
+    }
+    
+    for (SolrParams p : new SolrParams[] { 
+        params("stats.calcdistinct", "true",
+               "stats.field", "{!key=k}a_i"),
+        params("f.a_i." + StatsParams.STATS_CALC_DISTINCT, "true", 
+               "stats.field", "{!key=k}a_i"),
+        params("stats.calcdistinct", "false",
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "true", 
+               "stats.field", "{!key=k}a_i"),
+        params("stats.calcdistinct", "false ", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+        params("f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+        params("stats.calcdistinct", "false ", 
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+      }) {
+
+      assertQ("min is either default or explicitly requested; " +
+              "countDistinct & distinctValues explicitly requested"
+              , req(p, baseParams)
+              , min + "=1"
+              , countDistinct + "=1"
+              , distinctValues + "=1");
+    }
+    
+    for (SolrParams p : new SolrParams[] { 
+        params("stats.field", "{!key=k calcdistinct=true}a_i"),
+
+        params("stats.calcdistinct", "true",
+               "stats.field", "{!key=k min='false'}a_i"),
+
+        params("stats.calcdistinct", "true",
+               "stats.field", "{!key=k max='true' min='false'}a_i"),
+        
+        params("stats.calcdistinct", "false",
+               "stats.field", "{!key=k calcdistinct=true}a_i"),
+        params("f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k calcdistinct=true}a_i"),
+        params("stats.calcdistinct", "false",
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k calcdistinct=true}a_i"),
+        params("stats.calcdistinct", "false",
+               "f.a_i." + StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k min='false' calcdistinct=true}a_i"),
+      }) {
+
+      assertQ("min is explicitly excluded; " +
+              "countDistinct & distinctValues explicitly requested"
+              , req(p, baseParams)
+              , min + "=0"
+              , countDistinct + "=1"
+              , distinctValues + "=1");
+    }
+    
+    for (SolrParams p : new SolrParams[] { 
+        params(StatsParams.STATS_CALC_DISTINCT, "true", 
+               "stats.field", "{!key=k min=true}a_i"),
+        params("f.a_i.stats.calcdistinct", "true", 
+               "stats.field", "{!key=k min=true}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "false", 
+               "f.a_i.stats.calcdistinct", "true", 
+               "stats.field", "{!key=k min=true}a_i"),
+        params("f.a_i.stats.calcdistinct", "false", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "false", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+        params(StatsParams.STATS_CALC_DISTINCT, "false", 
+               "f.a_i.stats.calcdistinct", "false", 
+               "stats.field", "{!key=k min=true calcdistinct=true}a_i"),
+      }) {
+
+      assertQ("min is explicitly requested; " +
+              "countDistinct & distinctValues explicitly requested"
+              , req(p, baseParams)
+              , min + "=1"
+              , countDistinct + "=1"
+              , distinctValues + "=1");
+    }
+  }
+
+  // simple percentiles test
+  public void testPercentiles() throws Exception {
+    
+    // NOTE: deliberately not in numeric order
+    String percentiles = "10.0,99.9,1.0,2.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,98.0,99.0";
+    List <String> percentilesList = StrUtils.splitSmart(percentiles, ',');
+    
+    // test empty case 
+    SolrQueryRequest query = req("q", "*:*", "stats", "true",
+                                 "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      for (int i = 0; i < percentilesList.size(); i++) {
+        // ensure exact order, but all values should be null (empty result set)
+        assertEquals(percentilesList.get(i), pout.getName(i));
+        assertEquals(null, pout.getVal(i));
+      }
+    } finally {
+      query.close();
+    }
+    
+    int id = 0;
+    // add trivial docs to test basic percentiles
+    for (int i = 0; i < 100; i++) {
+      // add the same values multiple times (diff docs)
+      for (int j =0; j < 5; j++) {
+        assertU(adoc("id", ++id+"", "stat_f", ""+i));
+      }
+    }
+
+    assertU(commit());
+
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      for (int i = 0; i < percentilesList.size(); i++) { 
+        String p = percentilesList.get(i);
+        assertEquals(p, pout.getName(i));
+        assertEquals(Double.parseDouble(p), pout.getVal(i), 1.0D);
+                     
+      }
+    } finally {
+      query.close();
+    }
+    
+    // test request for no percentiles
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles=''}stat_f");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      NamedList<Double> pout = extractPercentils(rsp, "stat_f");
+      assertNull(pout);
+    } finally {
+      query.close();
+    }
+
+    // non-numeric types don't support percentiles
+    assertU(adoc("id", ++id+"", "stat_dt", "1999-05-03T04:55:01Z"));
+    assertU(adoc("id", ++id+"", "stat_s", "cow"));
+    
+    assertU(commit());
+
+    query = req("q", "*:*", "stats", "true", 
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_dt",
+                "stats.field", "{!percentiles='" + percentiles + "'}stat_s");
+
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, query);
+      assertNull(extractPercentils(rsp, "stat_dt"));
+      assertNull(extractPercentils(rsp, "stat_s"));
+    } finally {
+      query.close();
+    }
+    
+  }
+
+  private NamedList<Double> extractPercentils(SolrQueryResponse rsp, String key) {
+    return ((NamedList<NamedList<NamedList<NamedList<Double>>>> )
+            rsp.getValues().get("stats")).get("stats_fields").get(key).get("percentiles");
+  }
+
+  /** 
+   * given a comboSize and an EnumSet of Stats, generates iterators that produce every possible
+   * enum combination of that size 
+   */
+  public static final class StatSetCombinations implements Iterable<EnumSet<Stat>> {
+    // we need an array so we can do fixed index offset lookups
+    private final Stat[] all;
+    private final Combinations intCombos;
+    public StatSetCombinations(int comboSize, EnumSet<Stat> universe) {
+      // NOTE: should not need to sort, EnumSet uses natural ordering
+      all = universe.toArray(new Stat[universe.size()]);
+      intCombos = new Combinations(all.length, comboSize);
+    }
+    public Iterator<EnumSet<Stat>> iterator() {
+      return new Iterator<EnumSet<Stat>>() {
+        final Iterator<int[]> wrapped = intCombos.iterator();
+        public void remove() {
+          wrapped.remove();
+        }
+        public boolean hasNext() {
+          return wrapped.hasNext();
+        }
+        public EnumSet<Stat> next() {
+          EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
+          int[] indexes = wrapped.next();
+          for (int i = 0; i < indexes.length; i++) {
+            result.add(all[indexes[i]]);
+          }
+          return result;
+        }
+      };
+    }
+  }
 }

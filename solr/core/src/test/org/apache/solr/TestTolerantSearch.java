@@ -58,7 +58,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   @BeforeClass
   public static void createThings() throws Exception {
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath(), null, null);
+    createJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
     collection1 = new HttpSolrClient(url + "/collection1");
     collection2 = new HttpSolrClient(url + "/collection2");
@@ -109,7 +109,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   }
   
   @SuppressWarnings("unchecked")
-  public void testGetFieldsPhaseError() throws SolrServerException {
+  public void testGetFieldsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetFields = true;
     BadResponseWriter.failOnGetTopIds = false;
     SolrQuery query = new SolrQuery();
@@ -157,7 +157,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   }
   
   @SuppressWarnings("unchecked")
-  public void testGetTopIdsPhaseError() throws SolrServerException {
+  public void testGetTopIdsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetTopIds = true;
     BadResponseWriter.failOnGetFields = false;
     SolrQuery query = new SolrQuery();

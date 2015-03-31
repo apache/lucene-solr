@@ -45,14 +45,14 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  query.  Note that typically such scores are
    *  meaningless to the user, and require non-trivial CPU
    *  to compute, so it's almost always better to use {@link
-   *  MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} instead.
+   *  MultiTermQuery#CONSTANT_SCORE_REWRITE} instead.
    *
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
    *  BooleanQuery.TooManyClauses} if the number of terms
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see MultiTermQuery#setRewriteMethod */
-  public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_QUERY_REWRITE = new ScoringRewrite<BooleanQuery>() {
+  public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery>() {
     @Override
     protected BooleanQuery getTopLevelQuery() {
       return new BooleanQuery(true);
@@ -73,7 +73,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     }
   };
   
-  /** Like {@link #SCORING_BOOLEAN_QUERY_REWRITE} except
+  /** Like {@link #SCORING_BOOLEAN_REWRITE} except
    *  scores are not computed.  Instead, each matching
    *  document receives a constant score equal to the
    *  query's boost.
@@ -83,10 +83,10 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see MultiTermQuery#setRewriteMethod */
-  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = new RewriteMethod() {
+  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      final BooleanQuery bq = SCORING_BOOLEAN_QUERY_REWRITE.rewrite(reader, query);
+      final BooleanQuery bq = SCORING_BOOLEAN_REWRITE.rewrite(reader, query);
       // strip the scores off
       final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());

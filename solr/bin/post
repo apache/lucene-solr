@@ -34,7 +34,7 @@ SOLR_TIP=`dirname "$THIS_SCRIPT"`/..
 SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 
 if [ -n "$SOLR_JAVA_HOME" ]; then
-  JAVA=$SOLR_JAVA_HOME/bin/java
+  JAVA="$SOLR_JAVA_HOME/bin/java"
 elif [ -n "$JAVA_HOME" ]; then
   for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
     if [ -x "$java" ]; then
@@ -47,12 +47,12 @@ else
 fi
 
 # test that Java exists and is executable on this server
-$JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
+"$JAVA" -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
 
 
 # ===== post specific code
 
-TOOL_JAR=$SOLR_TIP/dist/solr-core-*.jar
+TOOL_JAR=("$SOLR_TIP/dist"/solr-core-*.jar)
 
 function print_usage() {
   echo ""
@@ -104,8 +104,8 @@ if [[ $# -eq 1 && ("$1" == "-help" || "$1" == "-h" || "$1" == "-usage") ]]; then
 fi
 
 
-COLLECTION=$DEFAULT_SOLR_COLLECTION
-PROPS="-Dauto=yes"
+COLLECTION="$DEFAULT_SOLR_COLLECTION"
+PROPS=('-Dauto=yes')
 RECURSIVE=""
 FILES=()
 URLS=()
@@ -118,7 +118,7 @@ while [ $# -gt 0 ]; do
   if [[ -d "$1" ]]; then
     # Directory
 #    echo "$1: DIRECTORY"
-    RECURSIVE="-Drecursive=yes"
+    RECURSIVE=yes
     FILES+=("$1")
   elif [[ -f "$1" ]]; then
     # File
@@ -129,12 +129,12 @@ while [ $# -gt 0 ]; do
 #    echo "$1: URL"
     URLS+=("$1")
   else
-    if [[ $1 == -* ]]; then
-      if [[ $1 == "-c" ]]; then
+    if [[ "$1" == -* ]]; then
+      if [[ "$1" == "-c" ]]; then
         # Special case, pull out collection name
         shift
-        COLLECTION=$1
-      elif [[ ($1 == "-d" || $1 == "--data" || $1 == "-") ]]; then
+        COLLECTION="$1"
+      elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
         if [[ -s /dev/stdin ]]; then
           MODE="stdin"
         else
@@ -148,10 +148,10 @@ while [ $# -gt 0 ]; do
           fi
         fi
       else
-        key=${1:1}
+        key="${1:1}"
         shift
 #       echo "$1: PROP"
-        PROPS="$PROPS -D$key=$1"
+        PROPS+=("-D$key=$1")
       fi
     else
       echo -e "\nUnrecognized argument: $1\n"
@@ -208,10 +208,13 @@ else
   PARAMS=("${ARGS[@]}")
 fi
 
-PROPS="$PROPS -Dc=$COLLECTION -Ddata=$MODE $RECURSIVE"
+PROPS+=("-Dc=$COLLECTION" "-Ddata=$MODE")
+if [[ -n "$RECURSIVE" ]]; then
+  PROPS+=('-Drecursive=yes')
+fi
 
-echo "$JAVA" -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
-"$JAVA" -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+echo "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+"$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
 
 # post smoker:
 # bin/post -c signals -out yes -type application/json -d '[{"id": 2, "val": 0.47}]'

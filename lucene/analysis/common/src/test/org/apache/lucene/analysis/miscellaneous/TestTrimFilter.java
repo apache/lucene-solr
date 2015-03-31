@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -103,6 +102,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       } 
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    a.close();
   }
   
   public void testEmptyTerm() throws IOException {
@@ -114,5 +114,6 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 }

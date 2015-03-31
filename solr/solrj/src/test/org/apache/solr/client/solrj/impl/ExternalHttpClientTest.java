@@ -25,6 +25,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,9 +34,11 @@ import org.junit.Test;
 public class ExternalHttpClientTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome(), null, null);
-    jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(BasicHttpSolrClientTest.SlowServlet.class, "/slow/*");
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .withServlet(new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), "/slow/*")
+        .withSSLConfig(sslConfig)
+        .build();
+    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   /**

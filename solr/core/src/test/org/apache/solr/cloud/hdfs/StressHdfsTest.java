@@ -17,8 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,6 +36,7 @@ import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +51,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 @Slow
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 public class StressHdfsTest extends BasicDistributedZkTest {
 
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
@@ -215,7 +218,8 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     // check that all dirs are gone
     for (String dataDir : dataDirs) {
       Configuration conf = new Configuration();
-      FileSystem fs = FileSystem.newInstance(new URI(dataDir), conf);
+      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+      FileSystem fs = FileSystem.get(new URI(dataDir), conf);
       assertFalse(
           "Data directory exists after collection removal : " + dataDir,
           fs.exists(new Path(dataDir)));

@@ -31,6 +31,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -356,7 +358,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     NamedList indexPart = textType.get("index");
     assertNotNull("expecting an index token analysis for field type 'charfilthtmlmap'", indexPart);
-    
+
     assertEquals("\n\nwhátëvêr\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
     assertEquals("\n\nwhatever\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
 
@@ -365,7 +367,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals(tokenList.size(), 1);
     assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, new int[]{1}, null, false));
   }
-  
+
   @Test
   public void testPositionHistoryWithWDF() throws Exception {
 
@@ -410,5 +412,25 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
+  }
+
+  @Test
+  public void testSpatial() throws Exception {
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("location_rpt");
+    request.setFieldValue("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))");
+
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    NamedList<List<NamedList>> tokens = (NamedList<List<NamedList>>)
+        ((NamedList)result.get("field_types").get("location_rpt")).get("index");
+    List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.BytesRefIteratorTokenStream");
+
+
+    List<String> vals = new ArrayList<>(tokenList.size());
+    for(NamedList v : tokenList) {
+      vals.add( (String)v.get("text") );
+    }
+    Collections.sort(vals);
+    assertEquals( "[s, s7, s7w, s7w1+, s9, s9v, s9v2+, sp, spp, spp5+, sv, svk, svk6+]", vals.toString() );
   }
 }

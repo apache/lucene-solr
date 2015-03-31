@@ -17,26 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -55,10 +35,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.stats.Clock;
 import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
@@ -67,24 +47,32 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
  * collections, shards, replicas and setting various properties.
  */
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETE}
-   */
-  @Deprecated
-  public static final String REMOVECOLLECTION = "removecollection";
-
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionParams.CollectionAction#DELETESHARD}
-   */
-  @Deprecated
-  public static final String REMOVESHARD = "removeshard";
 
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
@@ -375,47 +363,33 @@ public class Overseer implements Closeable {
         }
       } else {
         OverseerAction overseerAction = OverseerAction.get(operation);
-        if (overseerAction != null) {
-          switch (overseerAction) {
-            case STATE:
-              return new ReplicaMutator(getZkStateReader()).setState(clusterState, message);
-            case LEADER:
-              return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
-            case DELETECORE:
-              return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
-            case ADDROUTINGRULE:
-              return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
-            case REMOVEROUTINGRULE:
-              return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
-            case UPDATESHARDSTATE:
-              return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
-            case QUIT:
-              if (myId.equals(message.get("id"))) {
-                log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-                overseerCollectionProcessor.close();
-                close();
-              } else {
-                log.warn("Overseer received wrong QUIT message {}", message);
-              }
-              break;
-            default:
-              throw new RuntimeException("unknown operation:" + operation
-                  + " contents:" + message.getProperties());
-          }
-        } else  {
-          // merely for back-compat where overseer action names were different from the ones
-          // specified in CollectionAction. See SOLR-6115. Remove this in 5.0
-          switch (operation) {
-            case OverseerCollectionProcessor.CREATECOLLECTION:
-              return new ClusterStateMutator(getZkStateReader()).createCollection(clusterState, message);
-            case REMOVECOLLECTION:
-              return new ClusterStateMutator(getZkStateReader()).deleteCollection(clusterState, message);
-            case REMOVESHARD:
-              return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
-            default:
-              throw new RuntimeException("unknown operation:" + operation
-                  + " contents:" + message.getProperties());
-          }
+        if (overseerAction == null) {
+          throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
+        }
+        switch (overseerAction) {
+          case STATE:
+            return new ReplicaMutator(getZkStateReader()).setState(clusterState, message);
+          case LEADER:
+            return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
+          case DELETECORE:
+            return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
+          case ADDROUTINGRULE:
+            return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
+          case REMOVEROUTINGRULE:
+            return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
+          case UPDATESHARDSTATE:
+            return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
+          case QUIT:
+            if (myId.equals(message.get("id"))) {
+              log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+              overseerCollectionProcessor.close();
+              close();
+            } else {
+              log.warn("Overseer received wrong QUIT message {}", message);
+            }
+            break;
+          default:
+            throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }
       }
 
@@ -830,12 +804,12 @@ public class Overseer implements Closeable {
   private Stats stats;
   private String id;
   private boolean closed;
-  private ConfigSolr config;
+  private CloudConfig config;
 
   // overseer not responsible for closing reader
   public Overseer(ShardHandler shardHandler,
       UpdateShardHandler updateShardHandler, String adminPath,
-      final ZkStateReader reader, ZkController zkController, ConfigSolr config)
+      final ZkStateReader reader, ZkController zkController, CloudConfig config)
       throws KeeperException, InterruptedException {
     this.reader = reader;
     this.shardHandler = shardHandler;

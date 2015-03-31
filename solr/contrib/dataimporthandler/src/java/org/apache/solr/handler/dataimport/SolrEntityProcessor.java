@@ -196,7 +196,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     QueryResponse response = null;
     try {
       response = solrClient.query(solrQuery);
-    } catch (SolrServerException e) {
+    } catch (SolrServerException | IOException e) {
       if (ABORT.equals(onError)) {
         wrapAndThrow(SEVERE, e);
       } else if (SKIP.equals(onError)) {

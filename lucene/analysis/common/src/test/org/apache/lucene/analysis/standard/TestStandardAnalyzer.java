@@ -114,14 +114,25 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
-  private Analyzer a = new Analyzer() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-
-      Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
-      return new TokenStreamComponents(tokenizer);
-    }
-  };
+  private Analyzer a;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    a.close();
+    super.tearDown();
+  }
 
   public void testArmenian() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "Վիքիպեդիայի 13 միլիոն հոդվածները (4,600` հայերեն վիքիպեդիայում) գրվել են կամավորների կողմից ու համարյա բոլոր հոդվածները կարող է խմբագրել ցանկաց մարդ ով կարող է բացել Վիքիպեդիայի կայքը։",
@@ -350,27 +361,30 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new StandardAnalyzer(), 1000*RANDOM_MULTIPLIER);
+    Analyzer analyzer = new StandardAnalyzer();
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    analyzer.close();
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Random random = random();
-    checkRandomData(random, new StandardAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
+    Analyzer analyzer = new StandardAnalyzer();
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    analyzer.close();
   }
 
   // Adds random graph after:
   public void testRandomHugeStringsGraphAfter() throws Exception {
     Random random = random();
-    checkRandomData(random,
-                    new Analyzer() {
-                      @Override
-                      protected TokenStreamComponents createComponents(String fieldName) {
-                        Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
-                        TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
-                        return new TokenStreamComponents(tokenizer, tokenStream);
-                      }
-                    },
-                    100*RANDOM_MULTIPLIER, 8192);
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new StandardTokenizer(newAttributeFactory());
+        TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
+        return new TokenStreamComponents(tokenizer, tokenStream);
+      }
+    };
+    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    analyzer.close();
   }
 }

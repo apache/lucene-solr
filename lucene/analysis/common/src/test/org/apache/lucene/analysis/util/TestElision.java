@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +70,7 @@ public class TestElision extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+    a.close();
   }
 
 }

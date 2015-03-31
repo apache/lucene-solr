@@ -64,7 +64,7 @@ public final class CommitTracker implements Runnable {
   private final SolrCore core;
 
   private final boolean softCommit;
-  private final boolean openSearcher;
+  private boolean openSearcher;
   private final boolean waitSearcher = true;
 
   private String name;
@@ -255,5 +255,10 @@ public final class CommitTracker implements Runnable {
   // only for testing - not thread safe
   public void setTimeUpperBound(long timeUpperBound) {
     this.timeUpperBound = timeUpperBound;
+  }
+  
+  // only for testing - not thread safe
+  public void setOpenSearcher(boolean openSearcher) {
+    this.openSearcher = openSearcher;
   }
 }
