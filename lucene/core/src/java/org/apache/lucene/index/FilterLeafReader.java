@@ -222,17 +222,17 @@ public class FilterLeafReader extends LeafReader {
   }
 
   /** Base class for filtering {@link PostingsEnum} implementations. */
-  public static class FilterDocsEnum extends PostingsEnum {
-    /** The underlying DocsEnum instance. */
+  public static class FilterPostingsEnum extends PostingsEnum {
+    /** The underlying PostingsEnum instance. */
     protected final PostingsEnum in;
 
     /**
      * Create a new FilterDocsEnum
-     * @param in the underlying DocsEnum instance.
+     * @param in the underlying PostingsEnum instance.
      */
-    public FilterDocsEnum(PostingsEnum in) {
+    public FilterPostingsEnum(PostingsEnum in) {
       if (in == null) {
-        throw new NullPointerException("incoming DocsEnum cannot be null");
+        throw new NullPointerException("incoming PostingsEnum cannot be null");
       }
       this.in = in;
     }

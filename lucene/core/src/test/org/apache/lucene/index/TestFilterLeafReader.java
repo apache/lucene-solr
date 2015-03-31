@@ -77,12 +77,12 @@ public class TestFilterLeafReader extends LuceneTestCase {
 
       @Override
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-        return new TestPositions(super.postings(liveDocs, reuse == null ? null : ((FilterDocsEnum) reuse).in, flags));
+        return new TestPositions(super.postings(liveDocs, reuse == null ? null : ((FilterPostingsEnum) reuse).in, flags));
       }
     }
 
     /** Filter that only returns odd numbered documents. */
-    private static class TestPositions extends FilterDocsEnum {
+    private static class TestPositions extends FilterPostingsEnum {
       public TestPositions(PostingsEnum in) {
         super(in);
       }
@@ -188,7 +188,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     checkOverrideMethods(FilterLeafReader.FilterFields.class);
     checkOverrideMethods(FilterLeafReader.FilterTerms.class);
     checkOverrideMethods(FilterLeafReader.FilterTermsEnum.class);
-    checkOverrideMethods(FilterLeafReader.FilterDocsEnum.class);
+    checkOverrideMethods(FilterLeafReader.FilterPostingsEnum.class);
   }
 
   public void testUnwrap() throws IOException {

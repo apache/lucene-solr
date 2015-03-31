@@ -281,7 +281,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   static enum DocsEnumState { START, ITERATING, FINISHED };
 
   /** Wraps a docsenum with additional checks */
-  public static class AssertingPostingsEnum extends FilterDocsEnum {
+  public static class AssertingPostingsEnum extends FilterPostingsEnum {
     private final Thread creationThread = Thread.currentThread();
     private DocsEnumState state = DocsEnumState.START;
     int positionCount = 0;

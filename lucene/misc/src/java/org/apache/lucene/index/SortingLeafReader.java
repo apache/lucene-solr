@@ -326,7 +326,7 @@ public class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  static class SortingDocsEnum extends FilterDocsEnum {
+  static class SortingDocsEnum extends FilterPostingsEnum {
 
     private static final class DocFreqSorter extends TimSorter {
 
@@ -489,7 +489,7 @@ public class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  static class SortingPostingsEnum extends FilterDocsEnum {
+  static class SortingPostingsEnum extends FilterPostingsEnum {
 
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
