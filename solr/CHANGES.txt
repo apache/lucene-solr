@@ -91,15 +91,6 @@ Upgrading from Solr 5.0
   contain some LGPL-only code. Until that's resolved by Tika, you can download the
   .jar yourself and place it under contrib/extraction/lib.  
 
-* A twitter engineer discovered a JVM bug that causes GC pause problems.  The
-  workaround for those problems makes certain functionality impossible, such as
-  running the jstat program on your Solr instance.  That workaround has been
-  implemented in the bin/solr start scripts.  If you need the missing java
-  functionality, delete the "-XX:+PerfDisableSharedMem" parameter from
-  bin/solr.in.sh or bin/solr.in.cmd.
-
-  http://www.evanjones.ca/jvm-mmap-pause.html
-
 Detailed Change List
 ----------------------
 
@@ -349,12 +340,6 @@ Bug Fixes
 
 * SOLR-7309: Make bin/solr, bin/post work when Solr installation directory contains spaces
   (Ramkumar Aiyengar, Martijn Koster)
-
-* SOLR-7319: Workaround for the "Four Month Bug" GC pause problem discovered
-  by a twitter software engineer.  This causes GC pauses when JVM statistics
-  are left enabled and there is heavy MMAP write activity.
-  http://www.evanjones.ca/jvm-mmap-pause.html
-  (Shawn Heisey)
 
 Optimizations
 ----------------------
