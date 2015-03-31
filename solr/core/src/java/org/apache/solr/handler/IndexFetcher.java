@@ -363,9 +363,9 @@ public class IndexFetcher {
       indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       try {
-        
+
         SegmentInfos infos = SegmentInfos.readCommit(indexDir, commit.getSegmentsFileName());
-        
+
         // we treat these files as if they all the oldest version we see
         Version oldestVersion = Version.LUCENE_CURRENT;
         for (SegmentCommitInfo commitInfo : infos) {
@@ -374,8 +374,10 @@ public class IndexFetcher {
             oldestVersion = version;
           }
         }
-        
-        if (isIndexStale(indexDir, oldestVersion)) {
+
+        //We will compare all the index files from the master vs the index files on disk to see if there is a mismatch
+        //in the metadata. If there is a mismatch for the same index file then we download the entire index again.
+        if (!isFullCopyNeeded && isIndexStale(indexDir, oldestVersion)) {
           isFullCopyNeeded = true;
         }
         

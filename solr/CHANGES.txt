@@ -10,7 +10,32 @@ See http://lucene.apache.org/solr for more information.
 
 
 ==================  5.2.0 ==================
-(No Changes)
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+
+Upgrading from Solr 5.1
+-----------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Optimizations
+----------------------
+
+ * SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
+   (Stephan Lagraulet via Varun Thacker)
+
+Other Changes
+----------------------
 
 ==================  5.1.0 ==================
 
