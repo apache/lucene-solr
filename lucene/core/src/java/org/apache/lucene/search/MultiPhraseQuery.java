@@ -191,7 +191,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       // TODO: move this check to createWeight to happen earlier to the user?
-      if (!fieldTerms.hasPositions()) {
+      if (fieldTerms.hasPositions() == false) {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run MultiPhraseQuery (phrase=" + getQuery() + ")");
       }
 
@@ -481,11 +481,6 @@ class UnionPostingsEnum extends PostingsEnum {
       }
       termsEnum.seekExact(term.bytes(), termState);
       PostingsEnum postings = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
-      // nocommit: check
-      if (postings == null) {
-        // term does exist, but has no positions
-        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
-      }
       cost += postings.cost();
       postingsEnums.add(postings);
     }
