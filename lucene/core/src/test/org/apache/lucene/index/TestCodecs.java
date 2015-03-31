@@ -495,7 +495,6 @@ public class TestCodecs extends LuceneTestCase {
               }
               assertEquals(term.docs[upto2], doc);
               if (!field.omitTF) {
-                // nocommit: asking for freq() here, but above when field.omitTF == false, PostingsEnum.NONE flag is passed?
                 assertEquals(term.positions[upto2].length, postings.freq());
                 if (random().nextInt(2) == 1) {
                   this.verifyPositions(term.positions[upto2], postings);
