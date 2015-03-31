@@ -18,19 +18,18 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.TreeSet;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
 
 /**
  * 
@@ -39,141 +38,20 @@ import org.apache.lucene.search.DocIdSetIterator;
  * NOTE: This should be used for testing purposes only
  * @lucene.internal
  */
-public class MultiSpansWrapper extends Spans { // can't be package private due to payloads
+public class MultiSpansWrapper {
 
-  private SpanQuery query;
-  private List<LeafReaderContext> leaves;
-  private int leafOrd = 0;
-  private Spans current;
-  private Map<Term,TermContext> termContexts;
-  private final int numLeaves;
-
-  private MultiSpansWrapper(List<LeafReaderContext> leaves, SpanQuery query, Map<Term,TermContext> termContexts) {
-    this.query = query;
-    this.leaves = leaves;
-    this.numLeaves = leaves.size();
-    this.termContexts = termContexts;
-  }
-  
-  public static Spans wrap(IndexReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
+  public static Spans wrap(IndexReader reader, SpanQuery spanQuery) throws IOException {
+    LeafReader lr = SlowCompositeReaderWrapper.wrap(reader); // slow, but ok for testing
+    LeafReaderContext lrContext = lr.getContext();
+    Query rewrittenQuery = spanQuery.rewrite(lr); // get the term contexts so getSpans can be called directly
+    HashSet<Term> termSet = new HashSet<>();
+    rewrittenQuery.extractTerms(termSet);
     Map<Term,TermContext> termContexts = new HashMap<>();
-    TreeSet<Term> terms = new TreeSet<>();
-    query.extractTerms(terms);
-    for (Term term : terms) {
-      termContexts.put(term, TermContext.build(topLevelReaderContext, term));
+    for (Term term: termSet) {
+      TermContext termContext = TermContext.build(lrContext, term);
+      termContexts.put(term, termContext);
     }
-    final List<LeafReaderContext> leaves = topLevelReaderContext.leaves();
-    if(leaves.size() == 1) {
-      final LeafReaderContext ctx = leaves.get(0);
-      return query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-    }
-    return new MultiSpansWrapper(leaves, query, termContexts);
+    Spans actSpans = spanQuery.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), termContexts);
+    return actSpans;
   }
-
-  @Override
-  public boolean next() throws IOException {
-    if (leafOrd >= numLeaves) {
-      return false;
-    }
-    if (current == null) {
-      final LeafReaderContext ctx = leaves.get(leafOrd);
-      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-    }
-    while(true) {
-      if (current.next()) {
-        return true;
-      }
-      if (++leafOrd < numLeaves) {
-        final LeafReaderContext ctx = leaves.get(leafOrd);
-        current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-      } else {
-        current = null;
-        break;
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public boolean skipTo(int target) throws IOException {
-    if (leafOrd >= numLeaves) {
-      return false;
-    }
-
-    int subIndex = ReaderUtil.subIndex(target, leaves);
-    assert subIndex >= leafOrd;
-    if (subIndex != leafOrd) {
-      final LeafReaderContext ctx = leaves.get(subIndex);
-      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-      leafOrd = subIndex;
-    } else if (current == null) {
-      final LeafReaderContext ctx = leaves.get(leafOrd);
-      current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-    }
-    while (true) {
-      if (target < leaves.get(leafOrd).docBase) {
-        // target was in the previous slice
-        if (current.next()) {
-          return true;
-        }
-      } else if (current.skipTo(target - leaves.get(leafOrd).docBase)) {
-        return true;
-      }
-      if (++leafOrd < numLeaves) {
-        final LeafReaderContext ctx = leaves.get(leafOrd);
-        current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
-      } else {
-        current = null;
-        break;
-      }
-    }
-
-    return false;
-  }
-
-  @Override
-  public int doc() {
-    if (current == null) {
-      return DocIdSetIterator.NO_MORE_DOCS;
-    }
-    return current.doc() + leaves.get(leafOrd).docBase;
-  }
-
-  @Override
-  public int start() {
-    if (current == null) {
-      return DocIdSetIterator.NO_MORE_DOCS;
-    }
-    return current.start();
-  }
-
-  @Override
-  public int end() {
-    if (current == null) {
-      return DocIdSetIterator.NO_MORE_DOCS;
-    }
-    return current.end();
-  }
-
-  @Override
-  public Collection<byte[]> getPayload() throws IOException {
-    if (current == null) {
-      return Collections.emptyList();
-    }
-    return current.getPayload();
-  }
-
-  @Override
-  public boolean isPayloadAvailable() throws IOException {
-    if (current == null) {
-      return false;
-    }
-    return current.isPayloadAvailable();
-  }
-
-  @Override
-  public long cost() {
-    return Integer.MAX_VALUE; // just for tests
-  }
-
 }

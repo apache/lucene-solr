@@ -22,7 +22,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -201,117 +200,55 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("t3") },
                               slop,
                               ordered);
-    Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
+    Spans spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), snq);
 
-    assertTrue("first range", spans.next());
-    assertEquals("first doc", 11, spans.doc());
-    assertEquals("first start", 0, spans.start());
-    assertEquals("first end", 4, spans.end());
+    assertEquals("first doc", 11, spans.nextDoc());
+    assertEquals("first start", 0, spans.nextStartPosition());
+    assertEquals("first end", 4, spans.endPosition());
 
-    assertTrue("second range", spans.next());
-    assertEquals("second doc", 11, spans.doc());
-    assertEquals("second start", 2, spans.start());
-    assertEquals("second end", 6, spans.end());
+    assertEquals("second start", 2, spans.nextStartPosition());
+    assertEquals("second end", 6, spans.endPosition());
 
-    assertFalse("third range", spans.next());
+    tstEndSpans(spans);  
   }
 
-
   public void testSpanNearUnOrdered() throws Exception {
-
     //See http://www.gossamer-threads.com/lists/lucene/java-dev/52270 for discussion about this test
-    SpanNearQuery snq;
-    snq = new SpanNearQuery(
+    SpanNearQuery senq;
+    senq = new SpanNearQuery(
                               new SpanQuery[] {
                                 makeSpanTermQuery("u1"),
                                 makeSpanTermQuery("u2") },
                               0,
                               false);
-    Spans spans =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 4, spans.doc());
-    assertEquals("start", 1, spans.start());
-    assertEquals("end", 3, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 5, spans.doc());
-    assertEquals("start", 2, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 8, spans.doc());
-    assertEquals("start", 2, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 9, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 2, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 10, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 2, spans.end());
-    assertTrue("Has next and it shouldn't: " + spans.doc(), spans.next() == false);
+    Spans spans = MultiSpansWrapper.wrap(reader, senq);
+    tstNextSpans(spans, 4, 1, 3);
+    tstNextSpans(spans, 5, 2, 4);
+    tstNextSpans(spans, 8, 2, 4);
+    tstNextSpans(spans, 9, 0, 2);
+    tstNextSpans(spans, 10, 0, 2);
+    tstEndSpans(spans);
 
     SpanNearQuery u1u2 = new SpanNearQuery(new SpanQuery[]{makeSpanTermQuery("u1"),
                                 makeSpanTermQuery("u2")}, 0, false);
-    snq = new SpanNearQuery(
+    senq = new SpanNearQuery(
                               new SpanQuery[] {
                                 u1u2,
                                 makeSpanTermQuery("u2")
                               },
                               1,
                               false);
-    spans =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 4, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 3, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    //unordered spans can be subsets
-    assertEquals("doc", 4, spans.doc());
-    assertEquals("start", 1, spans.start());
-    assertEquals("end", 3, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 5, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 5, spans.doc());
-    assertEquals("start", 2, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 8, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 4, spans.end());
-
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 8, spans.doc());
-    assertEquals("start", 2, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 9, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 2, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 9, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 4, spans.end());
-
-    assertTrue("Does not have next and it should", spans.next());
-    assertEquals("doc", 10, spans.doc());
-    assertEquals("start", 0, spans.start());
-    assertEquals("end", 2, spans.end());
-
-    assertTrue("Has next and it shouldn't", spans.next() == false);
+    spans = MultiSpansWrapper.wrap(reader, senq);
+    tstNextSpans(spans, 4, 0, 3);
+    tstNextSpans(spans, 4, 1, 3); // unordered spans can be subsets
+    tstNextSpans(spans, 5, 0, 4);
+    tstNextSpans(spans, 5, 2, 4);
+    tstNextSpans(spans, 8, 0, 4);
+    tstNextSpans(spans, 8, 2, 4);
+    tstNextSpans(spans, 9, 0, 2);
+    tstNextSpans(spans, 9, 0, 4);
+    tstNextSpans(spans, 10, 0, 2);
+    tstEndSpans(spans);
   }
 
 
@@ -321,21 +258,40 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < terms.length; i++) {
       sqa[i] = makeSpanTermQuery(terms[i]);
     }
-    return  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), new SpanOrQuery(sqa));
+    return MultiSpansWrapper.wrap(searcher.getIndexReader(), new SpanOrQuery(sqa));
   }
 
-  private void tstNextSpans(Spans spans, int doc, int start, int end)
-  throws Exception {
-    assertTrue("next", spans.next());
-    assertEquals("doc", doc, spans.doc());
-    assertEquals("start", start, spans.start());
-    assertEquals("end", end, spans.end());
+  public static void tstNextSpans(Spans spans, int doc, int start, int end) throws IOException {
+    if (spans.docID() >= doc) {
+      assertEquals("docId", doc, spans.docID());
+    } else { // nextDoc needed before testing start/end
+      if (spans.docID() >= 0) {
+        assertEquals("nextStartPosition of previous doc", Spans.NO_MORE_POSITIONS, spans.nextStartPosition());
+        assertEquals("endPosition of previous doc", Spans.NO_MORE_POSITIONS, spans.endPosition());
+      }
+      assertEquals("nextDoc", doc, spans.nextDoc());
+      if (doc != Spans.NO_MORE_DOCS) {
+        assertEquals("first startPosition", -1, spans.startPosition());
+        assertEquals("first endPosition", -1, spans.endPosition());
+      }
+    }
+    if (doc != Spans.NO_MORE_DOCS) {
+      assertEquals("nextStartPosition", start, spans.nextStartPosition());
+      assertEquals("startPosition", start, spans.startPosition());
+      assertEquals("endPosition", end, spans.endPosition());
+    }
+  }
+  
+  public static void tstEndSpans(Spans spans) throws Exception {
+    if (spans != null) { // null Spans is empty
+      tstNextSpans(spans, Spans.NO_MORE_DOCS, -2, -2); // start and end positions will be ignored
+    }
   }
 
   public void testSpanOrEmpty() throws Exception {
     Spans spans = orSpans(new String[0]);
-    assertFalse("empty next", spans.next());
-
+    tstEndSpans(spans);
+    
     SpanOrQuery a = new SpanOrQuery();
     SpanOrQuery b = new SpanOrQuery();
     assertTrue("empty should equal", a.equals(b));
@@ -344,24 +300,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanOrSingle() throws Exception {
     Spans spans = orSpans(new String[] {"w5"});
     tstNextSpans(spans, 0, 4, 5);
-    assertFalse("final next", spans.next());
-  }
-  
-  public void testSpanOrMovesForward() throws Exception {
-    Spans spans = orSpans(new String[] {"w1", "xx"});
-
-    spans.next();
-    int doc = spans.doc();
-    assertEquals(0, doc);
-    
-    spans.skipTo(0);
-    doc = spans.doc();
-    
-    // LUCENE-1583:
-    // according to Spans, a skipTo to the same doc or less
-    // should still call next() on the underlying Spans
-    assertEquals(1, doc);
-
+    tstEndSpans(spans);
   }
   
   public void testSpanOrDouble() throws Exception {
@@ -370,17 +309,15 @@ public class TestSpans extends LuceneTestCase {
     tstNextSpans(spans, 2, 3, 4);
     tstNextSpans(spans, 3, 4, 5);
     tstNextSpans(spans, 7, 3, 4);
-    assertFalse("final next", spans.next());
+    tstEndSpans(spans);
   }
 
-  public void testSpanOrDoubleSkip() throws Exception {
+  public void testSpanOrDoubleAdvance() throws Exception {
     Spans spans = orSpans(new String[] {"w5", "yy"});
-    assertTrue("initial skipTo", spans.skipTo(3));
-    assertEquals("doc", 3, spans.doc());
-    assertEquals("start", 4, spans.start());
-    assertEquals("end", 5, spans.end());
+    assertEquals("initial advance", 3, spans.advance(3));
+    tstNextSpans(spans, 3, 4, 5);
     tstNextSpans(spans, 7, 3, 4);
-    assertFalse("final next", spans.next());
+    tstEndSpans(spans);
   }
 
   public void testSpanOrUnused() throws Exception {
@@ -389,7 +326,7 @@ public class TestSpans extends LuceneTestCase {
     tstNextSpans(spans, 2, 3, 4);
     tstNextSpans(spans, 3, 4, 5);
     tstNextSpans(spans, 7, 3, 4);
-    assertFalse("final next", spans.next());
+    tstEndSpans(spans);
   }
 
   public void testSpanOrTripleSameDoc() throws Exception {
@@ -400,7 +337,7 @@ public class TestSpans extends LuceneTestCase {
     tstNextSpans(spans, 11, 3, 4);
     tstNextSpans(spans, 11, 4, 5);
     tstNextSpans(spans, 11, 5, 6);
-    assertFalse("final next", spans.next());
+    tstEndSpans(spans);
   }
 
   public void testSpanScorerZeroSloppyFreq() throws Exception {
@@ -542,11 +479,15 @@ public class TestSpans extends LuceneTestCase {
      SpanTermQuery iq = new SpanTermQuery(new Term(field, include));
      SpanTermQuery eq = new SpanTermQuery(new Term(field, exclude));
      SpanNotQuery snq = new SpanNotQuery(iq, eq, pre, post);
-     Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
+     Spans spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), snq);
 
      int i = 0;
-     while (spans.next()){
-        i++;
+     if (spans != null) {
+       while (spans.nextDoc() != Spans.NO_MORE_DOCS){
+         while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+           i++;
+         }
+       }
      }
      return i;
   }

@@ -651,47 +651,6 @@ public class TestBasics extends LuceneTestCase {
               1746, 1747, 1756, 1757, 1766, 1767, 1776, 1777, 1786, 1787, 1796, 1797});
   }
   
-  @Test
-  public void testSpansSkipTo() throws Exception {
-    SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
-    SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
-    Spans s1 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t1);
-    Spans s2 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t2);
-
-    assertTrue(s1.next());
-    assertTrue(s2.next());
-
-    boolean hasMore = true;
-
-    do {
-      hasMore = skipToAccordingToJavaDocs(s1, s1.doc() + 1);
-      assertEquals(hasMore, s2.skipTo(s2.doc() + 1));
-      assertEquals(s1.doc(), s2.doc());
-    } while (hasMore);
-  }
-
-  /** Skips to the first match beyond the current, whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   *       return false;
-   *     } while (target &gt; doc());
-   *     return true;
-   *   }
-   * </pre>
-   */
-  private boolean skipToAccordingToJavaDocs(Spans s, int target)
-      throws Exception {
-    do {
-      if (!s.next())
-        return false;
-    } while (target > s.doc());
-    return true;
-
-  }
-
   private void checkHits(Query query, int[] results) throws IOException {
     CheckHits.checkHits(random(), query, "field", searcher, results);
   }

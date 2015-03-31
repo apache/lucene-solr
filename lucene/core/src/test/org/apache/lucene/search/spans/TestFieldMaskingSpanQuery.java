@@ -258,37 +258,19 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     SpanQuery q2 = new SpanTermQuery(new Term("first",  "james"));
     SpanQuery q  = new SpanOrQuery(q1, new FieldMaskingSpanQuery(q2, "gender"));
     check(q, new int[] { 0, 1, 2, 3, 4 });
-  
-    Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
-    
-    assertEquals(true, span.next());
-    assertEquals(s(0,0,1), s(span));
 
-    assertEquals(true, span.next());
-    assertEquals(s(1,0,1), s(span));
+    Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
 
-    assertEquals(true, span.next());
-    assertEquals(s(1,1,2), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(2,0,1), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(2,1,2), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(2,2,3), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(3,0,1), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(4,0,1), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(4,1,2), s(span));
-
-    assertEquals(false, span.next());
+    TestSpans.tstNextSpans(span, 0,0,1);
+    TestSpans.tstNextSpans(span, 1,0,1);
+    TestSpans.tstNextSpans(span, 1,1,2);
+    TestSpans.tstNextSpans(span, 2,0,1);
+    TestSpans.tstNextSpans(span, 2,1,2);
+    TestSpans.tstNextSpans(span, 2,2,3);
+    TestSpans.tstNextSpans(span, 3,0,1);
+    TestSpans.tstNextSpans(span, 4,0,1);
+    TestSpans.tstNextSpans(span, 4,1,2);
+    TestSpans.tstEndSpans(span);
   }
   
   public void testSpans1() throws Exception {
@@ -300,19 +282,22 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(qA, new int[] { 0, 1, 2, 4 });
     check(qB, new int[] { 0, 1, 2, 4 });
   
-    Spans spanA = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), qA);
-    Spans spanB = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), qB);
+    Spans spanA = MultiSpansWrapper.wrap(searcher.getIndexReader(), qA);
+    Spans spanB = MultiSpansWrapper.wrap(searcher.getIndexReader(), qB);
     
-    while (spanA.next()) {
-      assertTrue("spanB not still going", spanB.next());
-      assertEquals("spanA not equal spanB", s(spanA), s(spanB));
+    while (spanA.nextDoc() != Spans.NO_MORE_DOCS) {
+      assertNotSame("spanB not still going", Spans.NO_MORE_DOCS, spanB.nextDoc());
+      while (spanA.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+        assertEquals("spanB start position", spanA.startPosition(), spanB.nextStartPosition());
+        assertEquals("spanB end position", spanA.endPosition(), spanB.endPosition());
+      }
+      assertEquals("spanB start position", Spans.NO_MORE_POSITIONS, spanB.nextStartPosition());
     }
-    assertTrue("spanB still going even tough spanA is done", !(spanB.next()));
-
+    assertEquals("spanB end doc", Spans.NO_MORE_DOCS, spanB.nextDoc());
   }
   
   public void testSpans2() throws Exception {
-    assumeTrue("Broken scoring: LUCENE-3723", 
+    assumeTrue("Broken scoring: LUCENE-3723",
         searcher.getSimilarity() instanceof TFIDFSimilarity);
     SpanQuery qA1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery qA2 = new SpanTermQuery(new Term("first",  "james"));
@@ -322,30 +307,17 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
       { new FieldMaskingSpanQuery(qA, "id"),
         new FieldMaskingSpanQuery(qB, "id") }, -1, false );
     check(q, new int[] { 0, 1, 2, 3 });
-  
-    Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
-    
-    assertEquals(true, span.next());
-    assertEquals(s(0,0,1), s(span));
 
-    assertEquals(true, span.next());
-    assertEquals(s(1,1,2), s(span));
+    Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
 
-    assertEquals(true, span.next());
-    assertEquals(s(2,0,1), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(2,2,3), s(span));
-
-    assertEquals(true, span.next());
-    assertEquals(s(3,0,1), s(span));
-
-    assertEquals(false, span.next());
+    TestSpans.tstNextSpans(span, 0,0,1);
+    TestSpans.tstNextSpans(span, 1,1,2);
+    TestSpans.tstNextSpans(span, 2,0,1);
+    TestSpans.tstNextSpans(span, 2,2,3);
+    TestSpans.tstNextSpans(span, 3,0,1);
+    TestSpans.tstEndSpans(span);
   }
   
-  public String s(Spans span) {
-    return s(span.doc(), span.start(), span.end());
-  }
   public String s(int doc, int start, int end) {
     return "s(" + doc + "," + start + "," + end +")";
   }

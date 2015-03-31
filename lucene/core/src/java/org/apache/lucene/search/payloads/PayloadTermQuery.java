@@ -18,6 +18,7 @@ package org.apache.lucene.search.payloads;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -26,10 +27,10 @@ import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -60,14 +61,14 @@ public class PayloadTermQuery extends SpanTermQuery {
   }
 
   public PayloadTermQuery(Term term, PayloadFunction function,
-      boolean includeSpanScore) {
+                                    boolean includeSpanScore) {
     super(term);
-    this.function = function;
+    this.function = Objects.requireNonNull(function);
     this.includeSpanScore = includeSpanScore;
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new PayloadTermWeight(this, searcher);
   }
 
@@ -79,9 +80,11 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context, acceptDocs, termContexts),
-          this, similarity.simScorer(stats, context));
+    public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      TermSpans spans = (TermSpans) query.getSpans(context, acceptDocs, termContexts);
+      return (spans == null)
+              ? null
+              : new PayloadTermSpanScorer(spans, this, similarity.simScorer(stats, context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
@@ -90,45 +93,42 @@ public class PayloadTermQuery extends SpanTermQuery {
       protected int payloadsSeen;
       private final TermSpans termSpans;
 
-      public PayloadTermSpanScorer(TermSpans spans, Weight weight, Similarity.SimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(TermSpans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
-        termSpans = spans;
+        termSpans = spans; // CHECKME: generics to use SpansScorer.spans as TermSpans.
       }
 
       @Override
       protected boolean setFreqCurrentDoc() throws IOException {
-        if (!more) {
-          return false;
-        }
-        doc = spans.doc();
         freq = 0.0f;
         numMatches = 0;
         payloadScore = 0;
         payloadsSeen = 0;
-        while (more && doc == spans.doc()) {
-          int matchLength = spans.end() - spans.start();
+        int startPos = spans.nextStartPosition();
+        assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
+        do {
+          int matchLength = spans.endPosition() - startPos;
 
           freq += docScorer.computeSlopFactor(matchLength);
           numMatches++;
           processPayload(similarity);
 
-          more = spans.next();// this moves positions to the next match in this
-                              // document
-        }
-        return more || (freq != 0);
+          startPos = spans.nextStartPosition();
+        } while (startPos != Spans.NO_MORE_POSITIONS);
+        return freq != 0;
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
-        if (termSpans.isPayloadAvailable()) {
+        if (spans.isPayloadAvailable()) {
           final PostingsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),
-                                                 spans.start(), spans.end(), payloadsSeen, payloadScore,
-                                                 docScorer.computePayloadFactor(doc, spans.start(), spans.end(), payload));
+                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore,
+                                                 docScorer.computePayloadFactor(doc, spans.startPosition(), spans.endPosition(), payload));
           } else {
             payloadScore = function.currentScore(doc, term.field(),
-                                                 spans.start(), spans.end(), payloadsSeen, payloadScore, 1F);
+                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore, 1F);
           }
           payloadsSeen++;
 
@@ -176,7 +176,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, context.reader().getLiveDocs());
+      PayloadTermSpanScorer scorer = scorer(context, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -220,7 +220,7 @@ public class PayloadTermQuery extends SpanTermQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((function == null) ? 0 : function.hashCode());
+    result = prime * result + function.hashCode();
     result = prime * result + (includeSpanScore ? 1231 : 1237);
     return result;
   }
@@ -234,14 +234,9 @@ public class PayloadTermQuery extends SpanTermQuery {
     if (getClass() != obj.getClass())
       return false;
     PayloadTermQuery other = (PayloadTermQuery) obj;
-    if (function == null) {
-      if (other.function != null)
-        return false;
-    } else if (!function.equals(other.function))
-      return false;
     if (includeSpanScore != other.includeSpanScore)
       return false;
-    return true;
+    return function.equals(other.function);
   }
 
 }

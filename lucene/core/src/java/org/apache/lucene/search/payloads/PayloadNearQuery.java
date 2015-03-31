@@ -26,7 +26,6 @@ import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -71,7 +70,7 @@ public class PayloadNearQuery extends SpanNearQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new PayloadNearSpanWeight(this, searcher);
   }
 
@@ -113,7 +112,7 @@ public class PayloadNearQuery extends SpanNearQuery {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = super.hashCode() ^ getClass().hashCode();
     result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
     result = prime * result + ((function == null) ? 0 : function.hashCode());
     return result;
@@ -149,8 +148,10 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     @Override
     public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return new PayloadNearSpanScorer(query.getSpans(context, acceptDocs, termContexts), this,
-          similarity, similarity.simScorer(stats, context));
+      Spans spans = query.getSpans(context, acceptDocs, termContexts);
+      return (spans == null)
+              ? null
+              : new PayloadNearSpanScorer(spans, this, similarity, similarity.simScorer(stats, context));
     }
     
     @Override
@@ -188,7 +189,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     protected float payloadScore;
     private int payloadsSeen;
 
-    protected PayloadNearSpanScorer(Spans spans, Weight weight,
+    protected PayloadNearSpanScorer(Spans spans, SpanWeight weight,
         Similarity similarity, Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
       this.spans = spans;
@@ -200,13 +201,13 @@ public class PayloadNearQuery extends SpanNearQuery {
         if (subSpans[i] instanceof NearSpansOrdered) {
           if (((NearSpansOrdered) subSpans[i]).isPayloadAvailable()) {
             processPayloads(((NearSpansOrdered) subSpans[i]).getPayload(),
-                subSpans[i].start(), subSpans[i].end());
+                subSpans[i].startPosition(), subSpans[i].endPosition());
           }
           getPayloads(((NearSpansOrdered) subSpans[i]).getSubSpans());
         } else if (subSpans[i] instanceof NearSpansUnordered) {
           if (((NearSpansUnordered) subSpans[i]).isPayloadAvailable()) {
             processPayloads(((NearSpansUnordered) subSpans[i]).getPayload(),
-                subSpans[i].start(), subSpans[i].end());
+                subSpans[i].startPosition(), subSpans[i].endPosition());
           }
           getPayloads(((NearSpansUnordered) subSpans[i]).getSubSpans());
         }
@@ -233,7 +234,7 @@ public class PayloadNearQuery extends SpanNearQuery {
         scratch.length = thePayload.length;
         payloadScore = function.currentScore(doc, fieldName, start, end,
             payloadsSeen, payloadScore, docScorer.computePayloadFactor(doc,
-                spans.start(), spans.end(), scratch));
+                spans.startPosition(), spans.endPosition(), scratch));
         ++payloadsSeen;
       }
     }
@@ -241,22 +242,20 @@ public class PayloadNearQuery extends SpanNearQuery {
     //
     @Override
     protected boolean setFreqCurrentDoc() throws IOException {
-        if (!more) {
-            return false;
-          }
-          doc = spans.doc();
-          freq = 0.0f;
-          payloadScore = 0;
-          payloadsSeen = 0;
-          do {
-            int matchLength = spans.end() - spans.start();
-            freq += docScorer.computeSlopFactor(matchLength);
-            Spans[] spansArr = new Spans[1];
-            spansArr[0] = spans;
-            getPayloads(spansArr);            
-            more = spans.next();
-          } while (more && (doc == spans.doc()));
-          return true;
+      freq = 0.0f;
+      payloadScore = 0;
+      payloadsSeen = 0;
+      int startPos = spans.nextStartPosition();
+      assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
+      do {
+        int matchLength = spans.endPosition() - startPos;
+        freq += docScorer.computeSlopFactor(matchLength);
+        Spans[] spansArr = new Spans[1];
+        spansArr[0] = spans;
+        getPayloads(spansArr);            
+        startPos = spans.nextStartPosition();
+      } while (startPos != Spans.NO_MORE_POSITIONS);
+      return true;
     }
 
     @Override

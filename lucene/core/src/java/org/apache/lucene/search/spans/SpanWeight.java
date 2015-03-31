@@ -51,7 +51,7 @@ public class SpanWeight extends Weight {
     super(query);
     this.similarity = searcher.getSimilarity();
     this.query = query;
-    
+
     termContexts = new HashMap<>();
     TreeSet<Term> terms = new TreeSet<>();
     query.extractTerms(terms);
@@ -66,8 +66,8 @@ public class SpanWeight extends Weight {
     }
     final String field = query.getField();
     if (field != null) {
-      stats = similarity.computeWeight(query.getBoost(), 
-                                       searcher.collectionStatistics(query.getField()), 
+      stats = similarity.computeWeight(query.getBoost(),
+                                       searcher.collectionStatistics(query.getField()),
                                        termStats);
     }
   }
@@ -88,9 +88,9 @@ public class SpanWeight extends Weight {
   public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
     if (stats == null) {
       return null;
-    } else {
-      return new SpanScorer(query.getSpans(context, acceptDocs, termContexts), this, similarity.simScorer(stats, context));
     }
+    Spans spans = query.getSpans(context, acceptDocs, termContexts);
+    return (spans == null) ? null : new SpanScorer(spans, this, similarity.simScorer(stats, context));
   }
 
   @Override
@@ -106,11 +106,11 @@ public class SpanWeight extends Weight {
         Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
         result.addDetail(scoreExplanation);
         result.setValue(scoreExplanation.getValue());
-        result.setMatch(true);          
+        result.setMatch(true);
         return result;
       }
     }
-    
+
     return new ComplexExplanation(false, 0.0f, "no matching term");
   }
 }

@@ -32,6 +32,15 @@ API Changes
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 
+======================= Lucene 5.2.0 =======================
+
+New Features
+
+* LUCENE-6308: Span queries now share document conjunction/intersection
+  code with boolean queries, and use two-phased iterators for
+  faster intersection by avoiding loading positions in certain cases.
+  (Paul Elschot, Robert Muir via Mike McCandless)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

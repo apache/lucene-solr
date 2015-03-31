@@ -681,7 +681,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
       }
     };
     SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
-    Query query = new SpanNearQuery(new SpanQuery[] { childQuery }, 0, true);
+    Query query = new SpanNearQuery(new SpanQuery[] { childQuery, childQuery }, 0, false);
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);

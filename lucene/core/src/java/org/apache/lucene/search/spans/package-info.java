@@ -18,14 +18,18 @@
 /**
  * The calculus of spans.
  * 
- * <p>A span is a <code>&lt;doc,startPosition,endPosition&gt;</code> tuple.</p>
+ * <p>A span is a <code>&lt;doc,startPosition,endPosition&gt;</code> tuple  that is enumerated by
+ *    class {@link org.apache.lucene.search.spans.Spans Spans}.
+ *  </p>
  * 
  * <p>The following span query operators are implemented:
  * 
  * <ul>
  * 
  * <li>A {@link org.apache.lucene.search.spans.SpanTermQuery SpanTermQuery} matches all spans
- * containing a particular {@link org.apache.lucene.index.Term Term}.</li>
+ *    containing a particular {@link org.apache.lucene.index.Term Term}.
+ *    This should not be used for terms that are indexed at position Integer.MAX_VALUE.
+ * </li>
  * 
  * <li> A {@link org.apache.lucene.search.spans.SpanNearQuery SpanNearQuery} matches spans
  * which occur near one another, and can be used to implement things like
