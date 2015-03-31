@@ -58,6 +58,9 @@ Other Changes
 
 * SOLR-6954: Deprecated SolrClient.shutdown() method removed (Alan Woodward)
 
+==================  5.2.0 ==================
+(No Changes)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
