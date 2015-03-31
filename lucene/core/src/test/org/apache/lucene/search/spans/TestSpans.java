@@ -376,8 +376,8 @@ public class TestSpans extends LuceneTestCase {
         assertEquals("first doc number", spanScorer.docID() + ctx.docBase, 11);
         float score = spanScorer.score();
         assertTrue("first doc score should be zero, " + score, score == 0.0f);
-      }  else {
-        assertTrue("no second doc", spanScorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+      } else {
+        assertTrue("no second doc", spanScorer == null || spanScorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
       }
     }
   }
