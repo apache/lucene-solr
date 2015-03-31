@@ -86,7 +86,7 @@ public class FieldTermStack {
     }
 
     final Terms vector = vectors.terms(fieldName);
-    if (vector == null) {
+    if (vector == null || vector.hasPositions() == false) {
       // null snippet
       return;
     }
@@ -104,13 +104,7 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
-      // nocommit: check
       dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
-      if (dpEnum == null) {
-        // null snippet
-        return;
-      }
-
       dpEnum.nextDoc();
       
       // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html
