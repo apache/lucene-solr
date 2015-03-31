@@ -192,7 +192,7 @@ public class MultiPhraseQuery extends Query {
 
       // TODO: move this check to createWeight to happen earlier to the user?
       if (!fieldTerms.hasPositions()) {
-        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run PhraseQuery (phrase=" + getQuery() + ")");
+        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run MultiPhraseQuery (phrase=" + getQuery() + ")");
       }
 
       // Reuse single TermsEnum below:
