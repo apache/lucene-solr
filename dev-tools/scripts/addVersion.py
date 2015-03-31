@@ -16,7 +16,7 @@
 import os
 import sys
 sys.path.append(os.path.dirname(__file__))
-import scriptutil
+from scriptutil import *
 
 import argparse
 import io
@@ -36,7 +36,7 @@ def update_changes(filename, new_version):
     buffer.append(line)
     return match is not None
      
-  changed = scriptutil.update_file(filename, matcher, edit)
+  changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
 def add_constant(new_version, deprecate):
@@ -90,7 +90,7 @@ def add_constant(new_version, deprecate):
       buffer.append(line)
       return False
   
-  changed = scriptutil.update_file(filename, matcher, Edit())
+  changed = update_file(filename, matcher, Edit())
   print('done' if changed else 'uptodate')
 
 version_prop_re = re.compile('version\.base=(.*)')
@@ -103,7 +103,7 @@ def update_build_version(new_version):
     buffer.append('version.base=' + new_version.dot + '\n')
     return True 
 
-  changed = scriptutil.update_file(filename, version_prop_re, edit)
+  changed = update_file(filename, version_prop_re, edit)
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
@@ -116,7 +116,7 @@ def update_latest_constant(new_version):
     buffer.append(line.rpartition('=')[0] + ('= %s;\n' % new_version.constant))
     return True
 
-  changed = scriptutil.update_file(filename, matcher, edit)
+  changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
   
 def update_example_solrconfigs(new_version):
@@ -139,7 +139,7 @@ def update_solrconfig(filename, matcher, new_version):
     buffer.append(line.replace(match.group(1), new_version.dot))
     return True
 
-  changed = scriptutil.update_file(filename, matcher, edit)
+  changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
 def check_lucene_version_tests():
@@ -165,7 +165,7 @@ def read_config():
   parser.add_argument('-r', '--downstream-repo', help='Path to downstream checkout for given changeid')
   c = parser.parse_args()
 
-  c.branch_type = scriptutil.find_branch_type()
+  c.branch_type = find_branch_type()
   c.matching_branch = c.version.is_bugfix_release() and c.branch_type == 'release' or \
                       c.version.is_minor_release() and c.branch_type == 'stable' or \
                       c.branch_type == 'major'
