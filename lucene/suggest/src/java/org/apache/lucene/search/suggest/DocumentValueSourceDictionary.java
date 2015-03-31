@@ -145,7 +145,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
         try {
           currentWeightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex));
         } catch (IOException e) {
-          throw new RuntimeException();
+          throw new RuntimeException(e);
         }
       }
       return currentWeightValues.longVal(docId - starts[subIndex]);

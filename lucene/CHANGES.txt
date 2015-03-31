@@ -48,6 +48,10 @@ Optimizations
   faster IndexWriter.deleteAll in that case (Robert Muir, Adrien
   Grand, Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
+  (Varun Thacker, Adrien Grand, Mike McCandless)
 ======================= Lucene 5.1.0 =======================
 
 New Features
