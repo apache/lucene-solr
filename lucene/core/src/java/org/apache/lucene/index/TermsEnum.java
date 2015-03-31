@@ -141,10 +141,17 @@ public abstract class TermsEnum implements BytesRefIterator {
   /** Get {@link PostingsEnum} for the current term.  Do not
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
+   *  <p>
+   *  Use this method if you only require documents and frequencies,
+   *  and do not need any proximity data.
+   *  This method is equivalent to 
+   *  {@link #postings(Bits, PostingsEnum, int) postings(liveDocs, reuse, PostingsEnum.FREQS)}
    *  
    * @param liveDocs unset bits are documents that should not
    * be returned
-   * @param reuse pass a prior PostingsEnum for possible reuse */
+   * @param reuse pass a prior PostingsEnum for possible reuse 
+   * @see #postings(Bits, PostingsEnum, int)
+   */
   public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse) throws IOException {
     return postings(liveDocs, reuse, PostingsEnum.FREQS);
   }
@@ -160,7 +167,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * @param reuse pass a prior PostingsEnum for possible reuse
    * @param flags specifies which optional per-document values
    *        you require; see {@link PostingsEnum#FREQS}
-   * @see #postings(Bits, PostingsEnum, int) */
+   */
   public abstract PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException;
 
   /**
