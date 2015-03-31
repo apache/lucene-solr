@@ -84,23 +84,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // we did not index positions
     PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
-    // nocommit: check
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
-    // nocommit: check
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
-    // nocommit: check
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
-    // nocommit: check
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     iw.close();
     reader.close();
@@ -162,19 +158,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // we did not index positions
     PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     // we did not index positions
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
-    assertNull(docsAndPositionsEnum);
+    assertNotNull(docsAndPositionsEnum);
     
     iw.close();
     reader.close();

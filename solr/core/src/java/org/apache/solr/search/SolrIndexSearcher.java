@@ -801,8 +801,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       return -1;
     }
     PostingsEnum docs = termsEnum.postings(leafReader.getLiveDocs(), null, PostingsEnum.NONE);
-    // nocommit: check
-    if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
@@ -1173,7 +1171,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     FixedBitSet fbs = null;
 
     PostingsEnum postingsEnum = deState.termsEnum.postings(deState.liveDocs, deState.postingsEnum, PostingsEnum.NONE);
-    // nocommit: check
     if (deState.postingsEnum == null) {
       deState.postingsEnum = postingsEnum;
     }

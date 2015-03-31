@@ -335,7 +335,6 @@ public class TermAutomatonQuery extends Query {
 
     public EnumAndScorer(int termID, PostingsEnum posEnum) {
       this.termID = termID;
-      // nocommit: check uses
       this.posEnum = posEnum;
     }
   }
