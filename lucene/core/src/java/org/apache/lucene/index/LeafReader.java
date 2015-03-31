@@ -223,7 +223,14 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /** Returns {@link PostingsEnum} for the specified term
-   *  with {@link PostingsEnum#FREQS}. */
+   *  with {@link PostingsEnum#FREQS}.
+   *  <p>
+   *  Use this method if you only require documents and frequencies,
+   *  and do not need any proximity data.
+   *  This method is equivalent to 
+   *  {@link #postings(Term, int) postings(term, PostingsEnum.FREQS)}
+   *  @see #postings(Term, int)
+   */
   public final PostingsEnum postings(Term term) throws IOException {
     return postings(term, PostingsEnum.FREQS);
   }
