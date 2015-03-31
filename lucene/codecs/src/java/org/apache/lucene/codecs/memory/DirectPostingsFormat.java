@@ -866,7 +866,20 @@ public final class DirectPostingsFormat extends PostingsFormat {
           if (terms[termOrd] instanceof LowFreqTerm) {
             final LowFreqTerm term = ((LowFreqTerm) terms[termOrd]);
             final int[] postings = term.postings;
-            if (hasPos == false) {
+            if (hasFreq == false) {
+              LowFreqDocsEnumNoTF docsEnum;
+              if (reuse instanceof LowFreqDocsEnumNoTF) {
+                docsEnum = (LowFreqDocsEnumNoTF) reuse;
+                if (!docsEnum.canReuse(liveDocs)) {
+                  docsEnum = new LowFreqDocsEnumNoTF(liveDocs);
+                }
+              } else {
+                docsEnum = new LowFreqDocsEnumNoTF(liveDocs);
+              }
+
+              return docsEnum.reset(postings);
+              
+            } else if (hasPos == false) {
               LowFreqDocsEnumNoPos docsEnum;
               if (reuse instanceof LowFreqDocsEnumNoPos) {
                 docsEnum = (LowFreqDocsEnumNoPos) reuse;
@@ -883,7 +896,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
             return new LowFreqPostingsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
           } else {
             final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
-            return new HighFreqPostingsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+            if (hasPos == false) {
+              return new HighFreqDocsEnum(liveDocs).reset(term.docIDs, term.freqs);
+            } else {
+              return new HighFreqPostingsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+            }
           }
         }
 
