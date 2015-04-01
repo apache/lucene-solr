@@ -3,6 +3,7 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+
 ======================= Lucene 5.1.0 =======================
 
 New Features
@@ -56,6 +57,10 @@ Bug Fixes
 * LUCENE-6311: Fix NIOFSDirectory and SimpleFSDirectory so that the
   toString method of IndexInputs confess when they are from a compound
   file. (Robert Muir, Mike McCandless)
+
+* LUCENE-6381: Add defensive wait time limit in
+  DocumentsWriterStallControl to prevent hangs during indexing if we
+  miss a .notify/All somewhere (Mike McCandless)
 
 Optimizations
 

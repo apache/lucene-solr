@@ -46,7 +46,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     ctrl.updateStalled(true);
     waitThreads = waitThreads(atLeast(1), ctrl);
     start(waitThreads);
-    awaitState(Thread.State.WAITING, waitThreads);
+    awaitState(Thread.State.TIMED_WAITING, waitThreads);
     assertTrue(ctrl.hasBlocked());
     assertTrue(ctrl.anyStalledThreads());
     ctrl.updateStalled(false);
