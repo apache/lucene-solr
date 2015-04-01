@@ -68,6 +68,10 @@ Versions of Major Components
 Upgrading from Solr 5.1
 -----------------------
 
+* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
+  clarify the states a Slice can be in, as well comparing the state of a Slice.
+  (Shai Erera)
+
 Detailed Change List
 ----------------------
 
@@ -118,10 +122,6 @@ Upgrading from Solr 5.0
 * Tika's runtime dependency of 'jhighlight' was removed as the latter was found to 
   contain some LGPL-only code. Until that's resolved by Tika, you can download the
   .jar yourself and place it under contrib/extraction/lib.  
-
-* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
-  clarify the states a Slice can be in, as well comparing the state of a Slice.
-  (Shai Erera)
 
 Detailed Change List
 ----------------------
