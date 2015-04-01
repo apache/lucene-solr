@@ -52,15 +52,29 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
 
     rsp = processCommit("ignore-optimize-only-from-client-403", true);
     assertNotNull("Sending an optimize should have resulted in an exception in the response", rsp.getException());
+    // commit should happen if DistributedUpdateProcessor.COMMIT_END_POINT == true
+    rsp = processCommit("ignore-commit-from-client-403", false, new Boolean(true));
+    shouldBeNull = rsp.getException();
+    assertNull("Sending a commit should NOT have resulted in an exception in the response: "+shouldBeNull, shouldBeNull);
   }
 
   SolrQueryResponse processCommit(final String chain, boolean optimize) throws IOException {
+    return processCommit(chain, optimize, null);
+  }
+
+  SolrQueryResponse processCommit(final String chain, boolean optimize, Boolean commitEndPoint) throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+
+    if (commitEndPoint != null) {
+      ((ModifiableSolrParams)req.getParams()).set(
+          DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint.booleanValue());
+    }
+
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
