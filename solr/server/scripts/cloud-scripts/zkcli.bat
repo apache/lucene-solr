@@ -10,11 +10,11 @@ set SDIR=%~dp0
 if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 
 IF exist %SDIR%\..\..\solr-webapp\webapp\nul (
-  echo %SDIR%\....\..\solr-webapp\webapp exists
+  echo %SDIR%\..\..\solr-webapp\webapp exists
 ) ELSE (
   echo -------------------
-  echo Unzip example\webapps\solr.war to example\solr-webapp\. to use this script.
-  echo Starting the Solr example via start.jar will also do this extraction.
+  echo Unzip server\webapps\solr.war to server\solr-webapp\. to use this script.
+  echo Starting Solr via "bin\solr.cmd start" will also do this extraction.
   echo -------------------
 )
 
