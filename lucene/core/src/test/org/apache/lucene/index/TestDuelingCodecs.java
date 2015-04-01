@@ -37,17 +37,17 @@ import java.util.Random;
  * Compares one codec against another
  */
 public class TestDuelingCodecs extends LuceneTestCase {
-  private Directory leftDir;
-  private IndexReader leftReader;
-  private Codec leftCodec;
+  Directory leftDir;
+  IndexReader leftReader;
+  Codec leftCodec;
 
-  private Directory rightDir;
-  private IndexReader rightReader;
-  private Codec rightCodec;
-  private RandomIndexWriter leftWriter;
-  private RandomIndexWriter rightWriter;
-  private long seed;
-  private String info;  // for debugging
+  Directory rightDir;
+  IndexReader rightReader;
+  Codec rightCodec;
+  RandomIndexWriter leftWriter;
+  RandomIndexWriter rightWriter;
+  long seed;
+  String info;  // for debugging
 
   @Override
   public void setUp() throws Exception {
@@ -143,8 +143,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks the two indexes are equivalent
    */
+  // we use a small amount of docs here, so it works with any codec 
   public void testEquals() throws IOException {
-    int numdocs = TEST_NIGHTLY ? atLeast(2000) : atLeast(100);
+    int numdocs = atLeast(100);
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
