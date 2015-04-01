@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -1584,6 +1585,41 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         }
       }
     }
+  }
+
+  @Test
+  public void testExpandComponent() throws IOException, SolrServerException {
+    SolrClient server = getSolrClient();
+    server.deleteByQuery("*:*");
+
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"));
+    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"));
+    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_ti", "1", "test_tl", "100000", "test_tf", "2000", "type_s", "child"));
+    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_ti", "2", "test_tl", "100000", "test_tf", "200", "type_s", "child"));
+
+    server.add(docs);
+    server.commit();
+
+    ModifiableSolrParams msParams = new ModifiableSolrParams();
+    msParams.add("q", "*:*");
+    msParams.add("fq", "{!collapse field=group_s}");
+    msParams.add("defType", "edismax");
+    msParams.add("bf", "field(test_ti)");
+    msParams.add("expand", "true");
+    QueryResponse resp = server.query(msParams);
+
+    Map<String, SolrDocumentList> expanded = resp.getExpandedResults();
+    assertEquals(2, expanded.size());
+    assertEquals("1", expanded.get("group1").get(0).get("id"));
+    assertEquals("7", expanded.get("group1").get(1).get("id"));
+    assertEquals("5", expanded.get("group2").get(0).get("id"));
+    assertEquals("8", expanded.get("group2").get(1).get("id"));
+
   }
 
   @Test

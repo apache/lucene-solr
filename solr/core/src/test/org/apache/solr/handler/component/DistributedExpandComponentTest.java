@@ -78,6 +78,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     handle.put("q", SKIP);
     handle.put("maxScore", SKIPVAL);
     handle.put("_version_", SKIP);
+    handle.put("expanded", UNORDERED);
 
     query("q", "*:*", "fq", "{!collapse field="+group+"}", "defType", "edismax", "bf", "field(test_ti)", "expand", "true", "fl","*,score");
     query("q", "*:*", "fq", "{!collapse field="+group+"}", "defType", "edismax", "bf", "field(test_ti)", "expand", "true", "expand.sort", "test_tl desc", "fl","*,score");
