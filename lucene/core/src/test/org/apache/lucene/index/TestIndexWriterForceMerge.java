@@ -24,7 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -125,7 +127,16 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
     final MockDirectoryWrapper dir = newMockDirectory();
     dir.setEnableVirusScanner(false);
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+    // don't use MockAnalyzer, variable length payloads can cause merge to make things bigger,
+    // since things are optimized for fixed length case. this is a problem for MemoryPF's encoding.
+    // (it might have other problems too)
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
+      }
+    };
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(analyzer)
                                                  .setMaxBufferedDocs(10)
                                                  .setMergePolicy(newLogMergePolicy()));
     
