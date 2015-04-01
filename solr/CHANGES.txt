@@ -472,6 +472,10 @@ Other Changes
 * SOLR-7203: Remove buggy no-op retry code in HttpSolrClient (Alan Woodward,
   Mark Miller, Greg Solovyev)
 
+* SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
+  "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
+  (Varun Thacker, shalin)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -1261,10 +1265,6 @@ Other Changes
 
 * SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
   at least one jetty to kill. (shalin)
-
-* SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
-  "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
-  (Varun Thacker, shalin)
 
 ==================  4.10.4 ==================
 
