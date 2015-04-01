@@ -28,6 +28,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-6709: Fix QueryResponse to deal with the "expanded" section when using the XMLResponseParser
+  (Varun Thacker, Joel Bernstein)
 Optimizations
 ----------------------
 
