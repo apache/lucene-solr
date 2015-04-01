@@ -309,7 +309,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
             doAfterIndexingThreadDone();
           }
         };
-      threads[thread].setDaemon(true);
       threads[thread].start();
     }
 
@@ -332,7 +331,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
             if (VERBOSE) {
               System.out.println(Thread.currentThread().getName() + ": launch search thread");
             }
-            while (System.currentTimeMillis() < stopTimeMS) {
+            while (System.currentTimeMillis() < stopTimeMS && !failed.get()) {
               try {
                 final IndexSearcher s = getCurrentSearcher();
                 try {
@@ -399,12 +398,11 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
             }
           }
         };
-      searchThreads[thread].setDaemon(true);
       searchThreads[thread].start();
     }
 
-    for(int thread=0;thread<searchThreads.length;thread++) {
-      searchThreads[thread].join();
+    for(Thread thread : searchThreads) {
+      thread.join();
     }
 
     if (VERBOSE) {
@@ -535,8 +533,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       System.out.println("TEST: all searching done [" + (System.currentTimeMillis()-t0) + " ms]");
     }
     
-    for(int thread=0;thread<indexThreads.length;thread++) {
-      indexThreads[thread].join();
+    for(Thread thread : indexThreads) {
+      thread.join();
     }
 
     if (VERBOSE) {
