@@ -16,19 +16,6 @@
  */
 package org.apache.solr.logging.log4j;
 
-
-import com.google.common.base.Throwables;
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
-import org.apache.log4j.spi.ThrowableInformation;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.logging.CircularList;
-import org.apache.solr.logging.ListenerConfig;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.LoggerInfo;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -36,6 +23,20 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
+import org.apache.log4j.spi.ThrowableInformation;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.logging.CircularList;
+import org.apache.solr.logging.ListenerConfig;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.LoggerInfo;
+
+import com.google.common.base.Throwables;
 
 public class Log4jWatcher extends LogWatcher<LoggingEvent> {
 
@@ -157,6 +158,12 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
     if(t!=null) {
       doc.setField("trace", Throwables.getStackTraceAsString(t.getThrowable()));
     }
+    
+    // Will be null if not present
+    doc.setField("core", event.getMDC(ZkStateReader.CORE_NAME_PROP));
+    doc.setField("collection", event.getMDC(ZkStateReader.COLLECTION_PROP));
+    doc.setField("replica", event.getMDC(ZkStateReader.REPLICA_PROP));
+    doc.setField("shard", event.getMDC(ZkStateReader.SHARD_ID_PROP));
     return doc;
   }
 }

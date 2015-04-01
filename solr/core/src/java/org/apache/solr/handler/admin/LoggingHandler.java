@@ -121,7 +121,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
         SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
         if(time>0) {
           info.add("since", time);
-          info.add("found", found);
+          info.add("found", found.get());
         }
         else {
           info.add("levels", watcher.getAllLevels()); // show for the first request
