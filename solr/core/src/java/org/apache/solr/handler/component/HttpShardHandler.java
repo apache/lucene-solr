@@ -199,9 +199,7 @@ public class HttpShardHandler extends ShardHandler {
           params.remove(CommonParams.WT); // use default (currently javabin)
           params.remove(CommonParams.VERSION);
 
-          // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
-          // use generic request to avoid extra processing of queries
-          QueryRequest req = new QueryRequest(params);
+          QueryRequest req = makeQueryRequest(sreq, params, shard);
           req.setMethod(SolrRequest.METHOD.POST);
 
           // no need to set the response parser as binary is the default
@@ -239,11 +237,28 @@ public class HttpShardHandler extends ShardHandler {
 
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
 
-        return srsp;
+        return transfomResponse(sreq, srsp, shard);
       }
     };
 
     pending.add( completionService.submit(task) );
+  }
+  
+  /**
+   * Subclasses could modify the request based on the shard
+   */
+  protected QueryRequest makeQueryRequest(final ShardRequest sreq, ModifiableSolrParams params, String shard)
+  {
+    // use generic request to avoid extra processing of queries
+    return new QueryRequest(params);
+  }
+  
+  /**
+   * Subclasses could modify the Response based on the the shard
+   */
+  protected ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard)
+  {
+    return rsp;
   }
 
   /** returns a ShardResponse of the last response correlated with a ShardRequest.  This won't 
