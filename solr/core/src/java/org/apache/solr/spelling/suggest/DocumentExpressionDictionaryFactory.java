@@ -99,7 +99,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     try {
       expression = JavascriptCompiler.compile(weightExpression);
     } catch (ParseException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
     SimpleBindings bindings = new SimpleBindings();
     for (SortField sortField : sortFields) {

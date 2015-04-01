@@ -1494,7 +1494,7 @@ public class ExtendedDismaxQParser extends QParser {
       try {
         queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
-        throw new RuntimeException();
+        throw new RuntimeException(e);
       }
       // Phrase slop array
       int pslop[] = new int[4];

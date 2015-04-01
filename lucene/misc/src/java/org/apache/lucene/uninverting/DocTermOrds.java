@@ -902,7 +902,7 @@ public class DocTermOrds implements Accountable {
       try {
         return getOrdTermsEnum(reader);
       } catch (IOException e) {
-        throw new RuntimeException();
+        throw new RuntimeException(e);
       }
     }
   }
