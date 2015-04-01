@@ -49,7 +49,7 @@ import org.apache.lucene.util.IOUtils;
 
 public final class OrdsBlockTreeTermsReader extends FieldsProducer {
 
-  // Open input to the main terms dict file (_X.tiv)
+  // Open input to the main terms dict file (_X.tio)
   final IndexInput in;
 
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
