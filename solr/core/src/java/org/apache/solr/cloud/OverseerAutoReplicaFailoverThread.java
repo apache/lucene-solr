@@ -175,7 +175,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
-          if (slice.getState().equals(Slice.ACTIVE)) {
+          if (slice.getState() == Slice.State.ACTIVE) {
             
             final Collection<DownReplica> downReplicas = new ArrayList<DownReplica>();
             
@@ -318,7 +318,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
           // only look at active shards
-          if (slice.getState().equals(Slice.ACTIVE)) {
+          if (slice.getState() == Slice.State.ACTIVE) {
             log.debug("look at slice {} as possible create candidate", slice.getName()); 
             Collection<Replica> replicas = slice.getReplicas();
 

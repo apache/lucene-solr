@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FastWriter;
@@ -166,12 +167,12 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
           
           // state can lie to you if the node is offline, so need to reconcile with live_nodes too
           if (!liveNodes.contains(nodeName))
-            coreState = "down"; // not on a live node, so must be down
+            coreState = ZkStateReader.DOWN; // not on a live node, so must be down
           
-          if ("active".equals(coreState)) {
+          if (ZkStateReader.ACTIVE.equals(coreState)) {
             hasActive = true; // assumed no replicas active and found one that is for this shard
           } else {
-            if ("recovering".equals(coreState)) {
+            if (ZkStateReader.RECOVERING.equals(coreState)) {
               replicaInRecovery = true;
             }
             isHealthy = false; // assumed healthy and found one replica that is not
@@ -188,7 +189,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
         return !hasDownedShard && !isHealthy; // means no shards offline but not 100% healthy either
       } else if ("downed_shard".equals(filter)) {
         return hasDownedShard;
-      } else if ("recovering".equals(filter)) {
+      } else if (ZkStateReader.RECOVERING.equals(filter)) {
         return !isHealthy && replicaInRecovery;
       }
       

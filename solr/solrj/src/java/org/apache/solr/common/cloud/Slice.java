@@ -23,28 +23,65 @@ import org.noggit.JSONWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
 public class Slice extends ZkNodeProps {
-  public static String REPLICAS = "replicas";
-  public static String RANGE = "range";
-  public static String STATE = "state";
-  public static String LEADER = "leader";       // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader as a replica property?)
-  public static String ACTIVE = "active";
-  public static String INACTIVE = "inactive";
-  public static String CONSTRUCTION = "construction";
-  public static String RECOVERY = "recovery";
-  public static String PARENT = "parent";
+  
+  /** The slice's state. */
+  public enum State {
+    
+    /** The default state of a slice. */
+    ACTIVE,
+    
+    /**
+     * A slice is put in that state after it has been successfully split. See
+     * <a href="https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api3">
+     * the reference guide</a> for more details.
+     */
+    INACTIVE,
+    
+    /**
+     * When a shard is split, the new sub-shards are put in that state while the
+     * split operation is in progress. A shard in that state still receives
+     * update requests from the parent shard leader, however does not participate
+     * in distributed search.
+     */
+    CONSTRUCTION,
+    
+    /**
+     * Sub-shards of a split shard are put in that state, when they need to
+     * create replicas in order to meet the collection's replication factor. A
+     * shard in that state still receives update requests from the parent shard
+     * leader, however does not participate in distributed search.
+     */
+    RECOVERY;
+    
+    @Override
+    public String toString() {
+      return super.toString().toLowerCase(Locale.ROOT);
+    }
+    
+    /** Converts the state string to a State instance. */
+    public static State getState(String stateStr) {
+      return State.valueOf(stateStr.toUpperCase(Locale.ROOT));
+    }
+  }
+  
+  public static final String REPLICAS = "replicas";
+  public static final String RANGE = "range";
+  public static final String LEADER = "leader";       // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader as a replica property?)
+  public static final String PARENT = "parent";
 
   private final String name;
   private final DocRouter.Range range;
   private final Integer replicationFactor;      // FUTURE: optional per-slice override of the collection replicationFactor
   private final Map<String,Replica> replicas;
   private final Replica leader;
-  private final String state;
+  private final State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
 
@@ -58,11 +95,11 @@ public class Slice extends ZkNodeProps {
     this.name = name;
 
     Object rangeObj = propMap.get(RANGE);
-    if (propMap.containsKey(STATE) && propMap.get(STATE) != null)
-      this.state = (String) propMap.get(STATE);
-    else {
-      this.state = ACTIVE;                         //Default to ACTIVE
-      propMap.put(STATE, this.state);
+    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
+      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+    } else {
+      this.state = State.ACTIVE;                         //Default to ACTIVE
+      propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
     if (rangeObj instanceof DocRouter.Range) {
@@ -172,7 +209,7 @@ public class Slice extends ZkNodeProps {
     return range;
   }
 
-  public String getState() {
+  public State getState() {
     return state;
   }
 

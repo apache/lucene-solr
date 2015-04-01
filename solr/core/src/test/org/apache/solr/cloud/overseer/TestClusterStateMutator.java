@@ -24,6 +24,7 @@ import org.apache.solr.cloud.MockZkStateReader;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
@@ -60,8 +61,8 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertNotNull(collection.getSlicesMap().get("y"));
     assertNull(collection.getSlicesMap().get("x").getRange());
     assertNull(collection.getSlicesMap().get("y").getRange());
-    assertEquals("active", collection.getSlicesMap().get("x").getState());
-    assertEquals("active", collection.getSlicesMap().get("y").getState());
+    assertSame(Slice.State.ACTIVE, collection.getSlicesMap().get("x").getState());
+    assertSame(Slice.State.ACTIVE, collection.getSlicesMap().get("y").getState());
     assertEquals(4, collection.getMaxShardsPerNode());
     assertEquals(ImplicitDocRouter.class, collection.getRouter().getClass());
     assertNotNull(state.getCollectionOrNull("xyz")); // we still have the old collection

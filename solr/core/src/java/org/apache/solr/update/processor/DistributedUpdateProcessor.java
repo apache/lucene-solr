@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -436,19 +437,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   private boolean couldIbeSubShardLeader(DocCollection coll) {
     // Could I be the leader of a shard in "construction/recovery" state?
-    String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor()
-        .getShardId();
+    String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
     Slice mySlice = coll.getSlice(myShardId);
-    String state = mySlice.getState();
-    return (Slice.CONSTRUCTION.equals(state) || Slice.RECOVERY.equals(state));
+    State state = mySlice.getState();
+    return state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY;
   }
   
   private boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException {
     // Am I the leader of a shard in "construction/recovery" state?
     String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
     Slice mySlice = coll.getSlice(myShardId);
-    String state = mySlice.getState();
-    if (Slice.CONSTRUCTION.equals(state) || Slice.RECOVERY.equals(state)) {
+    final State state = mySlice.getState();
+    if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
       Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
       boolean amILeader = myLeader.getName().equals(
           req.getCore().getCoreDescriptor().getCloudDescriptor()
@@ -473,7 +473,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Collection<Slice> allSlices = coll.getSlices();
     List<Node> nodes = null;
     for (Slice aslice : allSlices) {
-      if (Slice.CONSTRUCTION.equals(aslice.getState()) || Slice.RECOVERY.equals(aslice.getState()))  {
+      final Slice.State state = aslice.getState();
+      if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY)  {
         DocRouter.Range myRange = coll.getSlice(shardId).getRange();
         if (myRange == null) myRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
         boolean isSubset = aslice.getRange() != null && aslice.getRange().isSubsetOf(myRange);
@@ -588,7 +589,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       String fromShard = req.getParams().get(DISTRIB_FROM_PARENT);
       if (fromShard != null) {
-        if (Slice.ACTIVE.equals(mySlice.getState()))  {
+        if (mySlice.getState() == Slice.State.ACTIVE)  {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
               "Request says it is coming from parent shard leader but we are in active state");
         }

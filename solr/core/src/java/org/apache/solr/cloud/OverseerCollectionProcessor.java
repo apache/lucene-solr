@@ -61,6 +61,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -86,6 +87,7 @@ import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -1071,7 +1073,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         log.warn("Exception trying to unload core " + sreq, e);
       }
 
-      collectShardResponses(!Slice.ACTIVE.equals(replica.getStr(Slice.STATE)) ? new NamedList() : results,
+      collectShardResponses(!ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP)) ? new NamedList() : results,
           false, null, shardHandler);
 
       if (waitForCoreNodeGone(collectionName, shard, replicaName, 5000))
@@ -1494,9 +1496,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
           Slice oSlice = clusterState.getSlice(collectionName, subSlice);
           if (oSlice != null) {
-            if (Slice.ACTIVE.equals(oSlice.getState())) {
+            final Slice.State state = oSlice.getState();
+            if (state == Slice.State.ACTIVE) {
               throw new SolrException(ErrorCode.BAD_REQUEST, "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
-            } else if (Slice.CONSTRUCTION.equals(oSlice.getState()) || Slice.RECOVERY.equals(oSlice.getState())) {
+            } else if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
               // delete the shards
               for (String sub : subSlices) {
                 log.info("Sub-shard: {} already exists therefore requesting its deletion", sub);
@@ -1537,7 +1540,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           propMap.put(ZkStateReader.SHARD_ID_PROP, subSlice);
           propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
           propMap.put(ZkStateReader.SHARD_RANGE_PROP, subRange.toString());
-          propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.CONSTRUCTION);
+          propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.State.CONSTRUCTION.toString());
           propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
           DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
           inQueue.offer(ZkStateReader.toJSON(new ZkNodeProps(propMap)));
@@ -1732,9 +1735,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
           Map<String, Object> propMap = new HashMap<>();
           propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-          propMap.put(slice, Slice.INACTIVE);
+          propMap.put(slice, Slice.State.INACTIVE.toString());
           for (String subSlice : subSlices) {
-            propMap.put(subSlice, Slice.ACTIVE);
+            propMap.put(subSlice, Slice.State.ACTIVE.toString());
           }
           propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
           ZkNodeProps m = new ZkNodeProps(propMap);
@@ -1745,7 +1748,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           Map<String, Object> propMap = new HashMap<>();
           propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
           for (String subSlice : subSlices) {
-            propMap.put(subSlice, Slice.RECOVERY);
+            propMap.put(subSlice, Slice.State.RECOVERY.toString());
           }
           propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
           ZkNodeProps m = new ZkNodeProps(propMap);
@@ -1886,11 +1889,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
       // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
       // TODO: Add check for range gaps on Slice deletion
-      if (!(slice.getRange() == null || slice.getState().equals(Slice.INACTIVE)
-          || slice.getState().equals(Slice.RECOVERY) || slice.getState().equals(Slice.CONSTRUCTION))) {
+      final Slice.State state = slice.getState();
+      if (!(slice.getRange() == null || state == Slice.State.INACTIVE
+          || state == Slice.State.RECOVERY || state == Slice.State.CONSTRUCTION)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "The slice: " + slice.getName() + " is currently "
-                + slice.getState() + ". Only non-active (or custom-hashed) slices can be deleted.");
+                + state + ". Only non-active (or custom-hashed) slices can be deleted.");
       }
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
