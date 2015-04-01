@@ -219,7 +219,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     final SearcherFactory sf = new SearcherFactory() {
         @Override
-        public IndexSearcher newSearcher(IndexReader r) throws IOException {
+        public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
           TestControlledRealTimeReopenThread.this.warmCalled = true;
           IndexSearcher s = new IndexSearcher(r, es);
           s.search(new TermQuery(new Term("body", "united")), 10);
@@ -413,7 +413,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader ignored) {
+      public IndexSearcher newSearcher(IndexReader ignored, IndexReader previous) {
         return LuceneTestCase.newSearcher(other);
       }
       };

@@ -53,6 +53,11 @@ Bug Fixes
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
   (Varun Thacker, Adrien Grand, Mike McCandless)
 
+API Changes
+
+* LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
+  to simplify warming logic during opening new searchers. (Simon Willnauer)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

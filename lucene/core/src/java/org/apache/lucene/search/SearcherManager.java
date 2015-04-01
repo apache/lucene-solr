@@ -86,7 +86,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes));
+    current = getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes), null);
   }
   
   /**
@@ -103,7 +103,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = getSearcher(searcherFactory, DirectoryReader.open(dir));
+    current = getSearcher(searcherFactory, DirectoryReader.open(dir), null);
   }
 
   /**
@@ -122,7 +122,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    this.current = getSearcher(searcherFactory, reader);
+    this.current = getSearcher(searcherFactory, reader, null);
   }
 
   @Override
@@ -138,7 +138,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
     if (newReader == null) {
       return null;
     } else {
-      return getSearcher(searcherFactory, newReader);
+      return getSearcher(searcherFactory, newReader, r);
     }
   }
   
@@ -172,11 +172,11 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
    *  IndexReader} using the provided {@link
    *  SearcherFactory}.  NOTE: this decRefs incoming reader
    * on throwing an exception. */
-  public static IndexSearcher getSearcher(SearcherFactory searcherFactory, IndexReader reader) throws IOException {
+  public static IndexSearcher getSearcher(SearcherFactory searcherFactory, IndexReader reader, IndexReader previousReader) throws IOException {
     boolean success = false;
     final IndexSearcher searcher;
     try {
-      searcher = searcherFactory.newSearcher(reader);
+      searcher = searcherFactory.newSearcher(reader, previousReader);
       if (searcher.getIndexReader() != reader) {
         throw new IllegalStateException("SearcherFactory must wrap exactly the provided reader (got " + searcher.getIndexReader() + " but expected " + reader + ")");
       }
