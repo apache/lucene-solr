@@ -77,7 +77,9 @@ final class DocumentsWriterStallControl {
           // don't loop here, higher level logic will re-stall!
           try {
             incWaiters();
-            wait();
+            // Defensive, in case we have a concurrency bug that fails to .notify/All our thread:
+            // just wait for up to 1 second here, and let caller re-stall if it's still needed:
+            wait(1000);
             decrWaiters();
           } catch (InterruptedException e) {
             throw new ThreadInterruptedException(e);
