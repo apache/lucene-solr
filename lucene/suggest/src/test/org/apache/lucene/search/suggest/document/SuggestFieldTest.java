@@ -291,7 +291,7 @@ public class SuggestFieldTest extends LuceneTestCase {
       Document doc = reader.document(docID);
       IndexableField[] weights = doc.getFields("weight_fld");
       assertThat(weights.length, equalTo(1));
-      int weight = (int) weights[0].numericValue();
+      int weight = weights[0].numericValue().intValue();
       if (weight != 1) {
         assertTrue(iw.tryDeleteDocument(reader, docID));
       }
