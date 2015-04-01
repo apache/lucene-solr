@@ -376,6 +376,9 @@ Bug Fixes
 * SOLR-6924: The config API forcefully refreshes all replicas in the collection to ensure all are
   updated (Noble Paul)
 
+* SOLR-7266: The IgnoreCommitOptimizeUpdateProcessor blocks commit requests from
+  replicas needing to recover. (Jessica Cheng Mallet, Timothy Potter)
+
 Optimizations
 ----------------------
 
