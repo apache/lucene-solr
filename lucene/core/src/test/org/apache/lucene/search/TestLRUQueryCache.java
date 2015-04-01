@@ -83,7 +83,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final SearcherFactory searcherFactory = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader reader) throws IOException {
+      public IndexSearcher newSearcher(IndexReader reader, IndexReader previous) throws IOException {
         IndexSearcher searcher = new IndexSearcher(reader);
         searcher.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
         searcher.setQueryCache(queryCache);

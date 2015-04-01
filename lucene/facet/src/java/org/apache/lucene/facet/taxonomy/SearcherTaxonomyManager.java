@@ -70,7 +70,7 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     this.searcherFactory = searcherFactory;
     this.taxoWriter = taxoWriter;
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
-    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes)), taxoReader);
+    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes), null), taxoReader);
     this.taxoEpoch = taxoWriter.getTaxonomyEpoch();
   }
 
@@ -88,7 +88,7 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     }
     this.searcherFactory = searcherFactory;
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(indexDir)), taxoReader);
+    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, DirectoryReader.open(indexDir), null), taxoReader);
     this.taxoWriter = null;
     taxoEpoch = -1;
   }
@@ -138,7 +138,7 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
         throw new IllegalStateException("DirectoryTaxonomyWriter.replaceTaxonomy was called, which is not allowed when using SearcherTaxonomyManager");
       }
 
-      return new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, newReader), tr);
+      return new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, newReader, r), tr);
     }
   }
 

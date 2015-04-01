@@ -88,7 +88,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final SearcherManager mgr = new SearcherManager(w.w, random().nextBoolean(), new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader reader) throws IOException {
+      public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) throws IOException {
         IndexSearcher searcher = new IndexSearcher(reader);
         // disable built-in caching
         searcher.setQueryCache(null);
