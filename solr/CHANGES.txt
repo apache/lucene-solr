@@ -34,6 +34,7 @@ Bug Fixes
 
 * SOLR-6709: Fix QueryResponse to deal with the "expanded" section when using the XMLResponseParser
   (Varun Thacker, Joel Bernstein)
+
 Optimizations
 ----------------------
 
@@ -325,6 +326,8 @@ Bug Fixes
 
 * SOLR-7266: The IgnoreCommitOptimizeUpdateProcessor blocks commit requests from
   replicas needing to recover. (Jessica Cheng Mallet, Timothy Potter)
+
+* SOLR-7299: bin\solr.cmd doesn't use jetty SSL configuration. (Steve Rowe)
 
 Optimizations
 ----------------------
