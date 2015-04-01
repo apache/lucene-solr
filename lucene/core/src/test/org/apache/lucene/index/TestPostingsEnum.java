@@ -46,7 +46,7 @@ public class TestPostingsEnum extends LuceneTestCase {
   
   private static void assertReused(String field, PostingsEnum p1, PostingsEnum p2) {
     // if its not DirectPF, we should always reuse. This one has trouble.
-    if (!"Direct".equals(TestUtil.getPostingsFormat("foo"))) {
+    if (!"Direct".equals(TestUtil.getPostingsFormat(field))) {
       assertSame(p1, p2);
     }
   }
