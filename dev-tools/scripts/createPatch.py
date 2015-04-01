@@ -90,7 +90,7 @@ def run_diff(from_dir, to_dir, skip_whitespace):
     flags += 'bBw'
 
   args = ['diff', flags]
-  for ignore in ('.svn', '.git', 'build', '.caches', '.idea', 'idea-build', 'eclipse-build'):
+  for ignore in ('.svn', '.git', 'build', '.caches', '.idea', 'idea-build', 'eclipse-build', '.settings'):
     args.append('-x')
     args.append(ignore)
   args.append(from_dir)
