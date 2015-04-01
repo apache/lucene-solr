@@ -59,7 +59,36 @@ Other Changes
 * SOLR-6954: Deprecated SolrClient.shutdown() method removed (Alan Woodward)
 
 ==================  5.2.0 ==================
-(No Changes)
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+
+Upgrading from Solr 5.1
+-----------------------
+
+* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
+  clarify the states a Slice can be in, as well comparing the state of a Slice.
+  (Shai Erera)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-6709: Fix QueryResponse to deal with the "expanded" section when using the XMLResponseParser
+  (Varun Thacker, Joel Bernstein)
+
+Optimizations
+----------------------
+
+* SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
+  (Stephan Lagraulet via Varun Thacker)
 
 ==================  5.1.0 ==================
 
@@ -359,9 +388,6 @@ Optimizations
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
    where local params disable all stats (hossman)
 
- * SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
-   (Stephan Lagraulet via Varun Thacker)
-
 Other Changes
 ----------------------
 
@@ -445,6 +471,10 @@ Other Changes
 
 * SOLR-7203: Remove buggy no-op retry code in HttpSolrClient (Alan Woodward,
   Mark Miller, Greg Solovyev)
+
+* SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
+  "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
+  (Varun Thacker, shalin)
 
 ==================  5.0.0 ==================
 
@@ -1235,10 +1265,6 @@ Other Changes
 
 * SOLR-6227: Avoid spurious failures of ChaosMonkeySafeLeaderTest by ensuring there's
   at least one jetty to kill. (shalin)
-
-* SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
-  "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
-  (Varun Thacker, shalin)
 
 ==================  4.10.4 ==================
 

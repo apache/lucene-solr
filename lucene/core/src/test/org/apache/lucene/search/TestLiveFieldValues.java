@@ -51,7 +51,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     final SearcherManager mgr = new SearcherManager(w, true, new SearcherFactory() {
         @Override
-        public IndexSearcher newSearcher(IndexReader r) {
+        public IndexSearcher newSearcher(IndexReader r, IndexReader previous) {
           return new IndexSearcher(r);
         }
       });

@@ -396,8 +396,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       clusterState = zkStateReader.getClusterState();
       slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
       slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
-      if (Slice.ACTIVE.equals(slice1_0.getState()) && Slice.ACTIVE.equals(slice1_1.getState()))
+      if (slice1_0.getState() == Slice.State.ACTIVE && slice1_1.getState() == Slice.State.ACTIVE) {
         break;
+      }
       Thread.sleep(500);
     }
 
@@ -405,8 +406,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     assertNotNull("Cluster state does not contain shard1_0", slice1_0);
     assertNotNull("Cluster state does not contain shard1_0", slice1_1);
-    assertEquals("shard1_0 is not active", Slice.ACTIVE, slice1_0.getState());
-    assertEquals("shard1_1 is not active", Slice.ACTIVE, slice1_1.getState());
+    assertSame("shard1_0 is not active", Slice.State.ACTIVE, slice1_0.getState());
+    assertSame("shard1_1 is not active", Slice.State.ACTIVE, slice1_1.getState());
     assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
     assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
 

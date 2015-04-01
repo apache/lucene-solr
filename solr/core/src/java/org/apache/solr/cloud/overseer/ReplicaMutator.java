@@ -17,6 +17,9 @@ package org.apache.solr.cloud.overseer;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.OverseerCollectionProcessor.*;
+import static org.apache.solr.cloud.overseer.CollectionMutator.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -38,10 +41,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
-import static org.apache.solr.cloud.overseer.CollectionMutator.checkKeyExistence;
 
 public class ReplicaMutator {
   private static Logger log = LoggerFactory.getLogger(ReplicaMutator.class);
@@ -322,7 +321,7 @@ public class ReplicaMutator {
       replicas = new HashMap<>(1);
       sliceProps = new HashMap<>();
       sliceProps.put(Slice.RANGE, shardRange);
-      sliceProps.put(Slice.STATE, shardState);
+      sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       sliceProps.put(Slice.PARENT, shardParent);
     }
 
@@ -357,8 +356,7 @@ public class ReplicaMutator {
   private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String coreNodeName, String sliceName, Map<String, Object> replicaProps) {
     Slice slice = collection.getSlice(sliceName);
     Map<String, Object> sliceProps = slice.getProperties();
-    String sliceState = slice.getState();
-    if (Slice.RECOVERY.equals(sliceState)) {
+    if (slice.getState() == Slice.State.RECOVERY) {
       log.info("Shard: {} is in recovery state", sliceName);
       // is this replica active?
       if (ZkStateReader.ACTIVE.equals(replicaProps.get(ZkStateReader.STATE_PROP))) {
@@ -367,7 +365,7 @@ public class ReplicaMutator {
         boolean allActive = true;
         for (Map.Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
           if (coreNodeName.equals(entry.getKey())) continue;
-          if (!Slice.ACTIVE.equals(entry.getValue().getStr(Slice.STATE))) {
+          if (!ZkStateReader.ACTIVE.equals(entry.getValue().getStr(ZkStateReader.STATE_PROP))) {
             allActive = false;
             break;
           }
@@ -382,7 +380,7 @@ public class ReplicaMutator {
             if (sliceName.equals(entry.getKey()))
               continue;
             Slice otherSlice = entry.getValue();
-            if (Slice.RECOVERY.equals(otherSlice.getState())) {
+            if (otherSlice.getState() == Slice.State.RECOVERY) {
               if (slice.getParent() != null && slice.getParent().equals(otherSlice.getParent())) {
                 log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
                 // this is a fellow sub shard so check if all replicas are active
@@ -404,10 +402,10 @@ public class ReplicaMutator {
 
             Map<String, Object> propMap = new HashMap<>();
             propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
-            propMap.put(parentSliceName, Slice.INACTIVE);
-            propMap.put(sliceName, Slice.ACTIVE);
+            propMap.put(parentSliceName, Slice.State.INACTIVE.toString());
+            propMap.put(sliceName, Slice.State.ACTIVE.toString());
             for (Slice subShardSlice : subShardSlices) {
-              propMap.put(subShardSlice.getName(), Slice.ACTIVE);
+              propMap.put(subShardSlice.getName(), Slice.State.ACTIVE.toString());
             }
             propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
             ZkNodeProps m = new ZkNodeProps(propMap);

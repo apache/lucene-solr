@@ -53,7 +53,7 @@ public class CollectionMutator {
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
       sliceProps.put(Slice.RANGE, shardRange);
-      sliceProps.put(Slice.STATE, shardState);
+      sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       if (shardParent != null) {
         sliceProps.put(Slice.PARENT, shardParent);
       }

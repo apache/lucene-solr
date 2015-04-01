@@ -17,13 +17,6 @@
 
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +24,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * 
@@ -86,7 +86,7 @@ public class QueryResponse extends SolrResponseBase
 
   // utility variable used for automatic binding -- it should not be serialized
   private transient final SolrClient solrClient;
-  
+
   public QueryResponse(){
     solrClient = null;
   }
@@ -134,7 +134,8 @@ public class QueryResponse extends SolrResponseBase
         extractGroupedInfo( _groupedInfo );
       }
       else if("expanded".equals(n)) {
-        _expandedResults = (Map<String, SolrDocumentList>) res.getVal( i );
+        NamedList map = (NamedList) res.getVal(i);
+        _expandedResults = map.asMap(1);
       }
       else if( "highlighting".equals( n ) ) {
         _highlightingInfo = (NamedList<Object>) res.getVal( i );
@@ -480,7 +481,13 @@ public class QueryResponse extends SolrResponseBase
     return _facetQuery;
   }
 
-  public Map<String, SolrDocumentList> getExpandedResults(){
+  /**
+   *
+   * @return map with each group value as key and the expanded documents that belong to the group as value.
+   * There is no guarantee on the order of the keys obtained via an iterator.
+   *
+   */
+  public Map<String, SolrDocumentList> getExpandedResults() {
     return this._expandedResults;
   }
 

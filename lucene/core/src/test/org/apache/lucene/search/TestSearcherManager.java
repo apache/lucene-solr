@@ -78,7 +78,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   protected void doAfterWriter(final ExecutorService es) throws Exception {
     final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader r) throws IOException {
+      public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
         IndexSearcher s = new IndexSearcher(r, es);
         TestSearcherManager.this.warmCalled = true;
         s.search(new TermQuery(new Term("body", "united")), 10);
@@ -217,7 +217,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
     final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader r) {
+      public IndexSearcher newSearcher(IndexReader r, IndexReader previous) {
         try {
           if (triedReopen.get()) {
             awaitEnterWarm.countDown();
@@ -400,7 +400,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
-      public IndexSearcher newSearcher(IndexReader ignored) {
+      public IndexSearcher newSearcher(IndexReader ignored, IndexReader previous) {
         return LuceneTestCase.newSearcher(other);
       }
       };
@@ -501,6 +501,49 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     }
     mgr.close();
     w.close();
+    dir.close();
+  }
+
+  public void testPreviousReaderIsPassed() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.addDocument(new Document());
+    class MySearcherFactory extends SearcherFactory {
+      IndexReader lastReader = null;
+      IndexReader lastPreviousReader = null;
+      int called = 0;
+      @Override
+      public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) throws IOException {
+        called++;
+        lastReader = reader;
+        lastPreviousReader = previousReader;
+        return super.newSearcher(reader, previousReader);
+      }
+    }
+
+    MySearcherFactory factory = new MySearcherFactory();
+    final SearcherManager sm = new SearcherManager(w, random().nextBoolean(), factory);
+    assertEquals(1, factory.called);
+    assertNull(factory.lastPreviousReader);
+    assertNotNull(factory.lastReader);
+    IndexSearcher acquire = sm.acquire();
+    assertSame(factory.lastReader, acquire.getIndexReader());
+    sm.release(acquire);
+
+    final IndexReader lastReader = factory.lastReader;
+    // refresh
+    w.addDocument(new Document());
+    assertTrue(sm.maybeRefresh());
+
+    acquire = sm.acquire();
+    assertSame(factory.lastReader, acquire.getIndexReader());
+    sm.release(acquire);
+    assertNotNull(factory.lastPreviousReader);
+    assertSame(lastReader, factory.lastPreviousReader);
+    assertNotSame(factory.lastReader, lastReader);
+    assertEquals(2, factory.called);
+    w.close();
+    sm.close();
     dir.close();
   }
 }

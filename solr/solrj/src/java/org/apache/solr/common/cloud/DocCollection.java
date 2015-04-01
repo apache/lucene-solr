@@ -87,7 +87,7 @@ public class DocCollection extends ZkNodeProps {
 
     while (iter.hasNext()) {
       Map.Entry<String, Slice> slice = iter.next();
-      if (slice.getValue().getState().equals(Slice.ACTIVE))
+      if (slice.getValue().getState() == Slice.State.ACTIVE)
         this.activeSlices.put(slice.getKey(), slice.getValue());
     }
     this.router = router;

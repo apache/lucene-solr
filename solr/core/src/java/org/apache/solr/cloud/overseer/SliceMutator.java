@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -187,10 +188,12 @@ public class SliceMutator {
       }
       log.info("Update shard state " + key + " to " + message.getStr(key));
       Map<String, Object> props = slice.shallowCopy();
-      if (Slice.RECOVERY.equals(props.get(Slice.STATE)) && Slice.ACTIVE.equals(message.getStr(key))) {
+      
+      if (Slice.State.getState((String) props.get(ZkStateReader.STATE_PROP)) == Slice.State.RECOVERY
+          && Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
         props.remove(Slice.PARENT);
       }
-      props.put(Slice.STATE, message.getStr(key));
+      props.put(ZkStateReader.STATE_PROP, message.getStr(key));
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
       slicesCopy.put(slice.getName(), newSlice);
     }

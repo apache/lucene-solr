@@ -45,6 +45,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -56,9 +57,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -199,22 +202,9 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.clear();
     }
 
-    // get docIDs to delete
+    iw.deleteDocuments(new Term("str_field", "delete"));
+
     DirectoryReader reader = DirectoryReader.open(iw, false);
-    List<Integer> docIdsToDelete = new ArrayList<>();
-    for (int i = 0; i < reader.maxDoc(); i++) {
-      StoredDocument doc = reader.document(i);
-      if ("delete".equals(doc.get("str_field"))) {
-        docIdsToDelete.add(i);
-      }
-    }
-
-    for (Integer docID : docIdsToDelete) {
-      assertTrue(iw.tryDeleteDocument(reader, docID));
-    }
-    reader.close();
-
-    reader = DirectoryReader.open(iw, false);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader, analyzer);
     TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", numLive);
     assertSuggestions(suggest, expectedEntries.toArray(new Entry[expectedEntries.size()]));
@@ -256,17 +246,14 @@ public class SuggestFieldTest extends LuceneTestCase {
     Document document = new Document();
     for (int i = 0; i < num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, i));
+      document.add(newStringField("delete", "delete", Field.Store.NO));
       iw.addDocument(document);
       document.clear();
     }
 
-    DirectoryReader reader = DirectoryReader.open(iw, false);
-    for (int docID = 0; docID < reader.maxDoc(); docID++) {
-      assertTrue(iw.tryDeleteDocument(reader, docID));
-    }
-    reader.close();
+    iw.deleteDocuments(new Term("delete", "delete"));
 
-    reader = DirectoryReader.open(iw, false);
+    DirectoryReader reader = DirectoryReader.open(iw, false);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader, analyzer);
     TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", num);
     assertThat(suggest.totalHits, equalTo(0));
@@ -289,20 +276,9 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.clear();
     }
 
-    DirectoryReader reader = DirectoryReader.open(iw, false);
-    // delete all but the lowest scored suggestion
-    for (int docID = 0; docID < reader.maxDoc(); docID++) {
-      StoredDocument doc = reader.document(docID);
-      StorableField[] weights = doc.getFields("weight_fld");
-      assertThat(weights.length, equalTo(1));
-      int weight = (int) weights[0].numericValue();
-      if (weight != 1) {
-        assertTrue(iw.tryDeleteDocument(reader, docID));
-      }
-    }
-    reader.close();
+    iw.deleteDocuments(NumericRangeQuery.newIntRange("weight_fld", 2, null, true, false));
 
-    reader = DirectoryReader.open(iw, false);
+    DirectoryReader reader = DirectoryReader.open(iw, true);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader, analyzer);
     TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", 1);
     assertSuggestions(suggest, new Entry("abc_1", 1));

@@ -25,6 +25,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -69,8 +70,8 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
     assertNotNull("Shard1 not found", slice1);
     assertNotNull("Shard2 not found", slice2);
-    assertEquals("Shard1 is not active", Slice.ACTIVE, slice1.getState());
-    assertEquals("Shard2 is not active", Slice.ACTIVE, slice2.getState());
+    assertSame("Shard1 is not active", Slice.State.ACTIVE, slice1.getState());
+    assertSame("Shard2 is not active", Slice.State.ACTIVE, slice2.getState());
 
     try {
       deleteShard(SHARD1);
@@ -79,19 +80,19 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
       // expected
     }
 
-    setSliceState(SHARD1, Slice.INACTIVE);
+    setSliceState(SHARD1, Slice.State.INACTIVE);
 
     clusterState = cloudClient.getZkStateReader().getClusterState();
 
     slice1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
 
-    assertEquals("Shard1 is not inactive yet.", Slice.INACTIVE, slice1.getState());
+    assertSame("Shard1 is not inactive yet.", Slice.State.INACTIVE, slice1.getState());
 
     deleteShard(SHARD1);
 
     confirmShardDeletion(SHARD1);
 
-    setSliceState(SHARD2, Slice.CONSTRUCTION);
+    setSliceState(SHARD2, Slice.State.CONSTRUCTION);
     deleteShard(SHARD2);
     confirmShardDeletion(SHARD2);
   }
@@ -135,12 +136,12 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  protected void setSliceState(String slice, String state) throws SolrServerException, IOException,
+  protected void setSliceState(String slice, State state) throws SolrServerException, IOException,
       KeeperException, InterruptedException {
     DistributedQueue inQueue = Overseer.getInQueue(cloudClient.getZkStateReader().getZkClient());
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-    propMap.put(slice, state);
+    propMap.put(slice, state.toString());
     propMap.put(ZkStateReader.COLLECTION_PROP, "collection1");
     ZkNodeProps m = new ZkNodeProps(propMap);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -150,8 +151,8 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     for (int counter = 10; counter > 0; counter--) {
       zkStateReader.updateClusterState(true);
       ClusterState clusterState = zkStateReader.getClusterState();
-      String sliceState = clusterState.getSlice("collection1", slice).getState();
-      if (sliceState.equals(state)) {
+      State sliceState = clusterState.getSlice("collection1", slice).getState();
+      if (sliceState == state) {
         transition = true;
         break;
       }
@@ -164,4 +165,3 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
   }
 
 }
-

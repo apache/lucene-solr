@@ -27,6 +27,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -62,6 +71,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -81,16 +91,6 @@ import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
-import com.carrotsearch.hppc.LongOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -384,7 +384,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       searcher.search(new FilteredQuery(query, pfilter.filter), collector);
     }
     LongObjectMap groups = ((GroupCollector)groupExpandCollector).getGroups();
-    Map<String, DocSlice> outMap = new HashMap<>();
+    NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
     for (LongObjectCursor cursor : (Iterable<LongObjectCursor>) groups) {
       long groupValue = cursor.key;
@@ -405,14 +405,14 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           final BytesRef bytesRef = ordBytes.get((int)groupValue);
           fieldType.indexedToReadable(bytesRef, charsRef);
           String group = charsRef.toString();
-          outMap.put(group, slice);
+          outMap.add(group, slice);
         } else {
           if(fieldType instanceof TrieIntField || fieldType instanceof TrieLongField ) {
-            outMap.put(Long.toString(groupValue), slice);
+            outMap.add(Long.toString(groupValue), slice);
           } else if(fieldType instanceof TrieFloatField) {
-            outMap.put(Float.toString(Float.intBitsToFloat((int)groupValue)), slice);
+            outMap.add(Float.toString(Float.intBitsToFloat((int) groupValue)), slice);
           } else if(fieldType instanceof TrieDoubleField) {
-            outMap.put(Double.toString(Double.longBitsToDouble(groupValue)), slice);
+            outMap.add(Double.toString(Double.longBitsToDouble(groupValue)), slice);
           }
         }
       }
@@ -450,19 +450,19 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       SolrQueryRequest req = rb.req;
-      Map expanded = (Map) req.getContext().get("expanded");
+      NamedList expanded = (NamedList) req.getContext().get("expanded");
       if (expanded == null) {
-        expanded = new HashMap();
+        expanded = new SimpleOrderedMap();
         req.getContext().put("expanded", expanded);
       }
 
       for (ShardResponse srsp : sreq.responses) {
         NamedList response = srsp.getSolrResponse().getResponse();
-        Map ex = (Map) response.get("expanded");
-        for (Map.Entry<String, SolrDocumentList> entry : (Iterable<Map.Entry<String, SolrDocumentList>>) ex.entrySet()) {
-          String name = entry.getKey();
-          SolrDocumentList val = entry.getValue();
-          expanded.put(name, val);
+        NamedList ex = (NamedList) response.get("expanded");
+        for (int i=0; i<ex.size(); i++) {
+          String name = ex.getName(i);
+          SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
+          expanded.add(name, val);
         }
       }
     }
@@ -479,9 +479,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    Map expanded = (Map) rb.req.getContext().get("expanded");
+    NamedList expanded = (NamedList) rb.req.getContext().get("expanded");
     if (expanded == null) {
-      expanded = new HashMap();
+      expanded = new SimpleOrderedMap();
     }
 
     rb.rsp.add("expanded", expanded);

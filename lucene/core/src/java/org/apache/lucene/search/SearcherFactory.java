@@ -49,9 +49,15 @@ import org.apache.lucene.search.similarities.Similarity; // javadocs
  */
 public class SearcherFactory {
   /** 
-   * Returns a new IndexSearcher over the given reader. 
+   * Returns a new IndexSearcher over the given reader.
+   * @param reader the reader to create a new searcher for
+   * @param previousReader the reader previously used to create a new searcher.
+   *                       This can be <code>null</code> if unknown or if the given reader is the initially opened reader.
+   *                       If this reader is non-null it can be used to find newly opened segments compared to the new reader to warm
+   *                       the searcher up before returning.
    */
-  public IndexSearcher newSearcher(IndexReader reader) throws IOException {
+  public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) throws IOException {
     return new IndexSearcher(reader);
   }
+
 }

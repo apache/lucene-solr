@@ -17,6 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -56,14 +64,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class RecoveryStrategy extends Thread implements ClosableThread {
   private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
@@ -580,7 +580,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       prepCmd.setState(ZkStateReader.RECOVERING);
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
-      if (!Slice.CONSTRUCTION.equals(slice.getState()) && !Slice.RECOVERY.equals(slice.getState())) {
+      final Slice.State state = slice.getState();
+      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
