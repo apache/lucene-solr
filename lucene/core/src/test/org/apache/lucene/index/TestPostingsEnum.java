@@ -32,6 +32,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+import static org.apache.lucene.index.PostingsEnum.NONE;
+import static org.apache.lucene.index.PostingsEnum.FREQS;
+import static org.apache.lucene.index.PostingsEnum.POSITIONS;
+import static org.apache.lucene.index.PostingsEnum.PAYLOADS;
+import static org.apache.lucene.index.PostingsEnum.OFFSETS;
+import static org.apache.lucene.index.PostingsEnum.ALL;
+
 /** 
  * Test basic postingsenum behavior, flags, reuse, etc.
  */
@@ -66,37 +73,23 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(1, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
-    // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
-    assertEquals(-1, docsOnly.docID());
-    assertEquals(0, docsOnly.nextDoc());
-    assertEquals(1, docsOnly.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
-    // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
-    assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
-    // and it had better work
-    assertEquals(-1, docsOnly2.docID());
-    assertEquals(0, docsOnly2.nextDoc());
-    assertEquals(1, docsOnly2.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
-    
-    // we did not index positions
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
-    assertNotNull(docsAndPositionsEnum);
+    // asking for any flags: ok
+    for (int flag : new int[] { NONE, FREQS, POSITIONS, PAYLOADS, OFFSETS, ALL }) {
+      postings = termsEnum.postings(null, null, flag);
+      assertEquals(-1, postings.docID());
+      assertEquals(0, postings.nextDoc());
+      assertEquals(1, postings.freq());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+      // reuse that too
+      postings2 = termsEnum.postings(null, postings, flag);
+      assertNotNull(postings2);
+      assertSame(postings, postings2);
+      // and it had better work
+      assertEquals(-1, postings2.docID());
+      assertEquals(0, postings2.nextDoc());
+      assertEquals(1, postings2.freq());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
+    }
     
     iw.close();
     reader.close();
@@ -156,21 +149,27 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
-    // we did not index positions
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
-    assertNotNull(docsAndPositionsEnum);
-    
-    // we did not index positions
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
-    assertNotNull(docsAndPositionsEnum);
+    // asking for any flags: ok
+    for (int flag : new int[] { NONE, FREQS, POSITIONS, PAYLOADS, OFFSETS, ALL }) {
+      postings = termsEnum.postings(null, null, flag);
+      assertEquals(-1, postings.docID());
+      assertEquals(0, postings.nextDoc());
+      if (flag != NONE) {
+        assertEquals(2, postings.freq());
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+      // reuse that too
+      postings2 = termsEnum.postings(null, postings, flag);
+      assertNotNull(postings2);
+      assertSame(postings, postings2);
+      // and it had better work
+      assertEquals(-1, postings2.docID());
+      assertEquals(0, postings2.nextDoc());
+      if (flag != NONE) {
+        assertEquals(2, postings2.freq());
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
+    }
     
     iw.close();
     reader.close();
