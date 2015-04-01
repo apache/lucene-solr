@@ -864,7 +864,7 @@ public class SolrCLI {
         if (replicaHealth.isLeader) 
           hasLeader = true;
         
-        if (!"active".equals(replicaHealth.status)) {
+        if (!ZkStateReader.ACTIVE.equals(replicaHealth.status)) {
           healthy = false;
         } else {
           atLeastOneActive = true;

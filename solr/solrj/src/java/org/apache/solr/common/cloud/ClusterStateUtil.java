@@ -75,7 +75,7 @@ public class ClusterStateUtil {
           Collection<Slice> slices = docCollection.getSlices();
           for (Slice slice : slices) {
             // only look at active shards
-            if (slice.getState().equals(Slice.ACTIVE)) {
+            if (slice.getState() == Slice.State.ACTIVE) {
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 // on a live node?
@@ -135,7 +135,7 @@ public class ClusterStateUtil {
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
           // only look at active shards
-          if (slice.getState().equals(Slice.ACTIVE)) {
+          if (slice.getState() == Slice.State.ACTIVE) {
             Collection<Replica> replicas = slice.getReplicas();
             for (Replica replica : replicas) {
               // on a live node?
@@ -188,7 +188,7 @@ public class ClusterStateUtil {
           Collection<Slice> slices = docCollection.getSlices();
           for (Slice slice : slices) {
             // only look at active shards
-            if (slice.getState().equals(Slice.ACTIVE)) {
+            if (slice.getState() == Slice.State.ACTIVE) {
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 // on a live node?

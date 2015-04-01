@@ -32,8 +32,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class SliceStateTest extends SolrTestCaseJ4 {
+  
   @Test
-  public void testDefaultSliceState() throws Exception {
+  public void testDefaultSliceState() {
     Map<String, DocCollection> collectionStates = new HashMap<>();
     Set<String> liveNodes = new HashSet<>();
     liveNodes.add("node1");
@@ -45,15 +46,14 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Replica replica = new Replica("node1", props);
     sliceToProps.put("node1", replica);
     Slice slice = new Slice("shard1", sliceToProps, null);
-    assertEquals("Default state not set to active", Slice.ACTIVE, slice.getState());
+    assertSame("Default state not set to active", Slice.State.ACTIVE, slice.getState());
     slices.put("shard1", slice);
     collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
 
-    ZkStateReader mockZkStateReader = ClusterStateTest.getMockZkStateReader(collectionStates.keySet());
     ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
     byte[] bytes = ZkStateReader.toJSON(clusterState);
     ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
 
-    assertEquals("Default state not set to active", "active", loadedClusterState.getSlice("collection1", "shard1").getState());
+    assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getSlice("collection1", "shard1").getState());
   }
 }

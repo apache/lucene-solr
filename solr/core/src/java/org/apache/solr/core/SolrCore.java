@@ -913,9 +913,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
       // ZK pre-Register would have already happened so we read slice properties now
       ClusterState clusterState = cc.getZkController().getClusterState();
-      Slice slice = clusterState.getSlice(cd.getCloudDescriptor().getCollectionName(),
+      Slice slice = clusterState.getSlice(cd.getCloudDescriptor().getCollectionName(), 
           cd.getCloudDescriptor().getShardId());
-      if (Slice.CONSTRUCTION.equals(slice.getState())) {
+      if (slice.getState() == Slice.State.CONSTRUCTION) {
         // set update log to buffer before publishing the core
         getUpdateHandler().getUpdateLog().bufferUpdates();
       }

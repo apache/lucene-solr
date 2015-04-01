@@ -94,6 +94,10 @@ Upgrading from Solr 5.0
   contain some LGPL-only code. Until that's resolved by Tika, you can download the
   .jar yourself and place it under contrib/extraction/lib.  
 
+* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
+  clarify the states a Slice can be in, as well comparing the state of a Slice.
+  (Shai Erera)
+
 Detailed Change List
 ----------------------
 

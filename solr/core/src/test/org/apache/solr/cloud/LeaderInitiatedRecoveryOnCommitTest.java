@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
 import java.io.File;
@@ -57,6 +58,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     }
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     oneShardTest();
@@ -91,7 +93,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     cloudClient.getZkStateReader().updateClusterState(true); // get the latest state
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    assertEquals("Leader was not active", "active", leader.getStr("state"));
+    assertEquals("Leader was not active", ZkStateReader.ACTIVE, leader.getStr(ZkStateReader.STATE_PROP));
 
     leaderProxy.reopen();
     Thread.sleep(sleepMsBeforeHealPartition);
@@ -134,7 +136,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     cloudClient.getZkStateReader().updateClusterState(true); // get the latest state
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    assertEquals("Leader was not active", "active", leader.getStr("state"));
+    assertEquals("Leader was not active", ZkStateReader.ACTIVE, leader.getStr(ZkStateReader.STATE_PROP));
 
     leaderProxy.reopen();
     Thread.sleep(sleepMsBeforeHealPartition);

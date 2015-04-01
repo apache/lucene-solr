@@ -17,6 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
+import static org.apache.solr.common.cloud.ZkNodeProps.*;
+
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -30,16 +38,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
-
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.setClusterProp;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
 
@@ -109,8 +107,8 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       while (System.currentTimeMillis() < endAt) {
         testcoll = client.getZkStateReader()
             .getClusterState().getCollection(collectionName);
-        if (!"active".equals(testcoll.getSlice(shard1.getName())
-            .getReplica(replica1.getName()).getStr(Slice.STATE))) {
+        if (!ZkStateReader.ACTIVE.equals(testcoll.getSlice(shard1.getName())
+            .getReplica(replica1.getName()).getStr(ZkStateReader.STATE_PROP))) {
           success = true;
         }
         if (success) break;

@@ -39,7 +39,7 @@ public class CloudDescriptor {
   /* shardRange and shardState are used once-only during sub shard creation for shard splits
    * Use the values from {@link Slice} instead */
   volatile String shardRange = null;
-  volatile String shardState = Slice.ACTIVE;
+  volatile Slice.State shardState = Slice.State.ACTIVE;
   volatile String shardParent = null;
 
   volatile boolean isLeader = false;
