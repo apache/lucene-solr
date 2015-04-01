@@ -113,7 +113,7 @@ public class FileDictionary implements Dictionary {
     try {
       return new FileIterator();
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
 

@@ -238,18 +238,20 @@ public class TestPositionIncrement extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\ngetPayloadSpans test");
     }
-    Spans pspans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
-    while (pspans.next()) {
-      if (VERBOSE) {
-        System.out.println("doc " + pspans.doc() + ": span " + pspans.start()
-            + " to " + pspans.end());
-      }
-      Collection<byte[]> payloads = pspans.getPayload();
-      sawZero |= pspans.start() == 0;
-      for (byte[] bytes : payloads) {
-        count++;
+    Spans pspans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
+    while (pspans.nextDoc() != Spans.NO_MORE_DOCS) {
+      while (pspans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if (VERBOSE) {
-          System.out.println("  payload: " + new String(bytes, StandardCharsets.UTF_8));
+          System.out.println("doc " + pspans.docID() + ": span " + pspans.startPosition()
+              + " to " + pspans.endPosition());
+        }
+        Collection<byte[]> payloads = pspans.getPayload();
+        sawZero |= pspans.startPosition() == 0;
+        for (byte[] bytes : payloads) {
+          count++;
+          if (VERBOSE) {
+            System.out.println("  payload: " + new String(bytes, StandardCharsets.UTF_8));
+          }
         }
       }
     }
@@ -257,19 +259,19 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(5, count);
 
     // System.out.println("\ngetSpans test");
-    Spans spans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
+    Spans spans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
     count = 0;
     sawZero = false;
-    while (spans.next()) {
-      count++;
-      sawZero |= spans.start() == 0;
-      // System.out.println(spans.doc() + " - " + spans.start() + " - " +
-      // spans.end());
+    while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
+      while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+        count++;
+        sawZero |= spans.startPosition() == 0;
+        // System.out.println(spans.doc() + " - " + spans.start() + " - " +
+        // spans.end());
+      }
     }
     assertEquals(4, count);
     assertTrue(sawZero);
-
-    // System.out.println("\nPayloadSpanUtil test");
 
     sawZero = false;
     PayloadSpanUtil psu = new PayloadSpanUtil(is.getTopReaderContext());

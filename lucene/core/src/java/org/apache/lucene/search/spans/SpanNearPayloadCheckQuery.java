@@ -105,7 +105,7 @@ public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
 
   @Override
   public int hashCode() {
-    int h = match.hashCode();
+    int h = match.hashCode() ^ getClass().hashCode();
     h ^= (h << 8) | (h >>> 25);  // reversible
     //TODO: is this right?
     h ^= payloadToMatch.hashCode();

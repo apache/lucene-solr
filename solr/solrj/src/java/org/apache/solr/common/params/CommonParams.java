@@ -224,5 +224,9 @@ public interface CommonParams {
    * When querying a node, prefer local node's cores for distributed queries.
    */
   public static final String PREFER_LOCAL_SHARDS = "preferLocalShards";
+
+  public static final String JAVABIN = "javabin";
+
+  public static final String JSON = "json";
 }
 

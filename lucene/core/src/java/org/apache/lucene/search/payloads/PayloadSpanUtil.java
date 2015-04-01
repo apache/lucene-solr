@@ -169,7 +169,7 @@ public class PayloadSpanUtil {
         final boolean inorder = (slop == 0);
 
         SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps,
-            inorder);
+                                                      inorder);
         sp.setBoost(query.getBoost());
         getPayloads(payloads, sp);
       }
@@ -186,11 +186,15 @@ public class PayloadSpanUtil {
     }
     for (LeafReaderContext leafReaderContext : context.leaves()) {
       final Spans spans = query.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), termContexts);
-      while (spans.next() == true) {
-        if (spans.isPayloadAvailable()) {
-          Collection<byte[]> payload = spans.getPayload();
-          for (byte [] bytes : payload) {
-            payloads.add(bytes);
+      if (spans != null) {
+        while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
+          while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+            if (spans.isPayloadAvailable()) {
+              Collection<byte[]> payload = spans.getPayload();
+              for (byte [] bytes : payload) {
+                payloads.add(bytes);
+              }
+            }
           }
         }
       }

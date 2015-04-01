@@ -32,6 +32,26 @@ API Changes
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 
+======================= Lucene 5.2.0 =======================
+
+New Features
+
+* LUCENE-6308: Span queries now share document conjunction/intersection
+  code with boolean queries, and use two-phased iterators for
+  faster intersection by avoiding loading positions in certain cases.
+  (Paul Elschot, Robert Muir via Mike McCandless)
+
+Optimizations
+
+* LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if
+  one of the queries is MatchAllDocsQuery and just invokes the much
+  faster IndexWriter.deleteAll in that case (Robert Muir, Adrien
+  Grand, Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
+  (Varun Thacker, Adrien Grand, Mike McCandless)
 ======================= Lucene 5.1.0 =======================
 
 New Features

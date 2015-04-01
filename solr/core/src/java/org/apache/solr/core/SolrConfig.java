@@ -77,6 +77,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
 import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
@@ -819,7 +820,7 @@ public class SolrConfig extends Config implements MapSerializable {
   @Override
   public Map<String, Object> toMap() {
     LinkedHashMap result = new LinkedHashMap();
-    if (getZnodeVersion() > -1) result.put("znodeVersion", getZnodeVersion());
+    if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put("luceneMatchVersion", luceneMatchVersion);
     result.put("updateHandler", getUpdateHandlerInfo().toMap());
     Map m = new LinkedHashMap();

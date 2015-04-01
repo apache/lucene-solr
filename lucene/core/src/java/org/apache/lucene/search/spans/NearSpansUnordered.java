@@ -17,220 +17,110 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
 /**
  * Similar to {@link NearSpansOrdered}, but for the unordered case.
- * 
+ *
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansUnordered extends Spans {
-  private SpanNearQuery query;
+public class NearSpansUnordered extends NearSpans {
 
-  private List<SpansCell> ordered = new ArrayList<>();         // spans in query order
-  private Spans[] subSpans;  
-  private int slop;                               // from query
+  private List<SpansCell> subSpanCells; // in query order
 
-  private SpansCell first;                        // linked list of spans
-  private SpansCell last;                         // sorted by doc only
+  private SpanPositionQueue spanPositionQueue;
 
-  private int totalLength;                        // sum of current lengths
+  public NearSpansUnordered(SpanNearQuery query, List<Spans> subSpans)
+  throws IOException {
+    super(query, subSpans);
 
-  private CellQueue queue;                        // sorted queue of spans
-  private SpansCell max;                          // max element in queue
+    this.subSpanCells = new ArrayList<>(subSpans.size());
+    for (Spans subSpan : subSpans) { // sub spans in query order
+      this.subSpanCells.add(new SpansCell(subSpan));
+    }
+    spanPositionQueue = new SpanPositionQueue(subSpans.size());
+    singleCellToPositionQueue(); // -1 startPosition/endPosition also at doc -1
+  }
 
-  private boolean more = true;                    // true iff not done
-  private boolean firstTime = true;               // true before first next()
+  private void singleCellToPositionQueue() {
+    maxEndPositionCell = subSpanCells.get(0);
+    assert maxEndPositionCell.docID() == -1;
+    assert maxEndPositionCell.startPosition() == -1;
+    spanPositionQueue.add(maxEndPositionCell);
+  }
 
-  private class CellQueue extends PriorityQueue<SpansCell> {
-    public CellQueue(int size) {
+  private void subSpanCellsToPositionQueue() throws IOException { // used when all subSpanCells arrived at the same doc.
+    spanPositionQueue.clear();
+    for (SpansCell cell : subSpanCells) {
+      assert cell.startPosition() == -1;
+      cell.nextStartPosition();
+      assert cell.startPosition() != NO_MORE_POSITIONS;
+      spanPositionQueue.add(cell);
+    }
+  }
+
+  /** SpansCell wraps a sub Spans to maintain totalSpanLength and maxEndPositionCell */
+  private int totalSpanLength;
+  private SpansCell maxEndPositionCell;
+
+  private class SpansCell extends FilterSpans {
+    private int spanLength = -1;
+
+    public SpansCell(Spans spans) {
+      super(spans);
+    }
+
+    @Override
+    public int nextStartPosition() throws IOException {
+      int res = in.nextStartPosition();
+      if (res != NO_MORE_POSITIONS) {
+        adjustLength();
+      }
+      adjustMax(); // also after last end position in current doc.
+      return res;
+    }
+
+    private void adjustLength() {
+      if (spanLength != -1) {
+        totalSpanLength -= spanLength;  // subtract old, possibly from a previous doc
+      }
+      assert in.startPosition() != NO_MORE_POSITIONS;
+      spanLength = endPosition() - startPosition();
+      assert spanLength >= 0;
+      totalSpanLength += spanLength; // add new
+    }
+
+    private void adjustMax() {
+      assert docID() == maxEndPositionCell.docID();
+      if (endPosition() > maxEndPositionCell.endPosition()) {
+        maxEndPositionCell = this;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "NearSpansUnordered.SpansCell(" + in.toString() + ")";
+    }
+  }
+
+
+  private static class SpanPositionQueue extends PriorityQueue<SpansCell> {
+    public SpanPositionQueue(int size) {
       super(size);
     }
-    
+
     @Override
     protected final boolean lessThan(SpansCell spans1, SpansCell spans2) {
-      if (spans1.doc() == spans2.doc()) {
-        return docSpansOrdered(spans1, spans2);
-      } else {
-        return spans1.doc() < spans2.doc();
-      }
+      return positionsOrdered(spans1, spans2);
     }
-  }
-
-
-  /** Wraps a Spans, and can be used to form a linked list. */
-  private class SpansCell extends Spans {
-    private Spans spans;
-    private SpansCell next;
-    private int length = -1;
-    private int index;
-
-    public SpansCell(Spans spans, int index) {
-      this.spans = spans;
-      this.index = index;
-    }
-
-    @Override
-    public boolean next() throws IOException {
-      return adjust(spans.next());
-    }
-
-    @Override
-    public boolean skipTo(int target) throws IOException {
-      return adjust(spans.skipTo(target));
-    }
-    
-    private boolean adjust(boolean condition) {
-      if (length != -1) {
-        totalLength -= length;  // subtract old length
-      }
-      if (condition) {
-        length = end() - start(); 
-        totalLength += length; // add new length
-
-        if (max == null || doc() > max.doc()
-            || (doc() == max.doc()) && (end() > max.end())) {
-          max = this;
-        }
-      }
-      more = condition;
-      return condition;
-    }
-
-    @Override
-    public int doc() { return spans.doc(); }
-    
-    @Override
-    public int start() { return spans.start(); }
-    
-    @Override
-    public int end() { return spans.end(); }
-                    // TODO: Remove warning after API has been finalized
-    @Override
-    public Collection<byte[]> getPayload() throws IOException {
-      return new ArrayList<>(spans.getPayload());
-    }
-
-    // TODO: Remove warning after API has been finalized
-    @Override
-    public boolean isPayloadAvailable() throws IOException {
-      return spans.isPayloadAvailable();
-    }
-
-    @Override
-    public long cost() {
-      return spans.cost();
-    }
-
-    @Override
-    public String toString() { return spans.toString() + "#" + index; }
-  }
-
-
-  public NearSpansUnordered(SpanNearQuery query, LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts)
-    throws IOException {
-    this.query = query;
-    this.slop = query.getSlop();
-
-    SpanQuery[] clauses = query.getClauses();
-    queue = new CellQueue(clauses.length);
-    subSpans = new Spans[clauses.length];    
-    for (int i = 0; i < clauses.length; i++) {
-      SpansCell cell =
-        new SpansCell(clauses[i].getSpans(context, acceptDocs, termContexts), i);
-      ordered.add(cell);
-      subSpans[i] = cell.spans;
-    }
-  }
-  public Spans[] getSubSpans() {
-    return subSpans;
-  }
-  @Override
-  public boolean next() throws IOException {
-    if (firstTime) {
-      initList(true);
-      listToQueue(); // initialize queue
-      firstTime = false;
-    } else if (more) {
-      if (min().next()) { // trigger further scanning
-        queue.updateTop(); // maintain queue
-      } else {
-        more = false;
-      }
-    }
-
-    while (more) {
-
-      boolean queueStale = false;
-
-      if (min().doc() != max.doc()) {             // maintain list
-        queueToList();
-        queueStale = true;
-      }
-
-      // skip to doc w/ all clauses
-
-      while (more && first.doc() < last.doc()) {
-        more = first.skipTo(last.doc());          // skip first upto last
-        firstToLast();                            // and move it to the end
-        queueStale = true;
-      }
-
-      if (!more) return false;
-
-      // found doc w/ all clauses
-
-      if (queueStale) {                           // maintain the queue
-        listToQueue();
-        queueStale = false;
-      }
-
-      if (atMatch()) {
-        return true;
-      }
-      
-      more = min().next();
-      if (more) {
-        queue.updateTop();                      // maintain queue
-      }
-    }
-    return false;                                 // no more matches
-  }
-
-  @Override
-  public boolean skipTo(int target) throws IOException {
-    if (firstTime) {                              // initialize
-      initList(false);
-      for (SpansCell cell = first; more && cell!=null; cell=cell.next) {
-        more = cell.skipTo(target);               // skip all
-      }
-      if (more) {
-        listToQueue();
-      }
-      firstTime = false;
-    } else {                                      // normal case
-      while (more && min().doc() < target) {      // skip as needed
-        if (min().skipTo(target)) {
-          queue.updateTop();
-        } else {
-          more = false;
-        }
-      }
-    }
-    return more && (atMatch() ||  next());
   }
 
   /** Check whether two Spans in the same document are ordered with possible overlap.
@@ -238,32 +128,114 @@ public class NearSpansUnordered extends Spans {
    *              or the spans start at the same position,
    *              and spans1 ends before spans2.
    */
-  static final boolean docSpansOrdered(Spans spans1, Spans spans2) {
-    assert spans1.doc() == spans2.doc() : "doc1 " + spans1.doc() + " != doc2 " + spans2.doc();
-    int start1 = spans1.start();
-    int start2 = spans2.start();
-    return (start1 == start2) ? (spans1.end() < spans2.end()) : (start1 < start2);
+  static final boolean positionsOrdered(Spans spans1, Spans spans2) {
+    assert spans1.docID() == spans2.docID() : "doc1 " + spans1.docID() + " != doc2 " + spans2.docID();
+    int start1 = spans1.startPosition();
+    int start2 = spans2.startPosition();
+    return (start1 == start2) ? (spans1.endPosition() < spans2.endPosition()) : (start1 < start2);
   }
 
-  private SpansCell min() { return queue.top(); }
+  private SpansCell minPositionCell() {
+    return spanPositionQueue.top();
+  }
+
+  private boolean atMatch() {
+    assert minPositionCell().docID() == maxEndPositionCell.docID();
+    return (maxEndPositionCell.endPosition() - minPositionCell().startPosition() - totalSpanLength) <= allowedSlop;
+  }
 
   @Override
-  public int doc() { return min().doc(); }
-  @Override
-  public int start() { return min().start(); }
-  @Override
-  public int end() { return max.end(); }
+  int toMatchDoc() throws IOException {
+    // at doc with all subSpans
+    subSpanCellsToPositionQueue();
+    while (true) {
+      if (atMatch()) {
+        atFirstInCurrentDoc = true;
+        oneExhaustedInCurrentDoc = false;
+        return conjunction.docID();
+      }
+      assert minPositionCell().startPosition() != NO_MORE_POSITIONS;
+      if (minPositionCell().nextStartPosition() != NO_MORE_POSITIONS) {
+        spanPositionQueue.updateTop();
+      }
+      else { // exhausted a subSpan in current doc
+        if (conjunction.nextDoc() == NO_MORE_DOCS) {
+          return NO_MORE_DOCS;
+        }
+        // at doc with all subSpans
+        subSpanCellsToPositionQueue();
+      }
+    }
+  }
 
-  // TODO: Remove warning after API has been finalized
+  @Override
+  boolean twoPhaseCurrentDocMatches() throws IOException {
+    // at doc with all subSpans
+    subSpanCellsToPositionQueue();
+    while (true) {
+      if (atMatch()) {
+        atFirstInCurrentDoc = true;
+        oneExhaustedInCurrentDoc = false;
+        return true;
+      }
+      assert minPositionCell().startPosition() != NO_MORE_POSITIONS;
+      if (minPositionCell().nextStartPosition() != NO_MORE_POSITIONS) {
+        spanPositionQueue.updateTop();
+      }
+      else { // exhausted a subSpan in current doc
+        return false;
+      }
+    }
+  }
+
+  @Override
+  public int nextStartPosition() throws IOException {
+    if (atFirstInCurrentDoc) {
+      atFirstInCurrentDoc = false;
+      return minPositionCell().startPosition();
+    }
+    while (minPositionCell().startPosition() == -1) { // initially at current doc
+      minPositionCell().nextStartPosition();
+      spanPositionQueue.updateTop();
+    }
+    assert minPositionCell().startPosition() != NO_MORE_POSITIONS;
+    while (true) {
+      if (minPositionCell().nextStartPosition() == NO_MORE_POSITIONS) {
+        oneExhaustedInCurrentDoc = true;
+        return NO_MORE_POSITIONS;
+      }
+      spanPositionQueue.updateTop();
+      if (atMatch()) {
+        return minPositionCell().startPosition();
+      }
+    }
+  }
+
+  @Override
+  public int startPosition() {
+    assert minPositionCell() != null;
+    return atFirstInCurrentDoc ? -1
+          : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
+          : minPositionCell().startPosition();
+  }
+
+  @Override
+  public int endPosition() {
+    return atFirstInCurrentDoc ? -1
+          : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
+          : maxEndPositionCell.endPosition();
+  }
+
+
   /**
-   * WARNING: The List is not necessarily in order of the the positions
+   * WARNING: The List is not necessarily in order of the positions.
    * @return Collection of <code>byte[]</code> payloads
    * @throws IOException if there is a low-level I/O error
    */
   @Override
   public Collection<byte[]> getPayload() throws IOException {
     Set<byte[]> matchPayload = new HashSet<>();
-    for (SpansCell cell = first; cell != null; cell = cell.next) {
+    for (SpansCell cell : subSpanCells) {
       if (cell.isPayloadAvailable()) {
         matchPayload.addAll(cell.getPayload());
       }
@@ -271,78 +243,23 @@ public class NearSpansUnordered extends Spans {
     return matchPayload;
   }
 
-  // TODO: Remove warning after API has been finalized
   @Override
   public boolean isPayloadAvailable() throws IOException {
-    SpansCell pointer = min();
-    while (pointer != null) {
-      if (pointer.isPayloadAvailable()) {
+    for (SpansCell cell : subSpanCells) {
+      if (cell.isPayloadAvailable()) {
         return true;
       }
-      pointer = pointer.next;
     }
-
     return false;
-  }
-  
-  @Override
-  public long cost() {
-    long minCost = Long.MAX_VALUE;
-    for (int i = 0; i < subSpans.length; i++) {
-      minCost = Math.min(minCost, subSpans[i].cost());
-    }
-    return minCost;
   }
 
   @Override
   public String toString() {
-    return getClass().getName() + "("+query.toString()+")@"+
-      (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));
-  }
-
-  private void initList(boolean next) throws IOException {
-    for (int i = 0; more && i < ordered.size(); i++) {
-      SpansCell cell = ordered.get(i);
-      if (next)
-        more = cell.next();                       // move to first entry
-      if (more) {
-        addToList(cell);                          // add to list
-      }
+    if (minPositionCell() != null) {
+      return getClass().getName() + "("+query.toString()+")@"+
+        (docID()+":"+startPosition()+"-"+endPosition());
+    } else {
+      return getClass().getName() + "("+query.toString()+")@ ?START?";
     }
-  }
-
-  private void addToList(SpansCell cell) {
-    if (last != null) {  // add next to end of list
-      last.next = cell;
-    } else
-      first = cell;
-    last = cell;
-    cell.next = null;
-  }
-
-  private void firstToLast() {
-    last.next = first;  // move first to end of list
-    last = first;
-    first = first.next;
-    last.next = null;
-  }
-
-  private void queueToList() {
-    last = first = null;
-    while (queue.top() != null) {
-      addToList(queue.pop());
-    }
-  }
-  
-  private void listToQueue() {
-    queue.clear(); // rebuild queue
-    for (SpansCell cell = first; cell != null; cell = cell.next) {
-      queue.add(cell);                      // add to queue from list
-    }
-  }
-
-  private boolean atMatch() {
-    return (min().doc() == max.doc())
-        && ((max.end() - min().start() - totalLength) <= slop);
   }
 }

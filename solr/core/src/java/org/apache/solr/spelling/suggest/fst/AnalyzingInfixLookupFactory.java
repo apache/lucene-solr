@@ -135,7 +135,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
         }
         };
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
 

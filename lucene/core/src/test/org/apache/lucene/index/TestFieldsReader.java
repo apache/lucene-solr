@@ -172,7 +172,7 @@ public class TestFieldsReader extends LuceneTestCase {
       try {
         i.seek(getFilePointer());
       } catch (IOException e) {
-        throw new RuntimeException();
+        throw new RuntimeException(e);
       }
       return i;
     }

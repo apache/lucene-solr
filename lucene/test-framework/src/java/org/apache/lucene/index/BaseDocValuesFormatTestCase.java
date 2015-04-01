@@ -2681,7 +2681,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
                 }
               }
             } catch (Throwable e) {
-              throw new RuntimeException();
+              throw new RuntimeException(e);
             }
           }
         };

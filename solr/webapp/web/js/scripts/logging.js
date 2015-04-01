@@ -361,6 +361,7 @@ var load_logging_viewer = function()
           content += '<tr class="' + classes.join( ' ' ) + '">' + "\n";
             content += '<td class="span"><a><span>' + format_time( doc.time ) + '</span></a></td>' + "\n";
             content += '<td class="level span"><a><span>' + doc.level.esc() + '</span></span></a></td>' + "\n";
+            content += '<td class="span"><a><span>' + doc.core   + '</span></a></td>' + "\n";
             content += '<td class="span"><a><span>' + doc.logger + '</span></a></td>' + "\n";
             content += '<td class="message span"><a><span>' + doc.message.replace( /,/g, ',&#8203;' ).esc() + '</span></a></td>' + "\n";
           content += '</tr>' + "\n";
@@ -433,6 +434,7 @@ sammy.get
                   '<tr>' + "\n" +
                     '<th class="time">Time (<span>Local</span>)</th>' + "\n" +
                     '<th class="level">Level</th>' + "\n" +
+                    '<th class="core">Core</th>' + "\n" +
                     '<th class="logger">Logger</th>' + "\n" +
                     '<th class="message">Message</th>' + "\n" +
                   '</tr>' + "\n" +

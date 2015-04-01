@@ -55,7 +55,7 @@ public class FileDictionaryFactory extends DictionaryFactory {
       return new FileDictionary(new InputStreamReader(
           core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8), fieldDelimiter);
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
   

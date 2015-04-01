@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReaderContext;
@@ -31,19 +32,23 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
-/** Matches spans containing a term. */
+/** Matches spans containing a term.
+ * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
+ */
 public class SpanTermQuery extends SpanQuery {
   protected Term term;
 
   /** Construct a SpanTermQuery matching the named term's spans. */
-  public SpanTermQuery(Term term) { this.term = term; }
+  public SpanTermQuery(Term term) {
+    this.term = Objects.requireNonNull(term);
+  }
 
   /** Return the term whose spans are matched. */
   public Term getTerm() { return term; }
 
   @Override
   public String getField() { return term.field(); }
-  
+
   @Override
   public void extractTerms(Set<Term> terms) {
     terms.add(term);
@@ -64,7 +69,7 @@ public class SpanTermQuery extends SpanQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    result = prime * result + term.hashCode();
     return result;
   }
 
@@ -77,12 +82,7 @@ public class SpanTermQuery extends SpanQuery {
     if (getClass() != obj.getClass())
       return false;
     SpanTermQuery other = (SpanTermQuery) obj;
-    if (term == null) {
-      if (other.term != null)
-        return false;
-    } else if (!term.equals(other.term))
-      return false;
-    return true;
+    return term.equals(other.term);
   }
 
   @Override
@@ -99,7 +99,7 @@ public class SpanTermQuery extends SpanQuery {
         }
 
         final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term.bytes())) { 
+        if (termsEnum.seekExact(term.bytes())) {
           state = termsEnum.termState();
         } else {
           state = null;
@@ -110,14 +110,14 @@ public class SpanTermQuery extends SpanQuery {
     } else {
       state = termContext.get(context.ord);
     }
-    
+
     if (state == null) { // term is not present in that reader
-      return TermSpans.EMPTY_TERM_SPANS;
+      return null;
     }
-    
+
     final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
     termsEnum.seekExact(term.bytes(), state);
-    
+
     final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
     return new TermSpans(postings, term);
   }

@@ -30,9 +30,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
-/** Removes matches which overlap with another SpanQuery or 
- * within a x tokens before or y tokens after another SpanQuery. */
+/** Removes matches which overlap with another SpanQuery or which are
+ * within x tokens before or y tokens after another SpanQuery.
+ */
 public class SpanNotQuery extends SpanQuery implements Cloneable {
   private SpanQuery include;
   private SpanQuery exclude;
@@ -45,20 +47,20 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
      this(include, exclude, 0, 0);
   }
 
-  
+
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
-   * have no overlap with spans from <code>exclude</code> within 
+   * have no overlap with spans from <code>exclude</code> within
    * <code>dist</code> tokens of <code>include</code>. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int dist) {
      this(include, exclude, dist, dist);
   }
-  
+
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
-   * have no overlap with spans from <code>exclude</code> within 
+   * have no overlap with spans from <code>exclude</code> within
    * <code>pre</code> tokens before or <code>post</code> tokens of <code>include</code>. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int pre, int post) {
-    this.include = include;
-    this.exclude = exclude;
+    this.include = Objects.requireNonNull(include);
+    this.exclude = Objects.requireNonNull(exclude);
     this.pre = (pre >=0) ? pre : 0;
     this.post = (post >= 0) ? post : 0;
 
@@ -96,81 +98,153 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
   @Override
   public SpanNotQuery clone() {
-    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),
-          (SpanQuery) exclude.clone(), pre, post);
+    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery) include.clone(),
+                                                                (SpanQuery) exclude.clone(), pre, post);
     spanNotQuery.setBoost(getBoost());
-    return  spanNotQuery;
+    return spanNotQuery;
   }
 
   @Override
   public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
+    Spans includeSpans = include.getSpans(context, acceptDocs, termContexts);
+    if (includeSpans == null) {
+      return null;
+    }
+
+    Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts);
+    if (excludeSpans == null) {
+      return includeSpans;
+    }
+
     return new Spans() {
-        private Spans includeSpans = include.getSpans(context, acceptDocs, termContexts);
-        private boolean moreInclude = true;
+      private boolean moreInclude = true;
+      private int includeStart = -1;
+      private int includeEnd = -1;
+      private boolean atFirstInCurrentDoc = false;
 
-        private Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts);
-        private boolean moreExclude = excludeSpans.next();
+      private boolean moreExclude = excludeSpans.nextDoc() != NO_MORE_DOCS;
+      private int excludeStart = moreExclude ? excludeSpans.nextStartPosition() : NO_MORE_POSITIONS;
 
-        @Override
-        public boolean next() throws IOException {
-          if (moreInclude)                        // move to next include
-            moreInclude = includeSpans.next();
 
-          while (moreInclude && moreExclude) {
+      @Override
+      public int nextDoc() throws IOException {
+        if (moreInclude) {
+          moreInclude = includeSpans.nextDoc() != NO_MORE_DOCS;
+          if (moreInclude) {
+            atFirstInCurrentDoc = true;
+            includeStart = includeSpans.nextStartPosition();
+            assert includeStart != NO_MORE_POSITIONS;
+          }
+        }
+        toNextIncluded();
+        int res = moreInclude ? includeSpans.docID() : NO_MORE_DOCS;
+        return res;
+      }
 
-            if (includeSpans.doc() > excludeSpans.doc()) // skip exclude
-              moreExclude = excludeSpans.skipTo(includeSpans.doc());
-
-            while (moreExclude                    // while exclude is before
-                   && includeSpans.doc() == excludeSpans.doc()
-                   && excludeSpans.end() <= includeSpans.start() - pre) {
-              moreExclude = excludeSpans.next();  // increment exclude
+      private void toNextIncluded() throws IOException {
+        while (moreInclude && moreExclude) {
+          if (includeSpans.docID() > excludeSpans.docID()) {
+            moreExclude = excludeSpans.advance(includeSpans.docID()) != NO_MORE_DOCS;
+            if (moreExclude) {
+              excludeStart = -1; // only use exclude positions at same doc
             }
-
-            if (!moreExclude                      // if no intersection
-                || includeSpans.doc() != excludeSpans.doc()
-                || includeSpans.end()+post <= excludeSpans.start())
-              break;                              // we found a match
-
-            moreInclude = includeSpans.next();    // intersected: keep scanning
           }
-          return moreInclude;
-        }
-
-        @Override
-        public boolean skipTo(int target) throws IOException {
-          if (moreInclude)                        // skip include
-            moreInclude = includeSpans.skipTo(target);
-
-          if (!moreInclude)
-            return false;
-
-          if (moreExclude                         // skip exclude
-              && includeSpans.doc() > excludeSpans.doc())
-            moreExclude = excludeSpans.skipTo(includeSpans.doc());
-
-          while (moreExclude                      // while exclude is before
-                 && includeSpans.doc() == excludeSpans.doc()
-                 && excludeSpans.end() <= includeSpans.start()-pre) {
-            moreExclude = excludeSpans.next();    // increment exclude
+          if (excludeForwardInCurrentDocAndAtMatch()) {
+            break; // at match.
           }
 
-          if (!moreExclude                      // if no intersection
-                || includeSpans.doc() != excludeSpans.doc()
-                || includeSpans.end()+post <= excludeSpans.start())
-            return true;                          // we found a match
+          // else intersected: keep scanning, to next doc if needed
+          includeStart = includeSpans.nextStartPosition();
+          if (includeStart == NO_MORE_POSITIONS) {
+            moreInclude = includeSpans.nextDoc() != NO_MORE_DOCS;
+            if (moreInclude) {
+              atFirstInCurrentDoc = true;
+              includeStart = includeSpans.nextStartPosition();
+              assert includeStart != NO_MORE_POSITIONS;
+            }
+          }
+        }
+      }
 
-          return next();                          // scan to next match
+      private boolean excludeForwardInCurrentDocAndAtMatch() throws IOException {
+        assert moreInclude;
+        assert includeStart != NO_MORE_POSITIONS;
+        if (! moreExclude) {
+          return true;
+        }
+        if (includeSpans.docID() != excludeSpans.docID()) {
+          return true;
+        }
+        // at same doc
+        if (excludeStart == -1) { // init exclude start position if needed
+          excludeStart = excludeSpans.nextStartPosition();
+          assert excludeStart != NO_MORE_POSITIONS;
+        }
+        while (excludeSpans.endPosition() <= includeStart - pre) {
+          // exclude end position is before a possible exclusion
+          excludeStart = excludeSpans.nextStartPosition();
+          if (excludeStart == NO_MORE_POSITIONS) {
+            return true; // no more exclude at current doc.
+          }
+        }
+        // exclude end position far enough in current doc, check start position:
+        boolean res = includeSpans.endPosition() + post <= excludeStart;
+        return res;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        if (moreInclude) {
+          assert target > includeSpans.docID() : "target="+target+", includeSpans.docID()="+includeSpans.docID();
+          moreInclude = includeSpans.advance(target) != NO_MORE_DOCS;
+          if (moreInclude) {
+            atFirstInCurrentDoc = true;
+            includeStart = includeSpans.nextStartPosition();
+            assert includeStart != NO_MORE_POSITIONS;
+          }
+        }
+        toNextIncluded();
+        int res = moreInclude ? includeSpans.docID() : NO_MORE_DOCS;
+        return res;
+      }
+
+      @Override
+      public int docID() {
+        int res = includeSpans.docID();
+        return res;
+      }
+
+      @Override
+      public int nextStartPosition() throws IOException {
+        assert moreInclude;
+
+        if (atFirstInCurrentDoc) {
+          atFirstInCurrentDoc = false;
+          assert includeStart != NO_MORE_POSITIONS;
+          return includeStart;
         }
 
-        @Override
-        public int doc() { return includeSpans.doc(); }
-        @Override
-        public int start() { return includeSpans.start(); }
-        @Override
-        public int end() { return includeSpans.end(); }
+        includeStart = includeSpans.nextStartPosition();
+        while ((includeStart != NO_MORE_POSITIONS)
+            && (! excludeForwardInCurrentDocAndAtMatch()))
+        {
+          includeStart = includeSpans.nextStartPosition();
+        }
 
-      // TODO: Remove warning after API has been finalized
+        return includeStart;
+      }
+
+      @Override
+      public int startPosition() {
+        assert includeStart == includeSpans.startPosition();
+        return atFirstInCurrentDoc ? -1 : includeStart;
+      }
+
+      @Override
+      public int endPosition() {
+        return atFirstInCurrentDoc ? -1 : includeSpans.endPosition();
+      }
+
       @Override
       public Collection<byte[]> getPayload() throws IOException {
         ArrayList<byte[]> result = null;
@@ -180,7 +254,6 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
         return result;
       }
 
-      // TODO: Remove warning after API has been finalized
       @Override
       public boolean isPayloadAvailable() throws IOException {
         return includeSpans.isPayloadAvailable();
@@ -193,10 +266,9 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
       @Override
       public String toString() {
-          return "spans(" + SpanNotQuery.this.toString() + ")";
-        }
-
-      };
+        return "spans(" + SpanNotQuery.this.toString() + ")";
+      }
+    };
   }
 
   @Override
@@ -230,7 +302,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     SpanNotQuery other = (SpanNotQuery)o;
     return this.include.equals(other.include)
             && this.exclude.equals(other.exclude)
-            && this.pre == other.pre 
+            && this.pre == other.pre
             && this.post == other.post;
   }
 

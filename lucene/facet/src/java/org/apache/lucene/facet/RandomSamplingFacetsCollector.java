@@ -215,7 +215,7 @@ public class RandomSamplingFacetsCollector extends FacetsCollector {
       
       return new MatchingDocs(docs.context, new BitDocIdSet(sampleDocs), docs.totalHits, null);
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
   

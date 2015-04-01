@@ -187,14 +187,14 @@ public class ConfigOverlay implements MapSerializable {
 
   public static final String RESOURCE_NAME = "configoverlay.json";
 
-  private static final Long STR_ATTR = 0L;
+  /*private static final Long STR_ATTR = 0L;
   private static final Long STR_NODE = 1L;
   private static final Long BOOL_ATTR = 10L;
   private static final Long BOOL_NODE = 11L;
   private static final Long INT_ATTR = 20L;
   private static final Long INT_NODE = 21L;
   private static final Long FLOAT_ATTR = 30L;
-  private static final Long FLOAT_NODE = 31L;
+  private static final Long FLOAT_NODE = 31L;*/
 
   private static Map editable_prop_map;
   //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
