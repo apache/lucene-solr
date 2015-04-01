@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -976,12 +977,18 @@ public class TestLRUQueryCache extends LuceneTestCase {
     BadQuery query = new BadQuery();
     searcher.count(query);
     query.i[0] += 1; // change the hashCode!
+    
     try {
       // trigger an eviction
       searcher.count(new MatchAllDocsQuery());
       fail();
     } catch (ConcurrentModificationException e) {
       // expected
+    } catch (RuntimeException e) {
+      // expected: wrapped when executor is in use
+      Throwable cause = e.getCause();
+      assertTrue(cause instanceof ExecutionException);
+      assertTrue(cause.getCause() instanceof ConcurrentModificationException);
     }
     
     IOUtils.close(w, reader, dir);
