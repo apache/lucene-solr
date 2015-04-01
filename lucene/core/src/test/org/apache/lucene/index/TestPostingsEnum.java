@@ -30,7 +30,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.index.PostingsEnum.NONE;
 import static org.apache.lucene.index.PostingsEnum.FREQS;
@@ -42,8 +42,14 @@ import static org.apache.lucene.index.PostingsEnum.ALL;
 /** 
  * Test basic postingsenum behavior, flags, reuse, etc.
  */
-@SuppressCodecs("Direct") // Direct does not support reuse, but we test that it works...
 public class TestPostingsEnum extends LuceneTestCase {
+  
+  private static void assertReused(String field, PostingsEnum p1, PostingsEnum p2) {
+    // if its not DirectPF, we should always reuse. This one has trouble.
+    if (!"Direct".equals(TestUtil.getPostingsFormat("foo"))) {
+      assertSame(p1, p2);
+    }
+  }
   
   public void testDocsOnly() throws Exception {
     Directory dir = newDirectory();
@@ -66,7 +72,7 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
@@ -83,7 +89,7 @@ public class TestPostingsEnum extends LuceneTestCase {
       // reuse that too
       postings2 = termsEnum.postings(null, postings, flag);
       assertNotNull(postings2);
-      assertSame(postings, postings2);
+      assertReused("foo", postings, postings2);
       // and it had better work
       assertEquals(-1, postings2.docID());
       assertEquals(0, postings2.nextDoc());
@@ -124,12 +130,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
-    assertEquals(-1, postings.docID());
-    assertEquals(0, postings.nextDoc());
-    assertEquals(2, postings.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+    assertEquals(-1, postings2.docID());
+    assertEquals(0, postings2.nextDoc());
+    assertEquals(2, postings2.freq());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
     PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
@@ -141,7 +147,7 @@ public class TestPostingsEnum extends LuceneTestCase {
     // reuse that too
     PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
+    assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
     assertEquals(-1, docsOnly2.docID());
     assertEquals(0, docsOnly2.nextDoc());
@@ -161,7 +167,7 @@ public class TestPostingsEnum extends LuceneTestCase {
       // reuse that too
       postings2 = termsEnum.postings(null, postings, flag);
       assertNotNull(postings2);
-      assertSame(postings, postings2);
+      assertReused("foo", postings, postings2);
       // and it had better work
       assertEquals(-1, postings2.docID());
       assertEquals(0, postings2.nextDoc());
@@ -202,12 +208,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
-    assertEquals(-1, postings.docID());
-    assertEquals(0, postings.nextDoc());
-    assertEquals(2, postings.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+    assertEquals(-1, postings2.docID());
+    assertEquals(0, postings2.nextDoc());
+    assertEquals(2, postings2.freq());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
     PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
@@ -219,12 +225,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     // reuse that too
     PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
+    assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
     assertEquals(-1, docsOnly2.docID());
     assertEquals(0, docsOnly2.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
+    assertTrue(docsOnly2.freq() == 1 || docsOnly2.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
@@ -244,19 +250,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // now reuse the positions
     PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads, offsets, etc don't cause an error if they aren't there
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
@@ -276,19 +282,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
@@ -306,19 +312,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
@@ -335,19 +341,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     iw.close();
     reader.close();
@@ -382,12 +388,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
-    assertEquals(-1, postings.docID());
-    assertEquals(0, postings.nextDoc());
-    assertEquals(2, postings.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+    assertEquals(-1, postings2.docID());
+    assertEquals(0, postings2.nextDoc());
+    assertEquals(2, postings2.freq());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
     PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
@@ -399,12 +405,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     // reuse that too
     PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
+    assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
     assertEquals(-1, docsOnly2.docID());
     assertEquals(0, docsOnly2.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
+    assertTrue(docsOnly2.freq() == 1 || docsOnly2.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
@@ -426,21 +432,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // now reuse the positions
     PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 0);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 3);
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 0);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 3);
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 4);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 7);
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 4);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 7);
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads don't cause an error if they aren't there
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
@@ -462,21 +468,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 0);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 3);
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 0);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 3);
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 4);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 7);
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 4);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 7);
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
@@ -494,19 +500,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(0, docsAndPositionsEnum.startOffset());
-    assertEquals(3, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(4, docsAndPositionsEnum.startOffset());
-    assertEquals(7, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(0, docsAndPositionsEnum2.startOffset());
+    assertEquals(3, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(4, docsAndPositionsEnum2.startOffset());
+    assertEquals(7, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
@@ -523,19 +529,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(0, docsAndPositionsEnum.startOffset());
-    assertEquals(3, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(4, docsAndPositionsEnum.startOffset());
-    assertEquals(7, docsAndPositionsEnum.endOffset());
-    assertNull(docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(0, docsAndPositionsEnum2.startOffset());
+    assertEquals(3, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(4, docsAndPositionsEnum2.startOffset());
+    assertEquals(7, docsAndPositionsEnum2.endOffset());
+    assertNull(docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     iw.close();
     reader.close();
@@ -567,12 +573,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
-    assertEquals(-1, postings.docID());
-    assertEquals(0, postings.nextDoc());
-    assertEquals(2, postings.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+    assertEquals(-1, postings2.docID());
+    assertEquals(0, postings2.nextDoc());
+    assertEquals(2, postings2.freq());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
     PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
@@ -584,12 +590,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     // reuse that too
     PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
+    assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
     assertEquals(-1, docsOnly2.docID());
     assertEquals(0, docsOnly2.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
+    assertTrue(docsOnly2.freq() == 1 || docsOnly2.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
@@ -611,21 +617,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // now reuse the positions
     PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
@@ -644,19 +650,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
@@ -676,21 +682,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
@@ -707,19 +713,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(-1, docsAndPositionsEnum.startOffset());
-    assertEquals(-1, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(-1, docsAndPositionsEnum2.startOffset());
+    assertEquals(-1, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     iw.close();
     reader.close();
@@ -753,12 +759,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(null, postings);
     assertNotNull(postings2);
-    assertSame(postings, postings2);
+    assertReused("foo", postings, postings2);
     // and it had better work
-    assertEquals(-1, postings.docID());
-    assertEquals(0, postings.nextDoc());
-    assertEquals(2, postings.freq());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
+    assertEquals(-1, postings2.docID());
+    assertEquals(0, postings2.nextDoc());
+    assertEquals(2, postings2.freq());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
     PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
@@ -770,12 +776,12 @@ public class TestPostingsEnum extends LuceneTestCase {
     // reuse that too
     PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
-    assertSame(docsOnly, docsOnly2);
+    assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
     assertEquals(-1, docsOnly2.docID());
     assertEquals(0, docsOnly2.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
+    assertTrue(docsOnly2.freq() == 1 || docsOnly2.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
@@ -799,23 +805,23 @@ public class TestPostingsEnum extends LuceneTestCase {
     
     // now reuse the positions
     PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 0);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 3);
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 0);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 3);
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 4);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 7);
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 4);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 7);
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
@@ -836,21 +842,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 0);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 3);
-    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 0);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 3);
+    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.startOffset() == -1 || docsAndPositionsEnum.startOffset() == 4);
-    assertTrue(docsAndPositionsEnum.endOffset() == -1 || docsAndPositionsEnum.endOffset() == 7);
-    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.startOffset() == -1 || docsAndPositionsEnum2.startOffset() == 4);
+    assertTrue(docsAndPositionsEnum2.endOffset() == -1 || docsAndPositionsEnum2.endOffset() == 7);
+    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
@@ -870,21 +876,21 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(0, docsAndPositionsEnum.startOffset());
-    assertEquals(3, docsAndPositionsEnum.endOffset());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(0, docsAndPositionsEnum2.startOffset());
+    assertEquals(3, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(4, docsAndPositionsEnum.startOffset());
-    assertEquals(7, docsAndPositionsEnum.endOffset());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay1").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(4, docsAndPositionsEnum2.startOffset());
+    assertEquals(7, docsAndPositionsEnum2.endOffset());
     // we don't define what it is, but if its something else, we should look into it?
-    assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
@@ -901,19 +907,19 @@ public class TestPostingsEnum extends LuceneTestCase {
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
-    assertSame(docsAndPositionsEnum, docsAndPositionsEnum2);
-    assertEquals(-1, docsAndPositionsEnum.docID());
-    assertEquals(0, docsAndPositionsEnum.nextDoc());
-    assertEquals(2, docsAndPositionsEnum.freq());
-    assertEquals(0, docsAndPositionsEnum.nextPosition());
-    assertEquals(0, docsAndPositionsEnum.startOffset());
-    assertEquals(3, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum.getPayload());
-    assertEquals(1, docsAndPositionsEnum.nextPosition());
-    assertEquals(4, docsAndPositionsEnum.startOffset());
-    assertEquals(7, docsAndPositionsEnum.endOffset());
-    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
+    assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
+    assertEquals(-1, docsAndPositionsEnum2.docID());
+    assertEquals(0, docsAndPositionsEnum2.nextDoc());
+    assertEquals(2, docsAndPositionsEnum2.freq());
+    assertEquals(0, docsAndPositionsEnum2.nextPosition());
+    assertEquals(0, docsAndPositionsEnum2.startOffset());
+    assertEquals(3, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay1"), docsAndPositionsEnum2.getPayload());
+    assertEquals(1, docsAndPositionsEnum2.nextPosition());
+    assertEquals(4, docsAndPositionsEnum2.startOffset());
+    assertEquals(7, docsAndPositionsEnum2.endOffset());
+    assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     iw.close();
     reader.close();
