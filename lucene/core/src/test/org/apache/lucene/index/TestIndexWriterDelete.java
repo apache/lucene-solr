@@ -1130,7 +1130,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                        .setRAMBufferSizeMB(0.5)
                                        .setMaxBufferedDocs(-1)
                                        .setMergePolicy(NoMergePolicy.INSTANCE)
-                                       .setReaderPooling(false)) {
+                                       .setReaderPooling(false)
+                                       // always use CFS so we don't use tons of file handles in the test
+                                       .setUseCompoundFile(true)) {
         @Override
         public void doAfterFlush() {
           assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 7);
