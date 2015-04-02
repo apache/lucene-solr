@@ -2291,7 +2291,7 @@ public final class ZkController {
           public void postClose(SolrCore core) { }
         });
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR,"This conf directory is not valid");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "This conf directory is not valid "+ confDir);
       }
     }
   }
