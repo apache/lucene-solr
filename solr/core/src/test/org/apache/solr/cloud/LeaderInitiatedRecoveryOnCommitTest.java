@@ -66,7 +66,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   }
 
   private void multiShardTest() throws Exception {
-    // create a collection that has 1 shard and 3 replicas
+    // create a collection that has 2 shard and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
     createCollection(testCollectionName, 2, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
