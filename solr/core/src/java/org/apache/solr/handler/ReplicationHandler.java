@@ -470,7 +470,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 long checksum = CodecUtil.retrieveChecksum(in);
                 fileMeta.put(CHECKSUM, checksum);
               } catch(Exception e) {
-                LOG.warn("Could not read checksum from index file.", e);
+                LOG.warn("Could not read checksum from index file: " + file, e);
               }
             }
           }
@@ -493,7 +493,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             try {
               fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch(Exception e) {
-              LOG.warn("Could not read checksum from index file.", e);
+              LOG.warn("Could not read checksum from index file: " + infos.getSegmentsFileName(), e);
             }
           }
         }
