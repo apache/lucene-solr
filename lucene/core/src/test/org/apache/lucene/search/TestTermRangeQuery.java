@@ -118,18 +118,12 @@ public class TestTermRangeQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     TermRangeQuery query = new TermRangeQuery("content", null, null, true, true);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "content");
-    // Should return the unfiltered TermsEnum:
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
 
     query = TermRangeQuery.newStringRange("content", "", null, true, true);
-    // Should return the unfiltered TermsEnum:
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
 
     query = TermRangeQuery.newStringRange("content", "", null, true, false);
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
 
     // and now another one
