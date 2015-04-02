@@ -30,29 +30,32 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.JsonRecordReader;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.RecordingJSONParser;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.JsonRecordReader;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.RecordingJSONParser;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 /**
@@ -64,7 +67,7 @@ public class JsonLoader extends ContentStreamLoader {
 
   @Override
   public String getDefaultWT() {
-    return "json";
+    return JSON;
   }
 
   @Override
@@ -115,7 +118,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     @SuppressWarnings("fallthrough")
     void processUpdate(Reader reader) throws IOException {
-      String path = (String) req.getContext().get("path");
+      String path = (String) req.getContext().get(PATH);
       if (UpdateRequestHandler.DOC_PATH.equals(path) || "false".equals(req.getParams().get("json.command"))) {
         String split = req.getParams().get("split");
         String[] f = req.getParams().getParams("f");

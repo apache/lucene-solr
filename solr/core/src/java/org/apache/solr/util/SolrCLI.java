@@ -17,6 +17,25 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -53,30 +72,14 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Command-line utility for working with Solr.
@@ -498,7 +501,7 @@ public class SolrCLI {
   @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
     // ensure we're requesting JSON back from Solr
-    HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter("wt", "json").build());
+    HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
     // make the request and get back a parsed JSON object
     Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler());
     // check the response JSON from Solr to see if it is an error
@@ -793,7 +796,7 @@ public class SolrCLI {
     
     public Map<String,Object> asMap() {
       Map<String,Object> map = new LinkedHashMap<String,Object>();
-      map.put("name", name);
+      map.put(NAME, name);
       map.put("url", url);
       map.put("numDocs", numDocs);
       map.put("status", status);
@@ -1043,7 +1046,7 @@ public class SolrCLI {
             .hasArg()
             .isRequired(true)
             .withDescription("Name of collection to create.")
-            .create("name"),
+            .create(NAME),
         OptionBuilder
             .withArgName("#")
             .hasArg()
@@ -1177,7 +1180,7 @@ public class SolrCLI {
             "there is at least 1 live node in the cluster.");
       String firstLiveNode = liveNodes.iterator().next();
 
-      String collectionName = cli.getOptionValue("name");
+      String collectionName = cli.getOptionValue(NAME);
 
       // build a URL to create the collection
       int numShards = optionAsInt(cli, "shards", 1);
@@ -1322,7 +1325,7 @@ public class SolrCLI {
               .hasArg()
               .isRequired(true)
               .withDescription("Name of the core to create.")
-              .create("name"),
+              .create(NAME),
           OptionBuilder
               .withArgName("CONFIG")
               .hasArg()
@@ -1362,7 +1365,7 @@ public class SolrCLI {
         }
       }
 
-      String coreName = cli.getOptionValue("name");
+      String coreName = cli.getOptionValue(NAME);
 
       String systemInfoUrl = solrUrl+"admin/info/system";
       CloseableHttpClient httpClient = getHttpClient();
@@ -1453,7 +1456,7 @@ public class SolrCLI {
         Map<String,Object> existsCheckResult = getJson(coreStatusUrl);
         Map<String,Object> status = (Map<String, Object>)existsCheckResult.get("status");
         Map<String,Object> coreStatus = (Map<String, Object>)status.get(coreName);
-        exists = coreStatus != null && coreStatus.containsKey("name");
+        exists = coreStatus != null && coreStatus.containsKey(NAME);
       } catch (Exception exc) {
         // just ignore it since we're only interested in a positive result here
       }
@@ -1529,7 +1532,7 @@ public class SolrCLI {
               .hasArg()
               .isRequired(true)
               .withDescription("Name of the core / collection to delete.")
-              .create("name"),
+              .create(NAME),
           OptionBuilder
               .withArgName("true|false")
               .hasArg()
@@ -1610,7 +1613,7 @@ public class SolrCLI {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       String baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
 
-      String collectionName = cli.getOptionValue("name");
+      String collectionName = cli.getOptionValue(NAME);
 
       if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
         System.err.println("\nERROR: Collection "+collectionName+" not found!");
@@ -1686,7 +1689,7 @@ public class SolrCLI {
     protected int deleteCore(CommandLine cli, CloseableHttpClient httpClient, String solrUrl) throws Exception {
 
       int status = 0;
-      String coreName = cli.getOptionValue("name");
+      String coreName = cli.getOptionValue(NAME);
       String deleteCoreUrl =
           String.format(Locale.ROOT,
               "%sadmin/cores?action=UNLOAD&core=%s&deleteIndex=true&deleteDataDir=true&deleteInstanceDir=true",

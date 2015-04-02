@@ -29,6 +29,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /**
  * 
  * @since solr 1.2
@@ -85,7 +87,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
     long tid = ti.getThreadId();
 
     info.add( "id", tid );
-    info.add( "name", ti.getThreadName() );
+    info.add(NAME, ti.getThreadName());
     info.add( "state", ti.getThreadState().toString() );
     
     if (ti.getLockName() != null) {
@@ -105,7 +107,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
 
     if (ti.getLockOwnerName() != null) {
       SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
-      owner.add( "name", ti.getLockOwnerName() );
+      owner.add(NAME, ti.getLockOwnerName());
       owner.add( "id", ti.getLockOwnerId() );
     }
     

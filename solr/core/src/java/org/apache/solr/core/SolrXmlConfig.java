@@ -17,6 +17,20 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -31,19 +45,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 /**
@@ -176,7 +178,7 @@ public class SolrXmlConfig {
       Properties properties = new Properties();
       for (int i = 0; i < props.getLength(); i++) {
         Node prop = props.item(i);
-        properties.setProperty(DOMUtil.getAttr(prop, "name"),
+        properties.setProperty(DOMUtil.getAttr(prop, NAME),
             PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
       }
       return properties;

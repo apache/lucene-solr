@@ -28,6 +28,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 public class InfoHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(InfoHandler.class);
@@ -75,7 +76,7 @@ public class InfoHandler extends RequestHandlerBase {
               "Core container instance missing");
     }
 
-    String path = (String) req.getContext().get("path");
+    String path = (String) req.getContext().get(PATH);
     int i = path.lastIndexOf('/');
     String name = path.substring(i + 1, path.length());
     

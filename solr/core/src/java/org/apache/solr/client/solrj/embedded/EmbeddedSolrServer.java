@@ -17,6 +17,12 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+
 import com.google.common.base.Strings;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -42,11 +48,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  * SolrClient that connects directly to a CoreContainer.
@@ -170,7 +172,7 @@ public class EmbeddedSolrServer extends SolrClient {
       }
 
       req = _parser.buildRequestFrom(core, params, request.getContentStreams());
-      req.getContext().put("path", path);
+      req.getContext().put(PATH, path);
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 

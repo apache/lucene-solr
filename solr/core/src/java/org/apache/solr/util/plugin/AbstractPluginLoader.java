@@ -19,16 +19,17 @@ package org.apache.solr.util.plugin;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * An abstract super class that manages standard solr-style plugin configuration.
@@ -144,7 +145,7 @@ public abstract class AbstractPluginLoader<T>
   
         String name = null;
         try {
-          name              = DOMUtil.getAttr(node,"name", requireName?type:null);
+          name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
           String className  = DOMUtil.getAttr(node,"class", type);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
             
@@ -222,7 +223,7 @@ public abstract class AbstractPluginLoader<T>
     T plugin = null;
 
     try {
-      String name = DOMUtil.getAttr(node, "name", requireName ? type : null);
+      String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
       plugin = create(loader, name, className, node);
       log.debug("created " + name + ": " + plugin.getClass().getName());
@@ -265,13 +266,11 @@ public abstract class AbstractPluginLoader<T>
    * Internal class to hold onto initialization info so that it can be initialized 
    * after it is registered.
    */
-  private class PluginInitInfo
-  {
+  private class PluginInitInfo {
     final T plugin;
     final Node node;
-    
-    PluginInitInfo( T plugin, Node node )
-    {
+
+    PluginInitInfo(T plugin, Node node) {
       this.plugin = plugin;
       this.node = node;
     }

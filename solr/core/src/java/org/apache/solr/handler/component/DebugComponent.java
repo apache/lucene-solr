@@ -17,17 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.util.SolrPluginUtils;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -41,7 +30,19 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.util.SolrPluginUtils;
+
 import static org.apache.solr.common.params.CommonParams.FQ;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
  * Adds debugging information to a request.
@@ -107,7 +108,7 @@ public class DebugComponent extends SearchComponent
       }
 
       if (rb.req.getJSON() != null) {
-        info.add("json", rb.req.getJSON());
+        info.add(JSON, rb.req.getJSON());
       }
 
       if (rb.isDebugQuery() && rb.getQparser() != null) {

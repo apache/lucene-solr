@@ -17,16 +17,16 @@
 
 package org.apache.solr.search;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.util.Map;
- 
-import org.apache.solr.common.util.NamedList;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.search.SolrCache.State;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Common base class of reusable functionality for SolrCaches
@@ -113,9 +113,9 @@ public abstract class SolrCacheBase {
   
   public void init(Map<String, String> args, CacheRegenerator regenerator) {
     this.regenerator = regenerator;
-    state=State.CREATED;
-    name = (String) args.get("name");
-    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
+    state = State.CREATED;
+    name = args.get(NAME);
+    autowarm = new AutoWarmCountRef(args.get("autowarmCount"));
     
   }
   
