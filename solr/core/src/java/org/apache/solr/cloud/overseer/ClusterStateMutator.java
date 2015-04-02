@@ -37,7 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class ClusterStateMutator {
   private static Logger log = LoggerFactory.getLogger(ClusterStateMutator.class);
@@ -49,7 +49,7 @@ public class ClusterStateMutator {
   }
 
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
-    String cName = message.getStr("name");
+    String cName = message.getStr(NAME);
     log.info("building a new cName: " + cName);
     if (clusterState.hasCollection(cName)) {
       log.warn("Collection {} already exists. exit", cName);
@@ -68,7 +68,7 @@ public class ClusterStateMutator {
     }
 
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
-    String routerName = routerSpec.get("name") == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get("name");
+    String routerName = routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
     DocRouter router = DocRouter.getDocRouter(routerName);
 
     List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
@@ -110,8 +110,8 @@ public class ClusterStateMutator {
   }
 
   public ZkWriteCommand deleteCollection(ClusterState clusterState, ZkNodeProps message) {
-    final String collection = message.getStr("name");
-    if (!CollectionMutator.checkKeyExistence(message, "name")) return ZkStateWriter.NO_OP;
+    final String collection = message.getStr(NAME);
+    if (!CollectionMutator.checkKeyExistence(message, NAME)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollectionOrNull(collection);
     if (coll == null) return ZkStateWriter.NO_OP;
 

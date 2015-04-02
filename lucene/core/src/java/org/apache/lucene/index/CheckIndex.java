@@ -25,7 +25,9 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -56,6 +58,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Basic tool and API to check the health of an index and
@@ -902,6 +906,180 @@ public class CheckIndex implements Closeable {
     return status;
   }
 
+  /** Visits all terms in the range minTerm (inclusive) to maxTerm (exclusive), marking all doc IDs encountered into allDocsSeen, and
+   *  returning the total number of terms visited. */
+  private static long getDocsFromTermRange(String field, int maxDoc, TermsEnum termsEnum, FixedBitSet docsSeen, BytesRef minTerm, BytesRef maxTerm, boolean isIntersect) throws IOException {
+    docsSeen.clear(0, docsSeen.length());
+
+    long termCount = 0;
+    PostingsEnum postingsEnum = null;
+    BytesRefBuilder lastTerm = null;
+    while (true) {
+      BytesRef term;
+
+      // Kinda messy: for intersect, we must first next(), but for "normal", we are already on our first term:
+      if (isIntersect || termCount != 0) {
+        term = termsEnum.next();
+      } else {
+        term = termsEnum.term();
+      }
+
+      if (term == null) {
+        if (isIntersect == false) {
+          throw new RuntimeException("didn't see max term field=" + field + " term=" + maxTerm);
+        }
+        return termCount;
+      }
+
+      assert term.isValid();
+        
+      if (lastTerm == null) {
+        lastTerm = new BytesRefBuilder();
+        lastTerm.copyBytes(term);
+      } else {
+        if (lastTerm.get().compareTo(term) >= 0) {
+          throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+        }
+        lastTerm.copyBytes(term);
+      }
+
+      //System.out.println("    term=" + term);
+
+      // Caller already ensured terms enum positioned >= minTerm:
+      if (term.compareTo(minTerm) < 0) {
+        throw new RuntimeException("saw term before min term field=" + field + " term=" + minTerm);
+      }
+
+      if (isIntersect == false) {
+        int cmp = term.compareTo(maxTerm);
+        if (cmp == 0) {
+          // Done!
+          return termCount;
+        } else if (cmp > 0) {
+          throw new RuntimeException("didn't see end term field=" + field + " term=" + maxTerm);
+        }
+      }
+
+      postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+
+      int lastDoc = -1;
+      while (true) {
+        int doc = postingsEnum.nextDoc();
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+        if (doc <= lastDoc) {
+          throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
+        }
+        if (doc >= maxDoc) {
+          throw new RuntimeException("term " + term + ": doc " + doc + " >= maxDoc " + maxDoc);
+        }
+
+        //System.out.println("      doc=" + doc);
+        docsSeen.set(doc);
+
+        lastDoc = doc;
+      }
+
+      termCount++;
+    }
+  }
+
+  /** Test Terms.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
+   *  any fake terms were seen. */
+  private static boolean checkSingleTermRange(String field, int maxDoc, Terms terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
+    // System.out.println("  check minTerm=" + minTerm + " maxTerm=" + maxTerm);
+
+    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum.SeekStatus status = termsEnum.seekCeil(minTerm);
+    if (status != TermsEnum.SeekStatus.FOUND) {
+      throw new RuntimeException("failed to seek to existing term field=" + field + " term=" + minTerm);
+    }
+
+    // Do "dumb" iteration to visit all terms in the range:
+    long normalTermCount = getDocsFromTermRange(field, maxDoc, termsEnum, normalDocs, minTerm, maxTerm, false);
+
+    // Now do the same operation using intersect:
+    long intersectTermCount = getDocsFromTermRange(field, maxDoc, terms.intersect(new CompiledAutomaton(Automata.makeBinaryInterval(minTerm, true, maxTerm, false), true, false, Integer.MAX_VALUE, true), null), intersectDocs, minTerm, maxTerm, true);
+
+    if (intersectTermCount > normalTermCount) {
+      throw new RuntimeException("intersect returned too many terms: field=" + field + " intersectTermCount=" + intersectTermCount + " normalTermCount=" + normalTermCount);
+    }
+
+    if (normalDocs.equals(intersectDocs) == false) {
+      throw new RuntimeException("intersect visited different docs than straight terms enum: " + normalDocs.cardinality() + " for straight enum, vs " + intersectDocs.cardinality() + " for intersect, minTerm=" + minTerm + " maxTerm=" + maxTerm);
+    }
+    //System.out.println("    " + intersectTermCount + " vs " + normalTermCount);
+    return intersectTermCount != normalTermCount;
+  }
+
+  /** Make an effort to visit "fake" (e.g. auto-prefix) terms.  We do this by running term range intersections across an initially wide
+   *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
+   *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
+   *  real terms. */
+  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
+
+    // We'll target this many terms in our interval for the current level:
+    double currentInterval = numTerms;
+
+    FixedBitSet normalDocs = new FixedBitSet(maxDoc);
+    FixedBitSet intersectDocs = new FixedBitSet(maxDoc);
+
+    TermsEnum termsEnum = null;
+    //System.out.println("CI.checkTermRanges field=" + field + " numTerms=" + numTerms);
+
+    while (currentInterval >= 10.0) {
+      //System.out.println("  cycle interval=" + currentInterval);
+
+      // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
+      termsEnum = terms.iterator(termsEnum);
+
+      long termCount = 0;
+
+      Deque<BytesRef> termBounds = new LinkedList<>();
+
+      long lastTermAdded = Long.MIN_VALUE;
+
+      BytesRefBuilder lastTerm = null;
+
+      while (true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
+        }
+        //System.out.println("  top: term=" + term.utf8ToString());
+        if (termCount >= lastTermAdded + currentInterval/4) {
+          termBounds.add(BytesRef.deepCopyOf(term));
+          lastTermAdded = termCount;
+          if (termBounds.size() == 5) {
+            BytesRef minTerm = termBounds.removeFirst();
+            BytesRef maxTerm = termBounds.getLast();
+            checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
+          }
+        }
+        termCount++;
+
+        if (lastTerm == null) {
+          lastTerm = new BytesRefBuilder();
+          lastTerm.copyBytes(term);
+        } else {
+          if (lastTerm.get().compareTo(term) >= 0) {
+            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+          }
+          lastTerm.copyBytes(term);
+        }
+      }
+
+      if (lastTerm != null && termBounds.isEmpty() == false) {
+        BytesRef minTerm = termBounds.removeFirst();
+        BytesRef maxTerm = lastTerm.get();
+        checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
+      }
+
+      currentInterval *= .75;
+    }
+  }
+
   /**
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
@@ -922,6 +1100,7 @@ public class CheckIndex implements Closeable {
     
     String lastField = null;
     for (String field : fields) {
+
       // MultiFieldsEnum relies upon this order...
       if (lastField != null && field.compareTo(lastField) <= 0) {
         throw new RuntimeException("fields out of order: lastField=" + lastField + " field=" + field);
@@ -1031,7 +1210,8 @@ public class CheckIndex implements Closeable {
         if (term == null) {
           break;
         }
-
+        // System.out.println("CI: field=" + field + " check term=" + term + " docFreq=" + termsEnum.docFreq());
+        
         assert term.isValid();
         
         // make sure terms arrive in order according to
@@ -1323,13 +1503,21 @@ public class CheckIndex implements Closeable {
         // docs got deleted and then merged away):
         
       } else {
+
+        long fieldTermCount = (status.delTermCount+status.termCount)-termCountStart;
+
+        if (hasFreqs == false) {
+          // For DOCS_ONLY fields we recursively test term ranges:
+          checkTermRanges(field, maxDoc, fieldTerms, fieldTermCount);
+        }
+
         final Object stats = fieldTerms.getStats();
         assert stats != null;
         if (status.blockTreeStats == null) {
           status.blockTreeStats = new HashMap<>();
         }
         status.blockTreeStats.put(field, stats);
-        
+
         if (sumTotalTermFreq != 0) {
           final long v = fields.terms(field).getSumTotalTermFreq();
           if (v != -1 && sumTotalTermFreq != v) {
@@ -1344,17 +1532,18 @@ public class CheckIndex implements Closeable {
           }
         }
         
-        if (fieldTerms != null) {
-          final int v = fieldTerms.getDocCount();
-          if (v != -1 && visitedDocs.cardinality() != v) {
-            throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
-          }
+        final int v = fieldTerms.getDocCount();
+        if (v != -1 && visitedDocs.cardinality() != v) {
+          throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
         
         // Test seek to last term:
         if (lastTerm != null) {
           if (termsEnum.seekCeil(lastTerm.get()) != TermsEnum.SeekStatus.FOUND) { 
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
+          }
+          if (termsEnum.term().equals(lastTerm.get()) == false) {
+            throw new RuntimeException("seek to last term " + lastTerm.get() + " returned FOUND but seeked to the wrong term " + termsEnum.term());
           }
           
           int expectedDocFreq = termsEnum.docFreq();
@@ -1364,21 +1553,21 @@ public class CheckIndex implements Closeable {
             docFreq++;
           }
           if (docFreq != expectedDocFreq) {
-            throw new RuntimeException("docFreq for last term " + lastTerm + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
+            throw new RuntimeException("docFreq for last term " + lastTerm.toBytesRef() + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
           }
         }
         
         // check unique term count
         long termCount = -1;
         
-        if ((status.delTermCount+status.termCount)-termCountStart > 0) {
+        if (fieldTermCount > 0) {
           termCount = fields.terms(field).size();
           
-          if (termCount != -1 && termCount != status.delTermCount + status.termCount - termCountStart) {
-            throw new RuntimeException("termCount mismatch " + (status.delTermCount + termCount) + " vs " + (status.termCount - termCountStart));
+          if (termCount != -1 && termCount != fieldTermCount) {
+            throw new RuntimeException("termCount mismatch " + termCount + " vs " + fieldTermCount);
           }
         }
-        
+
         // Test seeking by ord
         if (hasOrd && status.termCount-termCountStart > 0) {
           int seekCount = (int) Math.min(10000L, termCount);
@@ -1397,6 +1586,9 @@ public class CheckIndex implements Closeable {
             for(int i=seekCount-1;i>=0;i--) {
               if (termsEnum.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
+              }
+              if (termsEnum.term().equals(seekTerms[i]) == false) {
+                throw new RuntimeException("seek to existing term " + seekTerms[i] + " returned FOUND but seeked to the wrong term " + termsEnum.term());
               }
               
               postings = termsEnum.postings(liveDocs, postings, PostingsEnum.NONE);

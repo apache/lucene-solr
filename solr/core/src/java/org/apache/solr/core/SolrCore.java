@@ -66,7 +66,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -145,6 +144,8 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  *
@@ -2012,7 +2013,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
     toLog.add("webapp", req.getContext().get("webapp"));
-    toLog.add("path", req.getContext().get("path"));
+    toLog.add(PATH, req.getContext().get(PATH));
 
     final SolrParams params = req.getParams();
     final String lpList = params.get(CommonParams.LOG_PARAMS_LIST);

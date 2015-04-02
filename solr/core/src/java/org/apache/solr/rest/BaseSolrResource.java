@@ -16,6 +16,11 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -36,11 +41,7 @@ import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
  * Base class of all Solr Restlet server resource classes.
@@ -103,7 +104,7 @@ public abstract class BaseSolrResource extends ServerResource {
             schema = solrRequest.getSchema();
             String responseWriterName = solrRequest.getParams().get(CommonParams.WT);
             if (null == responseWriterName) {
-              responseWriterName = "json"; // Default to json writer
+              responseWriterName = JSON; // Default to json writer
             }
             String indent = solrRequest.getParams().get("indent");
             if (null == indent || ! ("off".equals(indent) || "false".equals(indent))) {

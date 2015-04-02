@@ -32,6 +32,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 public class CollectionMutator {
   private static Logger log = LoggerFactory.getLogger(CollectionMutator.class);
 
@@ -92,7 +94,7 @@ public class CollectionMutator {
       slices = new LinkedHashMap<>(1);
       slices.put(slice.getName(), slice);
       Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name", ImplicitDocRouter.NAME));
+      props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap(NAME, ImplicitDocRouter.NAME));
       newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy

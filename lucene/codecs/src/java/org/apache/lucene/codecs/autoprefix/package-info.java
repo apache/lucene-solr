@@ -1,5 +1,3 @@
-package org.apache.solr.handler;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,23 +15,8 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
-
 /**
- * Does nothing other than showing a 404 message
+ * An experimental postings format that automatically indexes appropriate
+ * prefix terms for fast range and prefix queries.
  */
-public class NotFoundRequestHandler extends RequestHandlerBase{
-  @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
-  }
-
-  @Override
-  public String getDescription() {
-    return "No Operation";
-  }
-}
+package org.apache.lucene.codecs.autoprefix;

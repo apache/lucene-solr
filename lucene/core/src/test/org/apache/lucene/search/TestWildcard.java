@@ -34,14 +34,8 @@ import java.io.IOException;
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
  */
-public class TestWildcard
-    extends LuceneTestCase {
+public class TestWildcard extends LuceneTestCase {
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
   public void testEquals() {
     WildcardQuery wq1 = new WildcardQuery(new Term("field", "b*a"));
     WildcardQuery wq2 = new WildcardQuery(new Term("field", "b*a"));
@@ -126,10 +120,10 @@ public class TestWildcard
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     reader.close();
     indexStore.close();

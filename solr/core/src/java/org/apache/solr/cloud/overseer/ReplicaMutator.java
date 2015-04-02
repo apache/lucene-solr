@@ -17,9 +17,6 @@ package org.apache.solr.cloud.overseer;
  * limitations under the License.
  */
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.*;
-import static org.apache.solr.cloud.overseer.CollectionMutator.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -41,6 +38,11 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
+import static org.apache.solr.cloud.overseer.CollectionMutator.checkKeyExistence;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class ReplicaMutator {
   private static Logger log = LoggerFactory.getLogger(ReplicaMutator.class);
@@ -214,7 +216,7 @@ public class ReplicaMutator {
     boolean collectionExists = prevState.hasCollection(cName);
     if (!collectionExists && numShards != null) {
       ClusterStateMutator.getShardNames(numShards, shardNames);
-      Map<String, Object> createMsg = ZkNodeProps.makeMap("name", cName);
+      Map<String, Object> createMsg = ZkNodeProps.makeMap(NAME, cName);
       createMsg.putAll(message.getProperties());
       writeCommand = new ClusterStateMutator(zkStateReader).createCollection(prevState, new ZkNodeProps(createMsg));
       DocCollection collection = writeCommand.collection;

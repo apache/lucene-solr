@@ -20,6 +20,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -67,7 +69,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       if (mergeCandidates.contains(segmentCommitInfo.info.name)) {
         segmentInfo.add("mergeCandidate", true);
       }
-      segmentInfos.add((String) segmentInfo.get("name"), segmentInfo);
+      segmentInfos.add((String) segmentInfo.get(NAME), segmentInfo);
     }
 
     return segmentInfos;
@@ -77,7 +79,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       SegmentCommitInfo segmentCommitInfo) throws IOException {
     SimpleOrderedMap<Object> segmentInfoMap = new SimpleOrderedMap<>();
 
-    segmentInfoMap.add("name", segmentCommitInfo.info.name);
+    segmentInfoMap.add(NAME, segmentCommitInfo.info.name);
     segmentInfoMap.add("delCount", segmentCommitInfo.getDelCount());
     segmentInfoMap.add("sizeInBytes", segmentCommitInfo.sizeInBytes());
     segmentInfoMap.add("size", segmentCommitInfo.info.maxDoc());

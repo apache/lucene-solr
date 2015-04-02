@@ -19,6 +19,10 @@ New Features
   for counting ranges that align with the underlying terms as defined by the
   NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
 
+* LUCENE-5879: Added experimental auto-prefix terms to BlockTree terms
+  dictionary, exposed as AutoPrefixPostingsFormat (Adrien Grand,
+  Uwe Schindler, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

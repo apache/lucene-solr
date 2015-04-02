@@ -37,6 +37,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /** 
  * Responsible for loading the lookup and dictionary Implementations specified by 
  * the SolrConfig. 
@@ -48,9 +50,6 @@ public class SolrSuggester implements Accountable {
   
   /** Name used when an unnamed suggester config is passed */
   public static final String DEFAULT_DICT_NAME = "default";
-  
-  /** Label to identify the name of the suggester */
-  public static final String NAME = "name";
   
   /** Location of the source data - either a path to a file, or null for the
    * current IndexReader.

@@ -599,7 +599,7 @@ public class RegExp {
         a = aa;
         break;
       case REGEXP_INTERVAL:
-        a = Automata.makeInterval(min, max, digits);
+        a = Automata.makeDecimalInterval(min, max, digits);
         break;
     }
     return a;

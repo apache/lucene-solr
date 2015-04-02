@@ -17,15 +17,12 @@
 
 package org.apache.solr.handler;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -33,7 +30,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.loader.CSVLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
@@ -45,8 +41,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  * UpdateHandler that uses content-type to pick the right Loader
@@ -77,7 +72,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     public void load(SolrQueryRequest req, SolrQueryResponse rsp,
         ContentStream stream, UpdateRequestProcessor processor) throws Exception {
 
-      ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get("path"));
+      ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get(PATH));
       if(loader == null) {
         String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
         if (type == null) {

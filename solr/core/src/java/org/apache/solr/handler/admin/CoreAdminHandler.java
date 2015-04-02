@@ -17,6 +17,23 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
@@ -68,24 +85,9 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  *
@@ -312,7 +314,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams params = adminReq.getParams();
     List<DocRouter.Range> ranges = null;
 
-    String[] pathsArr = params.getParams("path");
+    String[] pathsArr = params.getParams(PATH);
     String rangesStr = params.get(CoreAdminParams.RANGES);    // ranges=a-b,c-d,e-f
     if (rangesStr != null)  {
       String[] rangesArr = rangesStr.split(",");
@@ -1105,7 +1107,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       // It would be a real mistake to load the cores just to get the status
       CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
       if (desc != null) {
-        info.add("name", desc.getName());
+        info.add(NAME, desc.getName());
         info.add("instanceDir", desc.getInstanceDir());
         // None of the following are guaranteed to be present in a not-yet-loaded core.
         String tmp = desc.getDataDir();
@@ -1119,7 +1121,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     } else {
       try (SolrCore core = cores.getCore(cname)) {
         if (core != null) {
-          info.add("name", core.getName());
+          info.add(NAME, core.getName());
           info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
           info.add("dataDir", normalizePath(core.getDataDir()));
           info.add("config", core.getConfigResource());

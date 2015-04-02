@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.lucene.codecs.autoprefix;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,22 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.RandomPostingsTester;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
- * Does nothing other than showing a 404 message
+ * Tests AutoPrefix's postings
  */
-public class NotFoundRequestHandler extends RequestHandlerBase{
-  @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
-  }
 
-  @Override
-  public String getDescription() {
-    return "No Operation";
+// NOTE: we don't extend BasePostingsFormatTestCase becase we can only handle DOCS_ONLY fields:
+
+public class TestAutoPrefixPostingsFormat extends LuceneTestCase {
+  public void test() throws Exception {
+    new RandomPostingsTester(random()).testFull(TestUtil.alwaysPostingsFormat(new AutoPrefixPostingsFormat()),
+                                                createTempDir("autoprefix"),
+                                                IndexOptions.DOCS,
+                                                false);
   }
 }

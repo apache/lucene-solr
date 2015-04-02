@@ -18,20 +18,32 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.codecs.autoprefix.AutoPrefixPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 
 public class TestTermRangeQuery extends LuceneTestCase {
@@ -104,19 +116,18 @@ public class TestTermRangeQuery extends LuceneTestCase {
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
+
     TermRangeQuery query = new TermRangeQuery("content", null, null, true, true);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "content");
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
-    query = new TermRangeQuery("content", null, null, false, false);
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
+
+    query = TermRangeQuery.newStringRange("content", "", null, true, true);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
+
     query = TermRangeQuery.newStringRange("content", "", null, true, false);
-    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, 1000).scoreDocs.length);
-    // and now anothe one
-    query = TermRangeQuery.newStringRange("content", "B", null, true, false);
-    assertTrue(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
+
+    // and now another one
+    query = TermRangeQuery.newStringRange("content", "B", null, true, true);
     assertEquals(3, searcher.search(query, 1000).scoreDocs.length);
     reader.close();
   }
@@ -335,5 +346,128 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // until Lucene-38 is fixed, use this assert
     //assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
      reader.close();
+  }
+
+  /** Make sure auto prefix terms are used with TermRangeQuery */
+  public void testAutoPrefixTermsKickIn() throws Exception {
+
+    List<String> prefixes = new ArrayList<>();
+    for(int i=1;i<5;i++) {
+      char[] chars = new char[i];
+      Arrays.fill(chars, 'a');
+      prefixes.add(new String(chars));
+    }
+
+    Set<String> randomTerms = new HashSet<>();
+    int numTerms = atLeast(10000);
+    while (randomTerms.size() < numTerms) {
+      for(String prefix : prefixes) {
+        randomTerms.add(prefix + TestUtil.randomSimpleString(random()));
+      }
+    }
+
+    // We make term range aa<start> - aa<end>
+    char start;
+    char end;
+
+    int actualCount;
+    boolean startInclusive = random().nextBoolean();
+    boolean endInclusive = random().nextBoolean();
+    String startTerm;
+    String endTerm;
+
+    while (true) {
+      start = (char) TestUtil.nextInt(random(), 'a', 'm');
+      end = (char) TestUtil.nextInt(random(), start+1, 'z');
+
+      actualCount = 0;
+
+      startTerm = "aa" + start;
+      endTerm = "aa" + end;
+
+      for(String term : randomTerms) {
+        int cmpStart = startTerm.compareTo(term);
+        int cmpEnd = endTerm.compareTo(term);
+        if ((cmpStart < 0 || (startInclusive && cmpStart == 0)) &&
+            (cmpEnd > 0 || (endInclusive && cmpEnd == 0))) {
+          actualCount++;
+        }
+      }
+
+      if (actualCount > 2000) {
+        break;
+      }
+    }
+
+    //System.out.println("start " + startTerm + " inclusive? " + startInclusive);
+    //System.out.println("end " + endTerm + " inclusive? " + endInclusive);
+    //System.out.println("actual count " + actualCount);
+
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    int minTermsInBlock = TestUtil.nextInt(random(), 2, 100);
+    int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random().nextInt(100));
+
+    int minTermsAutoPrefix = TestUtil.nextInt(random(), 2, 100);
+    int maxTermsAutoPrefix = random().nextBoolean() ? Math.max(2, (minTermsAutoPrefix-1)*2 + random().nextInt(100)) : Integer.MAX_VALUE;
+
+    //System.out.println("minTermsAutoPrefix " + minTermsAutoPrefix);
+    //System.out.println("maxTermsAutoPrefix " + maxTermsAutoPrefix);
+
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new AutoPrefixPostingsFormat(minTermsInBlock, maxTermsInBlock,
+                                                                            minTermsAutoPrefix, maxTermsAutoPrefix)));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    //System.out.println("TEST: index terms");
+    for (String term : randomTerms) {
+      Document doc = new Document();
+      doc.add(new StringField("field", term, Field.Store.NO));
+      w.addDocument(doc);
+      //System.out.println("  " + term);
+    }
+
+    //System.out.println("TEST: now force merge");
+    w.forceMerge(1);
+    IndexReader r = w.getReader();
+    final Terms terms = MultiFields.getTerms(r, "field");
+    IndexSearcher s = new IndexSearcher(r);
+    final int finalActualCount = actualCount;
+    //System.out.println("start=" + startTerm + " end=" + endTerm + " startIncl=" + startInclusive + " endIncl=" + endInclusive);
+    TermRangeQuery q = new TermRangeQuery("field", new BytesRef(startTerm), new BytesRef(endTerm), startInclusive, endInclusive) {
+      public TermRangeQuery checkTerms() throws IOException {
+        TermsEnum termsEnum = getTermsEnum(terms, new AttributeSource());
+        int count = 0;
+        while (termsEnum.next() != null) {
+          //System.out.println("got term: " + termsEnum.term().utf8ToString());
+          count++;
+        }
+        //System.out.println("count " + count + " vs finalActualCount=" + finalActualCount);
+
+        // Auto-prefix term(s) should have kicked in, so we should have visited fewer than the total number of aa* terms:
+        assertTrue(count < finalActualCount);
+
+        return this;
+      }
+    }.checkTerms();
+
+    if (random().nextBoolean()) {
+      q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    } else if (random().nextBoolean()) {
+      q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
+    }
+
+    assertEquals(actualCount, s.search(q, 1).totalHits);
+
+    // Test when min == max:
+    List<String> randomTermsList = new ArrayList<>(randomTerms);
+    for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+      String term = randomTermsList.get(random().nextInt(randomTermsList.size()));
+      q = new TermRangeQuery("field", new BytesRef(term), new BytesRef(term), true, true);
+      assertEquals(1, s.search(q, 1).totalHits);
+    }
+
+    r.close();
+    w.close();
+    dir.close();
   }
 }

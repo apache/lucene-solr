@@ -17,6 +17,16 @@
 
 package org.apache.solr.handler;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
@@ -39,13 +49,7 @@ import org.apache.solr.util.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * An analysis handler that provides a breakdown of the analysis process of provided documents. This handler expects a
@@ -311,7 +315,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
           for (int i = 0; i < reader.getAttributeCount(); i++) {
             String attrName = reader.getAttributeLocalName(i);
-            if ("name".equals(attrName)) {
+            if (NAME.equals(attrName)) {
               fieldName = reader.getAttributeValue(i);
             }
           }
