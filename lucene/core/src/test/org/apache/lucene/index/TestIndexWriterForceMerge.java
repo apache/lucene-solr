@@ -18,12 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -146,6 +148,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: start disk usage = " + startDiskUsage);
     }
+    String startListing = listFiles(dir);
 
     dir.resetMaxUsedSizeInBytes();
     dir.setTrackDiskUsage(true);
@@ -181,11 +184,32 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     assertTrue("forceMerge used too much temporary space: starting usage was "
         + startDiskUsage + " bytes; final usage was " + finalDiskUsage
         + " bytes; max temp usage was " + maxDiskUsage
-        + " but should have been " + (3 * maxStartFinalDiskUsage)
-        + " (= 3X starting usage)", maxDiskUsage <= 3 * maxStartFinalDiskUsage);
+        + " but should have been at most " + (4 * maxStartFinalDiskUsage)
+        + " (= 4X starting usage), BEFORE=" + startListing + "AFTER=" + listFiles(dir), maxDiskUsage <= 4 * maxStartFinalDiskUsage);
     dir.close();
   }
   
+  // print out listing of files and sizes, but recurse into CFS to debug nested files there.
+  private String listFiles(Directory dir) throws IOException {
+    SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+    StringBuilder sb = new StringBuilder();
+    sb.append(System.lineSeparator());
+    for (SegmentCommitInfo info : infos) {
+      for (String file : info.files()) {
+        sb.append(String.format(Locale.ROOT, "%-20s%d%n", file, dir.fileLength(file)));
+      }
+      if (info.info.getUseCompoundFile()) {
+        try (Directory cfs = info.info.getCodec().compoundFormat().getCompoundReader(dir, info.info, IOContext.DEFAULT)) {
+          for (String file : cfs.listAll()) {
+            sb.append(String.format(Locale.ROOT, " |- (inside compound file) %-20s%d%n", file, cfs.fileLength(file)));
+          }
+        }
+      }
+    }
+    sb.append(System.lineSeparator());
+    return sb.toString();
+  }
+
   // Test calling forceMerge(1, false) whereby forceMerge is kicked
   // off but we don't wait for it to finish (but
   // writer.close()) does wait
