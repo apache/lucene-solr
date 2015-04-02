@@ -18,19 +18,19 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
 /** 
  * Base rewrite method that translates each term into a query, and keeps
@@ -112,7 +112,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
-        assert reader.docFreq(term) == termStates[pos].docFreq();
+        assert termStates[pos].hasOnlyRealTerms() == false || reader.docFreq(term) == termStates[pos].docFreq();
         addClause(result, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
       }
     }
@@ -137,7 +137,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       final int e = terms.add(bytes);
       final TermState state = termsEnum.termState();
       assert state != null; 
-      if (e < 0 ) {
+      if (e < 0) {
         // duplicate term: update docFreq
         final int pos = (-e)-1;
         array.termState[pos].register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());

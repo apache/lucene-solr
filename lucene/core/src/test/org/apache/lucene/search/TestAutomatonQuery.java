@@ -117,8 +117,8 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertAutomatonHits(2, Automata.makeString("doc"));
     assertAutomatonHits(1, Automata.makeChar('a'));
     assertAutomatonHits(2, Automata.makeCharRange('a', 'b'));
-    assertAutomatonHits(2, Automata.makeInterval(1233, 2346, 0));
-    assertAutomatonHits(1, Automata.makeInterval(0, 2000, 0));
+    assertAutomatonHits(2, Automata.makeDecimalInterval(1233, 2346, 0));
+    assertAutomatonHits(1, Automata.makeDecimalInterval(0, 2000, 0));
     assertAutomatonHits(2, Operations.union(Automata.makeChar('a'),
         Automata.makeChar('b')));
     assertAutomatonHits(0, Operations.intersection(Automata
@@ -194,7 +194,6 @@ public class TestAutomatonQuery extends LuceneTestCase {
     Automaton pfx = Automata.makeString("do");
     Automaton prefixAutomaton = Operations.concatenate(pfx, Automata.makeAnyString());
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), prefixAutomaton);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertEquals(3, automatonQueryNrHits(aq));
   }
   

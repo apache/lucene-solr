@@ -90,10 +90,39 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
+  /** Which state, if any, accepts all suffixes, else -1. */
+  public final int sinkState;
+
   /** Create this, passing simplify=true and finite=null, so that we try
    *  to simplify the automaton and determine if it is finite. */
   public CompiledAutomaton(Automaton automaton) {
     this(automaton, null, true);
+  }
+
+  /** Returns sink state, if present, else -1. */
+  private static int findSinkState(Automaton automaton) {
+    int numStates = automaton.getNumStates();
+    Transition t = new Transition();
+    int foundState = -1;
+    for (int s=0;s<numStates;s++) {
+      if (automaton.isAccept(s)) {
+        int count = automaton.initTransition(s, t);
+        boolean isSinkState = false;
+        for(int i=0;i<count;i++) {
+          automaton.getNextTransition(t);
+          if (t.dest == s && t.min == 0 && t.max == 0xff) {
+            isSinkState = true;
+            break;
+          }
+        }
+        if (isSinkState) {
+          foundState = s;
+          break;
+        }
+      }
+    }
+
+    return foundState;
   }
 
   /** Create this.  If finite is null, we use {@link Operations#isFinite}
@@ -134,6 +163,7 @@ public class CompiledAutomaton {
         runAutomaton = null;
         this.automaton = null;
         this.finite = null;
+        sinkState = -1;
         return;
       }
 
@@ -154,6 +184,7 @@ public class CompiledAutomaton {
         runAutomaton = null;
         this.automaton = null;
         this.finite = null;
+        sinkState = -1;
         return;
       }
 
@@ -174,7 +205,7 @@ public class CompiledAutomaton {
         } else {
           term = new BytesRef(UnicodeUtil.newString(singleton.ints, singleton.offset, singleton.length));
         }
-
+        sinkState = -1;
         return;
       }
     }
@@ -202,7 +233,8 @@ public class CompiledAutomaton {
     if (this.finite) {
       commonSuffixRef = null;
     } else {
-      // NOTE: this is a very costly operation!  We should test if it's really warranted in practice...
+      // NOTE: this is a very costly operation!  We should test if it's really warranted in practice... we could do a fast match
+      // by looking for a sink state (which means it has no common suffix).  Or maybe we shouldn't do it when simplify is false?:
       BytesRef suffix = Operations.getCommonSuffixBytesRef(binary, maxDeterminizedStates);
       if (suffix.length == 0) {
         commonSuffixRef = null;
@@ -215,6 +247,10 @@ public class CompiledAutomaton {
     runAutomaton = new ByteRunAutomaton(binary, true, maxDeterminizedStates);
 
     this.automaton = runAutomaton.automaton;
+
+    // TODO: this is a bit fragile because if the automaton is not minimized there could be more than 1 sink state but auto-prefix will fail
+    // to run for those:
+    sinkState = findSinkState(this.automaton);
   }
 
   private Transition transition = new Transition();

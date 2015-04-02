@@ -151,7 +151,6 @@ class FreqProxFields extends Fields {
     }
 
     public SeekStatus seekCeil(BytesRef text) {
-
       // TODO: we could instead keep the BytesRefHash
       // intact so this is a hash lookup
 
@@ -170,17 +169,19 @@ class FreqProxFields extends Fields {
         } else {
           // found:
           ord = mid;
+          assert term().compareTo(text) == 0;
           return SeekStatus.FOUND;
         }
       }
 
       // not found:
-      ord = lo + 1;
+      ord = lo;
       if (ord >= numTerms) {
         return SeekStatus.END;
       } else {
         int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
         terms.bytePool.setBytesRef(scratch, textStart);
+        assert term().compareTo(text) > 0;
         return SeekStatus.NOT_FOUND;
       }
     }
@@ -309,7 +310,7 @@ class FreqProxFields extends Fields {
     final FreqProxPostingsArray postingsArray;
     final ByteSliceReader reader = new ByteSliceReader();
     final boolean readTermFreq;
-    int docID;
+    int docID = -1;
     int freq;
     boolean ended;
     int termID;
@@ -324,7 +325,7 @@ class FreqProxFields extends Fields {
       this.termID = termID;
       terms.initReader(reader, termID, 0);
       ended = false;
-      docID = 0;
+      docID = -1;
     }
 
     @Override
@@ -365,6 +366,9 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
+      if (docID == -1) {
+        docID = 0;
+      }
       if (reader.eof()) {
         if (ended) {
           return NO_MORE_DOCS;
@@ -412,7 +416,7 @@ class FreqProxFields extends Fields {
     final ByteSliceReader reader = new ByteSliceReader();
     final ByteSliceReader posReader = new ByteSliceReader();
     final boolean readOffsets;
-    int docID;
+    int docID = -1;
     int freq;
     int pos;
     int startOffset;
@@ -436,7 +440,7 @@ class FreqProxFields extends Fields {
       terms.initReader(reader, termID, 0);
       terms.initReader(posReader, termID, 1);
       ended = false;
-      docID = 0;
+      docID = -1;
       posLeft = 0;
     }
 
@@ -452,6 +456,9 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
+      if (docID == -1) {
+        docID = 0;
+      }
       while (posLeft != 0) {
         nextPosition();
       }

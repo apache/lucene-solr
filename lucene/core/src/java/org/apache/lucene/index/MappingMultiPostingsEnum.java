@@ -49,6 +49,7 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
     this.numSubs = postingsEnum.getNumSubs();
     this.subs = postingsEnum.getSubs();
     upto = -1;
+    doc = -1;
     current = null;
     this.multiDocsAndPositionsEnum = postingsEnum;
     return this;

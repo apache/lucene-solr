@@ -48,6 +48,8 @@ public class Stats {
   /** Total number of bytes (sum of term lengths) across all terms in the field. */
   public long totalTermBytes;
 
+  // TODO: add total auto-prefix term count
+
   /** The number of normal (non-floor) blocks in the terms file. */
   public int nonFloorBlockCount;
 
