@@ -36,6 +36,8 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /**
  * @lucene.internal
  */
@@ -327,7 +329,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
     writer.write('<');
     writer.write(tag);
     if (name!=null) {
-      writeAttr("name", name);
+      writeAttr(NAME, name);
       if (closeTag) {
         writer.write("/>");
       } else {

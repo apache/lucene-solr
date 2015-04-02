@@ -18,6 +18,11 @@ package org.apache.solr.request.json;
  */
 
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -25,7 +30,6 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -33,10 +37,7 @@ import org.apache.solr.request.macro.MacroExpander;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class RequestUtil {
   /**
@@ -65,7 +66,7 @@ public class RequestUtil {
         req.setParams(params);
       }
 
-      String[] jsonFromParams = map.remove("json");  // params from the query string should come after (and hence override) JSON content streams
+      String[] jsonFromParams = map.remove(JSON);  // params from the query string should come after (and hence override) JSON content streams
 
       for (ContentStream cs : req.getContentStreams()) {
         String contentType = cs.getContentType();
@@ -75,7 +76,7 @@ public class RequestUtil {
 
         try {
           String jsonString = IOUtils.toString( cs.getReader() );
-          MultiMapSolrParams.addParam("json", jsonString, map);
+          MultiMapSolrParams.addParam(JSON, jsonString, map);
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exception reading content stream for request:"+req, e);
         }
@@ -84,12 +85,12 @@ public class RequestUtil {
       // append existing "json" params
       if (jsonFromParams != null) {
         for (String json : jsonFromParams) {
-          MultiMapSolrParams.addParam("json", json, map);
+          MultiMapSolrParams.addParam(JSON, json, map);
         }
       }
     }
 
-    String[] jsonS = params.getParams("json");
+    String[] jsonS = params.getParams(JSON);
 
     boolean hasAdditions = defaults != null || invariants != null || appends != null || jsonS != null;
 
@@ -168,12 +169,12 @@ public class RequestUtil {
 
     Map<String, Object> json = null;
     // Handle JSON body first, so query params will always overlay on that
-    jsonS = newMap.get("json");
+    jsonS = newMap.get(JSON);
     if (jsonS != null) {
       if (json == null) {
         json = new LinkedHashMap<>();
       }
-      mergeJSON(json, "json", jsonS, new ObjectUtil.ConflictHandler());
+      mergeJSON(json, JSON, jsonS, new ObjectUtil.ConflictHandler());
     }
     for (String key : newMap.keySet()) {
       // json.nl, json.wrf are existing query parameters

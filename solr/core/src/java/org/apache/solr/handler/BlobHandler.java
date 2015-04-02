@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
   protected static final Logger log = LoggerFactory.getLogger(BlobHandler.class);
@@ -72,7 +73,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = (String) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
-    SolrConfigHandler.setWt(req, "json");
+    SolrConfigHandler.setWt(req, JSON);
 
     List<String> pieces = StrUtils.splitSmart(path, '/');
     String blobName = null;

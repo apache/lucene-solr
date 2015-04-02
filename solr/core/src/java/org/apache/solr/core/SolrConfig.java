@@ -19,6 +19,27 @@ package org.apache.solr.core;
 
 
 import com.google.common.base.Charsets;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
@@ -56,27 +77,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -254,7 +256,7 @@ public class SolrConfig extends Config implements MapSerializable {
     CacheConfig conf = CacheConfig.getConfig(this, "query/fieldValueCache");
     if (conf == null) {
       Map<String, String> args = new HashMap<>();
-      args.put("name", "fieldValueCache");
+      args.put(NAME, "fieldValueCache");
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
@@ -753,7 +755,7 @@ public class SolrConfig extends Config implements MapSerializable {
         Node node = nodes.item(i);
 
         String baseDir = DOMUtil.getAttr(node, "dir");
-        String path = DOMUtil.getAttr(node, "path");
+        String path = DOMUtil.getAttr(node, PATH);
         if (null != baseDir) {
           // :TODO: add support for a simpler 'glob' mutually exclusive of regex
           String regex = DOMUtil.getAttr(node, "regex");

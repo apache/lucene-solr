@@ -89,6 +89,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
  * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicable index version
@@ -296,12 +298,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void deleteSnapshot(ModifiableSolrParams params) {
-    String name = params.get("name");
+    String name = params.get(NAME);
     if(name == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Missing mandatory param: name");
     }
 
-    SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get("name"));
+    SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get(NAME));
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
   }
@@ -399,7 +401,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       
       // small race here before the commit point is saved
-      SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get("name"));
+      SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get(NAME));
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapAsync(indexCommit, numberToKeep, this);
       
@@ -1458,8 +1460,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String LEN = "len";
 
   public static final String FILE = "file";
-
-  public static final String NAME = "name";
 
   public static final String SIZE = "size";
 

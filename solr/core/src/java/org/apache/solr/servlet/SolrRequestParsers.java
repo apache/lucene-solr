@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -35,10 +36,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -52,7 +50,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -61,6 +58,8 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 public class SolrRequestParsers 
@@ -163,7 +162,7 @@ public class SolrRequestParsers
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
-    sreq.getContext().put( "path", RequestHandlers.normalize(path) );
+    sreq.getContext().put(PATH, RequestHandlers.normalize(path));
     sreq.getContext().put("httpMethod", req.getMethod());
 
     if(addHttpRequestToContext) {

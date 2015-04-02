@@ -44,6 +44,8 @@ import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.JSON;
+
 /**
  * Pre-analyzed field type provides a way to index a serialized token stream,
  * optionally with an independent stored value of a field.
@@ -70,7 +72,7 @@ public class PreAnalyzedField extends FieldType {
       parser = new JsonPreAnalyzedParser();
     } else {
       // short name
-      if ("json".equalsIgnoreCase(implName)) {
+      if (JSON.equalsIgnoreCase(implName)) {
         parser = new JsonPreAnalyzedParser();
       } else if ("simple".equalsIgnoreCase(implName)) {
         parser = new SimplePreAnalyzedParser();

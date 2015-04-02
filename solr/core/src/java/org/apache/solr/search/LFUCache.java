@@ -16,12 +16,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.ConcurrentLFUCache;
-
 import java.io.Serializable;
 import java.net.URL;
 import java.util.List;
@@ -29,6 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ConcurrentLFUCache;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * SolrCache based on ConcurrentLFUCache implementation.
@@ -64,7 +66,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     state = State.CREATED;
     this.regenerator = regenerator;
-    name = (String) args.get("name");
+    name = (String) args.get(NAME);
     String str = (String) args.get("size");
     int limit = str == null ? 1024 : Integer.parseInt(str);
     int minLimit;

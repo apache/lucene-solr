@@ -43,6 +43,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 /**
  * This manages the lifecycle of a set of plugin of the same type .
  */
@@ -372,7 +374,7 @@ public class PluginBag<T> implements AutoCloseable {
 
     @Override
     public void init(PluginInfo info) {
-      name = info.attributes.get("name");
+      name = info.attributes.get(NAME);
       Object v = info.attributes.get("version");
       if (name == null || v == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");

@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class SliceMutator {
   private static Logger log = LoggerFactory.getLogger(SliceMutator.class);
@@ -123,7 +123,7 @@ public class SliceMutator {
     // if there are no slices left in the collection, remove it?
     if (newSlices.size() == 0) {
       return new ClusterStateMutator(zkStateReader).deleteCollection(clusterState,
-          new ZkNodeProps(ZkNodeProps.makeMap("name", collection)));
+          new ZkNodeProps(ZkNodeProps.makeMap(NAME, collection)));
     } else {
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
     }

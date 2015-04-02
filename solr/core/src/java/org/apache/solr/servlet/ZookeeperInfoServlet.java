@@ -17,6 +17,9 @@
 
 package org.apache.solr.servlet;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -32,12 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.cloud.ZkController;
@@ -60,6 +59,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 /**
@@ -354,7 +354,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
       return;
     }
 
-    String path = params.get("path");
+    String path = params.get(PATH);
     String addr = params.get("addr");
 
     if (addr != null && addr.length() == 0) {
@@ -785,7 +785,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
         json.writeNameSeparator();
         json.startObject();
 
-        writeKeyValue(json, "path", path, true);
+        writeKeyValue(json, PATH, path, true);
 
         json.writeValueSeparator();
         json.writeString("prop");

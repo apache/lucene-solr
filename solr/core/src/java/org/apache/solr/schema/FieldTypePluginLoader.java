@@ -17,27 +17,37 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.util.*;
-import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.plugin.AbstractPluginLoader;
-import org.w3c.dom.*;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.Version;
+import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public final class FieldTypePluginLoader 
   extends AbstractPluginLoader<FieldType> {
@@ -136,7 +146,7 @@ public final class FieldTypePluginLoader
   @Override
   protected void init(FieldType plugin, Node node) throws Exception {
 
-    Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), "name");
+    Map<String, String> params = DOMUtil.toMapExcept(node.getAttributes(), NAME);
     plugin.setArgs(schema, params);
   }
 

@@ -26,12 +26,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.InitParams;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {
@@ -68,7 +68,7 @@ public class DumpRequestHandler extends RequestHandlerBase
       // Cycle through each stream
       for( ContentStream content : req.getContentStreams() ) {
         NamedList<Object> stream = new SimpleOrderedMap<>();
-        stream.add( "name", content.getName() );
+        stream.add(NAME, content.getName());
         stream.add( "sourceInfo", content.getSourceInfo() );
         stream.add( "size", content.getSize() );
         stream.add( "contentType", content.getContentType() );

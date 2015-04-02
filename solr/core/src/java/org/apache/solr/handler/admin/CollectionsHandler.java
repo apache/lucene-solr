@@ -17,6 +17,17 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -58,17 +69,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
@@ -118,6 +118,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionsHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CollectionsHandler.class);
@@ -607,8 +608,8 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
 
   private void handleProp(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
-    req.getParams().required().check("name");
-    String name = req.getParams().get("name");
+    req.getParams().required().check(NAME);
+    String name = req.getParams().get(NAME);
     if(!OverseerCollectionProcessor.KNOWN_CLUSTER_PROPS.contains(name)){
       throw new SolrException(ErrorCode.BAD_REQUEST, "Not a known cluster property "+ name);
     }
@@ -616,7 +617,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     Map<String,Object> props = ZkNodeProps.makeMap(
         Overseer.QUEUE_OPERATION, CLUSTERPROP.toLower() );
     copyIfNotNull(req.getParams(),props,
-        "name",
+        NAME,
         "val");
 
     Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(props)) ;
@@ -754,10 +755,10 @@ public class CollectionsHandler extends RequestHandlerBase {
   
   private void handleReloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Reloading Collection : " + req.getParamString());
-    String name = req.getParams().required().get("name");
+    String name = req.getParams().required().get(NAME);
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        RELOAD.toLower(), "name", name);
+        RELOAD.toLower(), NAME, name);
 
     handleResponse(RELOAD.toLower(), m, rsp);
   }
@@ -787,11 +788,11 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleCreateAliasAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws Exception {
     log.info("Create alias action : " + req.getParamString());
-    String name = req.getParams().required().get("name");
+    String name = req.getParams().required().get(NAME);
     String collections = req.getParams().required().get("collections");
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        CREATEALIAS.toLower(), "name", name, "collections",
+        CREATEALIAS.toLower(), NAME, name, "collections",
         collections);
     
     handleResponse(CREATEALIAS.toLower(), m, rsp);
@@ -800,21 +801,21 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleDeleteAliasAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws Exception {
     log.info("Delete alias action : " + req.getParamString());
-    String name = req.getParams().required().get("name");
+    String name = req.getParams().required().get(NAME);
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        DELETEALIAS.toLower(), "name", name);
+        DELETEALIAS.toLower(), NAME, name);
     
     handleResponse(DELETEALIAS.toLower(), m, rsp);
   }
 
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Deleting Collection : " + req.getParamString());
-    
-    String name = req.getParams().required().get("name");
+
+    String name = req.getParams().required().get(NAME);
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        DELETE.toLower(), "name", name);
+        DELETE.toLower(), NAME, name);
 
     handleResponse(DELETE.toLower(), m, rsp);
   }
@@ -827,7 +828,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleCreateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Creating Collection : " + req.getParamString());
-    String name = req.getParams().required().get("name");
+    String name = req.getParams().required().get(NAME);
     if (name == null) {
       log.error("Collection name is required to create a new collection");
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -839,7 +840,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         CREATE.toLower(),
         "fromApi","true");
     copyIfNotNull(req.getParams(),props,
-        "name",
+        NAME,
         REPLICATION_FACTOR,
          COLL_CONF,
          NUM_SLICES,
@@ -901,7 +902,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Create shard: " + req.getParamString());
     req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP);
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if(!ImplicitDocRouter.NAME.equals( ((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get("name") )  )
+    if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get(NAME)))
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD.toLower());

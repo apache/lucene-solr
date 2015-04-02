@@ -17,12 +17,17 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -43,11 +48,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 /**
@@ -307,7 +308,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                 // as the default but operators need to update their luceneMatchVersion to enable
                 // this behavior since it did not work this way prior to 5.1
                 if (req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_5_1_0)) {
-                  String reqPath = (String)req.getContext().get("path");
+                  String reqPath = (String) req.getContext().get(PATH);
                   if (!"/select".equals(reqPath)) {
                     params.set(CommonParams.QT, reqPath);
                   } // else if path is /select, then the qt gets passed thru if set

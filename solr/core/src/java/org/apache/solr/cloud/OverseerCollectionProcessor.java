@@ -17,29 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.cloud.Assign.getNodesForNewShard;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +38,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -87,7 +63,6 @@ import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -118,6 +93,31 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import static org.apache.solr.cloud.Assign.getNodesForNewShard;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 
 public class OverseerCollectionProcessor implements Runnable, Closeable {
   
@@ -325,7 +325,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           for (QueueEvent head : heads) {
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             String collectionName = message.containsKey(COLLECTION_PROP) ?
-                message.getStr(COLLECTION_PROP) : message.getStr("name");
+                message.getStr(COLLECTION_PROP) : message.getStr(NAME);
             String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue))
@@ -380,7 +380,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   private boolean checkExclusivity(ZkNodeProps message, String id) throws KeeperException, InterruptedException {
     String collectionName = message.containsKey(COLLECTION_PROP) ?
-        message.getStr(COLLECTION_PROP) : message.getStr("name");
+        message.getStr(COLLECTION_PROP) : message.getStr(NAME);
 
     if(collectionName == null)
       return true;
@@ -638,7 +638,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
     } catch (Exception e) {
       String collName = message.getStr("collection");
-      if (collName == null) collName = message.getStr("name");
+      if (collName == null) collName = message.getStr(NAME);
 
       if (collName == null) {
         SolrException.log(log, "Operation " + operation + " failed", e);
@@ -1126,7 +1126,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   private void deleteCollection(ZkNodeProps message, NamedList results)
       throws KeeperException, InterruptedException {
-    final String collection = message.getStr("name");
+    final String collection = message.getStr(NAME);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
@@ -1136,7 +1136,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           null);
       
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          DELETE.toLower(), "name", collection);
+          DELETE.toLower(), NAME, collection);
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(
           ZkStateReader.toJSON(m));
       
@@ -1178,7 +1178,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
 
   private void createAlias(Aliases aliases, ZkNodeProps message) {
-    String aliasName = message.getStr("name");
+    String aliasName = message.getStr(NAME);
     String collections = message.getStr("collections");
 
     Map previousMDCContext = MDC.getCopyOfContextMap();
@@ -1257,7 +1257,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
 
   private void deleteAlias(Aliases aliases, ZkNodeProps message) {
-    String aliasName = message.getStr("name");
+    String aliasName = message.getStr(NAME);
     Map previousMDCContext = MDC.getCopyOfContextMap();
     MDCUtils.setCollection(aliasName);
 
@@ -1320,7 +1320,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         if (created) break;
       }
       if (!created)
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create shard: " + message.getStr("name"));
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create shard: " + message.getStr(NAME));
 
 
       String configName = message.getStr(COLL_CONF);
@@ -1995,7 +1995,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
       Map<String, Object> props = ZkNodeProps.makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
-          "name", tempSourceCollectionName);
+          NAME, tempSourceCollectionName);
 
       try {
         deleteCollection(new ZkNodeProps(props), results);
@@ -2079,7 +2079,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String configName = zkStateReader.readConfigName(sourceCollection.getName());
     Map<String, Object> props = ZkNodeProps.makeMap(
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
-        "name", tempSourceCollectionName,
+        NAME, tempSourceCollectionName,
         ZkStateReader.REPLICATION_FACTOR, 1,
         NUM_SLICES, 1,
         COLL_CONF, configName,
@@ -2208,7 +2208,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
       props = ZkNodeProps.makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
-          "name", tempSourceCollectionName);
+          NAME, tempSourceCollectionName);
       deleteCollection(new ZkNodeProps(props), results);
     } catch (Exception e) {
       log.error("Unable to delete temporary collection: " + tempSourceCollectionName
@@ -2289,7 +2289,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
   
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    String collectionName = message.getStr("name");
+    String collectionName = message.getStr(NAME);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -2375,11 +2375,11 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       boolean created = false;
       while (System.nanoTime() < waitUntil) {
         Thread.sleep(100);
-        created = zkStateReader.getClusterState().getCollections().contains(message.getStr("name"));
+        created = zkStateReader.getClusterState().getCollections().contains(message.getStr(NAME));
         if(created) break;
       }
       if (!created)
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create collection: " + message.getStr("name"));
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create collection: " + message.getStr(NAME));
 
       // For tracking async calls.
       HashMap<String, String> requestMap = new HashMap<String, String>();
@@ -2663,7 +2663,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results, String stateMatcher) {
     log.info("Executing Collection Cmd : " + params);
-    String collectionName = message.getStr("name");
+    String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -2855,7 +2855,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       boolean success = false;
       String asyncId = message.getStr(ASYNC);
       String collectionName = message.containsKey(COLLECTION_PROP) ?
-          message.getStr(COLLECTION_PROP) : message.getStr("name");
+          message.getStr(COLLECTION_PROP) : message.getStr(NAME);
       Map previousMDCContext = MDC.getCopyOfContextMap();
       MDCUtils.setCollection(collectionName);
       try {

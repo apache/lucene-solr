@@ -46,6 +46,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 
 /**
  * This handler returns system info
@@ -158,7 +160,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    info.add( "name", os.getName() );
+    info.add(NAME, os.getName());
     info.add( "version", os.getVersion() );
     info.add( "arch", os.getArch() );
     info.add( "systemLoadAverage", os.getSystemLoadAverage());
@@ -262,12 +264,12 @@ public class SystemInfoHandler extends RequestHandlerBase
 
     // Summary Info
     jvm.add( "version", jreVersion + " " + vmVersion);
-    jvm.add( "name", jreVendor + " " + vmName );
+    jvm.add(NAME, jreVendor + " " + vmName);
     
     // details
     SimpleOrderedMap<Object> java = new SimpleOrderedMap<>();
     java.add( "vendor", javaVendor );
-    java.add( "name", javaName );
+    java.add(NAME, javaName);
     java.add( "version", javaVersion );
     jvm.add( "spec", java );
     SimpleOrderedMap<Object> jre = new SimpleOrderedMap<>();
@@ -276,7 +278,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "jre", jre );
     SimpleOrderedMap<Object> vm = new SimpleOrderedMap<>();
     vm.add( "vendor", vmVendor );
-    vm.add( "name", vmName );
+    vm.add(NAME, vmName);
     vm.add( "version", vmVersion );
     jvm.add( "vm", vm );
            
