@@ -43,7 +43,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
@@ -57,11 +56,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -158,9 +155,10 @@ public class SuggestFieldTest extends LuceneTestCase {
       weights[i] = Math.abs(random().nextLong());
       document.add(newSuggestField("suggest_field", "abc", weights[i]));
       iw.addDocument(document);
-    }
-    if (rarely()) {
-      iw.commit();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     DirectoryReader reader = iw.getReader();
@@ -200,11 +198,15 @@ public class SuggestFieldTest extends LuceneTestCase {
       }
       iw.addDocument(document);
       document.clear();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     iw.deleteDocuments(new Term("str_field", "delete"));
 
-    DirectoryReader reader = DirectoryReader.open(iw, false);
+    DirectoryReader reader = DirectoryReader.open(iw, true);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader, analyzer);
     TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", numLive);
     assertSuggestions(suggest, expectedEntries.toArray(new Entry[expectedEntries.size()]));
@@ -224,6 +226,10 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.add(newStringField("str_fld", "deleted", Field.Store.NO));
       iw.addDocument(document);
       document.clear();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     Filter filter = new QueryWrapperFilter(new TermsQuery("str_fld", new BytesRef("non_existent")));
@@ -249,11 +255,15 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.add(newStringField("delete", "delete", Field.Store.NO));
       iw.addDocument(document);
       document.clear();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     iw.deleteDocuments(new Term("delete", "delete"));
 
-    DirectoryReader reader = DirectoryReader.open(iw, false);
+    DirectoryReader reader = DirectoryReader.open(iw, true);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader, analyzer);
     TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", num);
     assertThat(suggest.totalHits, equalTo(0));
@@ -274,6 +284,10 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.add(new IntField("weight_fld", i, Field.Store.YES));
       iw.addDocument(document);
       document.clear();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     iw.deleteDocuments(NumericRangeQuery.newIntRange("weight_fld", 2, null, true, false));
@@ -298,6 +312,10 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.add(new IntField("filter_int_fld", i, Field.Store.NO));
       iw.addDocument(document);
       document.clear();
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     DirectoryReader reader = iw.getReader();
@@ -542,6 +560,10 @@ public class SuggestFieldTest extends LuceneTestCase {
       document.add(newSuggestField("suggest_field", suggest, weight));
       mappings.put(suggest, weight);
       iw.addDocument(document);
+
+      if (usually()) {
+        iw.commit();
+      }
     }
 
     DirectoryReader reader = iw.getReader();
