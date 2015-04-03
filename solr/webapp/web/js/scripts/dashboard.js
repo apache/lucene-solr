@@ -111,10 +111,10 @@ sammy.get
                 .show();
                                 
               var data = {
-                'index_num-docs' : response['index']['numDocs'],
+                'index_num-doc' : response['index']['numDocs'],
                 'index_heap-usage-bytes' : response['index']['indexHeapUsageBytes'],
                 'index_max-doc' : response['index']['maxDoc'],
-                'index_deleted-docs' : response['index']['deletedDocs'],
+                'index_deleted-doc' : response['index']['deletedDocs'],
                 'index_version' : response['index']['version'],
                 'index_segmentCount' : response['index']['segmentCount'],
                 'index_last-modified' : response['index']['lastModified']

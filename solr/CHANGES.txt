@@ -387,6 +387,8 @@ Bug Fixes
 * SOLR-7266: The IgnoreCommitOptimizeUpdateProcessor blocks commit requests from
   replicas needing to recover. (Jessica Cheng Mallet, Timothy Potter)
 
+* SOLR-7334: Admin UI does not show "Num Docs" and "Deleted Docs". (Erick Erickson, Timothy Potter)
+
 Optimizations
 ----------------------
 
