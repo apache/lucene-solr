@@ -21,48 +21,58 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Public for extension only.
  */
 public class SpanScorer extends Scorer {
-  protected Spans spans;
-
-  protected int doc;
-  protected float freq;
-  protected int numMatches;
+  /** underlying spans we are scoring from */
+  protected final Spans spans;
+  /** similarity used in default score impl */
   protected final Similarity.SimScorer docScorer;
 
-  protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer)
-  throws IOException {
+  /** accumulated sloppy freq (computed in setFreqCurrentDoc) */
+  protected float freq;
+  /** number of matches (computed in setFreqCurrentDoc) */
+  protected int numMatches;
+  
+  private int lastScoredDoc = -1; // last doc we called setFreqCurrentDoc() for
+
+  protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = Objects.requireNonNull(docScorer);
     this.spans = Objects.requireNonNull(spans);
-    this.doc = -1;
   }
 
   @Override
-  public int nextDoc() throws IOException {
-    int prevDoc = doc;
-    doc = spans.nextDoc();
-    if (doc != NO_MORE_DOCS) {
-      setFreqCurrentDoc();
-    }
-    return doc;
+  public final int nextDoc() throws IOException {
+    return spans.nextDoc();
   }
 
   @Override
-  public int advance(int target) throws IOException {
-    int prevDoc = doc;
-    doc = spans.advance(target);
-    if (doc != NO_MORE_DOCS) {
+  public final int advance(int target) throws IOException {
+    return spans.advance(target);
+  }
+  
+  /** 
+   * Ensure setFreqCurrentDoc is called, if not already called for the current doc.
+   */
+  private final void ensureFreq() throws IOException {
+    int currentDoc = spans.docID();
+    if (lastScoredDoc != currentDoc) {
       setFreqCurrentDoc();
+      lastScoredDoc = currentDoc;
     }
-    return doc;
   }
 
-  protected boolean setFreqCurrentDoc() throws IOException {
+  /**
+   * Sets {@link #freq} and {@link #numMatches} for the current document.
+   * <p>
+   * This will be called at most once per document.
+   */
+  protected void setFreqCurrentDoc() throws IOException {
     freq = 0.0f;
     numMatches = 0;
 
@@ -90,34 +100,46 @@ public class SpanScorer extends Scorer {
 
     assert spans.startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, spans="+spans;
     assert spans.endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, spans="+spans;
-
-    return true;
+  }
+  
+  /**
+   * Score the current doc. The default implementation scores the doc 
+   * with the similarity using the slop-adjusted {@link #freq}.
+   */
+  protected float scoreCurrentDoc() throws IOException {
+    return docScorer.score(spans.docID(), freq);
   }
 
   @Override
-  public int docID() { return doc; }
+  public final int docID() { return spans.docID(); }
 
   @Override
-  public float score() throws IOException {
-    float s = docScorer.score(doc, freq);
-    return s;
+  public final float score() throws IOException {
+    ensureFreq();
+    return scoreCurrentDoc();
   }
 
   @Override
-  public int freq() throws IOException {
+  public final int freq() throws IOException {
+    ensureFreq();
     return numMatches;
   }
 
   /** Returns the intermediate "sloppy freq" adjusted for edit distance
    *  @lucene.internal */
   // only public so .payloads can see it.
-  public float sloppyFreq() throws IOException {
+  public final float sloppyFreq() throws IOException {
+    ensureFreq();
     return freq;
   }
 
   @Override
-  public long cost() {
+  public final long cost() {
     return spans.cost();
   }
 
+  @Override
+  public final TwoPhaseIterator asTwoPhaseIterator() {
+    return spans.asTwoPhaseIterator();
+  }
 }

@@ -232,8 +232,8 @@ public class PayloadNearQuery extends SpanNearQuery {
         scratch.bytes = thePayload;
         scratch.offset = 0;
         scratch.length = thePayload.length;
-        payloadScore = function.currentScore(doc, fieldName, start, end,
-            payloadsSeen, payloadScore, docScorer.computePayloadFactor(doc,
+        payloadScore = function.currentScore(docID(), fieldName, start, end,
+            payloadsSeen, payloadScore, docScorer.computePayloadFactor(docID(),
                 spans.startPosition(), spans.endPosition(), scratch));
         ++payloadsSeen;
       }
@@ -241,7 +241,7 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     //
     @Override
-    protected boolean setFreqCurrentDoc() throws IOException {
+    protected void setFreqCurrentDoc() throws IOException {
       freq = 0.0f;
       payloadScore = 0;
       payloadsSeen = 0;
@@ -255,14 +255,12 @@ public class PayloadNearQuery extends SpanNearQuery {
         getPayloads(spansArr);            
         startPos = spans.nextStartPosition();
       } while (startPos != Spans.NO_MORE_POSITIONS);
-      return true;
     }
 
     @Override
-    public float score() throws IOException {
-
-      return super.score()
-          * function.docScore(doc, fieldName, payloadsSeen, payloadScore);
+    public float scoreCurrentDoc() throws IOException {
+      return super.scoreCurrentDoc()
+          * function.docScore(docID(), fieldName, payloadsSeen, payloadScore);
     }
   }
 

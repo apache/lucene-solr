@@ -162,7 +162,12 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    protected boolean setFreqCurrentDoc() {
+    protected void setFreqCurrentDoc() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    protected float scoreCurrentDoc() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
