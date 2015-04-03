@@ -121,7 +121,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Test
   public void testBackupOnCommit() throws Exception {
     //Index
-    int nDocs = indexDocs();
+    int nDocs = indexDocs(masterClient);
 
     //Confirm if completed
     CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient);
@@ -146,7 +146,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private int indexDocs() throws IOException, SolrServerException {
+  protected static int indexDocs(SolrClient masterClient) throws IOException, SolrServerException {
     int nDocs = TestUtil.nextInt(random(), 1, 100);
     masterClient.deleteByQuery("*:*");
     for (int i = 0; i < nDocs; i++) {
@@ -164,7 +164,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Test
   public void doTestBackup() throws Exception {
 
-    int nDocs = indexDocs();
+    int nDocs = indexDocs(masterClient);
 
     Path[] snapDir = new Path[5]; //One extra for the backup on commit
     //First snapshot location
@@ -180,17 +180,16 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       backupNames = new String[4];
     }
     for (int i = 0; i < 4; i++) {
-      BackupCommand backupCommand;
       final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
       if (!namedBackup) {
-        backupCommand = new BackupCommand(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
+        if (addNumberToKeepInRequest) {
+          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&" + backupKeepParamName + "=2");
+        } else {
+          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "");
+        }
       } else {
-        backupCommand = new BackupCommand(backupName, ReplicationHandler.CMD_BACKUP);
+          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&name=" +  backupName);
         backupNames[i] = backupName;
-      }
-      backupCommand.runCommand();
-      if (backupCommand.fail != null) {
-        fail(backupCommand.fail);
       }
 
       CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, firstBackupTimestamp);
@@ -253,8 +252,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
     String lastTimestamp = null;
     for (int i = 0; i < 2; i++) {
-      BackupCommand deleteBackupCommand = new BackupCommand(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
-      deleteBackupCommand.runCommand();
+      runBackupCommand(masterJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);
       CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i], lastTimestamp);
       while (true) {
         boolean success = checkDeleteBackupStatus.fetchStatus();
@@ -267,52 +265,19 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         }
         Thread.sleep(200);
       }
-
-      if (deleteBackupCommand.fail != null) {
-        fail(deleteBackupCommand.fail);
-      }
     }
   }
 
-  private class BackupCommand {
-    String fail = null;
-    final boolean addNumberToKeepInRequest;
-    String backupKeepParamName;
-    String backupName;
-    String cmd;
-    
-    BackupCommand(boolean addNumberToKeepInRequest, String backupKeepParamName, String command) {
-      this.addNumberToKeepInRequest = addNumberToKeepInRequest;
-      this.backupKeepParamName = backupKeepParamName;
-      this.cmd = command;
-    }
-    BackupCommand(String backupName, String command) {
-      this.backupName = backupName;
-      addNumberToKeepInRequest = false;
-      this.cmd = command;
-    }
-    
-    public void runCommand() {
-      String masterUrl;
-      if(backupName != null) {
-        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + cmd +
-            "&name=" +  backupName;
-      } else {
-        masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + cmd +
-            (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=2" : "");
-      }
-
-      InputStream stream = null;
-      try {
-        URL url = new URL(masterUrl);
-        stream = url.openStream();
-        stream.close();
-      } catch (Exception e) {
-        fail = e.getMessage();
-      } finally {
-        IOUtils.closeQuietly(stream);
-      }
-
+  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
+    String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
+        + "/replication?command=" + cmd + params;
+    InputStream stream = null;
+    try {
+      URL url = new URL(masterUrl);
+      stream = url.openStream();
+      stream.close();
+    } finally {
+      IOUtils.closeQuietly(stream);
     }
   }
 
@@ -349,6 +314,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         IOUtils.closeQuietly(stream);
       }
       return false;
-    };
+    }
   }
 }

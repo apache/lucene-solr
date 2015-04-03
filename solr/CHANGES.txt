@@ -78,6 +78,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-6637: Solr should have a way to restore a core from a backed up index.
+  (Varun Thacker, noble, shalin)
+
 Bug Fixes
 ----------------------
 
