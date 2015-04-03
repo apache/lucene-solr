@@ -306,6 +306,9 @@ public class WeightedSpanTermExtractor {
       }
       Bits acceptDocs = context.reader().getLiveDocs();
       final Spans spans = q.getSpans(context, acceptDocs, termContexts);
+      if (spans == null) {
+        return;
+      }
 
       // collect span positions
       while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
