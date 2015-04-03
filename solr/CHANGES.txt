@@ -93,6 +93,11 @@ Optimizations
 * SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
   (Stephan Lagraulet via Varun Thacker)
 
+Other Changes
+----------------------
+
+* SOLR-6865: Upgrade HttpClient to 4.4.1 (Shawn Heisey)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
