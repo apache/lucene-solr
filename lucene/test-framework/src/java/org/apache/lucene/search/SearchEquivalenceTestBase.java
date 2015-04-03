@@ -263,6 +263,9 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * Both queries will be filtered by <code>filter</code>
    */
   protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
+    QueryUtils.check(q1);
+    QueryUtils.check(q2);
+
     if (filter != null) {
       q1 = new FilteredQuery(q1, filter);
       q2 = new FilteredQuery(q2, filter);
