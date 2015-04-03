@@ -199,8 +199,8 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     assertTrue("forceMerge used too much temporary space: starting usage was "
         + startDiskUsage + " bytes; final usage was " + finalDiskUsage
         + " bytes; max temp usage was " + maxDiskUsage
-        + " but should have been " + (3 * maxStartFinalDiskUsage)
-        + " (= 3X starting usage), BEFORE=" + startListing + "AFTER=" + listFiles(dir), maxDiskUsage <= 3 * maxStartFinalDiskUsage);
+        + " but should have been at most " + (4 * maxStartFinalDiskUsage)
+        + " (= 4X starting usage), BEFORE=" + startListing + "AFTER=" + listFiles(dir), maxDiskUsage <= 4 * maxStartFinalDiskUsage);
     dir.close();
   }
   

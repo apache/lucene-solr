@@ -40,10 +40,15 @@ API Changes
 
 New Features
 
-* LUCENE-6308: Span queries now share document conjunction/intersection
+* LUCENE-6308, LUCENE-6385, LUCENE-6391: Span queries now share 
+  document conjunction/intersection
   code with boolean queries, and use two-phased iterators for
   faster intersection by avoiding loading positions in certain cases.
-  (Paul Elschot, Robert Muir via Mike McCandless)
+  (Paul Elschot, Terry Smith, Robert Muir via Mike McCandless)
+
+* LUCENE-6352: Added a new query time join to the join module that uses
+  global ordinals, which is faster for subsequent joins between reopens.
+  (Martijn van Groningen, Adrien Grand)
 
 Optimizations
 
@@ -51,6 +56,9 @@ Optimizations
   one of the queries is MatchAllDocsQuery and just invokes the much
   faster IndexWriter.deleteAll in that case (Robert Muir, Adrien
   Grand, Mike McCandless)
+
+* LUCENE-6388: Optimize SpanNearQuery when payloads are not present.
+  (Robert Muir)
 
 Bug Fixes
 
@@ -122,6 +130,10 @@ Bug Fixes
 * LUCENE-6381: Add defensive wait time limit in
   DocumentsWriterStallControl to prevent hangs during indexing if we
   miss a .notify/All somewhere (Mike McCandless)
+
+* LUCENE-6386: Correct IndexWriter.forceMerge documentation to state
+  that up to 3X (X = current index size) spare disk space may be needed
+  to complete forceMerge(1).  (Robert Muir, Shai Erera, Mike McCandless)
 
 Optimizations
 

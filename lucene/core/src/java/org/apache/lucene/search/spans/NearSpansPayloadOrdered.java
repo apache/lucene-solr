@@ -47,7 +47,7 @@ public class NearSpansPayloadOrdered extends NearSpansOrdered {
    * Also collect the payloads.
    */
   protected boolean shrinkToAfterShortestMatch() throws IOException {
-    Spans lastSubSpans = subSpans.get(subSpans.size() - 1);
+    Spans lastSubSpans = subSpans[subSpans.length - 1];
     matchStart = lastSubSpans.startPosition();
     matchEnd = lastSubSpans.endPosition();
 
@@ -62,9 +62,8 @@ public class NearSpansPayloadOrdered extends NearSpansOrdered {
 
     int matchSlop = 0;
     int lastStart = matchStart;
-    int lastEnd = matchEnd;
-    for (int i = subSpans.size() - 2; i >= 0; i--) {
-      Spans prevSpans = subSpans.get(i);
+    for (int i = subSpans.length - 2; i >= 0; i--) {
+      Spans prevSpans = subSpans[i];
 
       if (prevSpans.isPayloadAvailable()) {
         Collection<byte[]> payload = prevSpans.getPayload();
@@ -112,7 +111,6 @@ public class NearSpansPayloadOrdered extends NearSpansOrdered {
        */
       matchStart = prevStart;
       lastStart = prevStart;
-      lastEnd = prevEnd;
     }
 
     boolean match = matchSlop <= allowedSlop;

@@ -99,7 +99,7 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       @Override
-      protected boolean setFreqCurrentDoc() throws IOException {
+      protected void setFreqCurrentDoc() throws IOException {
         freq = 0.0f;
         numMatches = 0;
         payloadScore = 0;
@@ -115,7 +115,6 @@ public class PayloadTermQuery extends SpanTermQuery {
 
           startPos = spans.nextStartPosition();
         } while (startPos != Spans.NO_MORE_POSITIONS);
-        return freq != 0;
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
@@ -123,11 +122,11 @@ public class PayloadTermQuery extends SpanTermQuery {
           final PostingsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
-            payloadScore = function.currentScore(doc, term.field(),
+            payloadScore = function.currentScore(docID(), term.field(),
                                                  spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore,
-                                                 docScorer.computePayloadFactor(doc, spans.startPosition(), spans.endPosition(), payload));
+                                                 docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payload));
           } else {
-            payloadScore = function.currentScore(doc, term.field(),
+            payloadScore = function.currentScore(docID(), term.field(),
                                                  spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore, 1F);
           }
           payloadsSeen++;
@@ -143,8 +142,7 @@ public class PayloadTermQuery extends SpanTermQuery {
        * @throws IOException if there is a low-level I/O error
        */
       @Override
-      public float score() throws IOException {
-
+      public float scoreCurrentDoc() throws IOException {
         return includeSpanScore ? getSpanScore() * getPayloadScore()
             : getPayloadScore();
       }
@@ -160,7 +158,7 @@ public class PayloadTermQuery extends SpanTermQuery {
        * @see #score()
        */
       protected float getSpanScore() throws IOException {
-        return super.score();
+        return super.scoreCurrentDoc();
       }
 
       /**
@@ -170,7 +168,7 @@ public class PayloadTermQuery extends SpanTermQuery {
        *         {@link PayloadFunction#docScore(int, String, int, float)}
        */
       protected float getPayloadScore() {
-        return function.docScore(doc, term.field(), payloadsSeen, payloadScore);
+        return function.docScore(docID(), term.field(), payloadsSeen, payloadScore);
       }
     }
     
