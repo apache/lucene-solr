@@ -40,7 +40,8 @@ API Changes
 
 New Features
 
-* LUCENE-6308, LUCENE-6385: Span queries now share document conjunction/intersection
+* LUCENE-6308, LUCENE-6385, LUCENE-6391: Span queries now share 
+  document conjunction/intersection
   code with boolean queries, and use two-phased iterators for
   faster intersection by avoiding loading positions in certain cases.
   (Paul Elschot, Terry Smith, Robert Muir via Mike McCandless)

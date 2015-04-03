@@ -146,7 +146,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
       startPos = in.nextStartPosition();
       assert startPos != NO_MORE_POSITIONS;
       for (;;) {
-        switch(acceptPosition(this)) {
+        switch(acceptPosition(in)) {
           case YES:
             atFirstInCurrentDoc = true;
             return in.docID();
@@ -180,7 +180,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
         if (startPos == NO_MORE_POSITIONS) {
           return NO_MORE_POSITIONS;
         }
-        switch(acceptPosition(this)) {
+        switch(acceptPosition(in)) {
           case YES:
             return startPos;
           case NO:
