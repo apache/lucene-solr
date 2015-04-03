@@ -56,6 +56,9 @@ Optimizations
   faster IndexWriter.deleteAll in that case (Robert Muir, Adrien
   Grand, Mike McCandless)
 
+* LUCENE-6388: Optimize SpanNearQuery when payloads are not present.
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
