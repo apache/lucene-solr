@@ -148,7 +148,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testDupSuggestFieldValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(300);
+    int num = Math.min(1000, atLeast(300));
     long[] weights = new long[num];
     for(int i = 0; i < num; i++) {
       Document document = new Document();
@@ -182,7 +182,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     // using IndexWriter instead of RandomIndexWriter
     IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
 
     Document document = new Document();
     int numLive = 0;
@@ -219,7 +219,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testSuggestOnAllFilteredDocuments() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
     for (int i = 0; i < num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, i));
@@ -248,7 +248,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // using IndexWriter instead of RandomIndexWriter
     IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
     for (int i = 0; i < num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, i));
@@ -277,7 +277,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // using IndexWriter instead of RandomIndexWriter
     IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
     for (int i = 1; i <= num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, i));
@@ -305,7 +305,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testSuggestOnMostlyFilteredOutDocuments() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
     for (int i = 0; i < num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, i));
@@ -351,7 +351,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testEarlyTermination() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
 
     // have segments of 4 documents
@@ -379,7 +379,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testMultipleSegments() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     Document document = new Document();
     List<Entry> entries = new ArrayList<>();
 
@@ -452,7 +452,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
     Document document = new Document();
-    int num = atLeast(10);
+    int num = Math.min(1000, atLeast(10));
     for (int i = 0; i < num; i++) {
       document.add(newSuggestField("suggest_field", "abc_" + i, num));
       document.add(new IntField("int_field", i, Field.Store.YES));
@@ -550,7 +550,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
-    int num = atLeast(100);
+    int num = Math.min(1000, atLeast(100));
     String[] prefixes = {"abc", "bac", "cab"};
     Map<String, Long> mappings = new HashMap<>();
     for (int i = 0; i < num; i++) {
@@ -592,7 +592,7 @@ public class SuggestFieldTest extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     LineFileDocs lineFileDocs = new LineFileDocs(random());
-    int num = atLeast(100);
+    int num = Math.min(1000, atLeast(100));
     Map<String, Long> mappings = new HashMap<>();
     for (int i = 0; i < num; i++) {
       Document document = lineFileDocs.nextDoc();
@@ -637,7 +637,7 @@ public class SuggestFieldTest extends LuceneTestCase {
   public void testThreads() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field_1", "suggest_field_2", "suggest_field_3"));
-    int num = atLeast(100);
+    int num = Math.min(1000, atLeast(100));
     final String prefix1 = "abc1_";
     final String prefix2 = "abc2_";
     final String prefix3 = "abc3_";
