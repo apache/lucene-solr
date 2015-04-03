@@ -29,11 +29,11 @@ import java.util.Objects;
  * Common super class for un/ordered Spans
  */
 abstract class NearSpans extends Spans {
-  SpanNearQuery query;
-  int allowedSlop;
+  final SpanNearQuery query;
+  final int allowedSlop;
 
-  List<Spans> subSpans; // in query order
-  DocIdSetIterator conjunction; // use to move to next doc with all clauses
+  final Spans[] subSpans; // in query order
+  final DocIdSetIterator conjunction; // use to move to next doc with all clauses
   boolean atFirstInCurrentDoc;
   boolean oneExhaustedInCurrentDoc; // no more results possbile in current doc
 
@@ -44,7 +44,7 @@ abstract class NearSpans extends Spans {
     if (subSpans.size() < 2) {
       throw new IllegalArgumentException("Less than 2 subSpans: " + query);
     }
-    this.subSpans = Objects.requireNonNull(subSpans); // in query order
+    this.subSpans = subSpans.toArray(new Spans[subSpans.size()]); // in query order
     this.conjunction = ConjunctionDISI.intersect(subSpans);
   }
 
@@ -91,13 +91,8 @@ abstract class NearSpans extends Spans {
     return res;
   }
 
-  private Spans[] subSpansArray = null; // init only when needed.
-
   public Spans[] getSubSpans() {
-    if (subSpansArray == null) {
-      subSpansArray = subSpans.toArray(new Spans[subSpans.size()]);
-    }
-    return subSpansArray;
+    return subSpans;
   }
 
 }

@@ -18,12 +18,8 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
-import java.util.Set;
 
 /** A Spans that is formed from the ordered subspans of a SpanNearQuery
  * where the subspans do not overlap and have a maximum slop between them,
@@ -146,11 +142,11 @@ public class NearSpansOrdered extends NearSpans {
    * otherwise at least one is exhausted in the current doc.
    */
   private boolean stretchToOrder() throws IOException {
-    Spans prevSpans = subSpans.get(0);
+    Spans prevSpans = subSpans[0];
     assert prevSpans.startPosition() != NO_MORE_POSITIONS : "prevSpans no start position "+prevSpans;
     assert prevSpans.endPosition() != NO_MORE_POSITIONS;
-    for (int i = 1; i < subSpans.size(); i++) {
-      Spans spans = subSpans.get(i);
+    for (int i = 1; i < subSpans.length; i++) {
+      Spans spans = subSpans[i];
       assert spans.startPosition() != NO_MORE_POSITIONS;
       assert spans.endPosition() != NO_MORE_POSITIONS;
 
@@ -169,15 +165,14 @@ public class NearSpansOrdered extends NearSpans {
    * on all subSpans, except the last one, in reverse order.
    */
   protected boolean shrinkToAfterShortestMatch() throws IOException {
-    Spans lastSubSpans = subSpans.get(subSpans.size() - 1);
+    Spans lastSubSpans = subSpans[subSpans.length - 1];
     matchStart = lastSubSpans.startPosition();
     matchEnd = lastSubSpans.endPosition();
 
     int matchSlop = 0;
     int lastStart = matchStart;
-    int lastEnd = matchEnd;
-    for (int i = subSpans.size() - 2; i >= 0; i--) {
-      Spans prevSpans = subSpans.get(i);
+    for (int i = subSpans.length - 2; i >= 0; i--) {
+      Spans prevSpans = subSpans[i];
 
       int prevStart = prevSpans.startPosition();
       int prevEnd = prevSpans.endPosition();
@@ -206,7 +201,6 @@ public class NearSpansOrdered extends NearSpans {
        */
       matchStart = prevStart;
       lastStart = prevStart;
-      lastEnd = prevEnd;
     }
 
     boolean match = matchSlop <= allowedSlop;
@@ -224,16 +218,14 @@ public class NearSpansOrdered extends NearSpans {
     return atFirstInCurrentDoc ? -1 : matchEnd;
   }
 
-  /** Throws an UnsupportedOperationException */
   @Override
   public Collection<byte[]> getPayload() throws IOException {
-    throw new UnsupportedOperationException("Use NearSpansPayloadOrdered instead");
+    return null;
   }
 
-  /** Throws an UnsupportedOperationException */
   @Override
   public boolean isPayloadAvailable() {
-    throw new UnsupportedOperationException("Use NearSpansPayloadOrdered instead");
+    return false;
   }
 
   @Override
