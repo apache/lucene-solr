@@ -331,6 +331,8 @@ Bug Fixes
 
 * SOLR-7299: bin\solr.cmd doesn't use jetty SSL configuration. (Steve Rowe)
 
+* SOLR-7334: Admin UI does not show "Num Docs" and "Deleted Docs". (Erick Erickson, Timothy Potter)
+
 Optimizations
 ----------------------
 
