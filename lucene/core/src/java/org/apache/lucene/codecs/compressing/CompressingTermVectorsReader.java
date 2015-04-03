@@ -936,12 +936,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-        if (positions == null && startOffsets == null)
-          return null;
-      }
-
       final TVPostingsEnum docsEnum;
       if (reuse != null && reuse instanceof TVPostingsEnum) {
         docsEnum = (TVPostingsEnum) reuse;

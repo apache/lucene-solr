@@ -297,6 +297,10 @@ public class PhraseQuery extends Query {
         return null;
       }
 
+      if (fieldTerms.hasPositions() == false) {
+        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run PhraseQuery (phrase=" + getQuery() + ")");
+      }
+
       // Reuse single TermsEnum below:
       final TermsEnum te = fieldTerms.iterator(null);
       
@@ -309,14 +313,6 @@ public class PhraseQuery extends Query {
         }
         te.seekExact(t.bytes(), state);
         PostingsEnum postingsEnum = te.postings(liveDocs, null, PostingsEnum.POSITIONS);
-
-        // PhraseQuery on a field that did not index
-        // positions.
-        if (postingsEnum == null) {
-          assert te.seekExact(t.bytes()) : "termstate found but no term exists in reader";
-          // term does exist, but has no positions
-          throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
-        }
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i), t);
       }
 

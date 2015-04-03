@@ -693,13 +693,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           term.copyChars(id);
           if (seen.contains(id) == false  && termsEnum.seekExact(term.get())) {
             postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.NONE);
-            if (postingsEnum != null) {
-              int docId = postingsEnum.nextDoc();
-              if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
-              termValues[ordSet.put(docId)] = term.toBytesRef();
-              seen.add(id);
-              assert postingsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
-            }
+            int docId = postingsEnum.nextDoc();
+            if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
+            termValues[ordSet.put(docId)] = term.toBytesRef();
+            seen.add(id);
+            assert postingsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
           }
         }
       }

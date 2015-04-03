@@ -504,6 +504,10 @@ public class PostingsHighlighter {
       // if the segment has changed, we must initialize new enums.
       if (leaf != lastLeaf) {
         Terms t = r.terms(field);
+        if (!t.hasOffsets()) {
+          // no offsets available
+          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
+        }
         if (t != null) {
           termsEnum = t.iterator(null);
           postings = new PostingsEnum[terms.length];
@@ -560,10 +564,7 @@ public class PostingsHighlighter {
           continue; // term not found
         }
         de = postings[i] = termsEnum.postings(null, null, PostingsEnum.OFFSETS);
-        if (de == null) {
-          // no positions available
-          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
-        }
+        assert de != null;
         pDoc = de.advance(doc);
       } else {
         pDoc = de.docID();
@@ -599,9 +600,7 @@ public class PostingsHighlighter {
     while ((off = pq.poll()) != null) {
       final PostingsEnum dp = off.dp;
       int start = dp.startOffset();
-      if (start == -1) {
-        throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
-      }
+      assert start >= 0;
       int end = dp.endOffset();
       // LUCENE-5166: this hit would span the content limit... however more valid 
       // hits may exist (they are sorted by start). so we pretend like we never 

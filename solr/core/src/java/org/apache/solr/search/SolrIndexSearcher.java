@@ -801,7 +801,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       return -1;
     }
     PostingsEnum docs = termsEnum.postings(leafReader.getLiveDocs(), null, PostingsEnum.NONE);
-    if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }

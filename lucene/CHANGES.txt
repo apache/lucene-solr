@@ -208,7 +208,7 @@ API Changes
 * LUCENE-6218, LUCENE-6220: Add Collector.needsScores() and needsScores
   parameter to Query.createWeight(). (Robert Muir, Adrien Grand)
 
-* LUCENE-4524, LUCENE-6246, LUCENE-6256: Merge DocsEnum and DocsAndPositionsEnum
+* LUCENE-4524, LUCENE-6246, LUCENE-6256, LUCENE-6271: Merge DocsEnum and DocsAndPositionsEnum
   into a single PostingsEnum iterator.  TermsEnum.docs() and TermsEnum.docsAndPositions()
   are replaced by TermsEnum.postings(). 
   (Alan Woodward, Simon Willnauer, Robert Muir, Ryan Ernst)

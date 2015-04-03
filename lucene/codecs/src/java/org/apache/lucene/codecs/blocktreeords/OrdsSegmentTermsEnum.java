@@ -924,14 +924,6 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
   @Override
   public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
-
-    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-      if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-        // Positions were not indexed:
-        return null;
-      }
-    }
-
     assert !eof;
     //if (DEBUG) {
     //System.out.println("BTTR.docs seg=" + segment);
