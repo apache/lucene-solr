@@ -129,7 +129,9 @@ Upgrading from Solr 5.0
   
 * Tika's runtime dependency of 'jhighlight' was removed as the latter was found to 
   contain some LGPL-only code. Until that's resolved by Tika, you can download the
-  .jar yourself and place it under contrib/extraction/lib.  
+  .jar yourself and place it under contrib/extraction/lib.
+    
+* The _text catch-all field in data_driven_schema_configs has been renamed to _text_.
 
 Detailed Change List
 ----------------------
@@ -488,6 +490,9 @@ Other Changes
 * SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
   "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
   (Varun Thacker, shalin)
+  
+* SOLR-7290: Rename catchall _text field in data_driven_schema_configs
+  to _text_ (Steve Rowe) 
 
 ==================  5.0.0 ==================
 

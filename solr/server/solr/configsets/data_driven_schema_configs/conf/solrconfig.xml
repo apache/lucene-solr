@@ -868,7 +868,7 @@
 
   <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
     <lst name="defaults">
-      <str name="df">_text</str>
+      <str name="df">_text_</str>
     </lst>
   </initParams>
 
@@ -889,7 +889,7 @@
     <lst name="defaults">
       <str name="lowernames">true</str>
       <str name="fmap.meta">ignored_</str>
-      <str name="fmap.content">_text</str>
+      <str name="fmap.content">_text_</str>
     </lst>
   </requestHandler>
 
