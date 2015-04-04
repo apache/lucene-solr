@@ -255,7 +255,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private final Directory mergeDirectory;  // used for merging
   private final Analyzer analyzer;    // how to analyze text
 
-  private volatile long changeCount; // increments every time a change is completed
+  private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed
   private volatile long lastCommitChangeCount; // last changeCount that was committed
 
   private List<SegmentCommitInfo> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
@@ -1531,7 +1531,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // could close, re-open and re-return the same segment
       // name that was previously returned which can cause
       // problems at least with ConcurrentMergeScheduler.
-      changeCount++;
+      changeCount.incrementAndGet();
       segmentInfos.changed();
       return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
     }
@@ -1979,7 +1979,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         deleter.checkpoint(segmentInfos, false);
         deleter.refresh();
 
-        lastCommitChangeCount = changeCount;
+        lastCommitChangeCount = changeCount.get();
         
         deleter.close();
 
@@ -2094,7 +2094,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // Don't bother saving any changes in our segmentInfos
             readerPool.dropAll(false);
             // Mark that the index has changed
-            ++changeCount;
+            changeCount.incrementAndGet();
             segmentInfos.changed();
             globalFieldNumberMap.clear();
 
@@ -2207,13 +2207,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  close/commit we will write a new segments file, but
    *  does NOT bump segmentInfos.version. */
   synchronized void checkpointNoSIS() throws IOException {
-    changeCount++;
+    changeCount.incrementAndGet();
     deleter.checkpoint(segmentInfos, false);
   }
 
   /** Called internally if any index state has changed. */
   synchronized void changed() {
-    changeCount++;
+    changeCount.incrementAndGet();
     segmentInfos.changed();
   }
 
@@ -2717,7 +2717,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // sneak into the commit point:
               toCommit = segmentInfos.clone();
 
-              pendingCommitChangeCount = changeCount;
+              pendingCommitChangeCount = changeCount.get();
 
               // This protects the segmentInfos we are now going
               // to commit.  This is important in case, eg, while
@@ -2775,7 +2775,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public final synchronized void setCommitData(Map<String,String> commitUserData) {
     segmentInfos.setUserData(new HashMap<>(commitUserData));
-    ++changeCount;
+    changeCount.incrementAndGet();
   }
   
   /**
@@ -2831,7 +2831,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  merged finished, this method may return true right
    *  after you had just called {@link #commit}. */
   public final boolean hasUncommittedChanges() {
-    return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
+    return changeCount.get() != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
   }
 
   private final void commitInternal(MergePolicy mergePolicy) throws IOException {
@@ -4258,7 +4258,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       synchronized(this) {
 
-        if (lastCommitChangeCount > changeCount) {
+        if (lastCommitChangeCount > changeCount.get()) {
           throw new IllegalStateException("lastCommitChangeCount=" + lastCommitChangeCount + ",changeCount=" + changeCount);
         }
 

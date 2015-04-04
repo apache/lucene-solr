@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -293,12 +294,14 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     Thread[] threads = new Thread[10];
     final IndexCommit[] snapshots = new IndexCommit[threads.length];
+    final CountDownLatch startingGun = new CountDownLatch(1);
     for (int i = 0; i < threads.length; i++) {
       final int finalI = i;
       threads[i] = new Thread() {
         @Override
         public void run() {
           try {
+            startingGun.await();
             writer.addDocument(new Document());
             writer.commit();
             snapshots[finalI] = sdp.snapshot();
@@ -309,11 +312,13 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       };
       threads[i].setName("t" + i);
     }
-    
+
     for (Thread t : threads) {
       t.start();
     }
     
+    startingGun.countDown();
+
     for (Thread t : threads) {
       t.join();
     }
