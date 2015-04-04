@@ -129,7 +129,12 @@ solrAdminServices.factory('System',
   }])
 .factory('Files',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/file', {'wt':'json', '_':Date.now()}); // @core
+    return $resource('/solr/:core/admin/file', {'wt':'json', core: '@core', '_':Date.now()}, {
+      "list": {},
+      "get": {method: "GET", interceptor: {
+          response: function(config) {return config;}
+      }}
+    });
   }])
 .factory('Query', // use $http for Query, as we need complete control over the URL
   ['$http', '$location', function($http, $location) {

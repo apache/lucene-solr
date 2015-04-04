@@ -71,6 +71,10 @@ solrAdminApp.config([
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
       }).
+      when('/:core/files', {
+        templateUrl: 'partials/files.html',
+        controller: 'FilesController'
+      }).
       when('/:core/query', {
         templateUrl: 'partials/query.html',
         controller: 'QueryController'
@@ -81,7 +85,7 @@ solrAdminApp.config([
 }])
 .filter('highlight', function($sce) {
   return function(input, lang) {
-    if (lang && input) return hljs.highlight(lang, input).value;
+    if (lang && input && lang!="text") return hljs.highlight(lang, input).value;
     return input;
   }
 })
@@ -129,10 +133,14 @@ solrAdminApp.config([
                         "animation" : 0
                       }
                   };
-                  var tree = $(element).jstree(treeConfig).jstree('open_node','li:first');
+
+                  var tree = $(element).jstree(treeConfig);
+                  tree.jstree('open_node','li:first');
                   if (tree) {
-                      tree.bind("select_node.jstree", function (event, data) {
-                          scope.onSelect({url: data.args[0].href});
+                      element.bind("select_node.jstree", function (event, data) {
+                          scope.$apply(function() {
+                              scope.onSelect({url: data.args[0].href, data: data});
+                          });
                       });
                   }
                 }
