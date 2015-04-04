@@ -294,7 +294,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
             if (!localCoreNodeName.equals(replica.getName()) &&
-                ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP)) &&
+                replica.getState() == Replica.State.ACTIVE &&
                 liveNodes.contains(replica.getNodeName())) {
               ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
               activeReplicaCoreUrls.add(replicaCoreProps.getCoreUrl());

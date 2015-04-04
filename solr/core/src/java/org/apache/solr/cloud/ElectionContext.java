@@ -161,7 +161,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
         ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
-        ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
+        ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));    
   }  
 }
@@ -384,11 +384,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (coreNodeName.equals(replicaCoreNodeName))
             continue; // added safe-guard so we don't mark this core as down
           
-          String lirState = zkController.getLeaderInitiatedRecoveryState(coll, shardId, replicaCoreNodeName);
-          if (ZkStateReader.DOWN.equals(lirState) || ZkStateReader.RECOVERY_FAILED.equals(lirState)) {
+          final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(coll, shardId, replicaCoreNodeName);
+          if (lirState == Replica.State.DOWN || lirState == Replica.State.RECOVERY_FAILED) {
             log.info("After core={} coreNodeName={} was elected leader, a replica coreNodeName={} was found in state: "
-                + lirState + " and needing recovery.", coreName, coreNodeName, replicaCoreNodeName);
-            List<ZkCoreNodeProps> replicaProps = 
+                + lirState.toString() + " and needing recovery.", coreName, coreNodeName, replicaCoreNodeName);
+            List<ZkCoreNodeProps> replicaProps =  
                 zkController.getZkStateReader().getReplicaProps(collection, shardId, coreNodeName);
             
             if (replicaProps != null && replicaProps.size() > 0) {                
@@ -507,15 +507,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return true;
     }
     
-    if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished().equals(ZkStateReader.ACTIVE)) {
+    if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished() == Replica.State.ACTIVE) {
       
       // maybe active but if the previous leader marked us as down and
       // we haven't recovered, then can't be leader
-      String lirState = zkController.getLeaderInitiatedRecoveryState(collection, shardId,
+      final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(collection, shardId,
           core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-      if (ZkStateReader.DOWN.equals(lirState) || ZkStateReader.RECOVERING.equals(lirState)) {
+      if (lirState == Replica.State.DOWN || lirState == Replica.State.RECOVERING) {
         log.warn("Although my last published state is Active, the previous leader marked me "+core.getName()
-            + " as " + lirState
+            + " as " + lirState.toString()
             + " and I haven't recovered yet, so I shouldn't be the leader.");
         return false;
       }

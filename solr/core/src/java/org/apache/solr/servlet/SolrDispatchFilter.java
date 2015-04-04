@@ -17,6 +17,32 @@
 
 package org.apache.solr.servlet;
 
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
@@ -44,7 +70,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -75,31 +100,6 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -687,24 +687,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     Set<String> liveNodes = clusterState.getLiveNodes();
     for (Slice slice : slices) {
       Map<String,Replica> sliceShards = slice.getReplicasMap();
-      for (ZkNodeProps nodeProps : sliceShards.values()) {
-        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        if (!activeReplicas || (liveNodes.contains(coreNodeProps.getNodeName())
-            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE))) {
+      for (Replica replica : sliceShards.values()) {
+        if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
+            && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
+          if (byCoreName && !collectionName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }
-          if (coreNodeProps.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+          if (replica.getStr(ZkStateReader.BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
 
           if (origCorename != null) {
-            coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
+            coreUrl = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + origCorename;
           } else {
-            coreUrl = coreNodeProps.getCoreUrl();
+            coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {
               coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
             }

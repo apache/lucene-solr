@@ -282,7 +282,9 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
         attempts++;
         int activeReplicaCount = 0;
         for (Replica x : zkStateReader.getClusterState().getCollection(collectionName).getSlice("x").getReplicas()) {
-          if(ZkStateReader.ACTIVE.equals(x.getStr(ZkStateReader.STATE_PROP))) activeReplicaCount++;
+          if (x.getState() == Replica.State.ACTIVE) {
+            activeReplicaCount++;
+          }
         }
         Thread.sleep(500);
         if(activeReplicaCount >= replicationFactor) break;

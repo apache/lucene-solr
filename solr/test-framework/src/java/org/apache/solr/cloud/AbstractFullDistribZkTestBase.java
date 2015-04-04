@@ -1079,7 +1079,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (CloudJettyRunner cjetty : solrJetties) {
       ZkNodeProps props = cjetty.info;
       String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
+      boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
       boolean live = zkStateReader.getClusterState().liveNodesContain(nodeName);
       if (active && live) {
         shardClients.add(cjetty.client.solrClient);
@@ -1169,8 +1169,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (verbose) System.err.println(" live:" + live);
       if (verbose) System.err.println(" num:" + num + "\n");
 
-      boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(
-          ZkStateReader.ACTIVE);
+      boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastJetty.url + "lastClient"
@@ -1315,8 +1314,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           CloudJettyRunner cjetty = shardToJetty.get(s).get(i);
           ZkNodeProps props = cjetty.info;
           SolrClient client = cjetty.client.solrClient;
-          boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(
-              ZkStateReader.ACTIVE);
+          boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
           if (active) {
             SolrQuery query = new SolrQuery("*:*");
             query.set("distrib", false);
@@ -1400,11 +1398,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       long count = 0;
-      String currentState = cjetty.info.getStr(ZkStateReader.STATE_PROP);
-      if (currentState != null
-          && currentState.equals(ZkStateReader.ACTIVE)
-          && zkStateReader.getClusterState().liveNodesContain(
-              cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
+      final Replica.State currentState = Replica.State.getState(cjetty.info.getStr(ZkStateReader.STATE_PROP));
+      if (currentState == Replica.State.ACTIVE
+          && zkStateReader.getClusterState().liveNodesContain(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
         count = client.solrClient.query(query).getResults().getNumFound();
@@ -1591,9 +1587,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String shardNames = (String) collectionProps.get(SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
-    Integer replicationFactor = (Integer) collectionProps.get(REPLICATION_FACTOR);
+    Integer replicationFactor = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
     if(replicationFactor==null){
-      replicationFactor = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(REPLICATION_FACTOR);
+      replicationFactor = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
     }
 
     if (confSetName != null) {
@@ -1634,9 +1630,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createCollection(collectionInfos, collectionName,
         ZkNodeProps.makeMap(
         NUM_SLICES, numShards,
-        REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
   }
 
@@ -1646,9 +1642,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createCollection(collectionInfos, collectionName,
         ZkNodeProps.makeMap(
         NUM_SLICES, numShards,
-        REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
   }
 
@@ -1861,8 +1857,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
     Map<String, Object> props = makeMap(
-        REPLICATION_FACTOR, replicationFactor,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
@@ -1903,9 +1899,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
-        String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-        if (!ZkStateReader.ACTIVE.equals(replicaState)) {
-          log.info("Replica " + replica.getName() + " is currently " + replicaState);
+        if (replica.getState() != Replica.State.ACTIVE) {
+          log.info("Replica {} is currently {}", replica.getName(), replica.getState());
           allReplicasUp = false;
         }
 

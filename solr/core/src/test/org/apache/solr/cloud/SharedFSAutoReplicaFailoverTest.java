@@ -219,7 +219,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     for (Slice slice : slices) {
       for (Replica replica : slice.getReplicas()) {
         boolean live = cloudClient.getZkStateReader().getClusterState().liveNodesContain(replica.getNodeName());
-        boolean active = replica.getStr(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
+        boolean active = replica.getState() == Replica.State.ACTIVE;
         if (live && active) {
           liveAndActive++;
         }

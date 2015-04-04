@@ -17,14 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import com.google.common.base.Strings;
+import java.util.Properties;
+
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
 
-import java.util.Properties;
+import com.google.common.base.Strings;
 
 public class CloudDescriptor {
 
@@ -43,7 +44,7 @@ public class CloudDescriptor {
   volatile String shardParent = null;
 
   volatile boolean isLeader = false;
-  volatile String lastPublished = ZkStateReader.ACTIVE;
+  volatile Replica.State lastPublished = Replica.State.ACTIVE;
 
   public static final String NUM_SHARDS = "numShards";
 
@@ -61,7 +62,7 @@ public class CloudDescriptor {
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
   }
   
-  public String getLastPublished() {
+  public Replica.State getLastPublished() {
     return lastPublished;
   }
 

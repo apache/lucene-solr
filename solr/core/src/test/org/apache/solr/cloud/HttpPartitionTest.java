@@ -129,8 +129,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     createCollectionRetry(testCollectionName, 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    Replica leader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
 
     CoreContainer cores = ((SolrDispatchFilter)leaderJetty.getDispatchFilter().getFilter()).getCores();
@@ -148,7 +147,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     assertTrue(zkController.isReplicaInRecoveryHandling(replicaUrl));
     Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
     assertNotNull(lirStateMap);
-    assertEquals(ZkStateReader.DOWN, lirStateMap.get("state"));
+    assertSame(Replica.State.DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
     zkController.removeReplicaFromLeaderInitiatedRecoveryHandling(replicaUrl);
     assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
 
@@ -158,7 +157,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     zkClient.setData(znodePath, "down".getBytes(StandardCharsets.UTF_8), true);
     lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
     assertNotNull(lirStateMap);
-    assertEquals(ZkStateReader.DOWN, lirStateMap.get("state"));
+    assertSame(Replica.State.DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
     zkClient.delete(znodePath, -1, false);
 
     // try to clean up
@@ -425,8 +424,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     for (Slice shard : cs.getActiveSlices(testCollectionName)) {
       if (shard.getName().equals(shardId)) {
         for (Replica replica : shard.getReplicas()) {
-          String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-          if (ZkStateReader.ACTIVE.equals(replicaState) || ZkStateReader.RECOVERING.equals(replicaState)) {
+          final Replica.State state = replica.getState();
+          if (state == Replica.State.ACTIVE || state == Replica.State.RECOVERING) {
             activeReplicas.put(replica.getName(), replica);
           }
         }
@@ -529,9 +528,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         if (!replicasToCheck.contains(replica.getName()))
           continue;
 
-        String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-        if (!ZkStateReader.ACTIVE.equals(replicaState)) {
-          log.info("Replica " + replica.getName() + " is currently " + replicaState);
+        final Replica.State state = replica.getState();
+        if (state != Replica.State.ACTIVE) {
+          log.info("Replica " + replica.getName() + " is currently " + state);
           allReplicasUp = false;
         }
       }

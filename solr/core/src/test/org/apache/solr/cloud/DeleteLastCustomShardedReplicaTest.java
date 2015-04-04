@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
@@ -36,9 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
@@ -83,8 +82,8 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
 
     Map<String, Object> props = ZkNodeProps.makeMap(
         "router.name", ImplicitDocRouter.NAME,
-        REPLICATION_FACTOR, replicationFactor,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, 1,
         SHARDS_PROP,"a,b");
 

@@ -43,6 +43,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -162,17 +163,17 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
         Map<String,Object> replicas = (Map<String,Object>)shard.get("replicas");
         for (String replicaId : replicas.keySet()) {
           Map<String,Object> replicaState = (Map<String,Object>)replicas.get(replicaId);
-          String coreState = (String)replicaState.get("state");
+          Replica.State coreState = Replica.State.getState((String)replicaState.get(ZkStateReader.STATE_PROP));
           String nodeName = (String)replicaState.get("node_name");
           
           // state can lie to you if the node is offline, so need to reconcile with live_nodes too
           if (!liveNodes.contains(nodeName))
-            coreState = ZkStateReader.DOWN; // not on a live node, so must be down
+            coreState = Replica.State.DOWN; // not on a live node, so must be down
           
-          if (ZkStateReader.ACTIVE.equals(coreState)) {
+          if (coreState == Replica.State.ACTIVE) {
             hasActive = true; // assumed no replicas active and found one that is for this shard
           } else {
-            if (ZkStateReader.RECOVERING.equals(coreState)) {
+            if (coreState == Replica.State.RECOVERING) {
               replicaInRecovery = true;
             }
             isHealthy = false; // assumed healthy and found one replica that is not
@@ -189,7 +190,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
         return !hasDownedShard && !isHealthy; // means no shards offline but not 100% healthy either
       } else if ("downed_shard".equals(filter)) {
         return hasDownedShard;
-      } else if (ZkStateReader.RECOVERING.equals(filter)) {
+      } else if (Replica.State.getState(filter) == Replica.State.RECOVERING) {
         return !isHealthy && replicaInRecovery;
       }
       

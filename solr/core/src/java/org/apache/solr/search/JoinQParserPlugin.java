@@ -50,7 +50,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -162,11 +161,10 @@ public class JoinQParserPlugin extends QParserPlugin {
           fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
           // found local replica, but is it Active?
-          ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
-          if (!ZkStateReader.ACTIVE.equals(replicaCoreProps.getState()))
+          if (replica.getState() != Replica.State.ACTIVE)
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
-                    ") on "+nodeName+", but it is "+replicaCoreProps.getState());
+                    ") on "+nodeName+", but it is "+replica.getState());
 
           break;
         }

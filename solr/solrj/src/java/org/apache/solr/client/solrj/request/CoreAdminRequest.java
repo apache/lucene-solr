@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -164,7 +165,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static class WaitForState extends CoreAdminRequest {
     protected String nodeName;
     protected String coreNodeName;
-    protected String state;
+    protected Replica.State state;
     protected Boolean checkLive;
     protected Boolean onlyIfLeader;
     protected Boolean onlyIfLeaderActive;
@@ -189,11 +190,11 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       this.coreNodeName = coreNodeName;
     }
 
-    public String getState() {
+    public Replica.State getState() {
       return state;
     }
 
-    public void setState(String state) {
+    public void setState(Replica.State state) {
       this.state = state;
     }
 
@@ -236,7 +237,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       }
       
       if (state != null) {
-        params.set( "state", state);
+        params.set(ZkStateReader.STATE_PROP, state.toString());
       }
       
       if (checkLive != null) {

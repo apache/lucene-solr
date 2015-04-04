@@ -71,6 +71,9 @@ Upgrading from Solr 5.1
 * SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
   clarify the states a Slice can be in, as well comparing the state of a Slice.
   (Shai Erera)
+  
+* SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
+  You should use Replica.State to compare a replica's state. (Shai Erera)
 
 Detailed Change List
 ----------------------
