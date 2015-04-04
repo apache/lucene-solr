@@ -449,6 +449,8 @@ function stop_solr() {
   SOLR_PORT="$2"
   STOP_PORT=`expr $SOLR_PORT - 1000`
   STOP_KEY="$3"
+  
+  
   SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
