@@ -84,6 +84,9 @@ New Features
 * SOLR-6637: Solr should have a way to restore a core from a backed up index.
   (Varun Thacker, noble, shalin)
 
+* SOLR-7241, SOLR-7263, SOLR-7279: More functionality moving the Admin UI to Angular JS
+  (Upayavira via Erick)
+
 Bug Fixes
 ----------------------
 

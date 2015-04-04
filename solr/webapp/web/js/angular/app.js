@@ -67,6 +67,10 @@ solrAdminApp.config([
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
       }).
+      when('/:core/documents', {
+        templateUrl: 'partials/documents.html',
+        controller: 'DocumentsController'
+      }).
       when('/:core/query', {
         templateUrl: 'partials/query.html',
         controller: 'QueryController'
@@ -197,9 +201,23 @@ solrAdminApp.config([
 
   return {request: started, response: ended, responseError: failed};
 })
-
 .config(function($httpProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
+})
+.directive('fileModel', function ($parse) {
+    return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+            var model = $parse(attrs.fileModel);
+            var modelSetter = model.assign;
+
+            element.bind('change', function(){
+                scope.$apply(function(){
+                    modelSetter(scope, element[0].files[0]);
+                });
+            });
+        }
+    };
 });
 
 var solrAdminControllers = angular.module('solrAdminControllers', []);
