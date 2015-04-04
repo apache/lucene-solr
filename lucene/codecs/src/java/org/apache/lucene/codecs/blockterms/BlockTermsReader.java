@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -657,8 +658,8 @@ public class BlockTermsReader extends FieldsProducer {
 
       @Override
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-
-        if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
+        
+        if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
             // Positions were not indexed:
             return null;

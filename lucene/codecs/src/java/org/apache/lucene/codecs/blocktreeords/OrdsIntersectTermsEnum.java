@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.blocktreeords;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
@@ -203,8 +204,8 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
 
   @Override
   public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
-
-    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
+    
+    if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
       if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
         // Positions were not indexed:
         return null;

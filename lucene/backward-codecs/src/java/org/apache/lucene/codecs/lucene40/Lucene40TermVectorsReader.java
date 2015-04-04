@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -492,18 +493,18 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
 
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-        if (!storePositions && !storeOffsets) {
+        if (storePositions || storeOffsets) {
+          TVPostingsEnum docsAndPositionsEnum;
+          if (reuse != null && reuse instanceof TVPostingsEnum) {
+            docsAndPositionsEnum = (TVPostingsEnum) reuse;
+          } else {
+            docsAndPositionsEnum = new TVPostingsEnum();
+          }
+          docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets, payloadOffsets, payloadData);
+          return docsAndPositionsEnum;
+        } else if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           return null;
         }
-
-        TVPostingsEnum docsAndPositionsEnum;
-        if (reuse != null && reuse instanceof TVPostingsEnum) {
-          docsAndPositionsEnum = (TVPostingsEnum) reuse;
-        } else {
-          docsAndPositionsEnum = new TVPostingsEnum();
-        }
-        docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets, payloadOffsets, payloadData);
-        return docsAndPositionsEnum;
       }
 
       TVDocsEnum docsEnum;

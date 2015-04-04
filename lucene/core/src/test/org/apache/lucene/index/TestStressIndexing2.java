@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -397,7 +396,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
               dpEnum = termsEnum3.postings(null, dpEnum, PostingsEnum.ALL);
-              if (dpEnum != null) {
+              if (terms3.hasPositions()) {
                 assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
                 final int freq = dpEnum.freq();
                 System.out.println("        doc=" + dpEnum.docID() + " freq=" + freq);
@@ -620,8 +619,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         
         dpEnum1 = termsEnum1.postings(null, dpEnum1, PostingsEnum.ALL);
         dpEnum2 = termsEnum2.postings(null, dpEnum2, PostingsEnum.ALL);
-        if (dpEnum1 != null) {
-          assertNotNull(dpEnum2);
+
+        if (terms1.hasPositions()) {
+          assertTrue(terms2.hasPositions());
           int docID1 = dpEnum1.nextDoc();
           dpEnum2.nextDoc();
           // docIDs are not supposed to be equal
@@ -632,24 +632,17 @@ public class TestStressIndexing2 extends LuceneTestCase {
           int freq1 = dpEnum1.freq();
           int freq2 = dpEnum2.freq();
           assertEquals(freq1, freq2);
-          OffsetAttribute offsetAtt1 = dpEnum1.attributes().getAttribute(OffsetAttribute.class);
-          OffsetAttribute offsetAtt2 = dpEnum2.attributes().getAttribute(OffsetAttribute.class);
-
-          if (offsetAtt1 != null) {
-            assertNotNull(offsetAtt2);
-          } else {
-            assertNull(offsetAtt2);
-          }
 
           for(int posUpto=0;posUpto<freq1;posUpto++) {
             int pos1 = dpEnum1.nextPosition();
             int pos2 = dpEnum2.nextPosition();
             assertEquals(pos1, pos2);
-            if (offsetAtt1 != null) {
-              assertEquals(offsetAtt1.startOffset(),
-                           offsetAtt2.startOffset());
-              assertEquals(offsetAtt1.endOffset(),
-                           offsetAtt2.endOffset());
+            if (terms1.hasOffsets()) {
+              assertTrue(terms2.hasOffsets());
+              assertEquals(dpEnum1.startOffset(),
+                           dpEnum2.startOffset());
+              assertEquals(dpEnum1.endOffset(),
+                           dpEnum2.endOffset());
             }
           }
           assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum1.nextDoc());

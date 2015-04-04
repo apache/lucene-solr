@@ -38,6 +38,14 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   /** Flag to pass to  {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}
    *  if you require payloads in the returned enum. */
   public static final int FLAG_PAYLOADS = 0x2;
+  
+  /**
+   * Codec implementations should check for this flag,
+   * and return null when positions are requested but not present.
+   * @deprecated only for internal use.
+   */
+  @Deprecated
+  public static final short OLD_NULL_SEMANTICS = 1 << 14;
 
   /** Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.) */

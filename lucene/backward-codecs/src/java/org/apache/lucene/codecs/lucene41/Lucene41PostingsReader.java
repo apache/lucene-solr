@@ -244,8 +244,8 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     
   @Override
   public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-
-    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS))
+    boolean hasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) && hasPositions)
       return fullPostings(fieldInfo, termState, liveDocs, reuse, flags);
 
     BlockDocsEnum docsEnum;

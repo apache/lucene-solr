@@ -160,8 +160,10 @@ public class AssertingLeafReader extends FilterLeafReader {
       }
       PostingsEnum docs = super.postings(liveDocs, actualReuse, flags);
       if (docs == null) {
+        assert PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS);
         return null;
-      } else if (docs == actualReuse) {
+      }
+      if (docs == actualReuse) {
         // codec reused, reset asserting state
         ((AssertingPostingsEnum)reuse).reset();
         return reuse;
@@ -282,7 +284,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   static enum DocsEnumState { START, ITERATING, FINISHED };
 
   /** Wraps a docsenum with additional checks */
-  public static class AssertingPostingsEnum extends FilterDocsEnum {
+  public static class AssertingPostingsEnum extends FilterPostingsEnum {
     private final Thread creationThread = Thread.currentThread();
     private DocsEnumState state = DocsEnumState.START;
     int positionCount = 0;

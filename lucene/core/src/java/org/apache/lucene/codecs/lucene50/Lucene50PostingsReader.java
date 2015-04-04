@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
@@ -196,8 +197,19 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     
   @Override
   public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    
+    boolean indexHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    boolean indexHasPayloads = fieldInfo.hasPayloads();
+    
+    if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
+      if (!indexHasPositions) {
+        // Positions were not indexed:
+        return null;
+      }
+    }
 
-    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) == false) {
+    if (indexHasPositions == false || PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) == false) {
       BlockDocsEnum docsEnum;
       if (reuse instanceof BlockDocsEnum) {
         docsEnum = (BlockDocsEnum) reuse;
@@ -208,17 +220,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         docsEnum = new BlockDocsEnum(fieldInfo);
       }
       return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
-    }
-
-    boolean indexHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    boolean indexHasPayloads = fieldInfo.hasPayloads();
-
-    if (!indexHasPositions)
-      return null;
-
-    if ((!indexHasOffsets || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
-        (!indexHasPayloads || PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) == false)) {
+    } else if ((indexHasOffsets == false || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
+               (indexHasPayloads == false || PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) == false)) {
       BlockPostingsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockPostingsEnum) {
         docsAndPositionsEnum = (BlockPostingsEnum) reuse;
