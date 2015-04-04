@@ -75,6 +75,16 @@ solrAdminApp.config([
         templateUrl: 'partials/files.html',
         controller: 'FilesController'
       }).
+      when('/:core/plugins', {
+        templateUrl: 'partials/plugins.html',
+        controller: 'PluginsController',
+        reloadOnSearch: false
+      }).
+      when('/:core/plugins/:legacytype', {
+        templateUrl: 'partials/plugins.html',
+        controller: 'PluginsController',
+        reloadOnSearch: false
+      }).
       when('/:core/query', {
         templateUrl: 'partials/query.html',
         controller: 'QueryController'
