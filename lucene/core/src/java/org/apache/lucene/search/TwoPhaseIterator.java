@@ -84,7 +84,7 @@ public abstract class TwoPhaseIterator {
   }
 
   /** Return whether the current doc ID that the iterator is on matches. This
-   *  method should only be called when the iterator is positionned -- ie. not
+   *  method should only be called when the iterator is positioned -- ie. not
    *  when {@link DocIdSetIterator#docID()} is {@code -1} or
    *  {@link DocIdSetIterator#NO_MORE_DOCS} -- and at most once. */
   public abstract boolean matches() throws IOException;
