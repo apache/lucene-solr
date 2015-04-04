@@ -106,20 +106,20 @@
    -->
 
     <!-- In this data_driven_schema_configs configset, only three fields are pre-declared: 
-         id, _version_, and _text.  All other fields will be type guessed and added via the
+         id, _version_, and _text_.  All other fields will be type guessed and added via the
          "add-unknown-fields-to-the-schema" update request processor chain declared 
          in solrconfig.xml.
          
          Note that many dynamic fields are also defined - you can used them to specify a 
          field's type via field naming conventions - see below.
   
-  WARNING: The _text catch-all field will significantly increase your index size.
+  WARNING: The _text_ catch-all field will significantly increase your index size.
            If you don't need it, consider removing it and the corresponding copyField directive.
       -->
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
     <field name="_version_" type="long" indexed="true" stored="true"/>
-    <field name="_text" type="text_general" indexed="true" stored="false" multiValued="true"/>
-    <copyField source="*" dest="_text"/>
+    <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
+    <copyField source="*" dest="_text_"/>
 
 
     <!-- Dynamic field definitions allow using convention over configuration
