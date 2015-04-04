@@ -125,7 +125,21 @@ solrAdminServices.factory('System',
   }])
 .factory('Mbeans',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/mbeans', {'wt':'json', 'stats': true, '_':Date.now()}); // @core
+    return $resource('/solr/:core/admin/mbeans', {'wt':'json', core: '@core', '_':Date.now()}, {
+        stats: {params: {stats: true}},
+        reference: {
+            params: {wt: "xml", stats: true}, transformResponse: function (data) {
+                return {reference: data}
+            }
+        },
+        delta: {method: "POST",
+                params: {stats: true, diff:true},
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                transformRequest: function(data) {
+                    return "stream.body=" + encodeURIComponent(data);
+                }
+        }
+    });
   }])
 .factory('Files',
   ['$resource', function($resource) {
