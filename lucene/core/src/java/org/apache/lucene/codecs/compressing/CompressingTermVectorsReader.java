@@ -27,6 +27,8 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -936,12 +938,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-        if (positions == null && startOffsets == null)
+      if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
+        if (positions == null && startOffsets == null) {
+          // Positions nor offsets were indexed:
           return null;
+        }
       }
-
+      
       final TVPostingsEnum docsEnum;
       if (reuse != null && reuse instanceof TVPostingsEnum) {
         docsEnum = (TVPostingsEnum) reuse;

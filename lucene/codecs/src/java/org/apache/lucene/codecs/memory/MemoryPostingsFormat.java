@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -828,11 +829,17 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
-
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
+      
+      if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
         if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          // Positions were not indexed:
           return null;
         }
+      }
+
+      // TODO: the logic of which enum impl to choose should be refactored to be simpler...
+      boolean hasPositions = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      if (hasPositions && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
         decodeMetaData();
         FSTPostingsEnum docsAndPositionsEnum;

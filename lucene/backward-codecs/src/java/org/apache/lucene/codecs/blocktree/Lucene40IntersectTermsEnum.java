@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
@@ -208,7 +209,7 @@ final class Lucene40IntersectTermsEnum extends TermsEnum {
 
   @Override
   public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
-    if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) && fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+    if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS) && fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       // Positions were not indexed:
       return null;
     }

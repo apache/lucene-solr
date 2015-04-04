@@ -936,8 +936,7 @@ public class CheckIndex implements Closeable {
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
     int computedFieldCount = 0;
-    
-    PostingsEnum docs = null;
+
     PostingsEnum postings = null;
     
     String lastField = null;
@@ -1087,8 +1086,7 @@ public class CheckIndex implements Closeable {
           throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
         }
         sumDocFreq += docFreq;
-        
-        docs = termsEnum.postings(liveDocs, docs);
+
         postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
@@ -1113,18 +1111,11 @@ public class CheckIndex implements Closeable {
           }
         }
         
-        final PostingsEnum docs2;
-        if (postings != null) {
-          docs2 = postings;
-        } else {
-          docs2 = docs;
-        }
-        
         int lastDoc = -1;
         int docCount = 0;
         long totalTermFreq = 0;
         while(true) {
-          final int doc = docs2.nextDoc();
+          final int doc = postings.nextDoc();
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
@@ -1132,7 +1123,7 @@ public class CheckIndex implements Closeable {
           visitedDocs.set(doc);
           int freq = -1;
           if (hasFreqs) {
-            freq = docs2.freq();
+            freq = postings.freq();
             if (freq <= 0) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
             }
@@ -1142,7 +1133,7 @@ public class CheckIndex implements Closeable {
             // When a field didn't index freq, it must
             // consistently "lie" and pretend that freq was
             // 1:
-            if (docs2.freq() != 1) {
+            if (postings.freq() != 1) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
             }
           }
@@ -1214,20 +1205,20 @@ public class CheckIndex implements Closeable {
         // Re-count if there are deleted docs:
         if (liveDocs != null) {
           if (hasFreqs) {
-            docs = termsEnum.postings(null, docs);
+            postings = termsEnum.postings(null, postings);
             docCount = 0;
             totalTermFreq = 0;
-            while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(docs.docID());
+            while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              visitedDocs.set(postings.docID());
               docCount++;
-              totalTermFreq += docs.freq();
+              totalTermFreq += postings.freq();
             }
           } else {
-            docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+            postings = termsEnum.postings(null, postings, PostingsEnum.NONE);
             docCount = 0;
             totalTermFreq = -1;
-            while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(docs.docID());
+            while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              visitedDocs.set(postings.docID());
               docCount++;
             }
           }
@@ -1314,15 +1305,15 @@ public class CheckIndex implements Closeable {
         } else {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            docs = termsEnum.postings(liveDocs, docs, PostingsEnum.NONE);
-            final int docID = docs.advance(skipDocID);
+            postings = termsEnum.postings(liveDocs, postings, PostingsEnum.NONE);
+            final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             } else {
               if (docID < skipDocID) {
                 throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
               }
-              final int nextDocID = docs.nextDoc();
+              final int nextDocID = postings.nextDoc();
               if (nextDocID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
@@ -1427,12 +1418,12 @@ public class CheckIndex implements Closeable {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              docs = termsEnum.postings(liveDocs, docs, PostingsEnum.NONE);
-              if (docs == null) {
+              postings = termsEnum.postings(liveDocs, postings, PostingsEnum.NONE);
+              if (postings == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
-              
-              while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+
+              while (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 totDocCount++;
               }
             }
@@ -1445,12 +1436,12 @@ public class CheckIndex implements Closeable {
               }
               
               totDocFreq += termsEnum.docFreq();
-              docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
-              if (docs == null) {
+              postings = termsEnum.postings(null, postings, PostingsEnum.NONE);
+              if (postings == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
               
-              while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 totDocCountNoDeletes++;
               }
             }
@@ -1849,12 +1840,11 @@ public class CheckIndex implements Closeable {
         infoStream.print("    test: term vectors........");
       }
 
-      PostingsEnum docs = null;
       PostingsEnum postings = null;
 
       // Only used if crossCheckTermVectors is true:
       PostingsEnum postingsDocs = null;
-      PostingsEnum postingsPostings = null;
+      PostingsEnum postingsDocs2 = null;
 
       final Bits liveDocs = reader.getLiveDocs();
 
@@ -1926,67 +1916,43 @@ public class CheckIndex implements Closeable {
                 final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
                 BytesRef term = null;
                 while ((term = termsEnum.next()) != null) {
-                  
-                  if (hasProx) {
-                    postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
-                    assert postings != null;
-                    docs = null;
-                  } else {
-                    docs = termsEnum.postings(null, docs);
-                    assert docs != null;
-                    postings = null;
-                  }
-                  
-                  final PostingsEnum docs2;
-                  if (hasProx) {
-                    assert postings != null;
-                    docs2 = postings;
-                  } else {
-                    assert docs != null;
-                    docs2 = docs;
-                  }
-                  
-                  final PostingsEnum postingsDocs2;
+
+                  // This is the term vectors:
+                  postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
+                  assert postings != null;
+
                   if (!postingsTermsEnum.seekExact(term)) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                   }
-                  postingsPostings = postingsTermsEnum.postings(null, postingsPostings, PostingsEnum.ALL);
-                  if (postingsPostings == null) {
-                    // Term vectors were indexed w/ pos but postings were not
-                    postingsDocs = postingsTermsEnum.postings(null, postingsDocs);
-                    if (postingsDocs == null) {
-                      throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                    }
-                  }
-                  
-                  if (postingsPostings != null) {
-                    postingsDocs2 = postingsPostings;
-                  } else {
-                    postingsDocs2 = postingsDocs;
-                  }
+
+                  // This is the inverted index ("real" postings):
+                  postingsDocs2 = postingsTermsEnum.postings(null, postingsDocs2, PostingsEnum.ALL);
+                  assert postingsDocs2 != null;
+
                   
                   final int advanceDoc = postingsDocs2.advance(j);
                   if (advanceDoc != j) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
                   }
                   
-                  final int doc = docs2.nextDoc();
+                  final int doc = postings.nextDoc();
                   
                   if (doc != 0) {
                     throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
                   }
                   
                   if (postingsHasFreq) {
-                    final int tf = docs2.freq();
+                    final int tf = postings.freq();
                     if (postingsHasFreq && postingsDocs2.freq() != tf) {
                       throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
                     }
-                    
+
+                    // Term vectors has prox?
                     if (hasProx) {
                       for (int i = 0; i < tf; i++) {
                         int pos = postings.nextPosition();
-                        if (postingsPostings != null) {
-                          int postingsPos = postingsPostings.nextPosition();
+                        if (postingsTerms.hasPositions()) {
+                          int postingsPos = postingsDocs2.nextPosition();
                           if (terms.hasPositions() && pos != postingsPos) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
                           }
@@ -2006,19 +1972,18 @@ public class CheckIndex implements Closeable {
                         }
                         lastStartOffset = startOffset;
                          */
-                        
-                        if (postingsPostings != null) {
-                          final int postingsStartOffset = postingsPostings.startOffset();
-                          
-                          final int postingsEndOffset = postingsPostings.endOffset();
-                          if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
+
+                        if (startOffset != -1 && endOffset != -1 && postingsTerms.hasOffsets()) {
+                          int postingsStartOffset = postingsDocs2.startOffset();
+                          int postingsEndOffset = postingsDocs2.endOffset();
+                          if (startOffset != postingsStartOffset) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
                           }
-                          if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
+                          if (endOffset != postingsEndOffset) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
                           }
                         }
-                        
+
                         BytesRef payload = postings.getPayload();
                         
                         if (payload != null) {
@@ -2026,21 +1991,20 @@ public class CheckIndex implements Closeable {
                         }
                         
                         if (postingsHasPayload && vectorsHasPayload) {
-                          assert postingsPostings != null;
                           
                           if (payload == null) {
                             // we have payloads, but not at this position. 
                             // postings has payloads too, it should not have one at this position
-                            if (postingsPostings.getPayload() != null) {
-                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsPostings.getPayload());
+                            if (postingsDocs2.getPayload() != null) {
+                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsDocs2.getPayload());
                             }
                           } else {
                             // we have payloads, and one at this position
                             // postings should also have one at this position, with the same bytes.
-                            if (postingsPostings.getPayload() == null) {
+                            if (postingsDocs2.getPayload() == null) {
                               throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but postings does not.");
                             }
-                            BytesRef postingsPayload = postingsPostings.getPayload();
+                            BytesRef postingsPayload = postingsDocs2.getPayload();
                             if (!payload.equals(postingsPayload)) {
                               throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but differs from postings payload=" + postingsPayload);
                             }

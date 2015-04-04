@@ -88,13 +88,13 @@ public class SortingLeafReader extends FilterLeafReader {
 
     @Override
     public TermsEnum iterator(final TermsEnum reuse) throws IOException {
-      return new SortingTermsEnum(in.iterator(reuse), docMap, indexOptions);
+      return new SortingTermsEnum(in.iterator(reuse), docMap, indexOptions, hasPositions());
     }
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm)
         throws IOException {
-      return new SortingTermsEnum(in.intersect(compiled, startTerm), docMap, indexOptions);
+      return new SortingTermsEnum(in.intersect(compiled, startTerm), docMap, indexOptions, hasPositions());
     }
 
   }
@@ -103,11 +103,13 @@ public class SortingLeafReader extends FilterLeafReader {
 
     final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
     private final IndexOptions indexOptions;
+    private final boolean hasPositions;
 
-    public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions) {
+    public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions, boolean hasPositions) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;
+      this.hasPositions = hasPositions;
     }
 
     Bits newToOld(final Bits liveDocs) {
@@ -132,7 +134,7 @@ public class SortingLeafReader extends FilterLeafReader {
     @Override
     public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, final int flags) throws IOException {
 
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
+      if (hasPositions && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         final PostingsEnum inReuse;
         final SortingPostingsEnum wrapReuse;
         if (reuse != null && reuse instanceof SortingPostingsEnum) {
@@ -146,10 +148,6 @@ public class SortingLeafReader extends FilterLeafReader {
         }
 
         final PostingsEnum inDocsAndPositions = in.postings(newToOld(liveDocs), inReuse, flags);
-        if (inDocsAndPositions == null) {
-          return null;
-        }
-
         // we ignore the fact that offsets may be stored but not asked for,
         // since this code is expected to be used during addIndexes which will
         // ask for everything. if that assumption changes in the future, we can
@@ -328,7 +326,7 @@ public class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  static class SortingDocsEnum extends FilterDocsEnum {
+  static class SortingDocsEnum extends FilterPostingsEnum {
 
     private static final class DocFreqSorter extends TimSorter {
 
@@ -489,9 +487,31 @@ public class SortingLeafReader extends FilterLeafReader {
     PostingsEnum getWrapped() {
       return in;
     }
+    
+    // we buffer up docs/freqs only, don't forward any positions requests to underlying enum
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
   }
 
-  static class SortingPostingsEnum extends FilterDocsEnum {
+  static class SortingPostingsEnum extends FilterPostingsEnum {
 
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and

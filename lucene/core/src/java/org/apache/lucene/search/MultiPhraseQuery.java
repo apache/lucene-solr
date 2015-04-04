@@ -190,6 +190,11 @@ public class MultiPhraseQuery extends Query {
         return null;
       }
 
+      // TODO: move this check to createWeight to happen earlier to the user?
+      if (fieldTerms.hasPositions() == false) {
+        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run MultiPhraseQuery (phrase=" + getQuery() + ")");
+      }
+
       // Reuse single TermsEnum below:
       final TermsEnum termsEnum = fieldTerms.iterator(null);
 
@@ -229,12 +234,6 @@ public class MultiPhraseQuery extends Query {
           }
           termsEnum.seekExact(term.bytes(), termState);
           postingsEnum = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
-
-          if (postingsEnum == null) {
-            // term does exist, but has no positions
-            assert termsEnum.postings(liveDocs, null, PostingsEnum.NONE) != null: "termstate found but no term exists in reader";
-            throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
-          }
 
           docFreq = termsEnum.docFreq();
         }
@@ -482,10 +481,6 @@ class UnionPostingsEnum extends PostingsEnum {
       }
       termsEnum.seekExact(term.bytes(), termState);
       PostingsEnum postings = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
-      if (postings == null) {
-        // term does exist, but has no positions
-        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
-      }
       cost += postings.cost();
       postingsEnums.add(postings);
     }

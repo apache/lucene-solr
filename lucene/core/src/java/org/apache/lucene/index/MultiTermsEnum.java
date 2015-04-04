@@ -379,22 +379,14 @@ public final class MultiTermsEnum extends TermsEnum {
 
       assert entry.index < docsEnum.subPostingsEnums.length: entry.index + " vs " + docsEnum.subPostingsEnums.length + "; " + subs.length;
       final PostingsEnum subPostingsEnum = entry.terms.postings(b, docsEnum.subPostingsEnums[entry.index], flags);
-      if (subPostingsEnum != null) {
-        docsEnum.subPostingsEnums[entry.index] = subPostingsEnum;
-        subDocs[upto].postingsEnum = subPostingsEnum;
-        subDocs[upto].slice = entry.subSlice;
-        upto++;
-      } else {
-        // should this be an error?
-        return null;    // We can't support what is being asked for
-      }
+      assert subPostingsEnum != null;
+      docsEnum.subPostingsEnums[entry.index] = subPostingsEnum;
+      subDocs[upto].postingsEnum = subPostingsEnum;
+      subDocs[upto].slice = entry.subSlice;
+      upto++;
     }
-
-    if (upto == 0) {
-      return null;
-    } else {
-      return docsEnum.reset(subDocs, upto);
-    }
+    
+    return docsEnum.reset(subDocs, upto);
   }
 
   final static class TermsEnumWithSlice {

@@ -1985,11 +1985,8 @@ public abstract class LuceneTestCase extends Assert {
    * checks docs + freqs + positions + payloads, sequentially
    */
   public void assertDocsAndPositionsEnumEquals(String info, PostingsEnum leftDocs, PostingsEnum rightDocs) throws IOException {
-    if (leftDocs == null || rightDocs == null) {
-      assertNull(leftDocs);
-      assertNull(rightDocs);
-      return;
-    }
+    assertNotNull(leftDocs);
+    assertNotNull(rightDocs);
     assertEquals(info, -1, leftDocs.docID());
     assertEquals(info, -1, rightDocs.docID());
     int docid;

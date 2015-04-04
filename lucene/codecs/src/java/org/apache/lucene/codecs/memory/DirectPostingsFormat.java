@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
@@ -872,22 +873,58 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+        
+        if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
+          if (!hasPos) {
+            // Positions were not indexed:
+            return null;
+          }
+        }
+
         // TODO: implement reuse
         // it's hairy!
 
+        // TODO: the logic of which enum impl to choose should be refactored to be simpler...
         if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
-          if (!hasPos) {
-            return null;
-          }
 
           if (terms[termOrd] instanceof LowFreqTerm) {
             final LowFreqTerm term = ((LowFreqTerm) terms[termOrd]);
             final int[] postings = term.postings;
+            if (hasFreq == false) {
+              LowFreqDocsEnumNoTF docsEnum;
+              if (reuse instanceof LowFreqDocsEnumNoTF) {
+                docsEnum = (LowFreqDocsEnumNoTF) reuse;
+                if (!docsEnum.canReuse(liveDocs)) {
+                  docsEnum = new LowFreqDocsEnumNoTF(liveDocs);
+                }
+              } else {
+                docsEnum = new LowFreqDocsEnumNoTF(liveDocs);
+              }
+
+              return docsEnum.reset(postings);
+              
+            } else if (hasPos == false) {
+              LowFreqDocsEnumNoPos docsEnum;
+              if (reuse instanceof LowFreqDocsEnumNoPos) {
+                docsEnum = (LowFreqDocsEnumNoPos) reuse;
+                if (!docsEnum.canReuse(liveDocs)) {
+                  docsEnum = new LowFreqDocsEnumNoPos(liveDocs);
+                }
+              } else {
+                docsEnum = new LowFreqDocsEnumNoPos(liveDocs);
+              }
+
+              return docsEnum.reset(postings);
+            }
             final byte[] payloads = term.payloads;
             return new LowFreqPostingsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
           } else {
             final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
-            return new HighFreqPostingsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+            if (hasPos == false) {
+              return new HighFreqDocsEnum(liveDocs).reset(term.docIDs, term.freqs);
+            } else {
+              return new HighFreqPostingsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+            }
           }
         }
 
@@ -1467,12 +1504,19 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
-        // TODO: implement reuse
-        // it's hairy!
-        if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
+        
+        if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           if (!hasPos) {
+            // Positions were not indexed:
             return null;
           }
+        }
+        
+        // TODO: implement reuse
+        // it's hairy!
+
+        // TODO: the logic of which enum impl to choose should be refactored to be simpler...
+        if (hasPos && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
           if (terms[termOrd] instanceof LowFreqTerm) {
             final LowFreqTerm term = ((LowFreqTerm) terms[termOrd]);
             final int[] postings = term.postings;

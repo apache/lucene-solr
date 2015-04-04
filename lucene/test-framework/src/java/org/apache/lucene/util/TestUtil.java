@@ -1087,9 +1087,10 @@ public final class TestUtil {
     return docs(random, termsEnum, liveDocs, reuse, flags);
   }
 
-  // Returns a DocsEnum from a positioned TermsEnum, but
-  // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
+  // Returns a PostingsEnum with random features available
   public static PostingsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    // TODO: simplify this method? it would be easier to randomly either use the flags passed, or do the random selection,
+    // FREQS should be part fo the random selection instead of outside on its own?
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
         final int posFlags;
@@ -1099,10 +1100,7 @@ public final class TestUtil {
           case 2: posFlags = PostingsEnum.PAYLOADS; break;
           default: posFlags = PostingsEnum.ALL; break;
         }
-        PostingsEnum docsAndPositions = termsEnum.postings(liveDocs, null, posFlags);
-        if (docsAndPositions != null) {
-          return docsAndPositions;
-        }
+        return termsEnum.postings(liveDocs, null, posFlags);
       }
       flags |= PostingsEnum.FREQS;
     }
