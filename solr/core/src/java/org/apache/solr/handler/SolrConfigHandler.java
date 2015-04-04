@@ -722,8 +722,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
-            if (ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP)) &&
-                liveNodes.contains(replica.getNodeName())) {
+            if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
               activeReplicaCoreUrls.add(replica.getCoreUrl());
             }
           }

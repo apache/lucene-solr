@@ -95,7 +95,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         if (slice.getState() == Slice.State.ACTIVE) {
           shard1 = slice;
           for (Replica replica : shard1.getReplicas()) {
-            if (ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP))) {
+            if (replica.getState() == Replica.State.ACTIVE) {
               replica1 = replica;
               break;
             }

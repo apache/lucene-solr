@@ -867,7 +867,7 @@ public class SolrCLI {
         if (replicaHealth.isLeader) 
           hasLeader = true;
         
-        if (!ZkStateReader.ACTIVE.equals(replicaHealth.status)) {
+        if (!Replica.State.ACTIVE.toString().equals(replicaHealth.status)) {
           healthy = false;
         } else {
           atLeastOneActive = true;
@@ -964,7 +964,7 @@ public class SolrCLI {
           // if replica's node is not live, its status is DOWN
           String nodeName = replicaCoreProps.getNodeName();
           if (nodeName == null || !liveNodes.contains(nodeName)) {
-            replicaStatus = ZkStateReader.DOWN;
+            replicaStatus = Replica.State.DOWN.toString();
           } else {
             // query this replica directly to get doc count and assess health
             q = new SolrQuery("*:*");
@@ -991,7 +991,7 @@ public class SolrCLI {
               log.error("ERROR: " + exc + " when trying to reach: " + coreUrl);
 
               if (checkCommunicationError(exc)) {
-                replicaStatus = "down";
+                replicaStatus = Replica.State.DOWN.toString();
               } else {
                 replicaStatus = "error: "+exc;
               }

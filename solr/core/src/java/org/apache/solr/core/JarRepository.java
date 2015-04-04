@@ -136,7 +136,7 @@ public class JarRepository {
       List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
       Collections.shuffle(replicas, RANDOM);
       for (Replica r : replicas) {
-        if (ZkStateReader.ACTIVE.equals(r.getStr(ZkStateReader.STATE_PROP))) {
+        if (r.getState() == Replica.State.ACTIVE) {
           if(zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))){
             replica = r;
             break;

@@ -298,22 +298,22 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
             node = "1";
           }
           
-          String state = ZkStateReader.ACTIVE;
+          Replica.State state = Replica.State.ACTIVE;
           String stateCode = m.group(3);
 
           if (stateCode != null) {
             switch (stateCode.charAt(0)) {
               case 'S':
-                state = ZkStateReader.ACTIVE;
+                state = Replica.State.ACTIVE;
                 break;
               case 'R':
-                state = ZkStateReader.RECOVERING;
+                state = Replica.State.RECOVERING;
                 break;
               case 'D':
-                state = ZkStateReader.DOWN;
+                state = Replica.State.DOWN;
                 break;
               case 'F':
-                state = ZkStateReader.RECOVERY_FAILED;
+                state = Replica.State.RECOVERY_FAILED;
                 break;
               default:
                 throw new IllegalArgumentException(
@@ -330,7 +330,7 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
           
           replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
           replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
-          replicaPropMap.put(ZkStateReader.STATE_PROP, state);
+          replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
           
           replica = new Replica(replicaName, replicaPropMap);
           

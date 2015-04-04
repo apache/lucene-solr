@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -398,8 +399,7 @@ public class ChaosMonkey {
     return cjetty;
   }
 
-  private int checkIfKillIsLegal(String slice, int numActive)
-      throws KeeperException, InterruptedException {
+  private int checkIfKillIsLegal(String slice, int numActive) throws KeeperException, InterruptedException {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       
       // get latest cloud state
@@ -413,11 +413,11 @@ public class ChaosMonkey {
         throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
       }
       
-      String state = props.getStr(ZkStateReader.STATE_PROP);
-      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
+      final String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
       
       if (cloudJetty.jetty.isRunning()
-          && state.equals(ZkStateReader.ACTIVE)
+          && state == Replica.State.ACTIVE
           && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         numActive++;
       }

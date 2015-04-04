@@ -517,7 +517,7 @@ public class Overseer implements Closeable {
     }
 
     private boolean isActive(Replica replica) {
-      return ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP));
+      return replica.getState() == Replica.State.ACTIVE;
     }
 
     // Collect a list of all the nodes that _can_ host the indicated property. Along the way, also collect any of

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
@@ -271,13 +272,13 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       for (Replica replica : replicas) {
         // on a live node?
         boolean live = clusterState.liveNodesContain(replica.getNodeName());
-        String state = replica.getStr(ZkStateReader.STATE_PROP);
+        final Replica.State state = replica.getState();
         
-        boolean okayState = (state.equals(ZkStateReader.DOWN)
-            || state.equals(ZkStateReader.RECOVERING) || state
-            .equals(ZkStateReader.ACTIVE));
+        final boolean okayState = state == Replica.State.DOWN
+            || state == Replica.State.RECOVERING
+            || state == Replica.State.ACTIVE;
         
-        log.debug("Process replica name={} live={} state={}", replica.getName(), live, state);
+        log.debug("Process replica name={} live={} state={}", replica.getName(), live, state.toString());
         
         if (live && okayState) {
           goodReplicas++;
@@ -395,13 +396,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     if (replicas != null) {
       log.debug("check if replica already exists on node using replicas {}", getNames(replicas));
       for (Replica replica : replicas) {
+        final Replica.State state = replica.getState();
         if (!replica.getName().equals(badReplica.replica.getName()) && replica.getStr(ZkStateReader.BASE_URL_PROP).equals(baseUrl)
             && clusterState.liveNodesContain(replica.getNodeName())
-            && (replica.getStr(ZkStateReader.STATE_PROP).equals(
-                ZkStateReader.ACTIVE)
-                || replica.getStr(ZkStateReader.STATE_PROP).equals(
-                    ZkStateReader.DOWN) || replica.getStr(
-                ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING))) {
+            && (state == Replica.State.ACTIVE || state == Replica.State.DOWN || state == Replica.State.RECOVERING)) {
           log.debug("replica already exists on node, bad replica={}, existing replica={}, node name={}", badReplica.replica.getName(), replica.getName(), replica.getNodeName());
           return true;
         }

@@ -193,8 +193,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         if (collection != null && shardId != null) {
           try {
             // call out to ZooKeeper to get the leader-initiated recovery state
-            String lirState = 
-                zkController.getLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName);
+            final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName);
             
             if (lirState == null) {
               log.warn("Stop trying to send recovery command to downed replica core="+coreNeedingRecovery+
@@ -203,7 +202,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               break;              
             }
             
-            if (ZkStateReader.RECOVERING.equals(lirState)) {
+            if (lirState == Replica.State.RECOVERING) {
               // replica has ack'd leader initiated recovery and entered the recovering state
               // so we don't need to keep looping to send the command
               continueTrying = false;  
@@ -216,12 +215,12 @@ public class LeaderInitiatedRecoveryThread extends Thread {
                   zkStateReader.getReplicaProps(collection, shardId, leaderCoreNodeName);
               if (replicaProps != null && replicaProps.size() > 0) {
                 for (ZkCoreNodeProps prop : replicaProps) {
-                  if (replicaCoreNodeName.equals(((Replica) prop.getNodeProps()).getName())) {
-                    String replicaState = prop.getState();
-                    if (ZkStateReader.ACTIVE.equals(replicaState)) {
+                  final Replica replica = (Replica) prop.getNodeProps();
+                  if (replicaCoreNodeName.equals(replica.getName())) {
+                    if (replica.getState() == Replica.State.ACTIVE) {
                       // replica published its state as "active",
                       // which is bad if lirState is still "down"
-                      if (ZkStateReader.DOWN.equals(lirState)) {
+                      if (lirState == Replica.State.DOWN) {
                         // OK, so the replica thinks it is active, but it never ack'd the leader initiated recovery
                         // so its state cannot be trusted and it needs to be told to recover again ... and we keep looping here
                         log.warn("Replica core={} coreNodeName={} set to active but the leader thinks it should be in recovery;"

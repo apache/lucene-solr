@@ -1008,7 +1008,7 @@ public class CloudSolrClient extends SolrClient {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
           if (!liveNodes.contains(coreNodeProps.getNodeName())
-              || !coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) continue;
+              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || coreNodeProps.isLeader()) {
               String url;

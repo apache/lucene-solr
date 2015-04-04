@@ -17,19 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
-import org.apache.solr.cloud.SolrZkServer;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +27,19 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+
+import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
+import org.apache.solr.cloud.SolrZkServer;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkContainer {
   protected static Logger log = LoggerFactory.getLogger(ZkContainer.class);
@@ -185,7 +185,7 @@ public class ZkContainer {
             SolrException.log(log, "", e);
           } catch (Exception e) {
             try {
-              zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+              zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
             } catch (InterruptedException e1) {
               Thread.currentThread().interrupt();
               log.error("", e1);
@@ -215,7 +215,7 @@ public class ZkContainer {
     
     for (SolrCore core : cores) {
       try {
-        zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
       } catch (KeeperException e) {
         CoreContainer.log.error("", e);
       } catch (InterruptedException e) {

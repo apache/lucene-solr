@@ -107,8 +107,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       while (System.currentTimeMillis() < endAt) {
         testcoll = client.getZkStateReader()
             .getClusterState().getCollection(collectionName);
-        if (!ZkStateReader.ACTIVE.equals(testcoll.getSlice(shard1.getName())
-            .getReplica(replica1.getName()).getStr(ZkStateReader.STATE_PROP))) {
+        if (testcoll.getSlice(shard1.getName()).getReplica(replica1.getName()).getState() != Replica.State.ACTIVE) {
           success = true;
         }
         if (success) break;

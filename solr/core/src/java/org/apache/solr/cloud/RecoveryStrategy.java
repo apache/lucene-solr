@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -126,7 +127,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
     SolrException.log(log, "Recovery failed - I give up. core=" + coreName);
     try {
-      zkController.publish(cd, ZkStateReader.RECOVERY_FAILED);
+      zkController.publish(cd, Replica.State.RECOVERY_FAILED);
     } finally {
       close();
       recoveryListener.failed();
@@ -338,12 +339,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader! core=" + coreName);
           log.info("Finished recovery process. core=" + coreName);
-          zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
+          zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
           return;
         }
         
         log.info("Publishing state of core "+core.getName()+" as recovering, leader is "+leaderUrl+" and I am "+ourUrl);
-        zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
         
         
         final Slice slice = zkStateReader.getClusterState().getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
@@ -413,8 +414,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             }
 
             // sync success - register as active and return
-            zkController.publish(core.getCoreDescriptor(),
-                ZkStateReader.ACTIVE);
+            zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
             successfulRecovery = true;
             close = true;
             return;
@@ -453,7 +453,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
           log.info("Replication Recovery was successful - registering as Active. core=" + coreName);
           // if there are pending recovery requests, don't advert as active
-          zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
+          zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
           close = true;
           successfulRecovery = true;
           recoveryListener.recovered();
@@ -577,7 +577,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(zkController.getNodeName());
       prepCmd.setCoreNodeName(coreZkNodeName);
-      prepCmd.setState(ZkStateReader.RECOVERING);
+      prepCmd.setState(Replica.State.RECOVERING);
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
       final Slice.State state = slice.getState();

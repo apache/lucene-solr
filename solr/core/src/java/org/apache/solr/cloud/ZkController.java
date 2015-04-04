@@ -83,15 +83,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.logging.MDCUtils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
-
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -116,7 +107,7 @@ import org.slf4j.MDC;
  */
 public final class ZkController {
 
-  private static Logger log = LoggerFactory.getLogger(ZkController.class);
+  private static final Logger log = LoggerFactory.getLogger(ZkController.class);
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
@@ -389,7 +380,7 @@ public final class ZkController {
       for (CoreDescriptor descriptor : descriptors) {
         try {
           descriptor.getCloudDescriptor().setLeader(false);
-          publish(descriptor, ZkStateReader.DOWN, updateLastPublished);
+          publish(descriptor, Replica.State.DOWN, updateLastPublished);
         } catch (Exception e) {
           if (isClosed) {
             return;
@@ -400,7 +391,7 @@ public final class ZkController {
             Thread.currentThread().interrupt();
           }
           try {
-            publish(descriptor, ZkStateReader.DOWN);
+            publish(descriptor, Replica.State.DOWN);
           } catch (Exception e2) {
             SolrException.log(log, "", e2);
             continue;
@@ -677,10 +668,9 @@ public final class ZkController {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
           if (getNodeName().equals(replica.getNodeName())
-              && !(replica.getStr(ZkStateReader.STATE_PROP)
-                  .equals(ZkStateReader.DOWN))) {
+              && replica.getState() != Replica.State.DOWN) {
             ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-                ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
+                ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
                 ZkStateReader.BASE_URL_PROP, getBaseUrl(),
                 ZkStateReader.CORE_NAME_PROP,
                 replica.getStr(ZkStateReader.CORE_NAME_PROP),
@@ -711,8 +701,7 @@ public final class ZkController {
         for (Slice slice : slices) {
           Collection<Replica> replicas = slice.getReplicas();
           for (Replica replica : replicas) {
-            if (replica.getStr(ZkStateReader.STATE_PROP).equals(
-                ZkStateReader.DOWN)) {
+            if (replica.getState() == Replica.State.DOWN) {
               updatedNodes.remove(replica.getStr(ZkStateReader.CORE_NAME_PROP));
               
             }
@@ -912,7 +901,7 @@ public final class ZkController {
           boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
               collection, coreZkNodeName, shardId, leaderProps, core, cc);
           if (!didRecovery) {
-            publish(desc, ZkStateReader.ACTIVE);
+            publish(desc, Replica.State.ACTIVE);
           }
         }
       }
@@ -1081,9 +1070,9 @@ public final class ZkController {
       }
       
       // see if the leader told us to recover
-      String lirState = getLeaderInitiatedRecoveryState(collection, shardId,
+      final Replica.State lirState = getLeaderInitiatedRecoveryState(collection, shardId,
           core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-      if (ZkStateReader.DOWN.equals(lirState)) {
+      if (lirState == Replica.State.DOWN) {
         log.info("Leader marked core "+core.getName()+" down; starting recovery process");
         core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
         return true;        
@@ -1100,18 +1089,18 @@ public final class ZkController {
     return baseURL;
   }
 
-  public void publish(final CoreDescriptor cd, final String state) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state) throws KeeperException, InterruptedException {
     publish(cd, state, true);
   }
   
-  public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws KeeperException, InterruptedException {
     publish(cd, state, updateLastState, false);
   }
   
   /**
    * Publish core state to overseer.
    */
-  public void publish(final CoreDescriptor cd, final String state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
     if (!forcePublish) {
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core == null || core.isClosed()) {
@@ -1127,7 +1116,7 @@ public final class ZkController {
     try {
       if (cd != null && cd.getName() != null)
         MDCUtils.setCore(cd.getName());
-      log.info("publishing core={} state={} collection={}", cd.getName(), state, collection);
+      log.info("publishing core={} state={} collection={}", cd.getName(), state.toString(), collection);
       //System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
       if (numShards == null) { //XXX sys prop hack
@@ -1142,21 +1131,21 @@ public final class ZkController {
       String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
       // If the leader initiated recovery, then verify that this replica has performed
       // recovery as requested before becoming active; don't even look at lirState if going down
-      if (!ZkStateReader.DOWN.equals(state)) {
-        String lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreNodeName);
+      if (state != Replica.State.DOWN) {
+        final Replica.State lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreNodeName);
         if (lirState != null) {
-          if (ZkStateReader.ACTIVE.equals(state)) {
+          if (state == Replica.State.ACTIVE) {
             // trying to become active, so leader-initiated state must be recovering
-            if (ZkStateReader.RECOVERING.equals(lirState)) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, ZkStateReader.ACTIVE, null, true);
-            } else if (ZkStateReader.DOWN.equals(lirState)) {
+            if (lirState == Replica.State.RECOVERING) {
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.ACTIVE, null);
+            } else if (lirState == Replica.State.DOWN) {
               throw new SolrException(ErrorCode.INVALID_STATE,
                   "Cannot publish state of core '" + cd.getName() + "' as active without recovering first!");
             }
-          } else if (ZkStateReader.RECOVERING.equals(state)) {
+          } else if (state == Replica.State.RECOVERING) {
             // if it is currently DOWN, then trying to enter into recovering state is good
-            if (ZkStateReader.DOWN.equals(lirState)) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, ZkStateReader.RECOVERING, null, true);
+            if (lirState == Replica.State.DOWN) {
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.RECOVERING, null);
             }
           }
         }
@@ -1164,7 +1153,7 @@ public final class ZkController {
 
       Map<String, Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
-      props.put(ZkStateReader.STATE_PROP, state);
+      props.put(ZkStateReader.STATE_PROP, state.toString());
       props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
@@ -1259,7 +1248,7 @@ public final class ZkController {
 
     if(configLocation != null) {
       synchronized (confDirectoryListeners) {
-        log.info("This conf directory is no more watched {0}",configLocation);
+        log.info("This conf directory is no more watched {}", configLocation);
         confDirectoryListeners.remove(configLocation);
       }
     }
@@ -1508,7 +1497,7 @@ public final class ZkController {
         cloudDesc.setCoreNodeName(coreNodeName);
       }
 
-      publish(cd, ZkStateReader.DOWN, false, true);
+      publish(cd, Replica.State.DOWN, false, true);
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
       if(collection !=null && collection.getStateFormat()>1  ){
         log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
@@ -1610,7 +1599,7 @@ public final class ZkController {
       
       // detect if this core is in leader-initiated recovery and if so, 
       // then we don't need the leader to wait on seeing the down state
-      String lirState = null;
+      Replica.State lirState = null;
       try {
         lirState = getLeaderInitiatedRecoveryState(collection, shard, myCoreNodeName);
       } catch (Exception exc) {
@@ -1633,7 +1622,7 @@ public final class ZkController {
           prepCmd.setCoreName(leaderCoreName);
           prepCmd.setNodeName(getNodeName());
           prepCmd.setCoreNodeName(coreZkNodeName);
-          prepCmd.setState(ZkStateReader.DOWN);
+          prepCmd.setState(Replica.State.DOWN);
           
           // let's retry a couple times - perhaps the leader just went down,
           // or perhaps he is just not quite ready for us yet
@@ -1952,7 +1941,7 @@ public final class ZkController {
       // we only really need to try to send the recovery command if the node itself is "live"
       if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
         // create a znode that requires the replica needs to "ack" to verify it knows it was out-of-sync
-        updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName, ZkStateReader.DOWN, leaderCoreNodeName, retryOnConnLoss);
+        updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName, Replica.State.DOWN, leaderCoreNodeName);
         replicasInLeaderInitiatedRecovery.put(replicaUrl,
             getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreNodeName));
         log.info("Put replica core={} coreNodeName={} on "+
@@ -1969,16 +1958,16 @@ public final class ZkController {
     }    
     
     if (publishDownState || forcePublishState) {
-      String replicaCoreName = replicaCoreProps.getCoreName();    
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state", 
-          ZkStateReader.STATE_PROP, ZkStateReader.DOWN, 
-          ZkStateReader.BASE_URL_PROP, replicaCoreProps.getBaseUrl(), 
+      String replicaCoreName = replicaCoreProps.getCoreName();
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
+          ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
+          ZkStateReader.BASE_URL_PROP, replicaCoreProps.getBaseUrl(),
           ZkStateReader.CORE_NAME_PROP, replicaCoreProps.getCoreName(),
           ZkStateReader.NODE_NAME_PROP, replicaCoreProps.getNodeName(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection);
       log.warn("Leader is publishing core={} coreNodeName ={} state={} on behalf of un-reachable replica {}; forcePublishState? "+forcePublishState,
-          replicaCoreName, replicaCoreNodeName, ZkStateReader.DOWN, replicaUrl);
+          replicaCoreName, replicaCoreNodeName, Replica.State.DOWN.toString(), replicaUrl);
       overseerJobQueue.offer(ZkStateReader.toJSON(m));      
     }
     
@@ -1999,9 +1988,13 @@ public final class ZkController {
     }
   }  
   
-  public String getLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName) {
-    Map<String,Object> stateObj = getLeaderInitiatedRecoveryStateObject(collection, shardId, coreNodeName);
-    return (stateObj != null) ? (String)stateObj.get("state") : null;
+  public Replica.State getLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName) {
+    final Map<String, Object> stateObj = getLeaderInitiatedRecoveryStateObject(collection, shardId, coreNodeName);
+    if (stateObj == null) {
+      return null;
+    }
+    final String stateStr = (String) stateObj.get(ZkStateReader.STATE_PROP);
+    return stateStr == null ? null : Replica.State.getState(stateStr);
   }
 
   public Map<String,Object> getLeaderInitiatedRecoveryStateObject(String collection, String shardId, String coreNodeName) {
@@ -2048,17 +2041,18 @@ public final class ZkController {
     return stateObj;
   }
   
-  private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName, String state,
-                                                  String leaderCoreNodeName, boolean retryOnConnLoss) {
+  private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName, 
+      Replica.State state, String leaderCoreNodeName) {
     if (collection == null || shardId == null || coreNodeName == null) {
-      log.warn("Cannot set leader-initiated recovery state znode to "+state+" using: collection="+collection+
-          "; shardId="+shardId+"; coreNodeName="+coreNodeName);
+      log.warn("Cannot set leader-initiated recovery state znode to "
+          + state.toString() + " using: collection=" + collection
+          + "; shardId=" + shardId + "; coreNodeName=" + coreNodeName);
       return; // if we don't have complete data about a core in cloud mode, do nothing
     }
 
     String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreNodeName);
     
-    if (ZkStateReader.ACTIVE.equals(state)) {
+    if (state == Replica.State.ACTIVE) {
       // since we're marking it active, we don't need this znode anymore, so delete instead of update
       try {
         zkClient.delete(znodePath, -1, false);
@@ -2077,7 +2071,7 @@ public final class ZkController {
     if (stateObj == null)
       stateObj = ZkNodeProps.makeMap();
 
-    stateObj.put("state", state);
+    stateObj.put(ZkStateReader.STATE_PROP, state.toString());
     // only update the createdBy value if it's not set
     if (stateObj.get("createdByNodeName") == null)
       stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
@@ -2085,7 +2079,7 @@ public final class ZkController {
     byte[] znodeData = ZkStateReader.toJSON(stateObj);
 
     try {
-      if (ZkStateReader.DOWN.equals(state)) {
+      if (state == Replica.State.DOWN) {
         markShardAsDownIfLeader(collection, shardId, leaderCoreNodeName, znodePath, znodeData);
       } else  {
         if (zkClient.exists(znodePath, true)) {
@@ -2094,13 +2088,13 @@ public final class ZkController {
           zkClient.makePath(znodePath, znodeData, true);
         }
       }
-      log.info("Wrote "+state+" to "+znodePath);
+      log.info("Wrote {} to {}", state.toString(), znodePath);
     } catch (Exception exc) {
       if (exc instanceof SolrException) {
         throw (SolrException)exc;
       } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Failed to update data to "+state+" for znode: "+znodePath, exc);
+            "Failed to update data to " + state.toString() + " for znode: " + znodePath, exc);
       }
     }
   }
