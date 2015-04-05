@@ -106,6 +106,11 @@ public class NearSpansUnordered extends NearSpans {
     }
 
     @Override
+    public boolean twoPhaseCurrentDocMatches() throws IOException {
+      return true; // we don't modify the spans, we just capture information from it.
+    }
+
+    @Override
     public String toString() {
       return "NearSpansUnordered.SpansCell(" + in.toString() + ")";
     }

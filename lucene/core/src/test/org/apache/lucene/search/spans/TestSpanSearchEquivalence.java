@@ -158,6 +158,79 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     }
   }
   
+  /** SpanPositionRangeQuery(A, M, N) ⊆ TermQuery(A) */
+  public void testSpanRangeTerm() throws Exception {
+    Term t1 = randomTerm();
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        Query q1 = new SpanPositionRangeQuery(new SpanTermQuery(t1), i, i+j);
+        Query q2 = new TermQuery(t1);
+        assertSubsetOf(q1, q2);
+      }
+    }
+  }
+  
+  /** SpanPositionRangeQuery(A, M, N) ⊆ SpanFirstQuery(A, M, N+1) */
+  public void testSpanRangeTermIncreasingEnd() throws Exception {
+    Term t1 = randomTerm();
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        Query q1 = new SpanPositionRangeQuery(new SpanTermQuery(t1), i, i+j);
+        Query q2 = new SpanPositionRangeQuery(new SpanTermQuery(t1), i, i+j+1);
+        assertSubsetOf(q1, q2);
+      }
+    }
+  }
+  
+  /** SpanPositionRangeQuery(A, 0, ∞) = TermQuery(A) */
+  public void testSpanRangeTermEverything() throws Exception {
+    Term t1 = randomTerm();
+    Query q1 = new SpanPositionRangeQuery(new SpanTermQuery(t1), 0, Integer.MAX_VALUE);
+    Query q2 = new TermQuery(t1);
+    assertSameSet(q1, q2);
+  }
+  
+  /** SpanPositionRangeQuery([A B], M, N) ⊆ SpanNearQuery([A B]) */
+  public void testSpanRangeNear() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    SpanQuery subquery[] = new SpanQuery[] { new SpanTermQuery(t1), new SpanTermQuery(t2) };
+    SpanQuery nearQuery = new SpanNearQuery(subquery, 10, true);
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        Query q1 = new SpanPositionRangeQuery(nearQuery, i, i+j);
+        Query q2 = nearQuery;
+        assertSubsetOf(q1, q2);
+      }
+    }
+  }
+  
+  /** SpanPositionRangeQuery([A B], M, N) ⊆ SpanFirstQuery([A B], M, N+1) */
+  public void testSpanRangeNearIncreasingEnd() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    SpanQuery subquery[] = new SpanQuery[] { new SpanTermQuery(t1), new SpanTermQuery(t2) };
+    SpanQuery nearQuery = new SpanNearQuery(subquery, 10, true);
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        Query q1 = new SpanPositionRangeQuery(nearQuery, i, i+j);
+        Query q2 = new SpanPositionRangeQuery(nearQuery, i, i+j+1);
+        assertSubsetOf(q1, q2);
+      }
+    }
+  }
+  
+  /** SpanPositionRangeQuery([A B], ∞) = SpanNearQuery([A B]) */
+  public void testSpanRangeNearEverything() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    SpanQuery subquery[] = new SpanQuery[] { new SpanTermQuery(t1), new SpanTermQuery(t2) };
+    SpanQuery nearQuery = new SpanNearQuery(subquery, 10, true);
+    Query q1 = new SpanPositionRangeQuery(nearQuery, 0, Integer.MAX_VALUE);
+    Query q2 = nearQuery;
+    assertSameSet(q1, q2);
+  }
+  
   /** SpanFirstQuery(A, N) ⊆ TermQuery(A) */
   public void testSpanFirstTerm() throws Exception {
     Term t1 = randomTerm();
@@ -187,7 +260,6 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   }
   
   /** SpanFirstQuery([A B], N) ⊆ SpanNearQuery([A B]) */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6393")
   public void testSpanFirstNear() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
@@ -201,7 +273,6 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   }
   
   /** SpanFirstQuery([A B], N) ⊆ SpanFirstQuery([A B], N+1) */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6393")
   public void testSpanFirstNearIncreasing() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
@@ -215,7 +286,6 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   }
   
   /** SpanFirstQuery([A B], ∞) = SpanNearQuery([A B]) */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6393")
   public void testSpanFirstNearEverything() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();

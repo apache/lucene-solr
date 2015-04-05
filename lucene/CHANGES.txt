@@ -45,6 +45,10 @@ New Features
   code with boolean queries, and use two-phased iterators for
   faster intersection by avoiding loading positions in certain cases.
   (Paul Elschot, Terry Smith, Robert Muir via Mike McCandless)
+  
+* LUCENE-6393: Add two-phase support to SpanPositionCheckQuery
+  and its subclasses: SpanPositionRangeQuery, SpanPayloadCheckQuery, 
+  SpanNearPayloadCheckQuery, SpanFirstQuery. (Paul Elschot, Robert Muir)
 
 * LUCENE-6352: Added a new query time join to the join module that uses
   global ordinals, which is faster for subsequent joins between reopens.
