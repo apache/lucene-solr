@@ -58,6 +58,35 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     assertSubsetOf(new SpanNotQuery(new SpanTermQuery(t1), new SpanTermQuery(t2)), new SpanTermQuery(t1));
   }
   
+  /** SpanNotQuery(A, [B C]) ⊆ SpanTermQuery(A) */
+  public void testSpanNotNearVersusSpanTerm() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    SpanQuery near = new SpanNearQuery(new SpanQuery[] { new SpanTermQuery(t2), new SpanTermQuery(t3) }, 10, random().nextBoolean());
+    assertSubsetOf(new SpanNotQuery(new SpanTermQuery(t1), near), new SpanTermQuery(t1));
+  }
+  
+  /** SpanNotQuery([A B], C) ⊆ SpanNearQuery([A B]) */
+  public void testSpanNotVersusSpanNear() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    SpanQuery near = new SpanNearQuery(new SpanQuery[] { new SpanTermQuery(t1), new SpanTermQuery(t2) }, 10, random().nextBoolean());
+    assertSubsetOf(new SpanNotQuery(near, new SpanTermQuery(t3)), near);
+  }
+  
+  /** SpanNotQuery([A B], [C D]) ⊆ SpanNearQuery([A B]) */
+  public void testSpanNotNearVersusSpanNear() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    Term t4 = randomTerm();
+    SpanQuery near1 = new SpanNearQuery(new SpanQuery[] { new SpanTermQuery(t1), new SpanTermQuery(t2) }, 10, random().nextBoolean());
+    SpanQuery near2 = new SpanNearQuery(new SpanQuery[] { new SpanTermQuery(t3), new SpanTermQuery(t4) }, 10, random().nextBoolean());
+    assertSubsetOf(new SpanNotQuery(near1, near2), near1);
+  }
+  
   /** SpanFirstQuery(A, 10) ⊆ SpanTermQuery(A) */
   public void testSpanFirstVersusSpanTerm() throws Exception {
     Term t1 = randomTerm();
