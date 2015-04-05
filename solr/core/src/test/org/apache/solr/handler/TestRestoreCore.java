@@ -26,6 +26,7 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
@@ -226,8 +227,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
       URL url = new URL(masterUrl);
       stream = url.openStream();
       String response = IOUtils.toString(stream, "UTF-8");
-      if(pException.matcher(response).find()) {
-        fail("Failed to complete restore action");
+      Matcher matcher = pException.matcher(response);
+      if(matcher.find()) {
+        fail("Failed to complete restore action with exception " + matcher.group(1));
       }
       if(response.contains("<str name=\"status\">success</str>")) {
         return true;

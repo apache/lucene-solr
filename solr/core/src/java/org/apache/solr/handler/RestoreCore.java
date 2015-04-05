@@ -17,6 +17,7 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
@@ -72,9 +73,14 @@ public class RestoreCore implements Callable<Boolean> {
       //Move all files from backupDir to restoreIndexDir
       for (String filename : backupDir.listAll()) {
         checkInterrupted();
-        log.info("Copying over file to restore directory " + filename);
+        log.info("Copying file {} to restore directory ", filename);
         try (IndexInput indexInput = backupDir.openInput(filename, IOContext.READONCE)) {
-          long checksum = CodecUtil.retrieveChecksum(indexInput);
+          Long checksum = null;
+          try {
+            checksum = CodecUtil.retrieveChecksum(indexInput);
+          } catch (Exception e) {
+            log.warn("Could not read checksum from index file: " + filename, e);
+          }
           long length = indexInput.length();
           IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
           if (!compareResult.equal || (!compareResult.checkSummed && (filename.endsWith(".si")
