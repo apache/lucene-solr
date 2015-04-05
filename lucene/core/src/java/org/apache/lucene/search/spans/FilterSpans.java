@@ -27,7 +27,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
  * A {@link Spans} implementation wrapping another spans instance,
  * allowing to override selected methods in a subclass.
  */
-public class FilterSpans extends Spans {
+public abstract class FilterSpans extends Spans {
  
   /** The wrapped spans instance. */
   protected final Spans in;
@@ -89,6 +89,31 @@ public class FilterSpans extends Spans {
   
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
-    return in.asTwoPhaseIterator();
+    final TwoPhaseIterator inner = in.asTwoPhaseIterator();
+    if (inner != null) {
+      // wrapped instance has an approximation
+      return new TwoPhaseIterator(inner.approximation()) {
+        @Override
+        public boolean matches() throws IOException {
+          return inner.matches() && twoPhaseCurrentDocMatches();
+        }
+      };
+    } else {
+      // wrapped instance has no approximation, but 
+      // we can still defer matching until absolutely needed.
+      return new TwoPhaseIterator(in) {
+        @Override
+        public boolean matches() throws IOException {
+          return twoPhaseCurrentDocMatches();
+        }
+      };
+    }
   }
+  
+  /**
+   * Returns true if the current document matches.
+   * <p>
+   * This is called during two-phase processing.
+   */
+  public abstract boolean twoPhaseCurrentDocMatches() throws IOException;
 }

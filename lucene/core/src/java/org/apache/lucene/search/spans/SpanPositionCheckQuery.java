@@ -127,45 +127,27 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 
     @Override
     public int nextDoc() throws IOException {
-      if (in.nextDoc() == NO_MORE_DOCS)
-        return NO_MORE_DOCS;
-
-      return toNextDocWithAllowedPosition();
+      while (true) {
+        int doc = in.nextDoc();
+        if (doc == NO_MORE_DOCS) {
+          return NO_MORE_DOCS;
+        } else if (twoPhaseCurrentDocMatches()) {
+          return doc;
+        }
+      }
     }
 
     @Override
     public int advance(int target) throws IOException {
-      if (in.advance(target) == NO_MORE_DOCS)
-        return NO_MORE_DOCS;
-
-      return toNextDocWithAllowedPosition();
-    }
-
-    @SuppressWarnings("fallthrough")
-    protected int toNextDocWithAllowedPosition() throws IOException {
-      startPos = in.nextStartPosition();
-      assert startPos != NO_MORE_POSITIONS;
-      for (;;) {
-        switch(acceptPosition(in)) {
-          case YES:
-            atFirstInCurrentDoc = true;
-            return in.docID();
-          case NO:
-            startPos = in.nextStartPosition();
-            if (startPos != NO_MORE_POSITIONS) {
-              break;
-            }
-            // else fallthrough
-          case NO_MORE_IN_CURRENT_DOC:
-            if (in.nextDoc() == NO_MORE_DOCS) {
-              startPos = -1;
-              return NO_MORE_DOCS;
-            }
-            startPos = in.nextStartPosition();
-            assert startPos != NO_MORE_POSITIONS : "no start position at doc="+in.docID();
-            break;
+      int doc = in.advance(target);
+      while (doc != NO_MORE_DOCS) {
+        if (twoPhaseCurrentDocMatches()) {
+          break;
         }
+        doc = in.nextDoc();
       }
+
+      return doc;
     }
 
     @Override
@@ -187,6 +169,30 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
             break;
           case NO_MORE_IN_CURRENT_DOC:
             return startPos = NO_MORE_POSITIONS; // startPos ahead for the current doc.
+        }
+      }
+    }
+    
+    // return true if the current document matches
+    @SuppressWarnings("fallthrough")
+    public boolean twoPhaseCurrentDocMatches() throws IOException {
+      atFirstInCurrentDoc = false;
+      startPos = in.nextStartPosition();
+      assert startPos != NO_MORE_POSITIONS;
+      for (;;) {
+        switch(acceptPosition(in)) {
+          case YES:
+            atFirstInCurrentDoc = true;
+            return true;
+          case NO:
+            startPos = in.nextStartPosition();
+            if (startPos != NO_MORE_POSITIONS) {
+              break;
+            }
+            // else fallthrough
+          case NO_MORE_IN_CURRENT_DOC:
+            startPos = -1;
+            return false;
         }
       }
     }
