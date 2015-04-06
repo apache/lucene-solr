@@ -397,6 +397,9 @@ Bug Fixes
 
 * SOLR-7334: Admin UI does not show "Num Docs" and "Deleted Docs". (Erick Erickson, Timothy Potter)
 
+* SOLR-7338, SOLR-6583: A reloaded core will never register itself as active after a ZK session expiration
+  (Mark Miller, Timothy Potter)
+
 Optimizations
 ----------------------
 
