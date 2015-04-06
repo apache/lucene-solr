@@ -503,6 +503,8 @@ Other Changes
 * SOLR-7290: Rename catchall _text field in data_driven_schema_configs
   to _text_ (Steve Rowe) 
 
+* SOLR-7346: Stored XSS in Admin UI Schema-Browser page and Analysis page (Mei Wang via Timothy Potter)
+
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
