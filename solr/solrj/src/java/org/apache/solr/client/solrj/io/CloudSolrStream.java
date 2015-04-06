@@ -108,7 +108,7 @@ public class CloudSolrStream extends TupleStream {
   public void open() throws IOException {
     this.tuples = new TreeSet();
     this.solrStreams = new ArrayList();
-    this.eofTuples = new HashMap();
+    this.eofTuples = Collections.synchronizedMap(new HashMap());
     if(this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
