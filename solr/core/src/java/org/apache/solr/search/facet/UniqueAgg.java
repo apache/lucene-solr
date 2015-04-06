@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.SchemaField;
 
 public class UniqueAgg extends StrAggValueSource {
   public static String UNIQUE = "unique";
@@ -36,10 +37,16 @@ public class UniqueAgg extends StrAggValueSource {
 
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    if (fcontext.qcontext.searcher().getSchema().getField(getArg()).multiValued())
-      return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots);
-    else
+    SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
+    if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+      if (sf.hasDocValues()) {
+        return new UniqueMultiDvSlotAcc(fcontext, getArg(), numSlots);
+      } else {
+        return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots);
+      }
+    } else {
       return new UniqueSinglevaluedSlotAcc(fcontext, getArg(), numSlots);
+    }
   }
 
   @Override

@@ -19,7 +19,10 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
@@ -44,23 +47,12 @@ public class FieldUtil {
     // if (!field.hasDocValues() && (field.getType() instanceof StrField || field.getType() instanceof TextField)) {
     // }
 
-    return si == null ? EMPTY_SortedDocValues : si;
+    return si == null ? DocValues.emptySorted() : si;
   }
 
-  private static SortedDocValues EMPTY_SortedDocValues = new SortedDocValues() {
-    @Override
-    public int getOrd(int docID) {
-      return -1;
-    }
+  public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field, QParser qparser) throws IOException {
+    SortedSetDocValues si = context.searcher().getLeafReader().getSortedSetDocValues(field.getName());
+    return si == null ? DocValues.emptySortedSet() : si;
+  }
 
-    @Override
-    public BytesRef lookupOrd(int ord) {
-      return null;
-    }
-
-    @Override
-    public int getValueCount() {
-      return 0;
-    }
-  };
 }

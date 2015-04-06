@@ -262,6 +262,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // multi-valued strings
     doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_d", "num_i","num_i", "super_s","super_ss", "val_b","val_b", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
+
+    // single valued docvalues for strings, and single valued numeric doc values for numeric fields
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
+
+    // multi-valued docvalues
+    FacetFieldProcessorDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
+
+    // multi-valued docvalues
+    FacetFieldProcessorDV.unwrap_singleValued_multiDv = true;
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
@@ -279,7 +290,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.deleteByQuery("*:*", null);
 
     client.add(sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2", super_s, "zodiac", val_b, "true", sparse_s, "one"), null);
-    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", val_b, "false"                , multi_ss,"a", "multi_ss","b" ), null);
+    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", val_b, "false"                , multi_ss,"a", multi_ss,"b" ), null);
     client.add(sdoc("id", "3"), null);
     client.commit();
     client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   super_s,"spiderman"                               , multi_ss, "b"), null);
@@ -493,7 +504,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test missing with stats
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, facet:{x:'sum(num_d)'}   }}}"
+            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, facet:{x:'sum(${num_d})'}   }}}"
         )
         , "facets=={ 'count':6, " +
             "'f1':{ 'buckets':[{val:one, count:1, x:4.0}, {val:two, count:1, x:11.0}], missing:{count:4, x:-12.0}   } } "
@@ -501,7 +512,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test that the missing bucket is not affected by any prefix
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, prefix:on, facet:{x:'sum(num_d)'}   }}}"
+            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, prefix:on, facet:{x:'sum(${num_d})'}   }}}"
         )
         , "facets=={ 'count':6, " +
             "'f1':{ 'buckets':[{val:one, count:1, x:4.0}], missing:{count:4, x:-12.0}   } } "
@@ -509,7 +520,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test missing with prefix that doesn't exist
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, prefix:ppp, facet:{x:'sum(num_d)'}   }}}"
+            , "json.facet", "{f1:{terms:{field:${sparse_s}, missing:true, prefix:ppp, facet:{x:'sum(${num_d})'}   }}}"
         )
         , "facets=={ 'count':6, " +
             "'f1':{ 'buckets':[], missing:{count:4, x:-12.0}   } } "
@@ -665,7 +676,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.testJQ(params(p, "q", "*:*"
             // , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc', facet:{n1:'sum(${num_d})'}  }}" +
             //    " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'sum(${num_d})'}  }} }"
-            , "facet","true", "facet.version", "2", "facet.field","{!key=f1}${cat_s}", "f.f1.facet.sort","n1 desc", "facet.stat","n1:sum(num_d)"
+            , "facet","true", "facet.version", "2", "facet.field","{!key=f1}${cat_s}", "f.f1.facet.sort","n1 desc", "facet.stat","n1:sum(${num_d})"
             , "facet.field","{!key=f2}${cat_s}", "f.f1.facet.sort","n1 asc"
         )
         , "facets=={ 'count':6, " +
