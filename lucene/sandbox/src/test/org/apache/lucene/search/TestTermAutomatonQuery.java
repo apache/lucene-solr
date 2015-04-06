@@ -652,4 +652,68 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       return "RandomFilter(seed=" + seed + ",density=" + density + ")";
     }
   }
+
+  /** See if we can create a TAQ with cycles */
+  public void testWithCycles1() throws Exception {
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes here comes", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newTextField("field", "comes here", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "here");
+    q.addTransition(s1, init, "comes");
+    q.setAccept(init, true);
+    q.finish();
+
+    assertEquals(1, s.search(q, 1).totalHits);
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  /** See if we can create a TAQ with cycles */
+  public void testWithCycles2() throws Exception {
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes kaoma", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newTextField("field", "here comes sun sun sun sun kaoma", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "here");
+    int s2 = q.createState();
+    q.addTransition(s1, s2, "comes");
+    int s3 = q.createState();
+    q.addTransition(s2, s3, "sun");
+    q.addTransition(s3, s3, "sun");
+    int s4 = q.createState();
+    q.addTransition(s3, s4, "kaoma");
+    q.setAccept(s4, true);
+    q.finish();
+
+    assertEquals(1, s.search(q, 1).totalHits);
+    w.close();
+    r.close();
+    dir.close();
+  }
 }
