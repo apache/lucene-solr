@@ -96,7 +96,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 20)
+  @Repeat(iterations = 15)
   public void testOperations() throws IOException {
     //setup
     if (random().nextInt(4) > 0) {//75% of the time choose geo (more interesting to test)
