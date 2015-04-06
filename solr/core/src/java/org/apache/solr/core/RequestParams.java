@@ -21,10 +21,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -174,27 +177,23 @@ public class RequestParams implements MapSerializable {
 
 
   private static Object[] getMapAndVersion(SolrResourceLoader loader, String name) {
-    InputStream in = null;
-    try {
-      in = loader.openResource(name);
+    try (InputStream in = loader.openResource(name)) {
+      int version = 0; //will be always 0 for file based resourceloader
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.info("conf resource {} loaded . version : {} ", name, version);
+      }
+      try {
+        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
+        return new Object[]{m, version};
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
+      }
+
     } catch (IOException e) {
       //no problem no overlay.json file
       return new Object[]{Collections.EMPTY_MAP, -1};
     }
-
-    int version = 0; //will be always 0 for file based resourceloader
-    if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-      version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-      log.info("conf resource {} loaded . version : {} ", name, version);
-    }
-
-    try {
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
-      return new Object[]{m, version};
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
-    }
-
   }
 
 
