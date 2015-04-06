@@ -139,6 +139,9 @@ Bug Fixes
   that up to 3X (X = current index size) spare disk space may be needed
   to complete forceMerge(1).  (Robert Muir, Shai Erera, Mike McCandless)
 
+* LUCENE-6395: Seeking by term ordinal was failing to set the term's
+  bytes in MemoryIndex (Mike McCandless)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields

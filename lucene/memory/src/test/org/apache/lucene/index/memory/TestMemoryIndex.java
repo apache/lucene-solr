@@ -17,10 +17,13 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
@@ -29,8 +32,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -88,6 +89,16 @@ public class TestMemoryIndex extends LuceneTestCase {
     // check we can set the Similarity again
     mi.setSimilarity(new DefaultSimilarity());
 
+  }
+
+  public void testSeekByTermOrd() throws IOException {
+    MemoryIndex mi = new MemoryIndex();
+    mi.addField("field", "some terms be here", analyzer);
+    IndexSearcher searcher = mi.createSearcher();
+    LeafReader reader = (LeafReader) searcher.getIndexReader();
+    TermsEnum terms = reader.fields().terms("field").iterator(null);
+    terms.seekExact(0);
+    assertEquals("be", terms.term().utf8ToString());
   }
 
   @Test
