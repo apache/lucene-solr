@@ -1125,6 +1125,8 @@ public class TestAutomaton extends LuceneTestCase {
         System.out.println("Original was not minimal:");
         System.out.println("Original:\n" + a.toDot());
         System.out.println("Minimized:\n" + minA.toDot());
+        System.out.println("minTerm=" + minTerm + " minInclusive=" + minInclusive);
+        System.out.println("maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
         fail("auotmaton was not minimal");
       }
 
@@ -1233,7 +1235,6 @@ public class TestAutomaton extends LuceneTestCase {
 
   public void testAcceptAllEmptyStringMin() throws Exception {
     Automaton a = Automata.makeBinaryInterval(new BytesRef(), true, null, true);
-    System.out.println("HERE: " + a.toDot());
     assertTrue(Operations.sameLanguage(Automata.makeAnyBinary(), a));
   }
 

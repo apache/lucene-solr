@@ -233,25 +233,27 @@ final public class Automata {
       throw new IllegalArgumentException("maxInclusive must be true when max is null (open ended)");
     }
 
-    if (min != null && min.length == 0 && minInclusive == true) {
-      // Silly empty string corner case:
-      min = null;
-    }
-
     if (min == null) {
-      if (max == null) {
-        // Accepts all terms:
-        return makeAnyBinary();
-      }
       min = new BytesRef();
       minInclusive = true;
     }
+
+    // Empty string corner case:
+    if (max != null && maxInclusive == false && max.length == 1 && max.bytes[max.offset] == 0) {
+      max = new BytesRef();
+      maxInclusive = true;
+    }
+
     int cmp;
     if (max != null) {
       cmp = min.compareTo(max);
     } else {
       cmp = -1;
+      if (min.length == 0 && minInclusive) {
+        return makeAnyBinary();
+      }
     }
+
     if (cmp == 0) {
       if (minInclusive == false || maxInclusive == false) {
         return makeEmpty();
