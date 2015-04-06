@@ -17,15 +17,14 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Filter;
@@ -40,8 +39,8 @@ import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.shape.Shape;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class NumberRangeFacetsTest extends StrategyTestCase {
 
@@ -61,7 +60,7 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
     randomCalWindowMs = Math.max(2000L, tmpCal.getTimeInMillis());
   }
 
-  @Repeat(iterations = 100)
+  @Repeat(iterations = 20)
   @Test
   public void test() throws IOException {
     //generate test data
