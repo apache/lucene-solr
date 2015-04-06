@@ -80,7 +80,7 @@ sammy.get
               {
                 fields.push
                 (
-                  '<option value="fieldname=' + field_name + '">' + field_name + '</option>'
+                  '<option value="fieldname=' + field_name.esc() + '">' + field_name.esc() + '</option>'
                 );
               }
               if( 0 !== fields.length )
@@ -95,7 +95,7 @@ sammy.get
               {
                 types.push
                 (
-                  '<option value="fieldtype=' + type_name + '">' + type_name + '</option>'
+                  '<option value="fieldtype=' + type_name.esc() + '">' + type_name.esc() + '</option>'
                 );
               }
               if( 0 !== types.length )

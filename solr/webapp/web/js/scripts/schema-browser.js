@@ -596,7 +596,7 @@ sammy.bind
                     {
                       fields.push
                       (
-                        '<option value="?field=' + field_name + '">' + field_name + '</option>'
+                        '<option value="?field=' + field_name.esc() + '">' + field_name.esc() + '</option>'
                       );
                     }
                     if( 0 !== fields.length )
@@ -612,7 +612,7 @@ sammy.bind
                     {
                       dynamic_fields.push
                       (
-                        '<option value="?dynamic-field=' + type_name + '">' + type_name + '</option>'
+                        '<option value="?dynamic-field=' + type_name.esc() + '">' + type_name.esc() + '</option>'
                       );
                     }
                     if( 0 !== dynamic_fields.length )
@@ -628,7 +628,7 @@ sammy.bind
                     {
                       types.push
                       (
-                        '<option value="?type=' + type_name + '">' + type_name + '</option>'
+                        '<option value="?type=' + type_name.esc() + '">' + type_name.esc() + '</option>'
                       );
                     }
                     if( 0 !== types.length )
