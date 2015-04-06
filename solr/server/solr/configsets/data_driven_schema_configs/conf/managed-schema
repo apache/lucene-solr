@@ -110,7 +110,7 @@
          "add-unknown-fields-to-the-schema" update request processor chain declared 
          in solrconfig.xml.
          
-         Note that many dynamic fields are also defined - you can used them to specify a 
+         Note that many dynamic fields are also defined - you can use them to specify a 
          field's type via field naming conventions - see below.
   
   WARNING: The _text_ catch-all field will significantly increase your index size.
