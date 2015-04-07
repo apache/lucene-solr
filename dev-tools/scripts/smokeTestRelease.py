@@ -983,7 +983,7 @@ def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
   print('    download artifacts')
   artifacts = {'lucene': [], 'solr': []}
   for project in ('lucene', 'solr'):
-    artifactsURL = '%s/%s/maven/org/apache/%s' % (baseURL, project, project)
+    artifactsURL = '%s/%s/maven/org/apache/%s/' % (baseURL, project, project)
     targetDir = '%s/maven/org/apache/%s' % (tmpDir, project)
     if not os.path.exists(targetDir):
       os.makedirs(targetDir)
