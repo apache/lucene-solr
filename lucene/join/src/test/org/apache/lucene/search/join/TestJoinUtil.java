@@ -17,6 +17,7 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -25,7 +26,6 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -285,14 +285,10 @@ public class TestJoinUtil extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
         random(),
         dir,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
     );
-    IndexIterationContext context = createContext(100, w, false, true);
-
-    w.forceMerge(1);
-
-    w.close();
-    IndexReader topLevelReader = DirectoryReader.open(dir);
+    IndexIterationContext context = createContext(512, w, false, true);
+    IndexReader topLevelReader = w.getReader();
 
     SortedDocValues[] values = new SortedDocValues[topLevelReader.leaves().size()];
     for (LeafReaderContext leadContext : topLevelReader.leaves()) {
@@ -301,47 +297,55 @@ public class TestJoinUtil extends LuceneTestCase {
     context.ordinalMap = MultiDocValues.OrdinalMap.build(
         topLevelReader.getCoreCacheKey(), values, PackedInts.DEFAULT
     );
+
+    int searchIters = 10;
     IndexSearcher indexSearcher = newSearcher(topLevelReader);
+    for (int i = 0; i < searchIters; i++) {
+      if (VERBOSE) {
+        System.out.println("search iter=" + i);
+      }
+      int r = random().nextInt(context.randomUniqueValues.length);
+      boolean from = context.randomFrom[r];
+      String randomValue = context.randomUniqueValues[r];
+      BitSet expectedResult = createExpectedResult(randomValue, from, indexSearcher.getIndexReader(), context);
 
-    int r = random().nextInt(context.randomUniqueValues.length);
-    boolean from = context.randomFrom[r];
-    String randomValue = context.randomUniqueValues[r];
-    BitSet expectedResult = createExpectedResult(randomValue, from, indexSearcher.getIndexReader(), context);
+      final Query actualQuery = new TermQuery(new Term("value", randomValue));
+      if (VERBOSE) {
+        System.out.println("actualQuery=" + actualQuery);
+      }
+      final ScoreMode scoreMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
+      if (VERBOSE) {
+        System.out.println("scoreMode=" + scoreMode);
+      }
 
-    final Query actualQuery = new TermQuery(new Term("value", randomValue));
-    if (VERBOSE) {
-      System.out.println("actualQuery=" + actualQuery);
-    }
-    final ScoreMode scoreMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
-    if (VERBOSE) {
-      System.out.println("scoreMode=" + scoreMode);
+      final Query joinQuery;
+      if (from) {
+        BooleanQuery fromQuery = new BooleanQuery();
+        fromQuery.add(new TermQuery(new Term("type", "from")), BooleanClause.Occur.FILTER);
+        fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
+        Query toQuery = new TermQuery(new Term("type", "to"));
+        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
+      } else {
+        BooleanQuery fromQuery = new BooleanQuery();
+        fromQuery.add(new TermQuery(new Term("type", "to")), BooleanClause.Occur.FILTER);
+        fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
+        Query toQuery = new TermQuery(new Term("type", "from"));
+        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
+      }
+      if (VERBOSE) {
+        System.out.println("joinQuery=" + joinQuery);
+      }
+
+      final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
+      final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10);
+      indexSearcher.search(joinQuery, MultiCollector.wrap(new BitSetCollector(actualResult), topScoreDocCollector));
+      assertBitSet(expectedResult, actualResult, indexSearcher);
+      TopDocs expectedTopDocs = createExpectedTopDocs(randomValue, from, scoreMode, context);
+      TopDocs actualTopDocs = topScoreDocCollector.topDocs();
+      assertTopDocs(expectedTopDocs, actualTopDocs, scoreMode, indexSearcher, joinQuery);
     }
 
-    final Query joinQuery;
-    if (from) {
-      BooleanQuery fromQuery = new BooleanQuery();
-      fromQuery.add(new TermQuery(new Term("type", "from")), BooleanClause.Occur.FILTER);
-      fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
-      Query toQuery = new TermQuery(new Term("type", "to"));
-      joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
-    } else {
-      BooleanQuery fromQuery = new BooleanQuery();
-      fromQuery.add(new TermQuery(new Term("type", "to")), BooleanClause.Occur.FILTER);
-      fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
-      Query toQuery = new TermQuery(new Term("type", "from"));
-      joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
-    }
-    if (VERBOSE) {
-      System.out.println("joinQuery=" + joinQuery);
-    }
-
-    final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
-    final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10);
-    indexSearcher.search(joinQuery, MultiCollector.wrap(new BitSetCollector(actualResult), topScoreDocCollector));
-    assertBitSet(expectedResult, actualResult, indexSearcher);
-    TopDocs expectedTopDocs = createExpectedTopDocs(randomValue, from, scoreMode, context);
-    TopDocs actualTopDocs = topScoreDocCollector.topDocs();
-    assertTopDocs(expectedTopDocs, actualTopDocs, scoreMode, indexSearcher, joinQuery);
+    w.close();
     topLevelReader.close();
     dir.close();
   }
@@ -699,11 +703,14 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     assertEquals(expectedTopDocs.getMaxScore(), actualTopDocs.getMaxScore(), 0.0f);
-    for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
-      if (VERBOSE) {
+    if (VERBOSE) {
+      for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
         System.out.printf(Locale.ENGLISH, "Expected doc: %d | Actual doc: %d\n", expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
         System.out.printf(Locale.ENGLISH, "Expected score: %f | Actual score: %f\n", expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score);
       }
+    }
+
+    for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
       assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
       assertEquals(expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score, 0.0f);
       Explanation explanation = indexSearcher.explain(joinQuery, expectedTopDocs.scoreDocs[i].doc);
@@ -721,7 +728,7 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     IndexIterationContext context = new IndexIterationContext();
-    int numRandomValues = nDocs / 2;
+    int numRandomValues = nDocs / RandomInts.randomIntBetween(random(), 2, 10);
     context.randomUniqueValues = new String[numRandomValues];
     Set<String> trackSet = new HashSet<>();
     context.randomFrom = new boolean[numRandomValues];
@@ -743,7 +750,7 @@ public class TestJoinUtil extends LuceneTestCase {
       int randomI = random().nextInt(context.randomUniqueValues.length);
       String value = context.randomUniqueValues[randomI];
       Document document = new Document();
-      document.add(newTextField(random(), "id", id, Field.Store.NO));
+      document.add(newTextField(random(), "id", id, Field.Store.YES));
       document.add(newTextField(random(), "value", value, Field.Store.NO));
 
       boolean from = context.randomFrom[randomI];
@@ -810,6 +817,11 @@ public class TestJoinUtil extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("Added document[" + docs[i].id + "]: " + document);
       }
+    }
+
+    if (random().nextBoolean()) {
+      fromWriter.forceMerge(1);
+      toWriter.forceMerge(1);
     }
 
     // Pre-compute all possible hits for all unique random values. On top of this also compute all possible score for

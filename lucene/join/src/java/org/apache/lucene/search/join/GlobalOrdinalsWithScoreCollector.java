@@ -171,7 +171,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
     @Override
     public float score(int globalOrdinal) {
-      return scores.getScore(globalOrdinal) / occurrences.getOccurence(globalOrdinal);
+      return scores.getScore(globalOrdinal) / occurrences.getOccurrence(globalOrdinal);
     }
   }
 
@@ -238,7 +238,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       occurrences[offset]++;
     }
 
-    public int getOccurence(int globalOrdinal) {
+    public int getOccurrence(int globalOrdinal) {
       int block = globalOrdinal / arraySize;
       int offset = globalOrdinal % arraySize;
       int[] occurrences = blocks[block];

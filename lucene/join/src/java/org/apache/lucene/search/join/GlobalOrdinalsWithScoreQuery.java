@@ -123,7 +123,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
           final float score;
           if (globalOrds != null) {
             long globalOrd = globalOrds.getGlobalOrds(context.ord).get(segmentOrd);
-            score = collector.scores.getScore((int) globalOrd);
+            score = collector.score((int) globalOrd);
           } else {
             score = collector.score(segmentOrd);
           }
