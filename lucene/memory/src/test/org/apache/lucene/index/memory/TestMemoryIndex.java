@@ -19,7 +19,9 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
@@ -30,6 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -99,6 +102,35 @@ public class TestMemoryIndex extends LuceneTestCase {
     TermsEnum terms = reader.fields().terms("field").iterator(null);
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
+    TestUtil.checkReader(reader);
+  }
+  
+  public void testReaderConsistency() throws IOException {
+    Analyzer analyzer = new MockPayloadAnalyzer();
+    
+    // defaults
+    MemoryIndex mi = new MemoryIndex();
+    mi.addField("field", "some terms be here", analyzer);
+    TestUtil.checkReader(mi.createSearcher().getIndexReader());
+    
+    // all combinations of offsets/payloads options
+    mi = new MemoryIndex(true, true);
+    mi.addField("field", "some terms be here", analyzer);
+    TestUtil.checkReader(mi.createSearcher().getIndexReader());
+    
+    mi = new MemoryIndex(true, false);
+    mi.addField("field", "some terms be here", analyzer);
+    TestUtil.checkReader(mi.createSearcher().getIndexReader());
+    
+    mi = new MemoryIndex(false, true);
+    mi.addField("field", "some terms be here", analyzer);
+    TestUtil.checkReader(mi.createSearcher().getIndexReader());
+    
+    mi = new MemoryIndex(false, false);
+    mi.addField("field", "some terms be here", analyzer);
+    TestUtil.checkReader(mi.createSearcher().getIndexReader());
+    
+    analyzer.close();
   }
 
   @Test
@@ -121,7 +153,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     float n2 = reader.getNormValues("f1").get(0);
 
     assertTrue(n1 != n2);
-
+    TestUtil.checkReader(reader);
   }
 
 
