@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -186,8 +187,10 @@ public class TestRestoreCore extends SolrJettyTestBase {
     //Remove the segments_n file so that the backup index is corrupted.
     //Restore should fail and it should automatically rollback to the original index.
     Path restoreIndexPath = Paths.get(location, "snapshot." + snapshotName);
-    Path segmentFileName = Files.newDirectoryStream(restoreIndexPath, IndexFileNames.SEGMENTS + "*").iterator().next();
-    Files.delete(segmentFileName);
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(restoreIndexPath, IndexFileNames.SEGMENTS + "*")) {
+      Path segmentFileName = stream.iterator().next();
+      Files.delete(segmentFileName);
+    }
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 

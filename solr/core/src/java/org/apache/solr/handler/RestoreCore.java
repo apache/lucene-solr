@@ -108,7 +108,7 @@ public class RestoreCore implements Callable<Boolean> {
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
         //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
-        log.info("Could not switch to restored index. Rolling back to the current index");
+        log.warn("Could not switch to restored index. Rolling back to the current index");
         Directory dir = null;
         try {
           dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
