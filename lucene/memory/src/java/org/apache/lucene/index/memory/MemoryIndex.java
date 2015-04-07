@@ -480,7 +480,12 @@ public class MemoryIndex {
         }
         if (storePayloads) {
           final BytesRef payload = payloadAtt.getPayload();
-          int pIndex = payload == null ? -1 : payloadsBytesRefs.append(payload);
+          final int pIndex;
+          if (payload == null || payload.length == 0) {
+            pIndex = -1;
+          } else {
+            pIndex = payloadsBytesRefs.append(payload);
+          }
           postingsWriter.writeInt(pIndex);
         }
         sliceArray.end[ord] = postingsWriter.getCurrentOffset();
