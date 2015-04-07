@@ -17,24 +17,25 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
 
 public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
@@ -152,14 +153,27 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final MultiTermQuery mtq = new MultiTermQuery("data") {
       @Override
       protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-        return new TermRangeTermsEnum(terms.iterator(null), new BytesRef("2"), new BytesRef("7"), true, true) {
+        return new FilteredTermsEnum(terms.iterator(null)) {
+
           final BoostAttribute boostAtt =
             attributes().addAttribute(BoostAttribute.class);
         
           @Override
           protected AcceptStatus accept(BytesRef term) {
             boostAtt.setBoost(Float.parseFloat(term.utf8ToString()));
-            return super.accept(term);
+            if (term.length == 0) {
+              return AcceptStatus.NO;
+            }
+            char c = (char) (term.bytes[term.offset] & 0xff);
+            if (c >= '2') {
+              if (c <= '7') {
+                return AcceptStatus.YES;
+              } else {
+                return AcceptStatus.END;
+              }
+            } else {
+              return AcceptStatus.NO;
+            }
           }
         };
       }

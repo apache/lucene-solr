@@ -28,8 +28,8 @@ public class ByteRunAutomaton extends RunAutomaton {
   }
   
   /** expert: if utf8 is true, the input is already byte-based */
-  public ByteRunAutomaton(Automaton a, boolean utf8, int maxDeterminizedStates) {
-    super(utf8 ? a : new UTF32ToUTF8().convert(a), 256, true, maxDeterminizedStates);
+  public ByteRunAutomaton(Automaton a, boolean isBinary, int maxDeterminizedStates) {
+    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, true, maxDeterminizedStates);
   }
 
   /**

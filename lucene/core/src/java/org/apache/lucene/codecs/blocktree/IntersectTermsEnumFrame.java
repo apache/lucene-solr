@@ -35,8 +35,13 @@ final class IntersectTermsEnumFrame {
   long fpEnd;
   long lastSubFP;
 
+  // private static boolean DEBUG = IntersectTermsEnum.DEBUG;
+
   // State in automaton
   int state;
+
+  // State just before the last label
+  int lastState;
 
   int metaDataUpto;
 
@@ -73,6 +78,8 @@ final class IntersectTermsEnumFrame {
   int transitionIndex;
   int transitionCount;
 
+  final boolean versionAutoPrefix;
+
   FST.Arc<BytesRef> arc;
 
   final BlockTermState termState;
@@ -89,6 +96,17 @@ final class IntersectTermsEnumFrame {
   int startBytePos;
   int suffix;
 
+  // When we are on an auto-prefix term this is the starting lead byte
+  // of the suffix (e.g. 'a' for the foo[a-m]* case):
+  int floorSuffixLeadStart;
+
+  // When we are on an auto-prefix term this is the ending lead byte
+  // of the suffix (e.g. 'm' for the foo[a-m]* case):
+  int floorSuffixLeadEnd;
+
+  // True if the term we are currently on is an auto-prefix term:
+  boolean isAutoPrefixTerm;
+
   private final IntersectTermsEnum ite;
 
   public IntersectTermsEnumFrame(IntersectTermsEnum ite, int ord) throws IOException {
@@ -97,23 +115,26 @@ final class IntersectTermsEnumFrame {
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
     this.longs = new long[ite.fr.longsSize];
+    this.versionAutoPrefix = ite.fr.parent.version >= BlockTreeTermsReader.VERSION_AUTO_PREFIX_TERMS;
   }
 
   void loadNextFloorBlock() throws IOException {
     assert numFollowFloorBlocks > 0;
-    //if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
+    //if (DEBUG) System.out.println("    loadNextFloorBlock transition.min=" + transition.min);
 
     do {
       fp = fpOrig + (floorDataReader.readVLong() >>> 1);
       numFollowFloorBlocks--;
-      // if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+      //if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
       if (numFollowFloorBlocks != 0) {
         nextFloorLabel = floorDataReader.readByte() & 0xff;
       } else {
         nextFloorLabel = 256;
       }
-      // if (DEBUG) System.out.println("    nextFloorLabel=" + (char) nextFloorLabel);
+      //if (DEBUG) System.out.println("    nextFloorLabel=" + (char) nextFloorLabel);
     } while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min);
+
+    //if (DEBUG) System.out.println("      done loadNextFloorBlock");
 
     load(null);
   }
@@ -121,11 +142,12 @@ final class IntersectTermsEnumFrame {
   public void setState(int state) {
     this.state = state;
     transitionIndex = 0;
-    transitionCount = ite.compiledAutomaton.automaton.getNumTransitions(state);
+    transitionCount = ite.automaton.getNumTransitions(state);
     if (transitionCount != 0) {
-      ite.compiledAutomaton.automaton.initTransition(state, transition);
-      ite.compiledAutomaton.automaton.getNextTransition(transition);
+      ite.automaton.initTransition(state, transition);
+      ite.automaton.getNextTransition(transition);
       curTransitionMax = transition.max;
+      //if (DEBUG) System.out.println("    after setState state=" + state + " trans: " + transition + " transCount=" + transitionCount);
     } else {
       curTransitionMax = -1;
     }
@@ -133,7 +155,7 @@ final class IntersectTermsEnumFrame {
 
   void load(BytesRef frameIndexData) throws IOException {
 
-    // if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
+    //xif (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
 
     if (frameIndexData != null && transitionCount != 0) {
       // Floor frame
@@ -148,7 +170,7 @@ final class IntersectTermsEnumFrame {
       if ((code & BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0) {
         numFollowFloorBlocks = floorDataReader.readVInt();
         nextFloorLabel = floorDataReader.readByte() & 0xff;
-        // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
+        //if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
 
         // If current state is accept, we must process
         // first block in case it has empty suffix:
@@ -158,7 +180,7 @@ final class IntersectTermsEnumFrame {
           while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min) {
             fp = fpOrig + (floorDataReader.readVLong() >>> 1);
             numFollowFloorBlocks--;
-            // if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+            //xif (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
             if (numFollowFloorBlocks != 0) {
               nextFloorLabel = floorDataReader.readByte() & 0xff;
             } else {
@@ -179,7 +201,7 @@ final class IntersectTermsEnumFrame {
     code = ite.in.readVInt();
     isLeafBlock = (code & 1) != 0;
     int numBytes = code >>> 1;
-    // if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
+    //if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
     if (suffixBytes.length < numBytes) {
       suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
@@ -214,41 +236,106 @@ final class IntersectTermsEnumFrame {
       // written one after another -- tail recurse:
       fpEnd = ite.in.getFilePointer();
     }
+
+    // Necessary in case this ord previously was an auto-prefix
+    // term but now we recurse to a new leaf block
+    isAutoPrefixTerm = false;
   }
 
   // TODO: maybe add scanToLabel; should give perf boost
 
+  // Decodes next entry; returns true if it's a sub-block
   public boolean next() {
-    return isLeafBlock ? nextLeaf() : nextNonLeaf();
+    if (isLeafBlock) {
+      nextLeaf();
+      return false;
+    } else {
+      return nextNonLeaf();
+    }
   }
 
-  // Decodes next entry; returns true if it's a sub-block
-  public boolean nextLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
+  public void nextLeaf() {
+    //if (DEBUG) {
+    //  System.out.println("  frame.nextLeaf ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
+    //}
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     suffix = suffixesReader.readVInt();
     startBytePos = suffixesReader.getPosition();
     suffixesReader.skipBytes(suffix);
-    return false;
   }
 
   public boolean nextNonLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
+    //if (DEBUG) {
+    //  System.out.println("  frame.nextNonLeaf ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount + " versionAutoPrefix=" + versionAutoPrefix + " fp=" + suffixesReader.getPosition());
+    // }
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     final int code = suffixesReader.readVInt();
-    suffix = code >>> 1;
-    startBytePos = suffixesReader.getPosition();
-    suffixesReader.skipBytes(suffix);
-    if ((code & 1) == 0) {
-      // A normal term
-      termState.termBlockOrd++;
-      return false;
+    if (versionAutoPrefix == false) {
+      suffix = code >>> 1;
+      startBytePos = suffixesReader.getPosition();
+      suffixesReader.skipBytes(suffix);
+      if ((code & 1) == 0) {
+        // A normal term
+        termState.termBlockOrd++;
+        return false;
+      } else {
+        // A sub-block; make sub-FP absolute:
+        lastSubFP = fp - suffixesReader.readVLong();
+        return true;
+      }
     } else {
-      // A sub-block; make sub-FP absolute:
-      lastSubFP = fp - suffixesReader.readVLong();
-      return true;
+      suffix = code >>> 2;
+      startBytePos = suffixesReader.getPosition();
+      suffixesReader.skipBytes(suffix);
+      switch (code & 3) {
+      case 0:
+        // A normal term
+        //if (DEBUG) System.out.println("    ret: term");
+        isAutoPrefixTerm = false;
+        termState.termBlockOrd++;
+        return false;
+      case 1:
+        // A sub-block; make sub-FP absolute:
+        isAutoPrefixTerm = false;
+        lastSubFP = fp - suffixesReader.readVLong();
+        //if (DEBUG) System.out.println("    ret: sub-block");
+        return true;
+      case 2:
+        // A normal prefix term, suffix leads with empty string
+        floorSuffixLeadStart = -1;
+        termState.termBlockOrd++;
+        floorSuffixLeadEnd = suffixesReader.readByte() & 0xff;
+        if (floorSuffixLeadEnd == 0xff) {
+          floorSuffixLeadEnd = -1;
+          //System.out.println("  fill in -1");
+        }
+        //if (DEBUG) System.out.println("    ret: floor prefix term: start=-1 end=" + floorSuffixLeadEnd);
+        isAutoPrefixTerm = true;
+        return false;
+      case 3:
+        // A floor'd prefix term, suffix leads with real byte
+        if (suffix == 0) {
+          // TODO: this is messy, but necessary because we are an auto-prefix term, but our suffix is the empty string here, so we have to
+          // look at the parent block to get the lead suffix byte:
+          assert ord > 0;
+          IntersectTermsEnumFrame parent = ite.stack[ord-1];
+          floorSuffixLeadStart = parent.suffixBytes[parent.startBytePos+parent.suffix-1] & 0xff;
+          //if (DEBUG) System.out.println("    peek-parent: suffix=" + floorSuffixLeadStart);
+        } else {
+          floorSuffixLeadStart = suffixBytes[startBytePos+suffix-1] & 0xff;
+        }
+        termState.termBlockOrd++;
+        isAutoPrefixTerm = true;
+        floorSuffixLeadEnd = suffixesReader.readByte() & 0xff;
+        //if (DEBUG) System.out.println("    ret: floor prefix term start=" + floorSuffixLeadStart + " end=" + floorSuffixLeadEnd);
+        return false;
+      default:
+        // Silly javac:
+        assert false;
+        return false;
+      }
     }
   }
 

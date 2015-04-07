@@ -62,6 +62,7 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    * @param name must be all ascii alphanumeric, and less than 128 characters in length.
    */
   protected PostingsFormat(String name) {
+    // TODO: can we somehow detect name conflicts here?  Two different classes trying to claim the same name?  Otherwise you see confusing errors...
     NamedSPILoader.checkServiceName(name);
     this.name = name;
   }

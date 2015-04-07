@@ -43,9 +43,9 @@ import org.apache.lucene.util.automaton.Transition;
  * completely accepted. This is not possible when the language accepted by the
  * FSM is not finite (i.e. * operator).
  * </p>
- * @lucene.experimental
+ * @lucene.internal
  */
-class AutomatonTermsEnum extends FilteredTermsEnum {
+public class AutomatonTermsEnum extends FilteredTermsEnum {
   // a tableized array-based form of the DFA
   private final ByteRunAutomaton runAutomaton;
   // common suffix of the automaton
@@ -70,9 +70,8 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
   /**
    * Construct an enumerator based upon an automaton, enumerating the specified
    * field, working on a supplied TermsEnum
-   * <p>
+   *
    * @lucene.experimental 
-   * <p>
    * @param compiled CompiledAutomaton
    */
   public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) {

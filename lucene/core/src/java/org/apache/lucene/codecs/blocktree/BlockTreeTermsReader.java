@@ -34,6 +34,8 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.PrefixQuery;  // javadocs
+import org.apache.lucene.search.TermRangeQuery;  // javadocs
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -56,6 +58,14 @@ import org.apache.lucene.util.fst.Outputs;
  *  <p><b>NOTE</b>: this terms dictionary supports
  *  min/maxItemsPerBlock during indexing to control how
  *  much memory the terms index uses.</p>
+ *
+ *  <p>If auto-prefix terms were indexed (see
+ *  {@link BlockTreeTermsWriter}), then the {@link Terms#intersect}
+ *  implementation here will make use of these terms only if the
+ *  automaton has a binary sink state, i.e. an accept state
+ *  which has a transition to itself accepting all byte values.
+ *  For example, both {@link PrefixQuery} and {@link TermRangeQuery}
+ *  pass such automata to {@link Terms#intersect}.</p>
  *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
@@ -90,8 +100,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Initial terms format. */
   public static final int VERSION_START = 0;
 
+  /** Auto-prefix terms. */
+  public static final int VERSION_AUTO_PREFIX_TERMS = 1;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_CURRENT = VERSION_AUTO_PREFIX_TERMS;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -116,7 +129,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   final String segment;
   
-  private final int version;
+  final int version;
 
   /** Sole constructor. */
   public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {

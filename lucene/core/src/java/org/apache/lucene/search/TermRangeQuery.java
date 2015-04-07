@@ -17,22 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Automaton;
 
 /**
  * A Query that matches documents within an range of terms.
  *
  * <p>This query matches the documents looking for terms that fall into the
- * supplied range according to {@link
- * Byte#compareTo(Byte)}. It is not intended
- * for numerical ranges; use {@link NumericRangeQuery} instead.
+ * supplied range according to {@link BytesRef#compareTo(BytesRef)}.
  *
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_REWRITE}
@@ -40,12 +35,11 @@ import org.apache.lucene.util.ToStringUtils;
  * @since 2.9
  */
 
-public class TermRangeQuery extends MultiTermQuery {
-  private BytesRef lowerTerm;
-  private BytesRef upperTerm;
-  private boolean includeLower;
-  private boolean includeUpper;
-
+public class TermRangeQuery extends AutomatonQuery {
+  private final BytesRef lowerTerm;
+  private final BytesRef upperTerm;
+  private final boolean includeLower;
+  private final boolean includeUpper;
 
   /**
    * Constructs a query selecting all terms greater/equal than <code>lowerTerm</code>
@@ -70,11 +64,26 @@ public class TermRangeQuery extends MultiTermQuery {
    *          included in the range.
    */
   public TermRangeQuery(String field, BytesRef lowerTerm, BytesRef upperTerm, boolean includeLower, boolean includeUpper) {
-    super(field);
+    super(new Term(field, lowerTerm), toAutomaton(lowerTerm, upperTerm, includeLower, includeUpper), Integer.MAX_VALUE, true);
     this.lowerTerm = lowerTerm;
     this.upperTerm = upperTerm;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
+  }
+
+  public static Automaton toAutomaton(BytesRef lowerTerm, BytesRef upperTerm, boolean includeLower, boolean includeUpper) {
+
+    if (lowerTerm == null) {
+      // makeBinaryInterval is more picky than we are:
+      includeLower = true;
+    }
+
+    if (upperTerm == null) {
+      // makeBinaryInterval is more picky than we are:
+      includeUpper = true;
+    }
+
+    return Automata.makeBinaryInterval(lowerTerm, includeLower, upperTerm, includeUpper);
   }
 
   /**
@@ -98,37 +107,22 @@ public class TermRangeQuery extends MultiTermQuery {
   /** Returns <code>true</code> if the upper endpoint is inclusive */
   public boolean includesUpper() { return includeUpper; }
   
-  @Override
-  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
-      return TermsEnum.EMPTY;
-    }
-    
-    TermsEnum tenum = terms.iterator(null);
-    
-    if ((lowerTerm == null || (includeLower && lowerTerm.length == 0)) && upperTerm == null) {
-      return tenum;
-    }
-    return new TermRangeTermsEnum(tenum,
-        lowerTerm, upperTerm, includeLower, includeUpper);
-  }
-
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-      StringBuilder buffer = new StringBuilder();
-      if (!getField().equals(field)) {
-          buffer.append(getField());
-          buffer.append(":");
-      }
-      buffer.append(includeLower ? '[' : '{');
-      // TODO: all these toStrings for queries should just output the bytes, it might not be UTF-8!
-      buffer.append(lowerTerm != null ? ("*".equals(Term.toString(lowerTerm)) ? "\\*" : Term.toString(lowerTerm))  : "*");
-      buffer.append(" TO ");
-      buffer.append(upperTerm != null ? ("*".equals(Term.toString(upperTerm)) ? "\\*" : Term.toString(upperTerm)) : "*");
-      buffer.append(includeUpper ? ']' : '}');
-      buffer.append(ToStringUtils.boost(getBoost()));
-      return buffer.toString();
+    StringBuilder buffer = new StringBuilder();
+    if (!getField().equals(field)) {
+      buffer.append(getField());
+      buffer.append(":");
+    }
+    buffer.append(includeLower ? '[' : '{');
+    // TODO: all these toStrings for queries should just output the bytes, it might not be UTF-8!
+    buffer.append(lowerTerm != null ? ("*".equals(Term.toString(lowerTerm)) ? "\\*" : Term.toString(lowerTerm))  : "*");
+    buffer.append(" TO ");
+    buffer.append(upperTerm != null ? ("*".equals(Term.toString(upperTerm)) ? "\\*" : Term.toString(upperTerm)) : "*");
+    buffer.append(includeUpper ? ']' : '}');
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
   }
 
   @Override
@@ -167,5 +161,4 @@ public class TermRangeQuery extends MultiTermQuery {
       return false;
     return true;
   }
-
 }

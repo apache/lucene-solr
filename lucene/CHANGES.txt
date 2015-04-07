@@ -21,6 +21,10 @@ New Features
   global ordinals, which is faster for subsequent joins between reopens.
   (Martijn van Groningen, Adrien Grand)
 
+* LUCENE-5879: Added experimental auto-prefix terms to BlockTree terms
+  dictionary, exposed as AutoPrefixPostingsFormat (Adrien Grand,
+  Uwe Schindler, Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

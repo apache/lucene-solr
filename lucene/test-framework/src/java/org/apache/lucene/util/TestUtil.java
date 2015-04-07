@@ -831,6 +831,14 @@ public final class TestUtil {
     return new String(buffer, 0, i);
   }
 
+  /** Returns a random binary term. */
+  public static BytesRef randomBinaryTerm(Random r) {
+    int length = r.nextInt(15);
+    BytesRef b = new BytesRef(length);
+    r.nextBytes(b.bytes);
+    b.length = length;
+    return b;
+  }
   
   /** Return a Codec that can read any of the
    *  default codecs and formats, but always writes in the specified
@@ -858,7 +866,7 @@ public final class TestUtil {
     // (and maybe their params, too) to infostream on flush and merge.
     // otherwise in a real debugging situation we won't know whats going on!
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("forcing docvalues format to:" + format);
+      System.out.println("TestUtil: forcing docvalues format to:" + format);
     }
     return new AssertingCodec() {
       @Override
@@ -1280,6 +1288,24 @@ public final class TestUtil {
       return mixedUp;
     } else {
       return sb.toString();
+    }
+  }
+
+  /** For debugging: tries to include br.utf8ToString(), but if that
+   *  fails (because it's not valid utf8, which is fine!), just
+   *  use ordinary toString. */
+  public static String bytesRefToString(BytesRef br) {
+    if (br == null) {
+      return "(null)";
+    } else {
+      try {
+        return br.utf8ToString() + " " + br.toString();
+      } catch (IllegalArgumentException t) {
+        // If BytesRef isn't actually UTF8, or it's eg a
+        // prefix of UTF8 that ends mid-unicode-char, we
+        // fallback to hex:
+        return br.toString();
+      }
     }
   }
   

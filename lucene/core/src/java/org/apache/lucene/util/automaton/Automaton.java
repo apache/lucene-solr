@@ -493,9 +493,48 @@ public class Automaton implements Accountable {
   public void getNextTransition(Transition t) {
     // Make sure there is still a transition left:
     assert (t.transitionUpto+3 - states[2*t.source]) <= 3*states[2*t.source+1];
+
+    // Make sure transitions are in fact sorted:
+    assert transitionSorted(t);
+
     t.dest = transitions[t.transitionUpto++];
     t.min = transitions[t.transitionUpto++];
     t.max = transitions[t.transitionUpto++];
+  }
+
+  private boolean transitionSorted(Transition t) {
+
+    int upto = t.transitionUpto;
+    if (upto == states[2*t.source]) {
+      // Transition isn't initialzed yet (this is the first transition); don't check:
+      return true;
+    }
+
+    int nextDest = transitions[upto];
+    int nextMin = transitions[upto+1];
+    int nextMax = transitions[upto+2];
+    if (nextMin > t.min) {
+      return true;
+    } else if (nextMin < t.min) {
+      return false;
+    }
+
+    // Min is equal, now test max:
+    if (nextMax > t.max) {
+      return true;
+    } else if (nextMax < t.max) {
+      return false;
+    }
+
+    // Max is also equal, now test dest:
+    if (nextDest > t.dest) {
+      return true;
+    } else if (nextDest < t.dest) {
+      return false;
+    }
+
+    // We should never see fully equal transitions here:
+    return false;
   }
 
   /** Fill the provided {@link Transition} with the index'th
@@ -567,7 +606,7 @@ public class Automaton implements Accountable {
       //System.out.println("toDot: state " + state + " has " + numTransitions + " transitions; t.nextTrans=" + t.transitionUpto);
       for(int i=0;i<numTransitions;i++) {
         getNextTransition(t);
-        //System.out.println("  t.nextTrans=" + t.transitionUpto);
+        //System.out.println("  t.nextTrans=" + t.transitionUpto + " t=" + t);
         assert t.max >= t.min;
         b.append("  ");
         b.append(state);
