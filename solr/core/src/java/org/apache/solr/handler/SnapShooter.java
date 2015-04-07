@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,10 +59,11 @@ public class SnapShooter {
 
   public SnapShooter(SolrCore core, String location, String snapshotName) {
     solrCore = core;
-    if (location == null) snapDir = core.getDataDir();
+    if (location == null) {
+      snapDir = core.getDataDir();
+    }
     else  {
-      File base = new File(core.getCoreDescriptor().getInstanceDir());
-      snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
+      snapDir = Paths.get(core.getCoreDescriptor().getInstanceDir()).resolve(location).toAbsolutePath().toString();
     }
     this.snapshotName = snapshotName;
 
@@ -125,7 +127,7 @@ public class SnapShooter {
   }
 
   void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
-    LOG.info("Creating backup snapshot...");
+    LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + snapDir);
     NamedList<Object> details = new NamedList<>();
     details.add("startTime", new Date().toString());
     try {
@@ -142,7 +144,8 @@ public class SnapShooter {
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());
       details.add("snapshotName", snapshotName);
-      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
+      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
+          " at " + snapDir);
     } catch (Exception e) {
       IndexFetcher.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
@@ -191,31 +194,6 @@ public class SnapShooter {
       LOG.warn("Unable to delete snapshot: " + snapshotName);
     }
     replicationHandler.snapShootDetails = details;
-  }
-
-  private class OldBackupDirectory implements Comparable<OldBackupDirectory>{
-    File dir;
-    Date timestamp;
-    final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
-
-    OldBackupDirectory(File dir) {
-      if(dir.isDirectory()) {
-        Matcher m = dirNamePattern.matcher(dir.getName());
-        if(m.find()) {
-          try {
-            this.dir = dir;
-            this.timestamp = new SimpleDateFormat(DATE_FMT, Locale.ROOT).parse(m.group(1));
-          } catch(Exception e) {
-            this.dir = null;
-            this.timestamp = null;
-          }
-        }
-      }
-    }
-    @Override
-    public int compareTo(OldBackupDirectory that) {
-      return that.timestamp.compareTo(this.timestamp);
-    }
   }
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
