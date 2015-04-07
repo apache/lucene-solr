@@ -108,11 +108,27 @@ public class IndexSearcher {
   }
 
   /**
+   * Expert: Get the default {@link QueryCache} or {@code null} if the cache is disabled.
+   * @lucene.internal
+   */
+  public static QueryCache getDefaultQueryCache() {
+    return DEFAULT_QUERY_CACHE;
+  }
+
+  /**
    * Expert: set the default {@link QueryCache} instance.
    * @lucene.internal
    */
   public static void setDefaultQueryCache(QueryCache defaultQueryCache) {
     DEFAULT_QUERY_CACHE = defaultQueryCache;
+  }
+
+  /**
+   * Expert: Get the default {@link QueryCachingPolicy}.
+   * @lucene.internal
+   */
+  public static QueryCachingPolicy getDefaultQueryCachingPolicy() {
+    return DEFAULT_CACHING_POLICY;
   }
 
   /**
