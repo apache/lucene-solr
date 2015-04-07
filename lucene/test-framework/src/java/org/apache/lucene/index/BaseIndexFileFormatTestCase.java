@@ -17,7 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -46,6 +49,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -58,6 +62,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
+import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -380,5 +385,139 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             
     IOUtils.close(oneDocReader, oneDocIndex, dir);
   }
-
+  
+  /** Tests exception handling on write and openInput/createOutput */
+  // TODO: this is really not ideal. each BaseXXXTestCase should have unit tests doing this.
+  // but we use this shotgun approach to prevent bugs in the meantime: it just ensures the
+  // codec does not corrupt the index or leak file handles.
+  public void testRandomExceptions() throws Exception {
+    // disable slow things: we don't rely upon sleeps here.
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    dir.setUseSlowOpenClosers(false);
+    dir.setPreventDoubleWrite(false);
+    dir.setRandomIOExceptionRate(0.001); // more rare
+    
+    // log all exceptions we hit, in case we fail (for debugging)
+    ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
+    PrintStream exceptionStream = new PrintStream(exceptionLog, true, "UTF-8");
+    //PrintStream exceptionStream = System.out;
+    
+    Analyzer analyzer = new MockAnalyzer(random());
+    
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    // just for now, try to keep this test reproducible
+    conf.setMergeScheduler(new SerialMergeScheduler());
+    conf.setCodec(getCodec());
+    
+    int numDocs = atLeast(500);
+    
+    IndexWriter iw = new IndexWriter(dir, conf);
+    try {
+      boolean allowAlreadyClosed = false;
+      for (int i = 0; i < numDocs; i++) {
+        dir.setRandomIOExceptionRateOnOpen(0.02); // turn on exceptions for openInput/createOutput
+        
+        Document doc = new Document();
+        doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
+        addRandomFields(doc);
+        
+        // single doc
+        try {
+          iw.addDocument(doc);
+          // we made it, sometimes delete our doc
+          iw.deleteDocuments(new Term("id", Integer.toString(i)));
+        } catch (AlreadyClosedException ace) {
+          // OK: writer was closed by abort; we just reopen now:
+          dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+          assertTrue(iw.deleter.isClosed());
+          assertTrue(allowAlreadyClosed);
+          allowAlreadyClosed = false;
+          conf = newIndexWriterConfig(analyzer);
+          // just for now, try to keep this test reproducible
+          conf.setMergeScheduler(new SerialMergeScheduler());
+          conf.setCodec(getCodec());
+          iw = new IndexWriter(dir, conf);            
+        } catch (Exception e) {
+          if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
+            exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
+            e.printStackTrace(exceptionStream);
+            allowAlreadyClosed = true;
+          } else {
+            Rethrow.rethrow(e);
+          }
+        }
+        
+        if (random().nextInt(10) == 0) {
+          // trigger flush:
+          try {
+            if (random().nextBoolean()) {
+              DirectoryReader ir = null;
+              try {
+                ir = DirectoryReader.open(iw, random().nextBoolean());
+                dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+                TestUtil.checkReader(ir);
+              } finally {
+                IOUtils.closeWhileHandlingException(ir);
+              }
+            } else {
+              dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration: 
+                                                       // or we make slowExists angry and trip a scarier assert!
+              iw.commit();
+            }
+            if (DirectoryReader.indexExists(dir)) {
+              TestUtil.checkIndex(dir);
+            }
+          } catch (AlreadyClosedException ace) {
+            // OK: writer was closed by abort; we just reopen now:
+            dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+            assertTrue(iw.deleter.isClosed());
+            assertTrue(allowAlreadyClosed);
+            allowAlreadyClosed = false;
+            conf = newIndexWriterConfig(analyzer);
+            // just for now, try to keep this test reproducible
+            conf.setMergeScheduler(new SerialMergeScheduler());
+            conf.setCodec(getCodec());
+            iw = new IndexWriter(dir, conf);            
+          } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
+              exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
+              e.printStackTrace(exceptionStream);
+              allowAlreadyClosed = true;
+            } else {
+              Rethrow.rethrow(e);
+            }
+          }
+        }
+      }
+      
+      try {
+        dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration: 
+                                                 // or we make slowExists angry and trip a scarier assert!
+        iw.close();
+      } catch (Exception e) {
+        if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
+          exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
+          e.printStackTrace(exceptionStream);
+          try {
+            iw.rollback();
+          } catch (Throwable t) {}
+        } else {
+          Rethrow.rethrow(e);
+        }
+      }
+      dir.close();
+    } catch (Throwable t) {
+      System.out.println("Unexpected exception: dumping fake-exception-log:...");
+      exceptionStream.flush();
+      System.out.println(exceptionLog.toString("UTF-8"));
+      System.out.flush();
+      Rethrow.rethrow(t);
+    }
+    
+    if (VERBOSE) {
+      System.out.println("TEST PASSED: dumping fake-exception-log:...");
+      System.out.println(exceptionLog.toString("UTF-8"));
+    }
+  }
 }
