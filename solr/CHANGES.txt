@@ -104,6 +104,8 @@ Other Changes
 
 * SOLR-6865: Upgrade HttpClient to 4.4.1 (Shawn Heisey)
 
+* SOLR-7358: TestRestoreCore fails in Windows (Ishan Chattopadhyaya via Varun Thacker)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
