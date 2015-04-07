@@ -318,9 +318,11 @@ public class SuggestFieldTest extends LuceneTestCase {
     QueryWrapperFilter filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", 0, topScore, true, true));
     Filter filter = randomAccessFilter(filterWrapper);
     // if at most half of the top scoring documents have been filtered out
-    // the search should be admissible
-    TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", 1, filter);
-    assertSuggestions(suggest, new Entry("abc_" + topScore, topScore));
+    // the search should be admissible for a single segment
+    TopSuggestDocs suggest = indexSearcher.suggest("suggest_field", "abc_", num, filter);
+    assertTrue(suggest.totalHits >= 1);
+    assertThat(suggest.scoreLookupDocs()[0].key.toString(), equalTo("abc_" + topScore));
+    assertThat(suggest.scoreLookupDocs()[0].score, equalTo((float) topScore));
 
     filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", 0, 0, true, true));
     filter = randomAccessFilter(filterWrapper);
