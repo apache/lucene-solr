@@ -92,7 +92,10 @@ public final class BitUtil {
 
   private BitUtil() {} // no instance
 
-  /** Return the number of bits sets in b. */
+  /** Return the number of bits sets in b. 
+   * @deprecated Use {@link Integer#bitCount(int)} instead.
+   */
+  @Deprecated
   public static int bitCount(byte b) {
     return BYTE_COUNTS[b & 0xFF];
   }
@@ -104,7 +107,10 @@ public final class BitUtil {
    * <li>{@code 0x43 & 0x0F} is 3, meaning the the first bit set is at offset 3-1 = 2,</li>
    * <li>{@code (0x43 >>> 4) & 0x0F} is 4, meaning there is a second bit set at offset 4-1=3,</li>
    * <li>{@code (0x43 >>> 8) & 0x0F} is 0, meaning there is no more bit set in this byte.</li>
-   * </ul>*/
+   * </ul>
+   * @deprecated do not use.
+   */
+  @Deprecated
   public static int bitList(byte b) {
     return BIT_LISTS[b & 0xFF];
   }
