@@ -69,7 +69,7 @@ public class HdfsTestUtil {
     conf.set("hadoop.security.authentication", "simple");
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
     conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
-    
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
     
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
