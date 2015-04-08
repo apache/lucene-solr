@@ -399,9 +399,11 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
     }
 
-    //System.out.println("start " + startTerm + " inclusive? " + startInclusive);
-    //System.out.println("end " + endTerm + " inclusive? " + endInclusive);
-    //System.out.println("actual count " + actualCount);
+    if (VERBOSE) {
+      System.out.println("start " + startTerm + " inclusive? " + startInclusive);
+      System.out.println("end " + endTerm + " inclusive? " + endInclusive);
+      System.out.println("actual count " + actualCount);
+    }
 
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -411,37 +413,52 @@ public class TestTermRangeQuery extends LuceneTestCase {
     int minTermsAutoPrefix = TestUtil.nextInt(random(), 2, 100);
     int maxTermsAutoPrefix = random().nextBoolean() ? Math.max(2, (minTermsAutoPrefix-1)*2 + random().nextInt(100)) : Integer.MAX_VALUE;
 
-    //System.out.println("minTermsAutoPrefix " + minTermsAutoPrefix);
-    //System.out.println("maxTermsAutoPrefix " + maxTermsAutoPrefix);
+    if (VERBOSE) {
+      System.out.println("minTermsAutoPrefix " + minTermsAutoPrefix);
+      System.out.println("maxTermsAutoPrefix " + maxTermsAutoPrefix);
+    }
 
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new AutoPrefixPostingsFormat(minTermsInBlock, maxTermsInBlock,
                                                                             minTermsAutoPrefix, maxTermsAutoPrefix)));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    //System.out.println("TEST: index terms");
+    if (VERBOSE) {
+      System.out.println("TEST: index terms");
+    }
     for (String term : randomTerms) {
       Document doc = new Document();
       doc.add(new StringField("field", term, Field.Store.NO));
       w.addDocument(doc);
-      //System.out.println("  " + term);
+      if (VERBOSE) {
+        System.out.println("  " + term);
+      }
     }
 
-    //System.out.println("TEST: now force merge");
+    if (VERBOSE) {
+      System.out.println("TEST: now force merge");
+    }
+
     w.forceMerge(1);
     IndexReader r = w.getReader();
     final Terms terms = MultiFields.getTerms(r, "field");
     IndexSearcher s = new IndexSearcher(r);
     final int finalActualCount = actualCount;
-    //System.out.println("start=" + startTerm + " end=" + endTerm + " startIncl=" + startInclusive + " endIncl=" + endInclusive);
+    if (VERBOSE) {
+      System.out.println("start=" + startTerm + " end=" + endTerm + " startIncl=" + startInclusive + " endIncl=" + endInclusive);
+    }
     TermRangeQuery q = new TermRangeQuery("field", new BytesRef(startTerm), new BytesRef(endTerm), startInclusive, endInclusive) {
       public TermRangeQuery checkTerms() throws IOException {
         TermsEnum termsEnum = getTermsEnum(terms, new AttributeSource());
         int count = 0;
         while (termsEnum.next() != null) {
-          //System.out.println("got term: " + termsEnum.term().utf8ToString());
+          if (VERBOSE) {
+            System.out.println("got term: " + termsEnum.term().utf8ToString());
+          }
           count++;
         }
-        //System.out.println("count " + count + " vs finalActualCount=" + finalActualCount);
+        if (VERBOSE) {
+          System.out.println("count " + count + " vs finalActualCount=" + finalActualCount);
+        }
 
         // Auto-prefix term(s) should have kicked in, so we should have visited fewer than the total number of aa* terms:
         assertTrue(count < finalActualCount);
@@ -456,6 +473,9 @@ public class TestTermRangeQuery extends LuceneTestCase {
       q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: use rewrite method " + q.getRewriteMethod());
+    }
     assertEquals(actualCount, s.search(q, 1).totalHits);
 
     // Test when min == max:

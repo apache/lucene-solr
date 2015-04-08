@@ -119,7 +119,7 @@ final class IntersectTermsEnumFrame {
   }
 
   void loadNextFloorBlock() throws IOException {
-    assert numFollowFloorBlocks > 0;
+    assert numFollowFloorBlocks > 0: "nextFloorLabel=" + nextFloorLabel;
     //if (DEBUG) System.out.println("    loadNextFloorBlock transition.min=" + transition.min);
 
     do {
@@ -157,7 +157,7 @@ final class IntersectTermsEnumFrame {
 
     //xif (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
 
-    if (frameIndexData != null && transitionCount != 0) {
+    if (frameIndexData != null) {
       // Floor frame
       if (floorData.length < frameIndexData.length) {
         this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
@@ -172,9 +172,9 @@ final class IntersectTermsEnumFrame {
         nextFloorLabel = floorDataReader.readByte() & 0xff;
         //if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
 
-        // If current state is accept, we must process
+        // If current state is not accept, and has transitions, we must process
         // first block in case it has empty suffix:
-        if (!ite.runAutomaton.isAccept(state)) {
+        if (ite.runAutomaton.isAccept(state) == false && transitionCount != 0) {
           // Maybe skip floor blocks:
           assert transitionIndex == 0: "transitionIndex=" + transitionIndex;
           while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min) {
