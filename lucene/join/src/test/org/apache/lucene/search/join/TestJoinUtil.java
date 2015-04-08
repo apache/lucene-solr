@@ -26,6 +26,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -281,25 +282,9 @@ public class TestJoinUtil extends LuceneTestCase {
   }
 
   public void testRandomOrdinalsJoin() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(
-        random(),
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-    );
-    IndexIterationContext context = createContext(512, w, false, true);
-    IndexReader topLevelReader = w.getReader();
-
-    SortedDocValues[] values = new SortedDocValues[topLevelReader.leaves().size()];
-    for (LeafReaderContext leadContext : topLevelReader.leaves()) {
-      values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
-    }
-    context.ordinalMap = MultiDocValues.OrdinalMap.build(
-        topLevelReader.getCoreCacheKey(), values, PackedInts.DEFAULT
-    );
-
+    IndexIterationContext context = createContext(512, false, true);
     int searchIters = 10;
-    IndexSearcher indexSearcher = newSearcher(topLevelReader);
+    IndexSearcher indexSearcher = context.searcher;
     for (int i = 0; i < searchIters; i++) {
       if (VERBOSE) {
         System.out.println("search iter=" + i);
@@ -344,10 +329,7 @@ public class TestJoinUtil extends LuceneTestCase {
       TopDocs actualTopDocs = topScoreDocCollector.topDocs();
       assertTopDocs(expectedTopDocs, actualTopDocs, scoreMode, indexSearcher, joinQuery);
     }
-
-    w.close();
-    topLevelReader.close();
-    dir.close();
+    context.close();
   }
 
   // TermsWithScoreCollector.MV.Avg forgets to grow beyond TermsWithScoreCollector.INITIAL_ARRAY_SIZE
@@ -623,21 +605,12 @@ public class TestJoinUtil extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("indexIter=" + indexIter);
       }
-      Directory dir = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(
-          random(),
-          dir,
-          newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
-      );
-      IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument, false);
-
-      IndexReader topLevelReader = w.getReader();
-      w.close();
+      IndexIterationContext context = createContext(numberOfDocumentsToIndex, multipleValuesPerDocument, false);
+      IndexSearcher indexSearcher = context.searcher;
       for (int searchIter = 1; searchIter <= maxSearchIter; searchIter++) {
         if (VERBOSE) {
           System.out.println("searchIter=" + searchIter);
         }
-        IndexSearcher indexSearcher = newSearcher(topLevelReader);
 
         int r = random().nextInt(context.randomUniqueValues.length);
         boolean from = context.randomFrom[r];
@@ -674,8 +647,7 @@ public class TestJoinUtil extends LuceneTestCase {
         TopDocs actualTopDocs = topScoreDocCollector.topDocs();
         assertTopDocs(expectedTopDocs, actualTopDocs, scoreMode, indexSearcher, joinQuery);
       }
-      topLevelReader.close();
-      dir.close();
+      context.close();
     }
   }
 
@@ -718,14 +690,17 @@ public class TestJoinUtil extends LuceneTestCase {
     }
   }
 
-  private IndexIterationContext createContext(int nDocs, RandomIndexWriter writer, boolean multipleValuesPerDocument, boolean ordinalJoin) throws IOException {
-    return createContext(nDocs, writer, writer, multipleValuesPerDocument, ordinalJoin);
-  }
-
-  private IndexIterationContext createContext(int nDocs, RandomIndexWriter fromWriter, RandomIndexWriter toWriter, boolean multipleValuesPerDocument, boolean globalOrdinalJoin) throws IOException {
+  private IndexIterationContext createContext(int nDocs, boolean multipleValuesPerDocument, boolean globalOrdinalJoin) throws IOException {
     if (globalOrdinalJoin) {
       assertFalse("ordinal join doesn't support multiple join values per document", multipleValuesPerDocument);
     }
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+    );
 
     IndexIterationContext context = new IndexIterationContext();
     int numRandomValues = nDocs / RandomInts.randomIntBetween(random(), 2, 10);
@@ -803,13 +778,6 @@ public class TestJoinUtil extends LuceneTestCase {
         }
       }
 
-      final RandomIndexWriter w;
-      if (from) {
-        w = fromWriter;
-      } else {
-        w = toWriter;
-      }
-
       w.addDocument(document);
       if (random().nextInt(10) == 4) {
         w.commit();
@@ -820,14 +788,14 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     if (random().nextBoolean()) {
-      fromWriter.forceMerge(1);
-      toWriter.forceMerge(1);
+      w.forceMerge(1);
     }
+    w.close();
 
     // Pre-compute all possible hits for all unique random values. On top of this also compute all possible score for
     // any ScoreMode.
-    IndexSearcher fromSearcher = newSearcher(fromWriter.getReader());
-    IndexSearcher toSearcher = newSearcher(toWriter.getReader());
+    DirectoryReader topLevelReader = DirectoryReader.open(dir);
+    IndexSearcher searcher = newSearcher(topLevelReader);
     for (int i = 0; i < context.randomUniqueValues.length; i++) {
       String uniqueRandomValue = context.randomUniqueValues[i];
       final String fromField;
@@ -844,7 +812,7 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<>();
       if (multipleValuesPerDocument) {
-        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
+        searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
           private Scorer scorer;
           private SortedSetDocValues docTermOrds;
@@ -879,7 +847,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
         });
       } else {
-        fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
+        searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
           private Scorer scorer;
           private BinaryDocValues terms;
@@ -922,7 +890,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        LeafReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(toSearcher.getIndexReader());
+        LeafReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(topLevelReader);
         Terms terms = slowCompositeReader.terms(toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
@@ -946,7 +914,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
         }
       } else {
-        toSearcher.search(new MatchAllDocsQuery(), new SimpleCollector() {
+        searcher.search(new MatchAllDocsQuery(), new SimpleCollector() {
 
           private BinaryDocValues terms;
           private int docBase;
@@ -968,7 +936,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {}
+          public void setScorer(Scorer scorer) {
+          }
 
           @Override
           public boolean needsScores() {
@@ -979,9 +948,18 @@ public class TestJoinUtil extends LuceneTestCase {
       queryVals.put(uniqueRandomValue, docToJoinScore);
     }
 
-    fromSearcher.getIndexReader().close();
-    toSearcher.getIndexReader().close();
+    if (globalOrdinalJoin) {
+      SortedDocValues[] values = new SortedDocValues[topLevelReader.leaves().size()];
+      for (LeafReaderContext leadContext : topLevelReader.leaves()) {
+        values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
+      }
+      context.ordinalMap = MultiDocValues.OrdinalMap.build(
+          topLevelReader.getCoreCacheKey(), values, PackedInts.DEFAULT
+      );
+    }
 
+    context.searcher = searcher;
+    context.dir = dir;
     return context;
   }
 
@@ -1068,6 +1046,15 @@ public class TestJoinUtil extends LuceneTestCase {
     Map<String, Map<Integer, JoinScore>> toHitsToJoinScore = new HashMap<>();
 
     MultiDocValues.OrdinalMap ordinalMap;
+
+    Directory dir;
+    IndexSearcher searcher;
+
+    void close() throws IOException {
+      searcher.getIndexReader().close();
+      dir.close();
+    }
+
   }
 
   private static class RandomDoc {
