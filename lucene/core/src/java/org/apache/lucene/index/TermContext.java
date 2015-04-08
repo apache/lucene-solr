@@ -90,7 +90,7 @@ public final class TermContext {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
       final Terms terms = ctx.reader().terms(field);
       if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = terms.iterator();
         if (termsEnum.seekExact(bytes)) { 
           final TermState termState = termsEnum.termState();
           //if (DEBUG) System.out.println("    found");

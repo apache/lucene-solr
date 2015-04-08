@@ -948,7 +948,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       IndexReader r = DirectoryReader.open(dir);
-      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator(null);
+      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
       BytesRef t = terms.next();
       assertNotNull(t);
 
@@ -1063,14 +1063,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       // check decoding of terms
       Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
-      TermsEnum termsEnum = NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      TermsEnum termsEnum = NumericUtils.filterPrefixCodedInts(terms.iterator());
       while (termsEnum.next() != null) {
         int val = NumericUtils.prefixCodedToInt(termsEnum.term());
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
       terms = MultiFields.getTerms(searcher.getIndexReader(), "trieLong");
-      termsEnum = NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      termsEnum = NumericUtils.filterPrefixCodedLongs(terms.iterator());
       while (termsEnum.next() != null) {
         long val = NumericUtils.prefixCodedToLong(termsEnum.term());
         assertTrue("value in id bounds", val >= 0L && val < 35L);

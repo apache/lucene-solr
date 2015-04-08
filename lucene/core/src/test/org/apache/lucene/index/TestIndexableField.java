@@ -329,7 +329,7 @@ public class TestIndexableField extends LuceneTestCase {
           if (tv) {
             final Terms tfv = r.getTermVectors(docID).terms(name);
             assertNotNull(tfv);
-            TermsEnum termsEnum = tfv.iterator(null);
+            TermsEnum termsEnum = tfv.iterator();
             assertEquals(new BytesRef(""+counter), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);

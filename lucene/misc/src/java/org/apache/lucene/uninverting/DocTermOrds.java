@@ -236,7 +236,7 @@ public class DocTermOrds implements Accountable {
       if (terms == null) {
         return null;
       } else {
-        return terms.iterator(null);
+        return terms.iterator();
       }
     } else {
       //System.out.println("GET wrapped enum ordBase=" + ordBase);
@@ -289,7 +289,7 @@ public class DocTermOrds implements Accountable {
       return;
     }
 
-    final TermsEnum te = terms.iterator(null);
+    final TermsEnum te = terms.iterator();
     final BytesRef seekStart = termPrefix != null ? termPrefix : new BytesRef();
     //System.out.println("seekStart=" + seekStart.utf8ToString());
     if (te.seekCeil(seekStart) == TermsEnum.SeekStatus.END) {
@@ -608,7 +608,7 @@ public class DocTermOrds implements Accountable {
     
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
-      termsEnum = reader.fields().terms(field).iterator(null);
+      termsEnum = reader.fields().terms(field).iterator();
     }
 
     @Override    

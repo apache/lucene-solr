@@ -191,8 +191,8 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
         assertEquals(iwTerms.getDocCount(), memTerms.getDocCount());
         assertEquals(iwTerms.getSumDocFreq(), memTerms.getSumDocFreq());
         assertEquals(iwTerms.getSumTotalTermFreq(), memTerms.getSumTotalTermFreq());
-        TermsEnum iwTermsIter = iwTerms.iterator(null);
-        TermsEnum memTermsIter = memTerms.iterator(null);
+        TermsEnum iwTermsIter = iwTerms.iterator();
+        TermsEnum memTermsIter = memTerms.iterator();
         if (iwTerms.hasPositions()) {
           final boolean offsets = iwTerms.hasOffsets() && memTerms.hasOffsets();
          
@@ -326,7 +326,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
-    TermsEnum te = reader.terms("foo").iterator(null);
+    TermsEnum te = reader.terms("foo").iterator();
     assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.postings(null, disi, PostingsEnum.NONE);
     docid = disi.docID();
@@ -365,7 +365,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       assertEquals(3, disi.endOffset());
       
       // now reuse and check again
-      TermsEnum te = reader.terms("foo").iterator(null);
+      TermsEnum te = reader.terms("foo").iterator();
       assertTrue(te.seekExact(new BytesRef("bar")));
       disi = te.postings(null, disi);
       docid = disi.docID();
@@ -529,8 +529,8 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
   protected void compareTermVectors(Terms terms, Terms memTerms, String field_name) throws IOException {
 
-    TermsEnum termEnum = terms.iterator(null);
-    TermsEnum memTermEnum = memTerms.iterator(null);
+    TermsEnum termEnum = terms.iterator();
+    TermsEnum memTermEnum = memTerms.iterator();
 
     while (termEnum.next() != null) {
       assertNotNull(memTermEnum.next());

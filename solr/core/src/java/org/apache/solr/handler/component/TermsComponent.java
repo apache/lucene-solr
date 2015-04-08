@@ -161,7 +161,7 @@ public class TermsComponent extends SearchComponent {
       }
 
 
-     TermsEnum termsEnum = terms.iterator(null);
+     TermsEnum termsEnum = terms.iterator();
      BytesRef term = null;
 
       if (lowerBytes != null) {

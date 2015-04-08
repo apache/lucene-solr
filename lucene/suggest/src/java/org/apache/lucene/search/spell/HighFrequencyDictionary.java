@@ -70,7 +70,7 @@ public class HighFrequencyDictionary implements Dictionary {
     HighFrequencyIterator() throws IOException {
       Terms terms = MultiFields.getTerms(reader, field);
       if (terms != null) {
-        termsEnum = terms.iterator(null);
+        termsEnum = terms.iterator();
       } else {
         termsEnum = null;
       }

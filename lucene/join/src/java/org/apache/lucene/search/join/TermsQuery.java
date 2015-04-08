@@ -58,7 +58,7 @@ class TermsQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
 
-    return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms, ords);
+    return new SeekingTermSetTermsEnum(terms.iterator(), this.terms, ords);
   }
 
   @Override

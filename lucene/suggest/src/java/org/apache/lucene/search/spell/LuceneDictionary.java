@@ -46,7 +46,7 @@ public class LuceneDictionary implements Dictionary {
   public final InputIterator getEntryIterator() throws IOException {
     final Terms terms = MultiFields.getTerms(reader, field);
     if (terms != null) {
-      return new InputIterator.InputIteratorWrapper(terms.iterator(null));
+      return new InputIterator.InputIteratorWrapper(terms.iterator());
     } else {
       return InputIterator.EMPTY;
     }

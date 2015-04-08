@@ -121,7 +121,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
 
     int lastPosition = -1;
 
-    final TermsEnum termsEnum = vector.iterator(null);
+    final TermsEnum termsEnum = vector.iterator();
     BytesRef termBytesRef;
     PostingsEnum dpEnum = null;
     //int sumFreq = 0;

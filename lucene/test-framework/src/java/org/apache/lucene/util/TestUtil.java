@@ -1088,7 +1088,7 @@ public final class TestUtil {
     if (terms == null) {
       return null;
     }
-    final TermsEnum termsEnum = terms.iterator(null);
+    final TermsEnum termsEnum = terms.iterator();
     if (!termsEnum.seekExact(term)) {
       return null;
     }

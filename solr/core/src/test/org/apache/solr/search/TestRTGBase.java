@@ -128,7 +128,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     Terms terms = MultiFields.getTerms(r, t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
-    final TermsEnum termsEnum = terms.iterator(null);
+    final TermsEnum termsEnum = terms.iterator();
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }

@@ -186,7 +186,7 @@ class AutoPrefixTermsWriter {
     this.maxItemsInPrefix = maxItemsInPrefix;
     //this.segment = segment;
 
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     while (true) {
       BytesRef term = termsEnum.next();
       if (term == null) {

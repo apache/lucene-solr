@@ -144,7 +144,7 @@ public class SlowFuzzyQuery extends MultiTermQuery {
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (!termLongEnough) {  // can only match if it's exact
-      return new SingleTermsEnum(terms.iterator(null), term.bytes());
+      return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
     return new SlowFuzzyTermsEnum(terms, atts, getTerm(), minimumSimilarity, prefixLength);
   }

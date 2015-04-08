@@ -141,7 +141,7 @@ public class TestFieldCache extends LuceneTestCase {
       cache.getNumerics(reader, "theDouble", new FieldCache.Parser() {
         @Override
         public TermsEnum termsEnum(Terms terms) throws IOException {
-          return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+          return NumericUtils.filterPrefixCodedLongs(terms.iterator());
         }
         @Override
         public long parseValue(BytesRef term) {

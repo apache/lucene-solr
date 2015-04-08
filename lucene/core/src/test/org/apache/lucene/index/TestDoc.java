@@ -256,7 +256,7 @@ public class TestDoc extends LuceneTestCase {
     for (String field : fields)  {
       Terms terms = fields.terms(field);
       assertNotNull(terms);
-      TermsEnum tis = terms.iterator(null);
+      TermsEnum tis = terms.iterator();
       while(tis.next() != null) {
 
         out.print("  term=" + field + ":" + tis.term());

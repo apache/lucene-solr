@@ -499,7 +499,7 @@ public class SpellChecker implements java.io.Closeable {
         for (final LeafReaderContext ctx : reader.leaves()) {
           Terms terms = ctx.reader().terms(F_WORD);
           if (terms != null)
-            termsEnums.add(terms.iterator(null));
+            termsEnums.add(terms.iterator());
         }
       }
       

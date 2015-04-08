@@ -277,7 +277,7 @@ final class NumericFacets {
           } else {
             prefix = new BytesRef();
           }
-          final TermsEnum termsEnum = terms.iterator(null);
+          final TermsEnum termsEnum = terms.iterator();
           BytesRef term;
           switch (termsEnum.seekCeil(prefix)) {
             case FOUND:
@@ -330,7 +330,7 @@ final class NumericFacets {
         } else {
           prefix = new BytesRef();
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = terms.iterator();
         BytesRef term;
         switch (termsEnum.seekCeil(prefix)) {
           case FOUND:

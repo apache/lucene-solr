@@ -233,7 +233,7 @@ public class TestCodecs extends LuceneTestCase {
     final Terms terms2 = reader.terms(fieldName);
     assertNotNull(terms2);
 
-    final TermsEnum termsEnum = terms2.iterator(null);
+    final TermsEnum termsEnum = terms2.iterator();
 
     PostingsEnum postingsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {
@@ -362,7 +362,7 @@ public class TestCodecs extends LuceneTestCase {
 
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
         final FieldData field = fields[random().nextInt(fields.length)];
-        final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator(null);
+        final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
 
         int upto = 0;
         // Test straight enum of the terms:
@@ -571,7 +571,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
+    public TermsEnum iterator() {
       return new DataTermsEnum(fieldData);
     }
 

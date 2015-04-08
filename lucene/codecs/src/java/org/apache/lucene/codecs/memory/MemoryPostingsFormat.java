@@ -307,7 +307,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           continue;
         }
 
-        TermsEnum termsEnum = terms.iterator(null);
+        TermsEnum termsEnum = terms.iterator();
 
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         TermsWriter termsWriter = new TermsWriter(out, fieldInfo,
@@ -952,7 +952,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
+    public TermsEnum iterator() {
       return new FSTTermsEnum(field, fst);
     }
 

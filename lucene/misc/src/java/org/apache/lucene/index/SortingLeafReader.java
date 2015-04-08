@@ -87,8 +87,8 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public TermsEnum iterator(final TermsEnum reuse) throws IOException {
-      return new SortingTermsEnum(in.iterator(reuse), docMap, indexOptions, hasPositions());
+    public TermsEnum iterator() throws IOException {
+      return new SortingTermsEnum(in.iterator(), docMap, indexOptions, hasPositions());
     }
 
     @Override

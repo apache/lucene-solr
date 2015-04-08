@@ -537,8 +537,8 @@ public final class NumericUtils {
   private static Terms intTerms(Terms terms) {
     return new FilterLeafReader.FilterTerms(terms) {
         @Override
-        public TermsEnum iterator(TermsEnum reuse) throws IOException {
-          return filterPrefixCodedInts(in.iterator(reuse));
+        public TermsEnum iterator() throws IOException {
+          return filterPrefixCodedInts(in.iterator());
         }
       };
   }
@@ -546,8 +546,8 @@ public final class NumericUtils {
   private static Terms longTerms(Terms terms) {
     return new FilterLeafReader.FilterTerms(terms) {
         @Override
-        public TermsEnum iterator(TermsEnum reuse) throws IOException {
-          return filterPrefixCodedLongs(in.iterator(reuse));
+        public TermsEnum iterator() throws IOException {
+          return filterPrefixCodedLongs(in.iterator());
         }
       };
   }

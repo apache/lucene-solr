@@ -161,7 +161,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     List<ClassificationResult<BytesRef>> dataList = new ArrayList<>();
 
     Terms terms = MultiFields.getTerms(leafReader, classFieldName);
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     BytesRef next;
     String[] tokenizedDoc = tokenizeDoc(inputDocument);
     int docsWithClassSize = countDocsWithClass();

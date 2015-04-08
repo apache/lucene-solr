@@ -226,7 +226,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         continue;
       }
 
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
 
       TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
       while (true) {

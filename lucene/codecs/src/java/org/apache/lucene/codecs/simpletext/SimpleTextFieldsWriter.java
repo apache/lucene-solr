@@ -91,7 +91,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         }
       }
 
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       PostingsEnum postingsEnum = null;
 
       // for each term in field

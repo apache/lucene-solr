@@ -114,7 +114,7 @@ public class TestTermdocPerf extends LuceneTestCase {
 
     IndexReader reader = DirectoryReader.open(dir);
 
-    TermsEnum tenum = MultiFields.getTerms(reader, "foo").iterator(null);
+    TermsEnum tenum = MultiFields.getTerms(reader, "foo").iterator();
 
     start = System.currentTimeMillis();
 

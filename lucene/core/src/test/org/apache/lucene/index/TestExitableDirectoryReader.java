@@ -54,8 +54,8 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
       }
 
       @Override
-      public TermsEnum iterator(TermsEnum reuse) throws IOException {
-        return new TestTermsEnum(super.iterator(reuse));
+      public TermsEnum iterator() throws IOException {
+        return new TestTermsEnum(super.iterator());
       }
     }
 

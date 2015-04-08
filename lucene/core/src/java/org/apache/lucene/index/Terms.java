@@ -41,7 +41,7 @@ public abstract class Terms {
    *  a previous TermsEnum, for example from a different
    *  field, you can pass it for possible reuse if the
    *  implementation can do so. */
-  public abstract TermsEnum iterator(TermsEnum reuse) throws IOException;
+  public abstract TermsEnum iterator() throws IOException;
 
   /** Returns a TermsEnum that iterates over all terms and
    *  documents that are accepted by the provided {@link
@@ -72,7 +72,7 @@ public abstract class Terms {
     // the returned enum, instead of only being able to seek
     // at the start
 
-    TermsEnum termsEnum = iterator(null);
+    TermsEnum termsEnum = iterator();
 
     if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
       throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
@@ -142,7 +142,7 @@ public abstract class Terms {
    *  take deleted documents into account.  This returns
    *  null when there are no terms. */
   public BytesRef getMin() throws IOException {
-    return iterator(null).next();
+    return iterator().next();
   }
 
   /** Returns the largest term (in lexicographic order) in the field. 
@@ -159,7 +159,7 @@ public abstract class Terms {
     } else if (size >= 0) {
       // try to seek-by-ord
       try {
-        TermsEnum iterator = iterator(null);
+        TermsEnum iterator = iterator();
         iterator.seekExact(size - 1);
         return iterator.term();
       } catch (UnsupportedOperationException e) {
@@ -168,7 +168,7 @@ public abstract class Terms {
     }
     
     // otherwise: binary search
-    TermsEnum iterator = iterator(null);
+    TermsEnum iterator = iterator();
     BytesRef v = iterator.next();
     if (v == null) {
       // empty: only possible from a FilteredTermsEnum...

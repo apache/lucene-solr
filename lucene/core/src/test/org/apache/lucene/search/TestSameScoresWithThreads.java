@@ -63,7 +63,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     final IndexSearcher s = newSearcher(r);
     Terms terms = MultiFields.getFields(r).terms("body");
     int termCount = 0;
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     while(termsEnum.next() != null) {
       termCount++;
     }
@@ -71,7 +71,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     
     // Target ~10 terms to search:
     double chance = 10.0 / termCount;
-    termsEnum = terms.iterator(termsEnum);
+    termsEnum = terms.iterator();
     final Map<BytesRef,TopDocs> answers = new HashMap<>();
     while(termsEnum.next() != null) {
       if (random().nextDouble() <= chance) {

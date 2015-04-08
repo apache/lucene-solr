@@ -54,7 +54,7 @@ public class SrndTermQuery extends SimpleTerm {
     /* check term presence in index here for symmetry with other SimpleTerm's */
     Terms terms = MultiFields.getTerms(reader, fieldName);
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
 
       TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(getTermText()));
       if (status == TermsEnum.SeekStatus.FOUND) {

@@ -562,14 +562,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       boostDocs = new IntIntOpenHashMap(boosted.size()*2);
 
       List<LeafReaderContext>leaves = indexSearcher.getTopReaderContext().leaves();
-      TermsEnum termsEnum = null;
       PostingsEnum postingsEnum = null;
       for(LeafReaderContext leaf : leaves) {
         LeafReader reader = leaf.reader();
         int docBase = leaf.docBase;
         Bits liveDocs = reader.getLiveDocs();
         Terms terms = reader.terms(fieldName);
-        termsEnum = terms.iterator(termsEnum);
+        TermsEnum termsEnum = terms.iterator();
         Iterator<BytesRef> it = localBoosts.iterator();
         while(it.hasNext()) {
           BytesRef ref = it.next();
@@ -636,7 +635,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       private final int[] values = new int[numHits];
       private int bottomVal;
       private int topVal;
-      private TermsEnum termsEnum;
       private PostingsEnum postingsEnum;
       Set<String> seen = new HashSet<>(elevations.ids.size());
 
@@ -685,7 +683,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         if (fields == null) return;
         Terms terms = fields.terms(idField);
         if (terms == null) return;
-        termsEnum = terms.iterator(termsEnum);
+        TermsEnum termsEnum = terms.iterator();
         BytesRefBuilder term = new BytesRefBuilder();
         Bits liveDocs = context.reader().getLiveDocs();
 

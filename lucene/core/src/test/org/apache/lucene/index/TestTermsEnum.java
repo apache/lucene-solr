@@ -55,7 +55,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     final List<BytesRef> terms = new ArrayList<>();
-    final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator(null);
+    final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator();
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       terms.add(BytesRef.deepCopyOf(term));
@@ -478,7 +478,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, docFreq(r, "xx"));
     assertEquals(1, docFreq(r, "aa4"));
 
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator(null);
+    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
     while(te.next() != null) {
       //System.out.println("TEST: next term=" + te.term().utf8ToString());
     }
@@ -510,7 +510,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, r.maxDoc());
     Terms terms = MultiFields.getTerms(r, "field");
     if (terms != null) {
-      assertNull(terms.iterator(null).next());
+      assertNull(terms.iterator().next());
     }
     r.close();
     d.close();
@@ -610,7 +610,7 @@ public class TestTermsEnum extends LuceneTestCase {
         System.out.println("  " + t.utf8ToString() + " " + t);
       }
     }
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator(null);
+    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
 
     final int END_LOC = -validTerms.length-1;
     
@@ -902,7 +902,7 @@ public class TestTermsEnum extends LuceneTestCase {
       System.out.println("\nTEST: reader=" + r);
     }
 
-    TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator(null);
+    TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
     PostingsEnum postingsEnum = null;
     PerThreadPKLookup pkLookup = new PerThreadPKLookup(r, "id");
 
@@ -983,7 +983,7 @@ public class TestTermsEnum extends LuceneTestCase {
       w.addDocument(doc);
       IndexReader r = w.getReader();
       assertEquals(1, r.leaves().size());
-      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator(null);
+      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator();
       for(int i=0;i<=termCount;i++) {
         assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
       }

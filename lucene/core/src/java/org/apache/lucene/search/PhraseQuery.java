@@ -302,7 +302,7 @@ public class PhraseQuery extends Query {
       }
 
       // Reuse single TermsEnum below:
-      final TermsEnum te = fieldTerms.iterator(null);
+      final TermsEnum te = fieldTerms.iterator();
       
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);

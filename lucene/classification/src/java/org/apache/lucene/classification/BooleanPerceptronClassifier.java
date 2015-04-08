@@ -152,10 +152,10 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     // TODO : remove this map as soon as we have a writable FST
     SortedMap<String, Double> weights = new ConcurrentSkipListMap<>();
 
-    TermsEnum reuse = textTerms.iterator(null);
+    TermsEnum termsEnum = textTerms.iterator();
     BytesRef textTerm;
-    while ((textTerm = reuse.next()) != null) {
-      weights.put(textTerm.utf8ToString(), (double) reuse.totalTermFreq());
+    while ((textTerm = termsEnum.next()) != null) {
+      weights.put(textTerm.utf8ToString(), (double) termsEnum.totalTermFreq());
     }
     updateFST(weights);
 
@@ -184,7 +184,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
       Boolean correctClass = Boolean.valueOf(field.stringValue());
       long modifier = correctClass.compareTo(assignedClass);
       if (modifier != 0) {
-        reuse = updateWeights(leafReader, reuse, scoreDoc.doc, assignedClass,
+        updateWeights(leafReader, scoreDoc.doc, assignedClass,
             weights, modifier, batchCount % batchSize == 0);
       }
       batchCount++;
@@ -197,10 +197,10 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     throw new IOException("training with multiple fields not supported by boolean perceptron classifier");
   }
 
-  private TermsEnum updateWeights(LeafReader leafReader, TermsEnum reuse,
-                                  int docId, Boolean assignedClass, SortedMap<String, Double> weights,
-                                  double modifier, boolean updateFST) throws IOException {
-    TermsEnum cte = textTerms.iterator(reuse);
+  private void updateWeights(LeafReader leafReader,
+                             int docId, Boolean assignedClass, SortedMap<String, Double> weights,
+                             double modifier, boolean updateFST) throws IOException {
+    TermsEnum cte = textTerms.iterator();
 
     // get the doc term vectors
     Terms terms = leafReader.getTermVector(docId, textFieldName);
@@ -210,7 +210,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
           + textFieldName);
     }
 
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
 
     BytesRef term;
 
@@ -227,8 +227,6 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     if (updateFST) {
       updateFST(weights);
     }
-    reuse = cte;
-    return reuse;
   }
 
   private void updateFST(SortedMap<String, Double> weights) throws IOException {

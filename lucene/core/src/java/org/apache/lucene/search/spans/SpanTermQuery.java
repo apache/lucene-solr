@@ -98,7 +98,7 @@ public class SpanTermQuery extends SpanQuery {
           throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
         }
 
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = terms.iterator();
         if (termsEnum.seekExact(term.bytes())) {
           state = termsEnum.termState();
         } else {
@@ -115,7 +115,7 @@ public class SpanTermQuery extends SpanQuery {
       return null;
     }
 
-    final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
+    final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
     termsEnum.seekExact(term.bytes(), state);
 
     final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);

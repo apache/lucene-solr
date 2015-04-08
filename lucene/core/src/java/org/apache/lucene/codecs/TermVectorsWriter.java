@@ -249,14 +249,14 @@ public abstract class TermVectorsWriter implements Closeable {
       if (numTerms == -1) {
         // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
         numTerms = 0;
-        termsEnum = terms.iterator(termsEnum);
+        termsEnum = terms.iterator();
         while(termsEnum.next() != null) {
           numTerms++;
         }
       }
       
       startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
-      termsEnum = terms.iterator(termsEnum);
+      termsEnum = terms.iterator();
 
       int termCount = 0;
       while(termsEnum.next() != null) {

@@ -62,7 +62,7 @@ public class PerThreadPKLookup {
     for(int i=0;i<leaves.size();i++) {
       Terms terms = leaves.get(i).reader().terms(idFieldName);
       if (terms != null) {
-        termsEnums[numSegs] = terms.iterator(null);
+        termsEnums[numSegs] = terms.iterator();
         assert termsEnums[numSegs] != null;
         docBases[numSegs] = leaves.get(i).docBase;
         liveDocs[numSegs] = leaves.get(i).reader().getLiveDocs();

@@ -99,7 +99,7 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      return NumericUtils.filterPrefixCodedInts(terms.iterator());
     }
     
     @Override
@@ -127,7 +127,7 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      return NumericUtils.filterPrefixCodedInts(terms.iterator());
     }
   };
 
@@ -147,7 +147,7 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      return NumericUtils.filterPrefixCodedLongs(terms.iterator());
     }
   };
 
@@ -169,7 +169,7 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      return NumericUtils.filterPrefixCodedLongs(terms.iterator());
     }
   };
   

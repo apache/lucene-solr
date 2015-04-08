@@ -424,7 +424,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
     };
     try {
-      TermsEnum iterator = terms.iterator(null);
+      TermsEnum iterator = terms.iterator();
       while (iterator.next() != null) {
         if (highFreqQueue.size() < 5) {
           highFreqQueue.add(new TermAndFreq(

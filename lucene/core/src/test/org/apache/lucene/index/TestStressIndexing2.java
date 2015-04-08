@@ -313,7 +313,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                  MultiFields.getFields(r2).terms(idField) == null);
       return;
     }
-    final TermsEnum termsEnum = terms1.iterator(null);
+    final TermsEnum termsEnum = terms1.iterator();
 
     final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
@@ -333,7 +333,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
       return;
     }
-    TermsEnum termsEnum2 = terms2.iterator(null);
+    TermsEnum termsEnum2 = terms2.iterator();
 
     PostingsEnum termDocs1 = null;
     PostingsEnum termDocs2 = null;
@@ -391,7 +391,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = tv1.terms(field);
             assertNotNull(terms3);
-            TermsEnum termsEnum3 = terms3.iterator(null);
+            TermsEnum termsEnum3 = terms3.iterator();
             BytesRef term2;
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
@@ -423,7 +423,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = tv2.terms(field);
             assertNotNull(terms3);
-            TermsEnum termsEnum3 = terms3.iterator(null);
+            TermsEnum termsEnum3 = terms3.iterator();
             BytesRef term2;
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
@@ -485,7 +485,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (terms == null) {
             continue;
           }
-          termsEnum1 = terms.iterator(null);
+          termsEnum1 = terms.iterator();
         }
         term1 = termsEnum1.next();
         if (term1 == null) {
@@ -518,7 +518,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (terms == null) {
             continue;
           }
-          termsEnum2 = terms.iterator(null);
+          termsEnum2 = terms.iterator();
         }
         term2 = termsEnum2.next();
         if (term2 == null) {
@@ -599,11 +599,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       Terms terms1 = d1.terms(field1);
       assertNotNull(terms1);
-      TermsEnum termsEnum1 = terms1.iterator(null);
+      TermsEnum termsEnum1 = terms1.iterator();
 
       Terms terms2 = d2.terms(field2);
       assertNotNull(terms2);
-      TermsEnum termsEnum2 = terms2.iterator(null);
+      TermsEnum termsEnum2 = terms2.iterator();
 
       PostingsEnum dpEnum1 = null;
       PostingsEnum dpEnum2 = null;

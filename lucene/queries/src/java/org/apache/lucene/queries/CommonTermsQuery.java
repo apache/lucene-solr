@@ -247,7 +247,7 @@ public class CommonTermsQuery extends Query {
           // field does not exist
           continue;
         }
-        termsEnum = terms.iterator(termsEnum);
+        termsEnum = terms.iterator();
         assert termsEnum != null;
         
         if (termsEnum == TermsEnum.EMPTY) continue;

@@ -496,7 +496,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       if (terms == null) {
         continue;
       }
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       PostingsEnum docs = null;
       while(termsEnum.next() != null) {
         docs = TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, PostingsEnum.FREQS);

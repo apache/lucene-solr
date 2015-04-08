@@ -137,7 +137,7 @@ final class OrdsFieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator(TermsEnum reuse) throws IOException {
+  public TermsEnum iterator() throws IOException {
     return new OrdsSegmentTermsEnum(this);
   }
 

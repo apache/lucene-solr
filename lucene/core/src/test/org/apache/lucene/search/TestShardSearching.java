@@ -174,7 +174,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
           if (terms == null && docCount > minDocsToMakeTerms) {
             // TODO: try to "focus" on high freq terms sometimes too
             // TODO: maybe also periodically reset the terms...?
-            final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator(null);
+            final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator();
             terms = new ArrayList<>();
             while(termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));

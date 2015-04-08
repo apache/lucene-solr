@@ -347,7 +347,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       }
 
       // Move all ngrams into an FST:
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
 
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
       Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);

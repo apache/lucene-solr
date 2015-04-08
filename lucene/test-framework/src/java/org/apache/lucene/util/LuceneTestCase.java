@@ -1859,8 +1859,8 @@ public abstract class LuceneTestCase extends Assert {
     assertEquals(leftTerms.hasPositions(), rightTerms.hasPositions());
     assertEquals(leftTerms.hasPayloads(), rightTerms.hasPayloads());
 
-    TermsEnum leftTermsEnum = leftTerms.iterator(null);
-    TermsEnum rightTermsEnum = rightTerms.iterator(null);
+    TermsEnum leftTermsEnum = leftTerms.iterator();
+    TermsEnum rightTermsEnum = rightTerms.iterator();
     assertTermsEnumEquals(info, leftReader, leftTermsEnum, rightTermsEnum, true);
     
     assertTermsSeekingEquals(info, leftTerms, rightTerms);
@@ -2106,18 +2106,18 @@ public abstract class LuceneTestCase extends Assert {
 
   
   private void assertTermsSeekingEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    TermsEnum leftEnum = null;
-    TermsEnum rightEnum = null;
 
     // just an upper bound
     int numTests = atLeast(20);
     Random random = random();
 
+    TermsEnum leftEnum = null;
+
     // collect this number of terms from the left side
     HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
-      leftEnum = leftTerms.iterator(leftEnum);
+      leftEnum = leftTerms.iterator();
       BytesRef term = null;
       while ((term = leftEnum.next()) != null) {
         int code = random.nextInt(10);
@@ -2155,16 +2155,16 @@ public abstract class LuceneTestCase extends Assert {
       numPasses++;
     }
 
-    rightEnum = rightTerms.iterator(rightEnum);
+    TermsEnum rightEnum = rightTerms.iterator();
 
     ArrayList<BytesRef> shuffledTests = new ArrayList<>(tests);
     Collections.shuffle(shuffledTests, random);
 
     for (BytesRef b : shuffledTests) {
       if (rarely()) {
-        // reuse the enums
-        leftEnum = leftTerms.iterator(leftEnum);
-        rightEnum = rightTerms.iterator(rightEnum);
+        // make new enums
+        leftEnum = leftTerms.iterator();
+        rightEnum = rightTerms.iterator();
       }
 
       final boolean seekExact = random().nextBoolean();

@@ -108,8 +108,8 @@ public class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      return in.iterator(reuse);
+    public TermsEnum iterator() throws IOException {
+      return in.iterator();
     }
 
     @Override

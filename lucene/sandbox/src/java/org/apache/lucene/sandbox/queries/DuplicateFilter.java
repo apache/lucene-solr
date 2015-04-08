@@ -99,7 +99,7 @@ public class DuplicateFilter extends Filter {
     Terms terms = reader.fields().terms(fieldName);
 
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       PostingsEnum docs = null;
       while (true) {
         BytesRef currTerm = termsEnum.next();
@@ -135,7 +135,7 @@ public class DuplicateFilter extends Filter {
     Terms terms = reader.fields().terms(fieldName);
 
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       PostingsEnum docs = null;
       while (true) {
         BytesRef currTerm = termsEnum.next();

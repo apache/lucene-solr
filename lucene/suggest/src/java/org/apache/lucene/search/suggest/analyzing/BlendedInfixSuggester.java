@@ -252,7 +252,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   private double createCoefficient(IndexSearcher searcher, int doc, Set<String> matchedTokens, String prefixToken) throws IOException {
 
     Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
-    TermsEnum it = tv.iterator(TermsEnum.EMPTY);
+    TermsEnum it = tv.iterator();
 
     Integer position = Integer.MAX_VALUE;
     BytesRef term;

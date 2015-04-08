@@ -509,7 +509,7 @@ public class PostingsHighlighter {
           throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
         }
         if (t != null) {
-          termsEnum = t.iterator(null);
+          termsEnum = t.iterator();
           postings = new PostingsEnum[terms.length];
         }
       }

@@ -173,8 +173,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     // NOTE: we don't assert hasOffsets/hasPositions/hasPayloads because they are allowed to be different
 
     boolean bothHavePositions = leftTerms.hasPositions() && rightTerms.hasPositions();
-    TermsEnum leftTermsEnum = leftTerms.iterator(null);
-    TermsEnum rightTermsEnum = rightTerms.iterator(null);
+    TermsEnum leftTermsEnum = leftTerms.iterator();
+    TermsEnum rightTermsEnum = rightTerms.iterator();
     assertTermsEnum(leftTermsEnum, rightTermsEnum, true, bothHavePositions);
     
     assertTermsSeeking(leftTerms, rightTerms);
@@ -206,7 +206,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
-      leftEnum = leftTerms.iterator(leftEnum);
+      leftEnum = leftTerms.iterator();
       BytesRef term = null;
       while ((term = leftEnum.next()) != null) {
         int code = random.nextInt(10);
@@ -234,8 +234,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     Collections.shuffle(shuffledTests, random);
     
     for (BytesRef b : shuffledTests) {
-      leftEnum = leftTerms.iterator(leftEnum);
-      rightEnum = rightTerms.iterator(rightEnum);
+      leftEnum = leftTerms.iterator();
+      rightEnum = rightTerms.iterator();
       
       assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));

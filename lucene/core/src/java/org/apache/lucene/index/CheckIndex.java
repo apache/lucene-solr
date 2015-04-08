@@ -993,7 +993,7 @@ public class CheckIndex implements Closeable {
     //System.out.println("    check minTerm=" + minTerm.utf8ToString() + " maxTerm=" + maxTerm.utf8ToString());
     assert minTerm.compareTo(maxTerm) <= 0;
 
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     TermsEnum.SeekStatus status = termsEnum.seekCeil(minTerm);
     if (status != TermsEnum.SeekStatus.FOUND) {
       throw new RuntimeException("failed to seek to existing term field=" + field + " term=" + minTerm);
@@ -1029,14 +1029,13 @@ public class CheckIndex implements Closeable {
     FixedBitSet normalDocs = new FixedBitSet(maxDoc);
     FixedBitSet intersectDocs = new FixedBitSet(maxDoc);
 
-    TermsEnum termsEnum = null;
     //System.out.println("CI.checkTermRanges field=" + field + " numTerms=" + numTerms);
 
     while (currentInterval >= 10.0) {
       //System.out.println("  cycle interval=" + currentInterval);
 
       // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
-      termsEnum = terms.iterator(termsEnum);
+      TermsEnum termsEnum = terms.iterator();
 
       long termCount = 0;
 
@@ -1198,7 +1197,7 @@ public class CheckIndex implements Closeable {
         }
       }
 
-      final TermsEnum termsEnum = terms.iterator(null);
+      final TermsEnum termsEnum = terms.iterator();
 
       boolean hasOrd = true;
       final long termCountStart = status.delTermCount + status.termCount;
@@ -2035,9 +2034,6 @@ public class CheckIndex implements Closeable {
         postingsFields = null;
       }
 
-      TermsEnum termsEnum = null;
-      TermsEnum postingsTermsEnum = null;
-      
       TermVectorsReader vectorsReader = reader.getTermVectorsReader();
 
       if (vectorsReader != null) {
@@ -2081,7 +2077,7 @@ public class CheckIndex implements Closeable {
               
               if (crossCheckTermVectors) {
                 Terms terms = tfv.terms(field);
-                termsEnum = terms.iterator(termsEnum);
+                TermsEnum termsEnum = terms.iterator();
                 final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
                 final boolean postingsHasPayload = fieldInfo.hasPayloads();
                 final boolean vectorsHasPayload = terms.hasPayloads();
@@ -2090,7 +2086,7 @@ public class CheckIndex implements Closeable {
                 if (postingsTerms == null) {
                   throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
                 }
-                postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
+                TermsEnum postingsTermsEnum = postingsTerms.iterator();
                 
                 final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
                 BytesRef term = null;

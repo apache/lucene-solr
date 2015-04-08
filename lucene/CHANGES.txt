@@ -74,6 +74,9 @@ API Changes
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
   to simplify warming logic during opening new searchers. (Simon Willnauer)
 
+* LUCENE-6410: Removed unused "reuse" parameter to
+  Terms.iterator. (Robert Muir, Mike McCandless)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

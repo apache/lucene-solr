@@ -894,11 +894,10 @@ public class TestJoinUtil extends LuceneTestCase {
         Terms terms = slowCompositeReader.terms(toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
-          TermsEnum termsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>(BytesRef.getUTF8SortedAsUnicodeComparator());
           joinValues.addAll(joinValueToJoinScores.keySet());
           for (BytesRef joinValue : joinValues) {
-            termsEnum = terms.iterator(termsEnum);
+            TermsEnum termsEnum = terms.iterator();
             if (termsEnum.seekExact(joinValue)) {
               postingsEnum = termsEnum.postings(slowCompositeReader.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
               JoinScore joinScore = joinValueToJoinScores.get(joinValue);

@@ -327,7 +327,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       BytesRef term;
       PostingsEnum postingsEnum = null;
       PostingsEnum docsAndPositionsEnum = null;
-      final TermsEnum termsEnum = termsIn.iterator(null);
+      final TermsEnum termsEnum = termsIn.iterator();
       int termOffset = 0;
 
       final IntArrayWriter scratch = new IntArrayWriter();
@@ -655,16 +655,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
-      DirectTermsEnum termsEnum;
-      if (reuse != null && reuse instanceof DirectTermsEnum) {
-        termsEnum = (DirectTermsEnum) reuse;
-        if (!termsEnum.canReuse(terms)) {
-          termsEnum = new DirectTermsEnum();
-        }
-      } else {
-        termsEnum = new DirectTermsEnum();
-      }
+    public TermsEnum iterator() {
+      DirectTermsEnum termsEnum = new DirectTermsEnum();
       termsEnum.reset();
       return termsEnum;
     }

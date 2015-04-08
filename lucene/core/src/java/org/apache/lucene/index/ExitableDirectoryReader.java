@@ -137,8 +137,8 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      return new ExitableTermsEnum(in.iterator(reuse), queryTimeout);
+    public TermsEnum iterator() throws IOException {
+      return new ExitableTermsEnum(in.iterator(), queryTimeout);
     }
   }
 

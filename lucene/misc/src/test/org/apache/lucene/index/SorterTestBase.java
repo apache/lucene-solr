@@ -233,7 +233,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testDocsAndPositionsEnum() throws Exception {
-    TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator(null);
+    TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
     PostingsEnum sortedPositions = termsEnum.postings(null, null, PostingsEnum.ALL);
     int doc;
@@ -294,7 +294,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   @Test
   public void testDocsEnum() throws Exception {
     Bits mappedLiveDocs = randomLiveDocs(sortedReader.maxDoc());
-    TermsEnum termsEnum = sortedReader.terms(DOCS_ENUM_FIELD).iterator(null);
+    TermsEnum termsEnum = sortedReader.terms(DOCS_ENUM_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOCS_ENUM_TERM)));
     PostingsEnum docs = termsEnum.postings(mappedLiveDocs, null);
 
@@ -392,7 +392,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     for (int i = 0; i < maxDoc; i++) {
       Terms terms = sortedReader.getTermVector(i, TERM_VECTORS_FIELD);
       assertNotNull("term vectors not found for doc " + i + " field [" + TERM_VECTORS_FIELD + "]", terms);
-      assertEquals("incorrect term vector for doc " + i, sortedValues[i].toString(), terms.iterator(null).next().utf8ToString());
+      assertEquals("incorrect term vector for doc " + i, sortedValues[i].toString(), terms.iterator().next().utf8ToString());
     }
   }
   

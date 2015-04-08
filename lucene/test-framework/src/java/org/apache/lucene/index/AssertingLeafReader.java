@@ -113,23 +113,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      // reuse, if the codec reused
-      final TermsEnum actualReuse;
-      if (reuse instanceof AssertingTermsEnum) {
-        actualReuse = ((AssertingTermsEnum) reuse).in;
-      } else {
-        actualReuse = null;
-      }
-      TermsEnum termsEnum = super.iterator(actualReuse);
+    public TermsEnum iterator() throws IOException {
+      TermsEnum termsEnum = super.iterator();
       assert termsEnum != null;
-      if (termsEnum == actualReuse) {
-        // codec reused, reset asserting state
-        ((AssertingTermsEnum)reuse).reset();
-        return reuse;
-      } else {
-        return new AssertingTermsEnum(termsEnum);
-      }
+      return new AssertingTermsEnum(termsEnum);
     }
   }
   

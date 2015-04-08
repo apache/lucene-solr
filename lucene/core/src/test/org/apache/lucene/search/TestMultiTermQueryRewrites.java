@@ -153,7 +153,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final MultiTermQuery mtq = new MultiTermQuery("data") {
       @Override
       protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-        return new FilteredTermsEnum(terms.iterator(null)) {
+        return new FilteredTermsEnum(terms.iterator()) {
 
           final BoostAttribute boostAtt =
             attributes().addAttribute(BoostAttribute.class);

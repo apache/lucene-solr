@@ -277,7 +277,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+    public TermsEnum iterator() throws IOException {
       // TODO: reuse
       return new SimpleTVTermsEnum(terms);
     }
