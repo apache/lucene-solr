@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
