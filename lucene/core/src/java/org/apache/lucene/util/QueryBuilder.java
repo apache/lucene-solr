@@ -192,182 +192,204 @@ public class QueryBuilder {
    */
   protected final Query createFieldQuery(Analyzer analyzer, BooleanClause.Occur operator, String field, String queryText, boolean quoted, int phraseSlop) {
     assert operator == BooleanClause.Occur.SHOULD || operator == BooleanClause.Occur.MUST;
-    // Use the analyzer to get all the tokens, and then build a TermQuery,
-    // PhraseQuery, or nothing based on the term count
-    CachingTokenFilter buffer = null;
-    TermToBytesRefAttribute termAtt = null;
-    PositionIncrementAttribute posIncrAtt = null;
-    int numTokens = 0;
-    int positionCount = 0;
-    boolean severalTokensAtSamePosition = false;
-    boolean hasMoreTokens = false;
+    
+    // Use the analyzer to get all the tokens, and then build an appropriate
+    // query based on the analysis chain.
+    
+    try (TokenStream source = analyzer.tokenStream(field, queryText);
+         CachingTokenFilter stream = new CachingTokenFilter(source)) {
+      
+      TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+      PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+      
+      if (termAtt == null) {
+        return null; 
+      }
+      
+      // phase 1: read through the stream and assess the situation:
+      // counting the number of tokens/positions and marking if we have any synonyms.
+      
+      int numTokens = 0;
+      int positionCount = 0;
+      boolean hasSynonyms = false;
 
-    try (TokenStream source = analyzer.tokenStream(field, queryText)) {
-      buffer = new CachingTokenFilter(source);
-      buffer.reset();
-
-      termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-
-      if (termAtt != null) {
-        try {
-          hasMoreTokens = buffer.incrementToken();
-          while (hasMoreTokens) {
-            numTokens++;
-            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-            if (positionIncrement != 0) {
-              positionCount += positionIncrement;
-            } else {
-              severalTokensAtSamePosition = true;
-            }
-            hasMoreTokens = buffer.incrementToken();
-          }
-        } catch (IOException e) {
-          // ignore
+      stream.reset();
+      while (stream.incrementToken()) {
+        numTokens++;
+        int positionIncrement = posIncAtt.getPositionIncrement();
+        if (positionIncrement != 0) {
+          positionCount += positionIncrement;
+        } else {
+          hasSynonyms = true;
+        }
+      }
+      
+      // phase 2: based on token count, presence of synonyms, and options
+      // formulate a single term, boolean, or phrase.
+      
+      if (numTokens == 0) {
+        return null;
+      } else if (numTokens == 1) {
+        // single term
+        return analyzeTerm(field, stream);
+      } else if (quoted && positionCount > 1) {
+        // phrase
+        if (hasSynonyms) {
+          // complex phrase with synonyms
+          return analyzeMultiPhrase(field, stream, phraseSlop);
+        } else {
+          // simple phrase
+          return analyzePhrase(field, stream, phraseSlop);
+        }
+      } else {
+        // boolean
+        if (positionCount == 1) {
+          // only one position, with synonyms
+          return analyzeBoolean(field, stream);
+        } else {
+          // complex case: multiple positions
+          return analyzeMultiBoolean(field, stream, operator);
         }
       }
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing query text", e);
     }
-
-    // rewind the buffer stream
-    try {
-      if (numTokens > 0) {
-        buffer.reset();//will never throw; the buffer is cached
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+  }
+  
+  /** 
+   * Creates simple term query from the cached tokenstream contents 
+   */
+  private Query analyzeTerm(String field, TokenStream stream) throws IOException {
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+    
+    stream.reset();
+    if (!stream.incrementToken()) {
+      throw new AssertionError();
     }
+    
+    termAtt.fillBytesRef();
+    return newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+  }
+  
+  /** 
+   * Creates simple boolean query from the cached tokenstream contents 
+   */
+  private Query analyzeBoolean(String field, TokenStream stream) throws IOException {
+    BooleanQuery q = newBooleanQuery(true);
 
-    BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+    
+    stream.reset();
+    while (stream.incrementToken()) {
+      termAtt.fillBytesRef();
+      Query currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+      q.add(currentQuery, BooleanClause.Occur.SHOULD);
+    }
+    
+    return q;
+  }
+  
+  /** 
+   * Creates complex boolean query from the cached tokenstream contents 
+   */
+  private Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
+    BooleanQuery q = newBooleanQuery(false);
+    Query currentQuery = null;
+    
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
 
-    if (numTokens == 0) {
-      return null;
-    } else if (numTokens == 1) {
-      try {
-        boolean hasNext = buffer.incrementToken();
-        assert hasNext == true;
-        termAtt.fillBytesRef();
-      } catch (IOException e) {
-        // safe to ignore, because we know the number of tokens
-      }
-      return newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-    } else {
-      if (severalTokensAtSamePosition || (!quoted)) {
-        if (positionCount == 1 || (!quoted)) {
-          // no phrase query:
-          
-          if (positionCount == 1) {
-            // simple case: only one position, with synonyms
-            BooleanQuery q = newBooleanQuery(true);
-            for (int i = 0; i < numTokens; i++) {
-              try {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                termAtt.fillBytesRef();
-              } catch (IOException e) {
-                // safe to ignore, because we know the number of tokens
-              }
-              Query currentQuery = newTermQuery(
-                  new Term(field, BytesRef.deepCopyOf(bytes)));
-              q.add(currentQuery, BooleanClause.Occur.SHOULD);
-            }
-            return q;
-          } else {
-            // multiple positions
-            BooleanQuery q = newBooleanQuery(false);
-            Query currentQuery = null;
-            for (int i = 0; i < numTokens; i++) {
-              try {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                termAtt.fillBytesRef();
-              } catch (IOException e) {
-                // safe to ignore, because we know the number of tokens
-              }
-              if (posIncrAtt != null && posIncrAtt.getPositionIncrement() == 0) {
-                if (!(currentQuery instanceof BooleanQuery)) {
-                  Query t = currentQuery;
-                  currentQuery = newBooleanQuery(true);
-                  ((BooleanQuery)currentQuery).add(t, BooleanClause.Occur.SHOULD);
-                }
-                ((BooleanQuery)currentQuery).add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
-              } else {
-                if (currentQuery != null) {
-                  q.add(currentQuery, operator);
-                }
-                currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-              }
-            }
-            q.add(currentQuery, operator);
-            return q;
-          }
-        } else {
-          // phrase query:
-          MultiPhraseQuery mpq = newMultiPhraseQuery();
-          mpq.setSlop(phraseSlop);
-          List<Term> multiTerms = new ArrayList<>();
-          int position = -1;
-          for (int i = 0; i < numTokens; i++) {
-            int positionIncrement = 1;
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              termAtt.fillBytesRef();
-              if (posIncrAtt != null) {
-                positionIncrement = posIncrAtt.getPositionIncrement();
-              }
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
-            }
-
-            if (positionIncrement > 0 && multiTerms.size() > 0) {
-              if (enablePositionIncrements) {
-                mpq.add(multiTerms.toArray(new Term[0]),position);
-              } else {
-                mpq.add(multiTerms.toArray(new Term[0]));
-              }
-              multiTerms.clear();
-            }
-            position += positionIncrement;
-            multiTerms.add(new Term(field, BytesRef.deepCopyOf(bytes)));
-          }
-          if (enablePositionIncrements) {
-            mpq.add(multiTerms.toArray(new Term[0]),position);
-          } else {
-            mpq.add(multiTerms.toArray(new Term[0]));
-          }
-          return mpq;
+    PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    
+    stream.reset();
+    while (stream.incrementToken()) {
+      termAtt.fillBytesRef();
+      if (posIncrAtt.getPositionIncrement() == 0) {
+        if (!(currentQuery instanceof BooleanQuery)) {
+          Query t = currentQuery;
+          currentQuery = newBooleanQuery(true);
+          ((BooleanQuery)currentQuery).add(t, BooleanClause.Occur.SHOULD);
         }
+        ((BooleanQuery)currentQuery).add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
       } else {
-        PhraseQuery pq = newPhraseQuery();
-        pq.setSlop(phraseSlop);
-        int position = -1;
-
-        for (int i = 0; i < numTokens; i++) {
-          int positionIncrement = 1;
-
-          try {
-            boolean hasNext = buffer.incrementToken();
-            assert hasNext == true;
-            termAtt.fillBytesRef();
-            if (posIncrAtt != null) {
-              positionIncrement = posIncrAtt.getPositionIncrement();
-            }
-          } catch (IOException e) {
-            // safe to ignore, because we know the number of tokens
-          }
-
-          if (enablePositionIncrements) {
-            position += positionIncrement;
-            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)),position);
-          } else {
-            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)));
-          }
+        if (currentQuery != null) {
+          q.add(currentQuery, operator);
         }
-        return pq;
+        currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
       }
     }
+    q.add(currentQuery, operator);
+    
+    return q;
+  }
+  
+  /** 
+   * Creates simple phrase query from the cached tokenstream contents 
+   */
+  private Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
+    PhraseQuery pq = newPhraseQuery();
+    pq.setSlop(slop);
+    
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    int position = -1;    
+    
+    stream.reset();
+    while (stream.incrementToken()) {
+      termAtt.fillBytesRef();
+      
+      if (enablePositionIncrements) {
+        position += posIncrAtt.getPositionIncrement();
+        pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
+      } else {
+        pq.add(new Term(field, BytesRef.deepCopyOf(bytes)));
+      }
+    }
+    
+    return pq;
+  }
+  
+  /** 
+   * Creates complex phrase query from the cached tokenstream contents 
+   */
+  private Query analyzeMultiPhrase(String field, TokenStream stream, int slop) throws IOException {
+    MultiPhraseQuery mpq = newMultiPhraseQuery();
+    mpq.setSlop(slop);
+    
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    int position = -1;  
+    
+    List<Term> multiTerms = new ArrayList<>();
+    stream.reset();
+    while (stream.incrementToken()) {
+      termAtt.fillBytesRef();
+      int positionIncrement = posIncrAtt.getPositionIncrement();
+      
+      if (positionIncrement > 0 && multiTerms.size() > 0) {
+        if (enablePositionIncrements) {
+          mpq.add(multiTerms.toArray(new Term[0]), position);
+        } else {
+          mpq.add(multiTerms.toArray(new Term[0]));
+        }
+        multiTerms.clear();
+      }
+      position += positionIncrement;
+      multiTerms.add(new Term(field, BytesRef.deepCopyOf(bytes)));
+    }
+    
+    if (enablePositionIncrements) {
+      mpq.add(multiTerms.toArray(new Term[0]), position);
+    } else {
+      mpq.add(multiTerms.toArray(new Term[0]));
+    }
+    return mpq;
   }
   
   /**
