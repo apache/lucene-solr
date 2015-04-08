@@ -97,7 +97,7 @@ public class HdfsUpdateLog extends UpdateLog {
     if (confDir != null) {
       HdfsUtil.addHdfsResources(conf, confDir);
     }
-    
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
     return conf;
   }
   
