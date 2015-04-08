@@ -48,6 +48,9 @@ public class SocketProxy {
   private static final transient Logger log = LoggerFactory.getLogger(SocketProxy.class);
   
   public static final int ACCEPT_TIMEOUT_MILLIS = 100;
+
+  // should be as large as the HttpShardHandlerFactory socket timeout ... or larger?
+  public static final int PUMP_SOCKET_TIMEOUT_MS = 100 * 1000;
   
   private URI proxyUrl;
   private URI target;
@@ -148,7 +151,7 @@ public class SocketProxy {
     synchronized (this.connections) {
       connections = new ArrayList<Bridge>(this.connections);
     }
-    log.warn("Closing " + connections.size()+" connections to: "+getUrl());
+    log.warn("Closing " + connections.size()+" connections to: "+getUrl()+", target: "+target);
     for (Bridge con : connections) {
       closeConnection(con);
     }
@@ -338,7 +341,7 @@ public class SocketProxy {
         byte[] buf = new byte[1024];
 
         try {
-          src.setSoTimeout(10 * 1000);
+          src.setSoTimeout(PUMP_SOCKET_TIMEOUT_MS);
         } catch (SocketException e) {
           log.error("Failed to set socket timeout on "+src+" due to: "+e);
           throw new RuntimeException(e);
