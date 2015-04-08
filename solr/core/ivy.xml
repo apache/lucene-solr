@@ -66,7 +66,7 @@
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile.hadoop"/>
     
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
-    <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${/com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru}" conf="compile.hadoop"/>
+    <dependency org="com.github.ben-manes.caffeine" name="caffeine" rev="${/com.github.ben-manes.caffeine/caffeine}" conf="compile.hadoop"/>
     <dependency org="org.htrace" name="htrace-core" rev="${/org.htrace/htrace-core}" conf="compile.hadoop"/>
     
     <!-- Hadoop DfsMiniCluster Dependencies-->

@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -34,12 +36,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private class MapperCache implements Cache {
-    public Map<String, byte[]> map = new ConcurrentLinkedHashMap.Builder<String, byte[]>().maximumWeightedCapacity(8).build();
+    public Map<String, byte[]> map = Caffeine.newBuilder()
+        .maximumSize(8)
+        .<String, byte[]>build()
+        .asMap();
 
     @Override
     public void update(String name, long blockId, int blockOffset, byte[] buffer, int offset, int length) {
@@ -167,7 +170,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomAccessWritesLargeCache() throws IOException {
-    mapperCache.map = new ConcurrentLinkedHashMap.Builder<String, byte[]>().maximumWeightedCapacity(10000).build();
+    mapperCache.map = Caffeine.newBuilder()
+        .maximumSize(10_000)
+        .<String, byte[]>build()
+        .asMap();
     testRandomAccessWrites();
   }
 

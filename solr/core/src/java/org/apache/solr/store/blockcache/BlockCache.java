@@ -21,8 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.EvictionListener;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
  * @lucene.experimental
@@ -31,7 +32,7 @@ public class BlockCache {
   
   public static final int _128M = 134217728;
   public static final int _32K = 32768;
-  private final ConcurrentMap<BlockCacheKey,BlockCacheLocation> cache;
+  private final Cache<BlockCacheKey,BlockCacheLocation> cache;
   private final ByteBuffer[] banks;
   private final BlockLocks[] locks;
   private final AtomicInteger[] lockCounters;
@@ -68,20 +69,18 @@ public class BlockCache {
       locks[i] = new BlockLocks(numberOfBlocksPerBank);
       lockCounters[i] = new AtomicInteger();
     }
-    
-    EvictionListener<BlockCacheKey,BlockCacheLocation> listener = new EvictionListener<BlockCacheKey,BlockCacheLocation>() {
-      @Override
-      public void onEviction(BlockCacheKey key, BlockCacheLocation location) {
-        releaseLocation(location);
-      }
-    };
-    cache = new ConcurrentLinkedHashMap.Builder<BlockCacheKey,BlockCacheLocation>()
-        .maximumWeightedCapacity(maxEntries).listener(listener).build();
+
+    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = 
+        notification -> releaseLocation(notification.getValue());
+    cache = Caffeine.newBuilder()
+        .removalListener(listener)
+        .maximumSize(maxEntries)
+        .build();
     this.blockSize = blockSize;
   }
   
   public void release(BlockCacheKey key) {
-    releaseLocation(cache.remove(key));
+    cache.invalidate(key);
   }
   
   private void releaseLocation(BlockCacheLocation location) {
@@ -104,7 +103,7 @@ public class BlockCache {
           + blockSize + "] got length [" + length + "] with blockOffset ["
           + blockOffset + "]");
     }
-    BlockCacheLocation location = cache.get(blockCacheKey);
+    BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     boolean newLocation = false;
     if (location == null) {
       newLocation = true;
@@ -122,7 +121,7 @@ public class BlockCache {
     bank.position(bankOffset + blockOffset);
     bank.put(data, offset, length);
     if (newLocation) {
-      releaseLocation(cache.put(blockCacheKey.clone(), location));
+      cache.put(blockCacheKey.clone(), location);
       metrics.blockCacheSize.incrementAndGet();
     }
     return true;
@@ -130,7 +129,7 @@ public class BlockCache {
   
   public boolean fetch(BlockCacheKey blockCacheKey, byte[] buffer,
       int blockOffset, int off, int length) {
-    BlockCacheLocation location = cache.get(blockCacheKey);
+    BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
       return false;
     }
@@ -201,6 +200,6 @@ public class BlockCache {
   }
   
   public int getSize() {
-    return cache.size();
+    return cache.asMap().size();
   }
 }
