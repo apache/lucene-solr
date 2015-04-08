@@ -44,9 +44,6 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public void close() throws IOException {
-    // TODO turn on the following to look for leaks closing inputs,
-    // after fixing TestTransactions
-    // dir.maybeThrowDeterministicException();
     if (closed) {
       delegate.close(); // don't mask double-close bugs
       return;
@@ -61,6 +58,7 @@ public class MockIndexInputWrapper extends IndexInput {
       if (!isClone) {
         dir.removeIndexInput(this, name);
       }
+      dir.maybeThrowDeterministicException();
     }
   }
   
