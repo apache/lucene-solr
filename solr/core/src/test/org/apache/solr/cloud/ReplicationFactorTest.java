@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -39,7 +40,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 
 /**
  * Tests a client application's ability to get replication factor
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
