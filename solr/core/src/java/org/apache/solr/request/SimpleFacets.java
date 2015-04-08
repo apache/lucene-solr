@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -141,6 +142,25 @@ public class SimpleFacets {
     this.params = orig = params;
     this.required = new RequiredSolrParams(params);
     this.rb = rb;
+  }
+
+  /**
+   * Returns <code>true</code> if a String contains the given substring. Otherwise
+   * <code>false</code>.
+   *
+   * @param ref
+   *          the {@link String} to test
+   * @param substring
+   *          the substring to look for
+   * @param ignoreCase
+   *          whether the comparison should be case-insensitive
+   * @return Returns <code>true</code> iff the String contains the given substring.
+   *         Otherwise <code>false</code>.
+   */
+  public static boolean contains(String ref, String substring, boolean ignoreCase) {
+    if (ignoreCase)
+      return StringUtils.containsIgnoreCase(ref, substring);
+    return StringUtils.contains(ref, substring);
   }
 
 
@@ -494,7 +514,6 @@ public class SimpleFacets {
     }
 
     BytesRef prefixBytesRef = prefix != null ? new BytesRef(prefix) : null;
-    BytesRef containsRef = contains != null ? new BytesRef(contains) : null;
     final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBytesRef, 128);
     
     SchemaField sf = searcher.getSchema().getFieldOrNull(groupField);
@@ -526,7 +545,7 @@ public class SimpleFacets {
       = result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       //:TODO:can we do contains earlier than this to make it more efficient?
-      if (containsRef != null && !StringHelper.contains(facetEntry.getValue(), containsRef, ignoreCase)) {
+      if (contains != null && !contains(facetEntry.getValue().utf8ToString(), contains, ignoreCase)) {
         continue;
       }
       facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
@@ -730,12 +749,6 @@ public class SimpleFacets {
       String indexedPrefix = ft.toInternal(prefix);
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
-    
-    BytesRef containsTermBytes = null;
-    if (contains != null) {
-      String indexedContains = ft.toInternal(contains);
-      containsTermBytes = new BytesRef(indexedContains);
-    }
 
     Fields fields = r.fields();
     Terms terms = fields==null ? null : fields.terms(field);
@@ -769,7 +782,7 @@ public class SimpleFacets {
         if (prefixTermBytes != null && !StringHelper.startsWith(term, prefixTermBytes))
           break;
 
-        if (containsTermBytes == null || StringHelper.contains(term, containsTermBytes, ignoreCase)) {
+        if (contains == null || contains(term.utf8ToString(), contains, ignoreCase)) {
           int df = termsEnum.docFreq();
 
           // If we are sorting, we can use df>min (rather than >=) since we
