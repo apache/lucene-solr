@@ -17,12 +17,8 @@
 
 package org.apache.solr.request;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
@@ -32,7 +28,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -41,6 +36,16 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
 
 
 class PerSegmentSingleValuedFaceting {
@@ -55,7 +60,7 @@ class PerSegmentSingleValuedFaceting {
   boolean missing;
   String sort;
   String prefix;
-  BytesRef containsBR;
+  String contains;
   boolean ignoreCase;
 
   Filter baseSet;
@@ -72,7 +77,7 @@ class PerSegmentSingleValuedFaceting {
     this.missing = missing;
     this.sort = sort;
     this.prefix = prefix;
-    this.containsBR = contains != null ? new BytesRef(contains) : null;
+    this.contains = contains;
     this.ignoreCase = ignoreCase;
   }
 
@@ -180,7 +185,7 @@ class PerSegmentSingleValuedFaceting {
       SegFacet seg = queue.top();
       
       // if facet.contains specified, only actually collect the count if substring contained
-      boolean collect = containsBR == null || StringHelper.contains(seg.tempBR, containsBR, ignoreCase);
+      boolean collect = contains == null || SimpleFacets.contains(seg.tempBR.utf8ToString(), contains, ignoreCase);
       
       // we will normally end up advancing the term enum for this segment
       // while still using "val", so we need to make a copy since the BytesRef

@@ -17,11 +17,8 @@ package org.apache.solr.request;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.List;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
@@ -34,7 +31,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LongValues;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -43,6 +39,9 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.LongPriorityQueue;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Computes term facets for docvalues field (single or multivalued).
@@ -99,8 +98,6 @@ public class DocValuesFacets {
       prefixRef.copyChars(prefix);
     }
     
-    final BytesRef containsBR = contains != null ? new BytesRef(contains) : null;
-
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
       startTermIndex = (int) si.lookupTerm(prefixRef.get());
@@ -173,9 +170,9 @@ public class DocValuesFacets {
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
           int c = counts[i];
-          if (containsBR != null) {
+          if (contains != null) {
             final BytesRef term = si.lookupOrd(startTermIndex+i);
-            if (!StringHelper.contains(term, containsBR, ignoreCase)) {
+            if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
               continue;
             }
           }
@@ -212,7 +209,7 @@ public class DocValuesFacets {
       } else {
         // add results in index order
         int i=(startTermIndex==-1)?1:0;
-        if (mincount<=0 && containsBR == null) {
+        if (mincount<=0 && contains == null) {
           // if mincount<=0 and we're not examining the values for contains, then
           // we won't discard any terms and we know exactly where to start.
           i+=off;
@@ -223,9 +220,9 @@ public class DocValuesFacets {
           int c = counts[i];
           if (c<mincount) continue;
           BytesRef term = null;
-          if (containsBR != null) {
+          if (contains != null) {
             term = si.lookupOrd(startTermIndex+i);
-            if (!StringHelper.contains(term, containsBR, ignoreCase)) {
+            if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
               continue;
             }
           }
