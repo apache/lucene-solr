@@ -32,6 +32,9 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Failure;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -91,6 +94,164 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     } catch (UnsupportedOperationException expected) {
       // ok
     }
+    dir.close();
+  }
+  
+  /** 
+   * Test field infos write that hits exception immediately on open.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCreateOutput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "createOutput".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    addAttributes(fi);
+    FieldInfos infos = builder.finish();
+    
+    fail.setDoFail();
+    try {
+      codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test field infos write that hits exception on close.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCloseOutput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "close".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    addAttributes(fi);
+    FieldInfos infos = builder.finish();
+    
+    fail.setDoFail();
+    try {
+      codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test field infos read that hits exception immediately on open.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnOpenInput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "openInput".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    addAttributes(fi);
+    FieldInfos infos = builder.finish();
+    codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
+    
+    fail.setDoFail();
+    try {
+      codec.fieldInfosFormat().read(dir, segmentInfo, "", IOContext.DEFAULT);      
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test field infos read that hits exception on close.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCloseInput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "close".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
+    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    addAttributes(fi);
+    FieldInfos infos = builder.finish();
+    codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
+    
+    fail.setDoFail();
+    try {
+      codec.fieldInfosFormat().read(dir, segmentInfo, "", IOContext.DEFAULT);      
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
     dir.close();
   }
   

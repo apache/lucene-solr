@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTransactions extends LuceneTestCase {
@@ -127,15 +128,25 @@ public class TestTransactions extends LuceneTestCase {
           try {
             writer1.prepareCommit();
           } catch (Throwable t) {
-            writer1.rollback();
-            writer2.rollback();
+            // release resources
+            try {
+              writer1.rollback();
+            } catch (Throwable ignore) {}
+            try {
+              writer2.rollback();
+            } catch (Throwable ignore) {}
             return;
           }
           try {
             writer2.prepareCommit();
           } catch (Throwable t) {
-            writer1.rollback();
-            writer2.rollback();
+            // release resources
+            try {
+              writer1.rollback();
+            } catch (Throwable ignore) {}
+            try {
+              writer2.rollback();
+            } catch (Throwable ignore) {}
             return;
           }
 
@@ -190,24 +201,20 @@ public class TestTransactions extends LuceneTestCase {
         try {
           r1 = DirectoryReader.open(dir1);
           r2 = DirectoryReader.open(dir2);
-        } catch (IOException e) {
+        } catch (Exception e) {
+          // can be rethrown as RuntimeException if it happens during a close listener
           if (!e.getMessage().contains("on purpose")) {
             throw e;
           }
-          if (r1 != null) {
-            r1.close();
-          }
-          if (r2 != null) {
-            r2.close();
-          }
+          // release resources
+          IOUtils.closeWhileHandlingException(r1, r2);
           return;
         }
       }
       if (r1.numDocs() != r2.numDocs()) {
         throw new RuntimeException("doc counts differ: r1=" + r1.numDocs() + " r2=" + r2.numDocs());
       }
-      r1.close();
-      r2.close();
+      IOUtils.closeWhileHandlingException(r1, r2);
     }
   }
 

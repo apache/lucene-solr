@@ -27,8 +27,12 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Failure;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -157,6 +161,155 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
       assertEquals(info2.getVersion(), v);
       dir.close();
     }
+  }
+  
+  /** 
+   * Test segment infos write that hits exception immediately on open.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCreateOutput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "createOutput".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+                                       Collections.<String,String>emptyMap(), id, new HashMap<String,String>());
+    info.setFiles(Collections.<String>emptySet());
+    
+    fail.setDoFail();
+    try {
+      codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test segment infos write that hits exception on close.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCloseOutput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "close".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+                                       Collections.<String,String>emptyMap(), id, new HashMap<String,String>());
+    info.setFiles(Collections.<String>emptySet());
+    
+    fail.setDoFail();
+    try {
+      codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test segment infos read that hits exception immediately on open.
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnOpenInput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "openInput".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+                                       Collections.<String,String>emptyMap(), id, new HashMap<String,String>());
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+    
+    fail.setDoFail();
+    try {
+      codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    
+    dir.close();
+  }
+  
+  /** 
+   * Test segment infos read that hits exception on close
+   * make sure we get our exception back, no file handle leaks, etc. 
+   */
+  public void testExceptionOnCloseInput() throws Exception {
+    Failure fail = new Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+          if (doFail && "close".equals(e.getMethodName())) {
+            throw new FakeIOException();
+          }
+        }
+      }
+    };
+    
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+                                       Collections.<String,String>emptyMap(), id, new HashMap<String,String>());
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+    
+    fail.setDoFail();
+    try {
+      codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (FakeIOException expected) {
+      // ok
+    } finally {
+      fail.clearDoFail();
+    }
+    dir.close();
   }
   
   /** 
