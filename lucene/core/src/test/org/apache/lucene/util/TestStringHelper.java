@@ -56,36 +56,6 @@ public class TestStringHelper extends LuceneTestCase {
     assertTrue(StringHelper.endsWith(ref, slice));
   }
 
-  public void testContainsAtStart() {
-    BytesRef ref = new BytesRef("foobar");
-    BytesRef slice = new BytesRef("foo");
-    assertTrue(StringHelper.contains(ref, slice, false));
-  }
-  
-  public void testContains() {
-    BytesRef ref = new BytesRef("foobar");
-    BytesRef slice = new BytesRef("ooba");
-    assertTrue(StringHelper.contains(ref, slice, false));
-  }
-  
-  public void testContainsAtEnd() {
-    BytesRef ref = new BytesRef("foobar");
-    BytesRef slice = new BytesRef("bar");
-    assertTrue(StringHelper.contains(ref, slice, false));
-  }
-  
-  public void testContainsWhole() {
-    BytesRef ref = new BytesRef("foobar");
-    BytesRef slice = new BytesRef("foobar");
-    assertTrue(StringHelper.contains(ref, slice, false));
-  }
-  
-  public void testContainsIgnoreCase() {
-    BytesRef ref = new BytesRef("FooBar");
-    BytesRef slice = new BytesRef("bar");
-    assertTrue(StringHelper.contains(ref, slice, true));
-  }
-
   public void testMurmurHash3() throws Exception {
     // Hashes computed using murmur3_32 from https://code.google.com/p/pyfasthash
     assertEquals(0xf6a5c420, StringHelper.murmurhash3_x86_32(new BytesRef("foo"), 0));

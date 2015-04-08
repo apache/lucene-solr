@@ -2258,4 +2258,24 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
               400);
   }
 
+  public void testContainsAtStart() {
+    assertTrue(SimpleFacets.contains("foobar", "foo", false));
+  }
+
+  public void testContains() {
+    assertTrue(SimpleFacets.contains("foobar", "ooba", false));
+  }
+
+  public void testContainsAtEnd() {
+    assertTrue(SimpleFacets.contains("foobar", "bar", false));
+  }
+
+  public void testContainsWhole() {
+    assertTrue(SimpleFacets.contains("foobar", "foobar", false));
+  }
+
+  public void testContainsIgnoreCase() {
+    assertTrue(SimpleFacets.contains("FooBar", "bar", true));
+  }
+
 }

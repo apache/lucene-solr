@@ -17,11 +17,11 @@ package org.apache.lucene.demo.facet;
  * limitations under the License.
  */
 
-import java.util.List;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
+
+import java.util.List;
 
 public class TestSimpleFacetsExample extends LuceneTestCase {
 
@@ -54,4 +54,5 @@ public class TestSimpleFacetsExample extends LuceneTestCase {
     assertEquals("dim=Publish Date path=[] value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", result.get(0).toString());
     assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", result.get(1).toString());
   }
+
 }

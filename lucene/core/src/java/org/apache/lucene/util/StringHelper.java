@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -134,35 +133,7 @@ public abstract class StringHelper {
   public static boolean endsWith(BytesRef ref, BytesRef suffix) {
     return sliceEquals(ref, suffix, ref.length - suffix.length);
   }
-  
-  /**
-   * Returns <code>true</code> iff the ref contains the given slice. Otherwise
-   * <code>false</code>.
-   * 
-   * @param ref
-   *          the {@link BytesRef} to test
-   * @param slice
-   *          the slice to look for
-   * @param ignoreCase
-   *          whether the comparison should be case-insensitive
-   * @return Returns <code>true</code> iff the ref contains the given slice.
-   *         Otherwise <code>false</code>.
-   */
-  public static boolean contains(BytesRef ref, BytesRef slice, boolean ignoreCase) {
-    if (ignoreCase) {
-      String s1 = ref.utf8ToString();
-      String s2 = slice.utf8ToString();
-      return s1.toLowerCase(Locale.ENGLISH).contains(s2.toLowerCase(Locale.ENGLISH));
-    } else {
-      for (int pos = 0; pos <= ref.length - slice.length; ++pos) {
-        if (sliceEquals(ref, slice, pos)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  
+
   private static boolean sliceEquals(BytesRef sliceToTest, BytesRef other, int pos) {
     if (pos < 0 || sliceToTest.length - pos < other.length) {
       return false;
