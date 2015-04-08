@@ -87,7 +87,7 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     for (String field : fields) {
       CompletionTermWriter termWriter = new CompletionTermWriter();
       Terms terms = fields.terms(field);
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
 
       // write terms
       BytesRef term;

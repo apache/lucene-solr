@@ -101,7 +101,7 @@ public class HighFreqTerms {
         throw new RuntimeException("field " + field + " not found");
       }
 
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       tiq = new TermStatsQueue(numTerms, comparator);
       tiq.fill(field, termsEnum);
     } else {
@@ -113,7 +113,7 @@ public class HighFreqTerms {
       for (String fieldName : fields) {
         Terms terms = fields.terms(fieldName);
         if (terms != null) {
-          tiq.fill(fieldName, terms.iterator(null));
+          tiq.fill(fieldName, terms.iterator());
         }
       }
     }

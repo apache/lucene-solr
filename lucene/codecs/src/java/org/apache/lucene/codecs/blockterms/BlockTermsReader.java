@@ -246,7 +246,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+    public TermsEnum iterator() throws IOException {
       return new SegmentTermsEnum();
     }
 

@@ -49,7 +49,7 @@ final class FreqProxTermsWriter extends TermsHash {
           lastField = deleteTerm.field();
           Terms terms = fields.terms(lastField);
           if (terms != null) {
-            termsEnum = terms.iterator(termsEnum);
+            termsEnum = terms.iterator();
           } else {
             termsEnum = null;
           }

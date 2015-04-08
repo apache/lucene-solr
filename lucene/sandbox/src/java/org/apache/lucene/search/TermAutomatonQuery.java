@@ -393,7 +393,7 @@ public class TermAutomatonQuery extends Query {
         TermState state = termContext.get(context.ord);
         if (state != null) {
 
-          TermsEnum termsEnum = context.reader().terms(field).iterator(null);
+          TermsEnum termsEnum = context.reader().terms(field).iterator();
           termsEnum.seekExact(term, state);
           enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(acceptDocs, null, PostingsEnum.POSITIONS));
         }

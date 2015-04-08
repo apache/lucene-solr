@@ -129,7 +129,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     Terms vector = mergedReader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
     assertEquals(3, vector.size());
-    TermsEnum termsEnum = vector.iterator(null);
+    TermsEnum termsEnum = vector.iterator();
 
     int i = 0;
     while (termsEnum.next() != null) {

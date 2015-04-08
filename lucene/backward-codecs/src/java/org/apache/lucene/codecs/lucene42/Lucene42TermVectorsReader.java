@@ -722,13 +722,8 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      final TVTermsEnum termsEnum;
-      if (reuse != null && reuse instanceof TVTermsEnum) {
-        termsEnum = (TVTermsEnum) reuse;
-      } else {
-        termsEnum = new TVTermsEnum();
-      }
+    public TermsEnum iterator() throws IOException {
+      final TVTermsEnum termsEnum = new TVTermsEnum();
       termsEnum.reset(numTerms, flags, prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths,
           payloadIndex, payloadBytes,
           new ByteArrayDataInput(termBytes.bytes, termBytes.offset, termBytes.length));

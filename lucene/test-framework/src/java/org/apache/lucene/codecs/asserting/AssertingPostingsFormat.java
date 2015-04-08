@@ -142,7 +142,6 @@ public final class AssertingPostingsFormat extends PostingsFormat {
       // incoming Fields here?
  
       String lastField = null;
-      TermsEnum termsEnum = null;
 
       for(String field : fields) {
 
@@ -157,7 +156,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         }
         assert terms != null;
 
-        termsEnum = terms.iterator(termsEnum);
+        TermsEnum termsEnum = terms.iterator();
         BytesRefBuilder lastTerm = null;
         PostingsEnum postingsEnum = null;
 

@@ -127,13 +127,11 @@ class TermsIncludingScoreQuery extends Query {
     final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
     return new Weight(TermsIncludingScoreQuery.this) {
 
-      private TermsEnum segmentTermsEnum;
-
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms != null) {
-          segmentTermsEnum = terms.iterator(segmentTermsEnum);
+          TermsEnum segmentTermsEnum = terms.iterator();
           BytesRef spare = new BytesRef();
           PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
@@ -169,7 +167,7 @@ class TermsIncludingScoreQuery extends Query {
         // what is the runtime...seems ok?
         final long cost = context.reader().maxDoc() * terms.size();
 
-        segmentTermsEnum = terms.iterator(segmentTermsEnum);
+        TermsEnum segmentTermsEnum = terms.iterator();
         if (multipleValuesPerDocument) {
           return new MVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
         } else {

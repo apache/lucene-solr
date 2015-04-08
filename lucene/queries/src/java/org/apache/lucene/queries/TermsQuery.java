@@ -382,7 +382,7 @@ public class TermsQuery extends Query implements Accountable {
         PostingsEnum docs = null;
         for (TermsAndField termsAndField : termsAndFields) {
           if ((terms = fields.terms(termsAndField.field)) != null) {
-            termsEnum = terms.iterator(termsEnum); // this won't return null
+            termsEnum = terms.iterator(); // this won't return null
             for (int i = termsAndField.start; i < termsAndField.end; i++) {
               spare.offset = offsets[i];
               spare.length = offsets[i+1] - offsets[i];

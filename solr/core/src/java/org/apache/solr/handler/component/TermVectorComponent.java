@@ -295,8 +295,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
     };
 
-    TermsEnum termsEnum = null;
-
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList<Object> docNL = new NamedList<>();
@@ -320,8 +318,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           final String field = entry.getKey();
           final Terms vector = reader.getTermVector(docId, field);
           if (vector != null) {
-            termsEnum = vector.iterator(termsEnum);
-            mapOneVector(docNL, entry.getValue(), reader, docId, vector.iterator(termsEnum), field);
+            TermsEnum termsEnum = vector.iterator();
+            mapOneVector(docNL, entry.getValue(), reader, docId, termsEnum, field);
           }
         }
       } else {
@@ -330,7 +328,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         for (String field : vectors) {
           Terms terms = vectors.terms(field);
           if (terms != null) {
-            termsEnum = terms.iterator(termsEnum);
+            TermsEnum termsEnum = terms.iterator();
             mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
           }
         }

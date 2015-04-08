@@ -482,16 +482,8 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
-      SeedTermsEnum termsEnum;
-      if (reuse != null && reuse instanceof SeedTermsEnum) {
-        termsEnum = (SeedTermsEnum) reuse;
-        if (termsEnum.terms != terms) {
-          termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
-        }
-      } else {
-        termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
-      }
+    public TermsEnum iterator() {
+      SeedTermsEnum termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
       termsEnum.reset();
 
       return termsEnum;
@@ -1124,7 +1116,7 @@ public class RandomPostingsTester {
 
       Terms terms = fieldsSource.terms(fieldAndTerm.field);
       assertNotNull(terms);
-      termsEnum = terms.iterator(null);
+      termsEnum = terms.iterator();
 
       if (!useTermState) {
         if (useTermOrd) {

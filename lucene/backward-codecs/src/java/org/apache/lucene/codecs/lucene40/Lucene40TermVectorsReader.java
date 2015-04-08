@@ -275,16 +275,8 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      TVTermsEnum termsEnum;
-      if (reuse instanceof TVTermsEnum) {
-        termsEnum = (TVTermsEnum) reuse;
-        if (!termsEnum.canReuse(tvf)) {
-          termsEnum = new TVTermsEnum();
-        }
-      } else {
-        termsEnum = new TVTermsEnum();
-      }
+    public TermsEnum iterator() throws IOException {
+      TVTermsEnum termsEnum = new TVTermsEnum();
       termsEnum.reset(numTerms, tvfFPStart, storePositions, storeOffsets, storePayloads);
       return termsEnum;
     }

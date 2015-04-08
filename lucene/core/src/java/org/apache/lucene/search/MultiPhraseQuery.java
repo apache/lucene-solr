@@ -196,7 +196,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       // Reuse single TermsEnum below:
-      final TermsEnum termsEnum = fieldTerms.iterator(null);
+      final TermsEnum termsEnum = fieldTerms.iterator();
 
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);

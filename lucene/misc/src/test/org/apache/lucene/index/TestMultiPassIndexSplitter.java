@@ -72,7 +72,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
     Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
-    TermsEnum te = MultiFields.getTerms(ir, "id").iterator(null);
+    TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("1")));
     assertNotSame("1", te.term().utf8ToString());
     ir.close();
@@ -80,7 +80,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals("1", doc.get("id"));
-    te = MultiFields.getTerms(ir, "id").iterator(null);
+    te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("0")));
 
     assertNotSame("0", te.term().utf8ToString());
@@ -90,7 +90,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     doc = ir.document(0);
     assertEquals("2", doc.get("id"));
 
-    te = MultiFields.getTerms(ir, "id").iterator(null);
+    te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("1")));
     assertNotSame("1", te.term());
 
@@ -130,7 +130,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));
     // make sure the deleted doc is not here
-    TermsEnum te = MultiFields.getTerms(ir, "id").iterator(null);
+    TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
     Term t = new Term("id", (NUM_DOCS - 1) + "");
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(t.text())));
     assertNotSame(t.text(), te.term().utf8ToString());

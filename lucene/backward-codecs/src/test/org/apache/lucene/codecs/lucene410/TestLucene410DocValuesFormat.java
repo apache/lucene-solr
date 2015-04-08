@@ -183,7 +183,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
       if (terms != null) {
         SortedSetDocValues ssdv = r.getSortedSetDocValues("dv");
         assertEquals(terms.size(), ssdv.getValueCount());
-        TermsEnum expected = terms.iterator(null);
+        TermsEnum expected = terms.iterator();
         TermsEnum actual = r.getSortedSetDocValues("dv").termsEnum();
         assertEquals(terms.size(), expected, actual);
 
@@ -200,7 +200,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
     Terms terms = ar.terms("indexed");
     if (terms != null) {
       assertEquals(terms.size(), ar.getSortedSetDocValues("dv").getValueCount());
-      TermsEnum expected = terms.iterator(null);
+      TermsEnum expected = terms.iterator();
       TermsEnum actual = ar.getSortedSetDocValues("dv").termsEnum();
       assertEquals(terms.size(), expected, actual);
     }

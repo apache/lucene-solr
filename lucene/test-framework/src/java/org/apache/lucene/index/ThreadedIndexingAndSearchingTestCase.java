@@ -356,7 +356,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     if (terms == null) {
                       continue;
                     }
-                    TermsEnum termsEnum = terms.iterator(null);
+                    TermsEnum termsEnum = terms.iterator();
                     int seenTermCount = 0;
                     int shift;
                     int trigger; 

@@ -340,7 +340,7 @@ public class TestFSTs extends LuceneTestCase {
     Terms terms = MultiFields.getTerms(r, "body");
     if (terms != null) {
       final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
-      final TermsEnum termsEnum = terms.iterator(null);
+      final TermsEnum termsEnum = terms.iterator();
       if (VERBOSE) {
         System.out.println("TEST: got termsEnum=" + termsEnum);
       }
@@ -922,7 +922,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // Verify w/ MultiTermsEnum
-      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator(null);
+      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
       for(int iter=0;iter<2*NUM_IDS;iter++) {
         final String id;
         final String nextID;

@@ -138,7 +138,7 @@ public final class MultiFields extends Fields {
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator(null);
+      final TermsEnum termsEnum = terms.iterator();
       if (termsEnum.seekExact(term)) {
         return termsEnum.postings(liveDocs, null, flags);
       }
@@ -165,7 +165,7 @@ public final class MultiFields extends Fields {
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator(null);
+      final TermsEnum termsEnum = terms.iterator();
       if (termsEnum.seekExact(term)) {
         return termsEnum.postings(liveDocs, null, flags);
       }

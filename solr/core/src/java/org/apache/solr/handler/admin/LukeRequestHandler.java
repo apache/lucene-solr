@@ -305,7 +305,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           Terms v = reader.getTermVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
-            final TermsEnum termsEnum = v.iterator(null);
+            final TermsEnum termsEnum = v.iterator();
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               final int freq = (int) termsEnum.totalTermFreq();
@@ -409,7 +409,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   // to do it this way.
   private static Document getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
     PostingsEnum postingsEnum = null;
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     BytesRef text;
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a better way?
     for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
@@ -623,7 +623,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     if (terms == null) {  // field does not exist
       return;
     }
-    TermsEnum termsEnum = terms.iterator(null);
+    TermsEnum termsEnum = terms.iterator();
     BytesRef text;
     int[] buckets = new int[HIST_ARRAY_SIZE];
     while ((text = termsEnum.next()) != null) {

@@ -329,9 +329,9 @@ public class CompiledAutomaton {
     case NONE:
       return TermsEnum.EMPTY;
     case ALL:
-      return terms.iterator(null);
+      return terms.iterator();
     case SINGLE:
-      return new SingleTermsEnum(terms.iterator(null), term);
+      return new SingleTermsEnum(terms.iterator(), term);
     case NORMAL:
       return terms.intersect(this, null);
     default:

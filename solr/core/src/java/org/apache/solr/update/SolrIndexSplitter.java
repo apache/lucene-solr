@@ -162,7 +162,7 @@ public class SolrIndexSplitter {
 
     Fields fields = reader.fields();
     Terms terms = fields==null ? null : fields.terms(field.getName());
-    TermsEnum termsEnum = terms==null ? null : terms.iterator(null);
+    TermsEnum termsEnum = terms==null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
 
     BytesRef term = null;

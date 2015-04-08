@@ -70,7 +70,7 @@ public class TFValueSource extends TermFreqValueSource {
         // no one should call us for deleted docs?
         
         if (terms != null) {
-          final TermsEnum termsEnum = terms.iterator(null);
+          final TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(indexedBytes)) {
             docs = termsEnum.postings(null, null);
           } else {

@@ -381,7 +381,7 @@ public class TestDocument extends LuceneTestCase {
       Terms tvs = tvFields.terms(field);
       assertNotNull(tvs);
       assertEquals(2, tvs.size());
-      TermsEnum tvsEnum = tvs.iterator(null);
+      TermsEnum tvsEnum = tvs.iterator();
       assertEquals(new BytesRef("abc"), tvsEnum.next());
       final PostingsEnum dpEnum = tvsEnum.postings(null, null, PostingsEnum.ALL);
       assertNotNull(dpEnum);

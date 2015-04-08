@@ -516,7 +516,7 @@ class BufferedUpdatesStream implements Accountable {
           Terms terms = state.reader.fields().terms(field);
           if (terms != null) {
             segTermCount += terms.size();
-            state.termsEnum = terms.iterator(state.termsEnum);
+            state.termsEnum = terms.iterator();
             state.term = state.termsEnum.next();
             if (state.term != null) {
               queue.add(state);
@@ -651,7 +651,7 @@ class BufferedUpdatesStream implements Accountable {
         currentField = term.field();
         Terms terms = fields.terms(currentField);
         if (terms != null) {
-          termsEnum = terms.iterator(termsEnum);
+          termsEnum = terms.iterator();
         } else {
           termsEnum = null;
         }

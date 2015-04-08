@@ -90,7 +90,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
      * @throws IOException If there is a low-level I/O error.
      */
     public LinearFuzzyTermsEnum() throws IOException {
-      super(terms.iterator(null));
+      super(terms.iterator());
 
       this.text = new int[termLength - realPrefixLength];
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);

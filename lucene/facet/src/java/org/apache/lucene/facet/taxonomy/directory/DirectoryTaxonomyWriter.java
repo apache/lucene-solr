@@ -381,12 +381,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     DirectoryReader reader = readerManager.acquire();
     try {
       final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
-      TermsEnum termsEnum = null; // reuse
       PostingsEnum docs = null; // reuse
       for (LeafReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
-          termsEnum = terms.iterator(termsEnum);
+          // TODO: share per-segment TermsEnum here!
+          TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(catTerm)) {
             // liveDocs=null because the taxonomy has no deletes
             docs = termsEnum.postings(null, docs, 0 /* freqs not required */);
@@ -674,12 +674,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     boolean aborted = false;
     DirectoryReader reader = readerManager.acquire();
     try {
-      TermsEnum termsEnum = null;
       PostingsEnum postingsEnum = null;
       for (LeafReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) { // cannot really happen, but be on the safe side
-          termsEnum = terms.iterator(termsEnum);
+          // TODO: share per-segment TermsEnum here!
+          TermsEnum termsEnum = terms.iterator();
           while (termsEnum.next() != null) {
             if (!cache.isFull()) {
               BytesRef t = termsEnum.term();
@@ -770,12 +770,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final OrdinalMap ordinalMap = map;
       ordinalMap.setSize(size);
       int base = 0;
-      TermsEnum te = null;
       PostingsEnum docs = null;
       for (final LeafReaderContext ctx : r.leaves()) {
         final LeafReader ar = ctx.reader();
         final Terms terms = ar.terms(Consts.FULL);
-        te = terms.iterator(te);
+        // TODO: share per-segment TermsEnum here!
+        TermsEnum te = terms.iterator();
         while (te.next() != null) {
           FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(te.term().utf8ToString()));
           final int ordinal = addCategory(cp);

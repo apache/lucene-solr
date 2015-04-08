@@ -39,17 +39,17 @@ public class DocToDoubleVectorUtils {
    * @throws IOException in case accessing the underlying index fails
    */
   public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms) throws IOException {
-    TermsEnum fieldTermsEnum = fieldTerms.iterator(null);
+    TermsEnum fieldTermsEnum = fieldTerms.iterator();
     Double[] freqVector = null;
     if (docTerms != null && fieldTerms.size() > -1) {
       freqVector = new Double[(int) fieldTerms.size()];
       int i = 0;
-      TermsEnum docTermsEnum = docTerms.iterator(null);
+      TermsEnum docTermsEnum = docTerms.iterator();
       BytesRef term;
       while ((term = fieldTermsEnum.next()) != null) {
         TermsEnum.SeekStatus seekStatus = docTermsEnum.seekCeil(term);
         if (seekStatus.equals(TermsEnum.SeekStatus.END)) {
-          docTermsEnum = docTerms.iterator(null);
+          docTermsEnum = docTerms.iterator();
         }
         if (seekStatus.equals(TermsEnum.SeekStatus.FOUND)) {
           long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document
@@ -75,7 +75,7 @@ public class DocToDoubleVectorUtils {
     if (docTerms != null) {
         freqVector = new Double[(int) docTerms.size()];
         int i = 0;
-        TermsEnum docTermsEnum = docTerms.iterator(null);
+        TermsEnum docTermsEnum = docTerms.iterator();
 
         while (docTermsEnum.next() != null) {
             long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document

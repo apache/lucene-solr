@@ -379,8 +379,8 @@ class JoinQuery extends Query {
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);
 
       BytesRef term = null;
-      TermsEnum  termsEnum = terms.iterator(null);
-      TermsEnum  toTermsEnum = toTerms.iterator(null);
+      TermsEnum  termsEnum = terms.iterator();
+      TermsEnum  toTermsEnum = toTerms.iterator();
       SolrIndexSearcher.DocsEnumState fromDeState = null;
       SolrIndexSearcher.DocsEnumState toDeState = null;
 

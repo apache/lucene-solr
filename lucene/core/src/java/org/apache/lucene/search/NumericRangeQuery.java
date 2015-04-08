@@ -297,7 +297,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     if (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) {
       return TermsEnum.EMPTY;
     }
-    return new NumericRangeTermsEnum(terms.iterator(null));
+    return new NumericRangeTermsEnum(terms.iterator());
   }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */

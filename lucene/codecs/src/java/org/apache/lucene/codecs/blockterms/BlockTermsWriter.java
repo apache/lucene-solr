@@ -136,7 +136,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
         continue;
       }
 
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
 
       TermsWriter termsWriter = addField(fieldInfos.fieldInfo(field));
 

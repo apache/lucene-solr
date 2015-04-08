@@ -150,7 +150,7 @@ final class Lucene40FieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator(TermsEnum reuse) throws IOException {
+  public TermsEnum iterator() throws IOException {
     return new Lucene40SegmentTermsEnum(this);
   }
 

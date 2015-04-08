@@ -68,13 +68,8 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
-      FreqProxTermsEnum termsEnum;
-      if (reuse instanceof FreqProxTermsEnum && ((FreqProxTermsEnum) reuse).terms == this.terms) {
-        termsEnum = (FreqProxTermsEnum) reuse;
-      } else {
-        termsEnum = new FreqProxTermsEnum(terms);
-      }
+    public TermsEnum iterator() {
+      FreqProxTermsEnum termsEnum = new FreqProxTermsEnum(terms);
       termsEnum.reset();
       return termsEnum;
     }

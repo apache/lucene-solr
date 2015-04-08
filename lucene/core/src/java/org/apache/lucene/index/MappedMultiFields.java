@@ -59,8 +59,8 @@ public class MappedMultiFields extends FilterFields {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      return new MappedMultiTermsEnum(mergeState, (MultiTermsEnum) in.iterator(reuse));
+    public TermsEnum iterator() throws IOException {
+      return new MappedMultiTermsEnum(mergeState, (MultiTermsEnum) in.iterator());
     }
 
     @Override

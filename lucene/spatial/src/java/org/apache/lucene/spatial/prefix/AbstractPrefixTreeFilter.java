@@ -89,7 +89,7 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
       this.maxDoc = reader.maxDoc();
       Terms terms = reader.terms(fieldName);
       if (terms != null)
-        this.termsEnum = terms.iterator(null);
+        this.termsEnum = terms.iterator();
     }
 
     protected void collectDocs(BitSet bitSet) throws IOException {

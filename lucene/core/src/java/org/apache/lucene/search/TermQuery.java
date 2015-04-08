@@ -101,7 +101,7 @@ public class TermQuery extends Query {
       // System.out.println("LD=" + reader.getLiveDocs() + " set?=" +
       // (reader.getLiveDocs() != null ? reader.getLiveDocs().get(0) : "null"));
       final TermsEnum termsEnum = context.reader().terms(term.field())
-          .iterator(null);
+          .iterator();
       termsEnum.seekExact(term.bytes(), state);
       return termsEnum;
     }

@@ -74,7 +74,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
   
   private void checkTerms(Terms terms, Bits liveDocs, String... termsList) throws IOException {
     assertNotNull(terms);
-    final TermsEnum te = terms.iterator(null);
+    final TermsEnum te = terms.iterator();
     
     for (String t : termsList) {
       BytesRef b = te.next();

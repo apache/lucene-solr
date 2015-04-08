@@ -134,7 +134,7 @@ final class VersionFieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator(TermsEnum reuse) throws IOException {
+  public TermsEnum iterator() throws IOException {
     return new IDVersionSegmentTermsEnum(this);
   }
 

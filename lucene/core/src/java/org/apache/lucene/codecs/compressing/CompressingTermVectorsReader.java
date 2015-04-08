@@ -775,13 +775,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      final TVTermsEnum termsEnum;
-      if (reuse != null && reuse instanceof TVTermsEnum) {
-        termsEnum = (TVTermsEnum) reuse;
-      } else {
-        termsEnum = new TVTermsEnum();
-      }
+    public TermsEnum iterator() throws IOException {
+      TVTermsEnum termsEnum = new TVTermsEnum();
       termsEnum.reset(numTerms, flags, prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths,
           payloadIndex, payloadBytes,
           new ByteArrayDataInput(termBytes.bytes, termBytes.offset, termBytes.length));

@@ -423,7 +423,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         prefixTerms = null;
       }
 
-      TermsEnum termsEnum = terms.iterator(null);
+      TermsEnum termsEnum = terms.iterator();
       TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
       int prefixTermUpto = 0;
       while (true) {
@@ -460,7 +460,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     assert prefixDocs != null;
     prefixDocs.clear(0, prefixDocs.length());
 
-    prefixTermsEnum = prefix.getTermsEnum(terms.iterator(prefixTermsEnum));
+    prefixTermsEnum = prefix.getTermsEnum(terms.iterator());
 
     //System.out.println("BTTW.getAutoPrefixTE: prefix=" + prefix);
     while (prefixTermsEnum.next() != null) {

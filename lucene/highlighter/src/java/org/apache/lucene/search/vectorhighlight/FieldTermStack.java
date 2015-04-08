@@ -92,7 +92,7 @@ public class FieldTermStack {
     }
 
     final CharsRefBuilder spare = new CharsRefBuilder();
-    final TermsEnum termsEnum = vector.iterator(null);
+    final TermsEnum termsEnum = vector.iterator();
     PostingsEnum dpEnum = null;
     BytesRef text;
     

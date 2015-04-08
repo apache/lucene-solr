@@ -237,19 +237,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public TermsEnum iterator(TermsEnum reuse) throws IOException {
-        if ((reuse != null) && (reuse instanceof BloomFilteredTermsEnum)) {
-          // recycle the existing BloomFilteredTermsEnum by asking the delegate
-          // to recycle its contained TermsEnum
-          BloomFilteredTermsEnum bfte = (BloomFilteredTermsEnum) reuse;
-          if (bfte.filter == filter) {
-            bfte.reset(delegateTerms, bfte.delegateTermsEnum);
-            return bfte;
-          }
-        }
-        // We have been handed something we cannot reuse (either null, wrong
-        // class or wrong filter) so allocate a new object
-        return new BloomFilteredTermsEnum(delegateTerms, reuse, filter);
+      public TermsEnum iterator() throws IOException {
+        return new BloomFilteredTermsEnum(delegateTerms, filter);
       }
       
       @Override
@@ -306,18 +295,15 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     final class BloomFilteredTermsEnum extends TermsEnum {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
-      private TermsEnum reuseDelegate;
       private final FuzzySet filter;
       
-      public BloomFilteredTermsEnum(Terms delegateTerms, TermsEnum reuseDelegate, FuzzySet filter) throws IOException {
+      public BloomFilteredTermsEnum(Terms delegateTerms, FuzzySet filter) throws IOException {
         this.delegateTerms = delegateTerms;
-        this.reuseDelegate = reuseDelegate;
         this.filter = filter;
       }
       
-      void reset(Terms delegateTerms, TermsEnum reuseDelegate) throws IOException {
+      void reset(Terms delegateTerms) throws IOException {
         this.delegateTerms = delegateTerms;
-        this.reuseDelegate = reuseDelegate;
         this.delegateTermsEnum = null;
       }
       
@@ -327,7 +313,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
            * this can be a relativly heavy operation depending on the 
            * delegate postings format and they underlying directory
            * (clone IndexInput) */
-          delegateTermsEnum = delegateTerms.iterator(reuseDelegate);
+          delegateTermsEnum = delegateTerms.iterator();
         }
         return delegateTermsEnum;
       }
@@ -449,7 +435,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           continue;
         }
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        TermsEnum termsEnum = terms.iterator(null);
+        TermsEnum termsEnum = terms.iterator();
 
         FuzzySet bloomFilter = null;
 

@@ -55,7 +55,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     for (LeafReaderContext ctx : open.leaves()) {
       LeafReader indexReader = ctx.reader();
       Terms terms = indexReader.terms("body");
-      TermsEnum iterator = terms.iterator(null);
+      TermsEnum iterator = terms.iterator();
       IdentityHashMap<PostingsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(indexReader.maxDoc());
       while ((iterator.next()) != null) {
@@ -82,7 +82,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     DirectoryReader open = DirectoryReader.open(dir);
     for (LeafReaderContext ctx : open.leaves()) {
       Terms terms = ctx.reader().terms("body");
-      TermsEnum iterator = terms.iterator(null);
+      TermsEnum iterator = terms.iterator();
       IdentityHashMap<PostingsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
       PostingsEnum docs = null;
@@ -93,7 +93,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       
       assertEquals(1, enums.size());
       enums.clear();
-      iterator = terms.iterator(null);
+      iterator = terms.iterator();
       docs = null;
       while ((iterator.next()) != null) {
         docs = iterator.postings(new Bits.MatchNoBits(open.maxDoc()), docs, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
@@ -102,7 +102,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       assertEquals(terms.size(), enums.size());
       
       enums.clear();
-      iterator = terms.iterator(null);
+      iterator = terms.iterator();
       docs = null;
       while ((iterator.next()) != null) {
         docs = iterator.postings(null, docs, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
@@ -134,10 +134,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     
     for (LeafReaderContext ctx : leaves) {
       Terms terms = ctx.reader().terms("body");
-      TermsEnum iterator = terms.iterator(null);
+      TermsEnum iterator = terms.iterator();
       IdentityHashMap<PostingsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(firstReader.maxDoc());
-      iterator = terms.iterator(null);
+      iterator = terms.iterator();
       PostingsEnum docs = null;
       BytesRef term = null;
       while ((term = iterator.next()) != null) {
@@ -146,7 +146,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       }
       assertEquals(terms.size(), enums.size());
       
-      iterator = terms.iterator(null);
+      iterator = terms.iterator();
       enums.clear();
       docs = null;
       while ((term = iterator.next()) != null) {
@@ -168,7 +168,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     if (terms == null) {
       return null;
     }
-    TermsEnum iterator = terms.iterator(null);
+    TermsEnum iterator = terms.iterator();
     if (iterator.seekExact(term)) {
       return iterator.postings(bits, null, random().nextBoolean() ? PostingsEnum.FREQS : PostingsEnum.NONE);
     }

@@ -756,7 +756,7 @@ public class SimpleFacets {
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
     if (terms != null) {
-      termsEnum = terms.iterator(null);
+      termsEnum = terms.iterator();
 
       // TODO: OPT: if seek(ord) is supported for this termsEnum, then we could use it for
       // facet.offset when sorting by index order.

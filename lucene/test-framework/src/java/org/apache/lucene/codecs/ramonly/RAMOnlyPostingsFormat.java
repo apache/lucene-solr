@@ -154,7 +154,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator(TermsEnum reuse) {
+    public TermsEnum iterator() {
       return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
     }
 
@@ -252,7 +252,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
           continue;
         }
 
-        TermsEnum termsEnum = terms.iterator(null);
+        TermsEnum termsEnum = terms.iterator();
 
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {

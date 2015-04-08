@@ -63,7 +63,7 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
 
   @Override
   protected FilteredTermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    return new RegexTermsEnum(terms.iterator(null), term, regexImpl);
+    return new RegexTermsEnum(terms.iterator(), term, regexImpl);
   }
 
   @Override
