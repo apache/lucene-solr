@@ -96,6 +96,8 @@ Bug Fixes
 * SOLR-6709: Fix QueryResponse to deal with the "expanded" section when using the XMLResponseParser
   (Varun Thacker, Joel Bernstein)
 
+* SOLR-7066: autoAddReplicas feature has bug when selecting replacement nodes. (Mark Miller)
+
 Optimizations
 ----------------------
 
