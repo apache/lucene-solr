@@ -1127,7 +1127,7 @@ public class TestAutomaton extends LuceneTestCase {
         System.out.println("Minimized:\n" + minA.toDot());
         System.out.println("minTerm=" + minTerm + " minInclusive=" + minInclusive);
         System.out.println("maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
-        fail("auotmaton was not minimal");
+        fail("automaton was not minimal");
       }
 
       if (VERBOSE) {
