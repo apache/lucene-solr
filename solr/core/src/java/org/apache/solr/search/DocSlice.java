@@ -59,7 +59,7 @@ public class DocSlice extends DocSetBase implements DocList {
     this.scores=scores;
     this.matches=matches;
     this.maxScore=maxScore;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(docs) + RamUsageEstimator.sizeOf(scores);
+    this.ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(docs) + (scores != null ? RamUsageEstimator.sizeOf(scores) : 0);
   }
 
   @Override
