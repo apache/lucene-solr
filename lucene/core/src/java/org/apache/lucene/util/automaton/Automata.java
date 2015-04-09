@@ -238,10 +238,15 @@ final public class Automata {
       minInclusive = true;
     }
 
-    // Empty string corner case:
+    // Empty string corner cases:
     if (max != null && maxInclusive == false && max.length == 1 && max.bytes[max.offset] == 0) {
       max = new BytesRef();
       maxInclusive = true;
+    }
+
+    if (min != null && minInclusive == false && min.length == 0) {
+      min = new BytesRef(new byte[1]);
+      minInclusive = true;
     }
 
     int cmp;
