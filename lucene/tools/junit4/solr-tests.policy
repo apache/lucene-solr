@@ -29,6 +29,7 @@ grant {
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read,execute";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,execute,write,delete";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
   

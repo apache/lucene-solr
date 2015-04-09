@@ -15,7 +15,10 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project name="solr" default="usage" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="solr" default="usage" 
+         xmlns:jacoco="antlib:org.jacoco.ant"
+         xmlns:ivy="antlib:org.apache.ivy.ant">
+
   <description>Solr</description>
   
   <target name="usage" description="Prints out instructions">
@@ -130,6 +133,41 @@
 
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="-init-totals, test-core, test-contrib, -check-totals"/>
+
+  <target name="jacoco" description="Generates JaCoCo code coverage reports." depends="-jacoco-install">
+    <!-- run jacoco for each module -->
+    <ant dir="${common-solr.dir}/core" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <ant dir="solrj" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <contrib-crawl target="jacoco" failonerror="false"/>
+
+    <!-- produce aggregate report -->
+    <property name="jacoco.output.dir" location="${jacoco.report.dir}/solr-all"/>
+    <!-- try to clean output dir to prevent any confusion -->
+    <delete dir="${jacoco.output.dir}" failonerror="false"/>
+    <mkdir dir="${jacoco.output.dir}"/>
+
+    <jacoco:report>
+      <executiondata>
+        <fileset dir="${common-solr.dir}/build" includes="**/jacoco.db"/>
+      </executiondata>
+      <structure name="${Name} aggregate JaCoCo coverage report">
+        <classfiles>
+          <fileset dir="${common-solr.dir}/build">
+             <include name="**/classes/java/**/*.class"/>
+             <exclude name="solr-test-framework/**"/>
+          </fileset>
+        </classfiles>
+        <!-- TODO: trying to specify source files could maybe work, but would
+             double the size of the reports -->
+      </structure>
+      <html destdir="${jacoco.output.dir}" footer="Copyright ${year} Apache Software Foundation.  All Rights Reserved."/>
+    </jacoco:report>
+  </target>
+
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="-clover.load, test-solr-core, test-solrj"/>

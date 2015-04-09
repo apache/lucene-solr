@@ -154,4 +154,8 @@
     <forall-analyzers target="check-forbidden-apis"/>
   </target>
 
+  <target name="jacoco">
+    <forall-analyzers target="jacoco"/>
+  </target>
+
 </project>
