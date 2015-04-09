@@ -44,7 +44,7 @@
   <field name="cat">electronics</field>
   <field name="cat">connector</field>
   <field name="features">car power adapter for iPod, white</field>
-  <field name="weight">2</field>
+  <field name="weight">2.0</field>
   <field name="price">11.50</field>
   <field name="popularity">1</field>
   <field name="inStock">false</field>

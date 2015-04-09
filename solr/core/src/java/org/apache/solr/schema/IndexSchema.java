@@ -590,10 +590,8 @@ public class IndexSchema {
       dynamicCopyFields = new DynamicCopy[] {};
       loadCopyFields(document, xpath);
 
-      //Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : schemaAware) {
-        aware.inform(this);
-      }
+      postReadInform();
+
     } catch (SolrException e) {
       throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
           resourcePath, e);
@@ -606,6 +604,13 @@ public class IndexSchema {
 
     // create the field analyzers
     refreshAnalyzers();
+  }
+  
+  protected void postReadInform() {
+    //Run the callbacks on SchemaAware now that everything else is done
+    for (SchemaAware aware : schemaAware) {
+      aware.inform(this);
+    }
   }
 
   /** 
