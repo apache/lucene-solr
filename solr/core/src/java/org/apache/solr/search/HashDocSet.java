@@ -35,7 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @since solr 0.9
  */
 public final class HashDocSet extends DocSetBase {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(HashDocSet.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(HashDocSet.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   /** Default load factor to use for HashDocSets.  We keep track of the inverse
    *  since multiplication is so much faster than division.  The default
@@ -52,16 +52,12 @@ public final class HashDocSet extends DocSetBase {
   private final static int EMPTY=-1;
   private final int[] table;
   private final int size;
-
   private final int mask;
-
-  private final long ramBytesUsed;
 
   public HashDocSet(HashDocSet set) {
     this.table = set.table.clone();
     this.size = set.size;
     this.mask = set.mask;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(table);
   }
 
   /** Create a HashDocSet from a list of *unique* ids */
@@ -89,8 +85,6 @@ public final class HashDocSet extends DocSetBase {
     }
 
     size = len;
-
-    ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(table);
   }
 
   void put(int doc) {
@@ -307,7 +301,7 @@ public final class HashDocSet extends DocSetBase {
 
   @Override
   public long ramBytesUsed() {
-    return ramBytesUsed;
+    return BASE_RAM_BYTES_USED + (table.length<<2);
   }
 
   @Override

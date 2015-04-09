@@ -31,7 +31,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @since solr 0.9
  */
 public class DocSlice extends DocSetBase implements DocList {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DocSlice.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DocSlice.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   final int offset;    // starting position of the docs (zero based)
   final int len;       // number of positions used in arrays
@@ -40,8 +40,6 @@ public class DocSlice extends DocSetBase implements DocList {
   final float[] scores;  // optional score list
   final int matches;
   final float maxScore;
-
-  final long ramBytesUsed;
 
   /**
    * Primary constructor for a DocSlice instance.
@@ -59,7 +57,6 @@ public class DocSlice extends DocSetBase implements DocList {
     this.scores=scores;
     this.matches=matches;
     this.maxScore=maxScore;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(docs) + (scores != null ? RamUsageEstimator.sizeOf(scores) : 0);
   }
 
   @Override
@@ -178,9 +175,10 @@ public class DocSlice extends DocSetBase implements DocList {
     return null;
   }
 
+  /** WARNING: this can over-estimate real memory use since backing arrays are shared with other DocSlice instances */
   @Override
   public long ramBytesUsed() {
-    return ramBytesUsed;
+    return BASE_RAM_BYTES_USED + ((long)docs.length << 2) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
   }
 
   @Override
