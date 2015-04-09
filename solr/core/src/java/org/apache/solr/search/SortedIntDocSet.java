@@ -35,18 +35,15 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <code>SortedIntDocSet</code> represents a sorted set of Lucene Document Ids.
  */
 public class SortedIntDocSet extends DocSetBase {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SortedIntDocSet.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SortedIntDocSet.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   protected final int[] docs;
-  protected final long ramBytesUsed;
 
   /**
    * @param docs  Sorted list of ids
    */
   public SortedIntDocSet(int[] docs) {
     this.docs = docs;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(docs);
-    // if (firstNonSorted(docs,0,docs.length)>=0) throw new RuntimeException("NON SORTED DOCS!!!");
   }
 
   /**
@@ -246,7 +243,7 @@ public class SortedIntDocSet extends DocSetBase {
 
     // if b is 8 times bigger than a, use the modified binary search.
     if ((b.length>>3) >= a.length) {
-      return intersectionSize(a,b);
+      return intersectionSize(a, b);
     }
 
     // if they are close in size, just do a linear walk of both.
@@ -796,7 +793,7 @@ public class SortedIntDocSet extends DocSetBase {
 
   @Override
   public long ramBytesUsed() {
-    return ramBytesUsed;
+    return BASE_RAM_BYTES_USED + (docs.length << 2);
   }
 
   @Override

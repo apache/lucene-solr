@@ -40,7 +40,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @since solr 0.9
  */
 public class BitDocSet extends DocSetBase {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class)
+      + RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class)
+      + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;  // for the array object inside the FixedBitSet. long[] array won't change alignment, so no need to calculate it.
 
   final FixedBitSet bits;
   int size;    // number of docs in the set (cached for perf)
@@ -198,7 +200,7 @@ public class BitDocSet extends DocSetBase {
     if (other instanceof BitDocSet) {
       // if we don't know our current size, this is faster than
       // size + other.size - intersection_size
-      return (int) FixedBitSet.unionCount(this.bits, ((BitDocSet)other).bits);
+      return (int) FixedBitSet.unionCount(this.bits, ((BitDocSet) other).bits);
     } else {
       // they had better not call us back!
       return other.unionSize(this);
@@ -369,7 +371,7 @@ public class BitDocSet extends DocSetBase {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + bits.ramBytesUsed();
+    return BASE_RAM_BYTES_USED + ((long)bits.getBits().length << 3);
   }
 
   @Override
