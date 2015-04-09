@@ -407,6 +407,9 @@ Bug Fixes
 * SOLR-7338, SOLR-6583: A reloaded core will never register itself as active after a ZK session expiration
   (Mark Miller, Timothy Potter)
 
+* SOLR-7366: Can't index example XML docs into the cloud example using bin/post due to regression in 
+  ManagedIndexSchema's handling of ResourceLoaderAware objects used by field types (Steve Rowe, Timothy Potter)
+
 Optimizations
 ----------------------
 

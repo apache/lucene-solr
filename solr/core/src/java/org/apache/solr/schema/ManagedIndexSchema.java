@@ -41,7 +41,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -50,13 +49,8 @@ import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -418,10 +412,8 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
 
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
+
       newSchema.refreshAnalyzers();
 
       if(persist) {
@@ -468,10 +460,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
       }
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -555,9 +544,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
 
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -595,10 +582,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
 
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
       if (persist) {
         success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
@@ -677,10 +661,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
 
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -748,9 +729,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
 
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -773,11 +752,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           newSchema.registerCopyField(entry.getKey(), destination);
         }
       }
-      //TODO: move this common stuff out to shared methods
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
       if(persist) {
         success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
@@ -813,11 +788,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           newSchema.deleteCopyField(entry.getKey(), destination);
         }
       }
-      //TODO: move this common stuff out to shared methods
-      // Run the callbacks on SchemaAware now that everything else is done
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -960,14 +931,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.fieldTypes.put(typeName, fieldType);
     }
 
-    // Run the callbacks on SchemaAware now that everything else is done
-    for (SchemaAware aware : newSchema.schemaAware)
-      aware.inform(newSchema);
+    newSchema.postReadInform();
     
-    // looks good for the add, notify ResoureLoaderAware objects
-    for (FieldType fieldType : fieldTypeList)
-      informResourceLoaderAwareObjectsForFieldType(fieldType);
-
     newSchema.refreshAnalyzers();
 
     if (persist) {
@@ -1018,12 +983,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       for (String name : names) {
         newSchema.fieldTypes.remove(name);
       }
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
-      for (FieldType fieldType : newSchema.fieldTypes.values()) {
-        informResourceLoaderAwareObjectsForFieldType(fieldType);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -1153,12 +1113,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema.rebuildCopyFields(copyFieldsToRebuild);
 
-      for (SchemaAware aware : newSchema.schemaAware) {
-        aware.inform(newSchema);
-      }
-      for (FieldType fieldType : newSchema.fieldTypes.values()) {
-        newSchema.informResourceLoaderAwareObjectsForFieldType(fieldType);
-      }
+      newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -1166,6 +1121,14 @@ public final class ManagedIndexSchema extends IndexSchema {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     return newSchema;
+  }
+  
+  @Override
+  protected void postReadInform() {
+    super.postReadInform();
+    for (FieldType fieldType : fieldTypes.values()) {
+      informResourceLoaderAwareObjectsForFieldType(fieldType);
+    }
   }
 
   /**
