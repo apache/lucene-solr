@@ -166,14 +166,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   }
 
   @Override
-  public void forward(String handler ,SolrParams params, SolrQueryResponse rsp){
-    try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(getCore(), params)) {
-      getCore().getRequestHandler(handler).handleRequest(r, rsp);
-    }
-
-  }
-
-  @Override
   public Map<String, Object> getJSON() {
     return json;
   }
