@@ -74,7 +74,7 @@ public class DocSetPerf {
     String test = args[3].intern();
     int iter = Integer.parseInt(args[4]);
 
-    int ret=0;
+    long ret=0;
 
     FixedBitSet[] sets = new FixedBitSet[numSets];
     DocSet[] bset = new DocSet[numSets];
@@ -153,7 +153,7 @@ public class DocSetPerf {
 
         if (oper=="intersect") {
           DocSet res = a.intersection(b);
-          ret += res.memSize();
+          ret += res.ramBytesUsed();
         } else if (oper=="intersectSize") {
           ret += a.intersectionSize(b);
         } else if (oper=="intersectAndSize") {
