@@ -91,7 +91,7 @@ public class FSHDFSUtils {
     // This should be set to how long it'll take for us to timeout against primary datanode if it
     // is dead.  We set it to 61 seconds, 1 second than the default READ_TIMEOUT in HDFS, the
     // default value for DFS_CLIENT_SOCKET_TIMEOUT_KEY.
-    long subsequentPause = conf.getInt("solr.hdfs.lease.recovery.dfs.timeout", 61 * 1000);
+    long subsequentPause = TimeUnit.NANOSECONDS.convert(conf.getInt("solr.hdfs.lease.recovery.dfs.timeout", 61 * 1000), TimeUnit.MILLISECONDS);
     
     Method isFileClosedMeth = null;
     // whether we need to look for isFileClosed method
