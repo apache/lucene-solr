@@ -17,16 +17,21 @@
 
 package org.apache.solr.search;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -35,6 +40,8 @@ import org.apache.lucene.util.FixedBitSet;
  * @since solr 0.9
  */
 public class BitDocSet extends DocSetBase {
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class);
+
   final FixedBitSet bits;
   int size;    // number of docs in the set (cached for perf)
 
@@ -254,11 +261,6 @@ public class BitDocSet extends DocSetBase {
   }
   
   @Override
-  public long memSize() {
-    return (bits.getBits().length << 3) + 16;
-  }
-
-  @Override
   protected BitDocSet clone() {
     return new BitDocSet(bits.clone(), size);
   }
@@ -358,5 +360,15 @@ public class BitDocSet extends DocSetBase {
         return "BitSetDocTopFilter";
       }
     };
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED + bits.ramBytesUsed();
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 }

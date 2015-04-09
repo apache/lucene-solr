@@ -114,6 +114,8 @@ Other Changes
 
 * SOLR-7358: TestRestoreCore fails in Windows (Ishan Chattopadhyaya via Varun Thacker)
 
+* SOLR-7371: Make DocSet implement Accountable to estimate memory usage. (yonik, shalin)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
