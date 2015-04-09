@@ -77,6 +77,11 @@ API Changes
 * LUCENE-6410: Removed unused "reuse" parameter to
   Terms.iterator. (Robert Muir, Mike McCandless)
 
+Other
+
+* LUCENE-6413: Test runner should report the number of suites completed/ 
+  remaining. (Dawid Weiss)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features
