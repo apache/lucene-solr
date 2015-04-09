@@ -467,16 +467,25 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
     }.checkTerms();
 
-    if (random().nextBoolean()) {
-      q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
-    } else if (random().nextBoolean()) {
-      q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
-    }
+    int maxClauseCount = BooleanQuery.getMaxClauseCount();
 
-    if (VERBOSE) {
-      System.out.println("TEST: use rewrite method " + q.getRewriteMethod());
+    try {
+
+      if (random().nextBoolean()) {
+        q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+        BooleanQuery.setMaxClauseCount(actualCount);
+      } else if (random().nextBoolean()) {
+        q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
+        BooleanQuery.setMaxClauseCount(actualCount);
+      }
+
+      if (VERBOSE) {
+        System.out.println("TEST: use rewrite method " + q.getRewriteMethod());
+      }
+      assertEquals(actualCount, s.search(q, 1).totalHits);
+    } finally {
+      BooleanQuery.setMaxClauseCount(maxClauseCount);
     }
-    assertEquals(actualCount, s.search(q, 1).totalHits);
 
     // Test when min == max:
     List<String> randomTermsList = new ArrayList<>(randomTerms);
