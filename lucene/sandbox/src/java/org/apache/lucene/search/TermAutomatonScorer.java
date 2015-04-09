@@ -78,13 +78,7 @@ class TermAutomatonScorer extends Scorer {
     for(EnumAndScorer sub : subs) {
       if (sub != null) {
         cost += sub.posEnum.cost();
-
-        if (sub.posEnum.nextDoc() != NO_MORE_DOCS) {
-          sub.posLeft = sub.posEnum.freq()-1;
-          sub.pos = sub.posEnum.nextPosition();
-        }
-          
-        docIDQueue.add(sub);
+        subsOnDoc[numSubsOnDoc++] = sub;
       }
     }
     this.cost = cost;
@@ -137,6 +131,8 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
+    // we only need to advance docs that are positioned since all docs in the
+    // pq are guaranteed to be beyond the current doc already
     for(int i=0;i<numSubsOnDoc;i++) {
       EnumAndScorer sub = subsOnDoc[i];
       if (sub.posEnum.nextDoc() != NO_MORE_DOCS) {
@@ -144,17 +140,27 @@ class TermAutomatonScorer extends Scorer {
         sub.pos = sub.posEnum.nextPosition();
       }
     }
+    pushCurrentDoc();
     return doNext();
   }
 
   @Override
   public int advance(int target) throws IOException {
-    if (docID == -1) {
-      popCurrentDoc();
-      if (docID >= target) {
-        return doNext();
+    // Both positioned docs and docs in the pq might be behind target
+
+    // 1. Advance the PQ
+    if (docIDQueue.size() > 0) {
+      EnumAndScorer top = docIDQueue.top();
+      while (top.posEnum.docID() < target) {
+        if (top.posEnum.advance(target) != NO_MORE_DOCS) {
+          top.posLeft = top.posEnum.freq()-1;
+          top.pos = top.posEnum.nextPosition();
+        }
+        top = docIDQueue.updateTop();
       }
     }
+
+    // 2. Advance subsOnDoc
     for(int i=0;i<numSubsOnDoc;i++) {
       EnumAndScorer sub = subsOnDoc[i];
       if (sub.posEnum.advance(target) != NO_MORE_DOCS) {
@@ -162,14 +168,15 @@ class TermAutomatonScorer extends Scorer {
         sub.pos = sub.posEnum.nextPosition();
       }
     }
-
+    pushCurrentDoc();
     return doNext();
   }
 
   private int doNext() throws IOException {
+    assert numSubsOnDoc == 0;
+    assert docIDQueue.top().posEnum.docID() > docID;
     while (true) {
       //System.out.println("  doNext: cycle");
-      pushCurrentDoc();
       popCurrentDoc();
       //System.out.println("    docID=" + docID);
       if (docID == NO_MORE_DOCS) {
@@ -186,6 +193,7 @@ class TermAutomatonScorer extends Scorer {
           sub.pos = sub.posEnum.nextPosition();
         }
       }
+      pushCurrentDoc();
     }
   }
 
