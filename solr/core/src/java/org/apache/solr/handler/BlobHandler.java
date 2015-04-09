@@ -38,11 +38,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -105,7 +107,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         TopDocs duplicate = req.getSearcher().search(new TermQuery(new Term("md5", md5)), 1);
         if (duplicate.totalHits > 0) {
           rsp.add("error", "duplicate entry");
-          req.forward(null,
+          forward(req, null,
               new MapSolrParams((Map) makeMap(
                   "q", "md5:" + md5,
                   "fl", "id,size,version,timestamp,blobName")),
@@ -193,7 +195,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           }
         }
 
-        req.forward(null,
+        forward(req, null,
             new MapSolrParams((Map) makeMap(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
@@ -207,7 +209,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     for (; ; ) {
       SolrQueryResponse response = new SolrQueryResponse();
       String id = blobName + "/" + version;
-      req.forward("/get", new MapSolrParams(singletonMap("id", id)), response);
+      forward(req, "/get", new MapSolrParams(singletonMap("id", id)), response);
       if (response.getValues().get("doc") == null) {
         //ensure that the version does not exist
         return;
@@ -304,4 +306,13 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
     }
   }
+
+  // This does not work for the general case of forwarding requests.  It probably currently
+  // works OK for real-time get (which is all that BlobHandler uses it for).
+  private static void forward(SolrQueryRequest req, String handler ,SolrParams params, SolrQueryResponse rsp){
+    try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params)) {
+      req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
+    }
+  }
+
 }
