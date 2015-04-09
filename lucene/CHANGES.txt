@@ -82,6 +82,8 @@ Other
 * LUCENE-6413: Test runner should report the number of suites completed/ 
   remaining. (Dawid Weiss)
 
+* LUCENE-5439: Add 'ant jacoco' build target. (Robert Muir)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

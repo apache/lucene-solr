@@ -20,6 +20,7 @@
 <project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
                        xmlns:ivy="antlib:org.apache.ivy.ant"
                        xmlns:junit4="antlib:com.carrotsearch.junit4"
+                       xmlns:jacoco="antlib:org.jacoco.ant"
                        xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <description>
     This file is designed for importing into a main build file, and not intended
@@ -266,6 +267,8 @@
   <property name="clover.license.path" location="${common.dir}/tools/clover/clover.license"/>
   <property name="clover.db.dir" location="${common.dir}/build/clover/db"/>
   <property name="clover.report.dir" location="${common.dir}/build/clover/reports"/>
+
+  <property name="jacoco.report.dir" location="${common.dir}/build/jacoco"/>
 
   <property name="pitest.report.dir" location="${common.dir}/build/pitest/${name}/reports"/>
   <property name="pitest.distance" value="0" />
@@ -851,6 +854,9 @@
     <attribute name="tests.monster" default="${tests.monster}"/>
     <attribute name="tests.slow" default="${tests.slow}"/>
     <attribute name="tests.multiplier" default="${tests.multiplier}"/>
+    <attribute name="additional.vm.args" default=""/>
+    <!-- note this enables keeping junit4 files only (not test temp files) -->
+    <attribute name="runner.leaveTemporary" default="false"/>
       
     <sequential>
         <!-- Warn if somebody uses removed properties. -->
@@ -878,6 +884,15 @@
         <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
         <property name="tests.leaveTemporary" value="false" />
+        <!-- 
+           keep junit4 runner files or not (independent of keeping test output files)
+         -->
+        <condition property="junit4.leaveTemporary">
+          <or>
+            <istrue value="${tests.leaveTemporary}"/> 
+            <istrue value="@{runner.leaveTemporary}"/> 
+          </or>
+        </condition>
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
         <property name="tests.useSecurityManager"  value="true" />
@@ -948,7 +963,7 @@
 
             dynamicAssignmentRatio="${tests.dynamicAssignmentRatio}"
             shuffleOnSlave="true"
-            leaveTemporary="${tests.leaveTemporary}"
+            leaveTemporary="${junit4.leaveTemporary}"
             seed="${tests.seed}"
 
             heartbeat="${tests.heartbeat}"
@@ -964,6 +979,7 @@
             <jvmarg line="${args}"/>
             <jvmarg line="${tests.heapdump.args}"/>
             <jvmarg line="${tests.clover.args}"/>
+            <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
 
             <!-- set the number of times tests should run -->
@@ -1344,6 +1360,54 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        jars so we just order it after compile-test to ensure that -->
   <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
   <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+
+  <target name="-jacoco-install">
+    <!-- download jacoco from ivy if needed -->
+    <ivy:cachepath organisation="org.jacoco" module="org.jacoco.ant" type="jar" inline="true" revision="0.7.4.201502262128"
+                   log="download-only" pathid="jacoco.classpath" />
+
+    <!-- install jacoco ant tasks -->
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath refid="jacoco.classpath"/>
+    </taskdef>
+  </target>
+
+  <target name="-jacoco-test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals">
+    <!-- hack: ant task computes absolute path, but we need a relative path, so its per-testrunner -->
+    <jacoco:agent property="agentvmparam.raw"/>
+    <property name="agentvmparam" value="${agentvmparam.raw}destfile=jacoco.db,append=false"/>
+  
+    <!-- create output dir if needed -->
+    <mkdir dir="${junit.output.dir}"/>
+
+    <!-- run tests, with agent vm args, and keep runner files around -->
+    <test-macro threadNum="${tests.jvms.override}" additional.vm.args="${agentvmparam}" runner.leaveTemporary="true"/>
+  </target>
+
+  <target name="-jacoco-report" depends="-check-totals">
+    <property name="jacoco.output.dir" location="${jacoco.report.dir}/${name}"/>
+    <!-- try to clean output dir to prevent any confusion -->
+    <delete dir="${jacoco.output.dir}" failonerror="false"/>
+    <mkdir dir="${jacoco.output.dir}"/>
+
+    <!-- print jacoco reports -->
+    <jacoco:report>
+      <executiondata>
+        <fileset dir="${junit.output.dir}" includes="**/jacoco.db"/>
+      </executiondata>
+      <structure name="${final.name} JaCoCo coverage report">
+        <classfiles>
+          <fileset dir="${build.dir}/classes/java"/>
+        </classfiles>
+        <sourcefiles>
+          <fileset dir="${src.dir}"/>
+        </sourcefiles>
+      </structure>
+      <html destdir="${jacoco.output.dir}" footer="Copyright ${year} Apache Software Foundation.  All Rights Reserved."/>
+    </jacoco:report>
+  </target>
+
+  <target name="jacoco" depends="-jacoco-install,-jacoco-test,-jacoco-report" description="Generates JaCoCo coverage report"/>
 
   <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
   <target name="-test">

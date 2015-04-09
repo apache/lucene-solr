@@ -18,6 +18,7 @@
  -->
 
 <project name="lucene" default="default" basedir="."
+         xmlns:jacoco="antlib:org.jacoco.ant"
          xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <import file="common-build.xml"/>
@@ -462,6 +463,38 @@
 
   <target name="pitest-modules" depends="compile-test">
     <modules-crawl target="pitest" failonerror="false"/>
+  </target>
+
+  <target name="jacoco" description="Generates JaCoCo code coverage reports" depends="-jacoco-install">
+    <!-- run jacoco for each module -->
+    <ant dir="${common.dir}/core" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <modules-crawl target="jacoco" failonerror="true"/>
+
+    <!-- produce aggregate report -->
+    <property name="jacoco.output.dir" location="${jacoco.report.dir}/lucene-all"/>
+    <!-- try to clean output dir to prevent any confusion -->
+    <delete dir="${jacoco.output.dir}" failonerror="false"/>
+    <mkdir dir="${jacoco.output.dir}"/>
+
+    <jacoco:report>
+      <executiondata>
+        <fileset dir="${common.dir}/build" includes="**/jacoco.db"/>
+      </executiondata>
+      <structure name="${Name} aggregate JaCoCo coverage report">
+        <classfiles>
+          <fileset dir="${common.dir}/build">
+             <include name="**/classes/java/**/*.class"/>
+             <exclude name="test-framework/**"/>
+             <exclude name="tools/**"/>
+          </fileset>
+        </classfiles>
+        <!-- TODO: trying to specify source files could maybe work, but would
+             double the size of the reports -->
+      </structure>
+      <html destdir="${jacoco.output.dir}" footer="Copyright ${year} Apache Software Foundation.  All Rights Reserved."/>
+    </jacoco:report>
   </target>
 
   <!--

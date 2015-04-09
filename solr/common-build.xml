@@ -33,6 +33,7 @@
 
   <property name="dest" location="${common-solr.dir}/build" />
   <property name="build.dir" location="${dest}/${ant.project.name}"/>
+  <property name="jacoco.report.dir" location="${dest}/jacoco"/>
   <property name="dist" location="${common-solr.dir}/dist"/>
   <property name="package.dir" location="${common-solr.dir}/package"/>
   <property name="maven.dist.dir" location="${package.dir}/maven"/>

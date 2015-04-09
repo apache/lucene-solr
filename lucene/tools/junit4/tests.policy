@@ -35,6 +35,7 @@ grant {
   // write only to sandbox
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
 
@@ -72,6 +73,8 @@ grant {
   permission java.lang.RuntimePermission "getClassLoader";
   // needed to test unmap hack on platforms that support it
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
+  // needed by jacoco to dump coverage
+  permission java.lang.RuntimePermission "shutdownHooks";
   
   // read access to all system properties:
   permission java.util.PropertyPermission "*", "read";
