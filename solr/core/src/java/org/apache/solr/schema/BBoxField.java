@@ -139,6 +139,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
         (org.apache.lucene.document.FieldType) solrNumField.createField(0.0, 1.0f).fieldType();
+    luceneType.setStored(storeSubFields);
+    
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that
     if (solrNumField.hasDocValues()) {
       luceneType = new org.apache.lucene.document.FieldType(luceneType);

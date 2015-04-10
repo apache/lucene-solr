@@ -382,6 +382,11 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
       // Make sure the subfields are not stored
       SchemaField sub = schema.getField("bbox"+BBoxStrategy.SUFFIX_MINX);
       assertFalse(sub.stored());
+
+      // Make sure solr field type is also not stored
+      BBoxField bbox = (BBoxField)schema.getField("bbox").getType();
+      BBoxStrategy strategy = bbox.getStrategy("bbox");
+      assertFalse(strategy.getFieldType().stored());
     }
   }
   
