@@ -18,8 +18,8 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.search.Query;
 
 
 /**
@@ -41,7 +41,7 @@ public interface QueryMaker {
   public void setConfig (Config config) throws Exception;
   
   /** Reset inputs so that the test run would behave, input wise, as if it just started. */
-  public void resetInputs();
+  public void resetInputs() throws Exception;
   
   /** Print the queries */
   public String printQueries();

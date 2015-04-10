@@ -421,7 +421,13 @@ public class PerfRunData implements Closeable {
     docMaker.resetInputs();
     facetSource.resetInputs();
     for (final QueryMaker queryMaker : readTaskQueryMaker.values()) {
-      queryMaker.resetInputs();
+      try {
+        queryMaker.resetInputs();
+      } catch (IOException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

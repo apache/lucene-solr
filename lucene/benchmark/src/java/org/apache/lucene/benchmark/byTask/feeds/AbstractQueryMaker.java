@@ -15,8 +15,8 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.search.Query;
 
 /**
  * Abstract base query maker. 
@@ -29,8 +29,10 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   protected Config config;
 
   @Override
-  public void resetInputs() {
+  public void resetInputs() throws Exception {
     qnum = 0;
+    // re-initialize since properties by round may have changed.
+    setConfig(config);
   }
 
   protected abstract Query[] prepareQueries() throws Exception;
