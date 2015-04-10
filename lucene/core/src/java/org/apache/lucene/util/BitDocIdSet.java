@@ -113,6 +113,15 @@ public class BitDocIdSet extends DocIdSet {
     }
 
     /**
+     * Is this builder definitely empty?  If so, {@link #build()} will return null.  This is usually the same as
+     * simply being empty but if this builder was constructed with the {@code full} option or if an iterator was passed
+     * that iterated over no documents, then we're not sure.
+     */
+    public boolean isDefinitelyEmpty() {
+      return sparseSet == null && denseSet == null;
+    }
+
+    /**
      * Add the content of the provided {@link DocIdSetIterator} to this builder.
      */
     public void or(DocIdSetIterator it) throws IOException {
