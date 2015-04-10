@@ -22,6 +22,14 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -407,6 +415,28 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
     
     assertEquals(5L, field.numericValue().longValue());
+  }
+
+  public void testIndexedBinaryField() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    BytesRef br = new BytesRef(new byte[5]);
+    Field field = new StringField("binary", br, Field.Store.YES);
+    assertEquals(br, field.binaryValue());
+    doc.add(field);
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new TermQuery(new Term("binary", br)), 1);
+    assertEquals(1, hits.totalHits);
+    StoredDocument storedDoc = s.doc(hits.scoreDocs[0].doc);
+    assertEquals(br, storedDoc.getField("binary").binaryValue());
+
+    r.close();
+    w.close();
+    dir.close();
   }
   
   private void trySetByteValue(Field f) {

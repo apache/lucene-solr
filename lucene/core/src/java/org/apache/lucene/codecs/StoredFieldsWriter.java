@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.FieldInfo;
@@ -140,14 +141,16 @@ public abstract class StoredFieldsWriter implements Closeable {
     @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
       reset(fieldInfo);
+      // TODO: can we avoid new BR here?
       binaryValue = new BytesRef(value);
       write();
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
       reset(fieldInfo);
-      stringValue = value;
+      // TODO: can we avoid new String here?
+      stringValue = new String(value, StandardCharsets.UTF_8);
       write();
     }
 

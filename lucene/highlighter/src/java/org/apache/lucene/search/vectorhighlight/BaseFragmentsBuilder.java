@@ -17,6 +17,16 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -25,18 +35,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.highlight.DefaultEncoder;
 import org.apache.lucene.search.highlight.Encoder;
-import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
+import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Base FragmentsBuilder implementation that supports colored pre/post
@@ -152,7 +153,8 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     reader.document(docId, new StoredFieldVisitor() {
         
         @Override
-        public void stringField(FieldInfo fieldInfo, String value) {
+        public void stringField(FieldInfo fieldInfo, byte[] bytes) {
+          String value = new String(bytes, StandardCharsets.UTF_8);
           FieldType ft = new FieldType(TextField.TYPE_STORED);
           ft.setStoreTermVectors(fieldInfo.hasVectors());
           fields.add(new Field(fieldInfo.name, value, ft));

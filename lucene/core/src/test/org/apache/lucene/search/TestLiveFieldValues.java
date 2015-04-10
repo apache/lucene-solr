@@ -31,13 +31,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -108,7 +108,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
                 if (threadRandom.nextDouble() <= addChance) {
                   String id = String.format(Locale.ROOT, "%d_%04x", threadID, threadRandom.nextInt(idCount));
                   Integer field = threadRandom.nextInt(Integer.MAX_VALUE);
-                  doc.add(new StringField("id", id, Field.Store.YES));
+                  doc.add(newStringField("id", new BytesRef(id), Field.Store.YES));
                   doc.add(new IntField("field", field.intValue(), Field.Store.YES));
                   w.updateDocument(new Term("id", id), doc);
                   rt.add(id, field);
@@ -119,7 +119,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
                 if (allIDs.size() > 0 && threadRandom.nextDouble() <= deleteChance) {
                   String randomID = allIDs.get(threadRandom.nextInt(allIDs.size()));
-                  w.deleteDocuments(new Term("id", randomID));
+                  w.deleteDocuments(new Term("id", new BytesRef(randomID)));
                   rt.delete(randomID);
                   values.put(randomID, missing);
                 }

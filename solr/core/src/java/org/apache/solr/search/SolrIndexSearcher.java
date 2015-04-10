@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -80,10 +81,10 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
@@ -618,7 +619,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] bytes) throws IOException {
+      String value = new String(bytes, StandardCharsets.UTF_8);
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.hasVectors());
       ft.setOmitNorms(fieldInfo.omitsNorms());
@@ -708,7 +710,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
               throw new AssertionError();
             }
           } else {
-            visitor.stringField(info, f.stringValue());
+            visitor.stringField(info, f.stringValue().getBytes(StandardCharsets.UTF_8));
           }
           break;
         case NO:

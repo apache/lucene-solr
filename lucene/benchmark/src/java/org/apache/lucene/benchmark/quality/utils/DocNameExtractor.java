@@ -17,6 +17,7 @@
 package org.apache.lucene.benchmark.quality.utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +51,8 @@ public class DocNameExtractor {
     final List<String> name = new ArrayList<>();
     searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
         @Override
-        public void stringField(FieldInfo fieldInfo, String value) {
+        public void stringField(FieldInfo fieldInfo, byte[] bytes) {
+          String value = new String(bytes, StandardCharsets.UTF_8);
           name.add(value);
         }
 

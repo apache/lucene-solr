@@ -58,6 +58,9 @@ New Features
   accuracy of SDV. Includes optimized Intersect predicate to avoid many
   geometry checks. Uses TwoPhaseIterator. (David Smiley)
 
+* LUCENE-5989: Allow passing BytesRef to StringField to make it easier
+  to index arbitrary binary tokens (Mike McCandless)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

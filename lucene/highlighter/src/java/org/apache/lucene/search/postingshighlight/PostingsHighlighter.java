@@ -18,6 +18,7 @@ package org.apache.lucene.search.postingshighlight;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -792,7 +793,8 @@ public class PostingsHighlighter {
     }
     
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] bytes) throws IOException {
+      String value = new String(bytes, StandardCharsets.UTF_8);
       assert currentField >= 0;
       StringBuilder builder = builders[currentField];
       if (builder.length() > 0 && builder.length() < maxLength) {

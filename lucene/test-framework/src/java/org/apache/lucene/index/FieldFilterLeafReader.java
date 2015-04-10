@@ -78,7 +78,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
       }
 
       @Override
-      public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
         visitor.stringField(fieldInfo, value);
       }
 
