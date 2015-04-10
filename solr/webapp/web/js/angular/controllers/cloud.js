@@ -49,7 +49,7 @@ var treeSubController = function($scope, Zookeeper) {
     $scope.showData = false;
 
     $scope.showTreeLink = function(link) {
-        var path = link.replace(/.*path=/, "").replace("%2F", "/");
+        var path = decodeURIComponent(link.replace(/.*[\\?&]path=([^&#]*).*/, "$1"));
         Zookeeper.detail({path: path}, function(data) {
             $scope.znode = data.znode;
             var path = data.znode.path.split( '.' );

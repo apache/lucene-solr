@@ -101,6 +101,8 @@ Bug Fixes
 * SOLR-7370: FSHDFSUtils#recoverFileLease tries to recover the lease every one second after 
   the first four second wait. (Mark Miller)
 
+* SOLR-7369: AngularJS UI insufficient URLDecoding in cloud/tree view (janhoy)
+
 Optimizations
 ----------------------
 
