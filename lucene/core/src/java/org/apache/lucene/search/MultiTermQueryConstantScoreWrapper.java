@@ -87,7 +87,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new ConstantScoreWeight(this) {
       @Override
-      Scorer scorer(LeafReaderContext context, Bits acceptDocs, final float score) throws IOException {
+      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, final float score) throws IOException {
         final Terms terms = context.reader().terms(query.field);
         if (terms == null) {
           // field does not exist

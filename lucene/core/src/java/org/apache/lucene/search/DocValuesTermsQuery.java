@@ -149,7 +149,7 @@ public class DocValuesTermsQuery extends Query {
     return new ConstantScoreWeight(this) {
 
       @Override
-      Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
+      protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
         final SortedSetDocValues values = DocValues.getSortedSet(context.reader(), field);
         final LongBitSet bits = new LongBitSet(values.getValueCount());
         for (BytesRef term : terms) {
