@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /** Merges multiple {@link FieldTermIterator}s */
-class MergedPrefixCodedTermsIterator implements FieldTermIterator {
+class MergedPrefixCodedTermsIterator extends FieldTermIterator {
 
   private static class TermMergeQueue extends PriorityQueue<TermIterator> {
     TermMergeQueue(int size) {
@@ -74,51 +74,49 @@ class MergedPrefixCodedTermsIterator implements FieldTermIterator {
   String field;
 
   @Override
-  public boolean next() {
+  public BytesRef next() {
     if (termQueue.size() == 0) {
-      // Current field is done:
+      // No more terms in current field:
       if (fieldQueue.size() == 0) {
         // No more fields:
         field = null;
-        return true;
+        return null;
       }
 
       // Transfer all iterators on the next field into the term queue:
       TermIterator top = fieldQueue.pop();
       termQueue.add(top);
-      assert top.field() != null;
+      field = top.field;
+      assert field != null;
 
       while (fieldQueue.size() != 0 && fieldQueue.top().field.equals(top.field)) {
-        termQueue.add(fieldQueue.pop());
+        TermIterator iter = fieldQueue.pop();
+        assert iter.field.equals(field);
+        // TODO: a little bit evil; we do this so we can == on field down below:
+        iter.field = field;
+        termQueue.add(iter);
       }
 
-      field = top.field;
-      return true;
+      return termQueue.top().bytes;
     } else {
       TermIterator top = termQueue.top();
-      if (top.next()) {
-        // New field
+      if (top.next() == null) {
         termQueue.pop();
-        if (top.field() != null) {
-          fieldQueue.add(top);
-        }
+      } else if (top.field() != field) {
+        // Field changed
+        termQueue.pop();
+        fieldQueue.add(top);
       } else {
         termQueue.updateTop();
       }
-
-      if (termQueue.size() != 0) {
-        // Still terms left in this field
-        return false;
-      } else {
+      if (termQueue.size() == 0) {
         // Recurse (just once) to go to next field:                                                                                                                                        
         return next();
+      } else {
+        // Still terms left in this field
+        return termQueue.top().bytes;
       }
     }
-  }
-
-  @Override
-  public BytesRef term() {
-    return termQueue.top().bytes;
   }
 
   @Override

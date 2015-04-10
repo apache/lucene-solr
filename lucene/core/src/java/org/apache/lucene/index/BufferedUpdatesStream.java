@@ -32,7 +32,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -334,12 +333,6 @@ class BufferedUpdatesStream implements Accountable {
     }
 
     if (infoStream.isEnabled("BD")) {
-      Directory dir;
-      if (segmentInfos.size() > 0) {
-        dir = segmentInfos.info(0).info.dir;
-      } else {
-        dir = null;
-      }
       infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + updates.size());
     }
     final int limit = updates.size();
@@ -495,18 +488,13 @@ class BufferedUpdatesStream implements Accountable {
     String field = null;
     SegmentQueue queue = null;
 
-    while (true) {
+    BytesRef term;
 
-      boolean newField;
+    while ((term = iter.next()) != null) {
 
-      newField = iter.next();
-
-      if (newField) {
+      if (iter.field() != field) {
+        // field changed
         field = iter.field();
-        if (field == null) {
-          // No more terms:
-          break;
-        }
 
         queue = new SegmentQueue(numReaders);
 
@@ -527,9 +515,8 @@ class BufferedUpdatesStream implements Accountable {
         assert checkDeleteTerm(null);
       }
 
-      // Get next term to delete
-      BytesRef term = iter.term();
       assert checkDeleteTerm(term);
+
       delTermVisitedCount++;
 
       long delGen = iter.delGen();

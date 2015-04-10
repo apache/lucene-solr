@@ -33,8 +33,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
     PrefixCodedTerms pb = b.finish();
     TermIterator iter = pb.iterator();
-    assertTrue(iter.next());
-    assertNull(iter.field);
+    assertNull(iter.next());
   }
   
   public void testOne() {
@@ -43,11 +42,10 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     b.add(term);
     PrefixCodedTerms pb = b.finish();
     TermIterator iter = pb.iterator();
-    assertTrue(iter.next());
-    assertEquals("foo", iter.field);
+    assertNotNull(iter.next());
+    assertEquals("foo", iter.field());
     assertEquals("bogus", iter.bytes.utf8ToString());
-    assertTrue(iter.next());
-    assertNull(iter.field);
+    assertNull(iter.next());
   }
   
   public void testRandom() {
@@ -66,19 +64,10 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     
     TermIterator iter = pb.iterator();
     Iterator<Term> expected = terms.iterator();
-    String field = "";
     //System.out.println("TEST: now iter");
-    while (true) {
-      boolean newField = iter.next();
-      //System.out.println("  newField=" + newField);
-      if (newField) {
-        field = iter.field;
-        if (field == null) {
-          break;
-        }
-      }
+    while (iter.next() != null) {
       assertTrue(expected.hasNext());
-      assertEquals(expected.next(), new Term(field, iter.bytes));
+      assertEquals(expected.next(), new Term(iter.field(), iter.bytes));
     }
 
     assertFalse(expected.hasNext());
@@ -97,13 +86,14 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     PrefixCodedTerms pb2 = b2.finish();
 
     MergedPrefixCodedTermsIterator merged = new MergedPrefixCodedTermsIterator(Arrays.asList(new PrefixCodedTerms[] {pb1, pb2}));
-    assertTrue(merged.next());
+    BytesRef term = merged.next();
+    assertNotNull(term);
     assertEquals("foo", merged.field());
-    assertEquals("a", merged.term().utf8ToString());
-    assertFalse(merged.next());
-    assertEquals("b", merged.term().utf8ToString());
-    assertTrue(merged.next());
-    assertNull(merged.field());
+    assertEquals("a", term.utf8ToString());
+    term = merged.next();
+    assertNotNull(term);
+    assertEquals("b", term.utf8ToString());
+    assertNull(merged.next());
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -137,25 +127,20 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     String field = "";
 
     BytesRef lastTerm = null;
-
-    while (true) {
-      if (actual.next()) {
+    BytesRef term;
+    while ((term = actual.next()) != null) {
+      if (field != actual.field()) {
         field = actual.field();
-        if (field == null) {
-          break;
-        }
         lastTerm = null;
-        //System.out.println("\nTEST: new field: " + field);
       }
-      if (lastTerm != null && lastTerm.equals(actual.term())) {
+      if (lastTerm != null && lastTerm.equals(term)) {
         continue;
       }
-      //System.out.println("TEST: iter: field=" + field + " term=" + actual.term());
-      lastTerm = BytesRef.deepCopyOf(actual.term());
+      lastTerm = BytesRef.deepCopyOf(term);
       assertTrue(expected.hasNext());
 
       Term expectedTerm = expected.next();
-      assertEquals(expectedTerm, new Term(field, actual.term()));
+      assertEquals(expectedTerm, new Term(field, term));
     }
 
     assertFalse(expected.hasNext());
