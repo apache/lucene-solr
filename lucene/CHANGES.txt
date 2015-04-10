@@ -84,6 +84,10 @@ Other
 
 * LUCENE-5439: Add 'ant jacoco' build target. (Robert Muir)
 
+* LUCENE-6315: Simplify the private iterator Lucene uses internally
+  when resolving deleted terms to matched docids. (Robert Muir, Adrien
+  Grand, Mike McCandless)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

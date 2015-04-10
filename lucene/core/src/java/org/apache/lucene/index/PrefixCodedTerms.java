@@ -104,7 +104,7 @@ class PrefixCodedTerms implements Accountable {
     }
   }
 
-  public static class TermIterator implements FieldTermIterator {
+  public static class TermIterator extends FieldTermIterator {
     final IndexInput input;
     final BytesRefBuilder builder = new BytesRefBuilder();
     final BytesRef bytes = builder.get();
@@ -123,7 +123,7 @@ class PrefixCodedTerms implements Accountable {
     }
 
     @Override
-    public boolean next() {
+    public BytesRef next() {
       if (input.getFilePointer() < end) {
         try {
           int code = input.readVInt();
@@ -134,13 +134,13 @@ class PrefixCodedTerms implements Accountable {
           int prefix = code >>> 1;
           int suffix = input.readVInt();
           readTermBytes(prefix, suffix);
-          return newField;
+          return bytes;
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
       } else {
         field = null;
-        return true;
+        return null;
       }
     }
 
@@ -149,11 +149,6 @@ class PrefixCodedTerms implements Accountable {
       builder.grow(prefix + suffix);
       input.readBytes(builder.bytes(), prefix, suffix);
       builder.setLength(prefix + suffix);
-    }
-
-    @Override
-    public BytesRef term() {
-      return bytes;
     }
 
     @Override
