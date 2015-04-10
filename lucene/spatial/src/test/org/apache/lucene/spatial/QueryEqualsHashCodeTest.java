@@ -17,9 +17,13 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
+import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
@@ -32,25 +36,33 @@ import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 public class QueryEqualsHashCodeTest extends LuceneTestCase {
 
   private final SpatialContext ctx = SpatialContext.GEO;
 
+  private SpatialOperation predicate;
+
   @Test
   public void testEqualsHashCode() {
 
+    switch (random().nextInt(4)) {//0-3
+      case 0: predicate = SpatialOperation.Contains; break;
+      case 1: predicate = SpatialOperation.IsWithin; break;
+
+      default: predicate = SpatialOperation.Intersects; break;
+    }
     final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
     final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
 
     Collection<SpatialStrategy> strategies = new ArrayList<>();
-    strategies.add(new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash"));
+    RecursivePrefixTreeStrategy recursive_geohash = new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash");
+    strategies.add(recursive_geohash);
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
     strategies.add(new PointVectorStrategy(ctx, "pointvector"));
     strategies.add(new BBoxStrategy(ctx, "bbox"));
-    strategies.add(new SerializedDVStrategy(ctx, "serialized"));
+    final SerializedDVStrategy serialized = new SerializedDVStrategy(ctx, "serialized");
+    strategies.add(serialized);
+    strategies.add(new CompositeSpatialStrategy("composite", recursive_geohash, serialized));
     for (SpatialStrategy strategy : strategies) {
       testEqualsHashcode(strategy);
     }
@@ -91,20 +103,20 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     Object second = generator.gen(args1);//should be the same
     assertEquals(first, second);
     assertEquals(first.hashCode(), second.hashCode());
-    assertNotSame(args1, args2);
+    assertTrue(args1.equals(args2) == false);
     second = generator.gen(args2);//now should be different
-    assertNotSame(first, second);
-    assertNotSame(first.hashCode(), second.hashCode());
+    assertTrue(first.equals(second) == false);
+    assertTrue(first.hashCode() != second.hashCode());
   }
 
   private SpatialArgs makeArgs1() {
     final Shape shape1 = ctx.makeRectangle(0, 0, 10, 10);
-    return new SpatialArgs(SpatialOperation.Intersects, shape1);
+    return new SpatialArgs(predicate, shape1);
   }
 
   private SpatialArgs makeArgs2() {
     final Shape shape2 = ctx.makeRectangle(0, 0, 20, 20);
-    return new SpatialArgs(SpatialOperation.Intersects, shape2);
+    return new SpatialArgs(predicate, shape2);
   }
 
   interface ObjGenerator {

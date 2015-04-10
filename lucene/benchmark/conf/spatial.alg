@@ -27,15 +27,19 @@ doc.maker=org.apache.lucene.benchmark.byTask.feeds.SpatialDocMaker
 #spatial.geo=true
 #spatial.distCalculator=haversine
 #spatial.worldBounds=...
+#  Spatial Strategy: composite | rpt | ...
+spatial.strategy=rpt
 #  Spatial Grid: (PrefixTree)  see SpatialPrefixTreeFactory.makeSPT
 #spatial.prefixTree=geohash  (or quad)
 spatial.prefixTree=quad
-#spatial.maxLevels=11
+#27 quad or 11 geohash are very close
+spatial.maxLevels=27
 #spatial.maxDistErr (in degrees) to compute maxLevels -- defaults to 1 meter's worth
 #  RecursivePrefixTreeStrategy:
-spatial.docPointsOnly=true
-#spatial.distErrPct=.25
-#spatial.prefixGridScanLevel=-4
+#spatial.docPointsOnly=true
+#spatial.distErrPct=0.025
+#spatial.pruneLeafyBranches=true
+
 #codec.postingsFormat=Memory or (Direct)
 
 ### Source & Doc
@@ -54,7 +58,6 @@ directory=FSDirectory
 compound=false
 merge.factor=10
 ram.flush.mb=64
-concurrent.merge.scheduler.max.thread.count=2
 
 ### Query
 query.maker=org.apache.lucene.benchmark.byTask.feeds.SpatialFileQueryMaker
@@ -66,10 +69,13 @@ query.spatial.radiusDegrees=0
 query.spatial.radiusDegreesRandPlusMinus=3
 query.spatial.bbox=false
 
+#query.spatial.prefixGridScanLevel=scanLevel:-1:-2:-3:-4
+#query.spatial.composite.optimizePredicates=optPred:true:false
+
 query.spatial.score=false
 #query.spatial.predicate=Intersects
 # (defaults to spatial.distErrPct)
-query.spatial.distErrPct=qDistErrPct:0.0:0.025:0.1:0.5
+#query.spatial.distErrPct=0.0
 
 ### Misc
 
@@ -104,7 +110,7 @@ CloseReader
   CloseReader
   
   NewRound
-} : 4
+} : 1
 
 
 #RepSumByName

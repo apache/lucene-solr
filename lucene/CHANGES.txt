@@ -54,6 +54,10 @@ New Features
   dictionary, exposed as AutoPrefixPostingsFormat (Adrien Grand,
   Uwe Schindler, Robert Muir, Mike McCandless)
 
+* LUCENE-5579: New CompositeSpatialStrategy combines speed of RPT with
+  accuracy of SDV. Includes optimized Intersect predicate to avoid many
+  geometry checks. Uses TwoPhaseIterator. (David Smiley)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if
