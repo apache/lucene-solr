@@ -92,6 +92,9 @@ Other
   when resolving deleted terms to matched docids. (Robert Muir, Adrien
   Grand, Mike McCandless)
 
+* LUCENE-6399: Benchmark module's QueryMaker.resetInputs should call setConfig
+  so queries can react to property changes in new rounds. (David Smiley)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features
