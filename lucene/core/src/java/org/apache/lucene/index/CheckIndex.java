@@ -947,6 +947,7 @@ public class CheckIndex implements Closeable {
         if (isIntersect == false) {
           throw new RuntimeException("didn't see max term field=" + field + " term=" + maxTerm);
         }
+        //System.out.println("      terms=" + termCount);
         return termCount;
       }
 
@@ -973,6 +974,7 @@ public class CheckIndex implements Closeable {
         int cmp = term.compareTo(maxTerm);
         if (cmp == 0) {
           // Done!
+          //System.out.println("      terms=" + termCount);
           return termCount;
         } else if (cmp > 0) {
           throw new RuntimeException("didn't see end term field=" + field + " term=" + maxTerm);
@@ -1007,7 +1009,8 @@ public class CheckIndex implements Closeable {
   /** Test Terms.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
    *  any fake terms were seen. */
   private static boolean checkSingleTermRange(String field, int maxDoc, Terms terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
-    // System.out.println("  check minTerm=" + minTerm + " maxTerm=" + maxTerm);
+    //System.out.println("    check minTerm=" + minTerm.utf8ToString() + " maxTerm=" + maxTerm.utf8ToString());
+    assert minTerm.compareTo(maxTerm) <= 0;
 
     TermsEnum termsEnum = terms.iterator();
     TermsEnum.SeekStatus status = termsEnum.seekCeil(minTerm);
@@ -1028,6 +1031,7 @@ public class CheckIndex implements Closeable {
     if (normalDocs.equals(intersectDocs) == false) {
       throw new RuntimeException("intersect visited different docs than straight terms enum: " + normalDocs.cardinality() + " for straight enum, vs " + intersectDocs.cardinality() + " for intersect, minTerm=" + minTerm + " maxTerm=" + maxTerm);
     }
+    //System.out.println("      docs=" + normalTermCount);
     //System.out.println("    " + intersectTermCount + " vs " + normalTermCount);
     return intersectTermCount != normalTermCount;
   }
@@ -1087,6 +1091,7 @@ public class CheckIndex implements Closeable {
           lastTerm.copyBytes(term);
         }
       }
+      //System.out.println("    count=" + termCount);
 
       if (lastTerm != null && termBounds.isEmpty() == false) {
         BytesRef minTerm = termBounds.removeFirst();
@@ -1524,7 +1529,8 @@ public class CheckIndex implements Closeable {
 
         long fieldTermCount = (status.delTermCount+status.termCount)-termCountStart;
 
-        if (hasFreqs == false) {
+        // LUCENE-5879: this is just too slow for now:
+        if (false && hasFreqs == false) {
           // For DOCS_ONLY fields we recursively test term ranges:
           checkTermRanges(field, maxDoc, fieldTerms, fieldTermCount);
         }
