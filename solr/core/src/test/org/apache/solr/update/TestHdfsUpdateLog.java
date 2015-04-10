@@ -29,14 +29,16 @@ import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakScope(Scope.NONE) // hdfs mini cluster currently leaks threads
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 @SuppressObjectReleaseTracker(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7115")
 public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
   

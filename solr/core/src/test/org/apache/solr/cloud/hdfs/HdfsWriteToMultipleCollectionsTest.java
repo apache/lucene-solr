@@ -17,8 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -38,6 +38,7 @@ import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
 import org.apache.solr.store.blockcache.Cache;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +51,9 @@ import java.util.List;
 
 @Slow
 @Nightly
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String SOLR_HDFS_HOME = "solr.hdfs.home";
   private static final String SOLR_HDFS_BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";

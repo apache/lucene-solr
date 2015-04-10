@@ -18,49 +18,70 @@ package org.apache.solr.cloud.hdfs;
  */
 
 import java.io.IOException;
+import java.net.URI;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.cloud.ChaosMonkeySafeLeaderTest;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@Slow
-@Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
+public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
+  
   private static MiniDFSCluster dfsCluster;
-  
+
   @BeforeClass
-  public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+  public static void beforeClass() throws Exception {
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false);
   }
-  
+
   @AfterClass
-  public static void teardownClass() throws Exception {
+  public static void afterClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
   
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    
-    // super class may hard code directory
-    useFactory("org.apache.solr.core.HdfsDirectoryFactory");
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
   }
-
   
-  @Override
-  protected String getDataDir(String dataDir) throws IOException {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
+  
+  @Test
+  public void testBasic() throws IOException {
+    URI uri = dfsCluster.getURI();
+    Path path = new Path(uri.toString());
+    Configuration conf = new Configuration();
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+    FileSystem fs = FileSystem.get(path.toUri(), conf);
+    Path testFile = new Path(uri.toString() + "/testfile");
+    FSDataOutputStream out = fs.create(testFile);
+    
+    out.write(5);
+    out.hflush();
+    out.close();
 
+    ((DistributedFileSystem) fs).recoverLease(testFile);
+
+    
+    fs.close();
+  }
 
 }
