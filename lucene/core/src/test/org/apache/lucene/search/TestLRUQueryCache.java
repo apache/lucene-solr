@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -51,8 +52,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -349,7 +348,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new ConstantScoreWeight(this) {
         @Override
-        Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+        protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
           return null;
         }
       };
@@ -925,7 +924,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       return new ConstantScoreWeight(this) {
         
         @Override
-        Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+        protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
           return null;
         }
       };

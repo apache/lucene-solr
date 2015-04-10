@@ -22,7 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
-abstract class ConstantScoreWeight extends Weight {
+/**
+ * A Weight that has a constant score equal to the boost of the wrapped query.
+ *
+ * @lucene.internal
+ */
+public abstract class ConstantScoreWeight extends Weight {
 
   private float queryNorm;
   private float queryWeight;
@@ -68,6 +73,6 @@ abstract class ConstantScoreWeight extends Weight {
     return scorer(context, acceptDocs, queryWeight);
   }
 
-  abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException;
+  protected abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException;
 
 }

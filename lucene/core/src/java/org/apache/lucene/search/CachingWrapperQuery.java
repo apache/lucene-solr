@@ -116,7 +116,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
     policy.onUse(weight.getQuery());
     return new ConstantScoreWeight(weight.getQuery()) {
       @Override
-      Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
         final LeafReader reader = context.reader();
         final Object key = reader.getCoreCacheKey();
 

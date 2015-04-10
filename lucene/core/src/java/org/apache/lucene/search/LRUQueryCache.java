@@ -547,7 +547,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+    protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
       if (context.ord == 0) {
         policy.onUse(getQuery());
       }

@@ -84,7 +84,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new ConstantScoreWeight(this) {
         @Override
-        Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+        protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
           TermsEnum termsEnum = query.getTermsEnum(new Terms() {
             
