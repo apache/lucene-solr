@@ -113,11 +113,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    //Solr expects us to remove the parameters we've used.
-    MapListener<String, String> argsWrap = new MapListener<>(args);
-    ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
-    args.keySet().removeAll(argsWrap.getSeenKeys());
-
+    if(ctx==null) { // subclass can set this directly
+      //Solr expects us to remove the parameters we've used.
+      MapListener<String, String> argsWrap = new MapListener<>(args);
+      ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
+      args.keySet().removeAll(argsWrap.getSeenKeys());
+    }
+    
     final String unitsErrMsg = "units parameter is deprecated, please use distanceUnits instead for field types with class " +
         getClass().getSimpleName();
     this.units = args.remove("units");//deprecated
