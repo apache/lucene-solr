@@ -356,7 +356,7 @@ public class IndexFetcher {
           || commit.getGeneration() >= latestGeneration || forceReplication;
 
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
-      tmpIndex = Paths.get(solrCore.getDataDir(), tmpIdxDirName).toString();
+      tmpIndex = solrCore.getDataDir() + tmpIdxDirName;
 
       tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       

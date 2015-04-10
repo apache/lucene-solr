@@ -55,15 +55,15 @@ public class RestoreCore implements Callable<Boolean> {
 
   private boolean doRestore() throws Exception {
 
-    Path backupPath = Paths.get(backupLocation, backupName);
+    Path backupPath = Paths.get(backupLocation).resolve(backupName);
     String restoreIndexName = "restore." + backupName;
-    Path restoreIndexPath = Paths.get(core.getDataDir(), restoreIndexName);
+    String restoreIndexPath = core.getDataDir() + restoreIndexName;
 
     Directory restoreIndexDir = null;
     Directory indexDir = null;
     try (Directory backupDir = FSDirectory.open(backupPath)) {
 
-      restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath.toString(),
+      restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
           DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       //Prefer local copy.

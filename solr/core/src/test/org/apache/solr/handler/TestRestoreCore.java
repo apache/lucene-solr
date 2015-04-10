@@ -186,7 +186,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     //Remove the segments_n file so that the backup index is corrupted.
     //Restore should fail and it should automatically rollback to the original index.
-    Path restoreIndexPath = Paths.get(location, "snapshot." + snapshotName);
+    Path restoreIndexPath = Paths.get(location).resolve("snapshot." + snapshotName);
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(restoreIndexPath, IndexFileNames.SEGMENTS + "*")) {
       Path segmentFileName = stream.iterator().next();
       Files.delete(segmentFileName);

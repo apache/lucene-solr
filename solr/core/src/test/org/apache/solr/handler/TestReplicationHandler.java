@@ -1274,7 +1274,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient.close();
     masterJetty.stop();
 
-    Directory dir = FSDirectory.open(Paths.get(dataDir, "index"));
+    Directory dir = FSDirectory.open(Paths.get(dataDir).resolve("index"));
     String[] files = dir.listAll();
     long totalBytes = 0;
     for(String file : files) {
