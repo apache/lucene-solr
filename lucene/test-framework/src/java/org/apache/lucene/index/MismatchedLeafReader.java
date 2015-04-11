@@ -92,7 +92,7 @@ public class MismatchedLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
       in.stringField(renumber(fieldInfo), value);
     }
 

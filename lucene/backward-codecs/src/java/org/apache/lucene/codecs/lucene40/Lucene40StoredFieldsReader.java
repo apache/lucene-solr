@@ -227,7 +227,7 @@ final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Clo
       if ((bits & FIELD_IS_BINARY) != 0) {
         visitor.binaryField(info, bytes);
       } else {
-        visitor.stringField(info, new String(bytes, 0, bytes.length, StandardCharsets.UTF_8));
+        visitor.stringField(info, bytes);
       }
     }
   }

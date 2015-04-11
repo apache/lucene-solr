@@ -220,7 +220,7 @@ final class Lucene41StoredFieldsReader extends StoredFieldsReader {
         length = in.readVInt();
         data = new byte[length];
         in.readBytes(data, 0, length);
-        visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
+        visitor.stringField(info, data);
         break;
       case NUMERIC_INT:
         visitor.intField(info, in.readInt());

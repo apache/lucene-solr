@@ -1,6 +1,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -275,8 +276,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     // once we find it...
     final StoredFieldVisitor getUniqValue = new StoredFieldVisitor() {
       @Override 
-      public void stringField(FieldInfo fieldInfo, String value) {
-        uniqValues.add(value);
+      public void stringField(FieldInfo fieldInfo, byte[] bytes) {
+        uniqValues.add(new String(bytes, StandardCharsets.UTF_8));
       }
 
       @Override 

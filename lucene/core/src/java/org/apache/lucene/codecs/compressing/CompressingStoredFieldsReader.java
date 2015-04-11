@@ -41,7 +41,6 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -220,7 +219,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         length = in.readVInt();
         data = new byte[length];
         in.readBytes(data, 0, length);
-        visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
+        visitor.stringField(info, data);
         break;
       case NUMERIC_INT:
         visitor.intField(info, in.readZInt());

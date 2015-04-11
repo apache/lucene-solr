@@ -16,19 +16,19 @@
  */
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.HashMap;
-import java.io.IOException;
+import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 
@@ -209,7 +209,8 @@ public class TestLazyDocument extends LuceneTestCase {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] bytes) throws IOException {
+      String value = new String(bytes, StandardCharsets.UTF_8);
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.hasVectors());
       ft.setOmitNorms(fieldInfo.omitsNorms());

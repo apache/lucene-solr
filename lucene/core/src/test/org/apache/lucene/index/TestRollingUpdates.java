@@ -213,8 +213,9 @@ public class TestRollingUpdates extends LuceneTestCase {
         DirectoryReader open = null;
         for (int i = 0; i < num; i++) {
           Document doc = new Document();// docs.nextDoc();
-          doc.add(newStringField("id", "test", Field.Store.NO));
-          writer.updateDocument(new Term("id", "test"), doc);
+          BytesRef br = new BytesRef("test");
+          doc.add(newStringField("id", br, Field.Store.NO));
+          writer.updateDocument(new Term("id", br), doc);
           if (random().nextInt(3) == 0) {
             if (open == null) {
               open = DirectoryReader.open(writer, true);
