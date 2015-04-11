@@ -59,7 +59,9 @@ New Features
   geometry checks. Uses TwoPhaseIterator. (David Smiley)
 
 * LUCENE-5989: Allow passing BytesRef to StringField to make it easier
-  to index arbitrary binary tokens (Mike McCandless)
+  to index arbitrary binary tokens, and change the experimental
+  StoredFieldVisitor.stringField API to take UTF-8 byte[] instead of
+  String (Mike McCandless)
 
 Optimizations
 
