@@ -122,11 +122,11 @@ public class ConcurrentLRUCache<K,V> {
 
     // Check if we need to clear out old entries from the cache.
     // isCleaning variable is checked instead of markAndSweepLock.isLocked()
-    // for performance because every put invokation will check until
+    // for performance because every put invocation will check until
     // the size is back to an acceptable level.
     //
     // There is a race between the check and the call to markAndSweep, but
-    // it's unimportant because markAndSweep actually aquires the lock or returns if it can't.
+    // it's unimportant because markAndSweep actually acquires the lock or returns if it can't.
     //
     // Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
     // in this method.
@@ -161,7 +161,7 @@ public class ConcurrentLRUCache<K,V> {
   private void markAndSweep() {
     // if we want to keep at least 1000 entries, then timestamps of
     // current through current-1000 are guaranteed not to be the oldest (but that does
-    // not mean there are 1000 entries in that group... it's acutally anywhere between
+    // not mean there are 1000 entries in that group... it's actually anywhere between
     // 1 and 1000).
     // Also, if we want to remove 500 entries, then
     // oldestEntry through oldestEntry+500 are guaranteed to be
@@ -185,7 +185,7 @@ public class ConcurrentLRUCache<K,V> {
       int wantToKeep = lowerWaterMark;
       int wantToRemove = sz - lowerWaterMark;
 
-      @SuppressWarnings("unchecked") // generic array's are anoying
+      @SuppressWarnings("unchecked") // generic array's are annoying
       CacheEntry<K,V>[] eset = new CacheEntry[sz];
       int eSize = 0;
 
