@@ -246,10 +246,13 @@
                  autowarmCount="0"/>
 
     <!-- Query Result Cache
-         
-         Caches results of searches - ordered lists of document ids
-         (DocList) based on a query, a sort, and the range of documents requested.  
-      -->
+
+        Caches results of searches - ordered lists of document ids
+        (DocList) based on a query, a sort, and the range of documents requested.
+        Additional supported parameter by LRUCache:
+           maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
+                      to occupy
+     -->
     <queryResultCache class="solr.LRUCache"
                      size="512"
                      initialSize="512"
