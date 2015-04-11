@@ -19,6 +19,8 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -144,6 +146,11 @@ public class TestLRUCache extends LuceneTestCase {
       public long ramBytesUsed() {
         return 512 * 1024;
       }
+
+      @Override
+      public Collection<Accountable> getChildResources() {
+        return Collections.emptyList();
+      }
     });
     assertEquals(1, accountableLRUCache.size());
     assertEquals(baseSize + 512 * 1024 + LRUCache.DEFAULT_RAM_BYTES_USED + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
@@ -151,6 +158,11 @@ public class TestLRUCache extends LuceneTestCase {
       @Override
       public long ramBytesUsed() {
         return 512 * 1024;
+      }
+
+      @Override
+      public Collection<Accountable> getChildResources() {
+        return Collections.emptyList();
       }
     });
     assertEquals(1, accountableLRUCache.size());
@@ -162,6 +174,11 @@ public class TestLRUCache extends LuceneTestCase {
       @Override
       public long ramBytesUsed() {
         return 1024;
+      }
+
+      @Override
+      public Collection<Accountable> getChildResources() {
+        return Collections.emptyList();
       }
     });
     nl = accountableLRUCache.getStatistics();
