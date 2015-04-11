@@ -22,7 +22,15 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.Parser;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -120,5 +128,65 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals(null, lruCacheNew.get(90));
     assertEquals(null, lruCacheNew.get(50));
     lruCacheNew.close();
+  }
+
+  public void testMaxRamSize() throws Exception {
+    LRUCache<String, Accountable> accountableLRUCache = new LRUCache<>();
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "5");
+    params.put("maxRamMB", "1");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = accountableLRUCache.init(params, null, cr);
+    long baseSize = accountableLRUCache.ramBytesUsed();
+    assertEquals(LRUCache.BASE_RAM_BYTES_USED, baseSize);
+    accountableLRUCache.put("1", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 512 * 1024;
+      }
+    });
+    assertEquals(1, accountableLRUCache.size());
+    assertEquals(baseSize + 512 * 1024 + LRUCache.DEFAULT_RAM_BYTES_USED + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
+    accountableLRUCache.put("2", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 512 * 1024;
+      }
+    });
+    assertEquals(1, accountableLRUCache.size());
+    assertEquals(baseSize + 512 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + LRUCache.DEFAULT_RAM_BYTES_USED, accountableLRUCache.ramBytesUsed());
+    NamedList<Serializable> nl = accountableLRUCache.getStatistics();
+    assertEquals(1L, nl.get("evictions"));
+    assertEquals(1L, nl.get("evictionsRamUsage"));
+    accountableLRUCache.put("3", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024;
+      }
+    });
+    nl = accountableLRUCache.getStatistics();
+    assertEquals(1L, nl.get("evictions"));
+    assertEquals(1L, nl.get("evictionsRamUsage"));
+    assertEquals(2L, accountableLRUCache.size());
+    assertEquals(baseSize + 513 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * 2 + LRUCache.DEFAULT_RAM_BYTES_USED * 2, accountableLRUCache.ramBytesUsed());
+
+    accountableLRUCache.clear();
+    assertEquals(RamUsageEstimator.shallowSizeOfInstance(LRUCache.class), accountableLRUCache.ramBytesUsed());
+  }
+
+  public void testNonAccountableValues() throws Exception {
+    LRUCache<String, String> cache = new LRUCache<>();
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "5");
+    params.put("maxRamMB", "1");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = cache.init(params, null, cr);
+
+    try {
+      cache.put("1", "1");
+      fail("Adding a non-accountable value to a cache configured with maxRamBytes should have failed");
+    } catch (Exception e) {
+      assertEquals(e.getClass(), SolrException.class);
+    }
   }
 }

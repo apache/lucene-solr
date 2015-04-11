@@ -477,7 +477,7 @@
            initialSize - the initial capacity (number of entries) of
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
-               and old cache.  
+               and old cache.
       -->
     <filterCache class="solr.FastLRUCache"
                  size="512"
@@ -487,7 +487,10 @@
     <!-- Query Result Cache
          
          Caches results of searches - ordered lists of document ids
-         (DocList) based on a query, a sort, and the range of documents requested.  
+         (DocList) based on a query, a sort, and the range of documents requested.
+         Additional supported parameter by LRUCache:
+            maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
+                       to occupy
       -->
     <queryResultCache class="solr.LRUCache"
                       size="512"
@@ -498,7 +501,7 @@
 
          Caches Lucene Document objects (the stored fields for each
          document).  Since Lucene internal document ids are transient,
-         this cache will not be autowarmed.  
+         this cache will not be autowarmed.
       -->
     <documentCache class="solr.LRUCache"
                    size="512"

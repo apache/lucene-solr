@@ -90,6 +90,9 @@ New Features
 * SOLR-7241, SOLR-7263, SOLR-7279: More functionality moving the Admin UI to Angular JS
   (Upayavira via Erick)
 
+* SOLR-7372: Limit memory consumed by LRUCache with a new 'maxRamMB' config parameter.
+  (yonik, shalin)
+
 Bug Fixes
 ----------------------
 
