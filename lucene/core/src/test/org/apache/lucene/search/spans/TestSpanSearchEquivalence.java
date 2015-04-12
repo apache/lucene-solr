@@ -25,6 +25,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearchEquivalenceTestBase;
 import org.apache.lucene.search.TermQuery;
 
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
+
 /**
  * Basic equivalence tests for span queries
  */
@@ -33,20 +35,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   // TODO: we could go a little crazy for a lot of these,
   // but these are just simple minimal cases in case something 
   // goes horribly wrong. Put more intense tests elsewhere.
-  
-  /** generally wrap with asserting. but not always, so we don't hide bugs */
-  private SpanQuery span(SpanQuery query) {
-    if (random().nextInt(100) <= 95) {
-      return new AssertingSpanQuery(query);
-    } else {
-      return query;
-    }
-  }
 
   /** SpanTermQuery(A) = TermQuery(A) */
   public void testSpanTermVersusTerm() throws Exception {
     Term t1 = randomTerm();
-    assertSameSet(new TermQuery(t1), span(new SpanTermQuery(t1)));
+    assertSameSet(new TermQuery(t1), spanQuery(new SpanTermQuery(t1)));
   }
   
   /** SpanOrQuery(A, B) = (A B) */
@@ -56,7 +49,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     BooleanQuery q1 = new BooleanQuery();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
-    SpanQuery q2 = span(new SpanOrQuery(span(new SpanTermQuery(t1)), span(new SpanTermQuery(t2))));
+    SpanQuery q2 = spanQuery(new SpanOrQuery(spanQuery(new SpanTermQuery(t1)), spanQuery(new SpanTermQuery(t2))));
     assertSameSet(q1, q2);
   }
   
@@ -64,8 +57,8 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   public void testSpanNotVersusSpanTerm() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    assertSubsetOf(span(new SpanNotQuery(span(new SpanTermQuery(t1)), span(new SpanTermQuery(t2)))), 
-                   span(new SpanTermQuery(t1)));
+    assertSubsetOf(spanQuery(new SpanNotQuery(spanQuery(new SpanTermQuery(t1)), spanQuery(new SpanTermQuery(t2)))), 
+                   spanQuery(new SpanTermQuery(t1)));
   }
   
   /** SpanNotQuery(A, [B C]) ⊆ SpanTermQuery(A) */
@@ -73,11 +66,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     Term t3 = randomTerm();
-    SpanQuery near = span(new SpanNearQuery(new SpanQuery[] { 
-                                              span(new SpanTermQuery(t2)), 
-                                              span(new SpanTermQuery(t3)) 
+    SpanQuery near = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                              spanQuery(new SpanTermQuery(t2)), 
+                                              spanQuery(new SpanTermQuery(t3)) 
                                             }, 10, random().nextBoolean()));
-    assertSubsetOf(span(new SpanNotQuery(span(new SpanTermQuery(t1)), near)), span(new SpanTermQuery(t1)));
+    assertSubsetOf(spanQuery(new SpanNotQuery(spanQuery(new SpanTermQuery(t1)), near)), spanQuery(new SpanTermQuery(t1)));
   }
   
   /** SpanNotQuery([A B], C) ⊆ SpanNearQuery([A B]) */
@@ -85,11 +78,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     Term t3 = randomTerm();
-    SpanQuery near = span(new SpanNearQuery(new SpanQuery[] { 
-                                              span(new SpanTermQuery(t1)), 
-                                              span(new SpanTermQuery(t2)) 
+    SpanQuery near = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                              spanQuery(new SpanTermQuery(t1)), 
+                                              spanQuery(new SpanTermQuery(t2)) 
                                             }, 10, random().nextBoolean()));
-    assertSubsetOf(span(new SpanNotQuery(near, span(new SpanTermQuery(t3)))), near);
+    assertSubsetOf(spanQuery(new SpanNotQuery(near, spanQuery(new SpanTermQuery(t3)))), near);
   }
   
   /** SpanNotQuery([A B], [C D]) ⊆ SpanNearQuery([A B]) */
@@ -98,22 +91,22 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t2 = randomTerm();
     Term t3 = randomTerm();
     Term t4 = randomTerm();
-    SpanQuery near1 = span(new SpanNearQuery(new SpanQuery[] { 
-                                               span(new SpanTermQuery(t1)), 
-                                               span(new SpanTermQuery(t2)) 
+    SpanQuery near1 = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                               spanQuery(new SpanTermQuery(t1)), 
+                                               spanQuery(new SpanTermQuery(t2)) 
                                              }, 10, random().nextBoolean()));
-    SpanQuery near2 = span(new SpanNearQuery(new SpanQuery[] { 
-                                               span(new SpanTermQuery(t3)), 
-                                               span(new SpanTermQuery(t4)) 
+    SpanQuery near2 = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                               spanQuery(new SpanTermQuery(t3)), 
+                                               spanQuery(new SpanTermQuery(t4)) 
                                              }, 10, random().nextBoolean()));
-    assertSubsetOf(span(new SpanNotQuery(near1, near2)), near1);
+    assertSubsetOf(spanQuery(new SpanNotQuery(near1, near2)), near1);
   }
   
   /** SpanFirstQuery(A, 10) ⊆ SpanTermQuery(A) */
   public void testSpanFirstVersusSpanTerm() throws Exception {
     Term t1 = randomTerm();
-    assertSubsetOf(span(new SpanFirstQuery(span(new SpanTermQuery(t1)), 10)), 
-                   span(new SpanTermQuery(t1)));
+    assertSubsetOf(spanQuery(new SpanFirstQuery(spanQuery(new SpanTermQuery(t1)), 10)), 
+                   spanQuery(new SpanTermQuery(t1)));
   }
   
   /** SpanNearQuery([A, B], 0, true) = "A B" */
@@ -121,10 +114,10 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery q1 = span(new SpanNearQuery(subquery, 0, true));
+    SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, 0, true));
     PhraseQuery q2 = new PhraseQuery();
     q2.add(t1);
     q2.add(t2);
@@ -136,10 +129,10 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery q1 = span(new SpanNearQuery(subquery, Integer.MAX_VALUE, false));
+    SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, Integer.MAX_VALUE, false));
     BooleanQuery q2 = new BooleanQuery();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.MUST);
@@ -151,11 +144,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery q1 = span(new SpanNearQuery(subquery, 0, false));
-    SpanQuery q2 = span(new SpanNearQuery(subquery, 1, false));
+    SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, 0, false));
+    SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, 1, false));
     assertSubsetOf(q1, q2);
   }
   
@@ -164,11 +157,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery q1 = span(new SpanNearQuery(subquery, 3, true));
-    SpanQuery q2 = span(new SpanNearQuery(subquery, 3, false));
+    SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, 3, true));
+    SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, 3, false));
     assertSubsetOf(q1, q2);
   }
   
@@ -177,12 +170,12 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
     for (int i = 0; i < 10; i++) {
-      SpanQuery q1 = span(new SpanNearQuery(subquery, i, false));
-      SpanQuery q2 = span(new SpanNearQuery(subquery, i+1, false));
+      SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, i, false));
+      SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, i+1, false));
       assertSubsetOf(q1, q2);
     }
   }
@@ -193,13 +186,13 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t2 = randomTerm();
     Term t3 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)), 
-                             span(new SpanTermQuery(t3)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)), 
+                             spanQuery(new SpanTermQuery(t3)) 
                            };
     for (int i = 0; i < 10; i++) {
-      SpanQuery q1 = span(new SpanNearQuery(subquery, i, false));
-      SpanQuery q2 = span(new SpanNearQuery(subquery, i+1, false));
+      SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, i, false));
+      SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, i+1, false));
       assertSubsetOf(q1, q2);
     }
   }
@@ -209,12 +202,12 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
     for (int i = 0; i < 10; i++) {
-      SpanQuery q1 = span(new SpanNearQuery(subquery, i, false));
-      SpanQuery q2 = span(new SpanNearQuery(subquery, i+1, false));
+      SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, i, false));
+      SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, i+1, false));
       assertSubsetOf(q1, q2);
     }
   }
@@ -225,13 +218,13 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t2 = randomTerm();
     Term t3 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)), 
-                             span(new SpanTermQuery(t3)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)), 
+                             spanQuery(new SpanTermQuery(t3)) 
                            };
     for (int i = 0; i < 10; i++) {
-      SpanQuery q1 = span(new SpanNearQuery(subquery, i, true));
-      SpanQuery q2 = span(new SpanNearQuery(subquery, i+1, true));
+      SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, i, true));
+      SpanQuery q2 = spanQuery(new SpanNearQuery(subquery, i+1, true));
       assertSubsetOf(q1, q2);
     }
   }
@@ -241,7 +234,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
-        Query q1 = span(new SpanPositionRangeQuery(span(new SpanTermQuery(t1)), i, i+j));
+        Query q1 = spanQuery(new SpanPositionRangeQuery(spanQuery(new SpanTermQuery(t1)), i, i+j));
         Query q2 = new TermQuery(t1);
         assertSubsetOf(q1, q2);
       }
@@ -253,8 +246,8 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
-        Query q1 = span(new SpanPositionRangeQuery(span(new SpanTermQuery(t1)), i, i+j));
-        Query q2 = span(new SpanPositionRangeQuery(span(new SpanTermQuery(t1)), i, i+j+1));
+        Query q1 = spanQuery(new SpanPositionRangeQuery(spanQuery(new SpanTermQuery(t1)), i, i+j));
+        Query q2 = spanQuery(new SpanPositionRangeQuery(spanQuery(new SpanTermQuery(t1)), i, i+j+1));
         assertSubsetOf(q1, q2);
       }
     }
@@ -263,7 +256,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   /** SpanPositionRangeQuery(A, 0, ∞) = TermQuery(A) */
   public void testSpanRangeTermEverything() throws Exception {
     Term t1 = randomTerm();
-    Query q1 = span(new SpanPositionRangeQuery(span(new SpanTermQuery(t1)), 0, Integer.MAX_VALUE));
+    Query q1 = spanQuery(new SpanPositionRangeQuery(spanQuery(new SpanTermQuery(t1)), 0, Integer.MAX_VALUE));
     Query q2 = new TermQuery(t1);
     assertSameSet(q1, q2);
   }
@@ -273,13 +266,13 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
-        Query q1 = span(new SpanPositionRangeQuery(nearQuery, i, i+j));
+        Query q1 = spanQuery(new SpanPositionRangeQuery(nearQuery, i, i+j));
         Query q2 = nearQuery;
         assertSubsetOf(q1, q2);
       }
@@ -291,14 +284,14 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
-        Query q1 = span(new SpanPositionRangeQuery(nearQuery, i, i+j));
-        Query q2 = span(new SpanPositionRangeQuery(nearQuery, i, i+j+1));
+        Query q1 = spanQuery(new SpanPositionRangeQuery(nearQuery, i, i+j));
+        Query q2 = spanQuery(new SpanPositionRangeQuery(nearQuery, i, i+j+1));
         assertSubsetOf(q1, q2);
       }
     }
@@ -309,11 +302,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
-    Query q1 = span(new SpanPositionRangeQuery(nearQuery, 0, Integer.MAX_VALUE));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
+    Query q1 = spanQuery(new SpanPositionRangeQuery(nearQuery, 0, Integer.MAX_VALUE));
     Query q2 = nearQuery;
     assertSameSet(q1, q2);
   }
@@ -322,7 +315,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   public void testSpanFirstTerm() throws Exception {
     Term t1 = randomTerm();
     for (int i = 0; i < 10; i++) {
-      Query q1 = span(new SpanFirstQuery(span(new SpanTermQuery(t1)), i));
+      Query q1 = spanQuery(new SpanFirstQuery(spanQuery(new SpanTermQuery(t1)), i));
       Query q2 = new TermQuery(t1);
       assertSubsetOf(q1, q2);
     }
@@ -332,8 +325,8 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   public void testSpanFirstTermIncreasing() throws Exception {
     Term t1 = randomTerm();
     for (int i = 0; i < 10; i++) {
-      Query q1 = span(new SpanFirstQuery(span(new SpanTermQuery(t1)), i));
-      Query q2 = span(new SpanFirstQuery(span(new SpanTermQuery(t1)), i+1));
+      Query q1 = spanQuery(new SpanFirstQuery(spanQuery(new SpanTermQuery(t1)), i));
+      Query q2 = spanQuery(new SpanFirstQuery(spanQuery(new SpanTermQuery(t1)), i+1));
       assertSubsetOf(q1, q2);
     }
   }
@@ -341,7 +334,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   /** SpanFirstQuery(A, ∞) = TermQuery(A) */
   public void testSpanFirstTermEverything() throws Exception {
     Term t1 = randomTerm();
-    Query q1 = span(new SpanFirstQuery(span(new SpanTermQuery(t1)), Integer.MAX_VALUE));
+    Query q1 = spanQuery(new SpanFirstQuery(spanQuery(new SpanTermQuery(t1)), Integer.MAX_VALUE));
     Query q2 = new TermQuery(t1);
     assertSameSet(q1, q2);
   }
@@ -351,12 +344,12 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
     for (int i = 0; i < 10; i++) {
-      Query q1 = span(new SpanFirstQuery(nearQuery, i));
+      Query q1 = spanQuery(new SpanFirstQuery(nearQuery, i));
       Query q2 = nearQuery;
       assertSubsetOf(q1, q2);
     }
@@ -367,13 +360,13 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
     for (int i = 0; i < 10; i++) {
-      Query q1 = span(new SpanFirstQuery(nearQuery, i));
-      Query q2 = span(new SpanFirstQuery(nearQuery, i+1));
+      Query q1 = spanQuery(new SpanFirstQuery(nearQuery, i));
+      Query q2 = spanQuery(new SpanFirstQuery(nearQuery, i+1));
       assertSubsetOf(q1, q2);
     }
   }
@@ -383,11 +376,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     SpanQuery subquery[] = new SpanQuery[] { 
-                             span(new SpanTermQuery(t1)), 
-                             span(new SpanTermQuery(t2)) 
+                             spanQuery(new SpanTermQuery(t1)), 
+                             spanQuery(new SpanTermQuery(t2)) 
                            };
-    SpanQuery nearQuery = span(new SpanNearQuery(subquery, 10, true));
-    Query q1 = span(new SpanFirstQuery(nearQuery, Integer.MAX_VALUE));
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
+    Query q1 = spanQuery(new SpanFirstQuery(nearQuery, Integer.MAX_VALUE));
     Query q2 = nearQuery;
     assertSameSet(q1, q2);
   }
