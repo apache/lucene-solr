@@ -17,6 +17,7 @@ package org.apache.lucene.search.spans;
  */
 
 
+import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
