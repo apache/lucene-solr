@@ -211,12 +211,17 @@ class AutoPrefixTermsWriter {
       }
     }
 
+    // Even though we visited terms in already-sorted order, the prefixes
+    // can be slightly unsorted, e.g. aaaaa will be before aaa, so we
+    // must sort here so our caller can do merge sort into actual terms
+    // when writing.  Probably we should use CollectionUtil.timSort here?
     Collections.sort(prefixes);
   }
 
   /** Pushes the new term to the top of the stack, and writes new blocks. */
   private void pushTerm(BytesRef text) throws IOException {
     int limit = Math.min(lastTerm.length(), text.length);
+    //if (DEBUG) System.out.println("\nterm: " + text.utf8ToString());
 
     // Find common prefix between last term and current term:
     int pos = 0;
@@ -234,10 +239,10 @@ class AutoPrefixTermsWriter {
       int prefixTopSize = pending.size() - prefixStarts[i];
 
       while (prefixTopSize >= minItemsInPrefix) {       
-        //if (DEBUG) System.out.println("pushTerm i=" + i + " prefixTopSize=" + prefixTopSize + " minItemsInBlock=" + minItemsInPrefix);
+        //if (DEBUG) System.out.println("  pop: i=" + i + " prefixTopSize=" + prefixTopSize + " minItemsInBlock=" + minItemsInPrefix);
         savePrefixes(i+1, prefixTopSize);
         //prefixStarts[i] -= prefixTopSize;
-        //System.out.println("    after savePrefixes: " + (pending.size() - prefixStarts[i]) + " pending.size()=" + pending.size() + " start=" + prefixStarts[i]);
+        //if (DEBUG) System.out.println("    after savePrefixes: " + (pending.size() - prefixStarts[i]) + " pending.size()=" + pending.size() + " start=" + prefixStarts[i]);
 
         // For large floor blocks, it's possible we should now re-run on the new prefix terms we just created:
         prefixTopSize = pending.size() - prefixStarts[i];
@@ -267,27 +272,52 @@ class AutoPrefixTermsWriter {
 
     assert count > 0;
 
-    //if (DEBUG2) {
-    //  BytesRef br = new BytesRef(lastTerm.bytes());
-    //  br.length = prefixLength;
-    //  System.out.println("  savePrefixes: seg=" + segment + " " + brToString(br) + " count=" + count + " pending.size()=" + pending.size());
-    //}
+    /*
+    if (DEBUG2) {
+      BytesRef br = new BytesRef(lastTerm.bytes());
+      br.length = prefixLength;
+      //System.out.println("  savePrefixes: seg=" + segment + " " + brToString(br) + " count=" + count + " pending.size()=" + pending.size());
+      System.out.println("  savePrefixes: " + brToString(br) + " count=" + count + " pending.size()=" + pending.size());
+    }
+    */
 
     int lastSuffixLeadLabel = -2;
 
     int start = pending.size()-count;
     assert start >=0;
 
+    // Special case empty-string suffix case: we are being asked to build prefix terms for all aaa* terms, but 
+    // the exact term aaa is here, and we must skip it (it is handled "higher", under the aa* terms):
+    Object o = pending.get(start);
+    boolean skippedEmptyStringSuffix = false;
+    if (o instanceof byte[]) {
+      if (((byte[]) o).length == prefixLength) {
+        start++;
+        count--;
+        //if (DEBUG) System.out.println("  skip empty-string term suffix");
+        skippedEmptyStringSuffix = true;
+      }
+    } else {
+      PrefixTerm prefix = (PrefixTerm) o;
+      if (prefix.term.bytes.length == prefixLength) {
+        start++;
+        count--;
+        //if (DEBUG) System.out.println("  skip empty-string PT suffix");
+        skippedEmptyStringSuffix = true;
+      }
+    }
+
     int end = pending.size();
     int nextBlockStart = start;
     int nextFloorLeadLabel = -1;
     int prefixCount = 0;
-    int pendingCount = 0;
+
     PrefixTerm lastPTEntry = null;
+
     for (int i=start; i<end; i++) {
 
       byte[] termBytes;
-      Object o = pending.get(i);
+      o = pending.get(i);
       PrefixTerm ptEntry;
       if (o instanceof byte[]) {
         ptEntry = null;
@@ -300,23 +330,15 @@ class AutoPrefixTermsWriter {
           ptEntry = null;
         }
       }
-      pendingCount++;
 
-      //if (DEBUG) System.out.println("    check term=" + brToString(new BytesRef(termBytes)));
+      //if (DEBUG) System.out.println("    check term=" + brToString(new BytesRef(termBytes)) + " o=" + o);
 
-      int suffixLeadLabel;
+      // We handled the empty-string suffix case up front:
+      assert termBytes.length > prefixLength;
 
-      if (termBytes.length == prefixLength) {
-        // Suffix is 0, i.e. prefix 'foo' and term is
-        // 'foo' so the term has empty string suffix
-        // in this block
-        assert lastSuffixLeadLabel == -2;
-        suffixLeadLabel = -2;
-      } else {
-        suffixLeadLabel = termBytes[prefixLength] & 0xff;
-      }
+      int suffixLeadLabel = termBytes[prefixLength] & 0xff;
 
-      // if (DEBUG) System.out.println("  i=" + i + " ent=" + ent + " suffixLeadLabel=" + suffixLeadLabel);
+      //if (DEBUG) System.out.println("  i=" + i + " o=" + o + " suffixLeadLabel=" + Integer.toHexString(suffixLeadLabel) + " pendingCount=" + (i - nextBlockStart) + " min=" + minItemsInPrefix);
 
       if (suffixLeadLabel != lastSuffixLeadLabel) {
         // This is a boundary, a chance to make an auto-prefix term if we want:
@@ -327,8 +349,9 @@ class AutoPrefixTermsWriter {
         // than the lead start of the current entry:
         assert suffixLeadLabel > lastSuffixLeadLabel: "suffixLeadLabel=" + suffixLeadLabel + " vs lastSuffixLeadLabel=" + lastSuffixLeadLabel;
 
-        // NOTE: must check nextFloorLeadLabel in case minItemsInPrefix is 2 and prefix is 'a' and we've seen 'a' and then 'aa'
-        if (pendingCount >= minItemsInPrefix && end-nextBlockStart > maxItemsInPrefix && nextFloorLeadLabel != -1) {
+        int itemsInBlock = i - nextBlockStart;
+
+        if (itemsInBlock >= minItemsInPrefix && end-nextBlockStart > maxItemsInPrefix) {
           // The count is too large for one block, so we must break it into "floor" blocks, where we record
           // the leading label of the suffix of the first term in each floor block, so at search time we can
           // jump to the right floor block.  We just use a naive greedy segmenter here: make a new floor
@@ -338,11 +361,10 @@ class AutoPrefixTermsWriter {
           // If the last entry was another prefix term of the same length, then it represents a range of terms, so we must use its ending
           // prefix label as our ending label:
           if (lastPTEntry != null) {
+            //if (DEBUG) System.out.println("  use last");
             lastSuffixLeadLabel = lastPTEntry.floorLeadEnd;
           }
-
           savePrefix(prefixLength, nextFloorLeadLabel, lastSuffixLeadLabel);
-          pendingCount = 0;
 
           prefixCount++;
           nextFloorLeadLabel = suffixLeadLabel;
@@ -356,6 +378,7 @@ class AutoPrefixTermsWriter {
 
         lastSuffixLeadLabel = suffixLeadLabel;
       }
+
       lastPTEntry = ptEntry;
     }
 
@@ -370,6 +393,12 @@ class AutoPrefixTermsWriter {
         if (prefixLength > 0) {
           savePrefix(prefixLength, -2, 0xff);
           prefixCount++;
+          
+          // If we skipped empty string suffix, e.g. term aaa for prefix aaa*, since we
+          // are now writing the full aaa* prefix term, we include it here:
+          if (skippedEmptyStringSuffix) {
+            count++;
+          }
         } else {
           // Don't add a prefix term for all terms in the index!
         }
@@ -384,16 +413,8 @@ class AutoPrefixTermsWriter {
     }
 
     // Remove slice from the top of the pending stack, that we just wrote:
-    int sizeToClear = count;
-    if (prefixCount > 1) {
-      Object o = pending.get(pending.size()-count);
-      if (o instanceof byte[] && ((byte[]) o).length == prefixLength) {
-        // If we were just asked to write all f* terms, but there were too many and so we made floor blocks, the exact term 'f' will remain
-        // as its own item, followed by floor block terms like f[a-m]*, f[n-z]*, so in this case we leave 3 (not 2) items on the pending stack:
-        sizeToClear--;
-      }
-    }
-    pending.subList(pending.size()-sizeToClear, pending.size()).clear();
+
+    pending.subList(pending.size()-count, pending.size()).clear();
 
     // Append prefix terms for each prefix, since these count like real terms that also need to be "rolled up":
     for(int i=0;i<prefixCount;i++) {
@@ -410,6 +431,8 @@ class AutoPrefixTermsWriter {
 
     PrefixTerm pt = new PrefixTerm(prefix, floorLeadStart, floorLeadEnd); 
     //if (DEBUG2) System.out.println("    savePrefix: seg=" + segment + " " + pt + " count=" + count);
+    //if (DEBUG) System.out.println("    savePrefix: " + pt);
+
     prefixes.add(pt);
   }
 }
