@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.MockRandomLookaheadTokenFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
+import org.apache.lucene.analysis.SimplePayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -75,7 +76,8 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       MockTokenFilter.class,
       MockVariableLengthPayloadFilter.class,
       ValidatingTokenFilter.class,
-      CrankyTokenFilter.class
+      CrankyTokenFilter.class,
+      SimplePayloadFilter.class
     );
   }
   
