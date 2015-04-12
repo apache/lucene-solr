@@ -106,6 +106,8 @@ Bug Fixes
 
 * SOLR-7369: AngularJS UI insufficient URLDecoding in cloud/tree view (janhoy)
 
+* SOLR-7380: SearchHandler should not try to load runtime components in inform() (Noble Paul)
+
 Optimizations
 ----------------------
 
