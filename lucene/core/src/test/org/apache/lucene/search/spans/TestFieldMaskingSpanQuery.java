@@ -36,6 +36,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
+
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
   protected static Document doc(Field[] fields) {
@@ -260,17 +262,16 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(q, new int[] { 0, 1, 2, 3, 4 });
 
     Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
-
-    TestSpans.tstNextSpans(span, 0,0,1);
-    TestSpans.tstNextSpans(span, 1,0,1);
-    TestSpans.tstNextSpans(span, 1,1,2);
-    TestSpans.tstNextSpans(span, 2,0,1);
-    TestSpans.tstNextSpans(span, 2,1,2);
-    TestSpans.tstNextSpans(span, 2,2,3);
-    TestSpans.tstNextSpans(span, 3,0,1);
-    TestSpans.tstNextSpans(span, 4,0,1);
-    TestSpans.tstNextSpans(span, 4,1,2);
-    TestSpans.tstEndSpans(span);
+    assertNext(span, 0,0,1);
+    assertNext(span, 1,0,1);
+    assertNext(span, 1,1,2);
+    assertNext(span, 2,0,1);
+    assertNext(span, 2,1,2);
+    assertNext(span, 2,2,3);
+    assertNext(span, 3,0,1);
+    assertNext(span, 4,0,1);
+    assertNext(span, 4,1,2);
+    assertFinished(span);
   }
   
   public void testSpans1() throws Exception {
@@ -309,13 +310,12 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(q, new int[] { 0, 1, 2, 3 });
 
     Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
-
-    TestSpans.tstNextSpans(span, 0,0,1);
-    TestSpans.tstNextSpans(span, 1,1,2);
-    TestSpans.tstNextSpans(span, 2,0,1);
-    TestSpans.tstNextSpans(span, 2,2,3);
-    TestSpans.tstNextSpans(span, 3,0,1);
-    TestSpans.tstEndSpans(span);
+    assertNext(span, 0,0,1);
+    assertNext(span, 1,1,2);
+    assertNext(span, 2,0,1);
+    assertNext(span, 2,2,3);
+    assertNext(span, 3,0,1);
+    assertFinished(span);
   }
   
   public String s(int doc, int start, int end) {

@@ -25,17 +25,14 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.spans.SpanFirstQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanNotQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 /**
  * Tests primitive queries (ie: that rewrite to themselves) to
@@ -140,58 +137,66 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   }
 
   /** MACRO for SpanTermQuery */
-  public SpanTermQuery st(String s) {
-    return new SpanTermQuery(new Term(FIELD,s));
+  public SpanQuery st(String s) {
+    return spanTermQuery(FIELD, s);
   }
   
   /** MACRO for SpanNotQuery */
-  public SpanNotQuery snot(SpanQuery i, SpanQuery e) {
-    return new SpanNotQuery(i,e);
+  public SpanQuery snot(SpanQuery i, SpanQuery e) {
+    return spanNotQuery(i, e);
   }
 
   /** MACRO for SpanOrQuery containing two SpanTerm queries */
-  public SpanOrQuery sor(String s, String e) {
-    return sor(st(s), st(e));
+  public SpanQuery sor(String s, String e) {
+    return spanOrQuery(FIELD, s, e);
   }
+  
   /** MACRO for SpanOrQuery containing two SpanQueries */
-  public SpanOrQuery sor(SpanQuery s, SpanQuery e) {
-    return new SpanOrQuery(s, e);
+  public SpanQuery sor(SpanQuery s, SpanQuery e) {
+    return spanOrQuery(s, e);
   }
   
   /** MACRO for SpanOrQuery containing three SpanTerm queries */
-  public SpanOrQuery sor(String s, String m, String e) {
-    return sor(st(s), st(m), st(e));
+  public SpanQuery sor(String s, String m, String e) {
+    return spanOrQuery(FIELD, s, m, e);
   }
   /** MACRO for SpanOrQuery containing two SpanQueries */
-  public SpanOrQuery sor(SpanQuery s, SpanQuery m, SpanQuery e) {
-    return new SpanOrQuery(s, m, e);
+  public SpanQuery sor(SpanQuery s, SpanQuery m, SpanQuery e) {
+    return spanOrQuery(s, m, e);
   }
   
   /** MACRO for SpanNearQuery containing two SpanTerm queries */
-  public SpanNearQuery snear(String s, String e, int slop, boolean inOrder) {
+  public SpanQuery snear(String s, String e, int slop, boolean inOrder) {
     return snear(st(s), st(e), slop, inOrder);
   }
+  
   /** MACRO for SpanNearQuery containing two SpanQueries */
-  public SpanNearQuery snear(SpanQuery s, SpanQuery e,
-                             int slop, boolean inOrder) {
-    return new SpanNearQuery(new SpanQuery[] { s, e }, slop, inOrder);
+  public SpanQuery snear(SpanQuery s, SpanQuery e, int slop, boolean inOrder) {
+    if (inOrder) {
+      return spanNearOrderedQuery(slop, s, e);
+    } else {
+      return spanNearUnorderedQuery(slop, s, e);
+    }
   }
   
   
   /** MACRO for SpanNearQuery containing three SpanTerm queries */
-  public SpanNearQuery snear(String s, String m, String e,
+  public SpanQuery snear(String s, String m, String e,
                              int slop, boolean inOrder) {
     return snear(st(s), st(m), st(e), slop, inOrder);
   }
   /** MACRO for SpanNearQuery containing three SpanQueries */
-  public SpanNearQuery snear(SpanQuery s, SpanQuery m, SpanQuery e,
-                             int slop, boolean inOrder) {
-    return new SpanNearQuery(new SpanQuery[] { s, m, e }, slop, inOrder);
+  public SpanQuery snear(SpanQuery s, SpanQuery m, SpanQuery e, int slop, boolean inOrder) {
+    if (inOrder) {
+      return spanNearOrderedQuery(slop, s, m, e);
+    } else {
+      return spanNearUnorderedQuery(slop, s, m, e);
+    }
   }
   
   /** MACRO for SpanFirst(SpanTermQuery) */
-  public SpanFirstQuery sf(String s, int b) {
-    return new SpanFirstQuery(st(s), b);
+  public SpanQuery sf(String s, int b) {
+    return spanFirstQuery(st(s), b);
   }
 
   /**

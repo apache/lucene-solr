@@ -20,7 +20,6 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -33,6 +32,8 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
   protected IndexSearcher searcher;
@@ -115,9 +116,9 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public void testNearSpansNext() throws Exception {
     SpanNearQuery q = makeQuery();
     Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
-    TestSpans.tstNextSpans(span,0,0,3);
-    TestSpans.tstNextSpans(span,1,0,4);
-    TestSpans.tstEndSpans(span);
+    assertNext(span,0,0,3);
+    assertNext(span,1,0,4);
+    assertFinished(span);
   }
 
   /**

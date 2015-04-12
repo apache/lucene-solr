@@ -24,12 +24,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 public class TestSpanFirstQuery extends LuceneTestCase {
   public void testStartPositions() throws Exception {
@@ -51,12 +52,12 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     // user queries on "starts-with quick"
-    SpanQuery sfq = new SpanFirstQuery(new SpanTermQuery(new Term("field", "quick")), 1);
+    SpanQuery sfq = spanFirstQuery(spanTermQuery("field", "quick"), 1);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
     
     // user queries on "starts-with the quick"
-    SpanQuery include = new SpanFirstQuery(new SpanTermQuery(new Term("field", "quick")), 2);
-    sfq = new SpanNotQuery(include, sfq);
+    SpanQuery include = spanFirstQuery(spanTermQuery("field", "quick"), 2);
+    sfq = spanNotQuery(include, sfq);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
     
     writer.close();

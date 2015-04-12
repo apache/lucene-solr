@@ -18,27 +18,23 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 /**
  * Tests Spans (v2)
@@ -49,50 +45,11 @@ public class TestSpansEnum extends LuceneTestCase {
   private static IndexReader reader;
   private static Directory directory;
 
-  static final class SimplePayloadFilter extends TokenFilter {
-    int pos;
-    final PayloadAttribute payloadAttr;
-    final CharTermAttribute termAttr;
-
-    public SimplePayloadFilter(TokenStream input) {
-      super(input);
-      pos = 0;
-      payloadAttr = input.addAttribute(PayloadAttribute.class);
-      termAttr = input.addAttribute(CharTermAttribute.class);
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (input.incrementToken()) {
-        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes(StandardCharsets.UTF_8)));
-        pos++;
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      pos = 0;
-    }
-  }
-
-  static Analyzer simplePayloadAnalyzer;
   @BeforeClass
   public static void beforeClass() throws Exception {
-    simplePayloadAnalyzer = new Analyzer() {
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-          return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
-        }
-    };
-
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(simplePayloadAnalyzer)
+        newIndexWriterConfig(new MockAnalyzer(random()))
             .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 10; i++) {
@@ -117,71 +74,48 @@ public class TestSpansEnum extends LuceneTestCase {
     searcher = null;
     reader = null;
     directory = null;
-    simplePayloadAnalyzer = null;
   }
 
   private void checkHits(Query query, int[] results) throws IOException {
     CheckHits.checkHits(random(), query, "field", searcher, results);
   }
 
-  SpanTermQuery spanTQ(String term) {
-    return new SpanTermQuery(new Term("field", term));
-  }
-
-  @Test
   public void testSpansEnumOr1() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t2 = spanTQ("two");
-    SpanOrQuery soq = new SpanOrQuery(t1, t2);
-    checkHits(soq, new int[] {1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    checkHits(spanOrQuery("field", "one", "two"), 
+              new int[] {1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
   }
 
-  @Test
   public void testSpansEnumOr2() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t11 = spanTQ("eleven");
-    SpanOrQuery soq = new SpanOrQuery(t1, t11);
-    checkHits(soq, new int[] {1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    checkHits(spanOrQuery("field", "one", "eleven"), 
+              new int[] {1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
   }
 
-  @Test
   public void testSpansEnumOr3() throws Exception {
-    SpanTermQuery t12 = spanTQ("twelve");
-    SpanTermQuery t11 = spanTQ("eleven");
-    SpanOrQuery soq = new SpanOrQuery(t12, t11);
-    checkHits(soq, new int[] {});
+    checkHits(spanOrQuery("field", "twelve", "eleven"), 
+              new int[] {});
+  }
+  
+  public SpanQuery spanTQ(String s) {
+    return spanTermQuery("field", s);
   }
 
-  @Test
   public void testSpansEnumOrNot1() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t2 = spanTQ("two");
-    SpanOrQuery soq = new SpanOrQuery(t1, t2);
-    SpanNotQuery snq = new SpanNotQuery(soq, t1);
-    checkHits(snq, new int[] {2,12});
+    checkHits(spanNotQuery(spanOrQuery("field", "one", "two"), spanTermQuery("field", "one")),
+              new int[] {2,12});
   }
 
-  @Test
   public void testSpansEnumNotBeforeAfter1() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t100 = spanTQ("hundred");
-    SpanNotQuery snq = new SpanNotQuery(t100, t1, 0, 0);
-    checkHits(snq, new int[] {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}); // include all "one hundred ..."
+    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one")), 
+              new int[] {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}); // include all "one hundred ..."
   }
 
-  @Test
   public void testSpansEnumNotBeforeAfter2() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t100 = spanTQ("hundred");
-    SpanNotQuery snq = new SpanNotQuery(t100, t1, 1, 0);
-    checkHits(snq, new int[] {}); // exclude all "one hundred ..."
+    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 1, 0),
+              new int[] {}); // exclude all "one hundred ..."
   }
 
-  @Test
   public void testSpansEnumNotBeforeAfter3() throws Exception {
-    SpanTermQuery t1 = spanTQ("one");
-    SpanTermQuery t100 = spanTQ("hundred");
-    SpanNotQuery snq = new SpanNotQuery(t100, t1, 0, 1);
-    checkHits(snq, new int[] {10, 12, 13, 14, 15, 16, 17, 18, 19}); // exclude "one hundred one"
+    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 0, 1),
+              new int[] {10, 12, 13, 14, 15, 16, 17, 18, 19}); // exclude "one hundred one"
   }
 }
