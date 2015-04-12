@@ -41,6 +41,7 @@ import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
  * limitations under the License.
  */
 
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7362")
 public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
   static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandlerCloud.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
