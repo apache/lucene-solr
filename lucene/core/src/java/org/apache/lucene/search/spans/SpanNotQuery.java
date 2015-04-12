@@ -122,25 +122,30 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     return new FilterSpans(includeSpans) {
       // last document we have checked matches() against for the exclusion, and failed
       // when using approximations, so we don't call it again, and pass thru all inclusions.
-      int lastNonMatchingDoc = -1;
+      int lastApproxDoc = -1;
+      boolean lastApproxResult = false;
       
       @Override
       protected AcceptStatus accept(Spans candidate) throws IOException {
+        // TODO: this logic is ugly and sneaky, can we clean it up?
         int doc = candidate.docID();
         if (doc > excludeSpans.docID()) {
           // catch up 'exclude' to the current doc
           if (excludeTwoPhase != null) {
             if (excludeApproximation.advance(doc) == doc) {
-              if (!excludeTwoPhase.matches()) {
-                lastNonMatchingDoc = doc; // mark as non-match
-              }
+              lastApproxDoc = doc;
+              lastApproxResult = excludeTwoPhase.matches();
             }
           } else {
             excludeSpans.advance(doc);
           }
+        } else if (excludeTwoPhase != null && doc == excludeSpans.docID() && doc != lastApproxDoc) {
+          // excludeSpans already sitting on our candidate doc, but matches not called yet.
+          lastApproxDoc = doc;
+          lastApproxResult = excludeTwoPhase.matches();
         }
         
-        if (doc == lastNonMatchingDoc || doc != excludeSpans.docID()) {
+        if (doc != excludeSpans.docID() || (doc == lastApproxDoc && lastApproxResult == false)) {
           return AcceptStatus.YES;
         }
         

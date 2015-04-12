@@ -97,4 +97,16 @@ public abstract class Spans extends DocIdSetIterator {
   public TwoPhaseIterator asTwoPhaseIterator() {
     return null;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    Class<? extends Spans> clazz = getClass();
+    sb.append(clazz.isAnonymousClass() ? clazz.getName() : clazz.getSimpleName());
+    sb.append("(doc=").append(docID());
+    sb.append(",start=").append(startPosition());
+    sb.append(",end=").append(endPosition());
+    sb.append(")");
+    return sb.toString();
+  }
 }

@@ -341,7 +341,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
 
-  @Test @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6418")
+  @Test
   public void testNpeInSpanNearInSpanFirstInSpanNot() throws Exception {
     int n = 5;
     SpanTermQuery hun = new SpanTermQuery(new Term("field", "hundred"));
