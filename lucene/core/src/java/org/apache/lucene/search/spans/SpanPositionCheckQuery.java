@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -59,23 +60,6 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   }
 
   /**
-   * Return value for {@link SpanPositionCheckQuery#acceptPosition(Spans)}.
-   */
-  protected static enum AcceptStatus {
-    /** Indicates the match should be accepted */
-    YES,
-
-    /** Indicates the match should be rejected */
-    NO,
-
-    /**
-     * Indicates the match should be rejected, and the enumeration may continue
-     * with the next document.
-     */
-    NO_MORE_IN_CURRENT_DOC
-  };
-
-  /**
    * Implementing classes are required to return whether the current position is a match for the passed in
    * "match" {@link SpanQuery}.
    *
@@ -95,9 +79,13 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   @Override
   public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     Spans matchSpans = match.getSpans(context, acceptDocs, termContexts);
-    return (matchSpans == null) ? null : new PositionCheckSpans(matchSpans);
+    return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
+      @Override
+      protected AcceptStatus accept(Spans candidate) throws IOException {
+        return acceptPosition(candidate);
+      }
+    };
   }
-
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
@@ -113,104 +101,6 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
       return clone;                        // some clauses rewrote
     } else {
       return this;                         // no clauses rewrote
-    }
-  }
-
-  protected class PositionCheckSpans extends FilterSpans {
-
-    private boolean atFirstInCurrentDoc = false;
-    private int startPos = -1;
-
-    public PositionCheckSpans(Spans matchSpans) throws IOException {
-      super(matchSpans);
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      while (true) {
-        int doc = in.nextDoc();
-        if (doc == NO_MORE_DOCS) {
-          return NO_MORE_DOCS;
-        } else if (twoPhaseCurrentDocMatches()) {
-          return doc;
-        }
-      }
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      int doc = in.advance(target);
-      while (doc != NO_MORE_DOCS) {
-        if (twoPhaseCurrentDocMatches()) {
-          break;
-        }
-        doc = in.nextDoc();
-      }
-
-      return doc;
-    }
-
-    @Override
-    public int nextStartPosition() throws IOException {
-      if (atFirstInCurrentDoc) {
-        atFirstInCurrentDoc = false;
-        return startPos;
-      }
-
-      for (;;) {
-        startPos = in.nextStartPosition();
-        if (startPos == NO_MORE_POSITIONS) {
-          return NO_MORE_POSITIONS;
-        }
-        switch(acceptPosition(in)) {
-          case YES:
-            return startPos;
-          case NO:
-            break;
-          case NO_MORE_IN_CURRENT_DOC:
-            return startPos = NO_MORE_POSITIONS; // startPos ahead for the current doc.
-        }
-      }
-    }
-    
-    // return true if the current document matches
-    @SuppressWarnings("fallthrough")
-    public boolean twoPhaseCurrentDocMatches() throws IOException {
-      atFirstInCurrentDoc = false;
-      startPos = in.nextStartPosition();
-      assert startPos != NO_MORE_POSITIONS;
-      for (;;) {
-        switch(acceptPosition(in)) {
-          case YES:
-            atFirstInCurrentDoc = true;
-            return true;
-          case NO:
-            startPos = in.nextStartPosition();
-            if (startPos != NO_MORE_POSITIONS) {
-              break;
-            }
-            // else fallthrough
-          case NO_MORE_IN_CURRENT_DOC:
-            startPos = -1;
-            return false;
-        }
-      }
-    }
-
-    @Override
-    public int startPosition() {
-      return atFirstInCurrentDoc ? -1 : startPos;
-    }
-
-    @Override
-    public int endPosition() {
-      return atFirstInCurrentDoc ? -1
-            : (startPos != NO_MORE_POSITIONS) ? in.endPosition() : NO_MORE_POSITIONS;
-    }
-
-    @Override
-    public String toString() {
-      return "spans(" + SpanPositionCheckQuery.this.toString() + ")";
     }
   }
 

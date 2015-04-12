@@ -21,13 +21,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
@@ -115,158 +115,52 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     if (excludeSpans == null) {
       return includeSpans;
     }
-
-    return new Spans() {
-      private boolean moreInclude = true;
-      private int includeStart = -1;
-      private int includeEnd = -1;
-      private boolean atFirstInCurrentDoc = false;
-
-      private boolean moreExclude = excludeSpans.nextDoc() != NO_MORE_DOCS;
-      private int excludeStart = moreExclude ? excludeSpans.nextStartPosition() : NO_MORE_POSITIONS;
-
-
+    
+    final TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
+    final DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
+    
+    return new FilterSpans(includeSpans) {
+      // last document we have checked matches() against for the exclusion, and failed
+      // when using approximations, so we don't call it again, and pass thru all inclusions.
+      int lastNonMatchingDoc = -1;
+      
       @Override
-      public int nextDoc() throws IOException {
-        if (moreInclude) {
-          moreInclude = includeSpans.nextDoc() != NO_MORE_DOCS;
-          if (moreInclude) {
-            atFirstInCurrentDoc = true;
-            includeStart = includeSpans.nextStartPosition();
-            assert includeStart != NO_MORE_POSITIONS;
-          }
-        }
-        toNextIncluded();
-        int res = moreInclude ? includeSpans.docID() : NO_MORE_DOCS;
-        return res;
-      }
-
-      private void toNextIncluded() throws IOException {
-        while (moreInclude && moreExclude) {
-          if (includeSpans.docID() > excludeSpans.docID()) {
-            moreExclude = excludeSpans.advance(includeSpans.docID()) != NO_MORE_DOCS;
-            if (moreExclude) {
-              excludeStart = -1; // only use exclude positions at same doc
+      protected AcceptStatus accept(Spans candidate) throws IOException {
+        int doc = candidate.docID();
+        if (doc > excludeSpans.docID()) {
+          // catch up 'exclude' to the current doc
+          if (excludeTwoPhase != null) {
+            if (excludeApproximation.advance(doc) == doc) {
+              if (!excludeTwoPhase.matches()) {
+                lastNonMatchingDoc = doc; // mark as non-match
+              }
             }
-          }
-          if (excludeForwardInCurrentDocAndAtMatch()) {
-            break; // at match.
-          }
-
-          // else intersected: keep scanning, to next doc if needed
-          includeStart = includeSpans.nextStartPosition();
-          if (includeStart == NO_MORE_POSITIONS) {
-            moreInclude = includeSpans.nextDoc() != NO_MORE_DOCS;
-            if (moreInclude) {
-              atFirstInCurrentDoc = true;
-              includeStart = includeSpans.nextStartPosition();
-              assert includeStart != NO_MORE_POSITIONS;
-            }
+          } else {
+            excludeSpans.advance(doc);
           }
         }
-      }
-
-      private boolean excludeForwardInCurrentDocAndAtMatch() throws IOException {
-        assert moreInclude;
-        assert includeStart != NO_MORE_POSITIONS;
-        if (! moreExclude) {
-          return true;
+        
+        if (doc == lastNonMatchingDoc || doc != excludeSpans.docID()) {
+          return AcceptStatus.YES;
         }
-        if (includeSpans.docID() != excludeSpans.docID()) {
-          return true;
+        
+        if (excludeSpans.startPosition() == -1) { // init exclude start position if needed
+          excludeSpans.nextStartPosition();
         }
-        // at same doc
-        if (excludeStart == -1) { // init exclude start position if needed
-          excludeStart = excludeSpans.nextStartPosition();
-          assert excludeStart != NO_MORE_POSITIONS;
-        }
-        while (excludeSpans.endPosition() <= includeStart - pre) {
+        
+        while (excludeSpans.endPosition() <= candidate.startPosition() - pre) {
           // exclude end position is before a possible exclusion
-          excludeStart = excludeSpans.nextStartPosition();
-          if (excludeStart == NO_MORE_POSITIONS) {
-            return true; // no more exclude at current doc.
+          if (excludeSpans.nextStartPosition() == NO_MORE_POSITIONS) {
+            return AcceptStatus.YES; // no more exclude at current doc.
           }
         }
+        
         // exclude end position far enough in current doc, check start position:
-        boolean res = includeSpans.endPosition() + post <= excludeStart;
-        return res;
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        if (moreInclude) {
-          assert target > includeSpans.docID() : "target="+target+", includeSpans.docID()="+includeSpans.docID();
-          moreInclude = includeSpans.advance(target) != NO_MORE_DOCS;
-          if (moreInclude) {
-            atFirstInCurrentDoc = true;
-            includeStart = includeSpans.nextStartPosition();
-            assert includeStart != NO_MORE_POSITIONS;
-          }
+        if (candidate.endPosition() + post <= excludeSpans.startPosition()) {
+          return AcceptStatus.YES;
+        } else {
+          return AcceptStatus.NO;
         }
-        toNextIncluded();
-        int res = moreInclude ? includeSpans.docID() : NO_MORE_DOCS;
-        return res;
-      }
-
-      @Override
-      public int docID() {
-        int res = includeSpans.docID();
-        return res;
-      }
-
-      @Override
-      public int nextStartPosition() throws IOException {
-        assert moreInclude;
-
-        if (atFirstInCurrentDoc) {
-          atFirstInCurrentDoc = false;
-          assert includeStart != NO_MORE_POSITIONS;
-          return includeStart;
-        }
-
-        includeStart = includeSpans.nextStartPosition();
-        while ((includeStart != NO_MORE_POSITIONS)
-            && (! excludeForwardInCurrentDocAndAtMatch()))
-        {
-          includeStart = includeSpans.nextStartPosition();
-        }
-
-        return includeStart;
-      }
-
-      @Override
-      public int startPosition() {
-        assert includeStart == includeSpans.startPosition();
-        return atFirstInCurrentDoc ? -1 : includeStart;
-      }
-
-      @Override
-      public int endPosition() {
-        return atFirstInCurrentDoc ? -1 : includeSpans.endPosition();
-      }
-
-      @Override
-      public Collection<byte[]> getPayload() throws IOException {
-        ArrayList<byte[]> result = null;
-        if (includeSpans.isPayloadAvailable()) {
-          result = new ArrayList<>(includeSpans.getPayload());
-        }
-        return result;
-      }
-
-      @Override
-      public boolean isPayloadAvailable() throws IOException {
-        return includeSpans.isPayloadAvailable();
-      }
-
-      @Override
-      public long cost() {
-        return includeSpans.cost();
-      }
-
-      @Override
-      public String toString() {
-        return "spans(" + SpanNotQuery.this.toString() + ")";
       }
     };
   }

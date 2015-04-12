@@ -17,6 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
@@ -71,11 +72,12 @@ public class NearSpansUnordered extends NearSpans {
   private int totalSpanLength;
   private SpansCell maxEndPositionCell;
 
-  private class SpansCell extends FilterSpans {
+  private class SpansCell extends Spans {
     private int spanLength = -1;
+    final Spans in;
 
     public SpansCell(Spans spans) {
-      super(spans);
+      this.in = spans;
     }
 
     @Override
@@ -106,8 +108,48 @@ public class NearSpansUnordered extends NearSpans {
     }
 
     @Override
-    public boolean twoPhaseCurrentDocMatches() throws IOException {
-      return true; // we don't modify the spans, we just capture information from it.
+    public int startPosition() {
+      return in.startPosition();
+    }
+
+    @Override
+    public int endPosition() {
+      return in.endPosition();
+    }
+
+    @Override
+    public Collection<byte[]> getPayload() throws IOException {
+      return in.getPayload();
+    }
+
+    @Override
+    public boolean isPayloadAvailable() throws IOException {
+      return in.isPayloadAvailable();
+    }
+
+    @Override
+    public TwoPhaseIterator asTwoPhaseIterator() {
+      return in.asTwoPhaseIterator();
+    }
+
+    @Override
+    public int docID() {
+      return in.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return in.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return in.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
     }
 
     @Override
