@@ -20,8 +20,10 @@ package org.apache.solr.handler.component;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.util.Version;
@@ -33,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -71,6 +74,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   protected List<SearchComponent> components = null;
   private ShardHandlerFactory shardHandlerFactory ;
   private PluginInfo shfInfo;
+  private SolrCore core;
 
   protected List<String> getDefaultComponents()
   {
@@ -106,6 +110,38 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core)
   {
+    this.core = core;
+    Set<String> missing = new HashSet<>();
+    List<String> c = (List<String>) initArgs.get(INIT_COMPONENTS);
+    missing.addAll(core.getSearchComponents().checkContains(c));
+    List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
+    missing.addAll(core.getSearchComponents().checkContains(first));
+    List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
+    missing.addAll(core.getSearchComponents().checkContains(last));
+    if (!missing.isEmpty()) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "Missing SearchComponents named : " + missing);
+    if (c != null && (first != null || last != null)) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "First/Last components only valid if you do not declare 'components'");
+
+    if (shfInfo == null) {
+      shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    } else {
+      shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {
+          shardHandlerFactory.close();
+        }
+
+        @Override
+        public void postClose(SolrCore core) {
+        }
+      });
+    }
+
+  }
+
+  private void initComponents() {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
@@ -136,7 +172,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     }
 
     // Build the component list
-    components = new ArrayList<>( list.size() );
+    List<SearchComponent> components = new ArrayList<>(list.size());
     DebugComponent dbgCmp = null;
     for(String c : list){
       SearchComponent comp = core.getSearchComponent( c );
@@ -151,30 +187,24 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       components.add(dbgCmp);
       log.debug("Adding  debug component:" + dbgCmp);
     }
-    if(shfInfo ==null) {
-      shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
-    } else {
-      shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
-      core.addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {
-          shardHandlerFactory.close();
-        }
-        @Override
-        public void postClose(SolrCore core) {
-        }
-      });
-    }
-
+    this.components = components;
   }
 
   public List<SearchComponent> getComponents() {
+    if (components == null) {
+      synchronized (this) {
+        if (components == null) {
+          initComponents();
+        }
+      }
+    }
     return components;
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
+    if (components == null) getComponents();
     ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
