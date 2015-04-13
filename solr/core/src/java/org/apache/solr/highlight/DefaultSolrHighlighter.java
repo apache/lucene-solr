@@ -237,7 +237,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param params The params controlling Highlighting
    */
   protected int getMaxSnippets(String fieldName, SolrParams params) {
-    return params.getFieldInt(fieldName, HighlightParams.SNIPPETS,1);
+    return params.getFieldInt(fieldName, HighlightParams.SNIPPETS, 1);
   }
 
   /**
@@ -298,7 +298,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   protected Fragmenter getFragmenter(String fieldName, SolrParams params)
   {
     String fmt = params.getFieldParam( fieldName, HighlightParams.FRAGMENTER );
-    SolrFragmenter frag = fragmenters.get( fmt );
+    SolrFragmenter frag = fragmenters.get(fmt);
     if( frag == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmenter: "+fmt );
     }
@@ -450,7 +450,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     final int mvToExamine =
         req.getParams().getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_EXAMINE,
-            schemaField.multiValued() ? Integer.MAX_VALUE : 1);
+            (schemaField != null && schemaField.multiValued()) ? Integer.MAX_VALUE : 1);
     // Technically this is the max *fragments* (snippets), not max values:
     int mvToMatch =
         req.getParams().getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_MATCH, Integer.MAX_VALUE);
