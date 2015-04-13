@@ -265,8 +265,11 @@ public class TestFSTs extends LuceneTestCase {
 
 
   public void testRandomWords() throws IOException {
-    testRandomWords(1000, atLeast(2));
-    //testRandomWords(100, 1);
+    if (TEST_NIGHTLY) {
+      testRandomWords(1000, atLeast(2));
+    } else {
+      testRandomWords(100, 1);
+    }
   }
 
   String inputModeToString(int mode) {
@@ -302,11 +305,11 @@ public class TestFSTs extends LuceneTestCase {
   }
   
   // Build FST for all unique terms in the test line docs
-  // file, up until a time limit
+  // file, up until a doc limit
   public void testRealTerms() throws Exception {
 
     final LineFileDocs docs = new LineFileDocs(random(), true);
-    final int RUN_TIME_MSEC = atLeast(500);
+    final int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
@@ -314,10 +317,9 @@ public class TestFSTs extends LuceneTestCase {
     final Path tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
-    final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;
     int docCount = 0;
-    while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
+    while((doc = docs.nextDoc()) != null && docCount < numDocs) {
       writer.addDocument(doc);
       docCount++;
     }
