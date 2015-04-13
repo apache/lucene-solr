@@ -317,4 +317,34 @@ public class TestLongBitSet extends LuceneTestCase {
     assertFalse(newBits.get(1));
   }
   
+  public void testHugeCapacity() {
+    long moreThanMaxInt = (long)Integer.MAX_VALUE + 5;
+    
+    LongBitSet bits = new LongBitSet(42);
+    
+    assertEquals(42, bits.length());
+    
+    LongBitSet hugeBits = LongBitSet.ensureCapacity(bits, moreThanMaxInt);
+    
+    assertTrue(hugeBits.length() >= moreThanMaxInt);
+  }
+  
+  public void testBits2Words() {
+    assertEquals(0, LongBitSet.bits2words(0));
+    assertEquals(1, LongBitSet.bits2words(1));
+    // ...
+    assertEquals(1, LongBitSet.bits2words(64));
+    assertEquals(2, LongBitSet.bits2words(65));
+    // ...
+    assertEquals(2, LongBitSet.bits2words(128));
+    assertEquals(3, LongBitSet.bits2words(129));
+    // ...
+    assertEquals(1 << (31-6), LongBitSet.bits2words(1L << 31));
+    assertEquals((1 << (31-6)) + 1, LongBitSet.bits2words((1L << 31)) + 1);
+    // ...
+    assertEquals(1 << (32-6), LongBitSet.bits2words(1L << 32));
+    assertEquals((1 << (32-6)) + 1, LongBitSet.bits2words((1L << 32)) + 1);
+    // ...
+    assertEquals(Integer.MAX_VALUE, LongBitSet.bits2words((1L << 37) - 64));
+  }
 }
