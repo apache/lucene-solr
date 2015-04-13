@@ -424,7 +424,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
       }
     };
-    JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
+    final JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
 
 //    STRING_CACHE = new JavaBinCodec.StringCache(cache);
     byte[] bytes = new byte[0];
@@ -441,17 +441,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     printMem("after cache init");
 
     long ms = System.currentTimeMillis();
-    int ITERS = 1000000;
+    final int ITERS = 1000000;
     int THREADS = 10;
 
-    runInThreads(THREADS,  () -> {
-      JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0,0);
-      for(int i=0;i< ITERS;i++){
-        JavaBinCodec.StringBytes b = l.get(i % l.size());
-        stringBytes1.reset(b.bytes,0,b.bytes.length);
-        if(STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
-      }
+    runInThreads(THREADS, new Runnable() {
+      @Override
+      public void run() {
+        JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0, 0);
+        for (int i = 0; i < ITERS; i++) {
+          JavaBinCodec.StringBytes b = l.get(i % l.size());
+          stringBytes1.reset(b.bytes, 0, b.bytes.length);
+          if (STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
+        }
 
+      }
     });
 
 
@@ -460,14 +463,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     System.out.println("time taken by LRUCACHE "+ (System.currentTimeMillis()-ms));
     ms = System.currentTimeMillis();
 
-    runInThreads(THREADS,  ()-> {
-      String a = null;
-      CharArr arr = new CharArr();
-      for (int i = 0; i < ITERS; i++) {
-        JavaBinCodec.StringBytes sb = l.get(i % l.size());
-        arr.reset();
-        ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
-        a = arr.toString();
+    runInThreads(THREADS, new Runnable() {
+      @Override
+      public void run() {
+        String a = null;
+        CharArr arr = new CharArr();
+        for (int i = 0; i < ITERS; i++) {
+          JavaBinCodec.StringBytes sb = l.get(i % l.size());
+          arr.reset();
+          ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
+          a = arr.toString();
+        }
       }
     });
 
@@ -525,12 +531,12 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     int arg=0;
     int nThreads = Integer.parseInt(args[arg++]);
     int nBuffers = Integer.parseInt(args[arg++]);
-    long iter = Long.parseLong(args[arg++]);
+    final long iter = Long.parseLong(args[arg++]);
     int cacheSz = Integer.parseInt(args[arg++]);
 
     Random r = new Random(0);
 
-    byte[][] buffers = new byte[nBuffers][];
+    final byte[][] buffers = new byte[nBuffers][];
 
     for (int bufnum=0; bufnum<nBuffers; bufnum++) {
       SolrDocument sdoc = new SolrDocument();
@@ -566,7 +572,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     int ret = 0;
     long start = System.currentTimeMillis();
     ConcurrentLRUCache underlyingCache = cacheSz > 0 ? new ConcurrentLRUCache<>(cacheSz,cacheSz-cacheSz/10,cacheSz,cacheSz/10,false,true,null) : null;  // the cache in the first version of the patch was 10000,9000,10000,1000,false,true,null
-    JavaBinCodec.StringCache stringCache = underlyingCache==null ? null : new JavaBinCodec.StringCache(underlyingCache);
+    final JavaBinCodec.StringCache stringCache = underlyingCache==null ? null : new JavaBinCodec.StringCache(underlyingCache);
     if (nThreads <= 0) {
       ret += doDecode(buffers, iter, stringCache);
     } else {
@@ -591,7 +597,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   public static int doDecode(byte[][] buffers, long iter, JavaBinCodec.StringCache stringCache) throws IOException {
     int ret = 0;
     int bufnum = -1;
-    byte[] tmp = new byte[8192];
 
     InputStream empty = new InputStream() {
       @Override
