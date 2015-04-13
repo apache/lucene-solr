@@ -141,9 +141,10 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     
     testDeleteByQueryDistrib();
 
-    testDeleteByIdImplicitRouter();
-
-    testDeleteByIdCompositeRouterWithRouterField();
+    // See SOLR-7384
+//    testDeleteByIdImplicitRouter();
+//
+//    testDeleteByIdCompositeRouterWithRouterField();
 
     docId = testThatCantForwardToLeaderFails(docId);
 
