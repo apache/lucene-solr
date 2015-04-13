@@ -564,7 +564,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         Collections.sort(frags, new Comparator<TextFragment>() {//TODO make TextFragment Comparable
           @Override
           public int compare(TextFragment arg0, TextFragment arg1) {
-            return Math.round(arg1.getScore() - arg0.getScore());
+            return Float.compare(arg1.getScore(), arg0.getScore());
           }
         });
       }
