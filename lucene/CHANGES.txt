@@ -85,6 +85,9 @@ Bug Fixes
 * LUCENE-6415: TermsQuery.extractTerms is a no-op (used to throw an
   UnsupportedOperationException). (Adrien Grand)
 
+* LUCENE-6416: BooleanQuery.extractTerms now only extracts terms from scoring
+  clauses. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
