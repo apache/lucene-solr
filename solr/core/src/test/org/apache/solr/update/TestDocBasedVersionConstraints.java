@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -359,7 +360,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   public void testConcurrentAdds() throws Exception {
     final int NUM_DOCS = atLeast(50);
     final int MAX_CONCURENT = atLeast(10);
-    ExecutorService runner = Executors.newFixedThreadPool(MAX_CONCURENT, new DefaultSolrThreadFactory("TestDocBasedVersionConstraints"));
+    ExecutorService runner = ExecutorUtil.newMDCAwareFixedThreadPool(MAX_CONCURENT, new DefaultSolrThreadFactory("TestDocBasedVersionConstraints"));
     // runner = Executors.newFixedThreadPool(1);    // to test single threaded
     try {
       for (int id = 0; id < NUM_DOCS; id++) {
@@ -393,7 +394,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
                  ,"/response/docs==["+expectedDoc+"]");
       }
     } finally {
-      runner.shutdownNow();
+      ExecutorUtil.shutdownAndAwaitTermination(runner);
     }
   }
   

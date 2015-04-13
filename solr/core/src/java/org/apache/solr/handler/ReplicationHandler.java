@@ -149,7 +149,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private ReentrantLock indexFetchLock = new ReentrantLock();
 
-  private ExecutorService restoreExecutor = Executors.newSingleThreadExecutor(
+  private ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
       new DefaultSolrThreadFactory("restoreExecutor"));
 
   private volatile Future<Boolean> restoreFuture;

@@ -49,6 +49,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -104,13 +105,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
 
-  ThreadPoolExecutor executor = new ThreadPoolExecutor(0,
-      Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("testExecutor"));
-  
-  CompletionService<Object> completionService;
-  Set<Future<Object>> pending;
-  
   // we randomly use a second config set rather than just one
   private boolean secondConfigSet = random().nextBoolean();
   
@@ -164,8 +158,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   public CollectionsAPIDistributedZkTest() {
     sliceCount = 2;
-    completionService = new ExecutorCompletionService<>(executor);
-    pending = new HashSet<>();
     checkCreatedVsState = false;
     
   }

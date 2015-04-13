@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 /**
@@ -197,7 +198,7 @@ public class CloudSolrStream extends TupleStream {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = Executors.newCachedThreadPool(new SolrjNamedThreadFactory("CloudSolrStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("CloudSolrStream"));
     try {
       List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {

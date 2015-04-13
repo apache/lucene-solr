@@ -17,11 +17,19 @@ package org.apache.solr.common.util;
  * limitations under the License.
  */
 
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 
 public class ExecutorUtil {
@@ -46,12 +54,16 @@ public class ExecutorUtil {
   }
   
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
+    shutdownAndAwaitTermination(pool, 60, TimeUnit.SECONDS);
+  }
+
+  public static void shutdownAndAwaitTermination(ExecutorService pool, long timeout, TimeUnit timeUnit) {
     pool.shutdown(); // Disable new tasks from being submitted
     boolean shutdown = false;
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(timeout, timeUnit);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
@@ -59,6 +71,80 @@ public class ExecutorUtil {
       if (!shutdown) {
         pool.shutdownNow(); // Cancel currently executing tasks
       }
+    }
+  }
+
+  /**
+   * See {@link java.util.concurrent.Executors#newFixedThreadPool(int, ThreadFactory)}
+   */
+  public static ExecutorService newMDCAwareFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
+    return new MDCAwareThreadPoolExecutor(nThreads, nThreads,
+        0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        threadFactory);
+  }
+
+  /**
+   * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}
+   */
+  public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
+    return new MDCAwareThreadPoolExecutor(1, 1,
+            0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            threadFactory);
+  }
+
+  /**
+   * See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)}
+   */
+  public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
+    return new MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+        60L, TimeUnit.SECONDS,
+        new SynchronousQueue<Runnable>(),
+        threadFactory);
+  }
+
+  public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
+
+    public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
+      super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+    }
+
+    public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
+      super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+    }
+
+    public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
+      super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
+    }
+
+    public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, RejectedExecutionHandler handler) {
+      super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
+      super.execute(new Runnable() {
+        @Override
+        public void run() {
+          Map<String, String> threadContext = MDC.getCopyOfContextMap();
+          if (submitterContext != null) {
+            MDC.setContextMap(submitterContext);
+          } else {
+            MDC.clear();
+          }
+          try {
+            command.run();
+          } finally {
+            if (threadContext != null) {
+              MDC.setContextMap(threadContext);
+            } else {
+              MDC.clear();
+            }
+          }
+        }
+      });
     }
   }
 }

@@ -1357,7 +1357,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor(
+  final ExecutorService searcherExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
       new DefaultSolrThreadFactory("searcherExecutor"));
   private int onDeckSearchers;  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.

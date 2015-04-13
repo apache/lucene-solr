@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
@@ -136,7 +137,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = Executors.newFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
+    ExecutorService service = ExecutorUtil.newMDCAwareFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
     List<Callable<Integer>> callees = new ArrayList<>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {

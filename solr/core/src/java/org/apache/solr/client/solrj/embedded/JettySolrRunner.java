@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -51,6 +52,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.EnumSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.SortedMap;
@@ -380,27 +382,37 @@ public class JettySolrRunner {
    * @throws Exception if an error occurs on startup
    */
   public void start() throws Exception {
-    // if started before, make a new server
-    if (startedBefore) {
-      waitOnSolr = false;
-      init(lastPort);
-    } else {
-      startedBefore = true;
-    }
+    // Do not let Jetty/Solr pollute the MDC for this thread
+    Map<String, String> prevContext = MDC.getCopyOfContextMap();
+    MDC.clear();
+    try {
+      // if started before, make a new server
+      if (startedBefore) {
+        waitOnSolr = false;
+        init(lastPort);
+      } else {
+        startedBefore = true;
+      }
 
-    if (!server.isRunning()) {
-      server.start();
-    }
-    synchronized (JettySolrRunner.this) {
-      int cnt = 0;
-      while (!waitOnSolr) {
-        this.wait(100);
-        if (cnt++ == 5) {
-          throw new RuntimeException("Jetty/Solr unresponsive");
+      if (!server.isRunning()) {
+        server.start();
+      }
+      synchronized (JettySolrRunner.this) {
+        int cnt = 0;
+        while (!waitOnSolr) {
+          this.wait(100);
+          if (cnt++ == 5) {
+            throw new RuntimeException("Jetty/Solr unresponsive");
+          }
         }
       }
+    } finally {
+      if (prevContext != null)  {
+        MDC.setContextMap(prevContext);
+      } else {
+        MDC.clear();
+      }
     }
-
   }
 
   /**
@@ -409,21 +421,31 @@ public class JettySolrRunner {
    * @throws Exception if an error occurs on shutdown
    */
   public void stop() throws Exception {
+    // Do not let Jetty/Solr pollute the MDC for this thread
+    Map<String, String> prevContext = MDC.getCopyOfContextMap();
+    MDC.clear();
+    try {
+      Filter filter = dispatchFilter.getFilter();
 
-    Filter filter = dispatchFilter.getFilter();
+      server.stop();
 
-    server.stop();
-
-    if (server.getState().equals(Server.FAILED)) {
-      filter.destroy();
-      if (extraFilters != null) {
-        for (FilterHolder f : extraFilters) {
-          f.getFilter().destroy();
+      if (server.getState().equals(Server.FAILED)) {
+        filter.destroy();
+        if (extraFilters != null) {
+          for (FilterHolder f : extraFilters) {
+            f.getFilter().destroy();
+          }
         }
       }
+
+      server.join();
+    } finally {
+      if (prevContext != null)  {
+        MDC.setContextMap(prevContext);
+      } else {
+        MDC.clear();
+      }
     }
-    
-    server.join();
   }
 
   /**

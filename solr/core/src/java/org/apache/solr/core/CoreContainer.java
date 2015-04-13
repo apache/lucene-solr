@@ -37,6 +37,7 @@ import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,9 +49,9 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 
 
 /**
@@ -245,6 +246,9 @@ public class CoreContainer {
     log.info("Node Name: " + hostName);
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
+    if (isZooKeeperAware()) {
+      MDC.put(NODE_NAME_PROP, getZkController().getNodeName());
+    }
 
     collectionsHandler = createHandler(cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
@@ -259,7 +263,7 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     // do not limit the size of the executor in zk mode since cores may try and wait for each other.
-    ExecutorService coreLoadExecutor = Executors.newFixedThreadPool(
+    ExecutorService coreLoadExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         ( zkSys.getZkController() == null ? cfg.getCoreLoadThreadCount() : Integer.MAX_VALUE ),
         new DefaultSolrThreadFactory("coreLoadExecutor") );
 

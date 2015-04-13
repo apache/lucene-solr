@@ -47,7 +47,7 @@ public class ZkContainer {
   protected ZkController zkController;
   private SolrZkServer zkServer;
 
-  private ExecutorService coreZkRegister = Executors.newFixedThreadPool(Integer.MAX_VALUE,
+  private ExecutorService coreZkRegister = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreZkRegister") );
   
   // see ZkController.zkRunOnly

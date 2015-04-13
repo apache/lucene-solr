@@ -1457,7 +1457,7 @@ public class UpdateLog implements PluginInfoInitialized {
     this.cancelApplyBufferUpdate = true;
   }
 
-  ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0,
+  ThreadPoolExecutor recoveryExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
       Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("recoveryExecutor"));
 

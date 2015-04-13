@@ -57,6 +57,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
@@ -661,7 +662,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
-        Executors.newFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
     try {
       List<Future<Boolean>> results =
           parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
@@ -700,8 +701,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
           prop, expectedVersion, concurrentTasks.size(), collection));
       Thread.currentThread().interrupt();
     } finally {
-      if (!parallelExecutor.isShutdown())
-        parallelExecutor.shutdownNow();
+      ExecutorUtil.shutdownNowAndAwaitTermination(parallelExecutor);
     }
 
     long diffMs = (System.currentTimeMillis() - startMs);

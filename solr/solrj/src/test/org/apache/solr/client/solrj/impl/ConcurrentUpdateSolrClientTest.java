@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -167,7 +168,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     concurrentClient.blockUntilFinished();
     
     int poolSize = 5;
-    ExecutorService threadPool = Executors.newFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
+    ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
 
     int numDocs = 100;
     int numRunnables = 5;

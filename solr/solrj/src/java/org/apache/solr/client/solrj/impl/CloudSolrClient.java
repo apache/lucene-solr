@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -107,8 +108,8 @@ public class CloudSolrClient extends SolrClient {
   
   private final boolean updatesToLeaders;
   private boolean parallelUpdates = true;
-  private ExecutorService threadPool = Executors
-      .newCachedThreadPool(new SolrjNamedThreadFactory(
+  private ExecutorService threadPool = ExecutorUtil
+      .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
           "CloudSolrServer ThreadPool"));
   private String idField = "id";
   public static final String STATE_VERSION = "_stateVer_";
