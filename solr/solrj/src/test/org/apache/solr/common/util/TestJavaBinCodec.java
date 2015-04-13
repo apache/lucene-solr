@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -477,7 +478,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   }
 
-  private void runInThreads(int count,  Runnable runnable) throws InterruptedException {
+  private static void runInThreads(int count,  Runnable runnable) throws InterruptedException {
     ArrayList<Thread> t =new ArrayList();
     for(int i=0;i<count;i++ ) t.add(new Thread(runnable));
     for (Thread thread : t) thread.start();
@@ -500,9 +501,118 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   }
 
-  public static void main(String[] args) throws IOException {
-    TestJavaBinCodec test = new TestJavaBinCodec();
-    test.genBinaryFiles();
+  public static void main(String[] args) {
+    // TestJavaBinCodec test = new TestJavaBinCodec();
+    // test.genBinaryFiles();
+    try {
+      doDecodePerf(args);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // common-case ascii
+  static String str(Random r, int sz) {
+    StringBuffer sb = new StringBuffer(sz);
+    for (int i=0; i<sz; i++) {
+      sb.append('\n' + r.nextInt(128-'\n'));
+    }
+    return sb.toString();
+  }
+
+
+  public static void doDecodePerf(String[] args) throws Exception {
+    int arg=0;
+    int nThreads = Integer.parseInt(args[arg++]);
+    int nBuffers = Integer.parseInt(args[arg++]);
+    long iter = Long.parseLong(args[arg++]);
+    int cacheSz = Integer.parseInt(args[arg++]);
+
+    Random r = new Random(0);
+
+    byte[][] buffers = new byte[nBuffers][];
+
+    for (int bufnum=0; bufnum<nBuffers; bufnum++) {
+      SolrDocument sdoc = new SolrDocument();
+      sdoc.put("id", "my_id_" + bufnum);
+      sdoc.put("author", str(r, 10 + r.nextInt(10)));
+      sdoc.put("address", str(r, 20 + r.nextInt(20)));
+      sdoc.put("license", str(r, 10));
+      sdoc.put("title", str(r, 5 + r.nextInt(10)));
+      sdoc.put("modified_dt", r.nextInt(1000000));
+      sdoc.put("creation_dt", r.nextInt(1000000));
+      sdoc.put("birthdate_dt", r.nextInt(1000000));
+      sdoc.put("clean", r.nextBoolean());
+      sdoc.put("dirty", r.nextBoolean());
+      sdoc.put("employed", r.nextBoolean());
+      sdoc.put("priority", r.nextInt(100));
+      sdoc.put("dependents", r.nextInt(6));
+      sdoc.put("level", r.nextInt(101));
+      sdoc.put("education_level", r.nextInt(10));
+      // higher level of reuse for string values
+      sdoc.put("state", "S"+r.nextInt(50));
+      sdoc.put("country", "Country"+r.nextInt(20));
+      sdoc.put("some_boolean", ""+r.nextBoolean());
+      sdoc.put("another_boolean", ""+r.nextBoolean());
+
+
+      JavaBinCodec javabin = new JavaBinCodec();
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      javabin.marshal(sdoc, os);
+      os.toByteArray();
+      buffers[bufnum] = os.toByteArray();
+    }
+
+    int ret = 0;
+    long start = System.currentTimeMillis();
+    ConcurrentLRUCache underlyingCache = cacheSz > 0 ? new ConcurrentLRUCache<>(cacheSz,cacheSz-cacheSz/10,cacheSz,cacheSz/10,false,true,null) : null;  // the cache in the first version of the patch was 10000,9000,10000,1000,false,true,null
+    JavaBinCodec.StringCache stringCache = underlyingCache==null ? null : new JavaBinCodec.StringCache(underlyingCache);
+    if (nThreads <= 0) {
+      ret += doDecode(buffers, iter, stringCache);
+    } else {
+      runInThreads(nThreads, new Runnable() {
+        @Override
+        public void run() {
+          try {
+            doDecode(buffers, iter, stringCache);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      });
+    }
+    long end = System.currentTimeMillis();
+
+    long n = iter * Math.max(1,nThreads);
+    System.out.println("ret=" + ret + " THROUGHPUT=" + (n*1000 / (end-start)));
+    if (underlyingCache != null) System.out.println("cache: hits=" + underlyingCache.getStats().getCumulativeHits() + " lookups=" + underlyingCache.getStats().getCumulativeLookups() + " size=" + underlyingCache.getStats().getCurrentSize());
+  }
+
+  public static int doDecode(byte[][] buffers, long iter, JavaBinCodec.StringCache stringCache) throws IOException {
+    int ret = 0;
+    int bufnum = -1;
+    byte[] tmp = new byte[8192];
+
+    InputStream empty = new InputStream() {
+      @Override
+      public int read() throws IOException {
+        return -1;
+      }
+    };
+
+    while (--iter >= 0) {
+      if (++bufnum >= buffers.length) bufnum = 0;
+      byte[] buf = buffers[bufnum];
+      JavaBinCodec javabin = new JavaBinCodec(null, stringCache);
+      FastInputStream in = new FastInputStream(empty, buf, 0, buf.length);
+      Object o = javabin.unmarshal( in );
+      if (o instanceof SolrDocument) {
+        ret += ((SolrDocument) o).size();
+      }
+    }
+    return ret;
   }
 
 }
+
+
