@@ -42,14 +42,49 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     assertSameSet(new TermQuery(t1), spanQuery(new SpanTermQuery(t1)));
   }
   
+  /** SpanOrQuery(A) = SpanTermQuery(A) */
+  public void testSpanOrVersusTerm() throws Exception {
+    Term t1 = randomTerm();
+    SpanQuery term = spanQuery(new SpanTermQuery(t1));
+    assertSameSet(spanQuery(new SpanOrQuery(term)), term);
+  }
+  
+  /** SpanOrQuery(A, A) = SpanTermQuery(A) */
+  public void testSpanOrDoubleVersusTerm() throws Exception {
+    Term t1 = randomTerm();
+    SpanQuery term = spanQuery(new SpanTermQuery(t1));
+    assertSameSet(spanQuery(new SpanOrQuery(term, term)), term);
+  }
+  
   /** SpanOrQuery(A, B) = (A B) */
-  public void testSpanOrVersusBoolean() throws Exception {
+  public void testSpanOrVersusBooleanTerm() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     BooleanQuery q1 = new BooleanQuery();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
     SpanQuery q2 = spanQuery(new SpanOrQuery(spanQuery(new SpanTermQuery(t1)), spanQuery(new SpanTermQuery(t2))));
+    assertSameSet(q1, q2);
+  }
+  
+  /** SpanOrQuery(SpanNearQuery[A B], SpanNearQuery[C D]) = (SpanNearQuery[A B], SpanNearQuery[C D]) */
+  public void testSpanOrVersusBooleanNear() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    Term t3 = randomTerm();
+    Term t4 = randomTerm();
+    SpanQuery near1 = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                               spanQuery(new SpanTermQuery(t1)), 
+                                               spanQuery(new SpanTermQuery(t2)) 
+                                             }, 10, random().nextBoolean()));
+    SpanQuery near2 = spanQuery(new SpanNearQuery(new SpanQuery[] { 
+                                               spanQuery(new SpanTermQuery(t3)), 
+                                               spanQuery(new SpanTermQuery(t4)) 
+                                             }, 10, random().nextBoolean()));
+    BooleanQuery q1 = new BooleanQuery();
+    q1.add(near1, Occur.SHOULD);
+    q1.add(near2, Occur.SHOULD);
+    SpanQuery q2 = spanQuery(new SpanOrQuery(near1, near2));
     assertSameSet(q1, q2);
   }
   

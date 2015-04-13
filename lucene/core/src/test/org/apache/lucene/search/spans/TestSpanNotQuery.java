@@ -17,39 +17,66 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** Basic tests for SpanOrQuery */
-public class TestSpanOrQuery extends LuceneTestCase {
+/** Basic tests for SpanNotQuery */
+public class TestSpanNotQuery extends LuceneTestCase {
   
   public void testHashcodeEquals() {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field", "bar"));
     SpanTermQuery q3 = new SpanTermQuery(new Term("field", "baz"));
     
-    SpanOrQuery or1 = new SpanOrQuery(q1, q2);
-    SpanOrQuery or2 = new SpanOrQuery(q2, q3);
-    QueryUtils.check(or1);
-    QueryUtils.check(or2);
-    QueryUtils.checkUnequal(or1, or2);
-  }
-  
-  public void testSpanOrEmpty() throws Exception {
-    SpanOrQuery a = new SpanOrQuery();
-    SpanOrQuery b = new SpanOrQuery();
-    assertTrue("empty should equal", a.equals(b));
+    SpanNotQuery not1 = new SpanNotQuery(q1, q2);
+    SpanNotQuery not2 = new SpanNotQuery(q2, q3);
+    QueryUtils.check(not1);
+    QueryUtils.check(not2);
+    QueryUtils.checkUnequal(not1, not2);
   }
   
   public void testDifferentField() throws Exception {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field1", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field2", "bar"));
     try {
-      new SpanOrQuery(q1, q2);
+      new SpanNotQuery(q1, q2);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("must have same field"));
     }
+  }
+  
+  public void testNoPositions() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher is = new IndexSearcher(ir);
+    SpanTermQuery query = new SpanTermQuery(new Term("foo", "bar"));
+    SpanTermQuery query2 = new SpanTermQuery(new Term("foo", "baz"));
+
+    try {
+      is.search(new SpanNotQuery(query, query2), 5);
+      fail("didn't get expected exception");
+    } catch (IllegalStateException expected) {
+      assertTrue(expected.getMessage().contains("was indexed without position data"));
+    }
+    ir.close();
+    dir.close();
   }
 }
