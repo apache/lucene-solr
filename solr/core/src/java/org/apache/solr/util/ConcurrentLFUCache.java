@@ -17,6 +17,7 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import org.apache.solr.common.util.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @since solr 1.6
  */
-public class ConcurrentLFUCache<K, V> {
+public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
   private static Logger log = LoggerFactory.getLogger(ConcurrentLFUCache.class);
 
   private final ConcurrentHashMap<Object, CacheEntry<K, V>> map;
@@ -84,6 +85,7 @@ public class ConcurrentLFUCache<K, V> {
     islive = live;
   }
 
+  @Override
   public V get(K key) {
     CacheEntry<K, V> e = map.get(key);
     if (e == null) {
@@ -97,6 +99,7 @@ public class ConcurrentLFUCache<K, V> {
     return e.value;
   }
 
+  @Override
   public V remove(K key) {
     CacheEntry<K, V> cacheEntry = map.remove(key);
     if (cacheEntry != null) {
@@ -106,6 +109,7 @@ public class ConcurrentLFUCache<K, V> {
     return null;
   }
 
+  @Override
   public V put(K key, V val) {
     if (val == null) return null;
     CacheEntry<K, V> e = new CacheEntry<>(key, val, stats.accessCounter.incrementAndGet());
@@ -305,6 +309,7 @@ public class ConcurrentLFUCache<K, V> {
     return stats.size.get();
   }
 
+  @Override
   public void clear() {
     map.clear();
   }

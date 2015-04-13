@@ -81,12 +81,18 @@ public class JavaBinCodec {
   private static byte VERSION = 2;
   private ObjectResolver resolver;
   protected FastOutputStream daos;
+  private StringCache stringCache;
 
   public JavaBinCodec() {
   }
 
   public JavaBinCodec(ObjectResolver resolver) {
+    this(resolver, null);
+  }
+
+  public JavaBinCodec(ObjectResolver resolver, StringCache stringCache) {
     this.resolver = resolver;
+    this.stringCache = stringCache;
   }
 
   public void marshal(Object nl, OutputStream os) throws IOException {
@@ -588,15 +594,23 @@ public class JavaBinCodec {
 
   byte[] bytes;
   CharArr arr = new CharArr();
+  private StringBytes bytesRef = new StringBytes(bytes,0,0);
 
   public String readStr(DataInputInputStream dis) throws IOException {
+    return readStr(dis,null);
+  }
+
+  public String readStr(DataInputInputStream dis, StringCache stringCache) throws IOException {
     int sz = readSize(dis);
     if (bytes == null || bytes.length < sz) bytes = new byte[sz];
     dis.readFully(bytes, 0, sz);
-
-    arr.reset();
-    ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
-    return arr.toString();
+    if (stringCache != null) {
+      return stringCache.get(bytesRef.reset(bytes, 0, sz));
+    }else {
+      arr.reset();
+      ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
+      return arr.toString();
+    }
   }
 
   public void writeInt(int val) throws IOException {
@@ -804,7 +818,8 @@ public class JavaBinCodec {
     if (idx != 0) {// idx != 0 is the index of the extern string
       return stringsList.get(idx - 1);
     } else {// idx == 0 means it has a string value
-      String s = (String) readVal(fis);
+      tagByte = fis.readByte();
+      String s = readStr(fis, stringCache);
       if (stringsList == null) stringsList = new ArrayList<>();
       stringsList.add(s);
       return s;
@@ -816,5 +831,77 @@ public class JavaBinCodec {
     public Object resolve(Object o, JavaBinCodec codec) throws IOException;
   }
 
+  public static class StringCache {
+    private final Cache<StringBytes,String> cache ;
+
+    public StringCache(Cache<StringBytes, String> cache) {
+      this.cache = cache;
+    }
+
+    public String get(StringBytes b){
+      String result  = cache.get(b);
+      if(result== null){
+        //make a copy because the buffer received may be changed later by the caller
+        StringBytes copy = new StringBytes(Arrays.copyOfRange(b.bytes, b.offset, b.offset + b.length), 0,b.length);
+        CharArr arr = new CharArr();
+        ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
+        result = arr.toString();
+        cache.put(copy,result);
+      }
+      return result;
+    }
+  }
+  public static class StringBytes {
+    byte[] bytes;
+
+    /** Offset of first valid byte. */
+    int offset;
+
+    /** Length of used bytes. */
+    private int length;
+    private int hash;
+    public StringBytes(byte[] bytes, int offset, int length) {
+      reset(bytes,offset,length);
+    }
+    StringBytes reset(byte[] bytes, int offset, int length){
+      this.bytes = bytes;
+      this.offset = offset;
+      this.length = length;
+      hash = bytes == null ? 0 : Hash.murmurhash3_x86_32(bytes, offset, length, 0);
+      return this;
+    }
+    @Override
+    public boolean equals(Object other) {
+      if (other == null) {
+        return false;
+      }
+      if (other instanceof StringBytes) {
+        return this.bytesEquals((StringBytes) other);
+      }
+      return false;
+    }
+
+    boolean bytesEquals(StringBytes other) {
+      assert other != null;
+      if (length == other.length) {
+        int otherUpto = other.offset;
+        final byte[] otherBytes = other.bytes;
+        final int end = offset + length;
+        for(int upto=offset;upto<end;upto++,otherUpto++) {
+          if (bytes[upto] != otherBytes[otherUpto]) {
+            return false;
+          }
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return hash;
+    }
+  }
 
 }

@@ -17,6 +17,7 @@ package org.apache.solr.util;
  */
 
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.common.util.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ import java.lang.ref.WeakReference;
  *
  * @since solr 1.4
  */
-public class ConcurrentLRUCache<K,V> {
+public class ConcurrentLRUCache<K,V> implements Cache<K,V> {
   private static Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
 
   private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
@@ -85,6 +86,7 @@ public class ConcurrentLRUCache<K,V> {
     islive = live;
   }
 
+  @Override
   public V get(K key) {
     CacheEntry<K,V> e = map.get(key);
     if (e == null) {
@@ -95,6 +97,7 @@ public class ConcurrentLRUCache<K,V> {
     return e.value;
   }
 
+  @Override
   public V remove(K key) {
     CacheEntry<K,V> cacheEntry = map.remove(key);
     if (cacheEntry != null) {
@@ -104,6 +107,7 @@ public class ConcurrentLRUCache<K,V> {
     return null;
   }
 
+  @Override
   public V put(K key, V val) {
     if (val == null) return null;
     CacheEntry<K,V> e = new CacheEntry<>(key, val, stats.accessCounter.incrementAndGet());
@@ -468,6 +472,7 @@ public class ConcurrentLRUCache<K,V> {
     return stats.size.get();
   }
 
+  @Override
   public void clear() {
     map.clear();
   }
@@ -623,8 +628,8 @@ public class ConcurrentLRUCache<K,V> {
   @Override
   protected void finalize() throws Throwable {
     try {
-      if(!isDestroyed){
-        log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+      if(!isDestroyed && (cleanupThread != null)){
+        log.error("ConcurrentLRUCache created with a thread and was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
         destroy();
       }
     } finally {
