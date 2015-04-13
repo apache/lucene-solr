@@ -88,6 +88,9 @@ Bug Fixes
 * LUCENE-6416: BooleanQuery.extractTerms now only extracts terms from scoring
   clauses. (Adrien Grand)
 
+* LUCENE-6409: Fixed integer overflow in LongBitSet.ensureCapacity.
+  (Luc Vanlerberghe via Adrien Grand)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

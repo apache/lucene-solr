@@ -51,19 +51,15 @@ public final class LongBitSet {
       if (numWords >= arr.length) {
         arr = ArrayUtil.grow(arr, numWords + 1);
       }
-      return new LongBitSet(arr, arr.length << 6);
+      return new LongBitSet(arr, (long)arr.length << 6);
     }
   }
   
   /** returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(long numBits) {
-    int numLong = (int) (numBits >>> 6);
-    if ((numBits & 63) != 0) {
-      numLong++;
-    }
-    return numLong;
+    return (int)((numBits - 1) >> 6) + 1; // I.e.: get the word-offset of the last bit and add one (make sure to use >> so 0 returns 0!)
   }
-
+  
   public LongBitSet(long numBits) {
     this.numBits = numBits;
     bits = new long[bits2words(numBits)];
@@ -247,7 +243,7 @@ public final class LongBitSet {
     int startWord = (int) (startIndex >> 6);
     int endWord = (int) ((endIndex-1) >> 6);
 
-    /*** Grrr, java shifting wraps around so -1L>>>64 == -1
+    /*** Grrr, java shifting uses only the lower 6 bits of the count so -1L>>>64 == -1
      * for that reason, make sure not to use endmask if the bits to flip will
      * be zero in the last word (redefine endWord to be the last changed...)
     long startmask = -1L << (startIndex & 0x3f);     // example: 11111...111000
@@ -255,7 +251,7 @@ public final class LongBitSet {
     ***/
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
 
     if (startWord == endWord) {
       bits[startWord] ^= (startmask & endmask);
@@ -287,7 +283,7 @@ public final class LongBitSet {
     int endWord = (int) ((endIndex-1) >> 6);
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
 
     if (startWord == endWord) {
       bits[startWord] |= (startmask & endmask);
@@ -315,7 +311,7 @@ public final class LongBitSet {
     int endWord = (int) ((endIndex-1) >> 6);
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
 
     // invert masks since we are clearing
     startmask = ~startmask;
