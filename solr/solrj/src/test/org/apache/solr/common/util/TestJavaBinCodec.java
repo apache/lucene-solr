@@ -423,7 +423,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
       }
     };
-    JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
+    final JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
 
 //    STRING_CACHE = new JavaBinCodec.StringCache(cache);
     byte[] bytes = new byte[0];
@@ -440,17 +440,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     printMem("after cache init");
 
     long ms = System.currentTimeMillis();
-    int ITERS = 1000000;
+    final int ITERS = 1000000;
     int THREADS = 10;
 
-    runInThreads(THREADS,  () -> {
-      JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0,0);
-      for(int i=0;i< ITERS;i++){
-        JavaBinCodec.StringBytes b = l.get(i % l.size());
-        stringBytes1.reset(b.bytes,0,b.bytes.length);
-        if(STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
-      }
+    runInThreads(THREADS, new Runnable() {
+      @Override
+      public void run() {
+        JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0, 0);
+        for (int i = 0; i < ITERS; i++) {
+          JavaBinCodec.StringBytes b = l.get(i % l.size());
+          stringBytes1.reset(b.bytes, 0, b.bytes.length);
+          if (STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
+        }
 
+      }
     });
 
 
@@ -459,14 +462,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     System.out.println("time taken by LRUCACHE "+ (System.currentTimeMillis()-ms));
     ms = System.currentTimeMillis();
 
-    runInThreads(THREADS,  ()-> {
-      String a = null;
-      CharArr arr = new CharArr();
-      for (int i = 0; i < ITERS; i++) {
-        JavaBinCodec.StringBytes sb = l.get(i % l.size());
-        arr.reset();
-        ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
-        a = arr.toString();
+    runInThreads(THREADS, new Runnable() {
+      @Override
+      public void run() {
+        String a = null;
+        CharArr arr = new CharArr();
+        for (int i = 0; i < ITERS; i++) {
+          JavaBinCodec.StringBytes sb = l.get(i % l.size());
+          arr.reset();
+          ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
+          a = arr.toString();
+        }
       }
     });
 
