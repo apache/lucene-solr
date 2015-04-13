@@ -37,7 +37,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
@@ -45,7 +44,6 @@ import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
-@Slow
 public class TestPackedInts extends LuceneTestCase {
 
   public void testByteCount() {
@@ -329,7 +327,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testRandomEquality() {
-    final int numIters = atLeast(2);
+    final int numIters = TEST_NIGHTLY ? atLeast(2) : 1;
     for (int i = 0; i < numIters; ++i) {
       final int valueCount = TestUtil.nextInt(random(), 1, 300);
 
@@ -983,7 +981,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedLongValues() {
-    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 1000000)];
+    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, TEST_NIGHTLY ? 1000000 : 100000)];
     float[] ratioOptions = new float[]{PackedInts.DEFAULT, PackedInts.COMPACT, PackedInts.FAST};
     for (int bpv : new int[]{0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
       for (DataType dataType : Arrays.asList(DataType.DELTA_PACKED)) {
