@@ -33,6 +33,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -92,8 +93,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     inputFactory = XMLInputFactory.newInstance();
     
     exe = // Executors.newSingleThreadExecutor();
-    rarely() ? Executors.newFixedThreadPool(atLeast(2), new DefaultSolrThreadFactory("AddBlockUpdateTest")) : Executors
-        .newCachedThreadPool(new DefaultSolrThreadFactory("AddBlockUpdateTest"));
+    rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new DefaultSolrThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
+        .newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("AddBlockUpdateTest"));
 
 
     initCore("solrconfig.xml", "schema15.xml");

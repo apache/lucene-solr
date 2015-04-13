@@ -336,8 +336,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
             cusc.deleteById(delete);
           } catch (Exception e) {
             changeUrlOnError(e);
-            //System.err.println("REQUEST FAILED:");
-            //e.printStackTrace();
             fails.incrementAndGet();
           }
         }
@@ -356,8 +354,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
           cusc.add(doc);
         } catch (Exception e) {
           changeUrlOnError(e);
-          //System.err.println("REQUEST FAILED:");
-          //e.printStackTrace();
           fails.incrementAndGet();
         }
         

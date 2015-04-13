@@ -100,6 +100,9 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -222,6 +225,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     MDCUtils.clearMDC();
+
+    if (this.cores.isZooKeeperAware())  {
+      MDC.put(NODE_NAME_PROP, this.cores.getZkController().getNodeName());
+    }
 
     if (abortErrorMessage != null) {
       sendError((HttpServletResponse) response, 500, abortErrorMessage);

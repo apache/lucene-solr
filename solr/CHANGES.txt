@@ -123,6 +123,9 @@ Other Changes
 
 * SOLR-7371: Make DocSet implement Accountable to estimate memory usage. (yonik, shalin)
 
+* SOLR-7381: Improve logging by adding node name in MDC in SolrCloud mode and adding MDC to
+  all thread pools. (shalin)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

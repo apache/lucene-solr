@@ -48,6 +48,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -96,7 +97,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private AtomicInteger nodeCounter = new AtomicInteger();
   
-  ThreadPoolExecutor executor = new ThreadPoolExecutor(0,
+  ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("testExecutor"));
   
@@ -497,7 +498,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
                    client.query(query).getResults().getNumFound());
     }
     assertTrue("total numDocs <= 0, WTF? Test is useless",
-               0 < totalShardNumDocs);
+        0 < totalShardNumDocs);
 
   }
 
@@ -507,16 +508,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     try (final HttpSolrClient httpSolrClient = new HttpSolrClient(url3)) {
       httpSolrClient.setConnectionTimeout(15000);
       httpSolrClient.setSoTimeout(60000);
-      ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-          5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-          new DefaultSolrThreadFactory("testExecutor"));
-      int cnt = 3;
+      ThreadPoolExecutor executor = null;
+      try {
+        executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+            5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+            new DefaultSolrThreadFactory("testExecutor"));
+        int cnt = 3;
 
-      // create the cores
-      createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
-
-      executor.shutdown();
-      executor.awaitTermination(120, TimeUnit.SECONDS);
+        // create the cores
+        createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
+      } finally {
+        if (executor != null) {
+          ExecutorUtil.shutdownAndAwaitTermination(executor, 120, TimeUnit.SECONDS);
+        }
+      }
     }
     
     ChaosMonkey.stop(cloudJettys.get(0).jetty);

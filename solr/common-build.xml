@@ -498,6 +498,7 @@
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
         <include name="base.txt" />
         <include name="servlet-api.txt" />
+        <include name="solr.txt" />
       </signaturesFileSet>
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>

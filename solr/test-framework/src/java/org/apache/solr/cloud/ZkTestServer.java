@@ -473,7 +473,7 @@ public class ZkTestServer {
             } else {
               this.clientPortAddress = new InetSocketAddress(clientPort);
             }
-            System.out.println("client port:" + this.clientPortAddress);
+            log.info("client port:" + this.clientPortAddress);
           }
         };
 

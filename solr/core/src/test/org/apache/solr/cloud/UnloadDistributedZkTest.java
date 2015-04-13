@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Test;
@@ -366,37 +367,40 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     try (final HttpSolrClient adminClient = new HttpSolrClient(url3)) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(60000);
-      ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+      int cnt = atLeast(3);
+      ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
           new DefaultSolrThreadFactory("testExecutor"));
-      int cnt = atLeast(3);
+      try {
+        // create the cores
+        createCores(adminClient, executor, "multiunload", 2, cnt);
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(executor, 120, TimeUnit.SECONDS);
+      }
 
-      // create the cores
-      createCores(adminClient, executor, "multiunload", 2, cnt);
-
-      executor.shutdown();
-      executor.awaitTermination(120, TimeUnit.SECONDS);
-      executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+      executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
           TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
           new DefaultSolrThreadFactory("testExecutor"));
-      for (int j = 0; j < cnt; j++) {
-        final int freezeJ = j;
-        executor.execute(new Runnable() {
-          @Override
-          public void run() {
-            Unload unloadCmd = new Unload(true);
-            unloadCmd.setCoreName("multiunload" + freezeJ);
-            try {
-              adminClient.request(unloadCmd);
-            } catch (SolrServerException | IOException e) {
-              throw new RuntimeException(e);
+      try {
+        for (int j = 0; j < cnt; j++) {
+          final int freezeJ = j;
+          executor.execute(new Runnable() {
+            @Override
+            public void run() {
+              Unload unloadCmd = new Unload(true);
+              unloadCmd.setCoreName("multiunload" + freezeJ);
+              try {
+                adminClient.request(unloadCmd);
+              } catch (SolrServerException | IOException e) {
+                throw new RuntimeException(e);
+              }
             }
-          }
-        });
-        Thread.sleep(random().nextInt(50));
+          });
+          Thread.sleep(random().nextInt(50));
+        }
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(executor, 120, TimeUnit.SECONDS);
       }
-      executor.shutdown();
-      executor.awaitTermination(120, TimeUnit.SECONDS);
     }
   }
 

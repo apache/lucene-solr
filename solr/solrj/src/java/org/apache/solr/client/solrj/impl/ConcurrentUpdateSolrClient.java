@@ -36,6 +36,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -103,7 +104,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   
   public ConcurrentUpdateSolrClient(String solrServerUrl,
                                     HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, client, queueSize, threadCount, Executors.newCachedThreadPool(
+    this(solrServerUrl, client, queueSize, threadCount, ExecutorUtil.newMDCAwareCachedThreadPool(
         new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
     shutdownExecutor = true;
   }

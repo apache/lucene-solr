@@ -39,7 +39,7 @@ public class UpdateShardHandler {
   
   private static Logger log = LoggerFactory.getLogger(UpdateShardHandler.class);
   
-  private ExecutorService updateExecutor = Executors.newCachedThreadPool(
+  private ExecutorService updateExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("updateExecutor"));
   
   private PoolingClientConnectionManager clientConnectionManager;
