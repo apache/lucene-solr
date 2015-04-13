@@ -128,7 +128,11 @@ Other Changes
 
 * SOLR-7384: Fix spurious failures in FullSolrCloudDistribCmdsTest. (shalin)
 
-* SOLR-6692: The default highlighter is much more extensible. (David Smiley)
+* SOLR-6692: Default highlighter changes:
+  - hl.maxAnalyzedChars now applies cumulatively on a multi-valied field.
+  - fragment ranking on a multi-valued field should be more relevant.
+  - Much more extensible.
+  (David Smiley)
 
 ==================  5.1.0 ==================
 
