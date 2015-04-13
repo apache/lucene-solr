@@ -128,6 +128,8 @@ Other Changes
 
 * SOLR-7384: Fix spurious failures in FullSolrCloudDistribCmdsTest. (shalin)
 
+* SOLR-6692: The default highlighter is much more extensible. (David Smiley)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
