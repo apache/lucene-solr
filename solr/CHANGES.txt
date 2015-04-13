@@ -437,6 +437,8 @@ Optimizations
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
    where local params disable all stats (hossman)
 
+ * SOLR-7110: Optimize JavaBinCodec to minimize string Object creation (Noble Paul)
+
 Other Changes
 ----------------------
 

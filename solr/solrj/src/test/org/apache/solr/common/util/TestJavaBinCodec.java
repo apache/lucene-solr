@@ -39,7 +39,10 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.util.ConcurrentLRUCache;
 import org.junit.Test;
+import org.noggit.CharArr;
 
 public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
@@ -300,6 +303,61 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertFalse(grandChildDocuments.get(0).hasChildDocuments());
     assertNull(grandChildDocuments.get(0).getChildDocuments());
   }
+  @Test
+  public void testStringCaching() throws Exception {
+    Map<String, Object> m = ZkNodeProps.makeMap("key1", "val1", "key2", "val2");
+
+    ByteArrayOutputStream os1 = new ByteArrayOutputStream();
+    new JavaBinCodec().marshal(m, os1);
+    Map m1 = (Map) new JavaBinCodec().unmarshal(new ByteArrayInputStream(os1.toByteArray()));
+    ByteArrayOutputStream os2 = new ByteArrayOutputStream();
+    new JavaBinCodec().marshal(m, os2);
+    Map m2 = (Map) new JavaBinCodec().unmarshal(new ByteArrayInputStream(os2.toByteArray()));
+    List l1 = new ArrayList<>(m1.keySet());
+    List l2 = new ArrayList<>(m2.keySet());
+
+    assertTrue(l1.get(0).equals(l2.get(0)));
+    assertFalse(l1.get(0) == l2.get(0));
+    assertTrue(l1.get(1).equals(l2.get(1)));
+    assertFalse(l1.get(1) == l2.get(1));
+
+    JavaBinCodec.StringCache stringCache = new JavaBinCodec.StringCache(new Cache<JavaBinCodec.StringBytes, String>() {
+      private HashMap<JavaBinCodec.StringBytes, String> cache = new HashMap<>();
+
+      @Override
+      public String put(JavaBinCodec.StringBytes key, String val) {
+        return cache.put(key, val);
+      }
+
+      @Override
+      public String get(JavaBinCodec.StringBytes key) {
+        return cache.get(key);
+      }
+
+      @Override
+      public String remove(JavaBinCodec.StringBytes key) {
+        return cache.remove(key);
+      }
+
+      @Override
+      public void clear() {
+        cache.clear();
+
+      }
+    });
+
+
+    m1 = (Map) new JavaBinCodec(null, stringCache).unmarshal(new ByteArrayInputStream(os1.toByteArray()));
+    m2 = (Map) new JavaBinCodec(null, stringCache).unmarshal(new ByteArrayInputStream(os2.toByteArray()));
+    l1 = new ArrayList<>(m1.keySet());
+    l2 = new ArrayList<>(m2.keySet());
+    assertTrue(l1.get(0).equals(l2.get(0)));
+    assertTrue(l1.get(0) == l2.get(0));
+    assertTrue(l1.get(1).equals(l2.get(1)));
+    assertTrue(l1.get(1) == l2.get(1));
+
+
+  }
 
   public void genBinaryFiles() throws IOException {
     JavaBinCodec javabin = new JavaBinCodec();
@@ -323,6 +381,122 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     bos = new BufferedOutputStream(fs);
     bos.write(os.toByteArray());
     bos.close();
+
+  }
+
+  private void testPerf() throws InterruptedException {
+    final ArrayList<JavaBinCodec.StringBytes> l = new ArrayList<>();
+    Cache<JavaBinCodec.StringBytes, String> cache = null;
+   /* cache = new ConcurrentLRUCache<JavaBinCodec.StringBytes,String>(10000, 9000, 10000, 1000, false, true, null){
+      @Override
+      public String put(JavaBinCodec.StringBytes key, String val) {
+        l.add(key);
+        return super.put(key, val);
+      }
+    };*/
+    Runtime.getRuntime().gc();
+    printMem("before cache init");
+
+    Cache<JavaBinCodec.StringBytes, String> cache1 = new Cache<JavaBinCodec.StringBytes, String>() {
+      private HashMap<JavaBinCodec.StringBytes, String> cache = new HashMap<>();
+
+      @Override
+      public String put(JavaBinCodec.StringBytes key, String val) {
+        l.add(key);
+        return cache.put(key, val);
+
+      }
+
+      @Override
+      public String get(JavaBinCodec.StringBytes key) {
+        return cache.get(key);
+      }
+
+      @Override
+      public String remove(JavaBinCodec.StringBytes key) {
+        return cache.remove(key);
+      }
+
+      @Override
+      public void clear() {
+        cache.clear();
+
+      }
+    };
+    JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
+
+//    STRING_CACHE = new JavaBinCodec.StringCache(cache);
+    byte[] bytes = new byte[0];
+    JavaBinCodec.StringBytes stringBytes = new JavaBinCodec.StringBytes(null,0,0);
+
+    for(int i=0;i<10000;i++) {
+      String s = String.valueOf(random().nextLong());
+      int end = s.length();
+      int maxSize = end * 4;
+      if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
+      int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
+      STRING_CACHE.get(stringBytes.reset(bytes, 0, sz));
+    }
+    printMem("after cache init");
+
+    long ms = System.currentTimeMillis();
+    int ITERS = 1000000;
+    int THREADS = 10;
+
+    runInThreads(THREADS,  () -> {
+      JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0,0);
+      for(int i=0;i< ITERS;i++){
+        JavaBinCodec.StringBytes b = l.get(i % l.size());
+        stringBytes1.reset(b.bytes,0,b.bytes.length);
+        if(STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
+      }
+
+    });
+
+
+
+    printMem("after cache test");
+    System.out.println("time taken by LRUCACHE "+ (System.currentTimeMillis()-ms));
+    ms = System.currentTimeMillis();
+
+    runInThreads(THREADS,  ()-> {
+      String a = null;
+      CharArr arr = new CharArr();
+      for (int i = 0; i < ITERS; i++) {
+        JavaBinCodec.StringBytes sb = l.get(i % l.size());
+        arr.reset();
+        ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
+        a = arr.toString();
+      }
+    });
+
+    printMem("after new string test");
+    System.out.println("time taken by string creation "+ (System.currentTimeMillis()-ms));
+
+
+
+  }
+
+  private void runInThreads(int count,  Runnable runnable) throws InterruptedException {
+    ArrayList<Thread> t =new ArrayList();
+    for(int i=0;i<count;i++ ) t.add(new Thread(runnable));
+    for (Thread thread : t) thread.start();
+    for (Thread thread : t) thread.join();
+  }
+
+  static void printMem(String head) {
+    System.out.println("*************" + head + "***********");
+    int mb = 1024*1024;
+    //Getting the runtime reference from system
+    Runtime runtime = Runtime.getRuntime();
+    //Print used memory
+    System.out.println("Used Memory:"
+        + (runtime.totalMemory() - runtime.freeMemory()) / mb);
+
+    //Print free memory
+    System.out.println("Free Memory:"
+        + runtime.freeMemory() / mb);
+
 
   }
 
