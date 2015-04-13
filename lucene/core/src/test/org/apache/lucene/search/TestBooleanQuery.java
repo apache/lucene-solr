@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -754,5 +756,20 @@ public class TestBooleanQuery extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
     bq.add(new TermQuery(new Term("field", "d")), Occur.FILTER);
     assertEquals("a +b -c #d", bq.toString("field"));
+  }
+
+  public void testExtractTerms() {
+    Term a = new Term("f", "a");
+    Term b = new Term("f", "b");
+    Term c = new Term("f", "c");
+    Term d = new Term("f", "d");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(a), Occur.SHOULD);
+    bq.add(new TermQuery(b), Occur.MUST);
+    bq.add(new TermQuery(c), Occur.FILTER);
+    bq.add(new TermQuery(d), Occur.MUST_NOT);
+    Set<Term> terms = new HashSet<>();
+    bq.extractTerms(terms);
+    assertEquals(new HashSet<>(Arrays.asList(a, b)), terms);
   }
 }

@@ -237,7 +237,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public void extractTerms(Set<Term> terms) {
     for (BooleanClause clause : clauses) {
-      if (clause.isProhibited() == false) {
+      if (clause.isScoring()) {
         clause.getQuery().extractTerms(terms);
       }
     }
