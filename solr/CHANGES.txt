@@ -162,11 +162,11 @@ Upgrading from Solr 5.0
 
 * Deprecated the 'lib' option added to create-requesthandler as part of SOLR-6801 in 5.0 release.
   Please use the add-runtimelib command
-  
-* Tika's runtime dependency of 'jhighlight' was removed as the latter was found to 
+
+* Tika's runtime dependency of 'jhighlight' was removed as the latter was found to
   contain some LGPL-only code. Until that's resolved by Tika, you can download the
   .jar yourself and place it under contrib/extraction/lib.
-    
+
 * The _text catch-all field in data_driven_schema_configs has been renamed to _text_.
 
 Detailed Change List
@@ -191,7 +191,7 @@ New Features
   collection that has a replica on all nodes where there is a replica in the to index
   (Jack Lo, Timothy Potter)
 
-* SOLR-6648: Add support in AnalyzingInfixLookupFactory and BlendedInfixLookupFactory 
+* SOLR-6648: Add support in AnalyzingInfixLookupFactory and BlendedInfixLookupFactory
   for setting 'highlight' and 'allTermsRequired' in the suggester configuration.
   (Boon Low, Varun Thacker via Tomás Fernández Löbbe)
 
@@ -202,7 +202,7 @@ New Features
 * SOLR-7005: Spatial 2D heatmap faceting on RPT fields via new facet.heatmap with PNG and
   2D int array formats. (David Smiley)
 
-* SOLR-7019: Support changing field key when using interval faceting. 
+* SOLR-7019: Support changing field key when using interval faceting.
   (Tomás Fernández Löbbe)
 
 * SOLR-6832: Queries be served locally rather than being forwarded to another replica.
@@ -213,35 +213,35 @@ New Features
 * SOLR-7125, SOLR-7158: You can upload and download configurations via CloudSolrClient
   (Alan Woodward, Ishan Chattopadhyaya)
 
-* SOLR-5507: Admin UI - Refactoring using AngularJS, first part (Upayavira via 
+* SOLR-5507: Admin UI - Refactoring using AngularJS, first part (Upayavira via
   Erick Erickson)
-  
+
 * SOLR-7164: BBoxField defaults sub fields to not-stored (ryan)
 
 * SOLR-7155,SOLR-7201: All SolrClient methods now take an optional 'collection' argument
   (Alan Woodward, Shawn Heisey)
 
-* SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
-
 * SOLR-6359: Allow number of logs and records kept by UpdateLog to be configured
-  (Ramkumar Aiyengar)
+    (Ramkumar Aiyengar)
 
 * SOLR-7189: Allow DIH to extract content from embedded documents via Tika.
-  (Tim Allison via shalin)
+    (Tim Allison via shalin)
 
 * SOLR-6841: Visualize lucene segment information in Admin UI.
-  (Alexey Kozhemiakin, Michal Bienkowski, hossman, Shawn Heisey, Varun Thacker via shalin)
+    (Alexey Kozhemiakin, Michal Bienkowski, hossman, Shawn Heisey, Varun Thacker via shalin)
 
 * SOLR-5846: EnumField supports DocValues functionality. (Elran Dvir, shalin)
 
 * SOLR-4044: CloudSolrClient.connect() throws a more useful exception if the
-  cluster is not ready, and can now take an optional timeout argument to wait
-  for the cluster. (Alan Woodward, shalin, yonik, Mark Miller, Vitaliy Zhovtyuk)
+    cluster is not ready, and can now take an optional timeout argument to wait
+    for the cluster. (Alan Woodward, shalin, yonik, Mark Miller, Vitaliy Zhovtyuk)
+
+* SOLR-7073: Support adding a jar to a collections classpath (Noble Paul)
 
 * SOLR-7126: Secure loading of runtime external jars (Noble Paul)
 
-* SOLR-6349: Added support for stats.field localparams to enable/disable individual stats to 
-  limit the amount of computation done and the amount of data returned. 
+* SOLR-6349: Added support for stats.field localparams to enable/disable individual stats to
+  limit the amount of computation done and the amount of data returned.
   eg: stats.field={!min=true max=true}field_name
   (Tomas Fernandez-Lobbe, Xu Zhang, hossman)
 
@@ -257,7 +257,7 @@ New Features
     json.facet={count1:{query:"price:[10 TO 20]"}, count2:{query:"color:blue AND popularity:[0 TO 50]"} }
     json.facet={categories:{terms:{field:cat, sort:"x desc", facet:{x:"avg(price)", y:"sum(price)"}}}}
   (yonik)
-  
+
 * SOLR-6141: Schema API: Remove fields, dynamic fields, field types and copy
   fields; and replace fields, dynamic fields and field types. (Steve Rowe)
 
@@ -306,7 +306,7 @@ New Features
 * SOLR-7226: Make /query/* jmx/* , requestDispatcher/*, <listener> <initParams>
   properties in solrconfig.xml editable (Noble Paul)
 
-* SOLR-7240: '/' redirects to '/solr/' for convenience (Martijn Koster, hossman)
+* SOLR-7240: '/' redirects to '/solr/' for convinience (Martijn Koster, hossman)
 
 * SOLR-5911: Added payload support for term vectors. New "termPayloads" option for fields
   / types in the schema, and "tv.payloads" param for the term vector component.
@@ -354,7 +354,7 @@ Bug Fixes
 * SOLR-7178: OverseerAutoReplicaFailoverThread compares Integer objects using ==
   (shalin)
 
-* SOLR-7171: BaseDistributedSearchTestCase now clones getSolrHome() for each subclass, 
+* SOLR-7171: BaseDistributedSearchTestCase now clones getSolrHome() for each subclass,
   and consistently uses getSolrXml().  (hossman)
 
 * SOLR-6657:  DocumentDictionaryFactory requires weightField to be mandatory, but it shouldn't
@@ -380,23 +380,15 @@ Bug Fixes
 
 * SOLR-7109: Indexing threads stuck during network partition can put leader into down state.
   (Mark Miller, Anshum Gupta, Ramkumar Aiyengar, yonik, shalin)
-  
+
 * SOLR-7092: Stop the HDFS lease recovery retries in HdfsTransactionLog on close and try
   to avoid lease recovery on closed files. (Mark Miller)
 
 * SOLR-7285: ActionThrottle will not pause if getNanoTime first returns 0.
   (Mark Miller, Gregory Chanan)
-  
+
 * SOLR-7141: RecoveryStrategy: Raise time that we wait for any updates from the leader before
   they saw the recovery state to have finished. (Mark Miller)
-
-* SOLR-7284: HdfsUpdateLog is using hdfs FileSystem.get without turning off the cache.
-  (Mark Miller)
-  
-* SOLR-7286: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
-  (Mark Miller)
-
-* SOLR-7134: Replication can still cause index corruption. (Mark Miller, shalin, Mike Drob)
 
 * SOLR-7248: In legacyCloud=false mode we should check if the core was hosted on the same node before registering it
   (Varun Thacker, Noble Paul, Mark Miller)
@@ -416,6 +408,8 @@ Bug Fixes
 * SOLR-7298: Fix Collections API calls (SolrJ) to not add name parameter when not needed.
   (Shai Erera, Anshum Gupta)
 
+* SOLR-7134: Replication can still cause index corruption. (Mark Miller, shalin, Mike Drob)
+
 * SOLR-7309: Make bin/solr, bin/post work when Solr installation directory contains spaces
   (Ramkumar Aiyengar, Martijn Koster)
 
@@ -425,13 +419,21 @@ Bug Fixes
 * SOLR-7266: The IgnoreCommitOptimizeUpdateProcessor blocks commit requests from
   replicas needing to recover. (Jessica Cheng Mallet, Timothy Potter)
 
+* SOLR-7299: bin\solr.cmd doesn't use jetty SSL configuration. (Steve Rowe)
+
 * SOLR-7334: Admin UI does not show "Num Docs" and "Deleted Docs". (Erick Erickson, Timothy Potter)
 
 * SOLR-7338, SOLR-6583: A reloaded core will never register itself as active after a ZK session expiration
   (Mark Miller, Timothy Potter)
 
-* SOLR-7366: Can't index example XML docs into the cloud example using bin/post due to regression in 
+* SOLR-7366: Can't index example XML docs into the cloud example using bin/post due to regression in
   ManagedIndexSchema's handling of ResourceLoaderAware objects used by field types (Steve Rowe, Timothy Potter)
+
+* SOLR-7284: HdfsUpdateLog is using hdfs FileSystem.get without turning off the cache.
+  (Mark Miller)
+
+* SOLR-7286: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
+  (Mark Miller)
 
 Optimizations
 ----------------------
@@ -442,24 +444,22 @@ Optimizations
  * SOLR-7116: Distributed facet refinement requests would needlessly compute other types
    of faceting that have already been computed. (David Smiley, Hossman)
 
- * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
+ * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations
    where local params disable all stats (hossman)
-
- * SOLR-7110: Optimize JavaBinCodec to minimize string Object creation (Noble Paul)
 
 Other Changes
 ----------------------
 
 * SOLR-7014: Collapse identical catch branches in try-catch statements. (shalin)
 
-* SOLR-6500: Refactor FileFetcher in SnapPuller, add debug logging. 
+* SOLR-6500: Refactor FileFetcher in SnapPuller, add debug logging.
   (Ramkumar Aiyengar via Mark Miller)
-
-* SOLR-7094: Better error reporting of JSON parse issues when indexing docs
-  (Ishan Chattopadhyaya via Timothy Potter)
 
 * SOLR-7076: In DIH, TikaEntityProcessor should have support for onError=skip
   (Noble Paul)
+
+* SOLR-7094: Better error reporting of JSON parse issues when indexing docs
+  (Ishan Chattopadhyaya via Timothy Potter)
 
 * SOLR-7103: Remove unused method params in faceting code. (shalin)
 
@@ -534,9 +534,9 @@ Other Changes
 * SOLR-7202: Remove deprecated string action types in Overseer and OverseerCollectionProcessor -
   "deletecollection", "createcollection", "reloadcollection", "removecollection", "removeshard".
   (Varun Thacker, shalin)
-  
+
 * SOLR-7290: Rename catchall _text field in data_driven_schema_configs
-  to _text_ (Steve Rowe) 
+  to _text_ (Steve Rowe)
 
 * SOLR-7346: Stored XSS in Admin UI Schema-Browser page and Analysis page (Mei Wang via Timothy Potter)
 

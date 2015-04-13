@@ -125,9 +125,6 @@ New Features
   than a given number of results under a choice of key. Introduces new remove 
   method to core's PriorityQueue. (Mark Harwood)
 
-* LUCENE-3922: Added JapaneseNumberFilter that normalizes Japanese numbers
-  in kansuji form to regular/Arabic numbers. (Gaute Lambertsen, Christian Moen)
-
 * LUCENE-6191: New spatial 2D heatmap faceting for PrefixTreeStrategy. (David Smiley)
 
 * LUCENE-6227: Added BooleanClause.Occur.FILTER to filter documents without
