@@ -929,11 +929,11 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "lower", "gap7 nothing",
         "lower", "gap8 nothing",
         "lower", "gap9 target",
-        "lower", "gap10 target" ));
+        "lower", "gap10 target"));
 
     assertU(commit());
 
-    // First insure we can count all six
+    // First ensure we can count all six
     assertQ("Counting all MV pairs failed",
         req(
             "q", "id:1000",
@@ -946,6 +946,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     );
 
     // NOTE: These tests seem repeated, but we're testing for off-by-one errors
+
     // Now we should see exactly 2 by limiting the number of values searched to 4
     assertQ("Off by one by going too far",
         req(
@@ -958,7 +959,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         ),
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
     );
-
 
     // Does 0 work?
     assertQ("Off by one by going too far",
@@ -973,7 +973,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='1000' and count(child::*) = 0]"
     );
 
-
     // Now we should see exactly 2 by limiting the number of values searched to 2
     assertQ("Off by one by not going far enough",
         req(
@@ -986,7 +985,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         ),
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
     );
-
 
     // Now we should see exactly 1 by limiting the number of values searched to 1
     assertQ("Not counting exactly 1",
@@ -1001,7 +999,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=1]"
     );
 
-
     // Now we should see exactly 4 by limiting the number of values found to 4
     assertQ("Matching 4 should exactly match 4",
         req(
@@ -1015,6 +1012,19 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=4]"
     );
 
+    // But if hl.preserveMulti=true then we should see 6 snippets even though 2 didn't match
+    assertQ("hl.preserveMulti",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "4",
+            HighlightParams.PRESERVE_MULTI, "true"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=6]"
+    );
 
     // Now we should see exactly 2 by limiting the number of values found to 2
     assertQ("Matching 6 should exactly search them all",
@@ -1028,7 +1038,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         ),
         "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=6]"
     );
-
 
     // Now we should see exactly 1 by limiting the number of values found to 1
     assertQ("Matching 6 should exactly match them all",
@@ -1055,7 +1064,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         ),
         "//lst[@name='highlighting']/lst[@name='1000' and count(child::*) = 0]"
     );
-
 
 
     // Should bail at the first parameter matched.
