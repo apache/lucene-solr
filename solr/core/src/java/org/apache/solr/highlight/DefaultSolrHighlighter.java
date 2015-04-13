@@ -321,7 +321,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   protected SolrFragmentsBuilder getSolrFragmentsBuilder( String fieldName, SolrParams params ){
     String fb = params.getFieldParam( fieldName, HighlightParams.FRAGMENTS_BUILDER );
-    SolrFragmentsBuilder solrFb = fragmentsBuilders.get( fb );
+    SolrFragmentsBuilder solrFb = fragmentsBuilders.get(fb);
     if( solrFb == null ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmentsBuilder: " + fb );
     }
@@ -549,7 +549,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
           // normally we want a score (must be highlighted), but if preserveMulti then we return a snippet regardless.
           if (bestTextFragment.getScore() > 0 || preserveMulti) {
             frags.add(bestTextFragment);
-            --mvToMatch; // note: limits fragments (for multi-valued fields), not quite the number of values
+            if (bestTextFragment.getScore() > 0)
+              --mvToMatch; // note: limits fragments (for multi-valued fields), not quite the number of values
           }
         }
       } catch (InvalidTokenOffsetsException e) {

@@ -131,7 +131,9 @@ Other Changes
 * SOLR-6692: Default highlighter changes:
   - hl.maxAnalyzedChars now applies cumulatively on a multi-valied field.
   - fragment ranking on a multi-valued field should be more relevant.
-  - Much more extensible.
+  - hl.usePhraseHighlighter is now toggleable on a per-field basis.
+  - Much more extensible (get values from another source; return snippet scores and offsets).
+  - When using hl.maxMultiValuedToMatch with hl.preserveMulti, only count matched snippets.
   (David Smiley)
 
 ==================  5.1.0 ==================
