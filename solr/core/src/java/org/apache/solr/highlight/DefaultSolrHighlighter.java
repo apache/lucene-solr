@@ -71,44 +71,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
+ *
  * @since solr 1.3
  */
 public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
   public static Logger log = LoggerFactory.getLogger(DefaultSolrHighlighter.class);
-  
+
   protected final SolrCore solrCore;
 
-  /** Will be invoked via reflection */
+  //Will be invoked via reflection
   public DefaultSolrHighlighter(SolrCore solrCore) {
     this.solrCore = solrCore;
   }
 
   // Thread safe registry
   protected final Map<String,SolrFormatter> formatters =
-    new HashMap<>();
+      new HashMap<>();
 
   // Thread safe registry
   protected final Map<String,SolrEncoder> encoders =
-    new HashMap<>();
+      new HashMap<>();
 
   // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
-    new HashMap<>() ;
+      new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragListBuilder> fragListBuilders =
-    new HashMap<>() ;
+      new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
-    new HashMap<>() ;
+      new HashMap<>() ;
 
   // Thread safe registry
   protected final Map<String, SolrBoundaryScanner> boundaryScanners =
-    new HashMap<>() ;
+      new HashMap<>() ;
 
   @Override
   public void init(PluginInfo info) {
@@ -143,7 +143,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if( fragListBuilder == null ) fragListBuilder = new SimpleFragListBuilder();
     fragListBuilders.put( "", fragListBuilder );
     fragListBuilders.put( null, fragListBuilder );
-    
+
     // Load the FragmentsBuilders
     SolrFragmentsBuilder fragsBuilder = solrCore.initPlugins(info.getChildren("fragmentsBuilder"),
         fragmentsBuilders, SolrFragmentsBuilder.class, null);
@@ -175,12 +175,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         getFormatter(fieldName, params),
         getEncoder(fieldName, params),
         getSpanQueryScorer(query, fieldName, tokenStream, request));
-    
+
     highlighter.setTextFragmenter(getFragmenter(fieldName, params));
 
     return highlighter;
   }
-  
+
   /**
    * Return a {@link org.apache.lucene.search.highlight.Highlighter} appropriate for this field.
    * @param query The current Query
@@ -188,15 +188,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param request The current SolrQueryRequest
    */
   protected Highlighter getHighlighter(Query query, String fieldName, SolrQueryRequest request) {
-    SolrParams params = request.getParams(); 
+    SolrParams params = request.getParams();
     Highlighter highlighter = new Highlighter(
-           getFormatter(fieldName, params), 
-           getEncoder(fieldName, params),
-           getQueryScorer(query, fieldName, request));
-     highlighter.setTextFragmenter(getFragmenter(fieldName, params));
-       return highlighter;
+        getFormatter(fieldName, params),
+        getEncoder(fieldName, params),
+        getQueryScorer(query, fieldName, request));
+    highlighter.setTextFragmenter(getFragmenter(fieldName, params));
+    return highlighter;
   }
-  
+
   /**
    * Return a {@link org.apache.lucene.search.highlight.QueryScorer} suitable for this Query and field.
    * @param query The current query
@@ -221,15 +221,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param request The SolrQueryRequest
    */
   protected Scorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
-     boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
-     if (reqFieldMatch) {
-        return new QueryTermScorer(query, request.getSearcher().getIndexReader(), fieldName);
-     }
-     else {
-        return new QueryTermScorer(query);
-     }
+    boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
+    if (reqFieldMatch) {
+      return new QueryTermScorer(query, request.getSearcher().getIndexReader(), fieldName);
+    } else {
+      return new QueryTermScorer(query);
+    }
   }
-  
+
   /**
    * Return the max number of snippets for this field. If this has not
    * been configured for this field, fall back to the configured default
@@ -238,7 +237,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param params The params controlling Highlighting
    */
   protected int getMaxSnippets(String fieldName, SolrParams params) {
-     return params.getFieldInt(fieldName, HighlightParams.SNIPPETS,1);
+    return params.getFieldInt(fieldName, HighlightParams.SNIPPETS,1);
   }
 
   /**
@@ -249,17 +248,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   protected boolean isMergeContiguousFragments(String fieldName, SolrParams params){
     return params.getFieldBool(fieldName, HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, false);
   }
-  
+
   /**
    * Return a {@link org.apache.lucene.search.highlight.Formatter} appropriate for this field. If a formatter
    * has not been configured for this field, fall back to the configured
    * default or the solr default ({@link org.apache.lucene.search.highlight.SimpleHTMLFormatter}).
-   * 
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Formatter}.
    */
-  protected Formatter getFormatter(String fieldName, SolrParams params ) 
+  protected Formatter getFormatter(String fieldName, SolrParams params )
   {
     String str = params.getFieldParam( fieldName, HighlightParams.FORMATTER );
     SolrFormatter formatter = formatters.get(str);
@@ -273,7 +272,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field. If an encoder
    * has not been configured for this field, fall back to the configured
    * default or the solr default ({@link org.apache.lucene.search.highlight.DefaultEncoder}).
-   * 
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Encoder}.
@@ -286,17 +285,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
     return encoder.getEncoder(fieldName, params);
   }
-  
+
   /**
    * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. If a fragmenter
    * has not been configured for this field, fall back to the configured
    * default or the solr default ({@link GapFragmenter}).
-   * 
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Fragmenter}.
    */
-  protected Fragmenter getFragmenter(String fieldName, SolrParams params) 
+  protected Fragmenter getFragmenter(String fieldName, SolrParams params)
   {
     String fmt = params.getFieldParam( fieldName, HighlightParams.FRAGMENTER );
     SolrFragmenter frag = fragmenters.get( fmt );
@@ -305,7 +304,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
     return frag.getFragmenter(fieldName, params);
   }
-  
+
   protected FragListBuilder getFragListBuilder( String fieldName, SolrParams params ){
     String flb = params.getFieldParam( fieldName, HighlightParams.FRAG_LIST_BUILDER );
     SolrFragListBuilder solrFlb = fragListBuilders.get(flb);
@@ -314,7 +313,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
     return solrFlb.getFragListBuilder(params);
   }
-  
+
   protected FragmentsBuilder getFragmentsBuilder( String fieldName, SolrParams params ){
     BoundaryScanner bs = getBoundaryScanner(fieldName, params);
     return getSolrFragmentsBuilder( fieldName, params ).getFragmentsBuilder(params, bs);
@@ -322,7 +321,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   protected SolrFragmentsBuilder getSolrFragmentsBuilder( String fieldName, SolrParams params ){
     String fb = params.getFieldParam( fieldName, HighlightParams.FRAGMENTS_BUILDER );
-    SolrFragmentsBuilder solrFb = fragmentsBuilders.get(fb);
+    SolrFragmentsBuilder solrFb = fragmentsBuilders.get( fb );
     if( solrFb == null ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmentsBuilder: " + fb );
     }
@@ -337,7 +336,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
     return solrBs.getBoundaryScanner(fieldName, params);
   }
-  
+
   /**
    * Generates a list of Highlighted query fragments for each item in a list
    * of documents, or returns null if highlighting is disabled.
@@ -353,23 +352,23 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   @Override
   @SuppressWarnings("unchecked")
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
-    SolrParams params = req.getParams(); 
+    SolrParams params = req.getParams();
     if (!isHighlightingEnabled(params))
-        return null;
-     
+      return null;
+
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
     NamedList fragments = new SimpleOrderedMap();
     String[] fieldNames = getHighlightFields(query, req, defaultFields);
     Set<String> fset = new HashSet<>();
-     
+
     {
       // pre-fetch documents using the Searcher's doc cache
       for(String f : fieldNames) { fset.add(f); }
       // fetch unique key if one exists.
       SchemaField keyField = schema.getUniqueKeyField();
       if(null != keyField)
-        fset.add(keyField.getName());  
+        fset.add(keyField.getName());
     }
 
     // get FastVectorHighlighter instance out of the processing loop
@@ -399,7 +398,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
     return fragments;
   }
-  
+
   /*
    * If fieldName is undefined, this method returns false, then
    * doHighlightingByHighlighter() will do nothing for the field.
@@ -438,7 +437,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   @SuppressWarnings("unchecked")
   protected void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,
-      int docId, Document doc, String fieldName ) throws IOException {
+                                              int docId, Document doc, String fieldName ) throws IOException {
     final SolrIndexSearcher searcher = req.getSearcher();
     final IndexSchema schema = searcher.getSchema();
     final SolrParams params = req.getParams();
@@ -538,6 +537,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
 
       highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
+      maxCharsToAnalyze -= thisText.length();
 
       // Highlight!
       try {
@@ -594,6 +594,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       String value = thisField.stringValue();
       result.add(value);
 
+      maxCharsToAnalyze -= value.length();//we exit early if we'll never get to analyze the value
       maxValues--;
       if (maxValues <= 0 || maxCharsToAnalyze <= 0) {
         break;
@@ -653,7 +654,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
   }
-  
+
   protected TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
     return new TokenOrderingFilter(schema.getIndexAnalyzer().tokenStream(fieldName, docText), 10);
   }
@@ -669,7 +670,7 @@ final class TokenOrderingFilter extends TokenFilter {
   private final LinkedList<OrderedToken> queue = new LinkedList<>(); //TODO replace with Deque, Array impl
   private boolean done=false;
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  
+
   protected TokenOrderingFilter(TokenStream input, int windowSize) {
     super(input);
     this.windowSize = windowSize;
