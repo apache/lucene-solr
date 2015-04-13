@@ -606,7 +606,7 @@ public class JavaBinCodec {
     dis.readFully(bytes, 0, sz);
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(bytes, 0, sz));
-    }else {
+    } else {
       arr.reset();
       ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
       return arr.toString();
@@ -832,44 +832,52 @@ public class JavaBinCodec {
   }
 
   public static class StringCache {
-    private final Cache<StringBytes,String> cache ;
+    private final Cache<StringBytes, String> cache;
 
     public StringCache(Cache<StringBytes, String> cache) {
       this.cache = cache;
     }
 
-    public String get(StringBytes b){
-      String result  = cache.get(b);
-      if(result== null){
+    public String get(StringBytes b) {
+      String result = cache.get(b);
+      if (result == null) {
         //make a copy because the buffer received may be changed later by the caller
-        StringBytes copy = new StringBytes(Arrays.copyOfRange(b.bytes, b.offset, b.offset + b.length), 0,b.length);
+        StringBytes copy = new StringBytes(Arrays.copyOfRange(b.bytes, b.offset, b.offset + b.length), 0, b.length);
         CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
-        cache.put(copy,result);
+        cache.put(copy, result);
       }
       return result;
     }
   }
+
   public static class StringBytes {
     byte[] bytes;
 
-    /** Offset of first valid byte. */
+    /**
+     * Offset of first valid byte.
+     */
     int offset;
 
-    /** Length of used bytes. */
+    /**
+     * Length of used bytes.
+     */
     private int length;
     private int hash;
+
     public StringBytes(byte[] bytes, int offset, int length) {
-      reset(bytes,offset,length);
+      reset(bytes, offset, length);
     }
-    StringBytes reset(byte[] bytes, int offset, int length){
+
+    StringBytes reset(byte[] bytes, int offset, int length) {
       this.bytes = bytes;
       this.offset = offset;
       this.length = length;
       hash = bytes == null ? 0 : Hash.murmurhash3_x86_32(bytes, offset, length, 0);
       return this;
     }
+
     @Override
     public boolean equals(Object other) {
       if (other == null) {
@@ -887,7 +895,7 @@ public class JavaBinCodec {
         int otherUpto = other.offset;
         final byte[] otherBytes = other.bytes;
         final int end = offset + length;
-        for(int upto=offset;upto<end;upto++,otherUpto++) {
+        for (int upto = offset; upto < end; upto++, otherUpto++) {
           if (bytes[upto] != otherBytes[otherUpto]) {
             return false;
           }
@@ -903,5 +911,4 @@ public class JavaBinCodec {
       return hash;
     }
   }
-
 }
