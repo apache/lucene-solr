@@ -175,6 +175,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
       assertTrue(status.get("QTime") > 0);
     }
 
+    waitForRecoveriesToFinish("implicit_collection_without_routerfield", true);
+
     SolrClient shard1 = createNewSolrClient("implicit_collection_without_routerfield_shard1_replica1",
         getBaseUrl((HttpSolrClient) clients.get(0)));
     SolrClient shard2 = createNewSolrClient("implicit_collection_without_routerfield_shard2_replica1",
@@ -301,6 +303,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
+
+    waitForRecoveriesToFinish("compositeid_collection_with_routerfield", true);
 
     SolrClient shard1 = createNewSolrClient("compositeid_collection_with_routerfield_shard1_replica1",
         getBaseUrl((HttpSolrClient) clients.get(0)));
