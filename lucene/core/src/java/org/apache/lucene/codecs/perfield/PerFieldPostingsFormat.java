@@ -217,6 +217,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<>();
     private final Map<String,FieldsProducer> formats = new HashMap<>();
+    private final String segment;
     
     // clone for merge
     FieldsReader(FieldsReader other) throws IOException {
@@ -234,6 +235,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         assert producer != null;
         fields.put(ent.getKey(), producer);
       }
+
+      segment = other.segment;
     }
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
@@ -267,6 +270,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           IOUtils.closeWhileHandlingException(formats.values());
         }
       }
+
+      this.segment = readState.segmentInfo.name;
     }
 
     @Override
@@ -320,7 +325,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public String toString() {
-      return "PerFieldPostings(formats=" + formats.size() + ")";
+      return "PerFieldPostings(segment=" + segment + " formats=" + formats.size() + ")";
     }
   }
 

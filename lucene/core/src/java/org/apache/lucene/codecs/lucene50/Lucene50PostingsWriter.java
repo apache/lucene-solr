@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermStat
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -250,6 +251,12 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
+    if (position > IndexWriter.MAX_POSITION) {
+      throw new CorruptIndexException("position=" + position + " is too large (> IndexWriter.MAX_POSITION=" + IndexWriter.MAX_POSITION + ")", docOut);
+    }
+    if (position < 0) {
+      throw new CorruptIndexException("position=" + position + " is < 0", docOut);
+    }
     posDeltaBuffer[posBufferUpto] = position - lastPosition;
     if (writePayloads) {
       if (payload == null || payload.length == 0) {

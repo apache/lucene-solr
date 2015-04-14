@@ -203,6 +203,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // ArrayUtil.MAX_ARRAY_LENGTH here because this can vary across JVMs:
   public static final int MAX_DOCS = Integer.MAX_VALUE - 128;
 
+  /** Maximum value of the token position in an indexed field. */
+  public static final int MAX_POSITION = Integer.MAX_VALUE - 128;
+
   // Use package-private instance var to enforce the limit so testing
   // can use less electricity:
   private static int actualMaxDocs = MAX_DOCS;

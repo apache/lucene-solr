@@ -1105,6 +1105,145 @@ public class TestAutomaton extends LuceneTestCase {
     }
   }
 
+  private boolean accepts(Automaton a, BytesRef b) {
+    IntsRefBuilder intsBuilder = new IntsRefBuilder();
+    Util.toIntsRef(b, intsBuilder);    
+    return Operations.run(a, intsBuilder.toIntsRef());
+  }
+
+  private Automaton makeBinaryInterval(BytesRef minTerm, boolean minInclusive,
+                                       BytesRef maxTerm, boolean maxInclusive) {
+    
+    if (VERBOSE) {
+      System.out.println("TEST: minTerm=" + minTerm + " minInclusive=" + minInclusive + " maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
+    }
+
+    Automaton a = Automata.makeBinaryInterval(minTerm, minInclusive,
+                                              maxTerm, maxInclusive);
+
+    Automaton minA = MinimizationOperations.minimize(a, Integer.MAX_VALUE);
+    if (minA.getNumStates() != a.getNumStates()) {
+      assertTrue(minA.getNumStates() < a.getNumStates());
+      System.out.println("Original was not minimal:");
+      System.out.println("Original:\n" + a.toDot());
+      System.out.println("Minimized:\n" + minA.toDot());
+      System.out.println("minTerm=" + minTerm + " minInclusive=" + minInclusive);
+      System.out.println("maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
+      fail("automaton was not minimal");
+    }
+
+    if (VERBOSE) {
+      System.out.println(a.toDot());
+    }
+
+    return a;
+  }
+
+  public void testMakeBinaryIntervalFiniteCasesBasic() throws Exception {
+    // 0 (incl) - 00 (incl)
+    byte[] zeros = new byte[3];
+    Automaton a = makeBinaryInterval(new BytesRef(zeros, 0, 1), true, new BytesRef(zeros, 0, 2), true);
+    assertTrue(Operations.isFinite(a));
+    assertFalse(accepts(a, new BytesRef()));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 1)));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 2)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 3)));
+
+    // '' (incl) - 00 (incl)
+    a = makeBinaryInterval(new BytesRef(), true, new BytesRef(zeros, 0, 2), true);
+    assertTrue(Operations.isFinite(a));
+    assertTrue(accepts(a, new BytesRef()));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 1)));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 2)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 3)));
+
+    // '' (excl) - 00 (incl)
+    a = makeBinaryInterval(new BytesRef(), false, new BytesRef(zeros, 0, 2), true);
+    assertTrue(Operations.isFinite(a));
+    assertFalse(accepts(a, new BytesRef()));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 1)));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 2)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 3)));
+
+    // 0 (excl) - 00 (incl)
+    a = makeBinaryInterval(new BytesRef(zeros, 0, 1), false, new BytesRef(zeros, 0, 2), true);
+    assertTrue(Operations.isFinite(a));
+    assertFalse(accepts(a, new BytesRef()));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 1)));
+    assertTrue(accepts(a, new BytesRef(zeros, 0, 2)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 3)));
+
+    // 0 (excl) - 00 (excl)
+    a = makeBinaryInterval(new BytesRef(zeros, 0, 1), false, new BytesRef(zeros, 0, 2), false);
+    assertTrue(Operations.isFinite(a));
+    assertFalse(accepts(a, new BytesRef()));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 1)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 2)));
+    assertFalse(accepts(a, new BytesRef(zeros, 0, 3)));
+  }
+
+  public void testMakeBinaryIntervalFiniteCasesRandom() throws Exception {
+    int iters = atLeast(100);
+    for(int iter=0;iter<iters;iter++) {
+      BytesRef prefix = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
+
+      BytesRefBuilder b = new BytesRefBuilder();
+      b.append(prefix);
+      int numZeros = random().nextInt(10);
+      for(int i=0;i<numZeros;i++) {
+        b.append((byte) 0);
+      }
+      BytesRef minTerm = b.get();
+
+      b = new BytesRefBuilder();
+      b.append(minTerm);
+      numZeros = random().nextInt(10);
+      for(int i=0;i<numZeros;i++) {
+        b.append((byte) 0);
+      }
+      BytesRef maxTerm = b.get();
+      
+      boolean minInclusive = random().nextBoolean();
+      boolean maxInclusive = random().nextBoolean();
+      Automaton a = makeBinaryInterval(minTerm, minInclusive,
+                                       maxTerm, maxInclusive);
+      assertTrue(Operations.isFinite(a));
+      int expectedCount = maxTerm.length - minTerm.length + 1;
+      if (minInclusive == false) {
+        expectedCount--;
+      }
+      if (maxInclusive == false) {
+        expectedCount--;
+      }
+
+      if (expectedCount <= 0) {
+        assertTrue(Operations.isEmpty(a));
+        continue;
+      } else {
+        // Enumerate all finite strings and verify the count matches what we expect:
+        assertEquals(expectedCount, Operations.getFiniteStrings(a, expectedCount).size());
+      }
+
+      b = new BytesRefBuilder();
+      b.append(minTerm);
+      if (minInclusive == false) {
+        assertFalse(accepts(a, b.get()));
+        b.append((byte) 0);
+      }
+      while (b.length() < maxTerm.length) {
+        b.append((byte) 0);
+
+        boolean expected;
+        if (b.length() == maxTerm.length) {
+          expected = maxInclusive;
+        } else {
+          expected = true;
+        }
+        assertEquals(expected, accepts(a, b.get()));
+      }
+    }
+  }
+
   public void testMakeBinaryIntervalRandom() throws Exception {
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
@@ -1113,26 +1252,7 @@ public class TestAutomaton extends LuceneTestCase {
       BytesRef maxTerm = TestUtil.randomBinaryTerm(random());
       boolean maxInclusive = random().nextBoolean();
 
-      if (VERBOSE) {
-        System.out.println("TEST: iter=" + iter + " minTerm=" + minTerm + " minInclusive=" + minInclusive + " maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
-      }
-
-      Automaton a = Automata.makeBinaryInterval(minTerm, minInclusive, maxTerm, maxInclusive);
-
-      Automaton minA = MinimizationOperations.minimize(a, Integer.MAX_VALUE);
-      if (minA.getNumStates() != a.getNumStates()) {
-        assertTrue(minA.getNumStates() < a.getNumStates());
-        System.out.println("Original was not minimal:");
-        System.out.println("Original:\n" + a.toDot());
-        System.out.println("Minimized:\n" + minA.toDot());
-        System.out.println("minTerm=" + minTerm + " minInclusive=" + minInclusive);
-        System.out.println("maxTerm=" + maxTerm + " maxInclusive=" + maxInclusive);
-        fail("automaton was not minimal");
-      }
-
-      if (VERBOSE) {
-        System.out.println(a.toDot());
-      }
+      Automaton a = makeBinaryInterval(minTerm, minInclusive, maxTerm, maxInclusive);
 
       for(int iter2=0;iter2<500;iter2++) {
         BytesRef term = TestUtil.randomBinaryTerm(random());

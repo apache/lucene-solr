@@ -32,6 +32,7 @@ package org.apache.lucene.util.automaton;
 import java.util.*;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Construction of basic automata.
@@ -216,6 +217,16 @@ final public class Automata {
     return s;
   }
 
+  private static boolean suffixIsZeros(BytesRef br, int len) {
+    for(int i=len;i<br.length;i++) {
+      if (br.bytes[br.offset+i] != 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /** Creates a new deterministic, minimal automaton accepting
    *  all binary terms in the specified interval.  Note that unlike
    *  {@link #makeDecimalInterval}, the returned automaton is infinite,
@@ -235,17 +246,6 @@ final public class Automata {
 
     if (min == null) {
       min = new BytesRef();
-      minInclusive = true;
-    }
-
-    // Empty string corner cases:
-    if (max != null && maxInclusive == false && max.length == 1 && max.bytes[max.offset] == 0) {
-      max = new BytesRef();
-      maxInclusive = true;
-    }
-
-    if (min != null && minInclusive == false && min.length == 0) {
-      min = new BytesRef(new byte[1]);
       minInclusive = true;
     }
 
@@ -270,8 +270,56 @@ final public class Automata {
       return makeEmpty();
     }
 
+    if (max != null &&
+        StringHelper.startsWith(max, min) &&
+        suffixIsZeros(max, min.length)) {
+
+      // Finite case: no sink state!
+
+      int maxLength = max.length;
+
+      // the == case was handled above
+      assert maxLength > min.length;
+
+      //  bar -> bar\0+
+      if (maxInclusive == false) {
+        maxLength--;
+      }
+
+      if (maxLength == min.length) {
+        if (minInclusive == false) {
+          return makeEmpty();
+        } else {
+          return makeBinary(min);
+        }
+      }
+
+      Automaton a = new Automaton();
+      int lastState = a.createState();
+      for (int i=0;i<min.length;i++) {
+        int state = a.createState();
+        int label = min.bytes[min.offset+i] & 0xff;
+        a.addTransition(lastState, state, label);
+        lastState = state;
+      }
+
+      if (minInclusive) {
+        a.setAccept(lastState, true);
+      }
+
+      for(int i=min.length;i<maxLength;i++) {
+        int state = a.createState();
+        a.addTransition(lastState, state, 0);
+        a.setAccept(state, true);
+        lastState = state;
+      }
+      a.finishState();
+      return a;
+    }
+
     Automaton a = new Automaton();
     int startState = a.createState();
+
     int sinkState = a.createState();
     a.setAccept(sinkState, true);
 

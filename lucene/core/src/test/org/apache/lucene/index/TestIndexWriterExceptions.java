@@ -31,10 +31,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -1728,49 +1726,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     uoe.doFail = false;
     d.close();
   }
-  
-  public void testIllegalPositions() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    Token t1 = new Token("foo", 0, 3);
-    t1.setPositionIncrement(Integer.MAX_VALUE);
-    Token t2 = new Token("bar", 4, 7);
-    t2.setPositionIncrement(200);
-    TokenStream overflowingTokenStream = new CannedTokenStream(
-        new Token[] { t1, t2 }
-    );
-    Field field = new TextField("foo", overflowingTokenStream);
-    doc.add(field);
-    try {
-      iw.addDocument(doc);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected exception
-    }
-    iw.close();
-    dir.close();
-  }
-  
-  public void testLegalbutVeryLargePositions() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    Token t1 = new Token("foo", 0, 3);
-    t1.setPositionIncrement(Integer.MAX_VALUE-500);
-    if (random().nextBoolean()) {
-      t1.setPayload(new BytesRef(new byte[] { 0x1 } ));
-    }
-    TokenStream overflowingTokenStream = new CannedTokenStream(
-        new Token[] { t1 }
-    );
-    Field field = new TextField("foo", overflowingTokenStream);
-    doc.add(field);
-    iw.addDocument(doc);
-    iw.close();
-    dir.close();
-  }
-  
+
   public void testBoostOmitNorms() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
