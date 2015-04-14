@@ -353,53 +353,67 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   @SuppressWarnings("unchecked")
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
-    if (!isHighlightingEnabled(params))
+    if (!isHighlightingEnabled(params)) // also returns early if no unique key field
       return null;
 
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
-    NamedList fragments = new SimpleOrderedMap();
-    String[] fieldNames = getHighlightFields(query, req, defaultFields);
-    Set<String> fset = new HashSet<>();
 
-    {
-      // pre-fetch documents using the Searcher's doc cache
-      for(String f : fieldNames) { fset.add(f); }
-      // fetch unique key if one exists.
-      SchemaField keyField = schema.getUniqueKeyField();
-      if(null != keyField)
-        fset.add(keyField.getName());
+    // fetch unique key if one exists.
+    SchemaField keyField = schema.getUniqueKeyField();
+    if (keyField == null) {
+      return null;//exit early; we need a unique key field to populate the response
     }
 
-    // get FastVectorHighlighter instance out of the processing loop
-    FastVectorHighlighter fvh = new FastVectorHighlighter(
-        // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
-        params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
-        // FVH cannot process hl.requireFieldMatch parameter per-field basis
-        params.getBool( HighlightParams.FIELD_MATCH, false ) );
-    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
-    FieldQuery fieldQuery = fvh.getFieldQuery( query, searcher.getIndexReader() );
+    String[] fieldNames = getHighlightFields(query, req, defaultFields);
+
+    Set<String> preFetchFieldNames = getDocPrefetchFieldNames(fieldNames, req);
+    if (preFetchFieldNames != null) {
+      preFetchFieldNames.add(keyField.getName());
+    }
+
+    FastVectorHighlighter fvh = null; // lazy
+    FieldQuery fvhFieldQuery = null; // lazy
 
     // Highlight each document
+    NamedList fragments = new SimpleOrderedMap();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      StoredDocument doc = searcher.doc(docId, fset);
+      StoredDocument doc = searcher.doc(docId, preFetchFieldNames);
+
       NamedList docSummaries = new SimpleOrderedMap();
       for (String fieldName : fieldNames) {
-        fieldName = fieldName.trim();
-        if( useFastVectorHighlighter( params, schema, fieldName ) )
-          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, req, docSummaries, docId, doc, fieldName );
-        else
-          doHighlightingByHighlighter( query, req, docSummaries, docId, doc, fieldName );
-      }
-      String printId = schema.printableUniqueKey(doc);
-      fragments.add(printId == null ? null : printId, docSummaries);
-    }
+        if (useFastVectorHighlighter(params, schema, fieldName)) {
+          if (fvhFieldQuery == null) {
+            fvh = new FastVectorHighlighter(
+                // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
+                params.getBool(HighlightParams.USE_PHRASE_HIGHLIGHTER, true),
+                // FVH cannot process hl.requireFieldMatch parameter per-field basis
+                params.getBool(HighlightParams.FIELD_MATCH, false));
+            fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
+            fvhFieldQuery = fvh.getFieldQuery(query, searcher.getIndexReader());
+          }
+          doHighlightingByFastVectorHighlighter(fvh, fvhFieldQuery, req, docSummaries, docId, doc, fieldName);
+        } else {
+          doHighlightingByHighlighter(query, req, docSummaries, docId, doc, fieldName);
+        }
+      } // for each field
+      fragments.add(schema.printableUniqueKey(doc), docSummaries);
+    } // for each doc
     return fragments;
   }
 
-  /*
+  /** Returns the field names to be passed to {@link SolrIndexSearcher#doc(int, Set)}.
+   * Subclasses might over-ride to include fields in search-results and other stored field values needed so as to avoid
+   * the possibility of extra trips to disk.  The uniqueKey will be added after if the result isn't null. */
+  protected Set<String> getDocPrefetchFieldNames(String[] hlFieldNames, SolrQueryRequest req) {
+    Set<String> preFetchFieldNames = new HashSet<>(hlFieldNames.length + 1);//+1 for uniqueyKey added after
+    Collections.addAll(preFetchFieldNames, hlFieldNames);
+    return preFetchFieldNames;
+  }
+
+  /**
    * If fieldName is undefined, this method returns false, then
    * doHighlightingByHighlighter() will do nothing for the field.
    */
