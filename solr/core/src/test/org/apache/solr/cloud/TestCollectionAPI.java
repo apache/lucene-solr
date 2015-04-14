@@ -162,8 +162,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull("Cluster state should not be null", cluster);
       NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
-      assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
+      Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      assertNotNull(collection);
+      assertEquals("conf1", collection.get("configName"));
     }
   }
 
@@ -189,6 +191,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       assertEquals(1, collections.size());
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
+      assertEquals("conf1", collection.get("configName"));
       Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
       assertEquals(1, shardStatus.size());
       Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD2);
@@ -225,6 +228,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
+      assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
     }

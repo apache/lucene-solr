@@ -823,6 +823,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(name));
         }
+        String configName = zkStateReader.readConfigName(name);
+        collectionStatus.put("configName", configName);
         collectionProps.add(name, collectionStatus);
       }
     } else {
@@ -839,6 +841,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(collection));
         }
+        String configName = zkStateReader.readConfigName(collection);
+        collectionStatus.put("configName", configName);
         collectionProps.add(collection, collectionStatus);
       } else {
         DocCollection coll = clusterState.getCollection(collection);
@@ -855,6 +859,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(collection));
         }
+        String configName = zkStateReader.readConfigName(collection);
+        collectionStatus.put("configName", configName);
         collectionProps.add(collection, collectionStatus);
       }
     }
