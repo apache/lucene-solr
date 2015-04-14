@@ -13,13 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-@defaultMessage Spawns threads without MDC logging context; use Solr's ExecutorUtil methods to create thread pools
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareFixedThreadPool instead
 java.util.concurrent.Executors#newFixedThreadPool(int,java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareSingleThreadExecutor instead
 java.util.concurrent.Executors#newSingleThreadExecutor(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareCachedThreadPool instead
 java.util.concurrent.Executors#newCachedThreadPool(java.util.concurrent.ThreadFactory)
 
-### TODO - Suppress these for all classes inside Solr except for ExecutorUtil.MDCAwareThreadPoolExecutor
-#java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory,java.util.concurrent.RejectedExecutionHandler)
-#java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue)
-#java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory)
-#java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.RejectedExecutionHandler)
+@defaultMessage Use ExecutorUtil.MDCAwareThreadPoolExecutor instead of ThreadPoolExecutor
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory,java.util.concurrent.RejectedExecutionHandler)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.RejectedExecutionHandler)

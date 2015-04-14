@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +162,7 @@ class BatchWriter {
 
     // we need to obtain the settings before the constructor
     if (writerThreads != 0) {
-      batchPool = new ThreadPoolExecutor(writerThreads, writerThreads, 5,
+      batchPool = new ExecutorUtil.MDCAwareThreadPoolExecutor(writerThreads, writerThreads, 5,
           TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(queueSize),
           new ThreadPoolExecutor.CallerRunsPolicy());
     } else { // single threaded case

@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.hadoop.MapReduceIndexerTool.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ class GoLive {
     boolean success = false;
     long start = System.nanoTime();
     int concurrentMerges = options.goLiveThreads;
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(concurrentMerges,
+    ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(concurrentMerges,
         concurrentMerges, 1, TimeUnit.SECONDS,
         new LinkedBlockingQueue<Runnable>());
     
