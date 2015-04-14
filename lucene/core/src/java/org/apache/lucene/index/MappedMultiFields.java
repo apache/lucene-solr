@@ -46,21 +46,23 @@ public class MappedMultiFields extends FilterFields {
     if (terms == null) {
       return null;
     } else {
-      return new MappedMultiTerms(mergeState, terms);
+      return new MappedMultiTerms(field, mergeState, terms);
     }
   }
 
   private static class MappedMultiTerms extends FilterTerms {
     final MergeState mergeState;
+    final String field;
 
-    public MappedMultiTerms(MergeState mergeState, MultiTerms multiTerms) {
+    public MappedMultiTerms(String field, MergeState mergeState, MultiTerms multiTerms) {
       super(multiTerms);
+      this.field = field;
       this.mergeState = mergeState;
     }
 
     @Override
     public TermsEnum iterator() throws IOException {
-      return new MappedMultiTermsEnum(mergeState, (MultiTermsEnum) in.iterator());
+      return new MappedMultiTermsEnum(field, mergeState, (MultiTermsEnum) in.iterator());
     }
 
     @Override
@@ -86,9 +88,11 @@ public class MappedMultiFields extends FilterFields {
 
   private static class MappedMultiTermsEnum extends FilterTermsEnum {
     final MergeState mergeState;
+    final String field;
 
-    public MappedMultiTermsEnum(MergeState mergeState, MultiTermsEnum multiTermsEnum) {
+    public MappedMultiTermsEnum(String field, MergeState mergeState, MultiTermsEnum multiTermsEnum) {
       super(multiTermsEnum);
+      this.field = field;
       this.mergeState = mergeState;
     }
 
@@ -110,26 +114,19 @@ public class MappedMultiFields extends FilterFields {
 
       MappingMultiPostingsEnum mappingDocsAndPositionsEnum;
       if (reuse instanceof MappingMultiPostingsEnum) {
-        mappingDocsAndPositionsEnum = (MappingMultiPostingsEnum) reuse;
+        MappingMultiPostingsEnum postings = (MappingMultiPostingsEnum) reuse;
+        if (postings.field.equals(this.field)) {
+          mappingDocsAndPositionsEnum = postings;
+        } else {
+          mappingDocsAndPositionsEnum = new MappingMultiPostingsEnum(field, mergeState);
+        }
       } else {
-        mappingDocsAndPositionsEnum = new MappingMultiPostingsEnum(mergeState);
+        mappingDocsAndPositionsEnum = new MappingMultiPostingsEnum(field, mergeState);
       }
 
       MultiPostingsEnum docsAndPositionsEnum = (MultiPostingsEnum) in.postings(liveDocs, mappingDocsAndPositionsEnum.multiDocsAndPositionsEnum, flags);
       mappingDocsAndPositionsEnum.reset(docsAndPositionsEnum);
       return mappingDocsAndPositionsEnum;
-
-/*
-      MappingMultiDocsEnum mappingDocsEnum;
-      if (reuse instanceof MappingMultiDocsEnum) {
-        mappingDocsEnum = (MappingMultiDocsEnum) reuse;
-      } else {
-        mappingDocsEnum = new MappingMultiDocsEnum(mergeState);
-      }
-      
-      MultiDocsEnum docsEnum = (MultiDocsEnum) in.docs(liveDocs, mappingDocsEnum.multiDocsEnum, flags);
-      mappingDocsEnum.reset(docsEnum);
-      return mappingDocsEnum;*/
     }
   }
 }

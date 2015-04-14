@@ -612,8 +612,11 @@ final class DefaultIndexingChain extends DocConsumer {
           if (invertState.position < invertState.lastPosition) {
             if (posIncr == 0) {
               throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
+            } else {
+              throw new IllegalArgumentException("position increments (and gaps) must be >= 0 (got " + posIncr + ") for field '" + field.name() + "'");
             }
-            throw new IllegalArgumentException("position increments (and gaps) must be >= 0 (got " + posIncr + ") for field '" + field.name() + "'");
+          } else if (invertState.position > IndexWriter.MAX_POSITION) {
+            throw new IllegalArgumentException("position " + invertState.position + " is too large for field '" + field.name() + "': max allowed position is " + IndexWriter.MAX_POSITION);
           }
           invertState.lastPosition = invertState.position;
           if (posIncr == 0) {

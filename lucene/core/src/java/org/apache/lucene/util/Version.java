@@ -202,7 +202,7 @@ public final class Version {
   /** Returns a new version based on raw numbers
    *
    *  @lucene.internal */
-  public static final Version fromBits(int major, int minor, int bugfix) {
+  public static Version fromBits(int major, int minor, int bugfix) {
     return new Version(major, minor, bugfix);
   }
 

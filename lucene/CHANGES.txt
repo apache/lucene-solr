@@ -113,6 +113,9 @@ Other
 * LUCENE-6399: Benchmark module's QueryMaker.resetInputs should call setConfig
   so queries can react to property changes in new rounds. (David Smiley)
 
+* LUCENE-6382: Lucene now enforces that positions never exceed the
+  maximum value IndexWriter.MAX_POSITION.  (Robert Muir, Mike McCandless)
+
 Build
 
 * LUCENE-6420: Update forbiddenapis to v1.8  (Uwe Schindler)
