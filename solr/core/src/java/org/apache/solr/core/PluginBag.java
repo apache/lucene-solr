@@ -338,7 +338,9 @@ public class PluginBag<T> implements AutoCloseable {
     @Override
     public T get() {
       if (lazyInst != null) return lazyInst;
-      if (solrException != null) throw solrException;
+      if (solrException != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Unrecoverable error", solrException);
+      }
       if (createInst()) {
         // check if we created the instance to avoid registering it again
         registerMBean(lazyInst, core, pluginInfo.name);
