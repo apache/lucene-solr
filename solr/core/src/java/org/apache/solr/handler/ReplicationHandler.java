@@ -90,6 +90,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -427,8 +428,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     RestoreCore restoreCore = new RestoreCore(core, location, name);
-    restoreFuture = restoreExecutor.submit(restoreCore);
-    currentRestoreName = name;
+    try {
+      MDC.put("RestoreCore.core", core.getName());
+      MDC.put("RestoreCore.backupLocation", location);
+      MDC.put("RestoreCore.backupName", name);
+      restoreFuture = restoreExecutor.submit(restoreCore);
+      currentRestoreName = name;
+    } finally {
+      MDC.remove("RestoreCore.core");
+      MDC.remove("RestoreCore.backupLocation");
+      MDC.remove("RestoreCore.backupName");
+    }
   }
 
   private NamedList<Object> getRestoreStatus() {

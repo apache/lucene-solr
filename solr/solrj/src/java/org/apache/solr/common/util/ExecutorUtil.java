@@ -106,6 +106,8 @@ public class ExecutorUtil {
 
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
+    private static final int MAX_THREAD_NAME_LEN = 512;
+
     public MDCAwareThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
     }
@@ -125,12 +127,18 @@ public class ExecutorUtil {
     @Override
     public void execute(final Runnable command) {
       final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
+      String ctxStr = submitterContext != null && !submitterContext.isEmpty() ?
+          submitterContext.toString().replace("/", "//") : "";
+      final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       super.execute(new Runnable() {
         @Override
         public void run() {
           Map<String, String> threadContext = MDC.getCopyOfContextMap();
-          if (submitterContext != null) {
+          final Thread currentThread = Thread.currentThread();
+          final String oldName = currentThread.getName();
+          if (submitterContext != null && !submitterContext.isEmpty()) {
             MDC.setContextMap(submitterContext);
+            currentThread.setName(oldName + "-processing-" + submitterContextStr);
           } else {
             MDC.clear();
           }
@@ -142,6 +150,7 @@ public class ExecutorUtil {
             } else {
               MDC.clear();
             }
+            currentThread.setName(oldName);
           }
         }
       });

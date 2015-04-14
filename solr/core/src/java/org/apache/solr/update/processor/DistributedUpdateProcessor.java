@@ -72,6 +72,7 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -933,7 +934,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               maxTries,
               cloudDesc.getCoreNodeName()); // core node name of current leader
       ExecutorService executor = coreContainer.getUpdateShardHandler().getUpdateExecutor();
-      executor.execute(lirThread);
+      try {
+        MDC.put("DistributedUpdateProcessor.replicaUrlToRecover", error.req.node.getNodeProps().getCoreUrl());
+        executor.execute(lirThread);
+      } finally {
+        MDC.remove("DistributedUpdateProcessor.replicaUrlToRecover");
+      }
     }
 
     if (replicationTracker != null) {

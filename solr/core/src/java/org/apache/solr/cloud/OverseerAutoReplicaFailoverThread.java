@@ -33,6 +33,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -245,14 +246,19 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       // need an async request - full shard goes down leader election
       final String coreName = badReplica.replica.getStr(ZkStateReader.CORE_NAME_PROP);
       log.debug("submit call to {}", createUrl);
-      updateExecutor.submit(new Callable<Boolean>() {
-        
-        @Override
-        public Boolean call() {
-          return createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName);
-        }
-      });
-      
+      MDC.put("OverseerAutoReplicaFailoverThread.createUrl", createUrl);
+      try {
+        updateExecutor.submit(new Callable<Boolean>() {
+
+          @Override
+          public Boolean call() {
+            return createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName);
+          }
+        });
+      } finally {
+        MDC.remove("OverseerAutoReplicaFailoverThread.createUrl");
+      }
+
       // wait to see state for core we just created
       boolean success = ClusterStateUtil.waitToSeeLiveReplica(zkStateReader, collection, coreNodeName, createUrl, 30000);
       if (!success) {
