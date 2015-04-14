@@ -200,30 +200,45 @@ public class MultiPhraseQuery extends Query {
 
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
-        List<PostingsEnum> postings = new ArrayList<>();
-        
-        for (Term term : terms) {
+
+        final PostingsEnum postingsEnum;
+        int docFreq;
+
+        if (terms.length > 1) {
+          postingsEnum = new UnionPostingsEnum(liveDocs, context, terms, termContexts, termsEnum);
+
+          // coarse -- this overcounts since a given doc can
+          // have more than one term:
+          docFreq = 0;
+          for(int termIdx=0;termIdx<terms.length;termIdx++) {
+            final Term term = terms[termIdx];
+            TermState termState = termContexts.get(term).get(context.ord);
+            if (termState == null) {
+              // Term not in reader
+              continue;
+            }
+            termsEnum.seekExact(term.bytes(), termState);
+            docFreq += termsEnum.docFreq();
+          }
+
+          if (docFreq == 0) {
+            // None of the terms are in this reader
+            return null;
+          }
+        } else {
+          final Term term = terms[0];
           TermState termState = termContexts.get(term).get(context.ord);
           if (termState == null) {
             // Term not in reader
             return null;
           }
           termsEnum.seekExact(term.bytes(), termState);
-          postings.add(termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS));
-        }
-        
-        if (postings.isEmpty()) {
-          return null;
-        }
-        
-        final PostingsEnum postingsEnum;
-        if (postings.size() == 1) {
-          postingsEnum = postings.get(0);
-        } else {
-          postingsEnum = new UnionPostingsEnum(postings);
+          postingsEnum = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
+
+          docFreq = termsEnum.docFreq();
         }
 
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, positions.get(pos).intValue(), terms);
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms);
       }
 
       // sort by increasing docFreq order
@@ -383,164 +398,175 @@ public class MultiPhraseQuery extends Query {
     }
     return true;
   }
-  
-  /** 
-   * Takes the logical union of multiple PostingsEnum iterators.
-   * <p>
-   * Note: positions are merged during freq()
-   */
-  static class UnionPostingsEnum extends PostingsEnum {
-    /** queue ordered by docid */
-    final DocsQueue docsQueue;
-    /** cost of this enum: sum of its subs */
-    final long cost;
-    
-    /** queue ordered by position for current doc */
-    final PositionsQueue posQueue = new PositionsQueue();
-    /** current doc posQueue is working */
-    int posQueueDoc = -2;
-    /** list of subs (unordered) */
-    final PostingsEnum[] subs;
-    
-    UnionPostingsEnum(Collection<PostingsEnum> subs) {
-      docsQueue = new DocsQueue(subs.size());
-      long cost = 0;
-      for (PostingsEnum sub : subs) {
-        docsQueue.add(sub);
-        cost += sub.cost();
-      }
-      this.cost = cost;
-      this.subs = subs.toArray(new PostingsEnum[subs.size()]);
-    }
+}
 
-    @Override
-    public int freq() throws IOException {
-      int doc = docID();
-      if (doc != posQueueDoc) {
-        posQueue.clear();
-        for (PostingsEnum sub : subs) {
-          if (sub.docID() == doc) {
-            int freq = sub.freq();
-            for (int i = 0; i < freq; i++) {
-              posQueue.add(sub.nextPosition());
-            }
-          }
+/**
+ * Takes the logical union of multiple DocsEnum iterators.
+ */
+
+// TODO: if ever we allow subclassing of the *PhraseScorer
+class UnionPostingsEnum extends PostingsEnum {
+
+  private static final class DocsQueue extends PriorityQueue<PostingsEnum> {
+    DocsQueue(List<PostingsEnum> postingsEnums) throws IOException {
+      super(postingsEnums.size());
+
+      Iterator<PostingsEnum> i = postingsEnums.iterator();
+      while (i.hasNext()) {
+        PostingsEnum postings = i.next();
+        if (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+          add(postings);
         }
-        posQueue.sort();
-        posQueueDoc = doc;
       }
-      return posQueue.size();
     }
 
     @Override
-    public int nextPosition() throws IOException {
-      return posQueue.next();
+    public final boolean lessThan(PostingsEnum a, PostingsEnum b) {
+      return a.docID() < b.docID();
     }
+  }
 
-    @Override
-    public int docID() {
-      return docsQueue.top().docID();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      PostingsEnum top = docsQueue.top();
-      int doc = top.docID();
-      
-      do {
-        top.nextDoc();
-        top = docsQueue.updateTop();
-      } while (top.docID() == doc);
-
-      return top.docID();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      PostingsEnum top = docsQueue.top();
-      
-      do {
-        top.advance(target);
-        top = docsQueue.updateTop();
-      } while (top.docID() < target);
-
-      return top.docID();
-    }
-
-    @Override
-    public long cost() {
-      return cost;
-    }
+  private static final class IntQueue {
+    private int _arraySize = 16;
+    private int _index = 0;
+    private int _lastIndex = 0;
+    private int[] _array = new int[_arraySize];
     
-    @Override
-    public int startOffset() throws IOException {
-      return -1; // offsets are unsupported
+    final void add(int i) {
+      if (_lastIndex == _arraySize)
+        growArray();
+
+      _array[_lastIndex++] = i;
     }
 
-    @Override
-    public int endOffset() throws IOException {
-      return -1; // offsets are unsupported
+    final int next() {
+      return _array[_index++];
     }
 
-    @Override
-    public BytesRef getPayload() throws IOException {
-      return null; // payloads are unsupported
+    final void sort() {
+      Arrays.sort(_array, _index, _lastIndex);
     }
-    
-    /** 
-     * disjunction of postings ordered by docid.
-     */
-    static class DocsQueue extends PriorityQueue<PostingsEnum> {
-      DocsQueue(int size) {
-        super(size);
+
+    final void clear() {
+      _index = 0;
+      _lastIndex = 0;
+    }
+
+    final int size() {
+      return (_lastIndex - _index);
+    }
+
+    private void growArray() {
+      int[] newArray = new int[_arraySize * 2];
+      System.arraycopy(_array, 0, newArray, 0, _arraySize);
+      _array = newArray;
+      _arraySize *= 2;
+    }
+  }
+
+  private int _doc = -1;
+  private int _freq;
+  private DocsQueue _queue;
+  private IntQueue _posList;
+  private long cost;
+
+  public UnionPostingsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term, TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+    List<PostingsEnum> postingsEnums = new LinkedList<>();
+    for (int i = 0; i < terms.length; i++) {
+      final Term term = terms[i];
+      TermState termState = termContexts.get(term).get(context.ord);
+      if (termState == null) {
+        // Term doesn't exist in reader
+        continue;
+      }
+      termsEnum.seekExact(term.bytes(), termState);
+      PostingsEnum postings = termsEnum.postings(liveDocs, null, PostingsEnum.POSITIONS);
+      cost += postings.cost();
+      postingsEnums.add(postings);
+    }
+
+    _queue = new DocsQueue(postingsEnums);
+    _posList = new IntQueue();
+  }
+
+  @Override
+  public final int nextDoc() throws IOException {
+    if (_queue.size() == 0) {
+      return _doc = NO_MORE_DOCS;
+    }
+
+    // TODO: move this init into positions(): if the search
+    // doesn't need the positions for this doc then don't
+    // waste CPU merging them:
+    _posList.clear();
+    _doc = _queue.top().docID();
+
+    // merge sort all positions together
+    PostingsEnum postings;
+    do {
+      postings = _queue.top();
+
+      final int freq = postings.freq();
+      for (int i = 0; i < freq; i++) {
+        _posList.add(postings.nextPosition());
       }
 
-      @Override
-      public final boolean lessThan(PostingsEnum a, PostingsEnum b) {
-        return a.docID() < b.docID();
+      if (postings.nextDoc() != NO_MORE_DOCS) {
+        _queue.updateTop();
+      } else {
+        _queue.pop();
+      }
+    } while (_queue.size() > 0 && _queue.top().docID() == _doc);
+
+    _posList.sort();
+    _freq = _posList.size();
+
+    return _doc;
+  }
+
+  @Override
+  public int nextPosition() {
+    return _posList.next();
+  }
+
+  @Override
+  public int startOffset() {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() {
+    return null;
+  }
+
+  @Override
+  public final int advance(int target) throws IOException {
+    while (_queue.top() != null && target > _queue.top().docID()) {
+      PostingsEnum postings = _queue.pop();
+      if (postings.advance(target) != NO_MORE_DOCS) {
+        _queue.add(postings);
       }
     }
-    
-    /** 
-     * queue of terms for a single document. its a sorted array of
-     * all the positions from all the postings
-     */
-    static class PositionsQueue {
-      private int arraySize = 16;
-      private int index = 0;
-      private int size = 0;
-      private int[] array = new int[arraySize];
-      
-      void add(int i) {
-        if (size == arraySize)
-          growArray();
+    return nextDoc();
+  }
 
-        array[size++] = i;
-      }
+  @Override
+  public final int freq() {
+    return _freq;
+  }
 
-      int next() {
-        return array[index++];
-      }
+  @Override
+  public final int docID() {
+    return _doc;
+  }
 
-      void sort() {
-        Arrays.sort(array, index, size);
-      }
-
-      void clear() {
-        index = 0;
-        size = 0;
-      }
-
-      int size() {
-        return size;
-      }
-
-      private void growArray() {
-        int[] newArray = new int[arraySize * 2];
-        System.arraycopy(array, 0, newArray, 0, arraySize);
-        array = newArray;
-        arraySize *= 2;
-      }
-    }
+  @Override
+  public long cost() {
+    return cost;
   }
 }

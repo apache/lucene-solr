@@ -77,9 +77,6 @@ Optimizations
 * LUCENE-6388: Optimize SpanNearQuery when payloads are not present.
   (Robert Muir)
 
-* LUCENE-6421: Defer reading of positions in MultiPhraseQuery until
-  they are needed. (Robert Muir)
-
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
