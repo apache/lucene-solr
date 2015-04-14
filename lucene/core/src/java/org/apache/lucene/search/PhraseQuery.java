@@ -174,14 +174,12 @@ public class PhraseQuery extends Query {
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
-    final int docFreq;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(PostingsEnum postings, int docFreq, int position, Term... terms) {
+    public PostingsAndFreq(PostingsEnum postings, int position, Term... terms) {
       this.postings = postings;
-      this.docFreq = docFreq;
       this.position = position;
       nTerms = terms==null ? 0 : terms.length;
       if (nTerms>0) {
@@ -200,9 +198,6 @@ public class PhraseQuery extends Query {
 
     @Override
     public int compareTo(PostingsAndFreq other) {
-      if (docFreq != other.docFreq) {
-        return docFreq - other.docFreq;
-      }
       if (position != other.position) {
         return position - other.position;
       }
@@ -223,7 +218,6 @@ public class PhraseQuery extends Query {
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      result = prime * result + docFreq;
       result = prime * result + position;
       for (int i=0; i<nTerms; i++) {
         result = prime * result + terms[i].hashCode(); 
@@ -237,7 +231,6 @@ public class PhraseQuery extends Query {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       PostingsAndFreq other = (PostingsAndFreq) obj;
-      if (docFreq != other.docFreq) return false;
       if (position != other.position) return false;
       if (terms == null) return other.terms == null;
       return Arrays.equals(terms, other.terms);
@@ -313,7 +306,7 @@ public class PhraseQuery extends Query {
         }
         te.seekExact(t.bytes(), state);
         PostingsEnum postingsEnum = te.postings(liveDocs, null, PostingsEnum.POSITIONS);
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i), t);
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions.get(i), t);
       }
 
       // sort by increasing docFreq order
