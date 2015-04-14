@@ -75,17 +75,21 @@ public abstract class SolrHighlighter
         Collection<String> storedHighlightFieldNames = request.getSearcher().getStoredHighlightFieldNames();
         List<String> storedFieldsToHighlight = new ArrayList<>();
         for (String storedFieldName: storedHighlightFieldNames) {
-            if (storedFieldName.matches(fieldRegex)) {
-              storedFieldsToHighlight.add(storedFieldName);
-            }
+          if (storedFieldName.matches(fieldRegex)) {
+            storedFieldsToHighlight.add(storedFieldName);
+          }
         }
-        fields = storedFieldsToHighlight.toArray(new String[] {});
+        fields = storedFieldsToHighlight.toArray(new String[storedFieldsToHighlight.size()]);
       } else {
         // if there's a single request/handler value, it may be a space/comma separated list
         fields = SolrPluginUtils.split(fields[0]);
       }
     }
 
+    // Trim them now in case they haven't been yet.  Not needed for all code-paths above but do it here.
+    for (int i = 0; i < fields.length; i++) {
+      fields[i] = fields[i].trim();
+    }
     return fields;
   }
 
