@@ -226,6 +226,8 @@ public final class ZkController {
     this.hostName = normalizeHostName(cloudConfig.getHost());
     this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
 
+    MDC.put(NODE_NAME_PROP, nodeName);
+
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 

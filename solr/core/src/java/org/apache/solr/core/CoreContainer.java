@@ -246,9 +246,6 @@ public class CoreContainer {
     log.info("Node Name: " + hostName);
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
-    if (isZooKeeperAware()) {
-      MDC.put(NODE_NAME_PROP, getZkController().getNodeName());
-    }
 
     collectionsHandler = createHandler(cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
