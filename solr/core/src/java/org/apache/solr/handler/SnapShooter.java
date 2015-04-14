@@ -63,7 +63,8 @@ public class SnapShooter {
       snapDir = core.getDataDir();
     }
     else  {
-      snapDir = Paths.get(core.getCoreDescriptor().getInstanceDir()).resolve(location).toAbsolutePath().toString();
+      File base = new File(core.getCoreDescriptor().getInstanceDir());
+      snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
     }
     this.snapshotName = snapshotName;
 
