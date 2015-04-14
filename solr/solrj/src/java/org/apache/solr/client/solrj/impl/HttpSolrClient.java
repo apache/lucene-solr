@@ -57,6 +57,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -262,6 +263,7 @@ public class HttpSolrClient extends SolrClient {
     final HttpRequestBase method = createMethod(request, null);
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
+      MDC.put("HttpSolrClient.url", baseUrl);
       mrr.future = pool.submit(new Callable<NamedList<Object>>(){
 
         @Override
@@ -271,6 +273,7 @@ public class HttpSolrClient extends SolrClient {
  
     } finally {
       pool.shutdown();
+      MDC.remove("HttpSolrClient.url");
     }
     assert method != null;
     mrr.httpUriRequest = method;

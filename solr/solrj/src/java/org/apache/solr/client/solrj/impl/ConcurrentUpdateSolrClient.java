@@ -42,6 +42,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -343,9 +344,14 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           if (runners.isEmpty() || (queue.remainingCapacity() < queue.size() && runners.size() < threadCount))
           {
             // We need more runners, so start a new one.
-            Runner r = new Runner();
-            runners.add(r);
-            scheduler.execute(r);
+            MDC.put("ConcurrentUpdateSolrClient.url", client.getBaseURL());
+            try {
+              Runner r = new Runner();
+              runners.add(r);
+              scheduler.execute(r);
+            } finally {
+              MDC.remove("ConcurrentUpdateSolrClient.url");
+            }
           } else {
             // break out of the retry loop if we added the element to the queue
             // successfully, *and*
@@ -402,9 +408,14 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           if (queueSize > 0) {
             log.warn("No more runners, but queue still has "+
               queueSize+" adding more runners to process remaining requests on queue");
-            Runner r = new Runner();
-            runners.add(r);
-            scheduler.execute(r);
+            MDC.put("ConcurrentUpdateSolrClient.url", client.getBaseURL());
+            try {
+              Runner r = new Runner();
+              runners.add(r);
+              scheduler.execute(r);
+            } finally {
+              MDC.remove("ConcurrentUpdateSolrClient.url");
+            }
           }
         }
       }

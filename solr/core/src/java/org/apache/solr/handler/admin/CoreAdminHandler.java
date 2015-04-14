@@ -84,6 +84,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -191,7 +192,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
       handleRequestInternal(req, rsp, action);
     } else {
       ParallelCoreAdminHandlerThread parallelHandlerThread = new ParallelCoreAdminHandlerThread(req, rsp, action, taskObject);
-      parallelExecutor.execute(parallelHandlerThread);
+      try {
+        MDC.put("CoreAdminHandler.asyncId", taskId);
+        if (action != null) {
+          MDC.put("CoreAdminHandler.action", action.name());
+        }
+        parallelExecutor.execute(parallelHandlerThread);
+      } finally {
+        MDC.remove("CoreAdminHandler.asyncId");
+        MDC.remove("CoreAdminHandler.action");
+      }
     }
   }
 

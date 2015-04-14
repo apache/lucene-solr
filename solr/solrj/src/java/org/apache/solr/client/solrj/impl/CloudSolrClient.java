@@ -54,6 +54,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -110,7 +111,7 @@ public class CloudSolrClient extends SolrClient {
   private boolean parallelUpdates = true;
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
-          "CloudSolrServer ThreadPool"));
+          "CloudSolrClient ThreadPool"));
   private String idField = "id";
   public static final String STATE_VERSION = "_stateVer_";
   private final Set<String> NON_ROUTABLE_PARAMS;
@@ -591,12 +592,17 @@ public class CloudSolrClient extends SolrClient {
       for (final Map.Entry<String, LBHttpSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBHttpSolrClient.Req lbRequest = entry.getValue();
-        responseFutures.put(url, threadPool.submit(new Callable<NamedList<?>>() {
-          @Override
-          public NamedList<?> call() throws Exception {
-            return lbClient.request(lbRequest).getResponse();
-          }
-        }));
+        try {
+          MDC.put("CloudSolrClient.url", url);
+          responseFutures.put(url, threadPool.submit(new Callable<NamedList<?>>() {
+            @Override
+            public NamedList<?> call() throws Exception {
+              return lbClient.request(lbRequest).getResponse();
+            }
+          }));
+        } finally {
+          MDC.remove("CloudSolrClient.url");
+        }
       }
 
       for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
