@@ -127,7 +127,9 @@ Other Changes
 * SOLR-7371: Make DocSet implement Accountable to estimate memory usage. (yonik, shalin)
 
 * SOLR-7381: Improve logging by adding node name in MDC in SolrCloud mode and adding MDC to
-  all thread pools. (shalin)
+  all thread pools. A new MDCAwareThreadPoolExecutor is introduced and usages of
+  Executors#newFixedThreadPool, #newSingleThreadExecutor, #newCachedThreadPool as well as
+  ThreadPoolExecutor directly is now forbidden in Solr. (shalin)
 
 * SOLR-7384: Fix spurious failures in FullSolrCloudDistribCmdsTest. (shalin)
 
