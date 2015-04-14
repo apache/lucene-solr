@@ -108,6 +108,9 @@ Bug Fixes
 
 * SOLR-7380: SearchHandler should not try to load runtime components in inform() (Noble Paul)
 
+* SOLR-7385: The clusterstatus API now returns the config set used to create a collection
+  inside a 'configName' key. (Shai Erera, shalin)
+
 Optimizations
 ----------------------
 
