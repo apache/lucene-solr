@@ -122,7 +122,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = new IndexSearcher(r);
     BooleanQuery q1 = new BooleanQuery();
     q1.add(new TermQuery(new Term("field", "little")), BooleanClause.Occur.SHOULD);
     q1.add(new TermQuery(new Term("field", "diseases")), BooleanClause.Occur.SHOULD);
