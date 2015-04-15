@@ -95,7 +95,8 @@ Bug Fixes
   (Luc Vanlerberghe via Adrien Grand)
 
 * LUCENE-6424: Fix many bugs with mockfs filesystems in the test-framework:
-  always consistently wrap Path, fix buggy behavior for globs, etc.  (Ryan Ernst)
+  always consistently wrap Path, fix buggy behavior for globs, etc.  
+  (Ryan Ernst, Simon Willnauer, Robert Muir)
 
 API Changes
 
