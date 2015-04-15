@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -135,14 +136,14 @@ public class RawValueTransformerFactory extends TransformerFactory
     
     @Override
     public void write(String name, TextResponseWriter writer) throws IOException {
-//      String str = null;
-//      if(val instanceof IndexableField) { // delays holding it in memory
-//        str = ((IndexableField)val).stringValue();
-//      }
-//      else {
-//        str = val.toString();
-//      }
-      writer.getWriter().write(val.toString());
+      String str = null;
+      if(val instanceof StorableField) { // delays holding it in memory
+        str = ((StorableField)val).stringValue();
+      }
+      else {
+        str = val.toString();
+      }
+      writer.getWriter().write(str);
     }
 
     @Override
