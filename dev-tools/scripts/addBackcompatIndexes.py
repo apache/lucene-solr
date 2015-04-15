@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# For usage information, see:
+# 
+#   http://wiki.apache.org/lucene-java/ReleaseTodo#Generate_Backcompat_Indexes
+
+
 import os
 import sys
 sys.path.append(os.path.dirname(__file__))
@@ -182,7 +188,11 @@ def download_release(version, temp_dir, force):
   return source
 
 def read_config():
-  parser = argparse.ArgumentParser(description='Add backcompat index and test for new version')
+  parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                   description='''\
+Add backcompat index and test for new version.  See:
+http://wiki.apache.org/lucene-java/ReleaseTodo#Generate_Backcompat_Indexes
+''')
   parser.add_argument('--force', action='store_true', default=False,
                       help='Redownload the version and rebuild, even if it already exists')
   parser.add_argument('--no-cleanup', dest='cleanup', action='store_false', default=True,
