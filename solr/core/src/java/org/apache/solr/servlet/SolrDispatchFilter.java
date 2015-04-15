@@ -666,13 +666,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       slices = new ArrayList<>();
       // look by core name
       byCoreName = true;
-      slices = getSlicesForCollections(clusterState, slices, true);
-      if (slices == null || slices.size() == 0) {
-        slices = getSlicesForCollections(clusterState, slices, false);
+      getSlicesForCollections(clusterState, slices, true);
+      if (slices.isEmpty()) {
+        getSlicesForCollections(clusterState, slices, false);
       }
     }
     
-    if (slices == null || slices.size() == 0) {
+    if (slices.isEmpty()) {
       return null;
     }
     
@@ -723,17 +723,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return null;
   }
 
-  private Collection<Slice> getSlicesForCollections(ClusterState clusterState,
+  private void getSlicesForCollections(ClusterState clusterState,
       Collection<Slice> slices, boolean activeSlices) {
-    Set<String> collections = clusterState.getCollections();
-    for (String collection : collections) {
-      if (activeSlices) {
-        slices.addAll(clusterState.getActiveSlices(collection));
-      } else {
-        slices.addAll(clusterState.getSlices(collection));
+    if (activeSlices) {
+      for (String collection : clusterState.getCollections()) {
+        final Collection<Slice> activeCollectionSlices = clusterState.getActiveSlices(collection);
+        if (activeCollectionSlices != null) {
+          slices.addAll(activeCollectionSlices);
+        }
+      }
+    } else {
+      for (String collection : clusterState.getCollections()) {
+        final Collection<Slice> collectionSlices = clusterState.getSlices(collection);
+        if (collectionSlices != null) {
+          slices.addAll(collectionSlices);
+        }
       }
     }
-    return slices;
   }
 
   private SolrCore getCoreByCollection(CoreContainer cores, String corename) {
