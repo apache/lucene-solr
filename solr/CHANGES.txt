@@ -119,6 +119,9 @@ Bug Fixes
 * SOLR-7385: The clusterstatus API now returns the config set used to create a collection
   inside a 'configName' key. (Shai Erera, shalin)
 
+* SOLR-7401: Fixed a NullPointerException when concurrently creating and deleting collections,
+  while accessing other collections. (Shai Erera)
+
 Optimizations
 ----------------------
 
