@@ -83,11 +83,6 @@ public class GeoRectangle implements GeoBBox
         this.LRHC = new GeoPoint(sinBottomLat,sinRightLon,cosBottomLat,cosRightLon);
         this.LLHC = new GeoPoint(sinBottomLat,sinLeftLon,cosBottomLat,cosLeftLon);
         
-        this.topPlane = new SidedPlane(LRHC,sinTopLat);
-        this.bottomPlane = new SidedPlane(ULHC,sinBottomLat);
-        this.leftPlane = new SidedPlane(LRHC,cosLeftLon,sinLeftLon);
-        this.rightPlane = new SidedPlane(LLHC,cosRightLon,sinRightLon);
-          
         double middleLat = (topLat + bottomLat) * 0.5;
         double sinMiddleLat = Math.sin(middleLat);
         cosMiddleLat = Math.cos(middleLat);
@@ -95,7 +90,13 @@ public class GeoRectangle implements GeoBBox
         double sinMiddleLon = Math.sin(middleLon);
         double cosMiddleLon = Math.cos(middleLon);
           
-        centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);      
+        centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);
+
+        this.topPlane = new SidedPlane(centerPoint,sinTopLat);
+        this.bottomPlane = new SidedPlane(centerPoint,sinBottomLat);
+        this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
+        this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
+
     }
 
     @Override

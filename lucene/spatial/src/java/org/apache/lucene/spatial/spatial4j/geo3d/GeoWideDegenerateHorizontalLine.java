@@ -17,25 +17,18 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Bounding box wider than PI but limited on four sides (top lat,
-* bottom lat, left lon, right lon).
+/** Degenerate bounding box wider than PI and limited on two sides (left lon, right lon).
 */
-public class GeoWideRectangle implements GeoBBox
+public class GeoWideDegenerateHorizontalLine implements GeoBBox
 {
-    public final double topLat;
-    public final double bottomLat;
+    public final double latitude;
     public final double leftLon;
     public final double rightLon;
       
-    public final double cosMiddleLat;
-      
-    public final GeoPoint ULHC;
-    public final GeoPoint URHC;
-    public final GeoPoint LRHC;
-    public final GeoPoint LLHC;
+    public final GeoPoint LHC;
+    public final GeoPoint RHC;
     
-    public final SidedPlane topPlane;
-    public final SidedPlane bottomPlane;
+    public final Plane plane;
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
       
@@ -46,15 +39,11 @@ public class GeoWideRectangle implements GeoBBox
     /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
      * Horizontal angle must be greater than or equal to PI.
      */
-    public GeoWideRectangle(double topLat, double bottomLat, double leftLon, double rightLon)
+    public GeoWideDegenerateHorizontalLine(double latitude, double leftLon, double rightLon)
     {
         // Argument checking
-        if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
-            throw new IllegalArgumentException("Top latitude out of range");
-        if (bottomLat > Math.PI * 0.5 || bottomLat < -Math.PI * 0.5)
-            throw new IllegalArgumentException("Bottom latitude out of range");
-        if (topLat < bottomLat)
-            throw new IllegalArgumentException("Top latitude less than bottom latitude");
+        if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
+            throw new IllegalArgumentException("Latitude out of range");
         if (leftLon < -Math.PI || leftLon > Math.PI)
             throw new IllegalArgumentException("Left longitude out of range");
         if (rightLon < -Math.PI || rightLon > Math.PI)
@@ -66,48 +55,40 @@ public class GeoWideRectangle implements GeoBBox
         if (extent < Math.PI)
             throw new IllegalArgumentException("Width of rectangle too small");
 
-        this.topLat = topLat;
-        this.bottomLat = bottomLat;
+        this.latitude = latitude;
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        double sinTopLat = Math.sin(topLat);
-        double cosTopLat = Math.cos(topLat);
-        double sinBottomLat = Math.sin(bottomLat);
-        double cosBottomLat = Math.cos(bottomLat);
+        double sinLatitude = Math.sin(latitude);
+        double cosLatitude = Math.cos(latitude);
         double sinLeftLon = Math.sin(leftLon);
         double cosLeftLon = Math.cos(leftLon);
         double sinRightLon = Math.sin(rightLon);
         double cosRightLon = Math.cos(rightLon);
         
-        // Now build the four points
-        this.ULHC = new GeoPoint(sinTopLat,sinLeftLon,cosTopLat,cosLeftLon);
-        this.URHC = new GeoPoint(sinTopLat,sinRightLon,cosTopLat,cosRightLon);
-        this.LRHC = new GeoPoint(sinBottomLat,sinRightLon,cosBottomLat,cosRightLon);
-        this.LLHC = new GeoPoint(sinBottomLat,sinLeftLon,cosBottomLat,cosLeftLon);
+        // Now build the two points
+        this.LHC = new GeoPoint(sinLatitude,sinLeftLon,cosLatitude,cosLeftLon);
+        this.RHC = new GeoPoint(sinLatitude,sinRightLon,cosLatitude,cosRightLon);
         
-        double middleLat = (topLat + bottomLat) * 0.5;
-        double sinMiddleLat = Math.sin(middleLat);
-        cosMiddleLat = Math.cos(middleLat);
+        this.plane = new Plane(sinLatitude);
+          
         double middleLon = (leftLon + rightLon) * 0.5;
         double sinMiddleLon = Math.sin(middleLon);
         double cosMiddleLon = Math.cos(middleLon);
           
-        centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);
+        centerPoint = new GeoPoint(sinLatitude,sinMiddleLon,cosLatitude,cosMiddleLon);
 
-        this.topPlane = new SidedPlane(centerPoint,sinTopLat);
-        this.bottomPlane = new SidedPlane(centerPoint,sinBottomLat);
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
-          
+
         this.eitherBound = new EitherBound();
     }
 
     @Override
     public GeoBBox expand(double angle)
     {
-        double newTopLat = topLat + angle;
-        double newBottomLat = bottomLat - angle;
+        double newTopLat = latitude + angle;
+        double newBottomLat = latitude - angle;
         // Figuring out when we escalate to a special case requires some prefiguring
         double currentLonSpan = rightLon - leftLon;
         if (currentLonSpan < 0.0)
@@ -124,8 +105,7 @@ public class GeoWideRectangle implements GeoBBox
     @Override
     public boolean isWithin(Vector point)
     {
-        return topPlane.isWithin(point) &&
-          bottomPlane.isWithin(point) &&
+        return plane.evaluate(point) == 0.0 &&
           (leftPlane.isWithin(point) ||
           rightPlane.isWithin(point));
     }
@@ -133,8 +113,7 @@ public class GeoWideRectangle implements GeoBBox
     @Override
     public boolean isWithin(double x, double y, double z)
     {
-        return topPlane.isWithin(x,y,z) &&
-          bottomPlane.isWithin(x,y,z) &&
+        return plane.evaluate(x,y,z) == 0.0 &&
           (leftPlane.isWithin(x,y,z) ||
           rightPlane.isWithin(x,y,z));
     }
@@ -145,10 +124,9 @@ public class GeoWideRectangle implements GeoBBox
         // Here we compute the distance from the middle point to one of the corners.  However, we need to be careful
         // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
         // the distance to the right or left edge from the center.
-        double centerAngle = (rightLon - (rightLon + leftLon) * 0.5) * cosMiddleLat;
-        double topAngle = centerPoint.arcDistance(URHC);
-        double bottomAngle = centerPoint.arcDistance(LLHC);
-        return Math.max(centerAngle,Math.max(topAngle,bottomAngle));
+        double topAngle = centerPoint.arcDistance(RHC);
+        double bottomAngle = centerPoint.arcDistance(LHC);
+        return Math.max(topAngle,bottomAngle);
     }
       
     @Override
@@ -162,10 +140,7 @@ public class GeoWideRectangle implements GeoBBox
     {
         // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
         // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-        return p.intersects(topPlane,bounds,bottomPlane,eitherBound) ||
-          p.intersects(bottomPlane,bounds,topPlane,eitherBound) ||
-          p.intersects(leftPlane,bounds,topPlane,bottomPlane) ||
-          p.intersects(rightPlane,bounds,topPlane,bottomPlane);
+        return p.intersects(plane,bounds,eitherBound);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -180,61 +155,38 @@ public class GeoWideRectangle implements GeoBBox
     {
         if (bounds == null)
             bounds = new Bounds();
-        bounds.addLatitudeZone(topLat).addLatitudeZone(bottomLat)
+        bounds.addLatitudeZone(latitude)
             .addLongitudeSlice(leftLon,rightLon);
         return bounds;
     }
 
     @Override
     public int getRelationship(GeoShape path) {
-        // There are many cases here.  I'll go through them in order
-        boolean ulhcWithin = path.isWithin(ULHC);
-        boolean urhcWithin = path.isWithin(URHC);
-        boolean lrhcWithin = path.isWithin(LRHC);
-        boolean llhcWithin = path.isWithin(LLHC);
 
-        // If there are some that are in, and some that are out, we've got overlap.  Otherwise, things are different.
-        if (ulhcWithin && urhcWithin && lrhcWithin && llhcWithin) {
-            // It's not precisely correct, but at this point we CHOOSE to claim that the entire rectangle is within the path.
-            // This in practice will mean that we generate more geotokens than are strictly needed, but otherwise this case
-            // would be expensive to disentangle.
+        if (path.intersects(plane,eitherBound)) {
+            return OVERLAPS;
+        }
+
+        if (path.isWithin(centerPoint)) {
             return CONTAINS;
         }
 
-        if (ulhcWithin || urhcWithin || lrhcWithin || llhcWithin) {
-            // Some are in, some are out: definite overlap
-            return OVERLAPS;
-        }
-
-        // All rectangle endpoints are outside the path.  The three possible cases are WITHIN, OVERLAPS, and DISJOINT.
-        // The only way to distinguish between them is to look at whether any of the four rectangle sides intersect
-        // the path edges.  If there is no intersection, AND any path point is within the rectangle, THEN return WITHIN.
-
-        if (path.intersects(topPlane,bottomPlane,eitherBound) ||
-            path.intersects(bottomPlane,topPlane,eitherBound) ||
-            path.intersects(leftPlane,topPlane,bottomPlane) ||
-            path.intersects(rightPlane,topPlane,bottomPlane))
-            return OVERLAPS;
-
-        if (isWithin(path.getInteriorPoint()))
-            return WITHIN;
-    
         return DISJOINT;
     }
 
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof GeoWideRectangle))
+        if (!(o instanceof GeoWideDegenerateHorizontalLine))
             return false;
-        GeoWideRectangle other = (GeoWideRectangle)o;
-        return other.ULHC.equals(ULHC) && other.LRHC.equals(LRHC);
+        GeoWideDegenerateHorizontalLine other = (GeoWideDegenerateHorizontalLine)o;
+        return other.LHC.equals(LHC) && other.RHC.equals(RHC);
     }
 
     @Override
     public int hashCode() {
-        int result = ULHC.hashCode();
-        result = 31 * result + LRHC.hashCode();
+        int result = LHC.hashCode();
+        result = 31 * result + RHC.hashCode();
         return result;
     }
 
@@ -254,3 +206,4 @@ public class GeoWideRectangle implements GeoBBox
     }
 }
   
+

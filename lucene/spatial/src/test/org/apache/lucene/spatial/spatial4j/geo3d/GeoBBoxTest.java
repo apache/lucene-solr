@@ -19,11 +19,33 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import org.junit.Test;
 
 public class GeoBBoxTest {
 
-
+    protected final double DEGREES_TO_RADIANS = Math.PI/180.0;
+    @Test
+    public void testBBoxDegenerate() {
+        GeoBBox box;
+        GeoConvexPolygon cp;
+        int relationship;
+        List<GeoPoint> points = new ArrayList<GeoPoint>();
+        points.add(new GeoPoint(24*DEGREES_TO_RADIANS,-30*DEGREES_TO_RADIANS));
+        points.add(new GeoPoint(-11*DEGREES_TO_RADIANS,101*DEGREES_TO_RADIANS));
+        points.add(new GeoPoint(-49*DEGREES_TO_RADIANS,-176*DEGREES_TO_RADIANS));
+        GeoMembershipShape shape = GeoPolygonFactory.makeGeoPolygon(points,0);
+        box = GeoBBoxFactory.makeGeoBBox(-64*DEGREES_TO_RADIANS,-64*DEGREES_TO_RADIANS,-180*DEGREES_TO_RADIANS,180*DEGREES_TO_RADIANS);
+        relationship = box.getRelationship(shape);
+        assertEquals(GeoArea.CONTAINS,relationship);
+        box = GeoBBoxFactory.makeGeoBBox(-61.85*DEGREES_TO_RADIANS,-67.5*DEGREES_TO_RADIANS,-180*DEGREES_TO_RADIANS,-168.75*DEGREES_TO_RADIANS);
+        System.out.println("Shape = "+shape+" Rect = "+box);
+        relationship = box.getRelationship(shape);
+        assertEquals(GeoArea.CONTAINS,relationship);
+    }
+    
     @Test
     public void testBBoxPointWithin() {
         GeoBBox box;

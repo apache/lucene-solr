@@ -41,18 +41,35 @@ public class GeoBBoxFactory
         if (leftLon == -Math.PI && rightLon == Math.PI) {
             if (topLat == Math.PI * 0.5 && bottomLat == -Math.PI * 0.5)
                 return new GeoWorld();
+            if (topLat == bottomLat)
+                return new GeoDegenerateLatitudeZone(topLat);
             return new GeoLatitudeZone(topLat, bottomLat);
         }
         double extent = rightLon - leftLon;
         if (extent < 0.0)
           extent += Math.PI * 2.0;
         if (topLat == Math.PI * 0.5 && bottomLat == -Math.PI * 0.5) {
+          if (leftLon == rightLon)
+            return new GeoDegenerateLongitudeSlice(leftLon);
+
           if (extent >= Math.PI)
             return new GeoWideLongitudeSlice(leftLon, rightLon);
+          
           return new GeoLongitudeSlice(leftLon, rightLon);
         }
-        if (extent >= Math.PI)
+        if (leftLon == rightLon) {
+          if (topLat == bottomLat)
+            return new GeoDegeneratePoint(topLat, leftLon);
+          return new GeoDegenerateVerticalLine(topLat, bottomLat, leftLon);
+        }
+        if (extent >= Math.PI) {
+          if (topLat == bottomLat) {
+            return new GeoWideDegenerateHorizontalLine(topLat, leftLon, rightLon);
+          }
           return new GeoWideRectangle(topLat, bottomLat, leftLon, rightLon);
+        }
+        if (topLat == bottomLat)
+          return new GeoDegenerateHorizontalLine(topLat, leftLon, rightLon);
         return new GeoRectangle(topLat, bottomLat, leftLon, rightLon);
     }
 

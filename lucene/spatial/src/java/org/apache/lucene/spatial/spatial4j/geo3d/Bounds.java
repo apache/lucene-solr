@@ -268,6 +268,18 @@ public class Bounds
         }
         return this;
     }
+
+    public Bounds addPoint(double latitude, double longitude) {
+        if (!noLongitudeBound) {
+            // Get a longitude value
+            addLongitudeBound(longitude);
+        }
+        if (!noTopLatitudeBound || !noBottomLatitudeBound) {
+            // Compute a latitude value
+            addLatitudeBound(latitude);
+        }
+        return this;
+    }
     
     public Bounds noLongitudeBound() {
         noLongitudeBound = true;
