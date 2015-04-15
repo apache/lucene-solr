@@ -41,7 +41,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    final File solrXml = getFile("solrj").toPath().resolve("solr/solr.xml").toFile();
+    final File solrXml = getFile("solr").toPath().resolve("solr.xml").toFile();
     solrCluster = new MiniSolrCloudCluster(1, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
   }
   
@@ -53,7 +53,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   }
   
   public void testConcurrentCreateAndDeleteDoesNotFail() {
-    final File configDir = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf").toFile();
+    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
     final Thread[] threads = new Thread[10];
