@@ -98,6 +98,9 @@ Bug Fixes
   always consistently wrap Path, fix buggy behavior for globs, etc.  
   (Ryan Ernst, Simon Willnauer, Robert Muir)
 
+* LUCENE-6426: Fix FieldType's copy constructor to also copy over the numeric
+  precision step. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

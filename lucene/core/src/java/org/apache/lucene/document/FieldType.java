@@ -68,8 +68,9 @@ public class FieldType implements IndexableFieldType  {
     this.storeTermVectorPayloads = ref.storeTermVectorPayloads();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
-    this.docValuesType = ref.docValuesType();
     this.numericType = ref.numericType();
+    this.numericPrecisionStep = ref.numericPrecisionStep();
+    this.docValuesType = ref.docValuesType();
     // Do not copy frozen!
   }
   
