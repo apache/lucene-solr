@@ -123,6 +123,11 @@ Build
 
 * LUCENE-6420: Update forbiddenapis to v1.8  (Uwe Schindler)
 
+Test Framework
+
+* LUCENE-6419: Added two-phase iteration assertions to AssertingQuery.
+  (Adrien Grand)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features

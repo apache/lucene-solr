@@ -604,7 +604,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.commit();
 
     DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
+    // not LuceneTestCase.newSearcher to not have the asserting wrappers
+    // and do instanceof checks
+    final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();
@@ -666,7 +668,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.commit();
 
     DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
+    // not LuceneTestCase.newSearcher to not have the asserting wrappers
+    // and do instanceof checks
+    final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
     PhraseQuery pq = new PhraseQuery();

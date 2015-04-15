@@ -141,7 +141,6 @@ public abstract class Filter extends Query {
           public long cost() {
             return iterator.cost();
           }
-
         };
       }
 

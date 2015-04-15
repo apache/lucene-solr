@@ -65,26 +65,17 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        Scorer scorer = w.scorer(context, acceptDocs);
-        if (scorer != null) {
-          // check that scorer obeys disi contract for docID() before next()/advance
-          try {
-            int docid = scorer.docID();
-            assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS;
-          } catch (UnsupportedOperationException ignored) {
-            // from a top-level BS1
-          }
-        }
-        return scorer;
-      }
-
-      @Override
       public float getValueForNormalization() {
         throw new IllegalStateException("Weight already normalized.");
       }
 
     };
+  }
+
+  @Override
+  public Weight createWeight(Query query, boolean needsScores) throws IOException {
+    // this adds assertions to the inner weights/scorers too
+    return new AssertingWeight(random, super.createWeight(query, needsScores));
   }
 
   @Override

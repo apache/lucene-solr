@@ -316,10 +316,13 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         int idx = -1;
         @Override
         public int docID() {
-          if (idx >= 0 && idx < size)
-            return docs[idx];
-          else
+          if (idx < 0) {
             return -1;
+          } else if (idx < size) {
+            return docs[idx];
+          } else {
+            return NO_MORE_DOCS;
+          }
         }
 
         @Override
