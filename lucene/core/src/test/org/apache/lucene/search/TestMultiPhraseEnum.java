@@ -86,6 +86,7 @@ public class TestMultiPhraseEnum extends LuceneTestCase {
     doc.add(new TextField("field", "bar", Field.Store.NO));
     writer.addDocument(doc);
     
+    writer.forceMerge(1);
     DirectoryReader ir = DirectoryReader.open(writer, true);
     writer.close();
 
