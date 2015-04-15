@@ -26,10 +26,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.SecureDirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
@@ -126,7 +124,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
 
   @Override
   public OutputStream newOutputStream(final Path path, OpenOption... options) throws IOException {
-    OutputStream stream = new FilterOutputStream2(super.newOutputStream(path, options)) {
+    OutputStream stream = new FilterOutputStream2(delegate.newOutputStream(toDelegate(path), options)) {
       
       boolean closed;
 
@@ -160,7 +158,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   
   @Override
   public FileChannel newFileChannel(final Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-    FileChannel channel = new FilterFileChannel(super.newFileChannel(path, options, attrs)) {
+    FileChannel channel = new FilterFileChannel(delegate.newFileChannel(toDelegate(path), options, attrs)) {
       
       boolean closed;
       
@@ -261,118 +259,43 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   }
 
   @Override
-  public DirectoryStream<Path> newDirectoryStream(final Path dir, Filter<? super Path> filter) throws IOException {
-    DirectoryStream<Path> stream = super.newDirectoryStream(dir, filter);
-    if (stream instanceof SecureDirectoryStream) {
-      stream = new TrackingSecureDirectoryStream((SecureDirectoryStream<Path>)stream, dir);
-    } else {
-      stream = new FilterDirectoryStream<Path>(stream) {
-        
-        boolean closed;
-        
-        @Override
-        public void close() throws IOException {
-          if (!closed) {
-            closed = true;
-            onClose(dir, this);
-          }
-          super.close();
+  public DirectoryStream<Path> newDirectoryStream(final Path dir, final Filter<? super Path> filter) throws IOException {
+    Filter<Path> wrappedFilter = new Filter<Path>() {
+      @Override
+      public boolean accept(Path entry) throws IOException {
+        return filter.accept(new FilterPath(entry, fileSystem));
+      }
+    };
+    DirectoryStream<Path> stream = delegate.newDirectoryStream(toDelegate(dir), wrappedFilter);
+    stream = new FilterDirectoryStream(stream, fileSystem) {
+      
+      boolean closed;
+      
+      @Override
+      public void close() throws IOException {
+        if (!closed) {
+          closed = true;
+          onClose(dir, this);
         }
-        
-        @Override
-        public String toString() {
-          return "DirectoryStream(" + dir + ")";
-        }
-        
-        @Override
-        public int hashCode() {
-          return System.identityHashCode(this);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-          return this == obj;
-        }
-      };
-    }
+        super.close();
+      }
+      
+      @Override
+      public String toString() {
+        return "DirectoryStream(" + dir + ")";
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+      
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
     callOpenHook(dir, stream);
     return stream;
-  }
-  
-  /** You can also open various things from SecureDirectoryStream, so we ensure we track those */
-  class TrackingSecureDirectoryStream extends FilterSecureDirectoryStream<Path> {
-    final Path dir;
-    
-    TrackingSecureDirectoryStream(SecureDirectoryStream<Path> delegate, Path dir) {
-      super(delegate);
-      this.dir = dir;
-    }
-    
-    boolean closed;
-
-    @Override
-    public void close() throws IOException {
-      if (!closed) {
-        closed = true;
-        onClose(dir, this);
-      }
-      super.close();
-    }
-    
-    @Override
-    public String toString() {
-      return "SecureDirectoryStream(" + dir + ")";
-    }
-    
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      return this == obj;
-    }
-
-    @Override
-    public SecureDirectoryStream<Path> newDirectoryStream(Path path, LinkOption... options) throws IOException {
-      SecureDirectoryStream<Path> stream = new TrackingSecureDirectoryStream(super.newDirectoryStream(path, options), path);
-      callOpenHook(path, stream);
-      return stream;
-    }
-
-    @Override
-    public SeekableByteChannel newByteChannel(final Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-      SeekableByteChannel channel = new FilterSeekableByteChannel(super.newByteChannel(path, options, attrs)) {
-        
-        boolean closed;
-        
-        @Override
-        public void close() throws IOException {
-          if (!closed) {
-            closed = true;
-            onClose(path, this);
-          }
-          super.close();
-        }
-
-        @Override
-        public String toString() {
-          return "SeekableByteChannel(" + path.toString() + ")";
-        }
-        
-        @Override
-        public int hashCode() {
-          return System.identityHashCode(this);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-          return this == obj;
-        }
-      };
-      callOpenHook(path, channel);
-      return channel;
-    }
   }
 }

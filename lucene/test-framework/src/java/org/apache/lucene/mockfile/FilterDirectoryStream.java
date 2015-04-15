@@ -19,6 +19,8 @@ package org.apache.lucene.mockfile;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -28,13 +30,18 @@ import java.util.Objects;
  * source of data, possibly transforming the data along the 
  * way or providing additional functionality. 
  */
-public class FilterDirectoryStream<T> implements DirectoryStream<T> {
+public class FilterDirectoryStream implements DirectoryStream<Path> {
   
   /** 
    * The underlying {@code DirectoryStream} instance. 
    */
-  protected final DirectoryStream<T> delegate;
+  protected final DirectoryStream<Path> delegate;
   
+  /**
+   * The underlying {@code FileSystem} instance.
+   */
+  protected final FileSystem fileSystem;
+
   /**
    * Construct a {@code FilterDirectoryStream} based on 
    * the specified base stream.
@@ -42,8 +49,9 @@ public class FilterDirectoryStream<T> implements DirectoryStream<T> {
    * Note that base stream is closed if this stream is closed.
    * @param delegate specified base stream.
    */
-  public FilterDirectoryStream(DirectoryStream<T> delegate) {
+  public FilterDirectoryStream(DirectoryStream<Path> delegate, FileSystem fileSystem) {
     this.delegate = Objects.requireNonNull(delegate);
+    this.fileSystem = Objects.requireNonNull(fileSystem);
   }
 
   @Override
@@ -52,7 +60,21 @@ public class FilterDirectoryStream<T> implements DirectoryStream<T> {
   }
 
   @Override
-  public Iterator<T> iterator() {
-    return delegate.iterator();
+  public Iterator<Path> iterator() {
+    final Iterator<Path> delegateIterator = delegate.iterator();
+    return new Iterator<Path>() {
+      @Override
+      public boolean hasNext() {
+        return delegateIterator.hasNext();
+      }
+      @Override
+      public Path next() {
+        return new FilterPath(delegateIterator.next(), fileSystem);
+      }
+      @Override
+      public void remove() {
+        delegateIterator.remove();
+      }
+    };
   }
 }

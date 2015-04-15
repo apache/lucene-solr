@@ -23,13 +23,10 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
-import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.SecureDirectoryStream;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
@@ -243,81 +240,5 @@ public class VerboseFS extends FilterFileSystemProvider {
       sop("deleteIfExists: " + path(path), exception);
     }
     throw new AssertionError();
-  }
-
-  @Override
-  public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
-    DirectoryStream<Path> stream = super.newDirectoryStream(dir, filter);
-    if (stream instanceof SecureDirectoryStream) {
-      stream = new VerboseSecureDirectoryStream((SecureDirectoryStream<Path>)stream, dir);
-    }
-    return stream;
-  }
-  
-  class VerboseSecureDirectoryStream extends FilterSecureDirectoryStream<Path> {
-    final Path dir;
-    
-    VerboseSecureDirectoryStream(SecureDirectoryStream<Path> delegate, Path dir) {
-      super(delegate);
-      this.dir = dir;
-    }
-
-    @Override
-    public SecureDirectoryStream<Path> newDirectoryStream(Path path, LinkOption... options) throws IOException {
-      return new VerboseSecureDirectoryStream(super.newDirectoryStream(path, options), path);
-    }
-
-    @Override
-    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-      Throwable exception = null;
-      try {
-        return super.newByteChannel(path, options, attrs);
-      } catch (Throwable t) {
-        exception = t;
-      } finally {
-        if (containsDestructive(options)) {
-          sop("newByteChannel[SECURE]" + options + ": " + path(path), exception);
-        } else {
-          IOUtils.reThrow(exception);
-        }
-      }
-      throw new AssertionError();
-    }
-
-    @Override
-    public void deleteFile(Path path) throws IOException {
-      Throwable exception = null;
-      try {
-        super.deleteFile(path);
-      } catch (Throwable t) {
-        exception = t;
-      } finally {
-        sop("deleteFile[SECURE]: " + path(path), exception);
-      }
-    }
-
-    @Override
-    public void deleteDirectory(Path path) throws IOException {
-      Throwable exception = null;
-      try {
-        super.deleteDirectory(path);
-      } catch (Throwable t) {
-        exception = t;
-      } finally {
-        sop("deleteDirectory[SECURE]: " + path(path), exception);
-      }
-    }
-
-    @Override
-    public void move(Path srcpath, SecureDirectoryStream<Path> targetdir, Path targetpath) throws IOException {
-      Throwable exception = null;
-      try {
-        super.move(srcpath, targetdir, targetpath);
-      } catch (Throwable t) {
-        exception = t;
-      } finally {
-        sop("move[SECURE]: " + path(srcpath) + " -> " + path(targetpath), exception);
-      }
-    }
   }
 }

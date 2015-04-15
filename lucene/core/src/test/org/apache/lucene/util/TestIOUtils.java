@@ -18,15 +18,12 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessMode;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -165,13 +162,12 @@ public class TestIOUtils extends LuceneTestCase {
    *  it will chroot /dev and /sys requests to root, so you can mock those too.
    *  <p>
    *  It is hacky by definition, so don't try putting it around a complex chain or anything.
-   *  Use FilterPath.unwrap
    */
   static class MockLinuxFileSystemProvider extends FilterFileSystemProvider {
     final Map<String,FileStore> filesToStore;
     final Path root;
     
-    public MockLinuxFileSystemProvider(FileSystem delegateInstance, final Map<String,FileStore> filesToStore, Path root) {
+    public MockLinuxFileSystemProvider(final FileSystem delegateInstance, final Map<String,FileStore> filesToStore, Path root) {
       super("mocklinux://", delegateInstance);
       final Collection<FileStore> allStores = new HashSet<>(filesToStore.values());
       this.fileSystem = new FilterFileSystem(this, delegateInstance) {
@@ -182,11 +178,11 @@ public class TestIOUtils extends LuceneTestCase {
 
         @Override
         public Path getPath(String first, String... more) {
-          return new MockLinuxPath(super.getPath(first, more), this);
+          return new MockLinuxPath(delegateInstance.getPath(first, more), this);
         }
       };
       this.filesToStore = filesToStore;
-      this.root = root;
+      this.root = new MockLinuxPath(root, this.fileSystem);
     }
 
     @Override
@@ -213,14 +209,8 @@ public class TestIOUtils extends LuceneTestCase {
     }
     
     @Override
-    public void checkAccess(Path path, AccessMode... modes) throws IOException {
-      // TODO: kinda screwed up how we do this, but it's easy to get lost. just unravel completely.
-      delegate.checkAccess(maybeChroot(FilterPath.unwrap(path)), modes);
-    }
-
-    @Override
-    public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
-      return super.newInputStream(maybeChroot(path), options);
+    protected Path toDelegate(Path path) {
+      return super.toDelegate(maybeChroot(path));
     }
 
     class MockLinuxPath extends FilterPath {
