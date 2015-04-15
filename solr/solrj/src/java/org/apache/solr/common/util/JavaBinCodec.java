@@ -95,6 +95,10 @@ public class JavaBinCodec {
     this.stringCache = stringCache;
   }
 
+  public ObjectResolver getResolver() {
+    return resolver;
+  }
+  
   public void marshal(Object nl, OutputStream os) throws IOException {
     init(FastOutputStream.wrap(os));
     try {
@@ -159,9 +163,15 @@ public class JavaBinCodec {
     if (writeKnownType(val)) {
       return;
     } else {
-      Object tmpVal = val;
+      ObjectResolver resolver = null;
+      if(val instanceof ObjectResolver) {
+        resolver = (ObjectResolver)val;
+      }
+      else {
+        resolver = this.resolver;
+      }
       if (resolver != null) {
-        tmpVal = resolver.resolve(val, this);
+        Object tmpVal = resolver.resolve(val, this);
         if (tmpVal == null) return; // null means the resolver took care of it fully
         if (writeKnownType(tmpVal)) return;
       }

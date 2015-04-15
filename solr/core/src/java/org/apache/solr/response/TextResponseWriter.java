@@ -203,6 +203,8 @@ public abstract class TextResponseWriter {
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else if (val instanceof EnumFieldValue) {
       writeStr(name, val.toString(), true);
+    } else if (val instanceof WriteableValue) {
+      ((WriteableValue)val).write(name, this);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);

@@ -97,6 +97,10 @@ New Features
 * SOLR-7372: Limit memory consumed by LRUCache with a new 'maxRamMB' config parameter.
   (yonik, shalin)
 
+* SOLR-7376: Return raw XML or JSON (in the appropriate writer) using DocumentTransformers.
+    ?fl=id,name,json_s:[json],xml_s:[xml]   (ryan)
+
+
 Bug Fixes
 ----------------------
 
