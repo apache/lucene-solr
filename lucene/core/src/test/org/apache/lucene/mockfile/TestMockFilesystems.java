@@ -25,6 +25,7 @@ import java.net.URI;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -259,5 +260,85 @@ public class TestMockFilesystems extends LuceneTestCase {
     }
     
     IOUtils.close(toClose);
+  }
+
+  public void testDirectoryStreamFiltered() throws IOException {
+    Path dir = FilterPath.unwrap(createTempDir());
+    FileSystem fs = new FilterFileSystemProvider("test://", dir.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path wrapped = new FilterPath(dir, fs);
+
+    OutputStream file = Files.newOutputStream(wrapped.resolve("file1"));
+    file.write(5);
+    file.close();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(wrapped)) {
+      int count = 0;
+      for (Path path : stream) {
+        assertTrue(path instanceof FilterPath);
+        if (!path.getFileName().toString().startsWith("extra")) {
+          count++;
+        }
+      }
+      assertEquals(1, count);
+    }
+
+    // check with LeakFS, a subclass of HandleTrackingFS which mucks with newDirectoryStream
+    dir = FilterPath.unwrap(createTempDir());
+    fs = new LeakFS(dir.getFileSystem()).getFileSystem(URI.create("file:///"));
+    wrapped = new FilterPath(dir, fs);
+
+    file = Files.newOutputStream(wrapped.resolve("file1"));
+    file.write(5);
+    file.close();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(wrapped)) {
+      int count = 0;
+      for (Path path : stream) {
+        assertTrue(path instanceof FilterPath);
+        if (!path.getFileName().toString().startsWith("extra")) {
+          count++;
+        }
+      }
+      assertEquals(1, count);
+    }
+  }
+
+  public void testDirectoryStreamGlobFiltered() throws IOException {
+    Path dir = FilterPath.unwrap(createTempDir());
+    FileSystem fs = new FilterFileSystemProvider("test://", dir.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path wrapped = new FilterPath(dir, fs);
+
+    OutputStream file = Files.newOutputStream(wrapped.resolve("foo"));
+    file.write(5);
+    file.close();
+    file = Files.newOutputStream(wrapped.resolve("bar"));
+    file.write(5);
+    file.close();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(wrapped, "f*")) {
+      int count = 0;
+      for (Path path : stream) {
+        assertTrue(path instanceof FilterPath);
+        ++count;
+      }
+      assertEquals(1, count);
+    }
+
+    // check with LeakFS, a subclass of HandleTrackingFS which mucks with newDirectoryStream
+    dir = FilterPath.unwrap(createTempDir());
+    fs = new LeakFS(dir.getFileSystem()).getFileSystem(URI.create("file:///"));
+    wrapped = new FilterPath(dir, fs);
+
+    file = Files.newOutputStream(wrapped.resolve("foo"));
+    file.write(5);
+    file.close();
+    file = Files.newOutputStream(wrapped.resolve("bar"));
+    file.write(5);
+    file.close();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(wrapped, "f*")) {
+      int count = 0;
+      for (Path path : stream) {
+        assertTrue(path instanceof FilterPath);
+        ++count;
+      }
+      assertEquals(1, count);
+    }
   }
 }
