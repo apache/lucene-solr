@@ -19,13 +19,17 @@ package org.apache.solr.client.solrj;
 
 
 import com.google.common.collect.Maps;
+
 import junit.framework.Assert;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -42,6 +46,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -49,6 +54,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
+import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -520,6 +526,89 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Augmented _value_ with alias
     assertEquals( "aaa", out1.get( "aaa" ) );
     assertEquals( 10, ((Integer)out1.get( "ten" )).intValue() );
+  }
+  
+
+  @Test
+  public void testRawFields() throws Exception
+  {    
+    String rawJson = "{ \"raw\": 1.234, \"id\":\"111\" }";
+    String rawXml = "<hello>this is <some/><xml/></hello>";
+    SolrClient client = getSolrClient();
+    
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    
+    // Now add something...
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "id", "111", 1.0f );
+    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "json_s", rawJson );
+    doc.addField( "xml_s", rawXml );
+    client.add(doc);
+    client.commit(); // make sure this gets in first
+    
+    SolrQuery query = new SolrQuery();
+    query.setQuery( "*:*" );
+    query.set( CommonParams.FL, "id,json_s:[json],xml_s:[xml]" );
+    
+    QueryRequest req = new QueryRequest( query );
+    req.setResponseParser(new BinaryResponseParser());
+    QueryResponse rsp = req.process(client);
+    
+    SolrDocumentList out = rsp.getResults();
+    assertEquals( 1, out.getNumFound() );
+    SolrDocument out1 = out.get( 0 ); 
+    assertEquals( "111", out1.getFieldValue( "id" ) );
+    
+    // Check that the 'raw' fields are unchanged using the standard formats
+    assertEquals( rawJson, out1.get( "json_s" ) );
+    assertEquals( rawXml,  out1.get( "xml_s" ) );
+    
+//    // Check that unknown augmenters throw an error
+//    query.set( CommonParams.FL, "id,[asdkgjahsdgjka]" );
+//    try {
+//      rsp = client.query( query );
+//      fail("Should throw an exception for unknown transformer: "+query.get(CommonParams.FL));
+//    }
+//    catch(SolrException ex) {
+//      assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+//    }
+
+    if(client instanceof EmbeddedSolrServer) {
+      return; // the EmbeddedSolrServer ignores the configured parser
+    }
+    
+    // Check raw JSON Output
+    query.set("fl", "id,json_s:[json],xml_s:[xml]");
+    query.set(CommonParams.WT, "json");
+    
+    req = new QueryRequest( query );
+    req.setResponseParser(new NoOpResponseParser("json"));
+    NamedList<Object> resp = client.request(req);
+    String raw = (String)resp.get("response");
+    
+    // Check that the response parses as JSON
+    JSONParser parser = new JSONParser(raw);
+    int evt = parser.nextEvent();
+    while(evt!=JSONParser.EOF) {
+      evt = parser.nextEvent();
+    }
+    assertTrue(raw.indexOf(rawJson)>0); // no escaping
+    assertTrue(raw.indexOf('"'+rawXml+'"')>0); // quoted xml
+
+    // Check raw XML Output
+    req.setResponseParser(new NoOpResponseParser("xml"));
+    query.set("fl", "id,json_s:[json],xml_s:[xml]");
+    query.set(CommonParams.WT, "xml");
+    req = new QueryRequest( query );
+    req.setResponseParser(new NoOpResponseParser("xml"));
+    resp = client.request(req);
+    raw = (String)resp.get("response");
+    
+    // Check that we get raw xml and json is escaped
+    assertTrue(raw.indexOf('>'+rawJson+'<')>0); // escaped
+    assertTrue(raw.indexOf(rawXml)>0); // raw xml
   }
 
   @Test
