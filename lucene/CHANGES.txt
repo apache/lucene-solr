@@ -94,8 +94,9 @@ Bug Fixes
 * LUCENE-6409: Fixed integer overflow in LongBitSet.ensureCapacity.
   (Luc Vanlerberghe via Adrien Grand)
 
-* LUCENE-6424: Fix many bugs with mockfs filesystems in the test-framework:
-  always consistently wrap Path, fix buggy behavior for globs, etc.  
+* LUCENE-6424, LUCENE-6430: Fix many bugs with mockfs filesystems in the 
+  test-framework: always consistently wrap Path, fix buggy behavior for 
+  globs, implement equals/hashcode for filtered Paths, etc.  
   (Ryan Ernst, Simon Willnauer, Robert Muir)
 
 * LUCENE-6426: Fix FieldType's copy constructor to also copy over the numeric

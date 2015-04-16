@@ -234,6 +234,26 @@ public class FilterPath implements Path {
     return delegate.compareTo(toDelegate(other));
   }
   
+  @Override
+  public int hashCode() {
+    return delegate.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    FilterPath other = (FilterPath) obj;
+    if (delegate == null) {
+      if (other.delegate != null) return false;
+    } else if (!delegate.equals(other.delegate)) return false;
+    if (fileSystem == null) {
+      if (other.fileSystem != null) return false;
+    } else if (!fileSystem.equals(other.fileSystem)) return false;
+    return true;
+  }
+
   /**
    * Unwraps all {@code FilterPath}s, returning
    * the innermost {@code Path}.
