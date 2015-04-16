@@ -105,6 +105,10 @@ Bug Fixes
 * LUCENE-6345: Null check terms/fields in Lucene queries (Lee
   Hinman via Mike McCandless)
 
+* LUCENE-6400: SolrSynonymParser should preserve original token instead
+  of replacing it with a synonym, when expand=true and there is no
+  explicit mapping (Ian Ribas, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
