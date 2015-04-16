@@ -71,7 +71,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   
   protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
-  protected List<SearchComponent> components = null;
+  protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory ;
   private PluginInfo shfInfo;
   private SolrCore core;
@@ -191,20 +191,22 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   }
 
   public List<SearchComponent> getComponents() {
-    if (components == null) {
+    List<SearchComponent> result = components;  // volatile read
+    if (result == null) {
       synchronized (this) {
         if (components == null) {
           initComponents();
         }
+        result = components;
       }
     }
-    return components;
+    return result;
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    if (components == null) getComponents();
+    List<SearchComponent> components  = getComponents();
     ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
