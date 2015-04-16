@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -39,7 +40,7 @@ public class ConstantScoreQuery extends Query {
   /** Strips off scores from the passed in Query. The hits will get a constant score
    * dependent on the boost factor of this query. */
   public ConstantScoreQuery(Query query) {
-    this.query = query;
+    this.query = Objects.requireNonNull(query, "Query must not be null");
   }
 
   /** Returns the encapsulated query. */

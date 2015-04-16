@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.FilteredTermsEnum; // javadocs
 import org.apache.lucene.index.IndexReader;
@@ -214,10 +215,7 @@ public abstract class MultiTermQuery extends Query {
    * Term.
    */
   public MultiTermQuery(final String field) {
-    if (field == null) {
-      throw new IllegalArgumentException("field must not be null");
-    }
-    this.field = field;
+    this.field = Objects.requireNonNull(field, "field must not be null");
   }
 
   /** Returns the field name for this query */

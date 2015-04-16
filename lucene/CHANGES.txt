@@ -102,6 +102,9 @@ Bug Fixes
 * LUCENE-6426: Fix FieldType's copy constructor to also copy over the numeric
   precision step. (Adrien Grand)
 
+* LUCENE-6345: Null check terms/fields in Lucene queries (Lee
+  Hinman via Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

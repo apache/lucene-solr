@@ -481,7 +481,8 @@ public final class IOUtils {
     }
     
     // get block device name
-    String devName = getBlockDevice(store);
+    String devName = store.name();
+
     // not a device (e.g. NFS server)
     if (!devName.startsWith("/")) {
       return true;
@@ -519,28 +520,38 @@ public final class IOUtils {
     FileStore store = Files.getFileStore(path);
     String mount = getMountPoint(store);
 
-    // find the "matching" FileStore from system list, it's the one we want.
+    // find the "matching" FileStore from system list, it's the one we want, but only return
+    // that if it's unambiguous (only one matching):
+    FileStore sameMountPoint = null;
     for (FileStore fs : path.getFileSystem().getFileStores()) {
       if (mount.equals(getMountPoint(fs))) {
-        return fs;
+        if (sameMountPoint == null) {
+          sameMountPoint = fs;
+        } else {
+          // more than one filesystem has the same mount point; something is wrong!
+          // fall back to crappy one we got from Files.getFileStore
+          return store;
+        }
       }
     }
 
-    // fall back to crappy one we got from Files.getFileStore
-    return store;    
+    if (sameMountPoint != null) {
+      // ok, we found only one, use it:
+      return sameMountPoint;
+    } else {
+      // fall back to crappy one we got from Files.getFileStore
+      return store;    
+    }
   }
   
-  // these are hacks that are not guaranteed
+  // these are hacks that are not guaranteed, may change across JVM versions, etc.
   static String getMountPoint(FileStore store) {
     String desc = store.toString();
-    return desc.substring(0, desc.lastIndexOf('(') - 1);
-  }
-  
-  // these are hacks that are not guaranteed
-  static String getBlockDevice(FileStore store) {
-    String desc = store.toString();
-    int start = desc.lastIndexOf('(');
-    int end = desc.indexOf(')', start);
-    return desc.substring(start+1, end);
+    int index = desc.lastIndexOf(" (");
+    if (index != -1) {
+      return desc.substring(0, index);
+    } else {
+      return desc;
+    }
   }
 }
