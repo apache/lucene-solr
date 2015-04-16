@@ -96,6 +96,11 @@ public class GeoPolygonFactory
                         // Handle exclusion
                         recursionList.add(newPoint);
                         recursionList.add(currentList.get(currentList.size()-1));
+                        if (recursionList.size() == pointsList.size()) {
+                            // We are trying to recurse with a list the same size as the one we started with.
+                            // Clearly, the polygon cannot be constructed
+                            throw new IllegalArgumentException("Polygon is illegal; cannot be decomposed into convex parts");
+                        }
                         // We want the other side for the recursion
                         SidedPlane otherSideNewBoundary = new SidedPlane(newBoundary);
                         rval.addShape(buildPolygonShape(recursionList,recursionList.size()-2,recursionList.size()-1,otherSideNewBoundary));
@@ -115,6 +120,11 @@ public class GeoPolygonFactory
             // The last step back to the start point had a recursion, so take care of that before we complete our work
             recursionList.add(currentList.get(0));
             recursionList.add(currentList.get(currentList.size()-1));
+            if (recursionList.size() == pointsList.size()) {
+                // We are trying to recurse with a list the same size as the one we started with.
+                // Clearly, the polygon cannot be constructed
+                throw new IllegalArgumentException("Polygon is illegal; cannot be decomposed into convex parts");
+            }
             // Construct a sided plane based on these two points, and the previous point
             SidedPlane newBoundary = new SidedPlane(currentList.get(currentList.size()-2),currentList.get(0),currentList.get(currentList.size()-1));
             // We want the other side for the recursion

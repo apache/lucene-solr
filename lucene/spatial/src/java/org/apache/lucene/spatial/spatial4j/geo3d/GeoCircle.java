@@ -221,4 +221,11 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Circle: center = ");
+        sb.append(center).append(" radius = ").append(cutoffAngle);
+        return sb.toString();
+    }
 }

@@ -42,6 +42,9 @@ import org.apache.lucene.spatial.spatial4j.Geo3dShape;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPolygonFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
 import org.junit.Test;
 
 import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
@@ -91,6 +94,14 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
 
   @Test
   public void testTriangleDisjointRect() throws IOException {
+    setupStrategy();
+    Rectangle rect = ctx.makeRectangle(-180, 180, 77, 84);
+    Shape triangle = makeTriangle(-149, 35, 88, -11, -27, -18);
+    assertTrue(rect.relate(triangle).intersects());     //unsure if this is correct or not but passes
+    //if they intersect, then the following rect cell can be "within" the triangle
+    final Rectangle cellRect = ctx.makeRectangle(-180, -168.75, 73.125, 78.75);
+    assert cellRect.relate(rect).intersects();
+    //assertTrue(cellRect.relate(triangle) != SpatialRelation.WITHIN);
   }
 
   private Shape makeTriangle(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -110,17 +121,85 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
 
   @Override
   protected Shape randomQueryShape() {
-    //random triangle
-    final List<GeoPoint> geoPoints = new ArrayList<>();
-    while (geoPoints.size() < 3) {
-      final Point point = randomPoint();
-      final GeoPoint gPt = new GeoPoint(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
-      if (geoPoints.contains(gPt) == false) {
-        geoPoints.add(gPt);
+    final int shapeType = random().nextInt(4);
+    switch (shapeType) {
+    case 0: {
+        // Polygons
+        final int vertexCount = random().nextInt(3) + 3;
+        while (true) {
+          final List<GeoPoint> geoPoints = new ArrayList<>();
+          while (geoPoints.size() < vertexCount) {
+            final Point point = randomPoint();
+            final GeoPoint gPt = new GeoPoint(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
+            geoPoints.add(gPt);
+          }
+          final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
+          try {
+            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(geoPoints, convexPointIndex);
+            return new Geo3dShape(shape, ctx);
+          } catch (IllegalArgumentException e) {
+            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            continue;
+          }
+        }
       }
+    case 1: {
+        // Circles
+        while (true) {
+          final int circleRadius = random().nextInt(180);
+          final Point point = randomPoint();
+          try {
+            final GeoShape shape = new GeoCircle(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+              circleRadius * DEGREES_TO_RADIANS);
+            return new Geo3dShape(shape, ctx);
+          } catch (IllegalArgumentException e) {
+            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            continue;
+          }
+        }
+      }
+    case 2: {
+        // Rectangles
+        while (true) {
+          final Point ulhcPoint = randomPoint();
+          final Point lrhcPoint = randomPoint();
+          try {
+            final GeoShape shape = GeoBBoxFactory.makeGeoBBox(ulhcPoint.getY() * DEGREES_TO_RADIANS,
+              lrhcPoint.getY() * DEGREES_TO_RADIANS,
+              ulhcPoint.getX() * DEGREES_TO_RADIANS,
+              lrhcPoint.getX() * DEGREES_TO_RADIANS);
+            return new Geo3dShape(shape, ctx);
+          } catch (IllegalArgumentException e) {
+            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            continue;
+          }
+        }
+      }
+    case 3: {
+        // Paths
+        final int pointCount = random().nextInt(5) + 1;
+        final double width = random().nextInt(90) * DEGREES_TO_RADIANS;
+        while (true) {
+          try {
+            final GeoPath path = new GeoPath(width);
+            for (int i = 0; i < pointCount; i++) {
+              final Point nextPoint = randomPoint();
+              path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
+            }
+            path.done();
+            return new Geo3dShape(path, ctx);
+          } catch (IllegalArgumentException e) {
+            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            continue;
+          }
+        }
+      }
+    default:
+      throw new IllegalStateException("Unexpected shape type");
     }
-    final int convexPointIndex = random().nextInt(3);
-    final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(geoPoints, convexPointIndex);
-    return new Geo3dShape(shape, ctx);
   }
 }

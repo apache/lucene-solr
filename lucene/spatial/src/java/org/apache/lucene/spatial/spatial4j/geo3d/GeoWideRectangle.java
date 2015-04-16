@@ -89,6 +89,10 @@ public class GeoWideRectangle implements GeoBBox
         double middleLat = (topLat + bottomLat) * 0.5;
         double sinMiddleLat = Math.sin(middleLat);
         cosMiddleLat = Math.cos(middleLat);
+        // Normalize
+        while (leftLon > rightLon) {
+            rightLon += Math.PI * 2.0;
+        }
         double middleLon = (leftLon + rightLon) * 0.5;
         double sinMiddleLon = Math.sin(middleLon);
         double cosMiddleLon = Math.cos(middleLon);
@@ -187,29 +191,6 @@ public class GeoWideRectangle implements GeoBBox
 
     @Override
     public int getRelationship(GeoShape path) {
-        // There are many cases here.  I'll go through them in order
-        boolean ulhcWithin = path.isWithin(ULHC);
-        boolean urhcWithin = path.isWithin(URHC);
-        boolean lrhcWithin = path.isWithin(LRHC);
-        boolean llhcWithin = path.isWithin(LLHC);
-
-        // If there are some that are in, and some that are out, we've got overlap.  Otherwise, things are different.
-        if (ulhcWithin && urhcWithin && lrhcWithin && llhcWithin) {
-            // It's not precisely correct, but at this point we CHOOSE to claim that the entire rectangle is within the path.
-            // This in practice will mean that we generate more geotokens than are strictly needed, but otherwise this case
-            // would be expensive to disentangle.
-            return CONTAINS;
-        }
-
-        if (ulhcWithin || urhcWithin || lrhcWithin || llhcWithin) {
-            // Some are in, some are out: definite overlap
-            return OVERLAPS;
-        }
-
-        // All rectangle endpoints are outside the path.  The three possible cases are WITHIN, OVERLAPS, and DISJOINT.
-        // The only way to distinguish between them is to look at whether any of the four rectangle sides intersect
-        // the path edges.  If there is no intersection, AND any path point is within the rectangle, THEN return WITHIN.
-
         if (path.intersects(topPlane,bottomPlane,eitherBound) ||
             path.intersects(bottomPlane,topPlane,eitherBound) ||
             path.intersects(leftPlane,topPlane,bottomPlane) ||
@@ -219,6 +200,9 @@ public class GeoWideRectangle implements GeoBBox
         if (isWithin(path.getInteriorPoint()))
             return WITHIN;
     
+        if (path.isWithin(centerPoint))
+            return CONTAINS;
+        
         return DISJOINT;
     }
 

@@ -54,6 +54,10 @@ public class GeoLongitudeSlice implements GeoBBox
         double sinRightLon = Math.sin(rightLon);
         double cosRightLon = Math.cos(rightLon);
 
+        // Normalize
+        while (leftLon > rightLon) {
+            rightLon += Math.PI * 2.0;
+        }
         double middleLon = (leftLon + rightLon) * 0.5;
         centerPoint = new GeoPoint(0.0,middleLon);              
         
@@ -134,22 +138,19 @@ public class GeoLongitudeSlice implements GeoBBox
 
     @Override
     public int getRelationship(GeoShape path) {
-        // It's possible to contain this area.  The way we do this is to 
-        // see whether the shape contains both the north and south poles.  If it does,
-        // we make the assumption that it contains the entire shape (which is 
-        // a convenient approximation that, at worst, increases our computation).
-        if (path.isWithin(0.0,0.0,Math.PI * 0.5) &&
-            path.isWithin(0.0,0.0,-Math.PI * 0.5))
-            return CONTAINS;
-        
-        // Next, look for intersections.
         if (path.intersects(leftPlane,rightPlane) ||
-            path.intersects(rightPlane,leftPlane))
+            path.intersects(rightPlane,leftPlane)) {
             return OVERLAPS;
+        }
 
-        if (isWithin(path.getInteriorPoint()))
+        if (isWithin(path.getInteriorPoint())) {
             return WITHIN;
+        }
 
+        if (path.isWithin(centerPoint)) {
+            return CONTAINS;
+        }
+        
         return DISJOINT;
     }
 

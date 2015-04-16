@@ -43,12 +43,13 @@ public class GeoLatitudeZone implements GeoBBox
         Vector topPoint = new Vector(0.0,0.0,sinTopLat);
         Vector bottomPoint = new Vector(0.0,0.0,sinBottomLat);
 
-        this.topPlane = new SidedPlane(bottomPoint,sinTopLat);
-        this.bottomPlane = new SidedPlane(topPoint,sinBottomLat);
-
         // Compute an interior point.  Pick one whose lat is between top and bottom.
-        double sinMiddleLat = (topLat + bottomLat) * 0.5;
+        double middleLat = (topLat + bottomLat) * 0.5;
+        double sinMiddleLat = Math.sin(middleLat);
         interiorPoint = new GeoPoint(Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat),0.0,sinMiddleLat);
+        
+        this.topPlane = new SidedPlane(interiorPoint,sinTopLat);
+        this.bottomPlane = new SidedPlane(interiorPoint,sinBottomLat);
     }
 
     @Override
@@ -117,16 +118,15 @@ public class GeoLatitudeZone implements GeoBBox
 
     @Override
     public int getRelationship(GeoShape path) {
-        // First observation: The only way you can draw a path that
-        // contains this area is to have an unbounded path that circles the globe.
-        // So we will never return CONTAINS.
-    
         // Second, the shortcut of seeing whether endpoints are in/out is not going to 
         // work with no area endpoints.  So we rely entirely on intersections.
 
         if (path.intersects(topPlane,bottomPlane) ||
             path.intersects(bottomPlane,topPlane))
             return OVERLAPS;
+
+        if (path.isWithin(interiorPoint))
+            return CONTAINS;
 
         if (isWithin(path.getInteriorPoint()))
             return WITHIN;

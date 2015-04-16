@@ -69,6 +69,11 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
         points.add(se);
     }
     
+    public void done() {
+        if (points.size() == 0)
+            throw new IllegalArgumentException("Path must have at least one point");
+    }
+    
     /** Compute an estimate of "distance" to the GeoPoint.
     * A return value of Double.MAX_VALUE should be returned for
     * points outside of the shape.

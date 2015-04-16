@@ -129,8 +129,14 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
         
         // Let's be sure that our interior point is really inside
         for (SidedPlane sp : edges) {
-            if (!sp.isWithin(interiorPoint))
-                throw new IllegalArgumentException("Interior point logic failed to produce an interior point");
+            if (!sp.isWithin(interiorPoint)) {
+                StringBuilder sb = new StringBuilder("Interior point logic failed to produce an interior point.  Vertices: ");
+                for (GeoPoint p : points) {
+                    sb.append(p).append(" ");
+                }
+                sb.append(". Interior point: ").append(interiorPoint);
+                throw new IllegalArgumentException(sb.toString());
+            }
         }
     }
     

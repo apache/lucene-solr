@@ -71,7 +71,11 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
         this.RHC = new GeoPoint(sinLatitude,sinRightLon,cosLatitude,cosRightLon);
         
         this.plane = new Plane(sinLatitude);
-          
+
+        // Normalize
+        while (leftLon > rightLon) {
+            rightLon += Math.PI * 2.0;
+        }
         double middleLon = (leftLon + rightLon) * 0.5;
         double sinMiddleLon = Math.sin(middleLon);
         double cosMiddleLon = Math.cos(middleLon);
