@@ -200,6 +200,9 @@ Bug Fixes
 * LUCENE-6395: Seeking by term ordinal was failing to set the term's
   bytes in MemoryIndex (Mike McCandless)
 
+* LUCENE-6429: Removed the TermQuery(Term,int) constructor which could lead to
+  inconsistent term statistics. (Adrien Grand, Robert Muir)
+
 Optimizations
 
 * LUCENE-6183, LUCENE-5647: Avoid recompressing stored fields
