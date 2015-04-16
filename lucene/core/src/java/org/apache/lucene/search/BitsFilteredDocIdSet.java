@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Objects;
+
 import org.apache.lucene.util.Bits;
 
 /**
@@ -50,9 +52,7 @@ public final class BitsFilteredDocIdSet extends FilteredDocIdSet {
    */
   public BitsFilteredDocIdSet(DocIdSet innerSet, Bits acceptDocs) {
     super(innerSet);
-    if (acceptDocs == null)
-      throw new NullPointerException("acceptDocs is null");
-    this.acceptDocs = acceptDocs;
+    this.acceptDocs = Objects.requireNonNull(acceptDocs, "Bits must not be null");
   }
 
   @Override

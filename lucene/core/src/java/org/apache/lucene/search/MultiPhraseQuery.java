@@ -93,6 +93,7 @@ public class MultiPhraseQuery extends Query {
    * @see PhraseQuery#add(Term, int)
    */
   public void add(Term[] terms, int position) {
+    Objects.requireNonNull(terms, "Term array must not be null");
     if (termArrays.size() == 0)
       field = terms[0].field();
 

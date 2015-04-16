@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.DoubleField; // for javadocs
@@ -172,7 +173,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
     this.precisionStep = precisionStep;
-    this.dataType = dataType;
+    this.dataType = Objects.requireNonNull(dataType, "NumericType must not be null");
     this.min = min;
     this.max = max;
     this.minInclusive = minInclusive;

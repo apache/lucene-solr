@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -50,8 +51,8 @@ public class CachingWrapperQuery extends Query implements Accountable {
    * @param policy policy defining which filters should be cached on which segments
    */
   public CachingWrapperQuery(Query query, QueryCachingPolicy policy) {
-    this.query = query;
-    this.policy = policy;
+    this.query = Objects.requireNonNull(query, "Query must not be null");
+    this.policy = Objects.requireNonNull(policy, "QueryCachingPolicy must not be null");
   }
 
   /** Same as {@link CachingWrapperQuery#CachingWrapperQuery(Query, QueryCachingPolicy)}

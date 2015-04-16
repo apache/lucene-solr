@@ -362,20 +362,20 @@ public class TestFilteredQuery extends LuceneTestCase {
   public void testInvalidArguments() throws Exception {
     try {
       new FilteredQuery(null, null);
-      fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
+      fail("Should throw NullPointerException");
+    } catch (NullPointerException npe) {
       // pass
     }
     try {
       new FilteredQuery(new TermQuery(new Term("field", "one")), null);
-      fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
+      fail("Should throw NullPointerException");
+    } catch (NullPointerException npe) {
       // pass
     }
     try {
       new FilteredQuery(null, new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))));
-      fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
+      fail("Should throw NullPointerException");
+    } catch (NullPointerException npe) {
       // pass
     }
   }

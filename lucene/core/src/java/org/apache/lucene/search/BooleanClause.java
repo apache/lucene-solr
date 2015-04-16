@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Objects;
+
 /** A clause in a BooleanQuery. */
 public class BooleanClause {
   
@@ -55,8 +57,8 @@ public class BooleanClause {
   /** Constructs a BooleanClause.
   */ 
   public BooleanClause(Query query, Occur occur) {
-    this.query = query;
-    this.occur = occur;
+    this.query = Objects.requireNonNull(query, "Query must not be null");
+    this.occur = Objects.requireNonNull(occur, "Occur must not be null");
     
   }
 
@@ -65,7 +67,7 @@ public class BooleanClause {
   }
 
   public void setOccur(Occur occur) {
-    this.occur = occur;
+    this.occur = Objects.requireNonNull(occur, "Occur must not be null");
 
   }
 
@@ -74,7 +76,7 @@ public class BooleanClause {
   }
 
   public void setQuery(Query query) {
-    this.query = query;
+    this.query = Objects.requireNonNull(query, "Query must not be null");
   }
   
   public boolean isProhibited() {

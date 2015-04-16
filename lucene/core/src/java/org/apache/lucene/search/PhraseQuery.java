@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.PostingsEnum;
@@ -110,6 +111,7 @@ public class PhraseQuery extends Query {
    * 
    */
   public void add(Term term, int position) {
+    Objects.requireNonNull(term, "Term must not be null");
     if (positions.size() > 0) {
       final int previousPosition = positions.get(positions.size()-1);
       if (position < previousPosition) {

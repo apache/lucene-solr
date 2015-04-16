@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -66,6 +67,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    * @param tieBreakerMultiplier   the weight to give to each matching non-maximum disjunct
    */
   public DisjunctionMaxQuery(Collection<Query> disjuncts, float tieBreakerMultiplier) {
+    Objects.requireNonNull(disjuncts, "Collection of Querys must not be null");
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     add(disjuncts);
   }
@@ -74,7 +76,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    * @param query the disjunct added
    */
   public void add(Query query) {
-    disjuncts.add(query);
+    disjuncts.add(Objects.requireNonNull(query, "Query must not be null"));
   }
 
   /** Add a collection of disjuncts to this disjunction
@@ -82,7 +84,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    * @param disjuncts a collection of queries to add as disjuncts.
    */
   public void add(Collection<Query> disjuncts) {
-    this.disjuncts.addAll(disjuncts);
+    this.disjuncts.addAll(Objects.requireNonNull(disjuncts, "Query connection must not be null"));
   }
 
   /** @return An {@code Iterator<Query>} over the disjuncts */

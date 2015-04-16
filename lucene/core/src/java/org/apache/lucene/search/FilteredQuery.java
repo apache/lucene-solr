@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -66,18 +67,9 @@ public class FilteredQuery extends Query {
    * @see FilterStrategy
    */
   public FilteredQuery(Query query, Filter filter, FilterStrategy strategy) {
-    if (query == null) {
-      throw new IllegalArgumentException("Query must not be be null.");
-    }
-    if (filter == null) {
-      throw new IllegalArgumentException("Filter must not be be null.");
-    }
-    if (strategy == null) {
-      throw new IllegalArgumentException("FilterStrategy must not be null");
-    }
-    this.strategy = strategy;
-    this.query = query;
-    this.filter = filter;
+    this.strategy = Objects.requireNonNull(strategy, "FilterStrategy must not be null");
+    this.query = Objects.requireNonNull(query, "Query must not be null");
+    this.filter = Objects.requireNonNull(filter, "Filter must not be null");
   }
   
   /**
