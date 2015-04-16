@@ -21,7 +21,6 @@ import java.io.StringReader;
 import java.text.ParseException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -31,7 +30,7 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * Tests parser for the Solr synonyms format
  * @lucene.experimental
  */
-public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
+public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
   
   /** Tests some simple examples from the solr wiki */
   public void testSimple() throws Exception {
@@ -173,5 +172,62 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
         new String[] { "b,b" },
         new int[] { 1 });
     analyzer.close();
+  }
+
+  /** Verify type of token and positionLength after analyzer. */
+  public void testPositionLengthAndTypeSimple() throws Exception {
+    String testFile =
+     "spider man, spiderman";
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    final SynonymMap map = parser.build();
+    analyzer.close();
+
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
+      }
+    };
+
+    assertAnalyzesToPositions(analyzer, "spider man",
+        new String[]{"spider", "spiderman", "man"},
+        new String[]{"word", "SYNONYM", "word"},
+        new int[]{1, 0, 1},
+        new int[]{1, 2, 1});
+  }
+
+  /** Test parsing of simple examples. */
+  public void testParseSimple() throws Exception {
+    String testFile =
+      "spider man, spiderman\n" +
+      "usa,united states,u s a,united states of america\n"+
+      "mystyped, mistyped => mistyped\n" +
+      "foo => foo bar\n" +
+      "foo => baz";
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    final SynonymMap map = parser.build();
+    analyzer.close();
+
+    assertEntryEquals(map, "spiderman", true, "spider man");
+    assertEntryEquals(map, "spider man", true, "spiderman");
+
+    assertEntryEquals(map, "usa", true, new String[] {"united states", "u s a", "united states of america"});
+    assertEntryEquals(map, "united states", true, new String[] {"usa", "u s a", "united states of america"});
+    assertEntryEquals(map, "u s a", true, new String[] {"usa", "united states", "united states of america"});
+    assertEntryEquals(map, "united states of america", true, new String[] {"usa", "u s a", "united states"});
+
+    assertEntryEquals(map, "mistyped", false, "mistyped");
+    assertEntryEquals(map, "mystyped", false, "mistyped");
+
+    assertEntryEquals(map, "foo", false, new String[]{"foo bar", "baz"});
+    assertEntryAbsent(map, "baz");
+    assertEntryAbsent(map, "bar");
   }
 }
