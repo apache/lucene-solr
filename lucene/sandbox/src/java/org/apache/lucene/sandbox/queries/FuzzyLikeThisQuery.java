@@ -27,12 +27,21 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -256,6 +265,27 @@ public class FuzzyLikeThisQuery extends Query
     }
   }
 
+  private Query newTermQuery(IndexReader reader, Term term) throws IOException {
+    if (ignoreTF) {
+      return new ConstantScoreQuery(new TermQuery(term));
+    } else {
+      // we build an artificial TermContext that will give an overall df and ttf
+      // equal to 1
+      TermContext context = new TermContext(reader.getContext());
+      for (LeafReaderContext leafContext : reader.leaves()) {
+        Terms terms = leafContext.reader().terms(term.field());
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator();
+          if (termsEnum.seekExact(term.bytes())) {
+            int freq = 1 - context.docFreq(); // we want the total df and ttf to be 1
+            context.register(termsEnum.termState(), leafContext.ord, freq, freq);
+          }
+        }
+      }
+      return new TermQuery(term, context);
+    }
+  }
+
   @Override
     public Query rewrite(IndexReader reader) throws IOException
     {
@@ -298,7 +328,7 @@ public class FuzzyLikeThisQuery extends Query
             {
                 //optimize where only one selected variant
                 ScoreTerm st= variants.get(0);
-                Query tq = ignoreTF ? new ConstantScoreQuery(new TermQuery(st.term)) : new TermQuery(st.term, 1);
+                Query tq = newTermQuery(reader, st.term);
                 tq.setBoost(st.score); // set the boost to a mix of IDF and score
                 bq.add(tq, BooleanClause.Occur.SHOULD); 
             }
@@ -310,7 +340,7 @@ public class FuzzyLikeThisQuery extends Query
                 {
                     ScoreTerm st = iterator2.next();
                     // found a match
-                    Query tq = ignoreTF ? new ConstantScoreQuery(new TermQuery(st.term)) : new TermQuery(st.term, 1);                    
+                    Query tq = newTermQuery(reader, st.term);
                     tq.setBoost(st.score); // set the boost using the ScoreTerm's score
                     termVariants.add(tq, BooleanClause.Occur.SHOULD);          // add to query                    
                 }

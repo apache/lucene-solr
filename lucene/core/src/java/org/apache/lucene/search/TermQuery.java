@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -40,7 +41,6 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class TermQuery extends Query {
   private final Term term;
-  private final int docFreq;
   private final TermContext perReaderTermState;
   
   final class TermWeight extends Weight {
@@ -138,16 +138,7 @@ public class TermQuery extends Query {
   
   /** Constructs a query for the term <code>t</code>. */
   public TermQuery(Term t) {
-    this(t, -1);
-  }
-  
-  /**
-   * Expert: constructs a TermQuery that will use the provided docFreq instead
-   * of looking up the docFreq against the searcher.
-   */
-  public TermQuery(Term t, int docFreq) {
-    term = t;
-    this.docFreq = docFreq;
+    term = Objects.requireNonNull(t);
     perReaderTermState = null;
   }
   
@@ -157,9 +148,8 @@ public class TermQuery extends Query {
    */
   public TermQuery(Term t, TermContext states) {
     assert states != null;
-    term = t;
-    docFreq = states.docFreq();
-    perReaderTermState = states;
+    term = Objects.requireNonNull(t);
+    perReaderTermState = Objects.requireNonNull(states);
   }
   
   /** Returns the term of this query. */
@@ -180,9 +170,6 @@ public class TermQuery extends Query {
       // PRTS was pre-build for this IS
       termState = this.perReaderTermState;
     }
-    
-    // we must not ignore the given docFreq - if set use the given value (lie)
-    if (docFreq != -1) termState.setDocFreq(docFreq);
     
     return new TermWeight(searcher, needsScores, termState);
   }

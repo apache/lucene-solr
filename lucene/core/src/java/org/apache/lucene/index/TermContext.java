@@ -53,6 +53,7 @@ public final class TermContext {
     assert context != null && context.isTopLevel;
     topReaderContext = context;
     docFreq = 0;
+    totalTermFreq = 0;
     final int len;
     if (context.leaves() == null) {
       len = 1;
@@ -107,6 +108,7 @@ public final class TermContext {
    */
   public void clear() {
     docFreq = 0;
+    totalTermFreq = 0;
     Arrays.fill(states, null);
   }
 
@@ -159,12 +161,6 @@ public final class TermContext {
    */
   public long totalTermFreq() {
     return totalTermFreq;
-  }
-  
-  /** expert: only available for queries that want to lie about docfreq
-   * @lucene.internal */
-  public void setDocFreq(int docFreq) {
-    this.docFreq = docFreq;
   }
 
   /** Returns true if all terms stored here are real (e.g., not auto-prefix terms).
