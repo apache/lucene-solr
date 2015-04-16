@@ -90,13 +90,17 @@ public class BuildMaxPositionIndex {
     }
 
     // Also confirm merging detects this:
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergeScheduler(new SerialMergeScheduler()));
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
     try {
       w.forceMerge(1);
     } catch (CorruptIndexException cie) {
       // SerialMergeScheduler
-      assertTrue(cie.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
+      assertTrue("got message " + cie.getMessage(),
+                 cie.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
     }
 
     w.close();
