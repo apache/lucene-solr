@@ -69,6 +69,13 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
   private int minTermsAutoPrefix = TestUtil.nextInt(random(), 2, 100);
   private int maxTermsAutoPrefix = random().nextBoolean() ? Math.max(2, (minTermsAutoPrefix-1)*2 + random().nextInt(100)) : Integer.MAX_VALUE;
 
+  public TestAutoPrefixTerms() {
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("TEST: using minItemsPerBlock=" + minItemsPerBlock + " maxItemsPerBlock=" + maxItemsPerBlock);
+      System.out.println("TEST: using minTermsAutoPrefix=" + minTermsAutoPrefix + " maxTermsAutoPrefix=" + maxTermsAutoPrefix);
+    }
+  }
+
   private final Codec codec = TestUtil.alwaysPostingsFormat(new AutoPrefixPostingsFormat(minItemsPerBlock, maxItemsPerBlock,
                                                                                          minTermsAutoPrefix, maxTermsAutoPrefix));
 
@@ -614,8 +621,12 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
         long allowedMaxTerms;
 
         if (bounds.length == 1) {
-          // Simple prefix query: we should never see more than maxPrefixCount terms:
-          allowedMaxTerms = maxPrefixCount;
+          // Simple prefix query: we should never see more than maxPrefixCount terms, except for the empty string:
+          if (bounds[0].length == 0) {
+            allowedMaxTerms = Integer.MAX_VALUE;
+          } else {
+            allowedMaxTerms = maxPrefixCount;
+          }
         } else {
           // Trickier: we need to allow for maxPrefixTerms for each different leading byte in the min and max:
           assert bounds.length == 2;
