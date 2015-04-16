@@ -278,14 +278,16 @@ public class WeightedSpanTermExtractor {
  
     Set<Term> nonWeightedTerms = new HashSet<>();
     final boolean mustRewriteQuery = mustRewriteQuery(spanQuery);
+    final IndexSearcher searcher = new IndexSearcher(getLeafContext());
+    searcher.setQueryCache(null);
     if (mustRewriteQuery) {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.extractTerms(nonWeightedTerms);
+        rewrittenQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
       }
     } else {
-      spanQuery.extractTerms(nonWeightedTerms);
+      spanQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();
@@ -300,7 +302,7 @@ public class WeightedSpanTermExtractor {
       LeafReaderContext context = getLeafContext();
       Map<Term,TermContext> termContexts = new HashMap<>();
       TreeSet<Term> extractedTerms = new TreeSet<>();
-      q.extractTerms(extractedTerms);
+      searcher.createNormalizedWeight(q, false).extractTerms(extractedTerms);
       for (Term term : extractedTerms) {
         termContexts.put(term, TermContext.build(context, term));
       }
@@ -353,7 +355,8 @@ public class WeightedSpanTermExtractor {
    */
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<>();
-    query.extractTerms(nonWeightedTerms);
+    final IndexSearcher searcher = new IndexSearcher(getLeafContext());
+    searcher.createNormalizedWeight(query, false).extractTerms(nonWeightedTerms);
 
     for (final Term queryTerm : nonWeightedTerms) {
 

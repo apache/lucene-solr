@@ -18,13 +18,11 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 
 import java.io.IOException;
-import java.util.Set;
 
 /** A simple query that wraps another query and implements ExtendedQuery. */
 public class WrappedQuery extends ExtendedQueryBase {
@@ -61,11 +59,6 @@ public class WrappedQuery extends ExtendedQueryBase {
   public Query rewrite(IndexReader reader) throws IOException {
     // currently no need to continue wrapping at this point.
     return q.rewrite(reader);
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    q.extractTerms(terms);
   }
 
   @Override

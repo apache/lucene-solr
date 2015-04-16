@@ -75,11 +75,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
     return Objects.hash(getClass(), query, getBoost());
   }
 
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    // no-op
-  }
-
   /** Returns the field name for this query */
   public final String getField() { return query.getField(); }
 

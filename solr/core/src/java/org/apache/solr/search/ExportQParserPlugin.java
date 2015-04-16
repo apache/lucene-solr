@@ -87,10 +87,6 @@ public class ExportQParserPlugin extends QParserPlugin {
       return this.mainQuery.rewrite(reader);
     }
 
-    public void extractTerms(Set<Term> terms) {
-      this.mainQuery.extractTerms(terms);
-    }
-
     public TopDocsCollector getTopDocsCollector(int len,
                                                 SolrIndexSearcher.QueryCommand cmd,
                                                 IndexSearcher searcher) throws IOException {

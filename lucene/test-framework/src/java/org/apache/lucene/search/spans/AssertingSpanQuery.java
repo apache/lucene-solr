@@ -38,6 +38,11 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
+  protected void extractTerms(Set<Term> terms) {
+    in.extractTerms(terms);
+  }
+
+  @Override
   public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     Spans spans = in.getSpans(context, acceptDocs, termContexts);
     if (spans == null) {
@@ -89,11 +94,6 @@ public class AssertingSpanQuery extends SpanQuery {
     } else {
       return q;
     }
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    in.extractTerms(terms);
   }
 
   @Override

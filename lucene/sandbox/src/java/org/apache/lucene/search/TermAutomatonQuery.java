@@ -202,15 +202,6 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    for(BytesRef text : termToID.keySet()) {
-      if (text != null) {
-        terms.add(new Term(field, text));
-      }
-    }
-  }
-
-  @Override
   public String toString(String field) {
     // TODO: what really am I supposed to do with the incoming field...
     StringBuilder sb = new StringBuilder();
@@ -363,6 +354,15 @@ public class TermAutomatonQuery extends Query {
       stats = similarity.computeWeight(getBoost(),
                                        searcher.collectionStatistics(field),
                                        allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      for(BytesRef text : termToID.keySet()) {
+        if (text != null) {
+          terms.add(new Term(field, text));
+        }
+      }
     }
 
     @Override

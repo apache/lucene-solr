@@ -106,6 +106,9 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
+    public void extractTerms(Set<Term> terms) {}
+
+    @Override
     public float getValueForNormalization() throws IOException {
       return parentWeight.getValueForNormalization() * joinQuery.getBoost() * joinQuery.getBoost();
     }
@@ -311,11 +314,6 @@ public class ToChildBlockJoinQuery extends Query {
     public long cost() {
       return parentScorer.cost();
     }
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    parentQuery.extractTerms(terms);
   }
 
   @Override

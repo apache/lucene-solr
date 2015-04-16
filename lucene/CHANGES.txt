@@ -109,6 +109,9 @@ API Changes
 * LUCENE-6410: Removed unused "reuse" parameter to
   Terms.iterator. (Robert Muir, Mike McCandless)
 
+* LUCENE-6425: Replaced Query.extractTerms with Weight.extractTerms.
+  (Adrien Grand)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 

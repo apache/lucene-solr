@@ -266,6 +266,11 @@ public class PhraseQuery extends Query {
     }
 
     @Override
+    public void extractTerms(Set<Term> queryTerms) {
+      queryTerms.addAll(terms);
+    }
+
+    @Override
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
     @Override
@@ -351,14 +356,6 @@ public class PhraseQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new PhraseWeight(searcher, needsScores);
-  }
-
-  /**
-   * @see org.apache.lucene.search.Query#extractTerms(Set)
-   */
-  @Override
-  public void extractTerms(Set<Term> queryTerms) {
-    queryTerms.addAll(terms);
   }
 
   /** Prints a user-readable version of this query. */

@@ -163,11 +163,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     }
 
-    public void extractTerms(Set<Term> terms) {
-      this.mainQuery.extractTerms(terms);
-
-    }
-
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
       return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher, needsScores);
     }
@@ -185,6 +180,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
       this.mainWeight = mainQuery.createWeight(searcher, needsScores);
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      this.mainWeight.extractTerms(terms);
+
     }
 
     public float getValueForNormalization() throws IOException {

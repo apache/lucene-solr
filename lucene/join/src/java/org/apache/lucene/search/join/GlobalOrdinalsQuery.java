@@ -67,11 +67,6 @@ final class GlobalOrdinalsQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    fromQuery.extractTerms(terms);
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -115,6 +110,9 @@ final class GlobalOrdinalsQuery extends Query {
       super(query);
       this.approximationWeight = approximationWeight;
     }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {}
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {

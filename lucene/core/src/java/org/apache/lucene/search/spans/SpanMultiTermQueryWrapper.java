@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -72,7 +73,12 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       setRewriteMethod(SCORING_SPAN_QUERY_REWRITE); 
     }
   }
-  
+
+  @Override
+  protected void extractTerms(Set<Term> terms) {
+    throw new IllegalStateException("Rewrite first");
+  }
+
   /**
    * Expert: returns the rewriteMethod
    */

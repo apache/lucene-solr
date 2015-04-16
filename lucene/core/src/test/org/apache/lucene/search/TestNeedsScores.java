@@ -113,6 +113,11 @@ public class TestNeedsScores extends LuceneTestCase {
       final Weight w = in.createWeight(searcher, needsScores);
       return new Weight(AssertNeedsScores.this) {
         @Override
+        public void extractTerms(Set<Term> terms) {
+          w.extractTerms(terms);
+        }
+
+        @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return w.explain(context, doc);
         }
@@ -143,11 +148,6 @@ public class TestNeedsScores extends LuceneTestCase {
       } else {
         return new AssertNeedsScores(in2, value);
       }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
     }
 
     @Override

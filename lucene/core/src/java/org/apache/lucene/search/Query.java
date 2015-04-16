@@ -18,10 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 
 /** The abstract base class for queries.
     <p>Instantiable subclasses are:
@@ -87,17 +85,6 @@ public abstract class Query implements Cloneable {
    */
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
-  }
-  
-  /**
-   * Expert: adds all terms occurring in this query to the terms set. Only
-   * works if this query is in its {@link #rewrite rewritten} form.
-   * 
-   * @throws UnsupportedOperationException if this query is not yet rewritten
-   */
-  public void extractTerms(Set<Term> terms) {
-    // needs to be implemented by query subclasses
-    throw new UnsupportedOperationException(getClass().getName());
   }
 
   /** Returns a clone of this query. */

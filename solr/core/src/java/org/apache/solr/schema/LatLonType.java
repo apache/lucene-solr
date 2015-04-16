@@ -306,10 +306,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     return bboxQuery != null ? bboxQuery.rewrite(reader) : this;
   }
 
-  @Override
-  public void extractTerms(Set terms) {}
-
-
   protected class SpatialWeight extends Weight {
     protected IndexSearcher searcher;
     protected float queryNorm;
@@ -325,6 +321,9 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       latSource.createWeight(latContext, searcher);
       lonSource.createWeight(lonContext, searcher);
     }
+
+    @Override
+    public void extractTerms(Set terms) {}
 
     @Override
     public float getValueForNormalization() throws IOException {

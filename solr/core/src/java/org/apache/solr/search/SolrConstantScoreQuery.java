@@ -94,12 +94,6 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     return this;
   }
 
-  @Override
-  public void extractTerms(Set terms) {
-    // OK to not add any terms when used for MultiSearcher,
-    // but may not be OK for highlighting
-  }
-
   protected class ConstantWeight extends Weight {
     private float queryNorm;
     private float queryWeight;
@@ -110,6 +104,12 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
       this.context = ValueSource.newContext(searcher);
       if (filter instanceof SolrFilter)
         ((SolrFilter)filter).createWeight(context, searcher);
+    }
+
+    @Override
+    public void extractTerms(Set<org.apache.lucene.index.Term> terms) {
+      // OK to not add any terms when used for MultiSearcher,
+      // but may not be OK for highlighting
     }
 
     @Override

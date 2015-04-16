@@ -60,7 +60,12 @@ public class TermQuery extends Query {
           searcher.collectionStatistics(term.field()),
           searcher.termStatistics(term, termStates));
     }
-    
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      terms.add(getTerm());
+    }
+
     @Override
     public String toString() {
       return "weight(" + TermQuery.this + ")";
@@ -172,11 +177,6 @@ public class TermQuery extends Query {
     }
     
     return new TermWeight(searcher, needsScores, termState);
-  }
-  
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    terms.add(getTerm());
   }
   
   /** Prints a user-readable version of this query. */

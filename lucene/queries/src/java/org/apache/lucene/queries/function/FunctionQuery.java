@@ -61,9 +61,6 @@ public class FunctionQuery extends Query {
     return this;
   }
 
-  @Override
-  public void extractTerms(Set<Term> terms) {}
-
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
     protected float queryNorm;
@@ -76,6 +73,9 @@ public class FunctionQuery extends Query {
       this.context = ValueSource.newContext(searcher);
       func.createWeight(context, searcher);
     }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {}
 
     @Override
     public float getValueForNormalization() throws IOException {

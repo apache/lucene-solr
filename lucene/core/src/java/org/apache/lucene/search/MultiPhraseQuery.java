@@ -126,16 +126,6 @@ public class MultiPhraseQuery extends Query {
     return result;
   }
 
-  // inherit javadoc
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    for (final Term[] arr : termArrays) {
-      for (final Term term: arr) {
-        terms.add(term);
-      }
-    }
-  }
-
 
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
@@ -165,6 +155,15 @@ public class MultiPhraseQuery extends Query {
       stats = similarity.computeWeight(getBoost(),
           searcher.collectionStatistics(field), 
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      for (final Term[] arr : termArrays) {
+        for (final Term term: arr) {
+          terms.add(term);
+        }
+      }
     }
 
     @Override

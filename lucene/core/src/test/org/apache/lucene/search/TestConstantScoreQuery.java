@@ -18,12 +18,16 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -230,5 +234,19 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  public void testExtractTerms() throws Exception {
+    final IndexSearcher searcher = newSearcher(new MultiReader());
+    final TermQuery termQuery = new TermQuery(new Term("foo", "bar"));
+    final ConstantScoreQuery csq = new ConstantScoreQuery(termQuery);
+
+    final Set<Term> scoringTerms = new HashSet<>();
+    searcher.createNormalizedWeight(csq, true).extractTerms(scoringTerms);
+    assertEquals(Collections.emptySet(), scoringTerms);
+
+    final Set<Term> matchingTerms = new HashSet<>();
+    searcher.createNormalizedWeight(csq, false).extractTerms(matchingTerms);
+    assertEquals(Collections.singleton(new Term("foo", "bar")), matchingTerms);
   }
 }

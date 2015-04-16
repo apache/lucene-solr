@@ -233,16 +233,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
   }
 
-  // inherit javadoc
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    for (BooleanClause clause : clauses) {
-      if (clause.isScoring()) {
-        clause.getQuery().extractTerms(terms);
-      }
-    }
-  }
-
   @Override @SuppressWarnings("unchecked")
   public BooleanQuery clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();

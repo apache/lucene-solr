@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -69,6 +70,11 @@ public class SpanWeight extends Weight {
                                        searcher.collectionStatistics(query.getField()),
                                        termStats);
     }
+  }
+
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    query.extractTerms(terms);
   }
 
   @Override

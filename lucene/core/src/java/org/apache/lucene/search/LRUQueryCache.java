@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
@@ -544,6 +545,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
       super(in.getQuery());
       this.in = in;
       this.policy = policy;
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      in.extractTerms(terms);
     }
 
     @Override

@@ -47,11 +47,6 @@ public class AssertingQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    in.extractTerms(terms);
-  }
-
-  @Override
   public String toString(String field) {
     return in.toString(field);
   }
