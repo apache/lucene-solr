@@ -62,16 +62,6 @@ public class ConstantScoreQuery extends Query {
     return this;
   }
 
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    // NOTE: ConstantScoreQuery used to wrap either a query or a filter. Now
-    // that filter extends Query, we need to only extract terms when the query
-    // is not a filter if we do not want to hit an UnsupportedOperationException
-    if (query instanceof Filter == false) {
-      query.extractTerms(terms);
-    }
-  }
-
   protected class ConstantWeight extends Weight {
     private final Weight innerWeight;
     private float queryNorm;
@@ -80,6 +70,11 @@ public class ConstantScoreQuery extends Query {
     public ConstantWeight(Weight innerWeight) throws IOException {
       super(ConstantScoreQuery.this);
       this.innerWeight = innerWeight;
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      // no-op
     }
 
     @Override

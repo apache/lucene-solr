@@ -62,6 +62,11 @@ public class IgnoreAcceptDocsQuery extends Query {
     }
 
     @Override
+    public void extractTerms(Set<Term> terms) {
+      w.extractTerms(terms);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return w.explain(context, doc);
     }
@@ -87,11 +92,6 @@ public class IgnoreAcceptDocsQuery extends Query {
     Query n = q.rewrite(reader);
     if (q == n) return this;
     return new IgnoreAcceptDocsQuery(n);
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    q.extractTerms(terms);
   }
 
   @Override

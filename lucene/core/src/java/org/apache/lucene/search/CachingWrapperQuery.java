@@ -23,11 +23,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -116,7 +118,12 @@ public class CachingWrapperQuery extends Query implements Accountable {
     policy.onUse(weight.getQuery());
     return new ConstantScoreWeight(weight.getQuery()) {
       @Override
-      protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, float score) throws IOException {
+      public void extractTerms(Set<Term> terms) {
+        weight.extractTerms(terms);
+      }
+
+      @Override
+      protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
         final LeafReader reader = context.reader();
         final Object key = reader.getCoreCacheKey();
 

@@ -204,10 +204,6 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set terms) {
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher);
   }
@@ -278,6 +274,9 @@ class JoinQuery extends Query {
       }
       this.toSearcher = searcher;
     }
+
+    @Override
+    public void extractTerms(Set<org.apache.lucene.index.Term> terms) {}
 
     @Override
     public float getValueForNormalization() throws IOException {

@@ -762,7 +762,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals("a +b -c #d", bq.toString("field"));
   }
 
-  public void testExtractTerms() {
+  public void testExtractTerms() throws IOException {
     Term a = new Term("f", "a");
     Term b = new Term("f", "b");
     Term c = new Term("f", "c");
@@ -772,8 +772,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     bq.add(new TermQuery(b), Occur.MUST);
     bq.add(new TermQuery(c), Occur.FILTER);
     bq.add(new TermQuery(d), Occur.MUST_NOT);
-    Set<Term> terms = new HashSet<>();
-    bq.extractTerms(terms);
-    assertEquals(new HashSet<>(Arrays.asList(a, b)), terms);
+    IndexSearcher searcher = new IndexSearcher(new MultiReader());
+
+    Set<Term> scoringTerms = new HashSet<>();
+    searcher.createNormalizedWeight(bq, true).extractTerms(scoringTerms);
+    assertEquals(new HashSet<>(Arrays.asList(a, b)), scoringTerms);
+
+    Set<Term> matchingTerms = new HashSet<>();
+    searcher.createNormalizedWeight(bq, false).extractTerms(matchingTerms);
+    assertEquals(new HashSet<>(Arrays.asList(a, b, c)), matchingTerms);
   }
 }

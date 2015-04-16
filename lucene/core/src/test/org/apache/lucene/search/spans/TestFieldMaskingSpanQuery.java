@@ -175,7 +175,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     HashSet<Term> set = new HashSet<>();
-    qr.extractTerms(set);
+    qr.createWeight(searcher, true).extractTerms(set);
     assertEquals(2, set.size());
   }
   

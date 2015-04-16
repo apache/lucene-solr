@@ -63,11 +63,6 @@ public class BoostedQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    q.extractTerms(terms);
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new BoostedQuery.BoostedWeight(searcher, needsScores);
   }
@@ -83,6 +78,11 @@ public class BoostedQuery extends Query {
       this.qWeight = q.createWeight(searcher, needsScores);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      qWeight.extractTerms(terms);
     }
 
     @Override

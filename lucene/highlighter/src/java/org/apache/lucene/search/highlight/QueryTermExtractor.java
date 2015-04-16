@@ -21,10 +21,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
@@ -36,6 +38,18 @@ import org.apache.lucene.search.Query;
  */
 public final class QueryTermExtractor
 {
+
+  /** for term extraction */
+  private static final IndexSearcher EMPTY_INDEXSEARCHER;
+  static {
+    try {
+      IndexReader emptyReader = new MultiReader();
+      EMPTY_INDEXSEARCHER = new IndexSearcher(emptyReader);
+      EMPTY_INDEXSEARCHER.setQueryCache(null);
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
+  }
 
   /**
    * Extracts all terms texts of a given Query into an array of WeightedTerms
@@ -113,7 +127,11 @@ public final class QueryTermExtractor
         getTermsFromFilteredQuery((FilteredQuery) query, terms, prohibited, fieldName);
       else {
         HashSet<Term> nonWeightedTerms = new HashSet<>();
-        query.extractTerms(nonWeightedTerms);
+        try {
+          EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(nonWeightedTerms);
+        } catch (IOException bogus) {
+          throw new RuntimeException("Should not happen on an empty index", bogus);
+        }
         for (Iterator<Term> iter = nonWeightedTerms.iterator(); iter.hasNext(); ) {
           Term term = iter.next();
           if ((fieldName == null) || (term.field().equals(fieldName))) {

@@ -81,7 +81,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("smith", "name", 0.3f, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    q.extractTerms(queryTerms);
+    searcher.createWeight(q, true).extractTerms(queryTerms);
     assertTrue("Should have variant smythe", queryTerms.contains(new Term("name", "smythe")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     assertTrue("Should have variant smyth", queryTerms.contains(new Term("name", "smyth")));
@@ -98,7 +98,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("jonathin smoth", "name", 0.3f, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    q.extractTerms(queryTerms);
+    searcher.createWeight(q, true).extractTerms(queryTerms);
     assertTrue("Should have variant jonathan", queryTerms.contains(new Term("name", "jonathan")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
@@ -116,7 +116,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     // don't fail here just because the field doesn't exits
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    q.extractTerms(queryTerms);
+    searcher.createWeight(q, true).extractTerms(queryTerms);
     assertTrue("Should have variant jonathan", queryTerms.contains(new Term("name", "jonathan")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
@@ -133,7 +133,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("fernando smith", "name", 0.3f, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    q.extractTerms(queryTerms);
+    searcher.createWeight(q, true).extractTerms(queryTerms);
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
     ScoreDoc[] sd = topDocs.scoreDocs;

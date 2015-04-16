@@ -76,11 +76,6 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    originalQuery.extractTerms(terms);
-  }
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query originalQueryRewrite = originalQuery.rewrite(reader);
     if (originalQueryRewrite != originalQuery) {
@@ -126,6 +121,9 @@ class TermsIncludingScoreQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
     return new Weight(TermsIncludingScoreQuery.this) {
+
+      @Override
+      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

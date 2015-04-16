@@ -18,9 +18,11 @@ package org.apache.lucene.facet;
  */
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
@@ -91,6 +93,9 @@ class DrillSidewaysQuery extends Query {
     }
 
     return new Weight(DrillSidewaysQuery.this) {
+      @Override
+      public void extractTerms(Set<Term> terms) {}
+
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return baseWeight.explain(context, doc);

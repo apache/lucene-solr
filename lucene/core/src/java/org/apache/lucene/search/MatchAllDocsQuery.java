@@ -93,6 +93,9 @@ public final class MatchAllDocsQuery extends Query {
     }
 
     @Override
+    public void extractTerms(Set<Term> terms) {}
+
+    @Override
     public String toString() {
       return "weight(" + MatchAllDocsQuery.this + ")";
     }
@@ -131,10 +134,6 @@ public final class MatchAllDocsQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
     return new MatchAllDocsWeight();
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
   }
 
   @Override

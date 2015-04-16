@@ -429,6 +429,10 @@ public class TestQueryRescorer extends LuceneTestCase {
       return new Weight(FixedScoreQuery.this) {
 
         @Override
+        public void extractTerms(Set<Term> terms) {
+        }
+
+        @Override
         public float getValueForNormalization() {
           return 1.0f;
         }
@@ -492,10 +496,6 @@ public class TestQueryRescorer extends LuceneTestCase {
           return null;
         }
       };
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
     }
 
     @Override

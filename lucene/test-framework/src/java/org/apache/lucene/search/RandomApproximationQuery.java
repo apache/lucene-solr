@@ -2,10 +2,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 
 /*
@@ -87,6 +90,11 @@ public class RandomApproximationQuery extends Query {
       super(weight.getQuery());
       this.weight = weight;
       this.random = random;
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      weight.extractTerms(terms);
     }
 
     @Override

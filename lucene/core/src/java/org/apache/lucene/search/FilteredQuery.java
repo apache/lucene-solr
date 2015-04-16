@@ -90,6 +90,11 @@ public class FilteredQuery extends Query {
     return new Weight(FilteredQuery.this) {
 
       @Override
+      public void extractTerms(Set<Term> terms) {
+        weight.extractTerms(terms);
+      }
+
+      @Override
       public float getValueForNormalization() throws IOException { 
         return weight.getValueForNormalization() * getBoost() * getBoost(); // boost sub-weight
       }
@@ -369,12 +374,6 @@ public class FilteredQuery extends Query {
   /** Returns this FilteredQuery's {@link FilterStrategy} */
   public FilterStrategy getFilterStrategy() {
     return this.strategy;
-  }
-
-  // inherit javadoc
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    getQuery().extractTerms(terms);
   }
 
   /** Prints a user-readable version of this query. */

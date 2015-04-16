@@ -19,8 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 
 class AssertingWeight extends Weight {
@@ -36,6 +38,11 @@ class AssertingWeight extends Weight {
     super(in.getQuery());
     this.random = random;
     this.in = in;
+  }
+
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    in.extractTerms(terms);
   }
 
   @Override

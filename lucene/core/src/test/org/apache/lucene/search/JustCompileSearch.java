@@ -18,9 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
@@ -276,6 +278,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public void extractTerms(Set<Term> terms) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -294,7 +301,7 @@ final class JustCompileSearch {
     public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
   
 }

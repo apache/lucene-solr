@@ -19,12 +19,14 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
 /** Base class for span-based queries. */
@@ -34,6 +36,13 @@ public abstract class SpanQuery extends Query {
    *  This may return null to indicate that the SpanQuery has no results.
    */
   public abstract Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException;
+
+  /**
+   * Extract terms from these spans.
+   * @lucene.internal
+   * @see Weight#extractTerms
+   */
+  protected abstract void extractTerms(Set<Term> terms);
 
   /**
    * Returns the name of the field matched by this query.

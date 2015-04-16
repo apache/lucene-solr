@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -74,6 +76,17 @@ public class BooleanWeight extends Weight {
       this.disableCoord = seenActualCoord == false;
     } else {
       this.disableCoord = true;
+    }
+  }
+
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    int i = 0;
+    for (BooleanClause clause : query.clauses()) {
+      if (clause.isScoring() || (needsScores == false && clause.isProhibited() == false)) {
+        weights.get(i).extractTerms(terms);
+      }
+      i++;
     }
   }
 

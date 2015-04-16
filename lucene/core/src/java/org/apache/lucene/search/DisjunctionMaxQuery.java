@@ -127,6 +127,13 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       this.needsScores = needsScores;
     }
 
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      for (Weight weight : weights) {
+        weight.extractTerms(terms);
+      }
+    }
+
     /** Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
     @Override
     public float getValueForNormalization() throws IOException {
@@ -235,14 +242,6 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
     clone.disjuncts = (ArrayList<Query>) this.disjuncts.clone();
     return clone;
-  }
-
-  // inherit javadoc
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    for (Query query : disjuncts) {
-      query.extractTerms(terms);
-    }
   }
 
   /** Prettyprint us.

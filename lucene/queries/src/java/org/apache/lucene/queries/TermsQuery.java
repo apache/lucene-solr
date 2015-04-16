@@ -262,14 +262,6 @@ public class TermsQuery extends Query implements Accountable {
     return Collections.emptyList();
   }
 
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    // no-op
-    // This query is for abuse cases when the number of terms is too high to
-    // run efficiently as a BooleanQuery. So likewise we hide its terms in
-    // order to protect highlighters
-  }
-
   private static final class TermsAndField implements Accountable {
 
     private static final long BASE_RAM_BYTES_USED =
@@ -359,6 +351,14 @@ public class TermsQuery extends Query implements Accountable {
 
       private float queryNorm;
       private float queryWeight;
+
+      @Override
+      public void extractTerms(Set<Term> terms) {
+        // no-op
+        // This query is for abuse cases when the number of terms is too high to
+        // run efficiently as a BooleanQuery. So likewise we hide its terms in
+        // order to protect highlighters
+      }
 
       @Override
       public float getValueForNormalization() throws IOException {

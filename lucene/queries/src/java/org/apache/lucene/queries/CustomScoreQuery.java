@@ -34,7 +34,6 @@ import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -107,15 +106,6 @@ public class CustomScoreQuery extends Query {
     }
     
     return (clone == null) ? this : clone;
-  }
-
-  /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    subQuery.extractTerms(terms);
-    for (Query scoringQuery : scoringQueries) {
-      scoringQuery.extractTerms(terms);
-    }
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#clone() */
@@ -196,6 +186,14 @@ public class CustomScoreQuery extends Query {
         this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores);
       }
       this.qStrict = strict;
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      subQueryWeight.extractTerms(terms);
+      for (Weight scoringWeight : valSrcWeights) {
+        scoringWeight.extractTerms(terms);
+      }
     }
 
     @Override

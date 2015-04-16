@@ -19,11 +19,9 @@ package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -57,11 +55,6 @@ public class CompositeVerifyQuery extends Query {
       return new CompositeVerifyQuery(rewritten, predicateValueSource);
     }
     return this;
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    indexQuery.extractTerms(terms);
   }
 
   @Override

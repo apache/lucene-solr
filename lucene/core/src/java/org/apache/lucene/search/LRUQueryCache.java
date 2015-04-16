@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
@@ -563,7 +564,12 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, float score) throws IOException {
+    public void extractTerms(Set<Term> terms) {
+      in.extractTerms(terms);
+    }
+
+    @Override
+    protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
       if (context.ord == 0) {
         policy.onUse(getQuery());
       }

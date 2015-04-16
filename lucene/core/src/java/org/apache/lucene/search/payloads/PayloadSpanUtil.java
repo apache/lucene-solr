@@ -26,15 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -180,7 +181,9 @@ public class PayloadSpanUtil {
       throws IOException {
     Map<Term,TermContext> termContexts = new HashMap<>();
     TreeSet<Term> terms = new TreeSet<>();
-    query.extractTerms(terms);
+    final IndexSearcher searcher = new IndexSearcher(context);
+    searcher.setQueryCache(null);
+    searcher.createNormalizedWeight(query, false).extractTerms(terms);
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(context, term));
     }

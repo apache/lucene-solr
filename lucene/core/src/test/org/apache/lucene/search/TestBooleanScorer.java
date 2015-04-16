@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -72,6 +73,11 @@ public class TestBooleanScorer extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new Weight(CrazyMustUseBulkScorerQuery.this) {
+        @Override
+        public void extractTerms(Set<Term> terms) {
+          throw new UnsupportedOperationException();
+        }
+
         @Override
         public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
