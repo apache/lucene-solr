@@ -48,7 +48,7 @@ public interface Classifier<T> {
    * @return the whole list of {@link ClassificationResult}, the classes and scores. Returns <code>null</code> if the classifier can't make lists.
    * @throws IOException If there is a low-level I/O error.
    */
-  public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException;
+  public List<ClassificationResult<T>> getClasses(String text) throws IOException;
 
   /**
    * Get the first <code>max</code> classes (sorted by score, descending) assigned to the given text String.
@@ -58,7 +58,7 @@ public interface Classifier<T> {
    * @return the whole list of {@link ClassificationResult}, the classes and scores. Cut for "max" number of elements. Returns <code>null</code> if the classifier can't make lists.
    * @throws IOException If there is a low-level I/O error.
    */
-  public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException;
+  public List<ClassificationResult<T>> getClasses(String text, int max) throws IOException;
 
   /**
    * Train the classifier using the underlying Lucene index
