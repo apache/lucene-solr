@@ -57,6 +57,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
 
   /** A marker to print full env. diagnostics after the suite. */
   private boolean printDiagnosticsAfterClass;
+  
+  /** true if we should skip the reproduce string (diagnostics are independent) */
+  private boolean suppressReproduceLine;
 
 
   @Override
@@ -66,6 +69,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     scope = LifecycleScope.SUITE;
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
+    suppressReproduceLine = targetClass.isAnnotationPresent(LuceneTestCase.SuppressReproduceLine.class);
     testClassesRun.add(targetClass.getSimpleName());
   }
 
@@ -142,6 +146,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   }
 
   private void reportAdditionalFailureInfo(final String testName) {
+    if (suppressReproduceLine) {
+      return;
+    }
     if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
       System.err.println("NOTE: download the large Jenkins line-docs file by running " +
         "'ant get-jenkins-line-docs' in the lucene directory.");
