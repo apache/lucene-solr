@@ -173,21 +173,24 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         Integer.MAX_VALUE).scoreDocs) {
       Document doc = indexSearcher.doc(scoreDoc.doc);
 
-      // assign class to the doc
-      ClassificationResult<Boolean> classificationResult = assignClass(doc
-          .getField(textFieldName).stringValue());
-      Boolean assignedClass = classificationResult.getAssignedClass();
+      IndexableField textField = doc.getField(textFieldName);
       
       // get the expected result
-      IndexableField field = doc.getField(classFieldName);
-      
-      Boolean correctClass = Boolean.valueOf(field.stringValue());
-      long modifier = correctClass.compareTo(assignedClass);
-      if (modifier != 0) {
-        updateWeights(leafReader, scoreDoc.doc, assignedClass,
-            weights, modifier, batchCount % batchSize == 0);
+      IndexableField classField = doc.getField(classFieldName);
+
+      if (textField != null && classField != null) {
+        // assign class to the doc
+        ClassificationResult<Boolean> classificationResult = assignClass(textField.stringValue());
+        Boolean assignedClass = classificationResult.getAssignedClass();
+
+        Boolean correctClass = Boolean.valueOf(classField.stringValue());
+        long modifier = correctClass.compareTo(assignedClass);
+        if (modifier != 0) {
+          updateWeights(leafReader, scoreDoc.doc, assignedClass,
+                weights, modifier, batchCount % batchSize == 0);
+        }
+        batchCount++;
       }
-      batchCount++;
     }
     weights.clear(); // free memory while waiting for GC
   }
@@ -246,18 +249,18 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    * {@inheritDoc}
    */
   @Override
-  public List<ClassificationResult<BytesRef>> getClasses(String text)
+  public List<ClassificationResult<Boolean>> getClasses(String text)
       throws IOException {
-    return null;
+    throw new RuntimeException("not implemented");
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public List<ClassificationResult<BytesRef>> getClasses(String text, int max)
+  public List<ClassificationResult<Boolean>> getClasses(String text, int max)
       throws IOException {
-    return null;
+    throw new RuntimeException("not implemented");
   }
 
 }
