@@ -344,6 +344,16 @@ public abstract class LuceneTestCase extends Assert {
     public String bugUrl();
   }
 
+  /**
+   * Suppress the default {@code reproduce with: ant test...}
+   * Your own listener can be added as needed for your build.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressReproduceLine {}
+  
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.
