@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -763,7 +764,7 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
-  //
+  private final static String[] OTHER_KEYS = new String[]{FacetRangeOther.BEFORE.toString(), FacetRangeOther.BETWEEN.toString(), FacetRangeOther.AFTER.toString()};
   // The implementation below uses the first encountered shard's
   // facet_ranges as the basis for subsequent shards' data to be merged.
   private void doDistribRanges(FacetInfo fi, NamedList facet_counts) {
@@ -777,7 +778,8 @@ public class FacetComponent extends SearchComponent {
       // go through each facet_range
       for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_ranges) {
         final String field = entry.getKey();
-        if (fi.rangeFacets.get(field) == null) {
+        SimpleOrderedMap<Object> fieldMap = fi.rangeFacets.get(field); 
+        if (fieldMap == null) {
           // first time we've seen this field, no merging
           fi.rangeFacets.add(field, entry.getValue());
 
@@ -790,17 +792,29 @@ public class FacetComponent extends SearchComponent {
 
           @SuppressWarnings("unchecked")
           NamedList<Integer> existFieldValues
-            = (NamedList<Integer>) fi.rangeFacets.get(field).get("counts");
+            = (NamedList<Integer>) fieldMap.get("counts");
 
           for (Map.Entry<String,Integer> existPair : existFieldValues) {
             final String key = existPair.getKey();
             // can be null if inconsistencies in shards responses
             Integer newValue = shardFieldValues.get(key);
-            if  (null != newValue) {
+            if (null != newValue) {
               Integer oldValue = existPair.getValue();
               existPair.setValue(oldValue + newValue);
             }
           }
+          
+          // merge before/between/after if they exist
+          for (String otherKey:OTHER_KEYS) {
+            Integer shardValue = (Integer)entry.getValue().get(otherKey);
+            if (shardValue != null && shardValue > 0) {
+              Integer existingValue = (Integer)fieldMap.get(otherKey);
+              // shouldn't be null
+              int idx = fieldMap.indexOf(otherKey, 0);
+              fieldMap.setVal(idx, existingValue + shardValue);
+            }
+          }
+          
         }
       }
     }
