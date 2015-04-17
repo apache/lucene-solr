@@ -357,4 +357,20 @@ public class TestMockFilesystems extends LuceneTestCase {
     assertEquals(f1.hashCode(), f1Again.hashCode());
     assertFalse(f1.equals(f2));
   }
+  
+  public void testURI() throws IOException {
+    Path dir = FilterPath.unwrap(createTempDir());
+    FileSystem fs = new FilterFileSystemProvider("test://", dir.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path wrapped = new FilterPath(dir, fs);
+
+    Path f1 = wrapped.resolve("file1");
+    URI uri = f1.toUri();
+    Path f2 = fs.provider().getPath(uri);
+    assertEquals(f1, f2);
+    
+    Path f3 = wrapped.resolve("中国");
+    URI uri2 = f3.toUri();
+    Path f4 = fs.provider().getPath(uri2);
+    assertEquals(f3, f4);
+  }
 }

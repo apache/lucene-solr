@@ -17,12 +17,10 @@ package org.apache.lucene.mockfile;
  * limitations under the License.
  */
 
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -126,7 +124,7 @@ public class FilterFileSystemProvider extends FileSystemProvider {
     if (fileSystem == null) {
       throw new IllegalStateException("subclass did not initialize singleton filesystem");
     }
-    Path path = delegate.getPath(toDelegate(uri));
+    Path path = delegate.getPath(uri);
     return new FilterPath(path, fileSystem);
   }
 
@@ -255,14 +253,6 @@ public class FilterFileSystemProvider extends FileSystemProvider {
       return fp.delegate;
     } else {
       throw new ProviderMismatchException("mismatch, expected: FilterPath, got: " + path.getClass());
-    }
-  }
-  
-  private URI toDelegate(URI uri) {
-    try {
-      return new URI(delegate.getScheme(), uri.getSchemeSpecificPart(), uri.getFragment());
-    } catch (URISyntaxException e) {
-      throw new IOError(e);
     }
   }
   
