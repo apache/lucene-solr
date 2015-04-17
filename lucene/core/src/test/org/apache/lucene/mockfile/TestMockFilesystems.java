@@ -25,6 +25,7 @@ import java.net.URI;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -368,6 +369,8 @@ public class TestMockFilesystems extends LuceneTestCase {
     Path f2 = fs.provider().getPath(uri);
     assertEquals(f1, f2);
     
+    assumeTrue(Charset.defaultCharset().name() + " can't encode chinese", 
+               Charset.defaultCharset().newEncoder().canEncode("中国"));
     Path f3 = wrapped.resolve("中国");
     URI uri2 = f3.toUri();
     Path f4 = fs.provider().getPath(uri2);
