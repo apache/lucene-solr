@@ -122,6 +122,9 @@ Bug Fixes
 * SOLR-7401: Fixed a NullPointerException when concurrently creating and deleting collections,
   while accessing other collections. (Shai Erera)
 
+* SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
+  (Will Miller, Tomás Fernándes Löbbe)
+
 Optimizations
 ----------------------
 

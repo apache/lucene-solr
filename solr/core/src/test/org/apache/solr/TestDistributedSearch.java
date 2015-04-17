@@ -17,18 +17,26 @@
 
 package org.apache.solr;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
-import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
@@ -40,22 +48,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
 import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
-import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
-import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.EnumSet;
 
 /**
  * TODO? perhaps use:
@@ -218,9 +216,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "facet","true", "facet.limit", 1, // TODO: limit shouldn't be needed: SOLR-6386
                 "facet.field", tdate_b, "facet.field", tdate_a);
     assertEquals(2, rsp.getFacetFields().size());
+    
+    String facetQuery = "id:[1 TO 15]";
 
     // simple date facet on one field
-    query("q","*:*", "rows",100, "facet","true", 
+    query("q",facetQuery, "rows",100, "facet","true", 
           "facet.date",tdate_a,
           "facet.date",tdate_a,
           "facet.date.other", "all", 
@@ -229,7 +229,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.date.end","2010-05-20T11:00:00Z");
 
     // date facet on multiple fields
-    query("q","*:*", "rows",100, "facet","true", 
+    query("q",facetQuery, "rows",100, "facet","true", 
           "facet.date",tdate_a,
           "facet.date",tdate_b,
           "facet.date",tdate_a,
@@ -241,7 +241,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.date.end","2010-05-20T11:00:00Z");
 
     // simple range facet on one field
-    query("q","*:*", "rows",100, "facet","true", 
+    query("q",facetQuery, "rows",100, "facet","true", 
           "facet.range",tlong,
           "facet.range",tlong,
           "facet.range.start",200, 
@@ -249,7 +249,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.end",900);
 
     // range facet on multiple fields
-    query("q","*:*", "rows",100, "facet","true", 
+    query("q",facetQuery, "rows",100, "facet","true", 
           "facet.range",tlong, 
           "facet.range",i1, 
           "f."+i1+".facet.range.start",300, 
@@ -258,6 +258,18 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.start",200, 
           "facet.range.gap",100, 
           "f."+tlong+".facet.range.end",900);
+    
+    // range facet with "other" param
+    QueryResponse response = query("q",facetQuery, "rows",100, "facet","true", 
+          "facet.range",tlong,
+          "facet.range.start",200, 
+          "facet.range.gap",100, 
+          "facet.range.end",900,
+          "facet.range.other","all");
+    assertEquals(tlong, response.getFacetRanges().get(0).getName());
+    assertEquals(new Integer(6), response.getFacetRanges().get(0).getBefore());
+    assertEquals(new Integer(5), response.getFacetRanges().get(0).getBetween());
+    assertEquals(new Integer(2), response.getFacetRanges().get(0).getAfter());
 
     // Test mincounts. Do NOT want to go through all the stuff where with validateControlData in query() method
     // Purposely packing a _bunch_ of stuff together here to insure that the proper level of mincount is used for
