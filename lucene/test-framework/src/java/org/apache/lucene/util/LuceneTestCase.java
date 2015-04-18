@@ -1703,6 +1703,32 @@ public abstract class LuceneTestCase extends Assert {
     IndexSearcher.setDefaultQueryCachingPolicy(DEFAULT_CACHING_POLICY);
   }
 
+  @BeforeClass
+  public static void setupCPUCoreCount() {
+    // Randomize core count so CMS varies its dynamic defaults, and this also "fixes" core
+    // count from the master seed so it will always be the same on reproduce:
+    int numCores = TestUtil.nextInt(random(), 1, 4);
+    System.setProperty(ConcurrentMergeScheduler.DEFAULT_CPU_CORE_COUNT_PROPERTY, Integer.toString(numCores));
+  }
+
+  @AfterClass
+  public static void restoreCPUCoreCount() {
+    System.clearProperty(ConcurrentMergeScheduler.DEFAULT_CPU_CORE_COUNT_PROPERTY);
+  }
+
+  @BeforeClass
+  public static void setupSpins() {
+    // Randomize IOUtils.spins() count so CMS varies its dynamic defaults, and this also "fixes" core
+    // count from the master seed so it will always be the same on reproduce:
+    boolean spins = random().nextBoolean();
+    System.setProperty(ConcurrentMergeScheduler.DEFAULT_SPINS_PROPERTY, Boolean.toString(spins));
+  }
+
+  @AfterClass
+  public static void restoreSpins() {
+    System.clearProperty(ConcurrentMergeScheduler.DEFAULT_SPINS_PROPERTY);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads.

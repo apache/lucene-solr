@@ -67,6 +67,16 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    *  Linux; other platforms will assume the index is not on an SSD. */
   public static final int AUTO_DETECT_MERGES_AND_THREADS = -1;
 
+  /** Used for testing.
+   *
+   * @lucene.internal */
+  public static final String DEFAULT_CPU_CORE_COUNT_PROPERTY = "lucene.cms.override_core_count";
+
+  /** Used for testing.
+   *
+   * @lucene.internal */
+  public static final String DEFAULT_SPINS_PROPERTY = "lucene.cms.override_spins";
+
   /** List of currently active {@link MergeThread}s. */
   protected final List<MergeThread> mergeThreads = new ArrayList<>();
   
@@ -159,7 +169,19 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       maxThreadCount = 1;
       maxMergeCount = 6;
     } else {
-      maxThreadCount = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors()/2));
+      int coreCount = Runtime.getRuntime().availableProcessors();
+
+      // Let tests override this to help reproducing a failure on a machine that has a different
+      // core count than the one where the test originally failed:
+      try {
+        String value = System.getProperty(DEFAULT_CPU_CORE_COUNT_PROPERTY);
+        if (value != null) {
+          coreCount = Integer.parseInt(value);
+        }
+      } catch (Throwable ignored) {
+      }
+
+      maxThreadCount = Math.max(1, Math.min(4, coreCount/2));
       maxMergeCount = maxThreadCount+5;
     }
   }
@@ -347,6 +369,16 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   private synchronized void initDynamicDefaults(IndexWriter writer) throws IOException {
     if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
       boolean spins = IOUtils.spins(writer.getDirectory());
+
+      // Let tests override this to help reproducing a failure on a machine that has a different
+      // core count than the one where the test originally failed:
+      try {
+        String value = System.getProperty(DEFAULT_SPINS_PROPERTY);
+        if (value != null) {
+          spins = Boolean.parseBoolean(value);
+        }
+      } catch (Throwable ignored) {
+      }
       setDefaultMaxMergesAndThreads(spins);
       if (verbose()) {
         message("initDynamicDefaults spins=" + spins + " maxThreadCount=" + maxThreadCount + " maxMergeCount=" + maxMergeCount);
