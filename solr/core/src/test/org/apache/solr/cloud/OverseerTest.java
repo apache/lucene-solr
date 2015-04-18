@@ -434,7 +434,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         Thread.sleep(200);
       }
-      assertEquals("Unable to verify all cores have been assigned an id in cloudstate", 
+      assertEquals("Unable to verify all cores have been assigned an id in cloudstate",
                    coreCount, cloudStateSliceCount);
 
       // make sure all cores have been returned an id
@@ -684,6 +684,69 @@ public class OverseerTest extends SolrTestCaseJ4 {
     } finally {
       close(mockController);
       close(overseerClient);
+      close(zkClient);
+      close(reader);
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testOverseerStatsReset() throws Exception {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    ZkTestServer server = new ZkTestServer(zkDir);
+    ZkStateReader reader = null;
+    MockZKController mockController = null;
+
+    SolrZkClient zkClient = null;
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+
+      ZkController.createClusterZkNodes(zkClient);
+
+      reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      mockController = new MockZKController(server.getZkAddress(), "node1");
+
+      LeaderElector overseerElector = new LeaderElector(zkClient);
+      if (overseers.size() > 0) {
+        overseers.get(overseers.size() -1).close();
+        overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
+      }
+      UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+      updateShardHandlers.add(updateShardHandler);
+      HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+      httpShardHandlerFactorys.add(httpShardHandlerFactory);
+      Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null,
+          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
+      overseers.add(overseer);
+      ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
+          server.getZkAddress().replaceAll("/", "_"));
+      overseerElector.setup(ec);
+      overseerElector.joinElection(ec, false);
+
+      mockController.publishState(collection, "core1", "core_node1", Replica.State.RECOVERING, 1);
+
+      assertNotNull(overseer.getStats());
+      assertEquals(1, (overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())));
+
+      // shut it down
+      overseer.close();
+      ec.cancelElection();
+
+      // start it again
+      overseerElector.setup(ec);
+      overseerElector.joinElection(ec, false);
+      assertNotNull(overseer.getStats());
+      assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())));
+
+    } finally {
+      close(mockController);
       close(zkClient);
       close(reader);
       server.shutdown();
