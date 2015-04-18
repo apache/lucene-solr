@@ -84,6 +84,10 @@ grant {
   // timezone randomization
   permission java.util.PropertyPermission "user.timezone", "write";
 
+  // CMS randomization
+  permission java.util.PropertyPermission "lucene.cms.override_core_count", "write";
+  permission java.util.PropertyPermission "lucene.cms.override_spins", "write";
+
   // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
   permission java.util.PropertyPermission "tests.runnested", "write";
 

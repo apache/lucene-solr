@@ -146,6 +146,11 @@ Test Framework
 * LUCENE-6419: Added two-phase iteration assertions to AssertingQuery.
   (Adrien Grand)
 
+* LUCENE-6437: Randomly set CPU core count and spins, derived from
+  test's master seed, used by ConcurrentMergeScheduler to set dynamic
+  defaults, for better test randomization and to help tests reproduce
+  (Robert Muir, Mike McCandless)
+
 ======================= Lucene 5.1.0 =======================
 
 New Features
