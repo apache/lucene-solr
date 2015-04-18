@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -32,6 +33,7 @@ import org.junit.Test;
 
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7421")
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   public RecoveryAfterSoftCommitTest() {
