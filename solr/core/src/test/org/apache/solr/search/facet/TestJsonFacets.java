@@ -309,7 +309,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // nested query facets
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{ catB:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} }}}"
+            , "json.facet", "{ catB:{type:query, q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} }}"
         )
         , "facets=={ 'count':6, 'catB':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}}"
     );
@@ -331,12 +331,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // field/terms facet
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{c1:{field:'${cat_s}'}, c2:{field:{field:'${cat_s}'}}, c3:{terms:{field:'${cat_s}'}}  }"
+            , "json.facet", "{c1:{field:'${cat_s}'}, c2:{field:{field:'${cat_s}'}}, c3:{type:terms, field:'${cat_s}'}  }"
         )
         , "facets=={ 'count':6, " +
             "'c1':{ 'buckets':[{ 'val':'B', 'count':3}, { 'val':'A', 'count':2}]}, " +
-            "'c2':{  'buckets':[{ 'val':'B', 'count':3}, { 'val':'A', 'count':2}]}, " +
-            "'c3':{  'buckets':[{ 'val':'B', 'count':3}, { 'val':'A', 'count':2}]}} "
+            "'c2':{ 'buckets':[{ 'val':'B', 'count':3}, { 'val':'A', 'count':2}]}, " +
+            "'c3':{ 'buckets':[{ 'val':'B', 'count':3}, { 'val':'A', 'count':2}]}} "
     );
 
     // test mincount
@@ -552,7 +552,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // basic range facet
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{f:{range:{field:${num_d}, start:-5, end:10, gap:5}}}"
+            , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5}}"
         )
         , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1}, {val:0.0,count:2}, {val:5.0,count:0} ] } }"
     );
