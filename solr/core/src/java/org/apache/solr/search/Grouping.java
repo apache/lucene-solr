@@ -405,10 +405,9 @@ public class Grouping {
             secondPhaseCollectors = pf.postFilter;
           }
           searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
-
-          if(secondPhaseCollectors instanceof DelegatingCollector) {
-            ((DelegatingCollector) secondPhaseCollectors).finish();
-          }
+        }
+        if (secondPhaseCollectors instanceof DelegatingCollector) {
+          ((DelegatingCollector) secondPhaseCollectors).finish();
         }
       }
     }

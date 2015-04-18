@@ -157,6 +157,9 @@ Other Changes
   - When using hl.maxMultiValuedToMatch with hl.preserveMulti, only count matched snippets.
   (David Smiley)
 
+* SOLR-6886: Removed redundant size check and added missing calls to
+  DelegatingCollection.finish inside Grouping code.  (Christine Poerschke via shalin)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
