@@ -125,6 +125,9 @@ Bug Fixes
 * SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
   (Will Miller, Tomás Fernándes Löbbe)
 
+* SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
+  throws an expected exception. (Christine Poerschke via shalin)
+
 Optimizations
 ----------------------
 
