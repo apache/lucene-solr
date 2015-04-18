@@ -100,6 +100,11 @@ New Features
 * SOLR-7376: Return raw XML or JSON (in the appropriate writer) using DocumentTransformers.
     ?fl=id,name,json_s:[json],xml_s:[xml]   (ryan)
 
+* SOLR-7422: Optional flatter form for the JSON Facet API via a "type" parameter:
+    top_authors : { type:terms, field:author, limit:5 } is equivalent to
+    top_authors : { terms : { field:author, limit:5  } }
+  (yonik)
+
 
 Bug Fixes
 ----------------------

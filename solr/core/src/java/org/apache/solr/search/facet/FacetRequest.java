@@ -366,24 +366,38 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   }
 
   public Object parseFacetOrStat(String key, Object o) throws SyntaxError {
-   if (o instanceof String) {
-     return parseStringFacetOrStat(key, (String)o);
-   }
 
-   if (!(o instanceof Map)) {
-     throw err("expected Map but got " + o);
-   }
+    if (o instanceof String) {
+      return parseStringFacetOrStat(key, (String)o);
+    }
 
-   // { "range" : { "field":...
-  Map<String,Object> m = (Map<String,Object>)o;
-  if (m.size() != 1) {
-    throw err("expected facet/stat type name, like {range:{... but got " + m);
-  }
+    if (!(o instanceof Map)) {
+      throw err("expected Map but got " + o);
+    }
 
-    // Is this most efficient way?
-    Map.Entry<String,Object> entry = m.entrySet().iterator().next();
-    String type = entry.getKey();
-    Object args = entry.getValue();
+    // The type can be in a one element map, or inside the args as the "type" field
+    // { "query" : "foo:bar" }
+    // { "range" : { "field":... } }
+    // { "type"  : range, field : myfield, ... }
+    Map<String,Object> m = (Map<String,Object>)o;
+    String type;
+    Object args;
+
+    if (m.size() == 1) {
+      Map.Entry<String,Object> entry = m.entrySet().iterator().next();
+      type = entry.getKey();
+      args = entry.getValue();
+      // throw err("expected facet/stat type name, like {range:{... but got " + m);
+    } else {
+      // type should be inside the map as a parameter
+      Object typeObj = m.get("type");
+      if (!(typeObj instanceof String)) {
+          throw err("expected facet/stat type name, like {type:range, field:price, ...} but got " + typeObj);
+      }
+      type = (String)typeObj;
+      args = m;
+    }
+
     return parseFacetOrStat(key, type, args);
   }
 
