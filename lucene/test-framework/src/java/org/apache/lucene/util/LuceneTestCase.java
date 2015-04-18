@@ -313,6 +313,18 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /**
+   * Annotation for test classes that should avoid always omit
+   * actual fsync calls from reaching the filesystem.
+   * <p>
+   * This can be useful, e.g. if they make many lucene commits.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressFsync {}
+  
+  /**
    * Marks any suites which are known not to close all the temporary
    * files. This may prevent temp. files and folders from being cleaned
    * up after the suite is completed.
