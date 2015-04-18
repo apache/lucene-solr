@@ -23,6 +23,7 @@ import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.VerboseFS;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
+import org.apache.lucene.util.LuceneTestCase.SuppressFsync;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -138,11 +139,17 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     }
     
     Random random = RandomizedContext.current().getRandom();
-    // sometimes just use a bare filesystem
-    if (random.nextInt(10) > 0) {
+    
+    // speed up tests by omitting actual fsync calls to the hardware most of the time.
+    if (targetClass.isAnnotationPresent(SuppressFsync.class) || random.nextInt(100) > 0) {
       if (allowed(avoid, DisableFsyncFS.class)) {
         fs = new DisableFsyncFS(fs).getFileSystem(null);
       }
+    }
+    
+    // otherwise, wrap with mockfilesystems for additional checks. some 
+    // of these have side effects (e.g. concurrency) so it doesn't always happen.
+    if (random.nextInt(10) > 0) {
       if (allowed(avoid, LeakFS.class)) {
         fs = new LeakFS(fs).getFileSystem(null);
       }
