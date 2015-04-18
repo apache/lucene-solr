@@ -67,13 +67,13 @@ import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -197,16 +197,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       postFilter.setLastDelegate(collector);
       collector = postFilter;
     }
-    
+
     try {
       super.search(query, collector);
-      if(collector instanceof DelegatingCollector) {
-        ((DelegatingCollector)collector).finish();
-      }
-    }
-    catch( TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x ) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
+      log.warn("Query: " + query + "; " + x.getMessage());
       qr.setPartialResults(true);
+    } catch (EarlyTerminatingCollectorException etce) {
+      if (collector instanceof DelegatingCollector) {
+        ((DelegatingCollector) collector).finish();
+      }
+      throw etce;
+    }
+    if (collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
     }
   }
   
