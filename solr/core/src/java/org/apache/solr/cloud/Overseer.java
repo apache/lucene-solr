@@ -825,6 +825,7 @@ public class Overseer implements Closeable {
     this.id = id;
     closed = false;
     doClose();
+    stats = new Stats();
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
@@ -1047,6 +1048,10 @@ public class Overseer implements Closeable {
 
     public void setQueueLength(int queueLength) {
       this.queueLength = queueLength;
+    }
+
+    public void clear() {
+      stats.clear();
     }
   }
 

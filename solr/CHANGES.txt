@@ -128,6 +128,8 @@ Bug Fixes
 * SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
   throws an expected exception. (Christine Poerschke via shalin)
 
+* SOLR-7420: Overseer stats are not reset on loss of ZK connection. (Jessica Cheng, shalin)
+
 Optimizations
 ----------------------
 
