@@ -18,8 +18,12 @@
 # affecting other Java applications on your server/workstation.
 #SOLR_JAVA_HOME=""
 
-# Increase Java Min/Max Heap as needed to support your indexing / query needs
-SOLR_JAVA_MEM="-Xms512m -Xmx512m"
+# Increase Java Heap as needed to support your indexing / query needs
+SOLR_HEAP="512m"
+
+# Expert: If you want finer control over memory options, specify them directly
+# Comment out SOLR_HEAP if you are using this though, that takes precedence
+#SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 
 # Enable verbose GC logging
 GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \

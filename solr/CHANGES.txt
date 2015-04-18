@@ -135,6 +135,9 @@ Bug Fixes
 
 * SOLR-7420: Overseer stats are not reset on loss of ZK connection. (Jessica Cheng, shalin)
 
+* SOLR-7392: Fix SOLR_JAVA_MEM and SOLR_OPTS customizations in solr.in.sh being ignored
+  (Ramkumar Aiyengar, Ere Maijala)
+
 Optimizations
 ----------------------
 

@@ -780,7 +780,7 @@ fi
 # Run in foreground (default is to run in the background)
 FG="false"
 noprompt=false
-SOLR_OPTS=()
+SOLR_OPTS=($SOLR_OPTS)
 
 if [ $# -gt 0 ]; then
   while true; do  
@@ -1070,10 +1070,11 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
         fi
         rm -f "$PIDF"
     done
-    # TODO: This doesn't get reflected across the subshell
-    if $none_stopped; then
-      echo -e "\nNo Solr nodes found to stop.\n"
-    fi
+    # TODO: none_stopped doesn't get reflected across the subshell
+    # This can be uncommented once we find a clean way out of it
+    # if $none_stopped; then
+    #   echo -e "\nNo Solr nodes found to stop.\n"
+    # fi
   else
     # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
     none_stopped=true
@@ -1253,13 +1254,12 @@ else
   REMOTE_JMX_OPTS=()
 fi
 
-SOLR_JAVA_MEM=()
-if [ "$SOLR_HEAP" != "" ]; then
-  SOLR_JAVA_MEM=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
-fi
-
-if [ -z "$SOLR_JAVA_MEM" ]; then
-  SOLR_JAVA_MEM=('-Xms512m' '-Xmx512m')
+JAVA_MEM_OPTS=()
+if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
+  JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
+else
+  SOLR_HEAP="${SOLR_HEAP:-512m}"
+  JAVA_MEM_OPTS=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
 fi
 
 if [ -z "$SOLR_TIMEZONE" ]; then
@@ -1305,7 +1305,7 @@ function launch_solr() {
     echo -e "    SOLR_HOST       = $SOLR_HOST"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    SOLR_JAVA_MEM   = ${SOLR_JAVA_MEM[@]}"
+    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
     echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
     echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
@@ -1337,7 +1337,7 @@ function launch_solr() {
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' '-Xss256k' "${SOLR_JAVA_MEM[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
+  SOLR_START_OPTS=('-server' '-Xss256k' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
