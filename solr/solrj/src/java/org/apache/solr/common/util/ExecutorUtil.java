@@ -130,6 +130,7 @@ public class ExecutorUtil {
       String ctxStr = submitterContext != null && !submitterContext.isEmpty() ?
           submitterContext.toString().replace("/", "//") : "";
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
+      final Exception submitterStackTrace = new Exception("Submitter stack trace");
       super.execute(new Runnable() {
         @Override
         public void run() {
@@ -144,8 +145,14 @@ public class ExecutorUtil {
           }
           try {
             command.run();
+          } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError)  {
+              throw t;
+            }
+            log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
+            throw t;
           } finally {
-            if (threadContext != null) {
+            if (threadContext != null && !threadContext.isEmpty()) {
               MDC.setContextMap(threadContext);
             } else {
               MDC.clear();
