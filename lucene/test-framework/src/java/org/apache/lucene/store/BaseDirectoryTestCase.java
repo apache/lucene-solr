@@ -1057,7 +1057,12 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   public void testSliceOfSlice() throws Exception {
     Directory dir = getDirectory(createTempDir("sliceOfSlice"));
     IndexOutput output = dir.createOutput("bytes", newIOContext(random()));
-    int num = TestUtil.nextInt(random(), 50, 2500);
+    final int num;
+    if (TEST_NIGHTLY) {
+      num = TestUtil.nextInt(random(), 250, 2500);
+    } else {
+      num = TestUtil.nextInt(random(), 50, 250);
+    }
     byte bytes[] = new byte[num];
     random().nextBytes(bytes);
     for (int i = 0; i < bytes.length; i++) {

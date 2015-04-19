@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -50,6 +51,7 @@ import org.junit.BeforeClass;
  * {@link #assertSameSet(Query, Query)} and 
  * {@link #assertSubsetOf(Query, Query)}
  */
+@SuppressCodecs("SimpleText")
 public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   protected static IndexSearcher s1, s2;
   protected static Directory directory;
@@ -72,7 +74,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     doc.add(field);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     for (int i = 0; i < numDocs; i++) {
       id.setStringValue(Integer.toString(i));
       field.setStringValue(randomFieldContents());
@@ -244,7 +246,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     assertSubsetOf(q1, q2, null);
     
     // test with some filters (this will sometimes cause advance'ing enough to test it)
-    int numFilters = atLeast(10);
+    int numFilters = TEST_NIGHTLY ? atLeast(10) : atLeast(3);
     for (int i = 0; i < numFilters; i++) {
       Filter filter = randomFilter();
       // incorporate the filter in different ways.
@@ -298,7 +300,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
 
     assertSameScores(q1, q2, null);
     // also test with some filters to test advancing
-    int numFilters = atLeast(10);
+    int numFilters = TEST_NIGHTLY ? atLeast(10) : atLeast(3);
     for (int i = 0; i < numFilters; i++) {
       Filter filter = randomFilter();
       // incorporate the filter in different ways.

@@ -28,6 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.Random;
 /**
  * Compares one codec against another
  */
+@Slow
 public class TestDuelingCodecs extends LuceneTestCase {
   Directory leftDir;
   IndexReader leftReader;
