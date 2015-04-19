@@ -158,6 +158,7 @@ Other Changes
   Executors#newFixedThreadPool, #newSingleThreadExecutor, #newCachedThreadPool as well as
   ThreadPoolExecutor directly is now forbidden in Solr. MDC keys are now exposed in thread
   names automatically so that a thread dump can give hints on what the thread was doing.
+  Uncaught exceptions thrown by tasks in the pool are logged along with submitter's stack trace.
   (shalin)
 
 * SOLR-7384: Fix spurious failures in FullSolrCloudDistribCmdsTest. (shalin)
