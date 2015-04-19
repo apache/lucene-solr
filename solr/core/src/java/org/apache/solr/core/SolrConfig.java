@@ -20,6 +20,7 @@ package org.apache.solr.core;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
+
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
@@ -48,6 +50,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -375,25 +378,31 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
+    InputStreamReader isr = null;
     try {
-      in = loader.openResource(ConfigOverlay.RESOURCE_NAME);
-    } catch (IOException e) {
-      //no problem no overlay.json file
-      return new ConfigOverlay(Collections.EMPTY_MAP, -1);
-    }
-
-    try {
-      int version = 0; //will be always 0 for file based resourceloader
+      try {
+        in = loader.openResource(ConfigOverlay.RESOURCE_NAME);
+      } catch (IOException e) {
+        // TODO: we should be explicitly looking for file not found exceptions
+        // and logging if it's not the expected IOException
+        // hopefully no problem, assume no overlay.json file
+        return new ConfigOverlay(Collections.EMPTY_MAP, -1);
+      }
+      
+      int version = 0; // will be always 0 for file based resourceLoader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("config overlay loaded . version : {} ", version);
       }
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
+      isr = new InputStreamReader(in, StandardCharsets.UTF_8);
+      Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);
+    } finally {
+      IOUtils.closeQuietly(isr);
+      IOUtils.closeQuietly(in);
     }
-
   }
 
   private Map<String, InitParams> initParams = Collections.emptyMap();

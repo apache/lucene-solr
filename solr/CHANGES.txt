@@ -138,6 +138,8 @@ Bug Fixes
 * SOLR-7392: Fix SOLR_JAVA_MEM and SOLR_OPTS customizations in solr.in.sh being ignored
   (Ramkumar Aiyengar, Ere Maijala)
 
+* SOLR-7426: SolrConfig#getConfigOverlay does not clean up it's resources. (Mark Miller)
+
 Optimizations
 ----------------------
 
