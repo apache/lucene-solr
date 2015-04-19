@@ -22,8 +22,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -34,6 +36,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -46,6 +49,8 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldValueQuery;
+import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
@@ -56,6 +61,7 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
@@ -332,6 +338,127 @@ public class TestJoinUtil extends LuceneTestCase {
     context.close();
   }
 
+  public void testMinMaxScore() throws Exception {
+    String priceField = "price";
+    // FunctionQuery would be helpful, but join module doesn't depend on queries module.
+    Query priceQuery = new Query() {
+
+      private final Query fieldQuery = new FieldValueQuery(priceField);
+
+      @Override
+      public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+        Weight fieldWeight = fieldQuery.createWeight(searcher, false);
+        return new Weight(this) {
+
+          @Override
+          public void extractTerms(Set<Term> terms) {
+          }
+
+          @Override
+          public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+            return null;
+          }
+
+          @Override
+          public float getValueForNormalization() throws IOException {
+            return 0;
+          }
+
+          @Override
+          public void normalize(float norm, float topLevelBoost) {
+          }
+
+          @Override
+          public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+            Scorer fieldScorer = fieldWeight.scorer(context, acceptDocs);
+            NumericDocValues price = context.reader().getNumericDocValues(priceField);
+            return new FilterScorer(fieldScorer, this) {
+              @Override
+              public float score() throws IOException {
+                return (float) price.get(in.docID());
+              }
+            };
+          }
+        };
+      }
+
+      @Override
+      public String toString(String field) {
+        return fieldQuery.toString(field);
+      }
+    };
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+    );
+
+    Map<String, Float> lowestScoresPerParent = new HashMap<>();
+    Map<String, Float> highestScoresPerParent = new HashMap<>();
+    int numParents = RandomInts.randomIntBetween(random(), 16, 64);
+    for (int p = 0; p < numParents; p++) {
+      String parentId = Integer.toString(p);
+      Document parentDoc = new Document();
+      parentDoc.add(new StringField("id", parentId, Field.Store.YES));
+      parentDoc.add(new StringField("type", "to", Field.Store.NO));
+      parentDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
+      iw.addDocument(parentDoc);
+      int numChildren = RandomInts.randomIntBetween(random(), 2, 16);
+      int lowest = Integer.MAX_VALUE;
+      int highest = Integer.MIN_VALUE;
+      for (int c = 0; c < numChildren; c++) {
+        String childId = Integer.toString(p + c);
+        Document childDoc = new Document();
+        childDoc.add(new StringField("id", childId, Field.Store.YES));
+        parentDoc.add(new StringField("type", "from", Field.Store.NO));
+        childDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
+        int price = random().nextInt(1000);
+        childDoc.add(new NumericDocValuesField(priceField, price));
+        iw.addDocument(childDoc);
+        lowest = Math.min(lowest, price);
+        highest = Math.max(highest, price);
+      }
+      lowestScoresPerParent.put(parentId, (float) lowest);
+      highestScoresPerParent.put(parentId, (float) highest);
+    }
+    iw.close();
+
+
+    IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(dir));
+    SortedDocValues[] values = new SortedDocValues[searcher.getIndexReader().leaves().size()];
+    for (LeafReaderContext leadContext : searcher.getIndexReader().leaves()) {
+      values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
+    }
+    MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+        searcher.getIndexReader().getCoreCacheKey(), values, PackedInts.DEFAULT
+    );
+    BooleanQuery fromQuery = new BooleanQuery();
+    fromQuery.add(priceQuery, BooleanClause.Occur.MUST);
+    Query toQuery = new TermQuery(new Term("type", "to"));
+    Query joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, searcher, ScoreMode.Min, ordinalMap);
+    TopDocs topDocs = searcher.search(joinQuery, numParents);
+    assertEquals(numParents, topDocs.totalHits);
+    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+      ScoreDoc scoreDoc = topDocs.scoreDocs[i];
+      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      assertEquals(lowestScoresPerParent.get(id), scoreDoc.score, 0f);
+    }
+
+    joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, searcher, ScoreMode.Max, ordinalMap);
+    topDocs = searcher.search(joinQuery, numParents);
+    assertEquals(numParents, topDocs.totalHits);
+    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+      ScoreDoc scoreDoc = topDocs.scoreDocs[i];
+      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      assertEquals(highestScoresPerParent.get(id), scoreDoc.score, 0f);
+    }
+
+    searcher.getIndexReader().close();
+    dir.close();
+  }
+
   // TermsWithScoreCollector.MV.Avg forgets to grow beyond TermsWithScoreCollector.INITIAL_ARRAY_SIZE
   public void testOverflowTermsWithScoreCollector() throws Exception {
     test300spartans(true, ScoreMode.Avg);
@@ -381,7 +508,6 @@ public class TestJoinUtil extends LuceneTestCase {
     TopDocs result = indexSearcher.search(joinQuery, 10);
     assertEquals(1, result.totalHits);
     assertEquals(0, result.scoreDocs[0].doc);
-
 
     indexSearcher.getIndexReader().close();
     dir.close();
@@ -1073,26 +1199,32 @@ public class TestJoinUtil extends LuceneTestCase {
 
   private static class JoinScore {
 
-    float maxScore;
+    float minScore = Float.POSITIVE_INFINITY;
+    float maxScore = Float.NEGATIVE_INFINITY;
     float total;
     int count;
 
     void addScore(float score) {
-      total += score;
       if (score > maxScore) {
         maxScore = score;
       }
+      if (score < minScore) {
+        minScore = score;
+      }
+      total += score;
       count++;
     }
 
     float score(ScoreMode mode) {
       switch (mode) {
         case None:
-          return 1.0f;
+          return 1f;
         case Total:
           return total;
         case Avg:
           return total / count;
+        case Min:
+          return minScore;
         case Max:
           return maxScore;
       }

@@ -28,6 +28,7 @@ import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
@@ -44,7 +45,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     this.field = field;
     this.ordinalMap = ordinalMap;
     this.collectedOrds = new LongBitSet(valueCount);
-    this.scores = new Scores(valueCount);
+    this.scores = new Scores(valueCount, unset());
   }
 
   public LongBitSet getCollectorOrdinals() {
@@ -56,6 +57,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   }
 
   protected abstract void doScore(int globalOrd, float existingScore, float newScore);
+
+  protected abstract float unset();
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -128,6 +131,23 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
   }
 
+  static final class Min extends GlobalOrdinalsWithScoreCollector {
+
+    public Min(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
+      super(field, ordinalMap, valueCount);
+    }
+
+    @Override
+    protected void doScore(int globalOrd, float existingScore, float newScore) {
+      scores.setScore(globalOrd, Math.min(existingScore, newScore));
+    }
+
+    @Override
+    protected float unset() {
+      return Float.POSITIVE_INFINITY;
+    }
+  }
+
   static final class Max extends GlobalOrdinalsWithScoreCollector {
 
     public Max(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
@@ -139,6 +159,10 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       scores.setScore(globalOrd, Math.max(existingScore, newScore));
     }
 
+    @Override
+    protected float unset() {
+      return Float.NEGATIVE_INFINITY;
+    }
   }
 
   static final class Sum extends GlobalOrdinalsWithScoreCollector {
@@ -152,6 +176,10 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       scores.setScore(globalOrd, existingScore + newScore);
     }
 
+    @Override
+    protected float unset() {
+      return 0f;
+    }
   }
 
   static final class Avg extends GlobalOrdinalsWithScoreCollector {
@@ -173,6 +201,11 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     public float score(int globalOrdinal) {
       return scores.getScore(globalOrdinal) / occurrences.getOccurrence(globalOrdinal);
     }
+
+    @Override
+    protected float unset() {
+      return 0f;
+    }
   }
 
   // Because the global ordinal is directly used as a key to a score we should be somewhat smart about allocation
@@ -188,10 +221,12 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   static final class Scores {
 
     final float[][] blocks;
+    final float unset;
 
-    private Scores(long valueCount) {
+    private Scores(long valueCount, float unset) {
       long blockSize = valueCount + arraySize - 1;
       blocks = new float[(int) ((blockSize) / arraySize)][];
+      this.unset = unset;
     }
 
     public void setScore(int globalOrdinal, float score) {
@@ -200,6 +235,9 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       float[] scores = blocks[block];
       if (scores == null) {
         blocks[block] = scores = new float[arraySize];
+        if (unset != 0f) {
+          Arrays.fill(scores, unset);
+        }
       }
       scores[offset] = score;
     }
@@ -212,7 +250,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       if (scores != null) {
         score = scores[offset];
       } else {
-        score =  0f;
+        score = unset;
       }
       return score;
     }

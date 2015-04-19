@@ -17,12 +17,6 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,6 +33,12 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * This query requires that you index
@@ -297,6 +297,7 @@ public class ToParentBlockJoinQuery extends Query {
 
         float totalScore = 0;
         float maxScore = Float.NEGATIVE_INFINITY;
+        float minScore = Float.POSITIVE_INFINITY;
 
         childDocUpto = 0;
         parentFreq = 0;
@@ -320,6 +321,7 @@ public class ToParentBlockJoinQuery extends Query {
               pendingChildScores[childDocUpto] = childScore;
             }
             maxScore = Math.max(childScore, maxScore);
+            minScore = Math.min(childFreq, minScore);
             totalScore += childScore;
             parentFreq += childFreq;
           }
@@ -339,6 +341,9 @@ public class ToParentBlockJoinQuery extends Query {
           break;
         case Max:
           parentScore = maxScore;
+          break;
+        case Min:
+          parentScore = minScore;
           break;
         case Total:
           parentScore = totalScore;

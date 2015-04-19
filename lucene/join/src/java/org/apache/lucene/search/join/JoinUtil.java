@@ -79,6 +79,7 @@ public final class JoinUtil {
         return new TermsQuery(toField, fromQuery, termsCollector.getCollectorTerms());
       case Total:
       case Max:
+      case Min:
       case Avg:
         TermsWithScoreCollector termsWithScoreCollector =
             TermsWithScoreCollector.create(fromField, multipleValuesPerDocument, scoreMode);
@@ -144,10 +145,10 @@ public final class JoinUtil {
       valueCount = ordinalMap.getValueCount();
     }
 
-    Query rewrittenFromQuery = searcher.rewrite(fromQuery);
+    final Query rewrittenFromQuery = searcher.rewrite(fromQuery);
     if (scoreMode == ScoreMode.None) {
       GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
-      searcher.search(fromQuery, globalOrdinalsCollector);
+      searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
       return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
     }
 
@@ -155,6 +156,9 @@ public final class JoinUtil {
     switch (scoreMode) {
       case Total:
         globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Sum(joinField, ordinalMap, valueCount);
+        break;
+      case Min:
+        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Min(joinField, ordinalMap, valueCount);
         break;
       case Max:
         globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Max(joinField, ordinalMap, valueCount);
@@ -165,7 +169,7 @@ public final class JoinUtil {
       default:
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
-    searcher.search(fromQuery, globalOrdinalsWithScoreCollector);
+    searcher.search(rewrittenFromQuery, globalOrdinalsWithScoreCollector);
     return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
   }
 

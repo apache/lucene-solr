@@ -40,6 +40,11 @@ public enum ScoreMode {
   /**
    * Parent hit's score is the sum of all child scores.
    */
-  Total
+  Total,
+
+  /**
+   * Parent hit's score is the min of all child scores.
+   */
+  Min
 
 }

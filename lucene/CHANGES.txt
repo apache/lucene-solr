@@ -67,6 +67,9 @@ New Features
   StoredFieldVisitor.stringField API to take UTF-8 byte[] instead of
   String (Mike McCandless)
 
+* LUCENE-6389: Added ScoreMode.Min that aggregates the lowest child score
+  to the parent hit. (Martijn van Groningen, Adrien Grand)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if
