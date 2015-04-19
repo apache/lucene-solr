@@ -879,14 +879,25 @@ public class TestLRUQueryCache extends LuceneTestCase {
     doc.add(f);
     w.addDocument(doc);
     IndexReader reader = w.getReader();
+    
+    final int maxSize;
+    final long maxRamBytesUsed;
+    final int iters;
+    
+    if (TEST_NIGHTLY) {
+      maxSize = TestUtil.nextInt(random(), 1, 10000);
+      maxRamBytesUsed = TestUtil.nextLong(random(), 1, 5000000);
+      iters = atLeast(20000);
+    } else {
+      maxSize = TestUtil.nextInt(random(), 1, 1000);
+      maxRamBytesUsed = TestUtil.nextLong(random(), 1, 500000);
+      iters = atLeast(2000);
+    }
 
-    final int maxSize = TestUtil.nextInt(random(), 1, 10000);
-    final long maxRamBytesUsed = TestUtil.nextLong(random(), 1, 5000000);
     final LRUQueryCache queryCache = new LRUQueryCache(maxSize, maxRamBytesUsed);
     IndexSearcher uncachedSearcher = null;
     IndexSearcher cachedSearcher = null;
 
-    final int iters = atLeast(20000);
     for (int i = 0; i < iters; ++i) {
       if (i == 0 || random().nextInt(100) == 1) {
         reader.close();
