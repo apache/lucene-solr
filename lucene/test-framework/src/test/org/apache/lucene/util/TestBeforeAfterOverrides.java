@@ -1,4 +1,4 @@
-package org.apache.lucene.util.junitcompat;
+package org.apache.lucene.util;
 
 import org.junit.After;
 import org.junit.Assert;

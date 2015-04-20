@@ -1,10 +1,4 @@
-package org.apache.lucene.util.junitcompat;
-
-import org.apache.lucene.codecs.Codec;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,25 +17,32 @@ import org.junit.runner.Result;
  * limitations under the License.
  */
 
-public class TestCodecReported extends WithNestedTests {
-  public TestCodecReported() {
+import org.apache.lucene.store.Directory;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+
+public class TestFailIfDirectoryNotClosed extends WithNestedTests {
+  public TestFailIfDirectoryNotClosed() {
     super(true);
   }
-  
-  public static class Nested1 extends WithNestedTests.AbstractNestedTest {
-    public static String codecName;
 
-    public void testDummy() {
-      codecName = Codec.getDefault().getName();
-      fail();
+  public static class Nested1 extends WithNestedTests.AbstractNestedTest {
+    public void testDummy() throws Exception {
+      Directory dir = newDirectory();
+      System.out.println(dir.toString());
     }
   }
 
   @Test
-  public void testCorrectCodecReported() {
+  public void testFailIfDirectoryNotClosed() {
     Result r = JUnitCore.runClasses(Nested1.class);
-    Assert.assertEquals(1, r.getFailureCount());
-    Assert.assertTrue(super.getSysErr(),
-        super.getSysErr().contains("codec=" + Nested1.codecName));
+    RandomizedTest.assumeTrue("Ignoring nested test, very likely zombie threads present.", 
+        r.getIgnoreCount() == 0);
+    assertFailureCount(1, r);
+    Assert.assertTrue(r.getFailures().get(0).toString().contains("Resource in scope SUITE failed to close"));
   }
 }

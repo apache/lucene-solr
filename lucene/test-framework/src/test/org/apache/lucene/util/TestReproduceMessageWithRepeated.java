@@ -1,4 +1,4 @@
-package org.apache.lucene.util.junitcompat;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,32 +17,37 @@ package org.apache.lucene.util.junitcompat;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
-public class TestFailIfDirectoryNotClosed extends WithNestedTests {
-  public TestFailIfDirectoryNotClosed() {
-    super(true);
-  }
-
-  public static class Nested1 extends WithNestedTests.AbstractNestedTest {
-    public void testDummy() throws Exception {
-      Directory dir = newDirectory();
-      System.out.println(dir.toString());
+/**
+ * Test reproduce message is right with {@link Repeat} annotation.
+ */
+public class TestReproduceMessageWithRepeated extends WithNestedTests {
+  public static class Nested extends AbstractNestedTest {
+    @Test
+    @Repeat(iterations = 10)
+    public void testMe() {
+      throw new RuntimeException("bad");
     }
   }
 
+  public TestReproduceMessageWithRepeated() {
+    super(true);
+  }
+
   @Test
-  public void testFailIfDirectoryNotClosed() {
-    Result r = JUnitCore.runClasses(Nested1.class);
-    RandomizedTest.assumeTrue("Ignoring nested test, very likely zombie threads present.", 
-        r.getIgnoreCount() == 0);
-    assertFailureCount(1, r);
-    Assert.assertTrue(r.getFailures().get(0).toString().contains("Resource in scope SUITE failed to close"));
+  public void testRepeatedMessage() throws Exception { 
+    String syserr = runAndReturnSyserr();
+    Assert.assertTrue(syserr.contains(" -Dtests.method=testMe "));
+  }
+
+  private String runAndReturnSyserr() {
+    JUnitCore.runClasses(Nested.class);
+    String err = getSysErr();
+    return err;
   }
 }

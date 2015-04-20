@@ -18,15 +18,34 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 
-public class TestMockDirectoryWrapper extends LuceneTestCase {
+public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
+  
+  @Override
+  protected Directory getDirectory(Path path) throws IOException {
+    final MockDirectoryWrapper dir;
+    if (random().nextBoolean()) {
+      dir = newMockDirectory();
+    } else {
+      dir = newMockFSDirectory(path);
+    }
+    dir.setEnableVirusScanner(false); // test manipulates filesystem directly
+    return dir;
+  }
+  
+  // we wrap the directory in slow stuff, so only run nightly
+  @Override @Nightly
+  public void testThreadSafety() throws Exception {
+    super.testThreadSafety();
+  }
   
   public void testFailIfIndexWriterNotClosed() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
@@ -103,6 +122,5 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
     iw.commit();
     iw.close();
     dir.close();
-  }
-  
+  }  
 }

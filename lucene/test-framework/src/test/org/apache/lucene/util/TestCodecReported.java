@@ -1,4 +1,10 @@
-package org.apache.lucene.codecs.asserting;
+package org.apache.lucene.util;
+
+import org.apache.lucene.codecs.Codec;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,20 +23,25 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
-
-/** Test AssertingPostingsFormat directly */
-public class TestAssertingDocValuesFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = new AssertingCodec();
+public class TestCodecReported extends WithNestedTests {
+  public TestCodecReported() {
+    super(true);
+  }
   
-  @Override
-  protected Codec getCodec() {
-    return codec;
+  public static class Nested1 extends WithNestedTests.AbstractNestedTest {
+    public static String codecName;
+
+    public void testDummy() {
+      codecName = Codec.getDefault().getName();
+      fail();
+    }
   }
 
-  @Override
-  protected boolean isPostingsEnumReuseImplemented() {
-    return false;
+  @Test
+  public void testCorrectCodecReported() {
+    Result r = JUnitCore.runClasses(Nested1.class);
+    Assert.assertEquals(1, r.getFailureCount());
+    Assert.assertTrue(super.getSysErr(),
+        super.getSysErr().contains("codec=" + Nested1.codecName));
   }
 }

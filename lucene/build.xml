@@ -53,7 +53,7 @@
   </target>
 
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
-  <target name="test" depends="-clover.load, -init-totals, test-core, test-modules, -check-totals"
+  <target name="test" depends="-clover.load, -init-totals, test-core, test-test-framework, test-modules, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
@@ -449,8 +449,17 @@
       <ant dir="core" target="compile-test" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
+      <ant dir="test-framework" target="compile-test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
       <modules-crawl target="compile-test" failonerror="true"/>
     </sequential>
+  </target>
+
+  <target name="test-test-framework">
+      <ant dir="test-framework" target="test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
   </target>
   
   <target name="test-modules">
@@ -470,6 +479,9 @@
     <ant dir="${common.dir}/core" target="jacoco" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
+    <ant dir="${common.dir}/test-framework" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <modules-crawl target="jacoco" failonerror="true"/>
 
     <!-- produce aggregate report -->
@@ -486,7 +498,6 @@
         <classfiles>
           <fileset dir="${common.dir}/build">
              <include name="**/classes/java/**/*.class"/>
-             <exclude name="test-framework/**"/>
              <exclude name="tools/**"/>
           </fileset>
         </classfiles>

@@ -30,7 +30,17 @@
     <fileset dir="lib"/>
   </path>
 
-  <path id="test.classpath"/>
+  <path id="test.classpath"> 
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/test"/>
+    <path refid="classpath"/>
+    <path refid="junit-path"/>
+  </path>
+
+  <path id="junit.classpath">
+    <path refid="test.classpath"/>
+    <pathelement path="${java.class.path}"/>
+  </path>
 
   <!-- 
       Specialize compile-core to depend on lucene-core and lucene-codecs compilation.
@@ -38,16 +48,11 @@
   <target name="compile-core" depends="init,compile-lucene-core,compile-codecs,common.compile-core"
           description="Compiles test-framework classes"/>
 
-  <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
-  <target name="-clover.setup" if="run.clover"/>
-
-  <!-- redefine the test compilation, so it's just a no-op -->
-  <target name="compile-test"/>
-  
   <!-- redefine the forbidden apis for tests, as we check ourselves - no sysout testing -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-core">
     <forbidden-apis suppressAnnotation="**.SuppressForbidden" signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/java"/>
+      <fileset dir="${build.dir}/classes/test"/>
     </forbidden-apis>
   </target>
   <target name="-check-forbidden-sysout"/>
