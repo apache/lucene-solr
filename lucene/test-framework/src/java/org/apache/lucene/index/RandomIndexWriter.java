@@ -100,8 +100,7 @@ public class RandomIndexWriter implements Closeable {
     }
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
-      System.out.println("codec default=" + codec.getName());
+      System.out.println("RIW dir=" + dir);
     }
 
     // Make sure we sometimes test indices that don't get

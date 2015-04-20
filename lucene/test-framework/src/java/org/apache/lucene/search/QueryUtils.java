@@ -18,24 +18,27 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AllDeletedFilterReader;
-import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -166,16 +169,16 @@ public class QueryUtils {
     // we can't put deleted docs before the nested reader, because
     // it will throw off the docIds
     IndexReader[] readers = new IndexReader[] {
-      edge < 0 ? r : emptyReaders[0],
-      emptyReaders[0],
-      new FCInvisibleMultiReader(edge < 0 ? emptyReaders[4] : emptyReaders[0],
-          emptyReaders[0],
-          0 == edge ? r : emptyReaders[0]),
-      0 < edge ? emptyReaders[0] : emptyReaders[7],
-      emptyReaders[0],
-      new FCInvisibleMultiReader(0 < edge ? emptyReaders[0] : emptyReaders[5],
-          emptyReaders[0],
-          0 < edge ? r : emptyReaders[0])
+      edge < 0 ? r : new MultiReader(),
+      new MultiReader(),
+      new FCInvisibleMultiReader(edge < 0 ? emptyReader(4) : new MultiReader(),
+          new MultiReader(),
+          0 == edge ? r : new MultiReader()),
+      0 < edge ? new MultiReader() : emptyReader(7),
+      new MultiReader(),
+      new FCInvisibleMultiReader(0 < edge ? new MultiReader() : emptyReader(5),
+          new MultiReader(),
+          0 < edge ? r : new MultiReader())
     };
 
     IndexSearcher out = LuceneTestCase.newSearcher(new FCInvisibleMultiReader(readers));
@@ -183,35 +186,105 @@ public class QueryUtils {
     return out;
   }
   
-  static final IndexReader[] emptyReaders = new IndexReader[8];
-  static {
-    try {
-      emptyReaders[0] = new MultiReader();
-      emptyReaders[4] = makeEmptyIndex(new Random(0), 4);
-      emptyReaders[5] = makeEmptyIndex(new Random(0), 5);
-      emptyReaders[7] = makeEmptyIndex(new Random(0), 7);
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
-  }
+  private static IndexReader emptyReader(final int maxDoc) {
+    return new LeafReader() {
 
-  private static IndexReader makeEmptyIndex(Random random, final int numDocs) throws IOException {
-    assert numDocs > 0;
-    Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
-    if (LuceneTestCase.VERBOSE) {
-      System.out.println("NOTE: QueryUtils: now create empty index");
-    }
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random)));
-    for (int i = 0; i < numDocs; i++) {
-      w.addDocument(new Document());
-    }
-    w.forceMerge(1);
-    w.close();
-    if (LuceneTestCase.VERBOSE) {
-      System.out.println("NOTE: QueryUtils: done create empty index");
-    }
-    DirectoryReader reader = DirectoryReader.open(d);
-    return new AllDeletedFilterReader(LuceneTestCase.getOnlySegmentReader(reader));
+      @Override
+      public void addCoreClosedListener(CoreClosedListener listener) {}
+
+      @Override
+      public void removeCoreClosedListener(CoreClosedListener listener) {}
+
+      @Override
+      public Fields fields() throws IOException {
+        return new Fields() {
+          @Override
+          public Iterator<String> iterator() {
+            return Collections.<String>emptyList().iterator();
+          }
+
+          @Override
+          public Terms terms(String field) throws IOException {
+            return null;
+          }
+
+          @Override
+          public int size() {
+            return 0;
+          }
+        };
+      }
+
+      @Override
+      public NumericDocValues getNumericDocValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public SortedDocValues getSortedDocValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public Bits getDocsWithField(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public NumericDocValues getNormValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public FieldInfos getFieldInfos() {
+        return new FieldInfos(new FieldInfo[0]);
+      }
+      
+      final Bits liveDocs = new Bits.MatchNoBits(maxDoc);
+      @Override
+      public Bits getLiveDocs() {
+        return liveDocs;
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {}
+
+      @Override
+      public Fields getTermVectors(int docID) throws IOException {
+        return null;
+      }
+
+      @Override
+      public int numDocs() {
+        return 0;
+      }
+
+      @Override
+      public int maxDoc() {
+        return maxDoc;
+      }
+
+      @Override
+      public void document(int docID, StoredFieldVisitor visitor) throws IOException {}
+
+      @Override
+      protected void doClose() throws IOException {}
+    };
   }
 
   /** alternate scorer advance(),advance(),next(),next(),advance(),advance(), etc

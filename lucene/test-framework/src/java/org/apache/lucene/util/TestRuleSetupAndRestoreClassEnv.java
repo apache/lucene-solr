@@ -114,15 +114,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     // if verbose: print some debugging stuff about which codecs are loaded.
     if (VERBOSE) {
-      Set<String> codecs = Codec.availableCodecs();
-      for (String codec : codecs) {
-        System.out.println("Loaded codec: '" + codec + "': " + Codec.forName(codec).getClass().getName());
-      }
-      
-      Set<String> postingsFormats = PostingsFormat.availablePostingsFormats();
-      for (String postingsFormat : postingsFormats) {
-        System.out.println("Loaded postingsFormat: '" + postingsFormat + "': " + PostingsFormat.forName(postingsFormat).getClass().getName());
-      }
+      System.out.println("Loaded codecs: " + Codec.availableCodecs());
+      System.out.println("Loaded postingsFormats: " + PostingsFormat.availablePostingsFormats());
+
     }
 
     savedInfoStream = InfoStream.getDefault();
