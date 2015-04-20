@@ -49,6 +49,8 @@
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
+      <str name="maxNumLogsToKeep">${solr.ulog.maxNumLogsToKeep:10}</str>
+      <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
     </updateLog>
   </updateHandler>
 

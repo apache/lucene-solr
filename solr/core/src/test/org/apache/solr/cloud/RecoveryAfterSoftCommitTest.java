@@ -33,8 +33,8 @@ import org.junit.Test;
 
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7421")
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
+  private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
 
   public RecoveryAfterSoftCommitTest() {
     sliceCount = 1;
@@ -43,12 +43,20 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeTests() {
-    System.setProperty("solr.tests.maxBufferedDocs", "2");
+    System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(MAX_BUFFERED_DOCS));
+    System.setProperty("solr.ulog.numRecordsToKeep", String.valueOf(ULOG_NUM_RECORDS_TO_KEEP));
+    // the default=7000ms artificially slows down recovery and is not needed for this test
+    System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    // avoid creating too many files, see SOLR-7421
+    System.setProperty("useCompoundFile", "true");
   }
 
   @AfterClass
   public static void afterTest()  {
     System.clearProperty("solr.tests.maxBufferedDocs");
+    System.clearProperty("solr.ulog.numRecordsToKeep");
+    System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+    System.clearProperty("useCompoundFile");
   }
 
   /**
@@ -64,8 +72,10 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void test() throws Exception {
+    waitForRecoveriesToFinish(DEFAULT_COLLECTION, true);
     // flush twice
-    for (int i=0; i<4; i++) {
+    int i = 0;
+    for (; i<MAX_BUFFERED_DOCS + 1; i++) {
       SolrInputDocument document = new SolrInputDocument();
       document.addField("id", String.valueOf(i));
       document.addField("a_t", "text_" + i);
@@ -82,8 +92,9 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
     proxy.close();
 
-    // add more than 100 docs so that peer sync cannot be used for recovery
-    for (int i=5; i<115; i++) {
+    // add more than ULOG_NUM_RECORDS_TO_KEEP docs so that peer sync cannot be used for recovery
+    int MAX_DOCS = 2 + MAX_BUFFERED_DOCS + ULOG_NUM_RECORDS_TO_KEEP;
+    for (; i < MAX_DOCS; i++) {
       SolrInputDocument document = new SolrInputDocument();
       document.addField("id", String.valueOf(i));
       document.addField("a_t", "text_" + i);
