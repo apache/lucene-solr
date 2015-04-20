@@ -33,6 +33,23 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
    * The ThreadLocal variable to store the time beyond which, the processing should exit.
    */
   public static ThreadLocal<Long> timeoutAt = new ThreadLocal<Long>() {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * By default, timeoutAt is set as far in the future as possible, 
+     * so that it effectively never happens.
+     * <p>
+     * Since nanoTime() values can be anything from Long.MIN_VALUE to
+     * Long.MAX_VALUE, adding Long.MAX_VALUE can cause overflow.  That's
+     * expected and works fine, since in that case the subtraction of a
+     * future nanoTime() value from timeoutAt (in 
+     * {@link SolrQueryTimeoutImpl#shouldExit}) will result in underflow,
+     * and checking the sign of the result of that subtraction (via
+     * comparison to zero) will correctly indicate whether the future
+     * nanoTime() value has exceeded the timeoutAt value.
+     * <p> 
+     * See {@link System#nanoTime}
+     */
     @Override
     protected Long initialValue() {
       return nanoTime() + Long.MAX_VALUE;
