@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /** Degenerate bounding box wider than PI and limited on two sides (left lon, right lon).
 */
-public class GeoWideDegenerateHorizontalLine implements GeoBBox
+public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
 {
     public final double latitude;
     public final double leftLon;
@@ -36,10 +36,12 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
 
     public final EitherBound eitherBound;
     
+    public final GeoPoint[] edgePoints;
+    
     /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
      * Horizontal angle must be greater than or equal to PI.
      */
-    public GeoWideDegenerateHorizontalLine(double latitude, double leftLon, double rightLon)
+    public GeoWideDegenerateHorizontalLine(final double latitude, final double leftLon, double rightLon)
     {
         // Argument checking
         if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
@@ -59,12 +61,12 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        double sinLatitude = Math.sin(latitude);
-        double cosLatitude = Math.cos(latitude);
-        double sinLeftLon = Math.sin(leftLon);
-        double cosLeftLon = Math.cos(leftLon);
-        double sinRightLon = Math.sin(rightLon);
-        double cosRightLon = Math.cos(rightLon);
+        final double sinLatitude = Math.sin(latitude);
+        final double cosLatitude = Math.cos(latitude);
+        final double sinLeftLon = Math.sin(leftLon);
+        final double cosLeftLon = Math.cos(leftLon);
+        final double sinRightLon = Math.sin(rightLon);
+        final double cosRightLon = Math.cos(rightLon);
         
         // Now build the two points
         this.LHC = new GeoPoint(sinLatitude,sinLeftLon,cosLatitude,cosLeftLon);
@@ -80,19 +82,21 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
         double sinMiddleLon = Math.sin(middleLon);
         double cosMiddleLon = Math.cos(middleLon);
           
-        centerPoint = new GeoPoint(sinLatitude,sinMiddleLon,cosLatitude,cosMiddleLon);
+        this.centerPoint = new GeoPoint(sinLatitude,sinMiddleLon,cosLatitude,cosMiddleLon);
 
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
         this.eitherBound = new EitherBound();
+        
+        this.edgePoints = new GeoPoint[]{centerPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
-        double newTopLat = latitude + angle;
-        double newBottomLat = latitude - angle;
+        final double newTopLat = latitude + angle;
+        final double newBottomLat = latitude - angle;
         // Figuring out when we escalate to a special case requires some prefiguring
         double currentLonSpan = rightLon - leftLon;
         if (currentLonSpan < 0.0)
@@ -107,15 +111,17 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
+        if (point == null)
+            return false;
         return plane.evaluate(point) == 0.0 &&
           (leftPlane.isWithin(point) ||
           rightPlane.isWithin(point));
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return plane.evaluate(x,y,z) == 0.0 &&
           (leftPlane.isWithin(x,y,z) ||
@@ -128,19 +134,19 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
         // Here we compute the distance from the middle point to one of the corners.  However, we need to be careful
         // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
         // the distance to the right or left edge from the center.
-        double topAngle = centerPoint.arcDistance(RHC);
-        double bottomAngle = centerPoint.arcDistance(LHC);
+        final double topAngle = centerPoint.arcDistance(RHC);
+        final double bottomAngle = centerPoint.arcDistance(LHC);
         return Math.max(topAngle,bottomAngle);
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return centerPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
         // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
@@ -165,8 +171,7 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
-
+    public int getRelationship(final GeoShape path) {
         if (path.intersects(plane,eitherBound)) {
             return OVERLAPS;
         }
@@ -194,17 +199,22 @@ public class GeoWideDegenerateHorizontalLine implements GeoBBox
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "GeoWideDegenerateHorizontalLine: {latitude="+latitude+"("+latitude*180.0/Math.PI+"), leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightLon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
+    }
+
     protected class EitherBound implements Membership {
         public EitherBound() {
         }
         
         @Override
-        public boolean isWithin(Vector v) {
+        public boolean isWithin(final Vector v) {
             return leftPlane.isWithin(v) || rightPlane.isWithin(v);
         }
         
         @Override
-        public boolean isWithin(double x, double y, double z) {
+        public boolean isWithin(final double x, final double y, final double z) {
             return leftPlane.isWithin(x,y,z) || rightPlane.isWithin(x,y,z);
         }
     }

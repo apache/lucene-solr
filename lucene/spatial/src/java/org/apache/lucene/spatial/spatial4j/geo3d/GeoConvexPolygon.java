@@ -17,7 +17,9 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 
 /** GeoConvexPolygon objects are generic building blocks of more complex structures.
 * The only restrictions on these objects are: (1) they must be convex; (2) they must have
@@ -27,70 +29,97 @@ import java.util.*;
 public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembershipShape
 {
     protected final List<GeoPoint> points;
+    protected final BitSet isInternalEdges;
+
     protected SidedPlane[] edges = null;
-    protected GeoPoint interiorPoint = null;
+    protected boolean[] internalEdges = null;
     
-    /** Create a convex polygon from a list of points.
+    protected GeoPoint[] edgePoints = null;
+    
+    /** Create a convex polygon from a list of points.  The first point must be on the
+    * external edge.
     */
-    public GeoConvexPolygon(List<GeoPoint> pointList) {
+    public GeoConvexPolygon(final List<GeoPoint> pointList) {
         this.points = pointList;
-        donePoints();
+        this.isInternalEdges = null;
+        donePoints(false);
+    }
+
+    /** Create a convex polygon from a list of points, keeping track of which boundaries
+    * are internal.  This is used when creating a polygon as a building block for another shape.
+    */
+    public GeoConvexPolygon(final List<GeoPoint> pointList, final BitSet internalEdgeFlags, final boolean returnEdgeInternal) {
+        this.points = pointList;
+        this.isInternalEdges = internalEdgeFlags;
+        donePoints(returnEdgeInternal);
     }
     
     /** Create a convex polygon, with a starting latitude and longitude.
     * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
     */
-    public GeoConvexPolygon(double startLatitude, double startLongitude)
+    public GeoConvexPolygon(final double startLatitude, final double startLongitude)
     {
         points = new ArrayList<GeoPoint>();
+        isInternalEdges = new BitSet();
         // Argument checking
         if (startLatitude > Math.PI * 0.5 || startLatitude < -Math.PI * 0.5)
             throw new IllegalArgumentException("Latitude out of range");
         if (startLongitude < -Math.PI || startLongitude > Math.PI)
             throw new IllegalArgumentException("Longitude out of range");
         
-        GeoPoint p = new GeoPoint(startLatitude, startLongitude);
+        final GeoPoint p = new GeoPoint(startLatitude, startLongitude);
         points.add(p);
     }
     
     /** Add a point to the polygon.
      * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+     *@param latitude is the latitude of the next point.
+     *@param longitude is the longitude of the next point.
+     *@param isInternalEdge is true if the edge just added should be considered "internal", and not
+     * intersected as part of the intersects() operation.
      */
-    public void addPoint(double latitude, double longitude) {
+    public void addPoint(final double latitude, final double longitude, final boolean isInternalEdge) {
         // Argument checking
         if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
             throw new IllegalArgumentException("Latitude out of range");
         if (longitude < -Math.PI || longitude > Math.PI)
             throw new IllegalArgumentException("Longitude out of range");
         
-        GeoPoint p = new GeoPoint(latitude, longitude);
+        final GeoPoint p = new GeoPoint(latitude, longitude);
+        isInternalEdges.set(points.size(),isInternalEdge);
         points.add(p);
     }
 
     /** Finish the polygon, by connecting the last added point with the starting point.
     */
-    public void donePoints() {
+    public void donePoints(final boolean isInternalReturnEdge) {
         // If fewer than 3 points, can't do it.
         if (points.size() < 3)
             throw new IllegalArgumentException("Polygon needs at least three points.");
         // Time to construct the planes.  If the polygon is truly convex, then any adjacent point
         edges = new SidedPlane[points.size()];
+        internalEdges = new boolean[points.size()];
         // to a segment can provide an interior measurement.
         for (int i = 0; i < points.size(); i++) {
-            GeoPoint start = points.get(i);
-            GeoPoint end = points.get(legalIndex(i+1));
-            GeoPoint check = points.get(legalIndex(i+2));
-            SidedPlane sp = new SidedPlane(check,start,end);
+            final GeoPoint start = points.get(i);
+            final boolean isInternalEdge = (isInternalEdges!=null?(i == isInternalEdges.size()?isInternalReturnEdge:isInternalEdges.get(i)):false);
+            final GeoPoint end = points.get(legalIndex(i+1));
+            final GeoPoint check = points.get(legalIndex(i+2));
+            final SidedPlane sp = new SidedPlane(check,start,end);
             //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
             edges[i] = sp;
+            internalEdges[i] = isInternalEdge;
         }
-        
+        createCenterPoint();
+    }
+    
+    protected void createCenterPoint() {
         // In order to naively confirm that the polygon is convex, I would need to
         // check every edge, and verify that every point (other than the edge endpoints)
         // is within the edge's sided plane.  This is an order n^2 operation.  That's still
         // not wrong, though, because everything else about polygons has a similar cost.
         for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
-            SidedPlane edge = edges[edgeIndex];
+            final SidedPlane edge = edges[edgeIndex];
             for (int pointIndex =0; pointIndex < points.size(); pointIndex++) {
                 if (pointIndex != edgeIndex && pointIndex != legalIndex(edgeIndex+1)) {
                     if (!edge.isWithin(points.get(pointIndex)))
@@ -98,46 +127,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
                 }
             }
         }
-        
-        // Finally, we need to compute a single interior point that will satisfy
-        // all edges.  If the polygon is convex, we know that such a point exists.
-        
-        // This is actually surprisingly hard.  I believe merely averaging the x, y, and z
-        // values of the points will produce a point inside the shape, but it won't be
-        // on the unit sphere, and it may be in fact degenerate and have a zero magnitude.
-        // In that case, an alternate algorithm would be required.  But since such cases
-        // are very special (or very contrived), I'm just going to not worry about that
-        // for the moment.
-        double sumX = 0.0;
-        double sumY = 0.0;
-        double sumZ = 0.0;
-        for (GeoPoint p : points) {
-            sumX += p.x;
-            sumY += p.y;
-            sumZ += p.z;
-        }
-        double denom = 1.0 / (double)points.size();
-        sumX *= denom;
-        sumY *= denom;
-        sumZ *= denom;
-        double magnitude = Math.sqrt(sumX * sumX + sumY * sumY + sumZ * sumZ);
-        if (magnitude < 1.0e-10)
-            throw new IllegalArgumentException("Polygon interior point cannot be determined");
-        denom = 1.0/magnitude;
-        
-        interiorPoint = new GeoPoint(sumX*denom,sumY*denom,sumZ*denom);
-        
-        // Let's be sure that our interior point is really inside
-        for (SidedPlane sp : edges) {
-            if (!sp.isWithin(interiorPoint)) {
-                StringBuilder sb = new StringBuilder("Interior point logic failed to produce an interior point.  Vertices: ");
-                for (GeoPoint p : points) {
-                    sb.append(p).append(" ");
-                }
-                sb.append(". Interior point: ").append(interiorPoint);
-                throw new IllegalArgumentException(sb.toString());
-            }
-        }
+        edgePoints = new GeoPoint[]{points.get(0)};
     }
     
     protected int legalIndex(int index) {
@@ -147,9 +137,9 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     }
     
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
-        for (SidedPlane edge : edges) {
+        for (final SidedPlane edge : edges) {
             if (!edge.isWithin(point))
                 return false;
         }
@@ -157,9 +147,9 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
-        for (SidedPlane edge : edges) {
+        for (final SidedPlane edge : edges) {
             if (!edge.isWithin(x,y,z))
                 return false;
         }
@@ -167,26 +157,29 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     }
 
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return interiorPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
-            SidedPlane edge = edges[edgeIndex];
-            // Construct boundaries
-            Membership[] membershipBounds = new Membership[edges.length-1];
-            int count = 0;
-            for (int otherIndex = 0; otherIndex < edges.length; otherIndex++) {
-                if (otherIndex != edgeIndex) {
-                    membershipBounds[count++] = edges[otherIndex];
+            final SidedPlane edge = edges[edgeIndex];
+            if (!internalEdges[edgeIndex]) {
+                // Edges flagged as 'internal only' are excluded from the matching
+                // Construct boundaries
+                final Membership[] membershipBounds = new Membership[edges.length-1];
+                int count = 0;
+                for (int otherIndex = 0; otherIndex < edges.length; otherIndex++) {
+                    if (otherIndex != edgeIndex) {
+                        membershipBounds[count++] = edges[otherIndex];
+                    }
                 }
+                if (edge.intersects(p,bounds,membershipBounds))
+                    return true;
             }
-            if (edge.intersects(p,bounds,membershipBounds))
-                return true;
         }
         return false;
     }
@@ -204,15 +197,15 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
         bounds = super.getBounds(bounds);
         
         // Add all the points
-        for (GeoPoint point : points) {
+        for (final GeoPoint point : points) {
             bounds.addPoint(point);
         }
 
         // Add planes with membership.
         for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
-            SidedPlane edge = edges[edgeIndex];
+            final SidedPlane edge = edges[edgeIndex];
             // Construct boundaries
-            Membership[] membershipBounds = new Membership[edges.length-1];
+            final Membership[] membershipBounds = new Membership[edges.length-1];
             int count = 0;
             for (int otherIndex = 0; otherIndex < edges.length; otherIndex++) {
                 if (otherIndex != edgeIndex) {
@@ -248,7 +241,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
 
     @Override
     public String toString() {
-        return "GeoConvexPolygon{" + points + "}";
+        return "GeoConvexPolygon: {" + points + "}";
     }
 }
   

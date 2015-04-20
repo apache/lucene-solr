@@ -40,7 +40,7 @@ public class Vector
      *@param A is the first vector
      *@param B is the second
      */
-    public Vector(Vector A, Vector B) {
+    public Vector(final Vector A, final Vector B) {
         // x = u2v3 - u3v2
         // y = u3v1 - u1v3
         // z = u1v2 - u2v1
@@ -67,7 +67,7 @@ public class Vector
      *@param v is the vector to evaluate.
      *@return the result.
      */
-    public double evaluate(Vector v) {
+    public double evaluate(final Vector v) {
         return this.x * v.x + this.y * v.y + this.z * v.z;
     }
 
@@ -77,7 +77,7 @@ public class Vector
      *@param z is the x value of the vector to evaluate.
      *@return the result.
      */
-    public double evaluate(double x, double y, double z) {
+    public double evaluate(final double x, final double y, final double z) {
         return this.x * x + this.y * y + this.z * z;
     }
 
@@ -87,14 +87,14 @@ public class Vector
      *@param moreBounds is the second part of the set of planes.
      *@return true if the point is within the bounds.
      */
-    public boolean isWithin(Membership[] bounds, Membership[] moreBounds) {
+    public boolean isWithin(final Membership[] bounds, final Membership[] moreBounds) {
         // Return true if the point described is within all provided bounds
         for (Membership bound : bounds) {
-            if (!bound.isWithin(this))
+            if (bound != null && !bound.isWithin(this))
                 return false;
         }
         for (Membership bound : moreBounds) {
-            if (!bound.isWithin(this))
+            if (bound != null && !bound.isWithin(this))
                 return false;
         }
         return true;
@@ -106,7 +106,7 @@ public class Vector
      *@param v is the vector to compute a distance to.
      *@return the square of the linear distance.
      */
-    public double linearDistanceSquared(Vector v) {
+    public double linearDistanceSquared(final Vector v) {
         double deltaX = this.x - v.x;
         double deltaY = this.y - v.y;
         double deltaZ = this.z - v.z;
@@ -121,7 +121,7 @@ public class Vector
      *@param z is the z part of the vector to compute a distance to.
      *@return the square of the linear distance.
      */
-    public double linearDistanceSquared(double x, double y, double z) {
+    public double linearDistanceSquared(final double x, final double y, final double z) {
         double deltaX = this.x - x;
         double deltaY = this.y - y;
         double deltaZ = this.z - z;
@@ -134,7 +134,7 @@ public class Vector
      *@param v is the vector to compute a distance to.
      *@return the linear distance.
      */
-    public double linearDistance(Vector v) {
+    public double linearDistance(final Vector v) {
         return Math.sqrt(linearDistanceSquared(v));
     }
     
@@ -146,7 +146,7 @@ public class Vector
      *@param z is the z part of the vector to compute a distance to.
      *@return the linear distance.
      */
-    public double linearDistance(double x, double y, double z) {
+    public double linearDistance(final double x, final double y, final double z) {
         return Math.sqrt(linearDistanceSquared(x,y,z));
     }
     
@@ -156,7 +156,7 @@ public class Vector
      *@param v is the vector to compute a distance to.
      *@return the square of the normal distance.
      */
-    public double normalDistanceSquared(Vector v) {
+    public double normalDistanceSquared(final Vector v) {
         double t = this.evaluate(v);
         double deltaX = this.x * t - v.x;
         double deltaY = this.y * t - v.y;
@@ -172,7 +172,7 @@ public class Vector
      *@param z is the z part of the vector to compute a distance to.
      *@return the square of the normal distance.
      */
-    public double normalDistanceSquared(double x, double y, double z) {
+    public double normalDistanceSquared(final double x, final double y, final double z) {
         double t = this.evaluate(x,y,z);
         double deltaX = this.x * t - x;
         double deltaY = this.y * t - y;
@@ -186,7 +186,7 @@ public class Vector
      *@param v is the vector to compute a distance to.
      *@return the normal distance.
      */
-    public double normalDistance(Vector v) {
+    public double normalDistance(final Vector v) {
         return Math.sqrt(normalDistanceSquared(v));
     }
 
@@ -198,7 +198,7 @@ public class Vector
      *@param z is the z part of the vector to compute a distance to.
      *@return the normal distance.
      */
-    public double normalDistance(double x, double y, double z) {
+    public double normalDistance(final double x, final double y, final double z) {
         return Math.sqrt(normalDistanceSquared(x,y,z));
     }
     
@@ -208,7 +208,7 @@ public class Vector
     public double magnitude() {
         return Math.sqrt(x * x + y * y + z * z);
     }
-                
+    
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof Vector))

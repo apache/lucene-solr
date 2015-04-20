@@ -21,7 +21,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 * The left-right maximum extent for this shape is PI; for anything larger, use
 * GeoWideLongitudeSlice.
 */
-public class GeoLongitudeSlice implements GeoBBox
+public class GeoLongitudeSlice extends GeoBBoxBase
 {
     public final double leftLon;
     public final double rightLon;
@@ -30,9 +30,11 @@ public class GeoLongitudeSlice implements GeoBBox
     public final SidedPlane rightPlane;
       
     public final GeoPoint centerPoint;
-
+    public final GeoPoint northPole = new GeoPoint(0.0,0.0,1.0);
+    public final GeoPoint[] edgePoints = new GeoPoint[]{northPole};
+    
     /** Accepts only values in the following ranges: lon: {@code -PI -> PI} */
-    public GeoLongitudeSlice(double leftLon, double rightLon)
+    public GeoLongitudeSlice(final double leftLon, double rightLon)
     {
         // Argument checking
         if (leftLon < -Math.PI || leftLon > Math.PI)
@@ -49,17 +51,17 @@ public class GeoLongitudeSlice implements GeoBBox
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        double sinLeftLon = Math.sin(leftLon);
-        double cosLeftLon = Math.cos(leftLon);
-        double sinRightLon = Math.sin(rightLon);
-        double cosRightLon = Math.cos(rightLon);
+        final double sinLeftLon = Math.sin(leftLon);
+        final double cosLeftLon = Math.cos(leftLon);
+        final double sinRightLon = Math.sin(rightLon);
+        final double cosRightLon = Math.cos(rightLon);
 
         // Normalize
         while (leftLon > rightLon) {
             rightLon += Math.PI * 2.0;
         }
-        double middleLon = (leftLon + rightLon) * 0.5;
-        centerPoint = new GeoPoint(0.0,middleLon);              
+        final double middleLon = (leftLon + rightLon) * 0.5;
+        this.centerPoint = new GeoPoint(0.0,middleLon);              
         
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
@@ -67,7 +69,7 @@ public class GeoLongitudeSlice implements GeoBBox
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
         // Figuring out when we escalate to a special case requires some prefiguring
         double currentLonSpan = rightLon - leftLon;
@@ -83,14 +85,14 @@ public class GeoLongitudeSlice implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return leftPlane.isWithin(point) &&
           rightPlane.isWithin(point);
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return leftPlane.isWithin(x,y,z) &&
           rightPlane.isWithin(x,y,z);
@@ -107,13 +109,13 @@ public class GeoLongitudeSlice implements GeoBBox
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return centerPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(leftPlane,bounds,rightPlane) ||
           p.intersects(rightPlane,bounds,leftPlane);
@@ -137,17 +139,26 @@ public class GeoLongitudeSlice implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
+        final int insideRectangle = isShapeInsideBBox(path);
+        if (insideRectangle == SOME_INSIDE)
+            return OVERLAPS;
+
+        final boolean insideShape = path.isWithin(northPole);
+        
+        if (insideRectangle == ALL_INSIDE && insideShape)
+            return OVERLAPS;
+
         if (path.intersects(leftPlane,rightPlane) ||
             path.intersects(rightPlane,leftPlane)) {
             return OVERLAPS;
         }
 
-        if (isWithin(path.getInteriorPoint())) {
+        if (insideRectangle == ALL_INSIDE) {
             return WITHIN;
         }
 
-        if (path.isWithin(centerPoint)) {
+        if (insideShape) {
             return CONTAINS;
         }
         
@@ -172,6 +183,11 @@ public class GeoLongitudeSlice implements GeoBBox
         temp = Double.doubleToLongBits(rightLon);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoLongitudeSlice: {leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightlon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
     }
 }
   

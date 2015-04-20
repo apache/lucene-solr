@@ -21,7 +21,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 * The left-right maximum extent for this shape is PI; for anything larger, use
 * GeoWideRectangle.
 */
-public class GeoRectangle implements GeoBBox
+public class GeoRectangle extends GeoBBoxBase
 {
     public final double topLat;
     public final double bottomLat;
@@ -42,8 +42,10 @@ public class GeoRectangle implements GeoBBox
       
     public final GeoPoint centerPoint;
 
+    public final GeoPoint[] edgePoints;
+    
     /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI} */
-    public GeoRectangle(double topLat, double bottomLat, double leftLon, double rightLon)
+    public GeoRectangle(final double topLat, final double bottomLat, final double leftLon, double rightLon)
     {
         // Argument checking
         if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
@@ -68,14 +70,14 @@ public class GeoRectangle implements GeoBBox
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        double sinTopLat = Math.sin(topLat);
-        double cosTopLat = Math.cos(topLat);
-        double sinBottomLat = Math.sin(bottomLat);
-        double cosBottomLat = Math.cos(bottomLat);
-        double sinLeftLon = Math.sin(leftLon);
-        double cosLeftLon = Math.cos(leftLon);
-        double sinRightLon = Math.sin(rightLon);
-        double cosRightLon = Math.cos(rightLon);
+        final double sinTopLat = Math.sin(topLat);
+        final double cosTopLat = Math.cos(topLat);
+        final double sinBottomLat = Math.sin(bottomLat);
+        final double cosBottomLat = Math.cos(bottomLat);
+        final double sinLeftLon = Math.sin(leftLon);
+        final double cosLeftLon = Math.cos(leftLon);
+        final double sinRightLon = Math.sin(rightLon);
+        final double cosRightLon = Math.cos(rightLon);
         
         // Now build the four points
         this.ULHC = new GeoPoint(sinTopLat,sinLeftLon,cosTopLat,cosLeftLon);
@@ -83,31 +85,32 @@ public class GeoRectangle implements GeoBBox
         this.LRHC = new GeoPoint(sinBottomLat,sinRightLon,cosBottomLat,cosRightLon);
         this.LLHC = new GeoPoint(sinBottomLat,sinLeftLon,cosBottomLat,cosLeftLon);
         
-        double middleLat = (topLat + bottomLat) * 0.5;
-        double sinMiddleLat = Math.sin(middleLat);
-        cosMiddleLat = Math.cos(middleLat);
+        final double middleLat = (topLat + bottomLat) * 0.5;
+        final double sinMiddleLat = Math.sin(middleLat);
+        this.cosMiddleLat = Math.cos(middleLat);
         // Normalize
         while (leftLon > rightLon) {
             rightLon += Math.PI * 2.0;
         }
-        double middleLon = (leftLon + rightLon) * 0.5;
-        double sinMiddleLon = Math.sin(middleLon);
-        double cosMiddleLon = Math.cos(middleLon);
+        final double middleLon = (leftLon + rightLon) * 0.5;
+        final double sinMiddleLon = Math.sin(middleLon);
+        final double cosMiddleLon = Math.cos(middleLon);
           
-        centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);
+        this.centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);
 
         this.topPlane = new SidedPlane(centerPoint,sinTopLat);
         this.bottomPlane = new SidedPlane(centerPoint,sinBottomLat);
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
+        this.edgePoints = new GeoPoint[]{ULHC};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
-        double newTopLat = topLat + angle;
-        double newBottomLat = bottomLat - angle;
+        final double newTopLat = topLat + angle;
+        final double newBottomLat = bottomLat - angle;
         // Figuring out when we escalate to a special case requires some prefiguring
         double currentLonSpan = rightLon - leftLon;
         if (currentLonSpan < 0.0)
@@ -122,7 +125,7 @@ public class GeoRectangle implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return topPlane.isWithin(point) &&
           bottomPlane.isWithin(point) &&
@@ -131,7 +134,7 @@ public class GeoRectangle implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return topPlane.isWithin(x,y,z) &&
           bottomPlane.isWithin(x,y,z) &&
@@ -145,20 +148,20 @@ public class GeoRectangle implements GeoBBox
         // Here we compute the distance from the middle point to one of the corners.  However, we need to be careful
         // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
         // the distance to the right or left edge from the center.
-        double centerAngle = (rightLon - (rightLon + leftLon) * 0.5) * cosMiddleLat;
-        double topAngle = centerPoint.arcDistance(URHC);
-        double bottomAngle = centerPoint.arcDistance(LLHC);
+        final double centerAngle = (rightLon - (rightLon + leftLon) * 0.5) * cosMiddleLat;
+        final double topAngle = centerPoint.arcDistance(URHC);
+        final double bottomAngle = centerPoint.arcDistance(LLHC);
         return Math.max(centerAngle,Math.max(topAngle,bottomAngle));
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return centerPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(topPlane,bounds,bottomPlane,leftPlane,rightPlane) ||
           p.intersects(bottomPlane,bounds,topPlane,leftPlane,rightPlane) ||
@@ -184,17 +187,26 @@ public class GeoRectangle implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
+        final int insideRectangle = isShapeInsideBBox(path);
+        if (insideRectangle == SOME_INSIDE)
+            return OVERLAPS;
+
+        final boolean insideShape = path.isWithin(ULHC);
+        
+        if (insideRectangle == ALL_INSIDE && insideShape)
+            return OVERLAPS;
+
         if (path.intersects(topPlane,bottomPlane,leftPlane,rightPlane) ||
             path.intersects(bottomPlane,topPlane,leftPlane,rightPlane) ||
             path.intersects(leftPlane,topPlane,bottomPlane,rightPlane) ||
             path.intersects(rightPlane,leftPlane,topPlane,bottomPlane))
             return OVERLAPS;
 
-        if (isWithin(path.getInteriorPoint()))
+        if (insideRectangle == ALL_INSIDE)
             return WITHIN;
     
-        if (path.isWithin(centerPoint))
+        if (insideShape)
             return CONTAINS;
         
         return DISJOINT;
@@ -214,6 +226,11 @@ public class GeoRectangle implements GeoBBox
         int result = ULHC.hashCode();
         result = 31 * result + LRHC.hashCode();
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoRectangle: {toplat="+topLat+"("+topLat*180.0/Math.PI+"), bottomlat="+bottomLat+"("+bottomLat*180.0/Math.PI+"), leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightlon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
     }
 }
   

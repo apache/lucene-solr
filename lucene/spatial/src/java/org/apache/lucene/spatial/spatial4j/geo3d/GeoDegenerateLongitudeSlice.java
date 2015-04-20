@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /** Degenerate longitude slice.
 */
-public class GeoDegenerateLongitudeSlice implements GeoBBox
+public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
 {
     public final double longitude;
     
@@ -28,9 +28,10 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
     public final SidedPlane boundingPlane;
     public final Plane plane;
     public final GeoPoint interiorPoint;
+    public final GeoPoint[] edgePoints;
 
     /** Accepts only values in the following ranges: lon: {@code -PI -> PI} */
-    public GeoDegenerateLongitudeSlice(double longitude)
+    public GeoDegenerateLongitudeSlice(final double longitude)
     {
         // Argument checking
         if (longitude < -Math.PI || longitude > Math.PI)
@@ -44,10 +45,11 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
         // We need a bounding plane too, which is perpendicular to the longitude plane and sided so that the point (0.0, longitude) is inside.
         this.interiorPoint = new GeoPoint(cosLongitude, sinLongitude, 0.0);
         this.boundingPlane = new SidedPlane(interiorPoint, -sinLongitude, cosLongitude);
+        this.edgePoints = new GeoPoint[]{interiorPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
         // Figuring out when we escalate to a special case requires some prefiguring
         double newLeftLon = longitude - angle;
@@ -61,14 +63,14 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return plane.evaluate(point) == 0.0 &&
             boundingPlane.isWithin(point);
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return plane.evaluate(x,y,z) == 0.0 &&
             boundingPlane.isWithin(x,y,z);
@@ -81,13 +83,13 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return interiorPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(plane,bounds,boundingPlane);
     }
@@ -110,7 +112,7 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
         // Look for intersections.
         if (path.intersects(plane,boundingPlane))
             return OVERLAPS;
@@ -137,6 +139,11 @@ public class GeoDegenerateLongitudeSlice implements GeoBBox
         temp = Double.doubleToLongBits(longitude);
         result = (int) (temp ^ (temp >>> 32));
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoDegenerateLongitudeSlice: {longitude="+longitude+"("+longitude*180.0/Math.PI+")}";
     }
 }
   

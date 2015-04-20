@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /** Degenerate bounding box limited on two sides (top lat, bottom lat).
 */
-public class GeoDegenerateVerticalLine implements GeoBBox
+public class GeoDegenerateVerticalLine extends GeoBBoxBase
 {
     public final double topLat;
     public final double bottomLat;
@@ -34,9 +34,10 @@ public class GeoDegenerateVerticalLine implements GeoBBox
     public final Plane plane;
       
     public final GeoPoint centerPoint;
-
+    public final GeoPoint[] edgePoints;
+    
     /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, longitude: {@code -PI -> PI} */
-    public GeoDegenerateVerticalLine(double topLat, double bottomLat, double longitude)
+    public GeoDegenerateVerticalLine(final double topLat, final double bottomLat, final double longitude)
     {
         // Argument checking
         if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
@@ -52,12 +53,12 @@ public class GeoDegenerateVerticalLine implements GeoBBox
         this.bottomLat = bottomLat;
         this.longitude = longitude;
           
-        double sinTopLat = Math.sin(topLat);
-        double cosTopLat = Math.cos(topLat);
-        double sinBottomLat = Math.sin(bottomLat);
-        double cosBottomLat = Math.cos(bottomLat);
-        double sinLongitude = Math.sin(longitude);
-        double cosLongitude = Math.cos(longitude);
+        final double sinTopLat = Math.sin(topLat);
+        final double cosTopLat = Math.cos(topLat);
+        final double sinBottomLat = Math.sin(bottomLat);
+        final double cosBottomLat = Math.cos(bottomLat);
+        final double sinLongitude = Math.sin(longitude);
+        final double cosLongitude = Math.cos(longitude);
         
         // Now build the two points
         this.UHC = new GeoPoint(sinTopLat,sinLongitude,cosTopLat,cosLongitude);
@@ -65,24 +66,25 @@ public class GeoDegenerateVerticalLine implements GeoBBox
         
         this.plane = new Plane(cosLongitude,sinLongitude);
           
-        double middleLat = (topLat + bottomLat) * 0.5;
-        double sinMiddleLat = Math.sin(middleLat);
-        double cosMiddleLat = Math.cos(middleLat);
+        final double middleLat = (topLat + bottomLat) * 0.5;
+        final double sinMiddleLat = Math.sin(middleLat);
+        final double cosMiddleLat = Math.cos(middleLat);
           
-        centerPoint = new GeoPoint(sinMiddleLat,sinLongitude,cosMiddleLat,cosLongitude);
+        this.centerPoint = new GeoPoint(sinMiddleLat,sinLongitude,cosMiddleLat,cosLongitude);
 
         this.topPlane = new SidedPlane(centerPoint,sinTopLat);
         this.bottomPlane = new SidedPlane(centerPoint,sinBottomLat);
 
         this.boundingPlane = new SidedPlane(centerPoint,-sinLongitude,cosLongitude);
 
+        this.edgePoints = new GeoPoint[]{centerPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
-        double newTopLat = topLat + angle;
-        double newBottomLat = bottomLat - angle;
+        final double newTopLat = topLat + angle;
+        final double newBottomLat = bottomLat - angle;
         double newLeftLon = longitude - angle;
         double newRightLon = longitude + angle;
         double currentLonSpan = 2.0 * angle;
@@ -94,7 +96,7 @@ public class GeoDegenerateVerticalLine implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return plane.evaluate(point) == 0.0 &&
           boundingPlane.isWithin(point) &&
@@ -103,7 +105,7 @@ public class GeoDegenerateVerticalLine implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return plane.evaluate(x,y,z) == 0.0 &&
           boundingPlane.isWithin(x,y,z) &&
@@ -117,19 +119,19 @@ public class GeoDegenerateVerticalLine implements GeoBBox
         // Here we compute the distance from the middle point to one of the corners.  However, we need to be careful
         // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
         // the distance to the right or left edge from the center.
-        double topAngle = centerPoint.arcDistance(UHC);
-        double bottomAngle = centerPoint.arcDistance(LHC);
+        final double topAngle = centerPoint.arcDistance(UHC);
+        final double bottomAngle = centerPoint.arcDistance(LHC);
         return Math.max(topAngle,bottomAngle);
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return centerPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(plane,bounds,boundingPlane,topPlane,bottomPlane);
     }
@@ -152,7 +154,7 @@ public class GeoDegenerateVerticalLine implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
         if (path.intersects(plane,boundingPlane,topPlane,bottomPlane))
             return OVERLAPS;
 
@@ -176,6 +178,11 @@ public class GeoDegenerateVerticalLine implements GeoBBox
         int result = UHC.hashCode();
         result = 31 * result + LHC.hashCode();
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoDegenerateVerticalLine: {longitude="+longitude+"("+longitude*180.0/Math.PI+"), toplat="+topLat+"("+topLat*180.0/Math.PI+"), bottomlat="+bottomLat+"("+bottomLat*180.0/Math.PI+")}";
     }
 }
   

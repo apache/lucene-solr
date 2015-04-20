@@ -22,13 +22,16 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 */
 public class Plane extends Vector
 {
+    protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
+    protected final static Membership[] NO_BOUNDS = new Membership[0];
+    
     public final double D;
   
     /** Construct a plane through two points and origin.
      *@param A is the first point (origin based).
      *@param B is the second point (origin based).
      */
-    public Plane(Vector A, Vector B) {
+    public Plane(final Vector A, final Vector B) {
         super(A,B);
         D = 0.0;
     }
@@ -36,7 +39,7 @@ public class Plane extends Vector
     /** Construct a horizontal plane at a specified Z.
      *@param height is the specified Z coordinate.
      */
-    public Plane(double height) {
+    public Plane(final double height) {
         super(0.0,0.0,1.0);
         D = -height;
     }
@@ -46,7 +49,7 @@ public class Plane extends Vector
      *@param x is the specified x value.
      *@param y is the specified y value.
      */
-    public Plane(double x, double y) {
+    public Plane(final double x, final double y) {
         super(y,-x,0.0);
         D = 0.0;
     }
@@ -55,7 +58,7 @@ public class Plane extends Vector
      * from origin.
      *@param D is the D offset from the origin.
      */
-    public Plane(Vector v, double D) {
+    public Plane(final Vector v, final double D) {
         super(v.x,v.y,v.z);
         this.D = D;
     }
@@ -65,7 +68,7 @@ public class Plane extends Vector
      *@param v is the vector.
      *@return the result of the evaluation.
      */
-    public double evaluate(Vector v) {
+    public double evaluate(final Vector v) {
         return super.evaluate(v) + D;
     }
   
@@ -85,11 +88,11 @@ public class Plane extends Vector
     *@param moreBounds is another set of bounds.
     *@return the intersection point(s) on the unit sphere, if there are any.
     */
-    protected GeoPoint[] findIntersections(Plane q, Membership[] bounds, Membership[] moreBounds) {
-        Vector lineVector = new Vector(this,q);
+    protected GeoPoint[] findIntersections(final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
+        final Vector lineVector = new Vector(this,q);
         if (lineVector.x == 0.0 && lineVector.y == 0.0 && lineVector.z == 0.0) {
             // Degenerate case: parallel planes
-            return new GeoPoint[0];
+            return NO_POINTS;
         }
 
         // The line will have the equation: A t + A0 = x, B t + B0 = y, C t + C0 = z.
@@ -115,30 +118,30 @@ public class Plane extends Vector
         double y0;
         double z0;
         // We try to maximize the determinant in the denominator
-        double denomYZ = this.y*q.z - this.z*q.y;
-        double denomXZ = this.x*q.z - this.z*q.x;
-        double denomXY = this.x*q.y - this.y*q.x;
+        final double denomYZ = this.y*q.z - this.z*q.y;
+        final double denomXZ = this.x*q.z - this.z*q.x;
+        final double denomXY = this.x*q.y - this.y*q.x;
         if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
             // X is the biggest, so our point will have x0 = 0.0
             if (Math.abs(denomYZ) < 1.0e-35)
-                return new GeoPoint[0];
-            double denom = 1.0 / denomYZ;
+                return NO_POINTS;
+            final double denom = 1.0 / denomYZ;
             x0 = 0.0;
             y0 = (-this.D * q.z - this.z * -q.D) * denom;
             z0 = (this.y * -q.D + this.D * q.y) * denom;
         } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
             // Y is the biggest, so y0 = 0.0
             if (Math.abs(denomXZ) < 1.0e-35)
-                return new GeoPoint[0];
-            double denom = 1.0 / denomXZ;
+                return NO_POINTS;
+            final double denom = 1.0 / denomXZ;
             x0 = (-this.D * q.z - this.z * -q.D) * denom;
             y0 = 0.0;
             z0 = (this.x * -q.D + this.D * q.x) * denom;
         } else {
             // Z is the biggest, so Z0 = 0.0
             if (Math.abs(denomXY) < 1.0e-35)
-                return new GeoPoint[0];
-            double denom = 1.0 / denomXY;
+                return NO_POINTS;
+            final double denom = 1.0 / denomXY;
             x0 = (-this.D * q.y - this.y * -q.D) * denom;
             y0 = (this.x * -q.D + this.D * q.x) * denom;
             z0 = 0.0;
@@ -151,26 +154,26 @@ public class Plane extends Vector
         // A^2 t^2 + 2AA0t + A0^2 + B^2 t^2 + 2BB0t + B0^2 + C^2 t^2 + 2CC0t + C0^2 - 1,0 = 0.0
         // [A^2 + B^2 + C^2] t^2 + [2AA0 + 2BB0 + 2CC0] t + [A0^2 + B0^2 + C0^2 - 1,0] = 0.0
         // Use the quadratic formula to determine t values and candidate point(s)
-        double A = lineVector.x * lineVector.x + lineVector.y * lineVector.y + lineVector.z * lineVector.z;
-        double B = 2.0*(lineVector.x * x0 + lineVector.y * y0 + lineVector.z * z0);
-        double C = x0*x0 + y0*y0 + z0*z0 - 1.0;
+        final double A = lineVector.x * lineVector.x + lineVector.y * lineVector.y + lineVector.z * lineVector.z;
+        final double B = 2.0*(lineVector.x * x0 + lineVector.y * y0 + lineVector.z * z0);
+        final double C = x0*x0 + y0*y0 + z0*z0 - 1.0;
 
-        double BsquaredMinus = B * B - 4.0 * A * C;
+        final double BsquaredMinus = B * B - 4.0 * A * C;
         if (BsquaredMinus < 0.0)
-            return new GeoPoint[0];
-        double inverse2A = 1.0 / (2.0 * A);
+            return NO_POINTS;
+        final double inverse2A = 1.0 / (2.0 * A);
         if (BsquaredMinus == 0.0) {
             // One solution only
-            double t = -B * inverse2A;
+            final double t = -B * inverse2A;
             GeoPoint point = new GeoPoint(lineVector.x * t + x0, lineVector.y * t + y0, lineVector.z * t + z0);
             if (point.isWithin(bounds,moreBounds))
                 return new GeoPoint[]{point};
-            return new GeoPoint[0];
+            return NO_POINTS;
         } else {
             // Two solutions
-            double sqrtTerm = Math.sqrt(BsquaredMinus);
-            double t1 = (-B + sqrtTerm) * inverse2A;
-            double t2 = (-B - sqrtTerm) * inverse2A;
+            final double sqrtTerm = Math.sqrt(BsquaredMinus);
+            final double t1 = (-B + sqrtTerm) * inverse2A;
+            final double t2 = (-B - sqrtTerm) * inverse2A;
             GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
             GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
             if (point1.isWithin(bounds,moreBounds)) {
@@ -180,7 +183,7 @@ public class Plane extends Vector
             }
             if (point2.isWithin(bounds,moreBounds))
                 return new GeoPoint[]{point2};
-            return new GeoPoint[0];
+            return NO_POINTS;
         }
     }
     
@@ -192,8 +195,8 @@ public class Plane extends Vector
     *@param boundsInfo is the info to update with additional bounding information.
     *@param bounds are the surfaces delineating what's inside the shape.
     */
-    public void recordBounds(Plane q, Bounds boundsInfo, Membership... bounds) {
-        GeoPoint[] intersectionPoints = findIntersections(q,bounds,new Membership[0]);
+    public void recordBounds(final Plane q, final Bounds boundsInfo, final Membership... bounds) {
+        final GeoPoint[] intersectionPoints = findIntersections(q,bounds,NO_BOUNDS);
         for (GeoPoint intersectionPoint : intersectionPoints) {
             boundsInfo.addPoint(intersectionPoint);
         }
@@ -205,7 +208,7 @@ public class Plane extends Vector
     *@param boundsInfo is the info to update with additional bounding information.
     *@param bounds are the surfaces delineating what's inside the shape.
     */
-    public void recordBounds(Bounds boundsInfo, Membership... bounds) {
+    public void recordBounds(final Bounds boundsInfo, final Membership... bounds) {
         // For clarity, load local variables with good names
         double A = this.x;
         double B = this.y;
@@ -617,7 +620,7 @@ public class Plane extends Vector
 
     }
     
-    protected static void addPoint(Bounds boundsInfo, Membership[] bounds, double x, double y, double z) {
+    protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final double x, final double y, final double z) {
         // Make sure the discovered point is within the bounds
         for (Membership bound : bounds) {
             if (!bound.isWithin(x,y,z))
@@ -635,8 +638,17 @@ public class Plane extends Vector
      *@param moreBounds are more bounds.
      *@return true if there's an intersection.
      */
-    public boolean intersects(Plane q, Membership[] bounds, Membership... moreBounds) {
+    public boolean intersects(final Plane q, final Membership[] bounds, final Membership... moreBounds) {
         return findIntersections(q,bounds,moreBounds).length > 0;
+    }
+    
+    /** Find a sample point on the intersection between two planes and the unit sphere.
+    */
+    public GeoPoint getSampleIntersectionPoint(final Plane q) {
+        final GeoPoint[] intersections = findIntersections(q, NO_BOUNDS, NO_BOUNDS);
+        if (intersections.length == 0)
+            return null;
+        return intersections[0];
     }
     
     @Override

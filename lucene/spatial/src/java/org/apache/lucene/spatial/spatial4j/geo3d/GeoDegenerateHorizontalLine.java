@@ -21,7 +21,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 * The left-right maximum extent for this shape is PI; for anything larger, use
 * GeoWideDegenerateHorizontalLine.
 */
-public class GeoDegenerateHorizontalLine implements GeoBBox
+public class GeoDegenerateHorizontalLine extends GeoBBoxBase
 {
     public final double latitude;
     public final double leftLon;
@@ -35,9 +35,10 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
     public final SidedPlane rightPlane;
       
     public final GeoPoint centerPoint;
-
+    public final GeoPoint[] edgePoints;
+    
     /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI} */
-    public GeoDegenerateHorizontalLine(double latitude, double leftLon, double rightLon)
+    public GeoDegenerateHorizontalLine(final double latitude, final double leftLon, double rightLon)
     {
         // Argument checking
         if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
@@ -57,12 +58,12 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        double sinLatitude = Math.sin(latitude);
-        double cosLatitude = Math.cos(latitude);
-        double sinLeftLon = Math.sin(leftLon);
-        double cosLeftLon = Math.cos(leftLon);
-        double sinRightLon = Math.sin(rightLon);
-        double cosRightLon = Math.cos(rightLon);
+        final double sinLatitude = Math.sin(latitude);
+        final double cosLatitude = Math.cos(latitude);
+        final double sinLeftLon = Math.sin(leftLon);
+        final double cosLeftLon = Math.cos(leftLon);
+        final double sinRightLon = Math.sin(rightLon);
+        final double cosRightLon = Math.cos(rightLon);
         
         // Now build the two points
         this.LHC = new GeoPoint(sinLatitude,sinLeftLon,cosLatitude,cosLeftLon);
@@ -74,18 +75,19 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
         while (leftLon > rightLon) {
             rightLon += Math.PI * 2.0;
         }
-        double middleLon = (leftLon + rightLon) * 0.5;
-        double sinMiddleLon = Math.sin(middleLon);
-        double cosMiddleLon = Math.cos(middleLon);
+        final double middleLon = (leftLon + rightLon) * 0.5;
+        final double sinMiddleLon = Math.sin(middleLon);
+        final double cosMiddleLon = Math.cos(middleLon);
           
-        centerPoint = new GeoPoint(sinLatitude,sinMiddleLon,cosLatitude,cosMiddleLon);
+        this.centerPoint = new GeoPoint(sinLatitude,sinMiddleLon,cosLatitude,cosMiddleLon);
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
+        this.edgePoints = new GeoPoint[]{centerPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
         double newTopLat = latitude + angle;
         double newBottomLat = latitude - angle;
@@ -103,7 +105,7 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return plane.evaluate(point) == 0.0 &&
           leftPlane.isWithin(point) &&
@@ -111,7 +113,7 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return plane.evaluate(x,y,z) == 0.0 &&
           leftPlane.isWithin(x,y,z) &&
@@ -127,13 +129,13 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
     }
       
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return centerPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(plane,bounds,leftPlane,rightPlane);
     }
@@ -155,7 +157,7 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
         if (path.intersects(plane,leftPlane,rightPlane))
             return OVERLAPS;
 
@@ -179,6 +181,11 @@ public class GeoDegenerateHorizontalLine implements GeoBBox
         int result = LHC.hashCode();
         result = 31 * result + RHC.hashCode();
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoDegenerateHorizontalLine: {latitude="+latitude+"("+latitude*180.0/Math.PI+"), leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightLon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
     }
 }
   

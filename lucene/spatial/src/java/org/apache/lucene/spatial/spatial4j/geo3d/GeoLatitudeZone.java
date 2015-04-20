@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /** This GeoBBox represents an area rectangle limited only in latitude.
 */
-public class GeoLatitudeZone implements GeoBBox
+public class GeoLatitudeZone extends GeoBBoxBase
 {
     public final double topLat;
     public final double bottomLat;
@@ -29,46 +29,58 @@ public class GeoLatitudeZone implements GeoBBox
     public final SidedPlane bottomPlane;
     public final GeoPoint interiorPoint;
 
-    public GeoLatitudeZone(double topLat, double bottomLat)
+    // We need two additional points because a latitude zone's boundaries don't intersect.  This is a very
+    // special case that most GeoBBox's do not have.
+    public final GeoPoint topBoundaryPoint;
+    public final GeoPoint bottomBoundaryPoint;
+    
+    // Edge points
+    public final GeoPoint[] edgePoints;
+    
+    public GeoLatitudeZone(final double topLat, final double bottomLat)
     {
         this.topLat = topLat;
         this.bottomLat = bottomLat;
           
-        double sinTopLat = Math.sin(topLat);
-        double sinBottomLat = Math.sin(bottomLat);
-        cosTopLat = Math.cos(topLat);
-        cosBottomLat = Math.cos(bottomLat);
+        final double sinTopLat = Math.sin(topLat);
+        final double sinBottomLat = Math.sin(bottomLat);
+        this.cosTopLat = Math.cos(topLat);
+        this.cosBottomLat = Math.cos(bottomLat);
           
         // Construct sample points, so we get our sidedness right
-        Vector topPoint = new Vector(0.0,0.0,sinTopLat);
-        Vector bottomPoint = new Vector(0.0,0.0,sinBottomLat);
+        final Vector topPoint = new Vector(0.0,0.0,sinTopLat);
+        final Vector bottomPoint = new Vector(0.0,0.0,sinBottomLat);
 
         // Compute an interior point.  Pick one whose lat is between top and bottom.
-        double middleLat = (topLat + bottomLat) * 0.5;
-        double sinMiddleLat = Math.sin(middleLat);
-        interiorPoint = new GeoPoint(Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat),0.0,sinMiddleLat);
+        final double middleLat = (topLat + bottomLat) * 0.5;
+        final double sinMiddleLat = Math.sin(middleLat);
+        this.interiorPoint = new GeoPoint(Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat),0.0,sinMiddleLat);
+        this.topBoundaryPoint = new GeoPoint(Math.sqrt(1.0 - sinTopLat * sinTopLat),0.0,sinTopLat);
+        this.bottomBoundaryPoint = new GeoPoint(Math.sqrt(1.0 - sinBottomLat * sinBottomLat),0.0,sinBottomLat);
         
         this.topPlane = new SidedPlane(interiorPoint,sinTopLat);
         this.bottomPlane = new SidedPlane(interiorPoint,sinBottomLat);
+        
+        this.edgePoints = new GeoPoint[]{topBoundaryPoint,bottomBoundaryPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
-        double newTopLat = topLat + angle;
-        double newBottomLat = bottomLat - angle;
+        final double newTopLat = topLat + angle;
+        final double newBottomLat = bottomLat - angle;
         return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, -Math.PI, Math.PI);
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return topPlane.isWithin(point) &&
           bottomPlane.isWithin(point);
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return topPlane.isWithin(x,y,z) &&
           bottomPlane.isWithin(x,y,z);
@@ -88,13 +100,13 @@ public class GeoLatitudeZone implements GeoBBox
     }
 
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return interiorPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(topPlane,bounds,bottomPlane) ||
           p.intersects(bottomPlane,bounds,topPlane);
@@ -117,7 +129,23 @@ public class GeoLatitudeZone implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
+        final int insideRectangle = isShapeInsideBBox(path);
+        if (insideRectangle == SOME_INSIDE)
+            return OVERLAPS;
+
+        final boolean topBoundaryInsideShape = path.isWithin(topBoundaryPoint);
+        final boolean bottomBoundaryInsideShape = path.isWithin(bottomBoundaryPoint);
+        
+        if (topBoundaryInsideShape && !bottomBoundaryInsideShape ||
+            !topBoundaryInsideShape && bottomBoundaryInsideShape)
+            return OVERLAPS;
+        
+        final boolean insideShape = topBoundaryInsideShape && bottomBoundaryInsideShape;
+
+        if (insideRectangle == ALL_INSIDE && insideShape)
+            return OVERLAPS;
+
         // Second, the shortcut of seeing whether endpoints are in/out is not going to 
         // work with no area endpoints.  So we rely entirely on intersections.
 
@@ -125,10 +153,16 @@ public class GeoLatitudeZone implements GeoBBox
             path.intersects(bottomPlane,topPlane))
             return OVERLAPS;
 
-        if (path.isWithin(interiorPoint))
+        // There is another case for latitude zones only.  This is when the boundaries of the shape all fit
+        // within the zone, but the shape includes areas outside the zone crossing a pole.
+        // In this case, the above "overlaps" check is insufficient.  We also need to check a point on either boundary
+        // whether it is within the shape.  If both such points are within, then CONTAINS is the right answer.  If
+        // one such point is within, then OVERLAPS is the right answer.  
+        
+        if (insideShape)
             return CONTAINS;
 
-        if (isWithin(path.getInteriorPoint()))
+        if (insideRectangle == ALL_INSIDE)
             return WITHIN;
 
         return DISJOINT;
@@ -148,5 +182,10 @@ public class GeoLatitudeZone implements GeoBBox
         int result = topPlane.hashCode();
         result = 31 * result + bottomPlane.hashCode();
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoLatitudeZone: {toplat="+topLat+"("+topLat*180.0/Math.PI+"), bottomlat="+bottomLat+"("+bottomLat*180.0/Math.PI+")}";
     }
 }

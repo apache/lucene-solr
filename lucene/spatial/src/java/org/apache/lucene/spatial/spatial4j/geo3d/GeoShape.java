@@ -23,20 +23,25 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 */
 public interface GeoShape extends Membership {
 
-    /** Return a sample point that is inside the shape.
-     *@return an interior point.
+    /** Return a sample point that is on the outside edge/boundary of the shape.
+     *@return samples of all edge points from distinct edge sections.  Typically one point
+     * is returned, but zero or two are also possible.
      */
-    public GeoPoint getInteriorPoint();
+    public GeoPoint[] getEdgePoints();
     
     /** Assess whether a plane, within the provided bounds, intersects
-     * with the shape.
+     * with the shape.  Note well that this method is allowed to return "true"
+     * if there are internal edges of a composite shape which intersect the plane.  
+     * Doing this can cause getRelationship() for most GeoBBox shapes to return
+     * OVERLAPS rather than the more correct CONTAINS, but that cannot be
+     * helped for some complex shapes that are built out of overlapping parts.
      *@param plane is the plane to assess for intersection with the shape's edges or
      *  bounding curves.
      *@param bounds are a set of bounds that define an area that an
      *  intersection must be within in order to qualify (provided by a GeoArea).
      *@return true if there's such an intersection, false if not.
      */
-    public boolean intersects(Plane plane, Membership... bounds);
+    public boolean intersects(final Plane plane, final Membership... bounds);
 
     /** Compute longitude/latitude bounds for the shape.
     *@param bounds is the optional input bounds object.  If this is null,
@@ -45,7 +50,7 @@ public interface GeoShape extends Membership {
     * be computed, then return a Bounds object with noLongitudeBound,
     * noTopLatitudeBound, and noBottomLatitudeBound.
     */
-    public Bounds getBounds(Bounds bounds);
+    public Bounds getBounds(final Bounds bounds);
 
     /** Equals */
     public boolean equals(Object o);

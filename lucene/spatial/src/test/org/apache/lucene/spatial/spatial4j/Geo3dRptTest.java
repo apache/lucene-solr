@@ -21,10 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -34,17 +32,15 @@ import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.prefix.tree.Cell;
-import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
-import org.apache.lucene.spatial.spatial4j.Geo3dShape;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPolygonFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
 import org.junit.Test;
 
 import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
@@ -84,8 +80,8 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 20)
-  //Seed("A9C215F48F200BB0")
+  //@Repeat(iterations = 2000)
+  @Seed("B808B88D6F8E285C")
   public void testOperations() throws IOException {
     setupStrategy();
 
@@ -93,15 +89,31 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  public void testTriangleDisjointRect() throws IOException {
-    setupStrategy();
-    Rectangle rect = ctx.makeRectangle(-180, 180, 77, 84);
-    Shape triangle = makeTriangle(-149, 35, 88, -11, -27, -18);
-    assertTrue(rect.relate(triangle).intersects());     //unsure if this is correct or not but passes
-    //if they intersect, then the following rect cell can be "within" the triangle
-    final Rectangle cellRect = ctx.makeRectangle(-180, -168.75, 73.125, 78.75);
+  public void testBigCircleFailure() throws IOException {
+    Rectangle rect = ctx.makeRectangle(-162, 89, -46, 38);
+    GeoCircle rawShape = new GeoCircle(-9 * DEGREES_TO_RADIANS, 134 * DEGREES_TO_RADIANS, 159 * DEGREES_TO_RADIANS);
+    Shape shape = new Geo3dShape(rawShape, ctx);
+    assertTrue(rect.relate(shape).intersects() == false);     //DWS: unsure if this is correct or not but passes
+    //since they don't intersect, then the following cell rect can't be WITHIN the circle
+    final Rectangle cellRect = ctx.makeRectangle(-11.25, 0, 0, 5.625);
     assert cellRect.relate(rect).intersects();
-    //assertTrue(cellRect.relate(triangle) != SpatialRelation.WITHIN);
+    assertTrue(cellRect.relate(shape) != SpatialRelation.WITHIN);
+  }
+
+  @Test
+  public void testWideRectFailure() throws IOException {
+    Rectangle rect = ctx.makeRectangle(-29, 9, 16, 25);
+    final GeoBBox geoBBox = GeoBBoxFactory.makeGeoBBox(
+        74 * DEGREES_TO_RADIANS, -31 * DEGREES_TO_RADIANS, -29 * DEGREES_TO_RADIANS, -45 * DEGREES_TO_RADIANS);
+    Shape shape = new Geo3dShape(geoBBox, ctx);
+    //Rect(minX=-22.5,maxX=-11.25,minY=11.25,maxY=16.875)
+    //since they don't intersect, then the following cell rect can't be WITHIN the geo3d shape
+    final Rectangle cellRect = ctx.makeRectangle(-22.5, -11.25, 11.25, 16.875);
+    assert cellRect.relate(rect).intersects();
+    assertTrue(rect.relate(shape).intersects() == false);
+    assertTrue(cellRect.relate(shape) != SpatialRelation.WITHIN);
+//    setupStrategy();
+//    testOperation(rect, SpatialOperation.Intersects, shape, false);
   }
 
   private Shape makeTriangle(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -163,8 +175,14 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     case 2: {
         // Rectangles
         while (true) {
-          final Point ulhcPoint = randomPoint();
-          final Point lrhcPoint = randomPoint();
+          Point ulhcPoint = randomPoint();
+          Point lrhcPoint = randomPoint();
+          if (ulhcPoint.getY() < lrhcPoint.getY()) {
+            //swap
+            Point temp = ulhcPoint;
+            ulhcPoint = lrhcPoint;
+            lrhcPoint = temp;
+          }
           try {
             final GeoShape shape = GeoBBoxFactory.makeGeoBBox(ulhcPoint.getY() * DEGREES_TO_RADIANS,
               lrhcPoint.getY() * DEGREES_TO_RADIANS,
@@ -181,7 +199,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     case 3: {
         // Paths
         final int pointCount = random().nextInt(5) + 1;
-        final double width = random().nextInt(90) * DEGREES_TO_RADIANS;
+        final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
         while (true) {
           try {
             final GeoPath path = new GeoPath(width);

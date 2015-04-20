@@ -19,16 +19,17 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /** Bounding box including the entire world.
 */
-public class GeoWorld implements GeoBBox
+public class GeoWorld extends GeoBBoxBase
 {
     protected final static GeoPoint originPoint = new GeoPoint(1.0,0.0,0.0);
-      
+    protected final static GeoPoint[] edgePoints = new GeoPoint[0];
+        
     public GeoWorld()
     {
     }
       
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
         return this;
     }
@@ -40,25 +41,25 @@ public class GeoWorld implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return true;
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return true;
     }
     
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return originPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return false;
     }
@@ -80,9 +81,12 @@ public class GeoWorld implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
-        // Path is always within the world
-        return WITHIN;
+    public int getRelationship(final GeoShape path) {
+        if (path.getEdgePoints().length > 0)
+            // Path is always within the world
+            return WITHIN;
+        
+        return OVERLAPS;
     }
 
     @Override
@@ -96,5 +100,10 @@ public class GeoWorld implements GeoBBox
     @Override
     public int hashCode() {
         return 0;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoWorld";
     }
 }

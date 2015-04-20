@@ -33,7 +33,7 @@ public abstract class GeoBaseExtendedShape implements GeoShape
      *@return true if the point is within this shape
      */
     @Override
-    public abstract boolean isWithin(Vector point);
+    public abstract boolean isWithin(final Vector point);
 
     /** Check if a point is within this shape.
      *@param x is x coordinate of point to check.
@@ -42,13 +42,13 @@ public abstract class GeoBaseExtendedShape implements GeoShape
      *@return true if the point is within this shape
      */
     @Override
-    public abstract boolean isWithin(double x, double y, double z);
+    public abstract boolean isWithin(final double x, final double y, final double z);
 
-    /** Return a sample point that is inside the shape.
-     *@return an interior point.
+    /** Return a sample point that is on the edge of the shape.
+     *@return a number of edge points, one for each disconnected edge.
      */
     @Override
-    public abstract GeoPoint getInteriorPoint();
+    public abstract GeoPoint[] getEdgePoints();
     
     /** Assess whether a plane, within the provided bounds, intersects
      * with the shape.
@@ -59,7 +59,7 @@ public abstract class GeoBaseExtendedShape implements GeoShape
      *@return true if there's such an intersection, false if not.
      */
     @Override
-    public abstract boolean intersects(Plane plane, Membership... bounds);
+    public abstract boolean intersects(final Plane plane, final Membership... bounds);
 
     /** Compute longitude/latitude bounds for the shape.
     *@param bounds is the optional input bounds object.  If this is null,

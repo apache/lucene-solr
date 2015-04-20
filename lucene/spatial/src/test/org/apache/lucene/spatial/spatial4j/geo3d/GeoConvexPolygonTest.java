@@ -17,9 +17,11 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GeoConvexPolygonTest {
 
@@ -29,10 +31,10 @@ public class GeoConvexPolygonTest {
         GeoConvexPolygon c;
         GeoPoint gp;
         c = new GeoConvexPolygon(-0.1,-0.5);
-        c.addPoint(0.0,-0.6);
-        c.addPoint(0.1,-0.5);
-        c.addPoint(0.0,-0.4);
-        c.donePoints();
+        c.addPoint(0.0,-0.6,false);
+        c.addPoint(0.1,-0.5,false);
+        c.addPoint(0.0,-0.4,false);
+        c.donePoints(false);
         // Sample some points within
         gp = new GeoPoint(0.0,-0.5);
         assertTrue(c.isWithin(gp));
@@ -68,10 +70,10 @@ public class GeoConvexPolygonTest {
         Bounds b;
         
         c = new GeoConvexPolygon(-0.1,-0.5);
-        c.addPoint(0.0,-0.6);
-        c.addPoint(0.1,-0.5);
-        c.addPoint(0.0,-0.4);
-        c.donePoints();
+        c.addPoint(0.0,-0.6,false);
+        c.addPoint(0.1,-0.5,false);
+        c.addPoint(0.0,-0.4,false);
+        c.donePoints(false);
 
         b = c.getBounds(null);
         assertFalse(b.checkNoLongitudeBound());

@@ -17,7 +17,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /** GeoComposite is a set of GeoMembershipShape's, treated as a unit.
 */
@@ -31,12 +32,12 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
     
     /** Add a shape to the composite.
     */
-    public void addShape(GeoMembershipShape shape) {
+    public void addShape(final GeoMembershipShape shape) {
         shapes.add(shape);
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         for (GeoMembershipShape shape : shapes) {
             if (shape.isWithin(point))
@@ -46,7 +47,7 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         for (GeoMembershipShape shape : shapes) {
             if (shape.isWithin(x,y,z))
@@ -56,13 +57,13 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
     }
 
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return shapes.get(0).getInteriorPoint();
+        return shapes.get(0).getEdgePoints();
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         for (GeoMembershipShape shape : shapes) {
             if (shape.intersects(p,bounds))
@@ -112,7 +113,7 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
 
     @Override
     public String toString() {
-        return "GeoCompositeMembershipShape{" + shapes + '}';
+        return "GeoCompositeMembershipShape: {" + shapes + '}';
     }
 }
   

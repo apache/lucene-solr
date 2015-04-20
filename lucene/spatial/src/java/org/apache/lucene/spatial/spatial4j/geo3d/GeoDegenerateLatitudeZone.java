@@ -20,15 +20,16 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /** This GeoBBox represents an area rectangle of one specific latitude with
 * no longitude bounds.
 */
-public class GeoDegenerateLatitudeZone implements GeoBBox
+public class GeoDegenerateLatitudeZone extends GeoBBoxBase
 {
     public final double latitude;
     
     public final double sinLatitude;
     public final Plane plane;
     public final GeoPoint interiorPoint;
-
-    public GeoDegenerateLatitudeZone(double latitude)
+    public final GeoPoint[] edgePoints;
+    
+    public GeoDegenerateLatitudeZone(final double latitude)
     {
         this.latitude = latitude;
           
@@ -38,10 +39,11 @@ public class GeoDegenerateLatitudeZone implements GeoBBox
 
         // Compute an interior point.  
         interiorPoint = new GeoPoint(cosLatitude,0.0,sinLatitude);
+        edgePoints = new GeoPoint[]{interiorPoint};
     }
 
     @Override
-    public GeoBBox expand(double angle)
+    public GeoBBox expand(final double angle)
     {
         double newTopLat = latitude + angle;
         double newBottomLat = latitude - angle;
@@ -49,13 +51,13 @@ public class GeoDegenerateLatitudeZone implements GeoBBox
     }
 
     @Override
-    public boolean isWithin(Vector point)
+    public boolean isWithin(final Vector point)
     {
         return point.z == this.sinLatitude;
     }
 
     @Override
-    public boolean isWithin(double x, double y, double z)
+    public boolean isWithin(final double x, final double y, final double z)
     {
         return z == this.sinLatitude;
     }
@@ -67,13 +69,13 @@ public class GeoDegenerateLatitudeZone implements GeoBBox
     }
 
     @Override
-    public GeoPoint getInteriorPoint()
+    public GeoPoint[] getEdgePoints()
     {
-        return interiorPoint;
+        return edgePoints;
     }
       
     @Override
-    public boolean intersects(Plane p, Membership... bounds)
+    public boolean intersects(final Plane p, final Membership... bounds)
     {
         return p.intersects(plane,bounds);
     }
@@ -95,7 +97,7 @@ public class GeoDegenerateLatitudeZone implements GeoBBox
     }
 
     @Override
-    public int getRelationship(GeoShape path) {
+    public int getRelationship(final GeoShape path) {
         // Second, the shortcut of seeing whether endpoints are in/out is not going to 
         // work with no area endpoints.  So we rely entirely on intersections.
         //System.out.println("Got here! latitude="+latitude+" path="+path);
@@ -125,6 +127,11 @@ public class GeoDegenerateLatitudeZone implements GeoBBox
         long temp = Double.doubleToLongBits(latitude);
         int result = (int) (temp ^ (temp >>> 32));
         return result;
+    }
+    
+    @Override
+    public String toString() {
+        return "GeoDegenerateLatitudeZone: {lat="+latitude+"("+latitude*180.0/Math.PI+")}";
     }
 }
 

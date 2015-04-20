@@ -17,9 +17,11 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GeoPathTest {
 
@@ -32,6 +34,7 @@ public class GeoPathTest {
         p.addPoint(0.0,0.0);
         p.addPoint(0.0,0.1);
         p.addPoint(0.0,0.2);
+        p.done();
         gp = new GeoPoint(Math.PI * 0.5,0.15);
         assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.0);
         gp = new GeoPoint(0.05,0.15);
@@ -50,6 +53,7 @@ public class GeoPathTest {
         p.addPoint(0.0,0.0);
         p.addPoint(0.0,0.1);
         p.addPoint(0.0,0.2);
+        p.done();
         gp = new GeoPoint(0.05,0.15);
         assertEquals(0.15 + 0.05, p.computeArcDistance(gp), 0.000001);
         gp = new GeoPoint(0.0,0.12);
@@ -59,6 +63,7 @@ public class GeoPathTest {
         p = new GeoPath(0.1);
         p.addPoint(-Math.PI * 0.25,-0.5);
         p.addPoint(Math.PI * 0.25,-0.5);
+        p.done();
         gp = new GeoPoint(0.0,0.0);
         assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.0);
         gp = new GeoPoint(-0.1,-1.0);
@@ -78,6 +83,7 @@ public class GeoPathTest {
         // Build a diagonal path crossing the equator
         p.addPoint(-0.2,-0.2);
         p.addPoint(0.2,0.2);
+        p.done();
         // Test points on the path
         gp = new GeoPoint(-0.2,-0.2);
         assertTrue(p.isWithin(gp));
@@ -128,6 +134,7 @@ public class GeoPathTest {
         p = new GeoPath(0.1);
         p.addPoint(-0.3,-0.3);
         p.addPoint(0.3,0.3);
+        p.done();
         // Easiest: The path is wholly contains the georect
         rect = new GeoRectangle(0.05,-0.05,-0.05,0.05);
         assertEquals(GeoArea.CONTAINS, rect.getRelationship(p));
@@ -161,7 +168,8 @@ public class GeoPathTest {
         c = new GeoPath(0.1);
         c.addPoint(-0.3,-0.3);
         c.addPoint(0.3,0.3);
-
+        c.done();
+        
         b = c.getBounds(null);
         assertFalse(b.checkNoLongitudeBound());
         assertFalse(b.checkNoTopLatitudeBound());

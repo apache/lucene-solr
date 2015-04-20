@@ -37,6 +37,10 @@ public interface GeoArea extends Membership {
      * other way around. For example, if this GeoArea is entirely within the
      * shape, then CONTAINS should be returned.  If the shape is entirely enclosed
      * by this GeoArea, then WITHIN should be returned.
+     * Note well: When a shape consists of multiple independent overlapping subshapes,
+     * it is sometimes impossible to determine the distinction between
+     * OVERLAPS and CONTAINS.  In that case, OVERLAPS may be returned even
+     * though the proper result would in fact be CONTAINS.  Code accordingly.
      *@param shape is the shape to consider.
      *@return the relationship, from the perspective of the shape.
      */

@@ -24,12 +24,14 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
 {
     public final double latitude;
     public final double longitude;
-    
-    public GeoDegeneratePoint(double lat, double lon)
+    public final GeoPoint[] edgePoints;
+	
+    public GeoDegeneratePoint(final double lat, final double lon)
     {
         super(lat,lon);
         this.latitude = lat;
         this.longitude = lon;
+        this.edgePoints = new GeoPoint[]{this};
     }
 
     /** Expand box by specified angle.
@@ -37,20 +39,20 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
      *@return a new GeoBBox.
      */
     @Override
-    public GeoBBox expand(double angle) {
-        double newTopLat = latitude + angle;
-        double newBottomLat = latitude - angle;
-        double newLeftLon = longitude - angle;
-        double newRightLon = longitude + angle;
+    public GeoBBox expand(final double angle) {
+        final double newTopLat = latitude + angle;
+        final double newBottomLat = latitude - angle;
+        final double newLeftLon = longitude - angle;
+        final double newRightLon = longitude + angle;
         return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
     }
 
-    /** Return a sample point that is inside the shape.
+    /** Return a sample point that is on the edge of the shape.
      *@return an interior point.
      */
     @Override
-    public GeoPoint getInteriorPoint() {
-        return this;
+    public GeoPoint[] getEdgePoints() {
+        return edgePoints;
     }
     
     /** Assess whether a plane, within the provided bounds, intersects
@@ -62,7 +64,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
      *@return true if there's such an intersection, false if not.
      */
     @Override
-    public boolean intersects(Plane plane, Membership... bounds) {
+    public boolean intersects(final Plane plane, final Membership... bounds) {
         if (plane.evaluate(this) == 0.0)
             return false;
         
@@ -108,12 +110,17 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
         return result;
     }
     
+    @Override
+    public String toString() {
+        return "GeoDegeneratePoint: {lat="+latitude+"("+latitude*180.0/Math.PI+"), lon="+longitude+"("+longitude*180.0/Math.PI+")}";
+    }
+    
     /** Check if a point is within this shape.
      *@param point is the point to check.
      *@return true if the point is within this shape
      */
     @Override
-    public boolean isWithin(Vector point) {
+    public boolean isWithin(final Vector point) {
         return isWithin(point.x,point.y,point.z);
     }
 
@@ -124,7 +131,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
      *@return true if the point is within this shape
      */
     @Override
-    public boolean isWithin(double x, double y, double z) {
+    public boolean isWithin(final double x, final double y, final double z) {
         return x == this.x && y == this.y && z == this.z;
     }
 
@@ -146,7 +153,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
      *@return the relationship, from the perspective of the shape.
      */
     @Override
-    public int getRelationship(GeoShape shape) {
+    public int getRelationship(final GeoShape shape) {
         if (shape.isWithin(this))
             return CONTAINS;
 

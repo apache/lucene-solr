@@ -25,7 +25,7 @@ public interface Membership {
      *@param point is the point to check.
      *@return true if the point is within this shape
      */
-    public boolean isWithin(Vector point);
+    public boolean isWithin(final Vector point);
 
     /** Check if a point is within this shape.
      *@param x is x coordinate of point to check.
@@ -33,6 +33,6 @@ public interface Membership {
      *@param z is z coordinate of point to check.
      *@return true if the point is within this shape
      */
-    public boolean isWithin(double x, double y, double z);
+    public boolean isWithin(final double x, final double y, final double z);
 
 }
