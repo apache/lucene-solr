@@ -60,14 +60,16 @@
         </excludes>
       </resource>
     </resources>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>de.thetaphi</groupId>
         <artifactId>forbiddenapis</artifactId>
@@ -79,7 +81,8 @@
           <execution>
             <id>lucene-shared-test-check-forbidden-apis</id>
             <goals>
-              <goal>check</goal> <!-- NOT testCheck -->
+              <goal>check</goal>
+              <goal>testCheck</goal>
             </goals>
           </execution>
           <execution>
