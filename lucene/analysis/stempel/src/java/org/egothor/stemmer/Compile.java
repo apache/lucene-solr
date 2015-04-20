@@ -63,6 +63,8 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /**
  * The Compile class is used to compile a stemmer table.
  */
@@ -85,6 +87,7 @@ public class Compile {
    * 
    * @param args the command line arguments
    */
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(java.lang.String[] args) throws Exception {
     if (args.length < 1) {
       return;

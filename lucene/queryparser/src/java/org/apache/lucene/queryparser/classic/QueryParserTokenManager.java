@@ -10,16 +10,12 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.Version;
 
 /** Token Manager. */
 public class QueryParserTokenManager implements QueryParserConstants
 {
 
-  /** Debug output. */
-  public  java.io.PrintStream debugStream = System.out;
-  /** Set debug output. */
-  public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }
+  
 private final int jjStopStringLiteralDfa_2(int pos, long active0)
 {
    switch (pos)

@@ -2374,7 +2374,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   
   <!-- applies to both source and test code -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
+    <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
@@ -2388,7 +2388,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- applies to only test code -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}"/>
     </forbidden-apis>
   </target>
@@ -2397,7 +2397,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout" />
 
   <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
-    <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.allclasses.classpath">
+    <forbidden-apis bundledSignatures="jdk-system-out" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-sysout-excludes}"/>
     </forbidden-apis>
   </target>

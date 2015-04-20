@@ -22,6 +22,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -52,6 +53,7 @@ import java.util.Collection;
   */
 public final class IndexUpgrader {
 
+  @SuppressForbidden(reason = "System.out required: command line tool")
   private static void printUsage() {
     System.err.println("Upgrades an index so all segments created with a previous Lucene version are rewritten.");
     System.err.println("Usage:");
@@ -73,6 +75,8 @@ public final class IndexUpgrader {
   public static void main(String[] args) throws IOException {
     parseArgs(args).upgrade();
   }
+  
+  @SuppressForbidden(reason = "System.out required: command line tool")
   static IndexUpgrader parseArgs(String[] args) throws IOException {
     String path = null;
     boolean deletePriorCommits = false;

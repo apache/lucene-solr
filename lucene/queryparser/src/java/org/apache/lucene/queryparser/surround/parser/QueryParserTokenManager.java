@@ -18,10 +18,7 @@ import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;
 public class QueryParserTokenManager implements QueryParserConstants
 {
 
-  /** Debug output. */
-  public  java.io.PrintStream debugStream = System.out;
-  /** Set debug output. */
-  public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }
+  
 private final int jjStopStringLiteralDfa_1(int pos, long active0)
 {
    switch (pos)

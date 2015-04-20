@@ -22,19 +22,6 @@
 
   <property name="build.dir" location="../build/core"/>
 
-  <property name="forbidden-sysout-excludes" value="
-    org/apache/lucene/index/CheckIndex.class
-    org/apache/lucene/index/IndexUpgrader.class
-    org/apache/lucene/store/LockVerifyServer.class
-    org/apache/lucene/store/LockStressTest.class
-    org/apache/lucene/util/PrintStreamInfoStream.class
-  "/>
-
-  <!-- Needs to start a process --> 
-  <property name="forbidden-tests-excludes" value="
-    org/apache/lucene/index/TestIndexWriterOnJRECrash.class
-  "/>
-
   <!-- lucene core can use the minimal JDK profile -->
   <property name="javac.profile.args" value="-profile compact1"/>
   <import file="../common-build.xml"/>

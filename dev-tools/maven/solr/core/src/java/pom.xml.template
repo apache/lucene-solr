@@ -69,31 +69,8 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>solr-shared-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
             <id>solr-shared-test-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>check-forbidden-apis</id>
-            <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>check</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

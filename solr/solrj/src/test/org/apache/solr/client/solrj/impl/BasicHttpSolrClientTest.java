@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.SSLTestConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -45,6 +46,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -111,6 +113,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       }
     }
 
+    @SuppressForbidden(reason = "fake servlet only")
     private void setParameters(HttpServletRequest req) {
       parameters = req.getParameterMap();
     }

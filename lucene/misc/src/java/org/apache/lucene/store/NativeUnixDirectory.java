@@ -28,6 +28,7 @@ import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.util.SuppressForbidden;
 
 // TODO
 //   - newer Linux kernel versions (after 2.6.29) have
@@ -152,6 +153,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
   }
 
+  @SuppressForbidden(reason = "java.io.File: native API requires old-style FileDescriptor")
   private final static class NativeUnixIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileOutputStream fos;
@@ -273,6 +275,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
   }
 
+  @SuppressForbidden(reason = "java.io.File: native API requires old-style FileDescriptor")
   private final static class NativeUnixIndexInput extends IndexInput {
     private final ByteBuffer buffer;
     private final FileInputStream fis;

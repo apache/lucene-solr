@@ -78,25 +78,13 @@
           </execution>
           <execution>
             <id>lucene-shared-test-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>test-check-forbidden-apis</id>
-            <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
             <goals>
               <goal>check</goal> <!-- NOT testCheck -->
             </goals>
+          </execution>
+          <execution>
+            <id>lucene-shared-check-sysout-forbidden-apis</id>
+            <phase>none</phase>  <!-- Block inherited execution -->
           </execution>
         </executions>
       </plugin>

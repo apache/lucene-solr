@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.SeedUtils;
@@ -92,6 +93,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   }
   
   /** fork ourselves in a new jvm. sets -Dtests.crashmode=true */
+  @SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
   public void forkTest() throws Exception {
     List<String> cmd = new ArrayList<>();
     cmd.add(System.getProperty("java.home") 

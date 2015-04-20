@@ -61,6 +61,8 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /**
  * The DiffIt class is a means generate patch commands from an already prepared
  * stemmer table.
@@ -87,6 +89,7 @@ public class DiffIt {
    * 
    * @param args the path to a file containing a stemmer table
    */
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(java.lang.String[] args) throws Exception {
     
     int ins = get(0, args[0]);

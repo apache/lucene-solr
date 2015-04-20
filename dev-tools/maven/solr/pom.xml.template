@@ -119,12 +119,17 @@
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
+              <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/solr.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -136,15 +141,18 @@
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
+              <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
-                <!-- Include commons-io-unsafe only in those modules with commons-io on their classpath -->
-                <!-- <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>       -->
+                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/solr.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

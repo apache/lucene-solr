@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
  *  poor concurrent performance (multiple threads will
@@ -35,6 +37,7 @@ import java.nio.file.Path;
  *  provided for applications that relied on the fact that 
  *  RandomAccessFile's IO was not interruptible.
  */
+@SuppressForbidden(reason = "java.io.File: RAFDirectory is legacy API")
 public class RAFDirectory extends FSDirectory {
     
   /** Create a new RAFDirectory for the named location.
@@ -72,6 +75,7 @@ public class RAFDirectory extends FSDirectory {
    * Reads bytes with {@link RandomAccessFile#seek(long)} followed by
    * {@link RandomAccessFile#read(byte[], int, int)}.  
    */
+  @SuppressForbidden(reason = "java.io.File: RAFDirectory is legacy API")
   static final class RAFIndexInput extends BufferedIndexInput {
     /**
      * The maximum chunk size is 8192 bytes, because {@link RandomAccessFile} mallocs

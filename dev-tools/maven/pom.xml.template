@@ -167,6 +167,9 @@
              -->
             <failOnUnsupportedJava>false</failOnUnsupportedJava>
             <targetVersion>${java.compat.version}</targetVersion>
+            <suppressAnnotations>
+              <suppressAnnotation>**.SuppressForbidden</suppressAnnotation>
+            </suppressAnnotations>
           </configuration>
         </plugin>
         <plugin>

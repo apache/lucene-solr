@@ -57,6 +57,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -2283,6 +2284,7 @@ public class CheckIndex implements Closeable {
   }
   
   // actual main: returns exit code instead of terminating JVM (for easy testing)
+  @SuppressForbidden(reason = "System.out required: command line tool")
   private static int doMain(String args[]) throws IOException, InterruptedException {
 
     boolean doExorcise = false;

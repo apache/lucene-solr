@@ -19,8 +19,10 @@ package org.apache.lucene.misc;
 
 import java.nio.file.Paths;
 import java.util.Locale;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -28,6 +30,7 @@ import org.apache.lucene.index.Term;
 /**
  * Utility to get document frequency and total number of occurrences (sum of the tf for each doc)  of a term. 
  */
+@SuppressForbidden(reason = "System.out required: command line tool")
 public class GetTermInfo {
   
   public static void main(String[] args) throws Exception {
