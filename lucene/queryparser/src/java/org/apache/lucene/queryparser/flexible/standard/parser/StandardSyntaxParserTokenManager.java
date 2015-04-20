@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
 
 import java.io.StringReader;
 import java.util.Vector;
+import java.util.Arrays;
 import org.apache.lucene.queryparser.flexible.messages.Message;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
@@ -42,10 +43,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 public class StandardSyntaxParserTokenManager implements StandardSyntaxParserConstants
 {
 
-  /** Debug output. */
-  public  java.io.PrintStream debugStream = System.out;
-  /** Set debug output. */
-  public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }
+  
 private final int jjStopStringLiteralDfa_2(int pos, long active0)
 {
    switch (pos)

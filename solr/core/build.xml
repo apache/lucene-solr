@@ -25,7 +25,6 @@
 
   <property name="forbidden-tests-excludes" value="
     org/apache/solr/internal/**
-    org/apache/solr/search/DocSetPerf.class
   "/>
 
   <import file="../common-build.xml"/>

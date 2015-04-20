@@ -22,11 +22,6 @@
 
   <property name="build.dir" location="../build/test-framework"/>
 
-  <!-- file is part of the API -->
-  <property name="forbidden-base-excludes" value="
-    org/apache/lucene/mockfile/FilterPath.class
-  "/>
-
   <import file="../common-build.xml"/>
 
   <path id="classpath">

@@ -164,7 +164,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   }
 
   final public Query Query(String field) throws ParseException {
-  List<BooleanClause> clauses = new ArrayList<>();
+  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
   Query q, firstQuery=null;
   int conj, mods;
     mods = Modifiers();
@@ -630,7 +630,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

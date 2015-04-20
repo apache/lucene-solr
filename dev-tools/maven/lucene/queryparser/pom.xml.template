@@ -69,51 +69,5 @@
         </excludes>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>de.thetaphi</groupId>
-        <artifactId>forbiddenapis</artifactId>
-        <executions>
-          <execution>
-            <id>lucene-shared-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>check-forbidden-apis</id>
-            <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>check-system-out</id>
-            <configuration>
-              <bundledSignatures>
-                <bundledSignature>jdk-system-out</bundledSignature>
-              </bundledSignatures>
-              <excludes>
-                <!-- not printing, just generated code from javacc -->
-                <exclude>org/apache/lucene/queryparser/classic/QueryParserTokenManager.class</exclude>
-                <exclude>org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class</exclude>
-                <exclude>org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class</exclude>
-              </excludes>
-            </configuration>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 </project>

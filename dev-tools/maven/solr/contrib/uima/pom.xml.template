@@ -79,24 +79,5 @@
         </includes>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>de.thetaphi</groupId>
-        <artifactId>forbiddenapis</artifactId>
-        <executions>
-          <execution>
-            <id>test-check-forbidden-servlet-api</id>
-            <configuration>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>testCheck</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 </project>

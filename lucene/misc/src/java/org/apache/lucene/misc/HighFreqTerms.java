@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SuppressForbidden;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -47,6 +48,7 @@ public class HighFreqTerms {
   // The top numTerms will be displayed
   public static final int DEFAULT_NUMTERMS = 100;
   
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws Exception {
     String field = null;
     int numTerms = DEFAULT_NUMTERMS;
@@ -83,6 +85,7 @@ public class HighFreqTerms {
     reader.close();
   }
   
+  @SuppressForbidden(reason = "System.out required: command line tool")
   private static void usage() {
     System.out
         .println("\n\n"

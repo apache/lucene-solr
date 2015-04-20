@@ -66,6 +66,7 @@ public class PrintStreamInfoStream extends InfoStream {
     }
   }
   
+  @SuppressForbidden(reason = "System.out/err detection")
   public boolean isSystemStream() {
     return stream == System.out || stream == System.err;
   }

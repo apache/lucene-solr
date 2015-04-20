@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.Version;
 
 /**
@@ -47,6 +48,7 @@ import org.apache.lucene.util.Version;
  * IndexWriter#updateDocuments}, which means it can easily
  * break up such document groups.
  */
+@SuppressForbidden(reason = "System.out required: command line tool")
 public class MultiPassIndexSplitter {
   
   /**

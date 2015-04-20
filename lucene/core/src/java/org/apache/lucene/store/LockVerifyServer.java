@@ -26,6 +26,7 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * Simple standalone server that must be running when you
@@ -39,6 +40,7 @@ import org.apache.lucene.util.IOUtils;
 
 public class LockVerifyServer {
 
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws Exception {
 
     if (args.length != 2) {

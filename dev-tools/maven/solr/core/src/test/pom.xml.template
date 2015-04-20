@@ -123,43 +123,12 @@
           </execution>
           <execution>
             <id>solr-shared-test-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>test-check-forbidden-apis</id>
             <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>testCheck</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-check-forbidden-test-apis</id> <!-- Separate execution to specify excludes -->
-            <configuration>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-              </signaturesFiles>
               <excludes>
-                <!-- not actually a test -->
-                <exclude>org/apache/solr/search/DocSetPerf.class</exclude>
-                <!-- imported code -->
+                <!-- TODO: remove this - imported code -->
                 <exclude>org/apache/solr/internal/**/*.class</exclude>
               </excludes>
             </configuration>
-            <goals>
-              <goal>testCheck</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

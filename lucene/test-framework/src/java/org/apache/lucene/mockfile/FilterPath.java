@@ -30,6 +30,8 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Iterator;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /**  
  * A {@code FilterPath} contains another 
  * {@code Path}, which it uses as its basic 
@@ -193,6 +195,7 @@ public class FilterPath implements Path {
   }
 
   @Override
+  @SuppressForbidden(reason = "Abstract API requires to use java.io.File")
   public File toFile() {
     // TODO: should we throw exception here?
     return delegate.toFile();

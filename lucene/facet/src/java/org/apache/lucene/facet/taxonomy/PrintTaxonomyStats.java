@@ -25,6 +25,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.SuppressForbidden;
 
 /** Prints how many ords are under each dimension. */
 
@@ -36,6 +37,7 @@ public class PrintTaxonomyStats {
   }
 
   /** Command-line tool. */
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws IOException {
     boolean printTree = false;
     String path = null;

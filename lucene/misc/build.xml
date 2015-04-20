@@ -23,23 +23,6 @@
     Index tools and other miscellaneous code
   </description>
 
-  <property name="forbidden-base-excludes" value="
-    org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexInput.class
-    org/apache/lucene/store/NativeUnixDirectory$NativeUnixIndexOutput.class
-    org/apache/lucene/store/RAFDirectory.class
-    org/apache/lucene/store/RAFDirectory$RAFIndexInput.class
-    org/apache/lucene/store/RAFDirectory$RAFIndexOutput.class
-  "/>
-
-  <property name="forbidden-sysout-excludes" value="
-    org/apache/lucene/index/CompoundFileExtractor.class
-    org/apache/lucene/index/IndexSplitter.class
-    org/apache/lucene/index/MultiPassIndexSplitter.class
-    org/apache/lucene/misc/GetTermInfo.class
-    org/apache/lucene/misc/HighFreqTerms.class
-    org/apache/lucene/misc/IndexMergeTool.class
-  "/>
-
   <import file="../module-build.xml"/>
 
   <target name="install-cpptasks" unless="cpptasks.uptodate" depends="ivy-availability-check,ivy-fail,ivy-configure">

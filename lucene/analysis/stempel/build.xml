@@ -22,11 +22,6 @@
   <description>
     Analyzer for indexing Polish
   </description>
-	
-  <property name="forbidden-sysout-excludes" value="
-    org/egothor/stemmer/Compile.class
-    org/egothor/stemmer/DiffIt.class
-  "/>
 
   <import file="../analysis-module-build.xml"/>
 

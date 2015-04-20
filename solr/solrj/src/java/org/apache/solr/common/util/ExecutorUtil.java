@@ -104,6 +104,7 @@ public class ExecutorUtil {
         threadFactory);
   }
 
+  @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
     private static final int MAX_THREAD_NAME_LEN = 512;

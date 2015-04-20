@@ -20,16 +20,6 @@
 
   <property name="test.lib.dir" location="test-lib"/>
 
-  <!-- Uses ThreadPoolExecutor constructors directly -->
-  <property name="forbidden-base-excludes" value="
-    org/apache/solr/common/util/ExecutorUtil$MDCAwareThreadPoolExecutor.class
-  "/>
-
-  <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
-  <property name="forbidden-tests-excludes" value="
-    org/apache/solr/client/solrj/impl/BasicHttpSolrClientTest$DebugServlet.class
-  "/>
-
   <import file="../common-build.xml"/>
 
   <!-- Specialized compile classpath: to only depend on what solrj should depend on (e.g. not lucene) -->

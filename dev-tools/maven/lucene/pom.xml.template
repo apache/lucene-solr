@@ -76,11 +76,22 @@
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>jdk-system-out</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/lucene.txt</signaturesFile>
               </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>lucene-shared-check-sysout-forbidden-apis</id>
+            <configuration>
+              <bundledSignatures>
+                <bundledSignature>jdk-system-out</bundledSignature>
+              </bundledSignatures>
             </configuration>
             <goals>
               <goal>check</goal>
@@ -98,6 +109,7 @@
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/lucene.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

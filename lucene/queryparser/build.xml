@@ -20,11 +20,6 @@
     Query parsers and parsing framework
   </description>
 
-  <!-- TODO: remove the stupid debugStream in the JavaCC TokenManager classes with an additional regex below! -->
-  <property name="forbidden-sysout-excludes" value="
-    org/apache/lucene/queryparser/**/*TokenManager.class
-  "/>
-
   <import file="../module-build.xml"/>
 
   <path id="classpath">
@@ -47,12 +42,17 @@
 
   <target name="javacc" depends="javacc-QueryParser,javacc-surround,javacc-flexible"/>
   
-  <macrodef name="replaceStringBuffer">
+  <macrodef name="generalReplaces">
     <attribute name="dir"/>
     <sequential>
+      <!-- StringBuffer -> StringBuilder -->
       <replace token="StringBuffer" value="StringBuilder" encoding="UTF-8">
          <fileset dir="@{dir}" includes="ParseException.java TokenMgrError.java"/>
       </replace>
+      <!-- Remove debug stream (violates forbiddena-apis) -->
+      <replaceregexp match="/\*\* Debug.*debugStream\s*=\s*ds;\s*}" replace="" flags="s" encoding="UTF-8">
+         <fileset dir="@{dir}" includes="*TokenManager.java"/>
+      </replaceregexp>
     </sequential>
   </macrodef>
   
@@ -70,7 +70,7 @@
 		     byline="true"
 		     match="public QueryParser\(QueryParserTokenManager "
 		     replace="protected QueryParser(QueryParserTokenManager "/>
-      <replaceStringBuffer dir="src/java/org/apache/lucene/queryparser/classic"/>
+      <generalReplaces dir="src/java/org/apache/lucene/queryparser/classic"/>
     </sequential>
   </target>
 
@@ -78,7 +78,7 @@
   	<invoke-javacc target="src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj"
                    outputDir="src/java/org/apache/lucene/queryparser/surround/parser"
     />
-    <replaceStringBuffer dir="src/java/org/apache/lucene/queryparser/surround/parser"/>
+    <generalReplaces dir="src/java/org/apache/lucene/queryparser/surround/parser"/>
   </target>
 
   <target name="javacc-flexible" depends="resolve-javacc">
@@ -137,7 +137,7 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
                              replace="  static private String add_escapes(String str) {"
                              flags="g"
                              byline="true"/>
-        <replaceStringBuffer dir="src/java/org/apache/lucene/queryparser/flexible/standard/parser"/>
+        <generalReplaces dir="src/java/org/apache/lucene/queryparser/flexible/standard/parser"/>
   </target>
 
   <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">

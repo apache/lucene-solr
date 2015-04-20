@@ -69,49 +69,8 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>lucene-shared-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
             <id>lucene-shared-test-check-forbidden-apis</id>
             <phase>none</phase>  <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>check-forbidden-apis</id>
-            <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
-              <bundledSignatures>
-                <bundledSignature>jdk-unsafe</bundledSignature>
-                <bundledSignature>jdk-deprecated</bundledSignature>
-              </bundledSignatures>
-              <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
-              </signaturesFiles>
-            </configuration>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>check-system-out</id> <!-- separate execution to specify excludes -->
-            <configuration>
-              <bundledSignatures>
-                <bundledSignature>jdk-system-out</bundledSignature>
-              </bundledSignatures>
-              <excludes>
-                <!-- exclude command line tools -->
-                <exclude>org/apache/lucene/index/CheckIndex.class</exclude>
-                <exclude>org/apache/lucene/index/IndexUpgrader.class</exclude>
-                <exclude>org/apache/lucene/store/LockVerifyServer.class</exclude>
-                <exclude>org/apache/lucene/store/LockStressTest.class</exclude>
-                <!-- not printing, just checking if it's a system stream -->
-                <exclude>org/apache/lucene/util/PrintStreamInfoStream.class</exclude>
-              </excludes>
-            </configuration>
-            <goals>
-              <goal>check</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 
+import org.apache.lucene.util.SuppressForbidden;
+
 /**
  * Simple standalone tool that forever acquires and releases a
  * lock using a specific LockFactory.  Run without any args
@@ -37,6 +39,7 @@ import java.util.Random;
 
 public class LockStressTest {
 
+  @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws Exception {
 
     if (args.length != 7) {

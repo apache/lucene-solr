@@ -17,10 +17,10 @@
 
 package org.apache.solr.search;
 
-import java.util.BitSet;
 import java.util.Random;
 
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  */
@@ -33,12 +33,17 @@ public class DocSetPerf {
       }
   }
 
-  static Random rand = new Random();
-
   static FixedBitSet bs;
   static BitDocSet bds;
   static HashDocSet hds;
   static int[] ids; // not unique
+
+  static Random rand = getRandom();
+  
+  @SuppressForbidden(reason = "No testcase, use of java.util.Random allowed")
+  private static Random getRandom() {
+    return new Random();
+  }
 
   static void generate(int maxSize, int bitsToSet) {
     bs = new FixedBitSet(maxSize);
@@ -56,8 +61,6 @@ public class DocSetPerf {
     bds = new BitDocSet(bs,bitsToSet);
     hds = new HashDocSet(ids,0,count);
   }
-
-
 
   public static void main(String[] args) {
     String bsSize=args[0];
@@ -79,8 +82,7 @@ public class DocSetPerf {
     FixedBitSet[] sets = new FixedBitSet[numSets];
     DocSet[] bset = new DocSet[numSets];
     DocSet[] hset = new DocSet[numSets];
-    BitSet scratch=new BitSet();
-
+    
     for (int i=0; i<numSets; i++) {
       generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
       sets[i] = bs;
@@ -166,7 +168,6 @@ public class DocSetPerf {
     long end = System.currentTimeMillis();
     System.out.println("TIME="+(end-start));
 
-    // System.out.println("ret="+ret + " scratchsize="+scratch.size());
     System.out.println("ret="+ret);
   }
 
