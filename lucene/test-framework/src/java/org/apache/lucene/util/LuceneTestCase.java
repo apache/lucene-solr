@@ -1111,6 +1111,8 @@ public abstract class LuceneTestCase extends Assert {
   public static void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
     boolean didChange = false;
 
+    String previous = c.toString();
+    
     if (rarely(r)) {
       // change flush parameters:
       // this is complicated because the api requires you "invoke setters in a magical order!"
@@ -1223,7 +1225,29 @@ public abstract class LuceneTestCase extends Assert {
       didChange = true;
     }
     if (VERBOSE && didChange) {
-      System.out.println("NOTE: LuceneTestCase: randomly changed IWC's live settings to:\n" + c);
+      String current = c.toString();
+      String previousLines[] = previous.split("\n");
+      String currentLines[] = current.split("\n");
+      StringBuilder diff = new StringBuilder();
+
+      // this should always be the case, diff each line
+      if (previousLines.length == currentLines.length) {
+        for (int i = 0; i < previousLines.length; i++) {
+          if (!previousLines[i].equals(currentLines[i])) {
+            diff.append("- " + previousLines[i] + "\n");
+            diff.append("+ " + currentLines[i] + "\n");
+          }
+        }
+      } else {
+        // but just in case of something ridiculous...
+        diff.append(current.toString());
+      }
+      
+      // its possible to be empty, if we "change" a value to what it had before.
+      if (diff.length() > 0) {
+        System.out.println("NOTE: LuceneTestCase: randomly changed IWC's live settings:");
+        System.out.println(diff);
+      }
     }
   }
 
