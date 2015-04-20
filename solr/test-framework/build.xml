@@ -51,7 +51,7 @@
   
   <!-- redefine the forbidden apis for tests, as we check ourselves -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-core">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
+    <forbidden-apis suppressAnnotation="**.SuppressForbidden" signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/java"/>
     </forbidden-apis>
   </target>
