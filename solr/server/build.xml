@@ -36,30 +36,17 @@
   <!-- nothing to cover -->
   <target name="pitest"/>
 
-  <!-- a hack because we don't use sync-true since we have 3 different profiles.
-       we have these different profiles because each has a different artifact pattern.
-       this way we can rename servlet-api-xxxxxxxxxxxxxxxxxxx.jar -> lib/servlet-api-3.0.jar,
-       and rename jetty-start-xxxxxxxxxxxxx.jar -> start.jar (not in lib/) ! 
-
-       there is probably a cleaner way: but this ensure we have no garbage if jetty is upgraded -->
-  <target name="sync-hack" unless="solr.skip.sync-hack">
-    <delete failonerror="false">
-      <fileset dir="lib" includes="*.jar"/>
-    </delete>
-  </target>
-
-  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure,sync-hack">
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>
     <!-- jetty libs in lib/ -->
-    <ivy:retrieve conf="jetty" type="jar" log="download-only" symlink="${ivy.symlink}"/>
+    <ivy:retrieve conf="jetty,servlet" type="jar" log="download-only" symlink="${ivy.symlink}"
+    	          pattern="lib/[artifact]-[revision].[ext]" sync="true"/>
     <ivy:retrieve conf="logging" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
-                  pattern="lib/ext/[artifact]-[revision].[ext]"/>
-    <!-- start.jar -->
+                  pattern="lib/ext/[artifact]-[revision].[ext]" sync="true"/>
+    <!-- start.jar - we don't use sync=true here, we don't own the dir, but
+         it's one jar with a constant name and we don't need it -->
     <ivy:retrieve conf="start" type="jar" log="download-only" symlink="${ivy.symlink}" 
                   pattern="start.jar"/>
-    <!-- servlet-api.jar -->
-    <ivy:retrieve conf="servlet" log="download-only" type="orbit" symlink="${ivy.symlink}"
-                  pattern="lib/servlet-api-3.0.jar"/>
     </sequential>
   </target>
 
