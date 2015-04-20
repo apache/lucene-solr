@@ -19,7 +19,7 @@ package org.apache.lucene.util;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.lucene.util.junitcompat.WithNestedTests;
+import org.apache.lucene.util.WithNestedTests;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

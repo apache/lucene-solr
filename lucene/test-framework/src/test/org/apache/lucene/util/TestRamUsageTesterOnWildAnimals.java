@@ -22,7 +22,7 @@ import org.junit.Assert;
 /**
  * Check large and special graphs. 
  */
-public class TestRamUsageEstimatorOnWildAnimals extends LuceneTestCase {
+public class TestRamUsageTesterOnWildAnimals extends LuceneTestCase {
   public static class ListElement {
     ListElement next;
   }

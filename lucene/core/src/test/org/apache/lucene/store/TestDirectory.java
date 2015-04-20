@@ -24,29 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestDirectory extends BaseDirectoryTestCase {
-
-  @Override
-  protected Directory getDirectory(Path path) throws IOException {
-    final Directory dir;
-    if (random().nextBoolean()) {
-      dir = newDirectory();
-    } else {
-      dir = newFSDirectory(path);
-    }
-    if (dir instanceof MockDirectoryWrapper) {
-      // test manipulates directory directly
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
-  // we wrap the directory in slow stuff, so only run nightly
-  @Override @Nightly
-  public void testThreadSafety() throws Exception {
-    super.testThreadSafety();
-  }
+public class TestDirectory extends LuceneTestCase {
 
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.

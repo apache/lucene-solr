@@ -1,4 +1,4 @@
-package org.apache.lucene.util.junitcompat;
+package org.apache.lucene.util;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;

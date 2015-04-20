@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.util;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;

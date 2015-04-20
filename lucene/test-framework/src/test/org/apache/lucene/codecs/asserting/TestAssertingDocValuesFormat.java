@@ -1,4 +1,4 @@
-package org.apache.lucene.util.junitcompat;
+package org.apache.lucene.codecs.asserting;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,17 +17,15 @@ package org.apache.lucene.util.junitcompat;
  * limitations under the License.
  */
 
-/**
- * A pointcut-like definition where we should trigger
- * an assumption or error.
- */
-public enum SorePoint {
-  // STATIC_INITIALIZER, // I assume this will result in JUnit failure to load a suite.
-  BEFORE_CLASS,
-  INITIALIZER,
-  RULE,
-  BEFORE,
-  TEST,
-  AFTER,
-  AFTER_CLASS
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseDocValuesFormatTestCase;
+
+/** Test AssertingDocValuesFormat directly */
+public class TestAssertingDocValuesFormat extends BaseDocValuesFormatTestCase {
+  private final Codec codec = new AssertingCodec();
+  
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
 }

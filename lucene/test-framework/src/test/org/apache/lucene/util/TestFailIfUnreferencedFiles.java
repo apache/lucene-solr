@@ -1,4 +1,4 @@
-package org.apache.lucene.util.junitcompat;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
