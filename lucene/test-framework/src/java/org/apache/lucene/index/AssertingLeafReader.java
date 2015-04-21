@@ -800,16 +800,15 @@ public class AssertingLeafReader extends FilterLeafReader {
     return docsWithField;
   }
 
-  // this is the same hack as FCInvisible
+  // we don't change behavior of the reader: just validate the API.
+
   @Override
   public Object getCoreCacheKey() {
-    return cacheKey;
+    return in.getCoreCacheKey();
   }
 
   @Override
   public Object getCombinedCoreAndDeletesKey() {
-    return cacheKey;
+    return in.getCombinedCoreAndDeletesKey();
   }
-  
-  private final Object cacheKey = new Object();
 }
