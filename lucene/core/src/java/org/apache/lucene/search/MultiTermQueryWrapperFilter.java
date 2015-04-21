@@ -60,16 +60,15 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   @SuppressWarnings({"rawtypes"})
   public final boolean equals(final Object o) {
     if (o==this) return true;
-    if (o==null) return false;
-    if (this.getClass().equals(o.getClass())) {
-      return this.query.equals( ((MultiTermQueryWrapperFilter)o).query );
+    if (super.equals(o) == false) {
+      return false;
     }
-    return false;
+    return this.query.equals( ((MultiTermQueryWrapperFilter)o).query );
   }
 
   @Override
   public final int hashCode() {
-    return query.hashCode();
+    return 31 * super.hashCode() + query.hashCode();
   }
 
   /** Returns the field name for this query */

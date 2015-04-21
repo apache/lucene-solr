@@ -81,13 +81,14 @@ public class QueryWrapperFilter extends Filter {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof QueryWrapperFilter))
+    if (super.equals(o) == false) {
       return false;
+    }
     return this.query.equals(((QueryWrapperFilter)o).query);
   }
 
   @Override
   public int hashCode() {
-    return query.hashCode() ^ 0x923F64B9;
+    return 31 * super.hashCode() + query.hashCode();
   }
 }

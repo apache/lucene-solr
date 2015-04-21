@@ -18,10 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -132,5 +133,22 @@ public class DocValuesTermsFilter extends Filter {
       sb.setLength(sb.length() - 2);
     }
     return sb.append(']').toString();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (super.equals(obj) == false) {
+      return false;
+    }
+    DocValuesTermsFilter other = (DocValuesTermsFilter) obj;
+    return field.equals(other.field) && Arrays.equals(terms, other.terms);
+  }
+
+  @Override
+  public int hashCode() {
+    int h = super.hashCode();
+    h = 31 * h + field.hashCode();
+    h = 31 * h + Arrays.hashCode(terms);
+    return h;
   }
 }

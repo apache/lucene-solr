@@ -327,27 +327,27 @@ public class FilteredQuery extends Query {
   
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if (filter instanceof QueryWrapperFilter) {
-      // In that case the filter does not implement random-access anyway so
-      // we want to take advantage of approximations
-      BooleanQuery rewritten = new BooleanQuery();
-      rewritten.add(query, Occur.MUST);
-      rewritten.add(((QueryWrapperFilter) filter).getQuery(), Occur.FILTER);
-      rewritten.setBoost(getBoost());
-      return rewritten;
-    }
-
     final Query queryRewritten = query.rewrite(reader);
+    final Query filterRewritten = filter.rewrite(reader);
     
-    if (queryRewritten != query) {
-      // rewrite to a new FilteredQuery wrapping the rewritten query
-      final Query rewritten = new FilteredQuery(queryRewritten, filter, strategy);
-      rewritten.setBoost(this.getBoost());
-      return rewritten;
-    } else {
-      // nothing to rewrite, we are done!
-      return this;
+    if (queryRewritten != query || filterRewritten != filter) {
+      // rewrite to a new FilteredQuery wrapping the rewritten query/filter
+      if (filterRewritten instanceof Filter) {
+        final Query rewritten = new FilteredQuery(queryRewritten, (Filter) filterRewritten, strategy);
+        rewritten.setBoost(this.getBoost());
+        return rewritten;
+      } else {
+        // In that case the filter does not implement random-access anyway so
+        // we want to take advantage of approximations
+        BooleanQuery rewritten = new BooleanQuery();
+        rewritten.add(queryRewritten, Occur.MUST);
+        rewritten.add(filterRewritten, Occur.FILTER);
+        rewritten.setBoost(getBoost());
+        return rewritten;
+      }
     }
+    // nothing to rewrite, we are done!
+    return this;
   }
 
   /** Returns this FilteredQuery's (unfiltered) Query */

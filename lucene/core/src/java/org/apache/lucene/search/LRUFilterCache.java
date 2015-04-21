@@ -586,13 +586,13 @@ public class LRUFilterCache implements FilterCache, Accountable {
 
     @Override
     public boolean equals(Object obj) {
-      return obj instanceof CachingWrapperFilter
+      return super.equals(obj)
           && in.equals(((CachingWrapperFilter) obj).in);
     }
 
     @Override
     public int hashCode() {
-      return in.hashCode() ^ getClass().hashCode();
+      return 31 * super.hashCode() + in.hashCode();
     }
 
     @Override

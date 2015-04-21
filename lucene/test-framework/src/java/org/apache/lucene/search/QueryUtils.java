@@ -50,6 +50,15 @@ public class QueryUtils {
   /** Check the types of things query objects should be able to do. */
   public static void check(Query q) {
     checkHashEquals(q);
+
+    if (q instanceof FilteredQuery) {
+      // This is our best option to have coverage on filters since they are
+      // rarely searched on directly
+      // This hack can go away when FilteredQuery goes away too
+      FilteredQuery filtered = (FilteredQuery) q;
+      check(filtered.getQuery());
+      check(filtered.getFilter());
+    }
   }
 
   /** check very basic hashCode and equals */

@@ -230,7 +230,7 @@ public final class TermsFilter extends Filter implements Accountable {
     if (this == obj) {
       return true;
     }
-    if ((obj == null) || (obj.getClass() != this.getClass())) {
+    if (super.equals(obj) == false) {
       return false;
     }
     
@@ -249,7 +249,7 @@ public final class TermsFilter extends Filter implements Accountable {
 
   @Override
   public int hashCode() {
-    return hashCode;
+    return 31 * super.hashCode() + hashCode;
   }
   
   @Override

@@ -46,7 +46,6 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -55,19 +54,14 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
@@ -849,6 +843,42 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(r, d);
   }
 
+  private static class UsedFilter extends Filter {
+    
+    private final AtomicBoolean used;
+    private final Filter in;
+    
+    UsedFilter(Filter in, AtomicBoolean used) {
+      this.in = in;
+      this.used = used;
+    }
+
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
+        throws IOException {
+      used.set(true);
+      return in.getDocIdSet(context, acceptDocs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return in.equals(((UsedFilter) obj).in);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + in.hashCode();
+    }
+  }
+
   public void testCustomDoublesValueSource() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -875,12 +905,12 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
         @Override
         public boolean equals(Object o) {
-          throw new UnsupportedOperationException();
+          return o != null && getClass() == o.getClass();
         }
 
         @Override
         public int hashCode() {
-          throw new UnsupportedOperationException();
+          return getClass().hashCode();
         }
 
         @Override
@@ -910,18 +940,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     if (random().nextBoolean()) {
       // Sort of silly:
       final Filter in = new QueryWrapperFilter(new MatchAllDocsQuery());
-      fastMatchFilter = new Filter() {
-        @Override
-        public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
-            throws IOException {
-          filterWasUsed.set(true);
-          return in.getDocIdSet(context, acceptDocs);
-        }
-        @Override
-        public String toString(String field) {
-          return in.toString(field);
-        }
-      };
+      fastMatchFilter = new UsedFilter(in, filterWasUsed);
     } else {
       fastMatchFilter = null;
     }

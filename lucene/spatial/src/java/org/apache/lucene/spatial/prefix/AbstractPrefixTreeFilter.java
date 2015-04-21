@@ -52,7 +52,7 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!getClass().equals(o.getClass())) return false;
+    if (super.equals(o) == false) return false;
 
     AbstractPrefixTreeFilter that = (AbstractPrefixTreeFilter) o;
 
@@ -65,7 +65,8 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
 
   @Override
   public int hashCode() {
-    int result = queryShape.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + queryShape.hashCode();
     result = 31 * result + fieldName.hashCode();
     result = 31 * result + detailLevel;
     return result;

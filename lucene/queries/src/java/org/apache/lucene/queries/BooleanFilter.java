@@ -148,7 +148,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       return true;
     }
 
-    if ((obj == null) || (obj.getClass() != this.getClass())) {
+    if (super.equals(obj) == false) {
       return false;
     }
 
@@ -158,7 +158,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
 
   @Override
   public int hashCode() {
-    return 657153718 ^ clauses.hashCode();
+    return 31 * super.hashCode() + clauses.hashCode();
   }
   
   /** Prints a user-readable version of this Filter. */

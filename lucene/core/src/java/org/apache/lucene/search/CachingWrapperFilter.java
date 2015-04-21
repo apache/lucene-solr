@@ -134,14 +134,16 @@ public class CachingWrapperFilter extends Filter implements Accountable {
 
   @Override
   public boolean equals(Object o) {
-    if (o == null || !getClass().equals(o.getClass())) return false;
+    if (super.equals(o) == false) {
+      return false;
+    }
     final CachingWrapperFilter other = (CachingWrapperFilter) o;
     return this.filter.equals(other.filter);
   }
 
   @Override
   public int hashCode() {
-    return (filter.hashCode() ^ getClass().hashCode());
+    return 31 * super.hashCode() + filter.hashCode();
   }
 
   @Override

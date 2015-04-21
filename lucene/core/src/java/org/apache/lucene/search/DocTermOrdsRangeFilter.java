@@ -130,7 +130,7 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
   @Override
   public final boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof DocTermOrdsRangeFilter)) return false;
+    if (super.equals(o) == false) return false;
     DocTermOrdsRangeFilter other = (DocTermOrdsRangeFilter) o;
 
     if (!this.field.equals(other.field)
@@ -144,7 +144,8 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
   
   @Override
   public final int hashCode() {
-    int h = field.hashCode();
+    int h = super.hashCode();
+    h = 31 * h + field.hashCode();
     h ^= (lowerVal != null) ? lowerVal.hashCode() : 550356204;
     h = (h << 1) | (h >>> 31);  // rotate to distinguish lower from upper
     h ^= (upperVal != null) ? upperVal.hashCode() : -1674416163;

@@ -62,19 +62,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     assert detailLevel <= grid.getMaxLevels();
   }
 
-  @Override
-  public boolean equals(Object o) {
-    return super.equals(o);//checks getClass == o.getClass & instanceof
-
-    //Ignore hasIndexedLeaves as it's fixed for a specific field, which super.equals compares
-    //Ignore prefixGridScanLevel as it is merely a tuning parameter.
-  }
-
-  @Override
-  public int hashCode() {
-    return super.hashCode();
-  }
-
   /**
    * An abstract class designed to make it easy to implement predicates or
    * other operations on a {@link SpatialPrefixTree} indexed field. An instance

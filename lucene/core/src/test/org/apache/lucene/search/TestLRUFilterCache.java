@@ -368,6 +368,10 @@ public class TestLRUFilterCache extends LuceneTestCase {
   /** A filter that produces empty sets. */
   private static class DummyFilter extends Filter {
 
+    private static final AtomicLong ID_GENERATOR = new AtomicLong();
+
+    private final long id = ID_GENERATOR.getAndIncrement();
+
     @Override
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return null;
@@ -376,6 +380,16 @@ public class TestLRUFilterCache extends LuceneTestCase {
     @Override
     public String toString(String field) {
       return "DummyFilter";
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + new Long(id).hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return super.equals(obj) && id == ((DummyFilter) obj).id;
     }
 
   }

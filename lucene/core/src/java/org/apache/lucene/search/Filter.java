@@ -64,19 +64,6 @@ public abstract class Filter extends Query {
   //
 
   @Override
-  public boolean equals(Object that) {
-    // Query's default impl only compares boost but they do not matter in the
-    // case of filters since it does not influence scores
-    return this == that;
-  }
-
-  @Override
-  public int hashCode() {
-    // Query's default impl returns a hash of the boost but this is irrelevant to filters
-    return System.identityHashCode(this);
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new Weight(this) {
 

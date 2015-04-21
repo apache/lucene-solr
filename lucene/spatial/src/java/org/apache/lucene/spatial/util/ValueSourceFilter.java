@@ -26,6 +26,7 @@ import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Filter that matches all documents where a ValueSource is
@@ -71,5 +72,21 @@ public class ValueSourceFilter extends Filter {
              "min=" + min + "," +
              "max=" + max +
            ")";
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (super.equals(obj) == false) {
+      return false;
+    }
+    ValueSourceFilter other = (ValueSourceFilter) obj;
+    return startingFilter.equals(other.startingFilter)
+        && source.equals(other.source)
+        && min == min && max == max;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), startingFilter, source, min, max);
   }
 }

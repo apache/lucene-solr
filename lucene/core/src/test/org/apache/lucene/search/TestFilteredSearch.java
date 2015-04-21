@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReaderContext;
@@ -105,6 +106,19 @@ public class TestFilteredSearch extends LuceneTestCase {
     @Override
     public String toString(String field) {
       return "SimpleDocIdSetFilter";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return Arrays.equals(docs, ((SimpleDocIdSetFilter) obj).docs);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + Arrays.hashCode(docs);
     }
   }
 

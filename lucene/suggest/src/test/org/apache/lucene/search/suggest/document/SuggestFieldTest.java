@@ -54,6 +54,7 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -690,42 +691,46 @@ public class SuggestFieldTest extends LuceneTestCase {
     iw.close();
   }
 
-  private static Filter randomAccessFilter(final Filter filter) {
-    return new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final DocIdSet docIdSet = filter.getDocIdSet(context, acceptDocs);
-        final DocIdSetIterator iterator = docIdSet.iterator();
-        final FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
-        if (iterator != null) {
-          int doc;
-          while((doc = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            bits.set(doc);
-          }
-        }
-        return new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() throws IOException {
-            return iterator;
-          }
+  private static class RandomAccessFilter extends Filter {
 
-          @Override
-          public Bits bits() throws IOException {
-            return bits;
-          }
+    private final Filter in;
 
-          @Override
-          public long ramBytesUsed() {
-            return docIdSet.ramBytesUsed();
-          }
-        };
+    private RandomAccessFilter(Filter in) {
+      this.in = in;
+    }
+
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      DocIdSet docIdSet = in.getDocIdSet(context, acceptDocs);
+      DocIdSetIterator iterator = docIdSet.iterator();
+      FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
+      if (iterator != null) {
+        bits.or(iterator);
       }
+      return new BitDocIdSet(bits);
+    }
 
-      @Override
-      public String toString(String field) {
-        return filter.toString(field);
+    @Override
+    public String toString(String field) {
+      return in.toString(field);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
       }
-    };
+      return in.equals(((RandomAccessFilter) obj).in);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + in.hashCode();
+    }
+  }
+
+  private static Filter randomAccessFilter(Filter filter) {
+    return new RandomAccessFilter(filter);
   }
 
   private static class Entry {
