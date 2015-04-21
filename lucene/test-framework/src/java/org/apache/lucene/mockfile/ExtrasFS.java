@@ -22,10 +22,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
-
-import com.carrotsearch.randomizedtesting.RandomizedContext;
 
 /** 
  * Adds extra files/subdirectories when directories are created.
@@ -39,14 +35,19 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
  * All other filesystem operations are passed thru as normal.
  */
 public class ExtrasFS extends FilterFileSystemProvider {
-  final int seed;
+  final boolean active;
+  final boolean createDirectory;
   
   /** 
    * Create a new instance, wrapping {@code delegate}.
+   * @param active {@code true} if we should create extra files
+   * @param createDirectory {@code true} if we should create directories instead of files.
+   *        Ignored if {@code active} is {@code false}.
    */
-  public ExtrasFS(FileSystem delegate, Random random) {
+  public ExtrasFS(FileSystem delegate, boolean active, boolean createDirectory) {
     super("extras://", delegate);
-    this.seed = random.nextInt();
+    this.active = active;
+    this.createDirectory = createDirectory;
   }
 
   @Override
@@ -54,17 +55,11 @@ public class ExtrasFS extends FilterFileSystemProvider {
     super.createDirectory(dir, attrs);   
     // ok, we created the directory successfully.
     
-    // a little funky: we only look at hashcode (well-defined) of the target class name.
-    // using a generator won't reproduce, because we are a per-class resource.
-    // using hashing on filenames won't reproduce, because many of the names rely on other things
-    // the test class did.
-    // so a test gets terrorized with extras or gets none at all depending on the initial seed.
-    int hash = RandomizedContext.current().getTargetClass().toString().hashCode() ^ seed;
-    if ((hash & 3) == 0) {
+    if (active) {
       // lets add a bogus file... if this fails, we don't care, its best effort.
       try {
         Path target = dir.resolve("extra0");
-        if (hash < 0) {
+        if (createDirectory) {
           super.createDirectory(target);
         } else {
           Files.createFile(target);
