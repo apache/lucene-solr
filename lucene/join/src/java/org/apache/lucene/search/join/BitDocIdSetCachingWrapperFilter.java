@@ -87,13 +87,15 @@ public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter {
 
   @Override
   public boolean equals(Object o) {
-    if (o == null || !getClass().equals(o.getClass())) return false;
+    if (super.equals(o) == false) {
+      return false;
+    }
     final BitDocIdSetCachingWrapperFilter other = (BitDocIdSetCachingWrapperFilter) o;
     return this.filter.equals(other.filter);
   }
 
   @Override
   public int hashCode() {
-    return (filter.hashCode() ^ getClass().hashCode());
+    return 31 * super.hashCode() + filter.hashCode();
   }
 }

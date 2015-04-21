@@ -50,16 +50,22 @@ public class ConstantScoreQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    Query sub = query;
-    if (sub instanceof QueryWrapperFilter) {
-      sub = ((QueryWrapperFilter) sub).getQuery();
+    Query rewritten = query.rewrite(reader);
+
+    if (rewritten.getClass() == getClass()) {
+      if (getBoost() != rewritten.getBoost()) {
+        rewritten = rewritten.clone();
+        rewritten.setBoost(getBoost());
+      }
+      return rewritten;
     }
-    Query rewritten = sub.rewrite(reader);
+
     if (rewritten != query) {
       rewritten = new ConstantScoreQuery(rewritten);
       rewritten.setBoost(this.getBoost());
       return rewritten;
     }
+
     return this;
   }
 

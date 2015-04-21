@@ -43,4 +43,17 @@ public class SingleDocTestFilter extends Filter {
   public String toString(String field) {
     return "SingleDocTestFilter(" + doc + ")";
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (super.equals(obj) == false) {
+      return false;
+    }
+    return doc == ((SingleDocTestFilter) obj).doc;
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * super.hashCode() + doc;
+  }
 }

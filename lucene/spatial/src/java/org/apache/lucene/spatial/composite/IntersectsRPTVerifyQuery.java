@@ -66,7 +66,6 @@ public class IntersectsRPTVerifyQuery extends Query {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof IntersectsRPTVerifyQuery)) return false;
     if (!super.equals(o)) return false;
 
     IntersectsRPTVerifyQuery that = (IntersectsRPTVerifyQuery) o;

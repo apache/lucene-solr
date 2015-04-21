@@ -153,6 +153,18 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       return in.toString(field);
     }
     
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return in.equals(((FilterWrapper) obj).in);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + in.hashCode();
+    }
   }
 
   public void testConstantScoreQueryAndFilter() throws Exception {

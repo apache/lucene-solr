@@ -88,6 +88,19 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     }
 
     @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return filter.equals(((BitSetCachingWrapperFilter) obj).filter);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + filter.hashCode();
+    }
+
+    @Override
     public String toString(String field) {
       return getClass().getName() + "(" + filter.toString(field) + ")";
     }

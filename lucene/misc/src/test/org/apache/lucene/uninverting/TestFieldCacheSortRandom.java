@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -32,9 +33,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -51,9 +52,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -163,7 +164,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         sort = new Sort(sf, SortField.FIELD_DOC);
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
-      final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
+      final RandomFilter f = new RandomFilter(random.nextLong(), random.nextFloat(), docValues);
       int queryType = random.nextInt(3);
       if (queryType == 0) {
         // force out of order
@@ -266,20 +267,21 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
   }
   
   private static class RandomFilter extends Filter {
-    private final Random random;
+    private final long seed;
     private float density;
     private final List<BytesRef> docValues;
     public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
-    public RandomFilter(Random random, float density, List<BytesRef> docValues) {
-      this.random = random;
+    public RandomFilter(long seed, float density, List<BytesRef> docValues) {
+      this.seed = seed;
       this.density = density;
       this.docValues = docValues;
     }
 
     @Override
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      Random random = new Random(seed ^ context.docBase);
       final int maxDoc = context.reader().maxDoc();
       final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
       assertNotNull(idSource);
@@ -298,6 +300,23 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     @Override
     public String toString(String field) {
       return "RandomFilter(density=" + density + ")";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      RandomFilter other = (RandomFilter) obj;
+      return seed == other.seed && docValues == other.docValues;
+    }
+
+    @Override
+    public int hashCode() {
+      int h = Objects.hash(seed, density);
+      h = 31 * h + System.identityHashCode(docValues);
+      h = 31 * h + super.hashCode();
+      return h;
     }
   }
 }

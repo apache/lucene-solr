@@ -140,20 +140,41 @@ public class TestScorerPerf extends LuceneTestCase {
     }
   }
 
+  private static class BitSetFilter extends Filter {
+    private final FixedBitSet docs;
+
+    BitSetFilter(FixedBitSet docs) {
+      this.docs = docs;
+    }
+
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
+      return new BitDocIdSet(docs);
+    }
+
+    @Override
+    public String toString(String field) {
+      return "randomBitSetFilter";
+    }
+  
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return docs == ((BitSetFilter) obj).docs;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * super.hashCode() + System.identityHashCode(docs);
+    }
+  }
 
   FixedBitSet addClause(BooleanQuery bq, FixedBitSet result) {
     final FixedBitSet rnd = sets[random().nextInt(sets.length)];
-    Query q = new ConstantScoreQuery(new Filter() {
-      @Override
-      public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
-        assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-        return new BitDocIdSet(rnd);
-      }
-      @Override
-      public String toString(String field) {
-        return "randomBitSetFilter";
-      }
-    });
+    Query q = new ConstantScoreQuery(new BitSetFilter(rnd));
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {
       if (result==null) result = rnd.clone();
