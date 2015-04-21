@@ -108,6 +108,7 @@ import org.slf4j.MDC;
 public final class ZkController {
 
   private static final Logger log = LoggerFactory.getLogger(ZkController.class);
+  static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
@@ -662,7 +663,7 @@ public final class ZkController {
     
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> collections = clusterState.getCollections();
-    List<String> updatedNodes = new ArrayList<>();
+    Set<String> updatedCoreNodeNames = new HashSet<>();
     for (String collectionName : collections) {
       DocCollection collection = clusterState.getCollection(collectionName);
       Collection<Slice> slices = collection.getSlices();
@@ -683,7 +684,7 @@ public final class ZkController {
                 replica.getStr(ZkStateReader.SHARD_ID_PROP),
                 ZkStateReader.COLLECTION_PROP, collectionName,
                 ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
-            updatedNodes.add(replica.getStr(ZkStateReader.CORE_NAME_PROP));
+            updatedCoreNodeNames.add(replica.getName());
             overseerJobQueue.offer(ZkStateReader.toJSON(m));
           }
         }
@@ -692,7 +693,7 @@ public final class ZkController {
     
     // now wait till the updates are in our state
     long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     boolean foundStates = false;
     while (System.nanoTime() < timeout) {
       clusterState = zkStateReader.getClusterState();
@@ -704,14 +705,14 @@ public final class ZkController {
           Collection<Replica> replicas = slice.getReplicas();
           for (Replica replica : replicas) {
             if (replica.getState() == Replica.State.DOWN) {
-              updatedNodes.remove(replica.getStr(ZkStateReader.CORE_NAME_PROP));
+              updatedCoreNodeNames.remove(replica.getName());
               
             }
           }
         }
       }
       
-      if (updatedNodes.size() == 0) {
+      if (updatedCoreNodeNames.size() == 0) {
         foundStates = true;
         Thread.sleep(1000);
         break;

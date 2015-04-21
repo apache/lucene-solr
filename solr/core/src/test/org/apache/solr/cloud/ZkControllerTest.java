@@ -19,7 +19,11 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -41,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slow
 public class ZkControllerTest extends SolrTestCaseJ4 {
@@ -173,7 +178,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       props.put("configName", actualConfigName);
       ZkNodeProps zkProps = new ZkNodeProps(props);
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/"
-          + COLLECTION_NAME, ZkStateReader.toJSON(zkProps),
+              + COLLECTION_NAME, ZkStateReader.toJSON(zkProps),
           CreateMode.PERSISTENT, true);
 
       if (DEBUG) {
@@ -246,6 +251,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
+  /*
+  Test that:
+  1) LIR state to 'down' is not set unless publishing node is a leader
+    1a) Test that leader can publish when LIR node already exists in zk
+    1b) Test that leader can publish when LIR node does not exist - TODO
+  2) LIR state to 'active' or 'recovery' can be set regardless of whether publishing
+    node is leader or not - TODO
+   */
   public void testEnsureReplicaInLeaderInitiatedRecovery() throws Exception  {
     String zkDir = createTempDir("testEnsureReplicaInLeaderInitiatedRecovery").toFile().getAbsolutePath();
     CoreContainer cc = null;
@@ -296,14 +309,69 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  /*
-  Test that:
-  1) LIR state to 'down' is not set unless publishing node is a leader
-    1a) Test that leader can publish when LIR node already exists in zk
-    1b) Test that leader can publish when LIR node does not exist
-  2) LIR state to 'active' or 'recovery' can be set regardless of whether publishing
-    node is leader or not
-   */
+  public void testPublishAndWaitForDownStates() throws Exception  {
+    String zkDir = createTempDir("testPublishAndWaitForDownStates").toFile().getAbsolutePath();
+    CoreContainer cc = null;
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      cc = getCoreContainer();
+      ZkController zkController = null;
+
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, new CurrentCoreDescriptorProvider() {
+
+          @Override
+          public List<CoreDescriptor> getCurrentDescriptors() {
+            // do nothing
+            return null;
+          }
+        });
+
+        HashMap<String, DocCollection> collectionStates = new HashMap<>();
+        HashMap<String, Replica> replicas = new HashMap<>();
+        // add two replicas with the same core name but one of them should be on a different node
+        // than this ZkController instance
+        for (int i=1; i<=2; i++)  {
+          Replica r = new Replica("core_node" + i,
+              map(ZkStateReader.STATE_PROP, i == 1 ? "active" : "down",
+              ZkStateReader.NODE_NAME_PROP, i == 1 ? "127.0.0.1:8983_solr" : "non_existent_host",
+              ZkStateReader.CORE_NAME_PROP, "collection1"));
+          replicas.put("core_node" + i, r);
+        }
+        HashMap<String, Object> sliceProps = new HashMap<>();
+        sliceProps.put("state", Slice.State.ACTIVE.toString());
+        Slice slice = new Slice("shard1", replicas, sliceProps);
+        DocCollection c = new DocCollection("testPublishAndWaitForDownStates", map("shard1", slice), Collections.<String, Object>emptyMap(), DocRouter.DEFAULT);
+        ClusterState state = new ClusterState(0, Collections.<String>emptySet(), map("testPublishAndWaitForDownStates", c));
+        byte[] bytes = ZkStateReader.toJSON(state);
+        zkController.getZkClient().makePath(ZkStateReader.getCollectionPath("testPublishAndWaitForDownStates"), bytes, CreateMode.PERSISTENT, true);
+
+        zkController.getZkStateReader().updateClusterState(true);
+        assertTrue(zkController.getZkStateReader().getClusterState().hasCollection("testPublishAndWaitForDownStates"));
+        assertNotNull(zkController.getZkStateReader().getClusterState().getCollection("testPublishAndWaitForDownStates"));
+
+        long now = System.nanoTime();
+        long timeout = now + TimeUnit.NANOSECONDS.convert(ZkController.WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        zkController.publishAndWaitForDownStates();
+        assertTrue("The ZkController.publishAndWaitForDownStates should have timed out but it didn't", System.nanoTime() >= timeout);
+      } finally {
+        if (zkController != null)
+          zkController.close();
+      }
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+      server.shutdown();
+    }
+  }
 
   private CoreContainer getCoreContainer() {
     return new MockCoreContainer();
