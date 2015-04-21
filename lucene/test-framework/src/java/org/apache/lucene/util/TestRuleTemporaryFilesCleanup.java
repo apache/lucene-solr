@@ -20,6 +20,7 @@ import org.apache.lucene.mockfile.DisableFsyncFS;
 import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
+import org.apache.lucene.mockfile.ShuffleFS;
 import org.apache.lucene.mockfile.VerboseFS;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
@@ -147,6 +148,13 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       }
     }
     
+    // impacts test reproducibility across platforms.
+    if (random.nextInt(100) > 0) {
+      if (allowed(avoid, ShuffleFS.class)) {
+        fs = new ShuffleFS(fs, random.nextLong()).getFileSystem(null);
+      }
+    }
+    
     // otherwise, wrap with mockfilesystems for additional checks. some 
     // of these have side effects (e.g. concurrency) so it doesn't always happen.
     if (random.nextInt(10) > 0) {
@@ -164,7 +172,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
         }
       }
       if (allowed(avoid, ExtrasFS.class)) {
-        fs = new ExtrasFS(fs, new Random(random.nextLong())).getFileSystem(null);
+        fs = new ExtrasFS(fs, random.nextInt(4) == 0, random.nextBoolean()).getFileSystem(null);
       }
     }
     if (LuceneTestCase.VERBOSE) {

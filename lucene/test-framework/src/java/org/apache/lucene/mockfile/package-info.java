@@ -24,6 +24,8 @@
  *   <li>{@link org.apache.lucene.mockfile.VerboseFS}: Prints destructive filesystem operations to infostream.
  *   <li>{@link org.apache.lucene.mockfile.WindowsFS}: Acts like windows.
  *   <li>{@link org.apache.lucene.mockfile.DisableFsyncFS}: Makes actual fsync calls a no-op.
+ *   <li>{@link org.apache.lucene.mockfile.ExtrasFS}: Adds 'bonus' files to directories.
+ *   <li>{@link org.apache.lucene.mockfile.ShuffleFS}: Directory listings in an unpredictable but deterministic order.
  * </ul>
  */
 package org.apache.lucene.mockfile;
