@@ -134,8 +134,12 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
     double top = Math.min(queryExtent.getMaxY(), target.getMaxY());
     double bottom = Math.max(queryExtent.getMinY(), target.getMinY());
     double height = top - bottom;
-    if (height < 0)
+    if (height < 0) {
+      if (exp != null) {
+        exp.set(Explanation.noMatch("No intersection"));
+      }
       return 0;//no intersection
+    }
 
     // calculate "width": the intersection width between two boxes.
     double width = 0;
@@ -153,6 +157,9 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
               && (Math.abs(b.getMinX()) == 180 || Math.abs(b.getMaxX()) == 180)) {
             width = 0;//both adjacent to dateline
           } else {
+            if (exp != null) {
+              exp.set(Explanation.noMatch("No intersection"));
+            }
             return 0;//no intersection
           }
         } else {//both cross
@@ -174,8 +181,12 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
         if (qryEastLeft < qryEastRight)
           width += qryEastRight - qryEastLeft;
 
-        if (qryWestLeft > qryWestRight && qryEastLeft > qryEastRight)
+        if (qryWestLeft > qryWestRight && qryEastLeft > qryEastRight) {
+          if (exp != null) {
+            exp.set(Explanation.noMatch("No intersection"));
+          }
           return 0;//no intersection
+        }
       }
     }
 

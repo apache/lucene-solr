@@ -72,6 +72,9 @@ public class Explanation {
     this.value = value;
     this.description = Objects.requireNonNull(description);
     this.details = Collections.unmodifiableList(new ArrayList<>(details));
+    for (Explanation detail : details) {
+      Objects.requireNonNull(detail);
+    }
   }
 
   /**
