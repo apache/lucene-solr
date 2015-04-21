@@ -140,6 +140,10 @@ Bug Fixes
 
 * SOLR-7426: SolrConfig#getConfigOverlay does not clean up it's resources. (Mark Miller)
 
+* SOLR-6665: ZkController.publishAndWaitForDownStates can return before all local cores are
+  marked as 'down' if multiple replicas with the same core name exist in the cluster.
+  (shalin)
+
 Optimizations
 ----------------------
 
