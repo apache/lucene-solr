@@ -48,7 +48,7 @@ public class TestSimilarity extends LuceneTestCase {
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
     @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] stats) {
-      return new Explanation(1.0f, "Inexplicable"); 
+      return Explanation.match(1.0f, "Inexplicable"); 
     }
   }
 

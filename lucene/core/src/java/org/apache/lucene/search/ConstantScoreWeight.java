@@ -62,19 +62,13 @@ public abstract class ConstantScoreWeight extends Weight {
     final Scorer s = scorer(context, context.reader().getLiveDocs());
     final boolean exists = (s != null && s.advance(doc) == doc);
 
-    final ComplexExplanation result = new ComplexExplanation();
     if (exists) {
-      result.setDescription(getQuery().toString() + ", product of:");
-      result.setValue(queryWeight);
-      result.setMatch(Boolean.TRUE);
-      result.addDetail(new Explanation(getQuery().getBoost(), "boost"));
-      result.addDetail(new Explanation(queryNorm, "queryNorm"));
+      return Explanation.match(
+          queryWeight, getQuery().toString() + ", product of:",
+          Explanation.match(getQuery().getBoost(), "boost"), Explanation.match(queryNorm, "queryNorm"));
     } else {
-      result.setDescription(getQuery().toString() + " doesn't match id " + doc);
-      result.setValue(0);
-      result.setMatch(Boolean.FALSE);
+      return Explanation.noMatch(getQuery().toString() + " doesn't match id " + doc);
     }
-    return result;
   }
 
   @Override

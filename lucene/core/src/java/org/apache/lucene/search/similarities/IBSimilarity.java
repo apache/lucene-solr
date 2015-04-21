@@ -17,6 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.similarities.Normalization.NoNormalization;
 
@@ -103,16 +105,15 @@ public class IBSimilarity extends SimilarityBase {
 
   @Override
   protected void explain(
-      Explanation expl, BasicStats stats, int doc, float freq, float docLen) {
+      List<Explanation> subs, BasicStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
-      expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
+      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
     }
     Explanation normExpl = normalization.explain(stats, freq, docLen);
     Explanation lambdaExpl = lambda.explain(stats);
-    expl.addDetail(normExpl);
-    expl.addDetail(lambdaExpl);
-    expl.addDetail(distribution.explain(
-        stats, normExpl.getValue(), lambdaExpl.getValue()));
+    subs.add(normExpl);
+    subs.add(lambdaExpl);
+    subs.add(distribution.explain(stats, normExpl.getValue(), lambdaExpl.getValue()));
   }
   
   /**

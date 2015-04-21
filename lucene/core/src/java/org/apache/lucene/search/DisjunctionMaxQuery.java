@@ -184,21 +184,25 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /** Explain the score we computed for doc */
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      if (disjuncts.size() == 1) return weights.get(0).explain(context,doc);
-      ComplexExplanation result = new ComplexExplanation();
+      boolean match = false;
       float max = 0.0f, sum = 0.0f;
-      result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
+      List<Explanation> subs = new ArrayList<>();
       for (Weight wt : weights) {
         Explanation e = wt.explain(context, doc);
         if (e.isMatch()) {
-          result.setMatch(Boolean.TRUE);
-          result.addDetail(e);
+          match = true;
+          subs.add(e);
           sum += e.getValue();
           max = Math.max(max, e.getValue());
         }
       }
-      result.setValue(max + (sum - max) * tieBreakerMultiplier);
-      return result;
+      if (match) {
+        final float score = max + (sum - max) * tieBreakerMultiplier;
+        final String desc = tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:";
+        return Explanation.match(score, desc, subs);
+      } else {
+        return Explanation.noMatch("No matching clause");
+      }
     }
     
   }  // end of DisjunctionMaxWeight inner class

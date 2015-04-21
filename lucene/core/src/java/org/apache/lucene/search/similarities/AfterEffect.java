@@ -56,7 +56,7 @@ public abstract class AfterEffect {
 
     @Override
     public final Explanation explain(BasicStats stats, float tfn) {
-      return new Explanation(1, "no aftereffect");
+      return Explanation.match(1, "no aftereffect");
     }
     
     @Override

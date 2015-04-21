@@ -18,6 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -119,15 +121,12 @@ public final class MatchAllDocsQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) {
-      // explain query weight
-      Explanation queryExpl = new ComplexExplanation
-        (true, queryWeight, "MatchAllDocsQuery, product of:");
+      List<Explanation> subs = new ArrayList<>();
       if (getBoost() != 1.0f) {
-        queryExpl.addDetail(new Explanation(getBoost(),"boost"));
+        subs.add(Explanation.match(getBoost(),"boost"));
       }
-      queryExpl.addDetail(new Explanation(queryNorm,"queryNorm"));
-
-      return queryExpl;
+      subs.add(Explanation.match(queryNorm, "queryNorm"));
+      return Explanation.match(queryWeight, "MatchAllDocsQuery, product of:", subs);
     }
   }
 

@@ -108,10 +108,7 @@ public class FilteredQuery extends Query {
         if (docIdSetIterator.advance(i) == i) {
           return inner;
         } else {
-          Explanation result = new Explanation
-            (0.0f, "failure to match filter: " + f.toString());
-          result.addDetail(inner);
-          return result;
+          return Explanation.noMatch("failure to match filter: " + f.toString(), inner);
         }
       }
 

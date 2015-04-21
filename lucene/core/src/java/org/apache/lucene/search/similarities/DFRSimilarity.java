@@ -17,6 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.similarities.AfterEffect.NoAfterEffect;
 import org.apache.lucene.search.similarities.Normalization.NoNormalization;
@@ -112,17 +114,17 @@ public class DFRSimilarity extends SimilarityBase {
   }
   
   @Override
-  protected void explain(Explanation expl,
+  protected void explain(List<Explanation> subs,
       BasicStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
-      expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
+      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
     }
     
     Explanation normExpl = normalization.explain(stats, freq, docLen);
     float tfn = normExpl.getValue();
-    expl.addDetail(normExpl);
-    expl.addDetail(basicModel.explain(stats, tfn));
-    expl.addDetail(afterEffect.explain(stats, tfn));
+    subs.add(normExpl);
+    subs.add(basicModel.explain(stats, tfn));
+    subs.add(afterEffect.explain(stats, tfn));
   }
 
   @Override

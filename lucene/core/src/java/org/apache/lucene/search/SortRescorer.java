@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -98,23 +99,22 @@ public class SortRescorer extends Rescorer {
     TopDocs hits = rescore(searcher, oneHit, 1);
     assert hits.totalHits == 1;
 
-    // TODO: if we could ask the Sort to explain itself then
-    // we wouldn't need the separate ExpressionRescorer...
-    Explanation result = new Explanation(0.0f, "sort field values for sort=" + sort.toString());
+    List<Explanation> subs = new ArrayList<>();
 
     // Add first pass:
-    Explanation first = new Explanation(firstPassExplanation.getValue(), "first pass score");
-    first.addDetail(firstPassExplanation);
-    result.addDetail(first);
+    Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
+    subs.add(first);
 
     FieldDoc fieldDoc = (FieldDoc) hits.scoreDocs[0];
 
     // Add sort values:
     SortField[] sortFields = sort.getSort();
     for(int i=0;i<sortFields.length;i++) {
-      result.addDetail(new Explanation(0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
+      subs.add(Explanation.match(0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
     }
 
-    return result;
+    // TODO: if we could ask the Sort to explain itself then
+    // we wouldn't need the separate ExpressionRescorer...
+    return Explanation.match(0.0f, "sort field values for sort=" + sort.toString(), subs);
   }
 }

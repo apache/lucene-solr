@@ -18,6 +18,8 @@ package org.apache.lucene.expressions;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +59,7 @@ class ExpressionRescorer extends SortRescorer {
 
   @Override
   public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
-    Explanation result = super.explain(searcher, firstPassExplanation, docID);
+    Explanation superExpl = super.explain(searcher, firstPassExplanation, docID);
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     int subReader = ReaderUtil.subIndex(docID, leaves);
@@ -71,11 +73,12 @@ class ExpressionRescorer extends SortRescorer {
 
     context.put("scorer", fakeScorer);
 
+    List<Explanation> subs = new ArrayList<>(Arrays.asList(superExpl.getDetails()));
     for(String variable : expression.variables) {
-      result.addDetail(new Explanation((float) bindings.getValueSource(variable).getValues(context, readerContext).doubleVal(docIDInSegment),
+      subs.add(Explanation.match((float) bindings.getValueSource(variable).getValues(context, readerContext).doubleVal(docIDInSegment),
                                        "variable \"" + variable + "\""));
     }
 
-    return result;
+    return Explanation.match(superExpl.getValue(), superExpl.getDescription(), subs);
   }
 }

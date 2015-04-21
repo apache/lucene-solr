@@ -24,7 +24,6 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -170,13 +169,10 @@ public class FunctionQuery extends Query {
     public Explanation explain(int doc) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 
-      Explanation result = new ComplexExplanation
-        (true, sc, "FunctionQuery(" + func + "), product of:");
-
-      result.addDetail(vals.explain(doc));
-      result.addDetail(new Explanation(getBoost(), "boost"));
-      result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));
-      return result;
+      return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
+          vals.explain(doc),
+          Explanation.match(getBoost(), "boost"),
+          Explanation.match(weight.queryNorm, "queryNorm"));
     }
 
   }

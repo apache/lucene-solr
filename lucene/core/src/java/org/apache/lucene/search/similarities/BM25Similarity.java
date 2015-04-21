@@ -18,9 +18,11 @@ package org.apache.lucene.search.similarities;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -166,7 +168,7 @@ public class BM25Similarity extends Similarity {
     final long df = termStats.docFreq();
     final long max = collectionStats.maxDoc();
     final float idf = idf(df, max);
-    return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
+    return Explanation.match(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
   /**
@@ -185,16 +187,14 @@ public class BM25Similarity extends Similarity {
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     final long max = collectionStats.maxDoc();
     float idf = 0.0f;
-    final Explanation exp = new Explanation();
-    exp.setDescription("idf(), sum of:");
+    List<Explanation> details = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
       final long df = stat.docFreq();
       final float termIdf = idf(df, max);
-      exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
       idf += termIdf;
     }
-    exp.setValue(idf);
-    return exp;
+    return Explanation.match(idf, "idf(), sum of:", details);
   }
 
   @Override
@@ -292,34 +292,38 @@ public class BM25Similarity extends Similarity {
       this.weight = idf.getValue() * queryBoost * topLevelBoost;
     } 
   }
-  
-  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
-    Explanation result = new Explanation();
-    result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
-    
-    Explanation boostExpl = new Explanation(stats.queryBoost * stats.topLevelBoost, "boost");
-    if (boostExpl.getValue() != 1.0f)
-      result.addDetail(boostExpl);
-    
-    result.addDetail(stats.idf);
 
-    Explanation tfNormExpl = new Explanation();
-    tfNormExpl.setDescription("tfNorm, computed from:");
-    tfNormExpl.addDetail(freq);
-    tfNormExpl.addDetail(new Explanation(k1, "parameter k1"));
+  private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
+    List<Explanation> subs = new ArrayList<>();
+    subs.add(freq);
+    subs.add(Explanation.match(k1, "parameter k1"));
     if (norms == null) {
-      tfNormExpl.addDetail(new Explanation(0, "parameter b (norms omitted for field)"));
-      tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1));
+      subs.add(Explanation.match(0, "parameter b (norms omitted for field)"));
+      return Explanation.match(
+          (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1),
+          "parameter b (norms omitted for field)", subs);
     } else {
       float doclen = decodeNormValue((byte)norms.get(doc));
-      tfNormExpl.addDetail(new Explanation(b, "parameter b"));
-      tfNormExpl.addDetail(new Explanation(stats.avgdl, "avgFieldLength"));
-      tfNormExpl.addDetail(new Explanation(doclen, "fieldLength"));
-      tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)));
+      subs.add(Explanation.match(b, "parameter b"));
+      subs.add(Explanation.match(stats.avgdl, "avgFieldLength"));
+      subs.add(Explanation.match(doclen, "fieldLength"));
+      return Explanation.match(
+          (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
+          "tfNorm, computed from:", subs);
     }
-    result.addDetail(tfNormExpl);
-    result.setValue(boostExpl.getValue() * stats.idf.getValue() * tfNormExpl.getValue());
-    return result;
+  }
+
+  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
+    Explanation boostExpl = Explanation.match(stats.queryBoost * stats.topLevelBoost, "boost");
+    List<Explanation> subs = new ArrayList<>();
+    if (boostExpl.getValue() != 1.0f)
+      subs.add(boostExpl);
+    subs.add(stats.idf);
+    Explanation tfNormExpl = explainTFNorm(doc, freq, stats, norms);
+    subs.add(tfNormExpl);
+    return Explanation.match(
+        boostExpl.getValue() * stats.idf.getValue() * tfNormExpl.getValue(),
+        "score(doc="+doc+",freq="+freq+"), product of:", subs);
   }
 
   @Override

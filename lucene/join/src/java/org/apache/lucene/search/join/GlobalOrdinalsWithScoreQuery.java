@@ -17,13 +17,15 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -34,9 +36,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
-
-import java.io.IOException;
-import java.util.Set;
 
 final class GlobalOrdinalsWithScoreQuery extends Query {
 
@@ -126,10 +125,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
             score = collector.score(segmentOrd);
           }
           BytesRef joinValue = values.lookupOrd(segmentOrd);
-          return new ComplexExplanation(true, score, "Score based on join value " + joinValue.utf8ToString());
+          return Explanation.match(score, "Score based on join value " + joinValue.utf8ToString());
         }
       }
-      return new ComplexExplanation(false, 0.0f, "Not a match");
+      return Explanation.noMatch("Not a match");
     }
 
     @Override

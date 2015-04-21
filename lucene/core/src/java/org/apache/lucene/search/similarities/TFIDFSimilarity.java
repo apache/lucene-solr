@@ -18,9 +18,11 @@ package org.apache.lucene.search.similarities;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -582,7 +584,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     final long df = termStats.docFreq();
     final long max = collectionStats.maxDoc();
     final float idf = idf(df, max);
-    return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
+    return Explanation.match(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
   /**
@@ -601,16 +603,14 @@ public abstract class TFIDFSimilarity extends Similarity {
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     final long max = collectionStats.maxDoc();
     float idf = 0.0f;
-    final Explanation exp = new Explanation();
-    exp.setDescription("idf(), sum of:");
+    List<Explanation> subs = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
       final long df = stat.docFreq();
       final float termIdf = idf(df, max);
-      exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      subs.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
       idf += termIdf;
     }
-    exp.setValue(idf);
-    return exp;
+    return Explanation.match(idf, "idf(), sum of:", subs);
   }
 
   /** Computes a score factor based on a term's document frequency (the number
@@ -764,58 +764,43 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
   }  
 
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
-    Explanation result = new Explanation();
-    result.setDescription("score(doc="+doc+",freq="+freq.getValue()+"), product of:");
+  private Explanation explainQuery(IDFStats stats) {
+    List<Explanation> subs = new ArrayList<>();
 
-    // explain query weight
-    Explanation queryExpl = new Explanation();
-    queryExpl.setDescription("queryWeight, product of:");
-
-    Explanation boostExpl = new Explanation(stats.queryBoost, "boost");
+    Explanation boostExpl = Explanation.match(stats.queryBoost, "boost");
     if (stats.queryBoost != 1.0f)
-      queryExpl.addDetail(boostExpl);
-    queryExpl.addDetail(stats.idf);
+      subs.add(boostExpl);
+    subs.add(stats.idf);
 
-    Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
-    queryExpl.addDetail(queryNormExpl);
+    Explanation queryNormExpl = Explanation.match(stats.queryNorm,"queryNorm");
+    subs.add(queryNormExpl);
 
-    queryExpl.setValue(boostExpl.getValue() *
-                       stats.idf.getValue() *
-                       queryNormExpl.getValue());
+    return Explanation.match(
+        boostExpl.getValue() * stats.idf.getValue() * queryNormExpl.getValue(),
+        "queryWeight, product of:", subs);
+  }
 
-    result.addDetail(queryExpl);
+  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
+    Explanation tfExplanation = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
+    Explanation fieldNormExpl = Explanation.match(
+        norms != null ? decodeNormValue(norms.get(doc)) : 1.0f,
+        "fieldNorm(doc=" + doc + ")");
 
-    // explain field weight
-    Explanation fieldExpl = new Explanation();
-    fieldExpl.setDescription("fieldWeight in "+doc+
-                             ", product of:");
+    return Explanation.match(
+        tfExplanation.getValue() * stats.idf.getValue() * fieldNormExpl.getValue(),
+        "fieldWeight in " + doc + ", product of:",
+        tfExplanation, stats.idf, fieldNormExpl);
+  }
 
-    Explanation tfExplanation = new Explanation();
-    tfExplanation.setValue(tf(freq.getValue()));
-    tfExplanation.setDescription("tf(freq="+freq.getValue()+"), with freq of:");
-    tfExplanation.addDetail(freq);
-    fieldExpl.addDetail(tfExplanation);
-    fieldExpl.addDetail(stats.idf);
-
-    Explanation fieldNormExpl = new Explanation();
-    float fieldNorm = norms != null ? decodeNormValue(norms.get(doc)) : 1.0f;
-    fieldNormExpl.setValue(fieldNorm);
-    fieldNormExpl.setDescription("fieldNorm(doc="+doc+")");
-    fieldExpl.addDetail(fieldNormExpl);
-    
-    fieldExpl.setValue(tfExplanation.getValue() *
-                       stats.idf.getValue() *
-                       fieldNormExpl.getValue());
-
-    result.addDetail(fieldExpl);
-    
-    // combine them
-    result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-
-    if (queryExpl.getValue() == 1.0f)
+  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
+    Explanation queryExpl = explainQuery(stats);
+    Explanation fieldExpl = explainField(doc, freq, stats, norms);
+    if (queryExpl.getValue() == 1f) {
       return fieldExpl;
-
-    return result;
+    }
+    return Explanation.match(
+        queryExpl.getValue() * fieldExpl.getValue(),
+        "score(doc="+doc+",freq="+freq.getValue()+"), product of:",
+        queryExpl, fieldExpl);
   }
 }

@@ -7,7 +7,6 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -135,22 +134,13 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
       ConstantScorer cs = new ConstantScorer(context, this, queryWeight, context.reader().getLiveDocs());
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
 
-      ComplexExplanation result = new ComplexExplanation();
-
       if (exists) {
-        result.setDescription("ConstantScoreQuery(" + filter
-        + "), product of:");
-        result.setValue(queryWeight);
-        result.setMatch(Boolean.TRUE);
-        result.addDetail(new Explanation(getBoost(), "boost"));
-        result.addDetail(new Explanation(queryNorm,"queryNorm"));
+        return Explanation.match(queryWeight, "ConstantScoreQuery(" + filter + "), product of:",
+            Explanation.match(getBoost(), "boost"),
+            Explanation.match(queryNorm,"queryNorm"));
       } else {
-        result.setDescription("ConstantScoreQuery(" + filter
-        + ") doesn't match id " + doc);
-        result.setValue(0);
-        result.setMatch(Boolean.FALSE);
+        return Explanation.noMatch("ConstantScoreQuery(" + filter + ") doesn't match id " + doc);
       }
-      return result;
     }
   }
 

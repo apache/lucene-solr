@@ -18,45 +18,74 @@ package org.apache.lucene.search;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 /** Expert: Describes the score computation for document and query. */
 public class Explanation {
-  private float value;                            // the value of this node
-  private String description;                     // what it represents
-  private ArrayList<Explanation> details;                      // sub-explanations
 
-  public Explanation() {}
-
-  public Explanation(float value, String description) {
-    this.value = value;
-    this.description = description;
+  /**
+   * Create a new explanation for a match.
+   * @param value       the contribution to the score of the document
+   * @param description how {@code value} was computed
+   * @param details     sub explanations that contributed to this explanation
+   */
+  public static Explanation match(float value, String description, Collection<Explanation> details) {
+    return new Explanation(true, value, description, details);
   }
 
   /**
-   * Indicates whether or not this Explanation models a good match.
-   *
-   * <p>
-   * By default, an Explanation represents a "match" if the value is positive.
-   * </p>
-   * @see #getValue
+   * Create a new explanation for a match.
+   * @param value       the contribution to the score of the document
+   * @param description how {@code value} was computed
+   * @param details     sub explanations that contributed to this explanation
    */
-  public boolean isMatch() {
-    return (0.0f < getValue());
+  public static Explanation match(float value, String description, Explanation... details) {
+    return new Explanation(true, value, description, Arrays.asList(details));
   }
 
+  /**
+   * Create a new explanation for a document which does not match.
+   */
+  public static Explanation noMatch(String description, Collection<Explanation> details) {
+    return new Explanation(false, 0f, description, Collections.<Explanation>emptyList());
+  }
 
+  /**
+   * Create a new explanation for a document which does not match.
+   */
+  public static Explanation noMatch(String description, Explanation... details) {
+    return new Explanation(false, 0f, description, Collections.<Explanation>emptyList());
+  }
+
+  private final boolean match;                          // whether the document matched
+  private final float value;                            // the value of this node
+  private final String description;                     // what it represents
+  private final List<Explanation> details;              // sub-explanations
+
+  /** Create a new explanation  */
+  private Explanation(boolean match, float value, String description, Collection<Explanation> details) {
+    this.match = match;
+    this.value = value;
+    this.description = Objects.requireNonNull(description);
+    this.details = Collections.unmodifiableList(new ArrayList<>(details));
+  }
+
+  /**
+   * Indicates whether or not this Explanation models a match.
+   */
+  public boolean isMatch() {
+    return match;
+  }
   
   /** The value assigned to this explanation node. */
   public float getValue() { return value; }
-  /** Sets the value assigned to this explanation node. */
-  public void setValue(float value) { this.value = value; }
 
   /** A description of this explanation node. */
   public String getDescription() { return description; }
-  /** Sets the description of this explanation node. */
-  public void setDescription(String description) {
-    this.description = description;
-  }
 
   /**
    * A short one line summary which should contain all high level
@@ -68,16 +97,7 @@ public class Explanation {
   
   /** The sub-nodes of this explanation node. */
   public Explanation[] getDetails() {
-    if (details == null)
-      return null;
     return details.toArray(new Explanation[0]);
-  }
-
-  /** Adds a sub-node to this explanation node. */
-  public void addDetail(Explanation detail) {
-    if (details == null)
-      details = new ArrayList<>();
-    details.add(detail);
   }
 
   /** Render an explanation as text. */
@@ -94,10 +114,8 @@ public class Explanation {
     buffer.append("\n");
 
     Explanation[] details = getDetails();
-    if (details != null) {
-      for (int i = 0 ; i < details.length; i++) {
-        buffer.append(details[i].toString(depth+1));
-      }
+    for (int i = 0 ; i < details.length; i++) {
+      buffer.append(details[i].toString(depth+1));
     }
 
     return buffer.toString();
@@ -114,10 +132,8 @@ public class Explanation {
     buffer.append("<br />\n");
 
     Explanation[] details = getDetails();
-    if (details != null) {
-      for (int i = 0 ; i < details.length; i++) {
-        buffer.append(details[i].toHtml());
-      }
+    for (int i = 0 ; i < details.length; i++) {
+      buffer.append(details[i].toHtml());
     }
 
     buffer.append("</li>\n");

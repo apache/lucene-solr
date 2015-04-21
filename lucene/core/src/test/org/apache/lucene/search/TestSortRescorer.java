@@ -101,7 +101,7 @@ public class TestSortRescorer extends LuceneTestCase {
 
     // Confirm the explanation breaks out the individual
     // sort fields:
-    assertTrue(expl.contains("= sort field <int: \"popularity\">! value=20"));
+    assertTrue(expl, expl.contains("= sort field <int: \"popularity\">! value=20"));
 
     // Confirm the explanation includes first pass details:
     assertTrue(expl.contains("= first pass score"));

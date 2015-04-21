@@ -39,7 +39,7 @@ public abstract class Distribution {
   /** Explains the score. Returns the name of the model only, since
    * both {@code tfn} and {@code lambda} are explained elsewhere. */
   public Explanation explain(BasicStats stats, float tfn, float lambda) {
-    return new Explanation(
+    return Explanation.match(
         score(stats, tfn, lambda), getClass().getSimpleName());
   }
   

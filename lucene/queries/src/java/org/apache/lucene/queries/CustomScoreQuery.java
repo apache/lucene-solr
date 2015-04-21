@@ -28,7 +28,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
@@ -244,7 +243,7 @@ public class CustomScoreQuery extends Query {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation explain = doExplain(context, doc);
-      return explain == null ? new Explanation(0.0f, "no matching docs") : explain;
+      return explain == null ? Explanation.noMatch("no matching docs") : explain;
     }
     
     private Explanation doExplain(LeafReaderContext info, int doc) throws IOException {
@@ -259,11 +258,9 @@ public class CustomScoreQuery extends Query {
       }
       Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info).customExplain(doc,subQueryExpl,valSrcExpls);
       float sc = queryWeight * customExp.getValue();
-      Explanation res = new ComplexExplanation(
-        true, sc, CustomScoreQuery.this.toString() + ", product of:");
-      res.addDetail(customExp);
-      res.addDetail(new Explanation(queryWeight, "queryWeight"));
-      return res;
+      return Explanation.match(
+        sc, CustomScoreQuery.this.toString() + ", product of:",
+        customExp, Explanation.match(queryWeight, "queryWeight"));
     }
     
   }

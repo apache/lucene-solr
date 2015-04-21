@@ -47,15 +47,11 @@ public abstract class BasicModel {
    * override this method.</p>
    */
   public Explanation explain(BasicStats stats, float tfn) {
-    Explanation result = new Explanation();
-    result.setDescription(getClass().getSimpleName() + ", computed from: ");
-    result.setValue(score(stats, tfn));
-    result.addDetail(new Explanation(tfn, "tfn"));
-    result.addDetail(
-        new Explanation(stats.getNumberOfDocuments(), "numberOfDocuments"));
-    result.addDetail(
-        new Explanation(stats.getTotalTermFreq(), "totalTermFreq"));
-    return result;
+    return Explanation.match(
+        score(stats, tfn),
+        getClass().getSimpleName() + ", computed from: ",
+        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
+        Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"));
   }
   
   /**

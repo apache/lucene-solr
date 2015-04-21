@@ -133,7 +133,7 @@ public abstract class FunctionValues {
   public void strVal(int doc, String [] vals) { throw new UnsupportedOperationException(); }
 
   public Explanation explain(int doc) {
-    return new Explanation(floatVal(doc), toString(doc));
+    return Explanation.match(floatVal(doc), toString(doc));
   }
 
   public ValueSourceScorer getScorer(IndexReader reader) {

@@ -272,7 +272,6 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertTrue(s.contains("first pass score"));
     assertTrue(s.contains("no second pass score"));
     assertFalse(s.contains("= second pass score"));
-    assertTrue(s.contains("NON-MATCH"));
     assertEquals(hits2.scoreDocs[1].score, explain.getValue(), 0.0f);
 
     r.close();

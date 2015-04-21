@@ -18,9 +18,11 @@ package org.apache.lucene.search.similarities;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -83,11 +85,11 @@ public class MultiSimilarity extends Similarity {
 
     @Override
     public Explanation explain(int doc, Explanation freq) {
-      Explanation expl = new Explanation(score(doc, freq.getValue()), "sum of:");
+      List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {
-        expl.addDetail(subScorer.explain(doc, freq));
+        subs.add(subScorer.explain(doc, freq));
       }
-      return expl;
+      return Explanation.match(score(doc, freq.getValue()), "sum of:", subs);
     }
 
     @Override

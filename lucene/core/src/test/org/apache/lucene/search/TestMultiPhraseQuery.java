@@ -337,7 +337,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.setSimilarity(new DefaultSimilarity() { 
       @Override
       public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-        return new Explanation(10f, "just a test");
+        return Explanation.match(10f, "just a test");
       } 
     });
     

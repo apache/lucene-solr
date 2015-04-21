@@ -126,18 +126,16 @@ public class TermQuery extends Query {
         if (newDoc == doc) {
           float freq = scorer.freq();
           SimScorer docScorer = similarity.simScorer(stats, context);
-          ComplexExplanation result = new ComplexExplanation();
-          result.setDescription("weight(" + getQuery() + " in " + doc + ") ["
-              + similarity.getClass().getSimpleName() + "], result of:");
-          Explanation scoreExplanation = docScorer.explain(doc,
-              new Explanation(freq, "termFreq=" + freq));
-          result.addDetail(scoreExplanation);
-          result.setValue(scoreExplanation.getValue());
-          result.setMatch(true);
-          return result;
+          Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
+          Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
+          return Explanation.match(
+              scoreExplanation.getValue(),
+              "weight(" + getQuery() + " in " + doc + ") ["
+                  + similarity.getClass().getSimpleName() + "], result of:",
+              scoreExplanation);
         }
       }
-      return new ComplexExplanation(false, 0.0f, "no matching term");
+      return Explanation.noMatch("no matching term");
     }
   }
   

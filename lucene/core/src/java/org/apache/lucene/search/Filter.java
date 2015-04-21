@@ -95,14 +95,12 @@ public abstract class Filter extends Query {
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         final Scorer scorer = scorer(context, context.reader().getLiveDocs());
         final boolean match = (scorer != null && scorer.advance(doc) == doc);
-        final String desc;
         if (match) {
           assert scorer.score() == 0f;
-          desc = "Match on id " + doc;
+          return Explanation.match(0f, "Match on id " + doc);
         } else {
-          desc = "No match on id " + doc;
+          return Explanation.match(0f, "No match on id " + doc);
         }
-        return new ComplexExplanation(match, 0f, desc);
       }
 
       @Override

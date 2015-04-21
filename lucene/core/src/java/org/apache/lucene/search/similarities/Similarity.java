@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /** 
  * Similarity defines the components of Lucene scoring.
@@ -210,10 +211,10 @@ public abstract class Similarity {
      * @return document's score
      */
     public Explanation explain(int doc, Explanation freq) {
-      Explanation result = new Explanation(score(doc, freq.getValue()), 
-          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:");
-      result.addDetail(freq);
-      return result;
+      return Explanation.match(
+          score(doc, freq.getValue()),
+          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:",
+          Collections.singleton(freq));
     }
   }
   
