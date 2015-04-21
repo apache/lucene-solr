@@ -316,7 +316,8 @@ public class TestLongBitSet extends LuceneTestCase {
     assertTrue(bits.get(1));
     assertFalse(newBits.get(1));
   }
-  
+
+  @Nightly
   public void testHugeCapacity() {
     long moreThanMaxInt = (long)Integer.MAX_VALUE + 5;
     
