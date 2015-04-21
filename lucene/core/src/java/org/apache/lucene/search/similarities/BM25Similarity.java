@@ -301,7 +301,7 @@ public class BM25Similarity extends Similarity {
       subs.add(Explanation.match(0, "parameter b (norms omitted for field)"));
       return Explanation.match(
           (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1),
-          "parameter b (norms omitted for field)", subs);
+          "tfNorm, computed from:", subs);
     } else {
       float doclen = decodeNormValue((byte)norms.get(doc));
       subs.add(Explanation.match(b, "parameter b"));
