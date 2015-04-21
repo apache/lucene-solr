@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
@@ -50,7 +50,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
@@ -63,7 +63,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return TestUtil.nextLong(r, Short.MIN_VALUE, Short.MAX_VALUE);
@@ -76,7 +76,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return TestUtil.nextLong(r, Long.MIN_VALUE, Long.MAX_VALUE);
@@ -89,7 +89,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           int thingToDo = r.nextInt(3);
@@ -107,7 +107,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return r.nextBoolean() ? 20 : 3;
@@ -120,7 +120,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return r.nextBoolean() ? 1000000L : -5000;
@@ -132,7 +132,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   public void testAllZeros() throws Exception {
     int iterations = atLeast(1);
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return 0;
@@ -145,7 +145,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : 0;
@@ -159,7 +159,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : commonValue;
@@ -174,7 +174,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
       final long uncommonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusStoredFields(new LongProducer() {
+      doTestNormsVersusDocValues(new LongProducer() {
         @Override
         long next() {
           return r.nextInt(100) == 0 ? uncommonValue : commonValue;
@@ -195,7 +195,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int j = 0; j < numOtherValues; ++j) {
       otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
     }
-    doTestNormsVersusStoredFields(new LongProducer() {
+    doTestNormsVersusDocValues(new LongProducer() {
       @Override
       long next() {
         return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
@@ -223,7 +223,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         for (int j = 0; j < numOtherValues; ++j) {
           otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
-        doTestNormsVersusStoredFields(new LongProducer() {
+        doTestNormsVersusDocValues(new LongProducer() {
           @Override
           long next() {
             return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
@@ -233,7 +233,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
   
-  private void doTestNormsVersusStoredFields(LongProducer longs) throws Exception {
+  private void doTestNormsVersusDocValues(LongProducer longs) throws Exception {
     int numDocs = atLeast(500);
     long norms[] = new long[numDocs];
     for (int i = 0; i < numDocs; i++) {
@@ -247,14 +247,17 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     Field idField = new StringField("id", "", Field.Store.NO);
-    Field storedField = newTextField("stored", "", Field.Store.YES);
+    Field indexedField = new TextField("indexed", "", Field.Store.NO);
+    Field dvField = new NumericDocValuesField("dv", 0);
     doc.add(idField);
-    doc.add(storedField);
+    doc.add(indexedField);
+    doc.add(dvField);
     
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       long value = norms[i];
-      storedField.setStringValue(Long.toString(value));
+      dvField.setLongValue(value);
+      indexedField.setStringValue(Long.toString(value));
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
         writer.commit();
@@ -262,7 +265,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
     
     // delete some docs
-    int numDeletions = random().nextInt(numDocs/10);
+    int numDeletions = random().nextInt(numDocs/20);
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
@@ -274,10 +277,10 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     DirectoryReader ir = DirectoryReader.open(dir);
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      NumericDocValues docValues = r.getNormValues("stored");
+      NumericDocValues expected = r.getNumericDocValues("dv");
+      NumericDocValues actual = r.getNormValues("indexed");
       for (int i = 0; i < r.maxDoc(); i++) {
-        long storedValue = Long.parseLong(r.document(i).get("stored"));
-        assertEquals("doc " + i, storedValue, docValues.get(i));
+        assertEquals("doc " + i, expected.get(i), actual.get(i));
       }
     }
     ir.close();
@@ -288,10 +291,10 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     ir = DirectoryReader.open(dir);
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      NumericDocValues docValues = r.getNormValues("stored");
+      NumericDocValues expected = r.getNumericDocValues("dv");
+      NumericDocValues actual = r.getNormValues("indexed");
       for (int i = 0; i < r.maxDoc(); i++) {
-        long storedValue = Long.parseLong(r.document(i).get("stored"));
-        assertEquals(storedValue, docValues.get(i));
+        assertEquals("doc " + i, expected.get(i), actual.get(i));
       }
     }
     
@@ -372,7 +375,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   public void testUndeadNorms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(500);
     List<Integer> toDelete = new ArrayList<>();
     for(int i=0;i<numDocs;i++) {
       Document doc = new Document();
