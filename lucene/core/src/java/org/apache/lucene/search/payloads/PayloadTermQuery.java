@@ -23,18 +23,16 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -179,12 +177,13 @@ public class PayloadTermQuery extends SpanTermQuery {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.sloppyFreq();
+          Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           SimScorer docScorer = similarity.simScorer(stats, context);
-          Explanation expl = new Explanation();
-          expl.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
-          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
-          expl.addDetail(scoreExplanation);
-          expl.setValue(scoreExplanation.getValue());
+          Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
+          Explanation expl = Explanation.match(
+              scoreExplanation.getValue(),
+              "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
+              scoreExplanation);
           // now the payloads part
           // QUESTION: Is there a way to avoid this skipTo call? We need to know
           // whether to load the payload or not
@@ -192,25 +191,18 @@ public class PayloadTermQuery extends SpanTermQuery {
           // would be a good idea
           String field = ((SpanQuery)getQuery()).getField();
           Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
-          payloadExpl.setValue(scorer.getPayloadScore());
           // combined
-          ComplexExplanation result = new ComplexExplanation();
           if (includeSpanScore) {
-            result.addDetail(expl);
-            result.addDetail(payloadExpl);
-            result.setValue(expl.getValue() * payloadExpl.getValue());
-            result.setDescription("btq, product of:");
+            return Explanation.match(
+                expl.getValue() * payloadExpl.getValue(),
+                "btq, product of:", expl, payloadExpl);
           } else {
-            result.addDetail(payloadExpl);
-            result.setValue(payloadExpl.getValue());
-            result.setDescription("btq(includeSpanScore=false), result of:");
+            return Explanation.match(payloadExpl.getValue(), "btq(includeSpanScore=false), result of:", payloadExpl);
           }
-          result.setMatch(true); // LUCENE-1303
-          return result;
         }
       }
       
-      return new ComplexExplanation(false, 0.0f, "no matching term");
+      return Explanation.noMatch("no matching term");
     }
   }
 

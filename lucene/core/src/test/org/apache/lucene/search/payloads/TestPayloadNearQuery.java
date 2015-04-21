@@ -341,7 +341,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     // idf used for phrase queries
     @Override 
     public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
-      return new Explanation(1.0f, "Inexplicable");
+      return Explanation.match(1.0f, "Inexplicable");
     }
   }
 }

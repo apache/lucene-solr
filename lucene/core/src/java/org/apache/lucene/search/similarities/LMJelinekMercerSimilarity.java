@@ -17,6 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.search.Explanation;
@@ -58,13 +59,13 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected void explain(Explanation expl, BasicStats stats, int doc,
+  protected void explain(List<Explanation> subs, BasicStats stats, int doc,
       float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
-      expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
+      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
     }
-    expl.addDetail(new Explanation(lambda, "lambda"));
-    super.explain(expl, stats, doc, freq, docLen);
+    subs.add(Explanation.match(lambda, "lambda"));
+    super.explain(subs, stats, doc, freq, docLen);
   }
 
   /** Returns the &lambda; parameter. */

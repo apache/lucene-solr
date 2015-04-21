@@ -347,7 +347,7 @@ public class CheckHits {
     if (expl.getDescription().endsWith("computed from:")) {
       return; // something more complicated.
     }
-    if (detail!=null) {
+    if (detail.length > 0) {
       if (detail.length==1) {
         // simple containment, unless it's a freq of: (which lets a query explain how the freq is calculated), 
         // just verify contained expl has same score

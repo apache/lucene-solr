@@ -31,7 +31,6 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -568,22 +567,13 @@ class JoinQuery extends Query {
       Scorer scorer = scorer(context, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 
-      ComplexExplanation result = new ComplexExplanation();
-
       if (exists) {
-        result.setDescription(this.toString()
-        + " , product of:");
-        result.setValue(queryWeight);
-        result.setMatch(Boolean.TRUE);
-        result.addDetail(new Explanation(getBoost(), "boost"));
-        result.addDetail(new Explanation(queryNorm,"queryNorm"));
+        return Explanation.match(queryWeight, this.toString() + " , product of:",
+            Explanation.match(getBoost(), "boost"),
+            Explanation.match(queryNorm,"queryNorm"));
       } else {
-        result.setDescription(this.toString()
-        + " doesn't match id " + doc);
-        result.setValue(0);
-        result.setMatch(Boolean.FALSE);
+        return Explanation.noMatch(this.toString() + " doesn't match id " + doc);
       }
-      return result;
     }
   }
 

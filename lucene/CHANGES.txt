@@ -123,6 +123,8 @@ API Changes
 * LUCENE-6425: Replaced Query.extractTerms with Weight.extractTerms.
   (Adrien Grand)
 
+* LUCENE-6446: Simplified Explanation API. (Adrien Grand)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 

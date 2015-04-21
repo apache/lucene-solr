@@ -117,19 +117,13 @@ public class ConstantScoreQuery extends Query {
       final Scorer cs = scorer(context, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
-      final ComplexExplanation result = new ComplexExplanation();
       if (exists) {
-        result.setDescription(ConstantScoreQuery.this.toString() + ", product of:");
-        result.setValue(queryWeight);
-        result.setMatch(Boolean.TRUE);
-        result.addDetail(new Explanation(getBoost(), "boost"));
-        result.addDetail(new Explanation(queryNorm, "queryNorm"));
+        return Explanation.match(
+            queryWeight, ConstantScoreQuery.this.toString() + ", product of:",
+            Explanation.match(getBoost(), "boost"), Explanation.match(queryNorm, "queryNorm"));
       } else {
-        result.setDescription(ConstantScoreQuery.this.toString() + " doesn't match id " + doc);
-        result.setValue(0);
-        result.setMatch(Boolean.FALSE);
+        return Explanation.noMatch(ConstantScoreQuery.this.toString() + " doesn't match id " + doc);
       }
-      return result;
     }
   }
 

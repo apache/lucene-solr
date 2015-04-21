@@ -17,11 +17,16 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,12 +38,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Set;
 
 /**
  * This query requires that you index
@@ -190,7 +189,7 @@ public class ToParentBlockJoinQuery extends Query {
       if (scorer != null && scorer.advance(doc) == doc) {
         return scorer.explain(context.docBase);
       }
-      return new ComplexExplanation(false, 0.0f, "Not a match");
+      return Explanation.noMatch("Not a match");
     }
   }
 
@@ -414,8 +413,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(int docBase) throws IOException {
       int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
       int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
-      return new ComplexExplanation(
-          true, score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
+      return Explanation.match(score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
       );
     }
 

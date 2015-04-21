@@ -18,9 +18,11 @@ package org.apache.lucene.search.similarities;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -32,7 +34,7 @@ import org.apache.lucene.util.SmallFloat;
  * A subclass of {@code Similarity} that provides a simplified API for its
  * descendants. Subclasses are only required to implement the {@link #score}
  * and {@link #toString()} methods. Implementing
- * {@link #explain(Explanation, BasicStats, int, float, float)} is optional,
+ * {@link #explain(List, BasicStats, int, float, float)} is optional,
  * inasmuch as SimilarityBase already provides a basic explanation of the score
  * and the term frequency. However, implementers of a subclass are encouraged to
  * include as much detail about the scoring method as possible.
@@ -152,14 +154,14 @@ public abstract class SimilarityBase extends Similarity {
    * clauses to explain details of their scoring formulae.
    * <p>The default implementation does nothing.</p>
    * 
-   * @param expl the explanation to extend with details.
+   * @param subExpls the list of details of the explanation to extend
    * @param stats the corpus level statistics.
    * @param doc the document id.
    * @param freq the term frequency.
    * @param docLen the document length.
    */
   protected void explain(
-      Explanation expl, BasicStats stats, int doc, float freq, float docLen) {}
+      List<Explanation> subExpls, BasicStats stats, int doc, float freq, float docLen) {}
   
   /**
    * Explains the score. The implementation here provides a basic explanation
@@ -168,7 +170,7 @@ public abstract class SimilarityBase extends Similarity {
    * attaches the score (computed via the {@link #score(BasicStats, float, float)}
    * method) and the explanation for the term frequency. Subclasses content with
    * this format may add additional details in
-   * {@link #explain(Explanation, BasicStats, int, float, float)}.
+   * {@link #explain(List, BasicStats, int, float, float)}.
    *  
    * @param stats the corpus level statistics.
    * @param doc the document id.
@@ -178,15 +180,13 @@ public abstract class SimilarityBase extends Similarity {
    */
   protected Explanation explain(
       BasicStats stats, int doc, Explanation freq, float docLen) {
-    Explanation result = new Explanation(); 
-    result.setValue(score(stats, freq.getValue(), docLen));
-    result.setDescription("score(" + getClass().getSimpleName() +
-        ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:");
-    result.addDetail(freq);
+    List<Explanation> subs = new ArrayList<>();
+    explain(subs, stats, doc, freq.getValue(), docLen);
     
-    explain(result, stats, doc, freq.getValue(), docLen);
-    
-    return result;
+    return Explanation.match(
+        score(stats, freq.getValue(), docLen),
+        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
+        subs);
   }
   
   @Override

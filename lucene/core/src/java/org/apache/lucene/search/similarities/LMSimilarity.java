@@ -17,6 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.search.CollectionStatistics;
@@ -69,9 +70,9 @@ public abstract class LMSimilarity extends SimilarityBase {
   }
 
   @Override
-  protected void explain(Explanation expl, BasicStats stats, int doc,
+  protected void explain(List<Explanation> subExpls, BasicStats stats, int doc,
       float freq, float docLen) {
-    expl.addDetail(new Explanation(collectionModel.computeProbability(stats),
+    subExpls.add(Explanation.match(collectionModel.computeProbability(stats),
                                    "collection probability"));
   }
   

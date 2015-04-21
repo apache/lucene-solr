@@ -18,10 +18,14 @@ package org.apache.lucene.spatial.util;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -83,8 +87,9 @@ public class ShapeAreaValueSource extends ValueSource {
       @Override
       public Explanation explain(int doc) {
         Explanation exp = super.explain(doc);
-        exp.addDetail(shapeValues.explain(doc));
-        return exp;
+        List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
+        details.add(shapeValues.explain(doc));
+        return Explanation.match(exp.getValue(), exp.getDescription(), details);
       }
     };
   }

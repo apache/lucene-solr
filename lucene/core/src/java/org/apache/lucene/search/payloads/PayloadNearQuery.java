@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
@@ -161,26 +160,25 @@ public class PayloadNearQuery extends SpanNearQuery {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
+          Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           SimScorer docScorer = similarity.simScorer(stats, context);
-          Explanation expl = new Explanation();
-          expl.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
-          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
-          expl.addDetail(scoreExplanation);
-          expl.setValue(scoreExplanation.getValue());
+          Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
+          Explanation expl = Explanation.match(
+              scoreExplanation.getValue(),
+              "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
+              scoreExplanation);
           String field = ((SpanQuery)getQuery()).getField();
           // now the payloads part
           Explanation payloadExpl = function.explain(doc, field, scorer.payloadsSeen, scorer.payloadScore);
           // combined
-          ComplexExplanation result = new ComplexExplanation();
-          result.addDetail(expl);
-          result.addDetail(payloadExpl);
-          result.setValue(expl.getValue() * payloadExpl.getValue());
-          result.setDescription("PayloadNearQuery, product of:");
-          return result;
+          return Explanation.match(
+              expl.getValue() * payloadExpl.getValue(),
+              "PayloadNearQuery, product of:",
+              expl, payloadExpl);
         }
       }
       
-      return new ComplexExplanation(false, 0.0f, "no matching term");
+      return Explanation.noMatch("no matching term");
     }
   }
 

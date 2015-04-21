@@ -180,12 +180,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
 
         @Override
         public Explanation explain(int doc, Explanation freq) {
-          Explanation boostExplanation = new Explanation(Float.intBitsToFloat((int)values.get(doc)), "indexDocValue(" + boostField + ")");
+          Explanation boostExplanation = Explanation.match(Float.intBitsToFloat((int)values.get(doc)), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
-          Explanation expl = new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
-          expl.addDetail(boostExplanation);
-          expl.addDetail(simExplanation);
-          return expl;
+          return Explanation.match(
+              boostExplanation.getValue() * simExplanation.getValue(),
+              "product of:", boostExplanation, simExplanation);
         }
       };
     }

@@ -17,7 +17,18 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
@@ -33,15 +44,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.Term;
 
 /**
  * Test CustomScoreQuery search.
@@ -94,13 +96,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
         @Override
         public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
-          float valSrcScore = valSrcExpl == null ? 0 : valSrcExpl.getValue();
-          Explanation exp = new Explanation(valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
-          exp.addDetail(subQueryExpl);
+          List<Explanation> subs = new ArrayList<>();
+          subs.add(subQueryExpl);
           if (valSrcExpl != null) {
-            exp.addDetail(valSrcExpl);
+            subs.add(valSrcExpl);
           }
-          return exp;
+          float valSrcScore = valSrcExpl == null ? 0 : valSrcExpl.getValue();
+          return Explanation.match(valSrcScore + subQueryExpl.getValue(), "custom score: sum of:", subs);
         }
       };
     }
@@ -140,17 +142,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
           if (valSrcExpls.length == 0) {
             return subQueryExpl;
           }
-          Explanation exp = new Explanation(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "sum of:");
-          exp.addDetail(subQueryExpl);
-          exp.addDetail(valSrcExpls[0]);
           if (valSrcExpls.length == 1) {
-            exp.setDescription("CustomMulAdd, sum of:");
-            return exp;
+            return Explanation.match(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "CustomMulAdd, sum of:", subQueryExpl, valSrcExpls[0]);
+          } else {
+            Explanation exp = Explanation.match(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "sum of:", subQueryExpl, valSrcExpls[0]);
+            return Explanation.match(valSrcExpls[1].getValue() * exp.getValue(), "custom score: product of:", valSrcExpls[1], exp);
           }
-          Explanation exp2 = new Explanation(valSrcExpls[1].getValue() * exp.getValue(), "custom score: product of:");
-          exp2.addDetail(valSrcExpls[1]);
-          exp2.addDetail(exp);
-          return exp2;
         }
       };
     }

@@ -266,7 +266,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
         @Override
         public Explanation explain(int doc) {
-          return new Explanation(Float.NaN, toString(doc));
+          return Explanation.match(Float.NaN, toString(doc));
         }
 
         @Override

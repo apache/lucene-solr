@@ -35,14 +35,11 @@ public class LambdaDF extends Lambda {
   
   @Override
   public final Explanation explain(BasicStats stats) {
-    Explanation result = new Explanation();
-    result.setDescription(getClass().getSimpleName() + ", computed from: ");
-    result.setValue(lambda(stats));
-    result.addDetail(
-        new Explanation(stats.getDocFreq(), "docFreq"));
-    result.addDetail(
-        new Explanation(stats.getNumberOfDocuments(), "numberOfDocuments"));
-    return result;
+    return Explanation.match(
+        lambda(stats),
+        getClass().getSimpleName() + ", computed from: ",
+        Explanation.match(stats.getDocFreq(), "docFreq"),
+        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"));
   }
   
   @Override

@@ -454,7 +454,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
         @Override
         public Explanation explain(int doc, Explanation freq) {
-          return new Explanation(Float.intBitsToFloat((int) values.get(doc)),
+          return Explanation.match(Float.intBitsToFloat((int) values.get(doc)),
               "indexDocValue(" + scoreValueField + ")");
         }
       };

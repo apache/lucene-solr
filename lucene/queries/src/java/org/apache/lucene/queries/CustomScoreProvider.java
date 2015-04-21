@@ -18,9 +18,11 @@ package org.apache.lucene.queries;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader; // for javadocs
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.search.Explanation;
 
@@ -130,12 +132,13 @@ public class CustomScoreProvider {
     for (Explanation valSrcExpl : valSrcExpls) {
       valSrcScore *= valSrcExpl.getValue();
     }
-    Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
-    exp.addDetail(subQueryExpl);
+    
+    List<Explanation> subs = new ArrayList<>();
+    subs.add(subQueryExpl);
     for (Explanation valSrcExpl : valSrcExpls) {
-      exp.addDetail(valSrcExpl);
+      subs.add(valSrcExpl);
     }
-    return exp;
+    return Explanation.match(valSrcScore * subQueryExpl.getValue(), "custom score: product of:", subs);
   }
   
   /**
@@ -154,10 +157,7 @@ public class CustomScoreProvider {
     if (valSrcExpl != null) {
       valSrcScore *= valSrcExpl.getValue();
     }
-    Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
-    exp.addDetail(subQueryExpl);
-    exp.addDetail(valSrcExpl);
-    return exp;
+    return Explanation.match(valSrcScore * subQueryExpl.getValue(), "custom score: product of:", subQueryExpl, valSrcExpl);
   }
 
 }

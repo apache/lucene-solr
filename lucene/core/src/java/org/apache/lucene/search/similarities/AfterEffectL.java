@@ -35,11 +35,10 @@ public class AfterEffectL extends AfterEffect {
   
   @Override
   public final Explanation explain(BasicStats stats, float tfn) {
-    Explanation result = new Explanation();
-    result.setDescription(getClass().getSimpleName() + ", computed from: ");
-    result.setValue(score(stats, tfn));
-    result.addDetail(new Explanation(tfn, "tfn"));
-    return result;
+    return Explanation.match(
+        score(stats, tfn),
+        getClass().getSimpleName() + ", computed from: ",
+        Explanation.match(tfn, "tfn"));
   }
   
   @Override

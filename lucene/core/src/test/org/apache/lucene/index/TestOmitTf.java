@@ -56,7 +56,7 @@ public class TestOmitTf extends LuceneTestCase {
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
     @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
-      return new Explanation(1.0f, "Inexplicable");
+      return Explanation.match(1.0f, "Inexplicable");
     }
     @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }

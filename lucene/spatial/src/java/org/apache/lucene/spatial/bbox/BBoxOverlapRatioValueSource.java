@@ -16,9 +16,12 @@
  */
 package org.apache.lucene.spatial.bbox;
 
-import com.spatial4j.core.shape.Rectangle;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
+
+import com.spatial4j.core.shape.Rectangle;
 
 /**
  * The algorithm is implemented as envelope on envelope (rect on rect) overlays rather than
@@ -126,7 +129,7 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
   }
 
   @Override
-  protected double score(Rectangle target, Explanation exp) {
+  protected double score(Rectangle target, AtomicReference<Explanation> exp) {
     // calculate "height": the intersection height between two boxes.
     double top = Math.min(queryExtent.getMaxY(), target.getMaxY());
     double bottom = Math.max(queryExtent.getMinY(), target.getMinY());
@@ -211,25 +214,19 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
     double score = queryFactor + targetFactor;
 
     if (exp!=null) {
-      exp.setValue((float)score);
-      exp.setDescription(this.getClass().getSimpleName()+": queryFactor + targetFactor");
-
-      Explanation e;//tmp
-
       String minSideDesc = minSideLength > 0.0 ? " (minSide="+minSideLength+")" : "";
-
-      exp.addDetail( e = new Explanation((float)intersectionArea, "IntersectionArea" + minSideDesc));
-      e.addDetail(new Explanation((float)width,  "width"));
-      e.addDetail(new Explanation((float)height, "height"));
-      e.addDetail(new Explanation((float)queryTargetProportion, "queryTargetProportion"));
-
-      exp.addDetail( e = new Explanation((float)queryFactor, "queryFactor"));
-      e.addDetail(new Explanation((float)queryRatio, "ratio"));
-      e.addDetail(new Explanation((float)queryArea,  "area of " + queryExtent + minSideDesc));
-
-      exp.addDetail( e = new Explanation((float)targetFactor, "targetFactor"));
-      e.addDetail(new Explanation((float)targetRatio, "ratio"));
-      e.addDetail(new Explanation((float)targetArea,  "area of " + target + minSideDesc));
+      exp.set(Explanation.match((float) score,
+          this.getClass().getSimpleName()+": queryFactor + targetFactor",
+          Explanation.match((float)intersectionArea, "IntersectionArea" + minSideDesc,
+              Explanation.match((float)width, "width"),
+              Explanation.match((float)height, "height"),
+              Explanation.match((float)queryTargetProportion, "queryTargetProportion")),
+          Explanation.match((float)queryFactor, "queryFactor",
+              Explanation.match((float)targetRatio, "ratio"),
+              Explanation.match((float)queryArea,  "area of " + queryExtent + minSideDesc)),
+          Explanation.match((float)targetFactor, "targetFactor",
+              Explanation.match((float)targetRatio, "ratio"),
+              Explanation.match((float)targetArea,  "area of " + target + minSideDesc))));
     }
 
     return score;

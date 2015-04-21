@@ -34,7 +34,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -377,19 +376,12 @@ public class TermsQuery extends Query implements Accountable {
         final Scorer s = scorer(context, context.reader().getLiveDocs());
         final boolean exists = (s != null && s.advance(doc) == doc);
 
-        final ComplexExplanation result = new ComplexExplanation();
         if (exists) {
-          result.setDescription(TermsQuery.this.toString() + ", product of:");
-          result.setValue(queryWeight);
-          result.setMatch(Boolean.TRUE);
-          result.addDetail(new Explanation(getBoost(), "boost"));
-          result.addDetail(new Explanation(queryNorm, "queryNorm"));
+          return Explanation.match(queryWeight, TermsQuery.this.toString() + ", product of:",
+              Explanation.match(getBoost(), "boost"), Explanation.match(queryNorm, "queryNorm"));
         } else {
-          result.setDescription(TermsQuery.this.toString() + " doesn't match id " + doc);
-          result.setValue(0);
-          result.setMatch(Boolean.FALSE);
+          return Explanation.noMatch(TermsQuery.this.toString() + " doesn't match id " + doc);
         }
-        return result;
       }
 
       @Override

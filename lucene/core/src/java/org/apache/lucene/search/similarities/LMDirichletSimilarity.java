@@ -17,6 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.search.Explanation;
@@ -70,21 +71,21 @@ public class LMDirichletSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected void explain(Explanation expl, BasicStats stats, int doc,
+  protected void explain(List<Explanation> subs, BasicStats stats, int doc,
       float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
-      expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
+      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
     }
 
-    expl.addDetail(new Explanation(mu, "mu"));
-    Explanation weightExpl = new Explanation();
-    weightExpl.setValue((float)Math.log(1 + freq /
-        (mu * ((LMStats)stats).getCollectionProbability())));
-    weightExpl.setDescription("term weight");
-    expl.addDetail(weightExpl);
-    expl.addDetail(new Explanation(
+    subs.add(Explanation.match(mu, "mu"));
+    Explanation weightExpl = Explanation.match(
+        (float)Math.log(1 + freq /
+        (mu * ((LMStats)stats).getCollectionProbability())),
+        "term weight");
+    subs.add(weightExpl);
+    subs.add(Explanation.match(
         (float)Math.log(mu / (docLen + mu)), "document norm"));
-    super.explain(expl, stats, doc, freq, docLen);
+    super.explain(subs, stats, doc, freq, docLen);
   }
 
   /** Returns the &mu; parameter. */

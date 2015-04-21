@@ -387,7 +387,7 @@ public class SolrPluginUtils {
     Explanation[] details = e.getDetails();
 
     // short circut out
-    if (null == details || 0 == details.length) return out;
+    if (0 == details.length) return out;
 
     List<NamedList<Object>> kids
       = new ArrayList<>(details.length);

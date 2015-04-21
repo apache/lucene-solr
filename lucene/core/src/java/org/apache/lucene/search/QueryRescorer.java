@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import org.apache.lucene.index.LeafReaderContext;
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.
@@ -151,22 +150,16 @@ public abstract class QueryRescorer extends Rescorer {
       score = combine(firstPassExplanation.getValue(), true,  secondPassScore.floatValue());
     }
 
-    Explanation result = new Explanation(score, "combined first and second pass score using " + getClass());
-
-    Explanation first = new Explanation(firstPassExplanation.getValue(), "first pass score");
-    first.addDetail(firstPassExplanation);
-    result.addDetail(first);
+    Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
 
     Explanation second;
     if (secondPassScore == null) {
-      second = new Explanation(0.0f, "no second pass score");
+      second = Explanation.noMatch("no second pass score");
     } else {
-      second = new Explanation(secondPassScore, "second pass score");
+      second = Explanation.match(secondPassScore, "second pass score", secondPassExplanation);
     }
-    second.addDetail(secondPassExplanation);
-    result.addDetail(second);
 
-    return result;
+    return Explanation.match(score, "combined first and second pass score using " + getClass(), first, second);
   }
 
   /** Sugar API, calling {#rescore} using a simple linear
