@@ -611,15 +611,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})',  med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={ 'count':6, " +
-            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0, numwhere:2, med:2.0, perc:[-9.0,2.0,11.0]  }"
+            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0, numwhere:2, unique_num_i:4, unique_num_d:5, unique_date:5, med:2.0, perc:[-9.0,2.0,11.0]  }"
     );
 
     // stats at top level, no matches
     client.testJQ(params(p, "q", "id:DOESNOTEXIST"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})',  med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={count:0 " +
             "/* ,sum1:0.0, sumsq1:0.0, avg1:0.0, min1:'NaN', max1:'NaN', numwhere:0 */ }"

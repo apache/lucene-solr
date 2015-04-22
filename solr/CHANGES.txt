@@ -111,6 +111,9 @@ New Features
 * SOLR-7176: zkcli script can perfrom the CLUSTERPROP command without a running Solr cluster
   (Hrishikesh Gadre, Per Steffensen, Noble Paul)
 
+* SOLR-7417: JSON Facet API - unique() is now implemented for numeric and date fields.
+  (yonik)
+
 
 Bug Fixes
 ----------------------
