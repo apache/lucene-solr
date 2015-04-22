@@ -250,14 +250,12 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
 
     normRoot = normSlashes(root)
 
-    if project == 'solr' and normRoot.endswith('/server/lib'):
-      # Solr's example intentionally ships servlet JAR:
-      continue
-    
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
+          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) \
+              or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')) \
+              or (normRoot.endswith('/server/lib/ext') and file.startswith('javax.servlet')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:

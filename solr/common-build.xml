@@ -74,6 +74,7 @@
   	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
   	<fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
   	<fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/server/lib/ext" includes="javax.servlet-api-*.jar"/>
   	<fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>  	
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
