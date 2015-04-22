@@ -20,6 +20,7 @@ package org.apache.solr.common.cloud;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ByteUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -50,6 +51,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableSet;
 
 public class ZkStateReader implements Closeable {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
@@ -113,6 +117,10 @@ public class ZkStateReader implements Closeable {
 
   private final ZkConfigManager configManager;
 
+  public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
+      LEGACY_CLOUD,
+      URL_SCHEME,
+      AUTO_ADD_REPLICAS)));
 
   //
   // convenience methods... should these go somewhere else?
@@ -765,7 +773,58 @@ public class ZkStateReader implements Closeable {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading cluster properties",e) ;
     }
   }
-  
+
+  /**
+   * This method sets a cluster property.
+   *
+   * @param propertyName  The property name to be set.
+   * @param propertyValue The value of the property.
+   */
+  public void setClusterProperty(String propertyName, String propertyValue) {
+    if (!KNOWN_CLUSTER_PROPS.contains(propertyName)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Not a known cluster property " + propertyName);
+    }
+
+    for (; ; ) {
+      Stat s = new Stat();
+      try {
+        if (getZkClient().exists(CLUSTER_PROPS, true)) {
+          int v = 0;
+          Map properties = (Map) fromJSON(getZkClient().getData(CLUSTER_PROPS, null, s, true));
+          if (propertyValue == null) {
+            //Don't update ZK unless absolutely necessary.
+            if (properties.get(propertyName) != null) {
+              properties.remove(propertyName);
+              getZkClient().setData(CLUSTER_PROPS, toJSON(properties), s.getVersion(), true);
+            }
+          } else {
+            //Don't update ZK unless absolutely necessary.
+            if (!propertyValue.equals(properties.get(propertyName))) {
+              properties.put(propertyName, propertyValue);
+              getZkClient().setData(CLUSTER_PROPS, toJSON(properties), s.getVersion(), true);
+            }
+          }
+        } else {
+          Map properties = new LinkedHashMap();
+          properties.put(propertyName, propertyValue);
+          getZkClient().create(CLUSTER_PROPS, toJSON(properties), CreateMode.PERSISTENT, true);
+        }
+      } catch (KeeperException.BadVersionException bve) {
+        log.warn("Race condition while trying to set a new cluster prop on current version " + s.getVersion());
+        //race condition
+        continue;
+      } catch (KeeperException.NodeExistsException nee) {
+        log.warn("Race condition while trying to set a new cluster prop on current version " + s.getVersion());
+        //race condition
+        continue;
+      } catch (Exception ex) {
+        log.error("Error updating path " + CLUSTER_PROPS, ex);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error updating cluster property " + propertyName, ex);
+      }
+      break;
+    }
+  }
+
   /**
    * Returns the baseURL corresponding to a given node's nodeName --
    * NOTE: does not (currently) imply that the nodeName (or resulting 

@@ -298,6 +298,26 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkClient.close();
   }
 
+  @Test
+  public void testSetClusterProperty() throws Exception {
+    ZkStateReader reader = new ZkStateReader(zkClient);
+    try {
+      // add property urlScheme=http
+      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
+          "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
+      ZkCLI.main(args);
+      assertEquals("http", reader.getClusterProps().get("urlScheme"));
+      
+      // remove it again
+      args = new String[] {"-zkhost", zkServer.getZkAddress(),
+          "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
+      ZkCLI.main(args);
+      assertNull(reader.getClusterProps().get("urlScheme"));
+    } finally {
+      reader.close();
+    }
+  }
+
   @Override
   public void tearDown() throws Exception {
     if (VERBOSE) {

@@ -108,6 +108,9 @@ New Features
     top_authors : { terms : { field:author, limit:5  } }
   (yonik)
 
+* SOLR-7176: zkcli script can perfrom the CLUSTERPROP command without a running Solr cluster
+  (Hrishikesh Gadre, Per Steffensen, Noble Paul)
+
 
 Bug Fixes
 ----------------------
