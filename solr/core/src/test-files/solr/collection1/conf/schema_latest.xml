@@ -229,8 +229,10 @@
    <!-- Type used to index the lat and lon components for the "location" FieldType -->
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" />
 
-   <dynamicField name="*_dt"  type="date"    indexed="true"  stored="true"/>
-   <dynamicField name="*_dts" type="date"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_dt"   type="date"   indexed="true"  stored="true"/>
+   <dynamicField name="*_dts"  type="date"   indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_dtd"  type="date"   indexed="true"  stored="true"                       docValues="true" />
+   <dynamicField name="*_dtds" type="date"   indexed="true"  stored="true" multiValued="true"    docValues="true" />
    <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
 
    <!-- some trie-coded dynamic fields for faster range queries -->
