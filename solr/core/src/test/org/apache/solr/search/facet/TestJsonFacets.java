@@ -258,21 +258,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   public void doStats(Client client, ModifiableSolrParams p) throws Exception {
     // single valued strings
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_s",  "cat_s","cat_s", "where_s","where_s", "num_d","num_d", "num_i","num_i", "super_s","super_s", "val_b","val_b", "sparse_s","sparse_s"    ,"multi_ss","multi_ss") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_s",  "cat_s","cat_s", "where_s","where_s", "num_d","num_d", "num_i","num_i", "super_s","super_s", "val_b","val_b", "date","date_dt", "sparse_s","sparse_s"    ,"multi_ss","multi_ss") );
 
     // multi-valued strings
-    doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_d", "num_i","num_i", "super_s","super_ss", "val_b","val_b", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
+    doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_d", "num_i","num_i", "super_s","super_ss", "val_b","val_b", "date","date_dt", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
 
     // single valued docvalues for strings, and single valued numeric doc values for numeric fields
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
     FacetFieldProcessorDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
     FacetFieldProcessorDV.unwrap_singleValued_multiDv = true;
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
@@ -283,20 +283,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
     String num_d = m.expand("${num_d}");
     String num_i = m.expand("${num_i}");
     String val_b = m.expand("${val_b}");
+    String date = m.expand("${date}");
     String super_s = m.expand("${super_s}");
     String sparse_s = m.expand("${sparse_s}");
     String multi_ss = m.expand("${multi_ss}");
 
     client.deleteByQuery("*:*", null);
 
-    client.add(sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2", super_s, "zodiac", val_b, "true", sparse_s, "one"), null);
-    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", val_b, "false"                , multi_ss,"a", multi_ss,"b" ), null);
+    client.add(sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2",   super_s, "zodiac",  date,"2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one"), null);
+    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" ), null);
     client.add(sdoc("id", "3"), null);
     client.commit();
-    client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   super_s,"spiderman"                               , multi_ss, "b"), null);
-    client.add(sdoc("id", "5", cat_s, "B", where_s, "NJ", num_d, "11", num_i, "7",  super_s,"batman"                   ,sparse_s,"two", multi_ss, "a"), null);
+    client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   super_s,"spiderman", date,"2003-03-03T03:03:03Z"                         , multi_ss, "b"), null);
+    client.add(sdoc("id", "5", cat_s, "B", where_s, "NJ", num_d, "11", num_i, "7",  super_s,"batman"   , date,"2001-02-03T01:02:03Z"          ,sparse_s,"two", multi_ss, "a"), null);
     client.commit();
-    client.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5", num_i, "-5", super_s,"hulk"                                    , multi_ss, "b", multi_ss, "a" ), null);
+    client.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5", num_i, "-5", super_s,"hulk"     , date,"2002-03-01T03:02:01Z"                         , multi_ss, "b", multi_ss, "a" ), null);
     client.commit();
 
 
@@ -555,6 +556,20 @@ public class TestJsonFacets extends SolrTestCaseHS {
             , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5}}"
         )
         , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1}, {val:0.0,count:2}, {val:5.0,count:0} ] } }"
+    );
+
+    // basic range facet on dates
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f:{type:range, field:${date}, start:'2001-01-01T00:00:00Z', end:'2003-01-01T00:00:00Z', gap:'+1YEAR'}}"
+        )
+        , "facets=={count:6, f:{buckets:[ {val:'2001-01-01T00:00:00Z',count:2}, {val:'2002-01-01T00:00:00Z',count:2}] } }"
+    );
+
+    // range facet on dates w/ stats
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f:{type:range, field:${date}, start:'2002-01-01T00:00:00Z', end:'2005-01-01T00:00:00Z', gap:'+1YEAR',   other:all, facet:{ x:'avg(${num_d})' } } }"
+        )
+        , "facets=={count:6, f:{buckets:[ {val:'2002-01-01T00:00:00Z',count:2,x:-7.0}, {val:'2003-01-01T00:00:00Z',count:1,x:2.0}, {val:'2004-01-01T00:00:00Z',count:0}], before:{count:2,x:7.5}, after:{count:0}, between:{count:3,x:-4.0}  } }"
     );
 
     // basic range facet with "include" params

@@ -147,6 +147,9 @@ Bug Fixes
 * SOLR-7418: Check and raise a SolrException instead of an NPE when an invalid doc id is sent
    to the MLTQParser. (Anshum Gupta)
 
+* SOLR-7443: Implemented range faceting over date fields in the new facet module
+  (JSON Facet API).  (yonik)
+
 Optimizations
 ----------------------
 

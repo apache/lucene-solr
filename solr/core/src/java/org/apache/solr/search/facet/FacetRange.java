@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -28,7 +29,9 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequest {
   String field;
@@ -92,6 +95,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           break;
         case LONG:
           calc = new LongRangeEndpointCalculator(sf);
+          break;
+        case DATE:
+          calc = new DateRangeEndpointCalculator(sf, null);
           break;
         default:
           throw new SolrException
@@ -371,4 +377,37 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return new Long(value.longValue() + Long.valueOf(gap).longValue());
     }
   }
+  private static class DateRangeEndpointCalculator
+      extends RangeEndpointCalculator<Date> {
+    private static final String TYPE_ERR_MSG = "SchemaField must use field type extending TrieDateField or DateRangeField";
+    private final Date now;
+    public DateRangeEndpointCalculator(final SchemaField f,
+                                       final Date now) {
+      super(f);
+      this.now = now;
+      if (! (field.getType() instanceof TrieDateField) ) {
+        throw new IllegalArgumentException
+            (TYPE_ERR_MSG);
+      }
+    }
+    @Override
+    public String formatValue(Date val) {
+      return ((TrieDateField)field.getType()).toExternal(val);
+    }
+    @Override
+    protected Date parseVal(String rawval) {
+      return ((TrieDateField)field.getType()).parseMath(now, rawval);
+    }
+    @Override
+    protected Object parseGap(final String rawval) {
+      return rawval;
+    }
+    @Override
+    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+      final DateMathParser dmp = new DateMathParser();
+      dmp.setNow(value);
+      return dmp.parseMath(gap);
+    }
+  }
+
 }
