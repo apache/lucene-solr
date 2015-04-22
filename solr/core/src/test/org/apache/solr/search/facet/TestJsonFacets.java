@@ -264,15 +264,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_d", "num_i","num_i", "super_s","super_ss", "val_b","val_b", "date","date_dt", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
 
     // single valued docvalues for strings, and single valued numeric doc values for numeric fields
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "date","date_dtd", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
     FacetFieldProcessorDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
     FacetFieldProcessorDV.unwrap_singleValued_multiDv = true;
-    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dt", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
+    doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
