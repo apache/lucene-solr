@@ -70,6 +70,9 @@ New Features
 * LUCENE-6389: Added ScoreMode.Min that aggregates the lowest child score
   to the parent hit. (Martijn van Groningen, Adrien Grand)
 
+* LUCENE-6423: New LimitTokenOffsetFilter that limits tokens to those before
+  a configured maximum start offset. (David Smiley)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if
