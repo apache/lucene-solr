@@ -165,6 +165,9 @@ Bug Fixes
 * SOLR-7408: Listeners set by SolrCores on config directories in ZK could be removed if collections
   are created/deleted in paralle against the same config set. (Shai Erera, Anshum Gupta)
 
+* SOLR-7450: Fix edge case which could cause `bin/solr stop` to hang forever
+  (Ramkumar Aiyengar)
+
 Optimizations
 ----------------------
 
