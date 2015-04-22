@@ -114,3 +114,12 @@ can safely assume that they will be collected in order.
 ## Renamed "Atomic" to "Leaf" for segment readers (LUCENE-5569)
 
 AtomicReader and AtomicReaderContext are now called LeafReader and LeafReaderContext, respectively.
+
+## Removed custom Analyzer per-document indexing APIs from IndexWriter (LUCENE-6212)
+
+These methods were removed because they are dangerous since they let
+you analyze each document arbitrarily differently, making it difficult
+to properly analyze text at query time and easy to accidentally "lose"
+search hits.  Instead, you should break out text into separate fields
+and use a different analyzer for each field with
+PerFieldAnalyzerWrapper.
