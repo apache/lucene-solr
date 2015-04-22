@@ -86,6 +86,9 @@ Optimizations
 * LUCENE-6421: Defer reading of positions in MultiPhraseQuery until
   they are needed. (Robert Muir)
 
+* LUCENE-6392: Highligher- reduce memory of tokens in
+  TokenStreamFromTermVector, and add maxStartOffset limit. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
