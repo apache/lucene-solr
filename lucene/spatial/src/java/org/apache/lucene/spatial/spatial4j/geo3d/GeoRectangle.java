@@ -39,7 +39,12 @@ public class GeoRectangle extends GeoBBoxBase
     public final SidedPlane bottomPlane;
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
-      
+    
+    public final GeoPoint[] topPlanePoints;
+    public final GeoPoint[] bottomPlanePoints;
+    public final GeoPoint[] leftPlanePoints;
+    public final GeoPoint[] rightPlanePoints;
+    
     public final GeoPoint centerPoint;
 
     public final GeoPoint[] edgePoints;
@@ -103,6 +108,11 @@ public class GeoRectangle extends GeoBBoxBase
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
+        this.topPlanePoints = new GeoPoint[]{ULHC,URHC};
+        this.bottomPlanePoints = new GeoPoint[]{LLHC,LRHC};
+        this.leftPlanePoints = new GeoPoint[]{ULHC,LLHC};
+        this.rightPlanePoints = new GeoPoint[]{URHC,LRHC};
+        
         this.edgePoints = new GeoPoint[]{ULHC};
     }
 
@@ -161,12 +171,12 @@ public class GeoRectangle extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(topPlane,bounds,bottomPlane,leftPlane,rightPlane) ||
-          p.intersects(bottomPlane,bounds,topPlane,leftPlane,rightPlane) ||
-          p.intersects(leftPlane,bounds,rightPlane,topPlane,bottomPlane) ||
-          p.intersects(rightPlane,bounds,leftPlane,topPlane,bottomPlane);
+        return p.intersects(topPlane,notablePoints,topPlanePoints,bounds,bottomPlane,leftPlane,rightPlane) ||
+          p.intersects(bottomPlane,notablePoints,bottomPlanePoints,bounds,topPlane,leftPlane,rightPlane) ||
+          p.intersects(leftPlane,notablePoints,leftPlanePoints,bounds,rightPlane,topPlane,bottomPlane) ||
+          p.intersects(rightPlane,notablePoints,rightPlanePoints,bounds,leftPlane,topPlane,bottomPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -188,27 +198,40 @@ public class GeoRectangle extends GeoBBoxBase
 
     @Override
     public int getRelationship(final GeoShape path) {
+        //System.err.println(this+" getrelationship with "+path);
         final int insideRectangle = isShapeInsideBBox(path);
         if (insideRectangle == SOME_INSIDE)
+        {
+            //System.err.println(" some inside");
             return OVERLAPS;
+        }
 
         final boolean insideShape = path.isWithin(ULHC);
-        
-        if (insideRectangle == ALL_INSIDE && insideShape)
-            return OVERLAPS;
 
-        if (path.intersects(topPlane,bottomPlane,leftPlane,rightPlane) ||
-            path.intersects(bottomPlane,topPlane,leftPlane,rightPlane) ||
-            path.intersects(leftPlane,topPlane,bottomPlane,rightPlane) ||
-            path.intersects(rightPlane,leftPlane,topPlane,bottomPlane))
+        if (insideRectangle == ALL_INSIDE && insideShape) {
+            //System.err.println(" inside of each other");
             return OVERLAPS;
+        }
+
+        if (path.intersects(topPlane,topPlanePoints,bottomPlane,leftPlane,rightPlane) ||
+            path.intersects(bottomPlane,bottomPlanePoints,topPlane,leftPlane,rightPlane) ||
+            path.intersects(leftPlane,leftPlanePoints,topPlane,bottomPlane,rightPlane) ||
+            path.intersects(rightPlane,rightPlanePoints,leftPlane,topPlane,bottomPlane)) {
+            //System.err.println(" edges intersect");
+            return OVERLAPS;
+        }
 
         if (insideRectangle == ALL_INSIDE)
+        {
+            //System.err.println(" shape inside rectangle");
             return WITHIN;
+        }
     
-        if (insideShape)
+        if (insideShape) {
+            //System.err.println(" shape contains rectangle");
             return CONTAINS;
-        
+        }
+        //System.err.println(" disjoint");
         return DISJOINT;
     }
 

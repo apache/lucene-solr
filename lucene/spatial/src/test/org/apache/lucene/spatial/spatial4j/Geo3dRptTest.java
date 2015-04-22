@@ -21,12 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -34,7 +32,6 @@ import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
@@ -80,40 +77,12 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  //@Repeat(iterations = 2000)
-  @Seed("B808B88D6F8E285C")
+  @Repeat(iterations = 2000)
+  //@Seed("B808B88D6F8E285C")
   public void testOperations() throws IOException {
     setupStrategy();
 
     testOperationRandomShapes(SpatialOperation.Intersects);
-  }
-
-  @Test
-  public void testBigCircleFailure() throws IOException {
-    Rectangle rect = ctx.makeRectangle(-162, 89, -46, 38);
-    GeoCircle rawShape = new GeoCircle(-9 * DEGREES_TO_RADIANS, 134 * DEGREES_TO_RADIANS, 159 * DEGREES_TO_RADIANS);
-    Shape shape = new Geo3dShape(rawShape, ctx);
-    assertTrue(rect.relate(shape).intersects() == false);     //DWS: unsure if this is correct or not but passes
-    //since they don't intersect, then the following cell rect can't be WITHIN the circle
-    final Rectangle cellRect = ctx.makeRectangle(-11.25, 0, 0, 5.625);
-    assert cellRect.relate(rect).intersects();
-    assertTrue(cellRect.relate(shape) != SpatialRelation.WITHIN);
-  }
-
-  @Test
-  public void testWideRectFailure() throws IOException {
-    Rectangle rect = ctx.makeRectangle(-29, 9, 16, 25);
-    final GeoBBox geoBBox = GeoBBoxFactory.makeGeoBBox(
-        74 * DEGREES_TO_RADIANS, -31 * DEGREES_TO_RADIANS, -29 * DEGREES_TO_RADIANS, -45 * DEGREES_TO_RADIANS);
-    Shape shape = new Geo3dShape(geoBBox, ctx);
-    //Rect(minX=-22.5,maxX=-11.25,minY=11.25,maxY=16.875)
-    //since they don't intersect, then the following cell rect can't be WITHIN the geo3d shape
-    final Rectangle cellRect = ctx.makeRectangle(-22.5, -11.25, 11.25, 16.875);
-    assert cellRect.relate(rect).intersects();
-    assertTrue(rect.relate(shape).intersects() == false);
-    assertTrue(cellRect.relate(shape) != SpatialRelation.WITHIN);
-//    setupStrategy();
-//    testOperation(rect, SpatialOperation.Intersects, shape, false);
   }
 
   private Shape makeTriangle(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -159,7 +128,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     case 1: {
         // Circles
         while (true) {
-          final int circleRadius = random().nextInt(180);
+          final int circleRadius = random().nextInt(179) + 1;
           final Point point = randomPoint();
           try {
             final GeoShape shape = new GeoCircle(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
@@ -188,6 +157,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
               lrhcPoint.getY() * DEGREES_TO_RADIANS,
               ulhcPoint.getX() * DEGREES_TO_RADIANS,
               lrhcPoint.getX() * DEGREES_TO_RADIANS);
+            //System.err.println("Trial rectangle shape: "+shape);
             return new Geo3dShape(shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where

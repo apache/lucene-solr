@@ -29,9 +29,11 @@ public class GeoLongitudeSlice extends GeoBBoxBase
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
       
+    public final static GeoPoint[] planePoints = new GeoPoint[]{NORTH_POLE,SOUTH_POLE};
+    
     public final GeoPoint centerPoint;
-    public final GeoPoint northPole = new GeoPoint(0.0,0.0,1.0);
-    public final GeoPoint[] edgePoints = new GeoPoint[]{northPole};
+
+    public final static GeoPoint[] edgePoints = new GeoPoint[]{NORTH_POLE};
     
     /** Accepts only values in the following ranges: lon: {@code -PI -> PI} */
     public GeoLongitudeSlice(final double leftLon, double rightLon)
@@ -115,10 +117,10 @@ public class GeoLongitudeSlice extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(leftPlane,bounds,rightPlane) ||
-          p.intersects(rightPlane,bounds,leftPlane);
+        return p.intersects(leftPlane,notablePoints,planePoints,bounds,rightPlane) ||
+          p.intersects(rightPlane,notablePoints,planePoints,bounds,leftPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -144,13 +146,13 @@ public class GeoLongitudeSlice extends GeoBBoxBase
         if (insideRectangle == SOME_INSIDE)
             return OVERLAPS;
 
-        final boolean insideShape = path.isWithin(northPole);
+        final boolean insideShape = path.isWithin(NORTH_POLE);
         
         if (insideRectangle == ALL_INSIDE && insideShape)
             return OVERLAPS;
 
-        if (path.intersects(leftPlane,rightPlane) ||
-            path.intersects(rightPlane,leftPlane)) {
+        if (path.intersects(leftPlane,planePoints,rightPlane) ||
+            path.intersects(rightPlane,planePoints,leftPlane)) {
             return OVERLAPS;
         }
 

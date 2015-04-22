@@ -67,6 +67,20 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
           if (ps.isDegenerate())
               return;
           segments.add(ps);
+        } else {
+            // First point.  We compute the basic set of edgepoints here because we've got the lat and lon available.
+            // Move from center only in latitude.  Then, if we go past the north pole, adjust the longitude also.
+            double newLat = lat + cutoffAngle;
+            double newLon = lon;
+            if (newLat > Math.PI * 0.5) {
+                newLat = Math.PI - newLat;
+                newLon += Math.PI;
+            }
+            while (newLon > Math.PI) {
+                newLon -= Math.PI * 2.0;
+            }
+            final GeoPoint edgePoint = new GeoPoint(newLat,newLon);
+            this.edgePoints = new GeoPoint[]{edgePoint};
         }
         final SegmentEndpoint se = new SegmentEndpoint(end, originDistance, cutoffOffset, cutoffAngle, chordDistance);
         points.add(se);
@@ -77,8 +91,24 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             throw new IllegalArgumentException("Path must have at least one point");
         if (segments.size() > 0) {
             edgePoints = new GeoPoint[]{points.get(0).circlePlane.getSampleIntersectionPoint(segments.get(0).invertedStartCutoffPlane)};
-        } else {
-            edgePoints = new GeoPoint[]{points.get(0).point.getSamplePoint(cutoffOffset,originDistance)};
+        }
+        for (int i = 0; i < points.size(); i++) {
+            final SegmentEndpoint pathPoint = points.get(i);
+            Membership previousEndBound = null;
+            GeoPoint[] previousEndNotablePoints = null;
+            Membership nextStartBound = null;
+            GeoPoint[] nextStartNotablePoints = null;
+            if (i > 0) {
+                final PathSegment previousSegment = segments.get(i-1);
+                previousEndBound = previousSegment.invertedEndCutoffPlane;
+                previousEndNotablePoints = previousSegment.endCutoffPlanePoints;
+            }
+            if (i < segments.size()) {
+                final PathSegment nextSegment = segments.get(i);
+                nextStartBound = nextSegment.invertedStartCutoffPlane;
+                nextStartNotablePoints = nextSegment.startCutoffPlanePoints;
+            }
+            pathPoint.setCutoffPlanes(previousEndNotablePoints,previousEndBound,nextStartNotablePoints,nextStartBound);
         }
     }
     
@@ -267,7 +297,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
     }
       
     @Override
-    public boolean intersects(final Plane plane, final Membership... bounds)
+    public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds)
     {
         // We look for an intersection with any of the exterior edges of the path.
         // We also have to look for intersections with the cones described by the endpoints.
@@ -279,21 +309,14 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
         // Well, sort of.  We can detect intersections also due to overlap of segments with each other.
         // But that's an edge case and we won't be optimizing for it.
         
-        for (int i = 0; i < points.size(); i++) {
-            final SegmentEndpoint pathPoint = points.get(i);
-            Membership previousEndBound = null;
-            Membership nextStartBound = null;
-            if (i > 0)
-                previousEndBound = segments.get(i-1).invertedEndCutoffPlane;
-            if (i < segments.size())
-                nextStartBound = segments.get(i).invertedStartCutoffPlane;
-            if (pathPoint.intersects(plane, bounds, previousEndBound, nextStartBound)) {
+        for (final SegmentEndpoint pathPoint : points) {
+            if (pathPoint.intersects(plane, notablePoints, bounds)) {
                 return true;
             }
         }
 
-        for (PathSegment pathSegment : segments) {
-            if (pathSegment.intersects(plane, bounds)) {
+        for (final PathSegment pathSegment : segments) {
+            if (pathSegment.intersects(plane, notablePoints, bounds)) {
                 return true;
             }
         }
@@ -363,7 +386,11 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
         public final double cutoffNormalDistance;
         public final double cutoffAngle;
         public final double chordDistance;
-
+        public Membership[] cutoffPlanes = null;
+        public GeoPoint[] notablePoints = null;
+        
+        public final static GeoPoint[] circlePoints = new GeoPoint[0];
+        
         public SegmentEndpoint(final GeoPoint point, final double originDistance, final double cutoffOffset, final double cutoffAngle, final double chordDistance)
         {
             this.point = point;
@@ -373,6 +400,30 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             this.circlePlane = new SidedPlane(point, point, -originDistance);
         }
       
+        public void setCutoffPlanes(final GeoPoint[] previousEndNotablePoints, final Membership previousEndPlane,
+            final GeoPoint[] nextStartNotablePoints, final Membership nextStartPlane) {
+            if (previousEndNotablePoints == null && nextStartNotablePoints == null) {
+                cutoffPlanes = new Membership[0];
+                notablePoints = new GeoPoint[0];
+            } else if (previousEndNotablePoints != null && nextStartNotablePoints == null) {
+                cutoffPlanes = new Membership[]{previousEndPlane};
+                notablePoints = previousEndNotablePoints;
+            } else if (previousEndNotablePoints == null && nextStartNotablePoints != null) {
+                cutoffPlanes = new Membership[]{nextStartPlane};
+                notablePoints = nextStartNotablePoints;
+            } else {
+                cutoffPlanes = new Membership[]{previousEndPlane,nextStartPlane};
+                notablePoints = new GeoPoint[previousEndNotablePoints.length + nextStartNotablePoints.length];
+                int i = 0;
+                for (GeoPoint p : previousEndNotablePoints) {
+                    notablePoints[i++] = p;
+                }
+                for (GeoPoint p : nextStartNotablePoints) {
+                    notablePoints[i++] = p;
+                }
+            }
+        }
+        
         public boolean isWithin(final Vector point)
         {
             return circlePlane.isWithin(point);
@@ -407,9 +458,9 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             return dist;
         }
         
-        public boolean intersects(final Plane p, final Membership[] bounds, final Membership previousEndCutoff, final Membership nextStartCutoff)
+        public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds)
         {
-            return circlePlane.intersects(p, bounds, previousEndCutoff, nextStartCutoff);
+            return circlePlane.intersects(p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
         }
 
         public void getBounds(Bounds bounds)
@@ -450,6 +501,10 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
         public final SidedPlane lowerConnectingPlane;
         public final SidedPlane startCutoffPlane;
         public final SidedPlane endCutoffPlane;
+        public final GeoPoint[] upperConnectingPlanePoints;
+        public final GeoPoint[] lowerConnectingPlanePoints;
+        public final GeoPoint[] startCutoffPlanePoints;
+        public final GeoPoint[] endCutoffPlanePoints;
         public final double planeBoundingOffset;
         public final double arcWidth;
         public final double chordDistance;
@@ -475,6 +530,10 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
                 lowerConnectingPlane = null;
                 startCutoffPlane = null;
                 endCutoffPlane = null;
+                upperConnectingPlanePoints = null;
+                lowerConnectingPlanePoints = null;
+                startCutoffPlanePoints = null;
+                endCutoffPlanePoints = null;
                 invertedStartCutoffPlane = null;
                 invertedEndCutoffPlane = null;
             } else {
@@ -484,6 +543,18 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
                 // Cutoff planes use opposite endpoints as correct side examples
                 startCutoffPlane = new SidedPlane(end,normalizedConnectingPlane,start);
                 endCutoffPlane = new SidedPlane(start,normalizedConnectingPlane,end);
+                final Membership[] upperSide = new Membership[]{upperConnectingPlane};
+                final Membership[] lowerSide = new Membership[]{lowerConnectingPlane};
+                final Membership[] startSide = new Membership[]{startCutoffPlane};
+                final Membership[] endSide = new Membership[]{endCutoffPlane};
+                final GeoPoint ULHC = upperConnectingPlane.findIntersections(startCutoffPlane,lowerSide,endSide)[0];
+                final GeoPoint URHC = upperConnectingPlane.findIntersections(endCutoffPlane,lowerSide,startSide)[0];
+                final GeoPoint LLHC = lowerConnectingPlane.findIntersections(startCutoffPlane,upperSide,endSide)[0];
+                final GeoPoint LRHC = lowerConnectingPlane.findIntersections(endCutoffPlane,upperSide,startSide)[0];
+                upperConnectingPlanePoints = new GeoPoint[]{ULHC,URHC};
+                lowerConnectingPlanePoints = new GeoPoint[]{LLHC,LRHC};
+                startCutoffPlanePoints = new GeoPoint[]{ULHC,LLHC};
+                endCutoffPlanePoints = new GeoPoint[]{URHC,LRHC};
                 invertedStartCutoffPlane = new SidedPlane(startCutoffPlane);
                 invertedEndCutoffPlane = new SidedPlane(endCutoffPlane);
             }
@@ -535,7 +606,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             final double perpZ = normalizedConnectingPlane.x * point.y - normalizedConnectingPlane.y * point.x;
 
             // If we have a degenerate line, then just compute the normal distance from point x to the start
-            if (perpX < 1e-10 && perpY < 1e-10 && perpZ < 1e-10)
+            if (Math.abs(perpX) < Vector.MINIMUM_RESOLUTION && Math.abs(perpY) < Vector.MINIMUM_RESOLUTION && Math.abs(perpZ) < Vector.MINIMUM_RESOLUTION)
               return point.normalDistance(start);
 
             final double normFactor = 1.0 / Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
@@ -556,7 +627,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             final double perpZ = normalizedConnectingPlane.x * point.y - normalizedConnectingPlane.y * point.x;
 
             // If we have a degenerate line, then just compute the normal distance from point x to the start
-            if (Math.abs(perpX) < 1e-10 && Math.abs(perpY) < 1e-10 && Math.abs(perpZ) < 1e-10)
+            if (Math.abs(perpX) < Vector.MINIMUM_RESOLUTION && Math.abs(perpY) < Vector.MINIMUM_RESOLUTION && Math.abs(perpZ) < Vector.MINIMUM_RESOLUTION)
                 return point.linearDistance(start);
 
             // Next, we need the vector of the line, which is the cross product of the normalized connecting plane
@@ -584,10 +655,10 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             return point.linearDistance(normLineX,normLineY,normLineZ) + start.linearDistance(normLineX,normLineY,normLineZ);
         }
         
-        public boolean intersects(final Plane p, final Membership[] bounds)
+        public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds)
         {
-            return upperConnectingPlane.intersects(p, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
-                lowerConnectingPlane.intersects(p, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+            return upperConnectingPlane.intersects(p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
+                lowerConnectingPlane.intersects(p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
         }
 
         public void getBounds(Bounds bounds)

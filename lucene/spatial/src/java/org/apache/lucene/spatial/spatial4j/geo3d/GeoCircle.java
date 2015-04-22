@@ -27,6 +27,7 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     public final double cutoffLinearDistance;
     public final SidedPlane circlePlane;
     public final GeoPoint[] edgePoints;
+    public static final GeoPoint[] circlePoints = new GeoPoint[0];
     
     public GeoCircle(final double lat, final double lon, final double cutoffAngle)
     {
@@ -35,7 +36,7 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
             throw new IllegalArgumentException("Latitude out of bounds");
         if (lon < -Math.PI || lon > Math.PI)
             throw new IllegalArgumentException("Longitude out of bounds");
-        if (cutoffAngle < 0.0 || cutoffAngle > Math.PI)
+        if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI)
             throw new IllegalArgumentException("Cutoff angle out of bounds");
         final double sinAngle = Math.sin(cutoffAngle);
         final double cosAngle = Math.cos(cutoffAngle);
@@ -47,9 +48,25 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
         this.cutoffAngle = cutoffAngle;
         this.circlePlane = new SidedPlane(center, center, -cosAngle);
         
-        // Compute a point on the circle boundary.  This can be any point that is easy to compute.
-        // This requires some math, so I've implemented it in Plane.
-        this.edgePoints = new GeoPoint[]{center.getSamplePoint(sinAngle,cosAngle)};
+        // Compute a point on the circle boundary. 
+        if (cutoffAngle == Math.PI)
+            this.edgePoints = new GeoPoint[0];
+        else {
+            // Move from center only in latitude.  Then, if we go past the north pole, adjust the longitude also.
+            double newLat = lat + cutoffAngle;
+            double newLon = lon;
+            if (newLat > Math.PI * 0.5) {
+                newLat = Math.PI - newLat;
+                newLon += Math.PI;
+            }
+            while (newLon > Math.PI) {
+                newLon -= Math.PI * 2.0;
+            }
+            final GeoPoint edgePoint = new GeoPoint(newLat,newLon);
+            //if (Math.abs(circlePlane.evaluate(edgePoint)) > 1e-10)
+            //    throw new RuntimeException("Computed an edge point that does not satisfy circlePlane equation! "+circlePlane.evaluate(edgePoint));
+            this.edgePoints = new GeoPoint[]{edgePoint};
+        }
     }
     
     @Override
@@ -170,8 +187,6 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     @Override
     public boolean isWithin(final Vector point)
     {
-        if (point == null)
-            return false;
         // Fastest way of determining membership
         return circlePlane.isWithin(point);
     }
@@ -190,9 +205,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return circlePlane.intersects(p, bounds);
+        return circlePlane.intersects(p, notablePoints, circlePoints, bounds);
     }
 
     /** Compute longitude/latitude bounds for the shape.

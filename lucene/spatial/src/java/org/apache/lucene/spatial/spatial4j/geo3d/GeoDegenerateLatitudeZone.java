@@ -28,6 +28,7 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase
     public final Plane plane;
     public final GeoPoint interiorPoint;
     public final GeoPoint[] edgePoints;
+    public final static GeoPoint[] planePoints = new GeoPoint[0];
     
     public GeoDegenerateLatitudeZone(final double latitude)
     {
@@ -36,7 +37,6 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase
         this.sinLatitude = Math.sin(latitude);
         double cosLatitude = Math.cos(latitude);
         this.plane = new Plane(sinLatitude);
-
         // Compute an interior point.  
         interiorPoint = new GeoPoint(cosLatitude,0.0,sinLatitude);
         edgePoints = new GeoPoint[]{interiorPoint};
@@ -53,13 +53,13 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase
     @Override
     public boolean isWithin(final Vector point)
     {
-        return point.z == this.sinLatitude;
+        return Math.abs(point.z - this.sinLatitude) < 1e-10;
     }
 
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return z == this.sinLatitude;
+        return Math.abs(z - this.sinLatitude) < 1e-10;
     }
 
     @Override
@@ -75,9 +75,9 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(plane,bounds);
+        return p.intersects(plane,notablePoints,planePoints,bounds);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -102,7 +102,7 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase
         // work with no area endpoints.  So we rely entirely on intersections.
         //System.out.println("Got here! latitude="+latitude+" path="+path);
         
-        if (path.intersects(plane)) {
+        if (path.intersects(plane,planePoints)) {
             return OVERLAPS;
         }
 

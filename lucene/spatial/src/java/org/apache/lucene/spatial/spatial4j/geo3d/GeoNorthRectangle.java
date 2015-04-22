@@ -17,51 +17,40 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Bounding box wider than PI but limited on four sides (top lat,
-* bottom lat, left lon, right lon).
+/** Bounding box limited on three sides (bottom lat, left lon, right lon), including
+* the north pole.
+* The left-right maximum extent for this shape is PI; for anything larger, use
+* GeoWideNorthRectangle.
 */
-public class GeoWideRectangle extends GeoBBoxBase
+public class GeoNorthRectangle extends GeoBBoxBase
 {
-    public final double topLat;
     public final double bottomLat;
     public final double leftLon;
     public final double rightLon;
       
     public final double cosMiddleLat;
       
-    public final GeoPoint ULHC;
-    public final GeoPoint URHC;
     public final GeoPoint LRHC;
     public final GeoPoint LLHC;
     
-    public final SidedPlane topPlane;
     public final SidedPlane bottomPlane;
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
-
-    public final GeoPoint[] topPlanePoints;
+    
     public final GeoPoint[] bottomPlanePoints;
     public final GeoPoint[] leftPlanePoints;
     public final GeoPoint[] rightPlanePoints;
-
+    
     public final GeoPoint centerPoint;
 
-    public final EitherBound eitherBound;
+    public final GeoPoint[] edgePoints = new GeoPoint[]{NORTH_POLE};
     
-    public final GeoPoint[] edgePoints;
-    
-    /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
-     * Horizontal angle must be greater than or equal to PI.
-     */
-    public GeoWideRectangle(final double topLat, final double bottomLat, final double leftLon, double rightLon)
+    /** Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI} */
+    public GeoNorthRectangle(final double bottomLat, final double leftLon, double rightLon)
     {
         // Argument checking
-        if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
-            throw new IllegalArgumentException("Top latitude out of range");
         if (bottomLat > Math.PI * 0.5 || bottomLat < -Math.PI * 0.5)
             throw new IllegalArgumentException("Bottom latitude out of range");
-        if (topLat < bottomLat)
-            throw new IllegalArgumentException("Top latitude less than bottom latitude");
         if (leftLon < -Math.PI || leftLon > Math.PI)
             throw new IllegalArgumentException("Left longitude out of range");
         if (rightLon < -Math.PI || rightLon > Math.PI)
@@ -70,16 +59,13 @@ public class GeoWideRectangle extends GeoBBoxBase
         if (extent < 0.0) {
             extent += 2.0 * Math.PI;
         }
-        if (extent < Math.PI)
-            throw new IllegalArgumentException("Width of rectangle too small");
+        if (extent > Math.PI)
+            throw new IllegalArgumentException("Width of rectangle too great");
 
-        this.topLat = topLat;
         this.bottomLat = bottomLat;
         this.leftLon = leftLon;
         this.rightLon = rightLon;
           
-        final double sinTopLat = Math.sin(topLat);
-        final double cosTopLat = Math.cos(topLat);
         final double sinBottomLat = Math.sin(bottomLat);
         final double cosBottomLat = Math.cos(bottomLat);
         final double sinLeftLon = Math.sin(leftLon);
@@ -87,13 +73,11 @@ public class GeoWideRectangle extends GeoBBoxBase
         final double sinRightLon = Math.sin(rightLon);
         final double cosRightLon = Math.cos(rightLon);
         
-        // Now build the four points
-        this.ULHC = new GeoPoint(sinTopLat,sinLeftLon,cosTopLat,cosLeftLon);
-        this.URHC = new GeoPoint(sinTopLat,sinRightLon,cosTopLat,cosRightLon);
+        // Now build the points
         this.LRHC = new GeoPoint(sinBottomLat,sinRightLon,cosBottomLat,cosRightLon);
         this.LLHC = new GeoPoint(sinBottomLat,sinLeftLon,cosBottomLat,cosLeftLon);
         
-        final double middleLat = (topLat + bottomLat) * 0.5;
+        final double middleLat = (Math.PI * 0.5 + bottomLat) * 0.5;
         final double sinMiddleLat = Math.sin(middleLat);
         this.cosMiddleLat = Math.cos(middleLat);
         // Normalize
@@ -106,25 +90,20 @@ public class GeoWideRectangle extends GeoBBoxBase
           
         this.centerPoint = new GeoPoint(sinMiddleLat,sinMiddleLon,cosMiddleLat,cosMiddleLon);
 
-        this.topPlane = new SidedPlane(centerPoint,sinTopLat);
         this.bottomPlane = new SidedPlane(centerPoint,sinBottomLat);
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
-        this.topPlanePoints = new GeoPoint[]{ULHC,URHC};
         this.bottomPlanePoints = new GeoPoint[]{LLHC,LRHC};
-        this.leftPlanePoints = new GeoPoint[]{ULHC,LLHC};
-        this.rightPlanePoints = new GeoPoint[]{URHC,LRHC};
-
-        this.eitherBound = new EitherBound();
+        this.leftPlanePoints = new GeoPoint[]{NORTH_POLE,LLHC};
+        this.rightPlanePoints = new GeoPoint[]{NORTH_POLE,LRHC};
         
-        this.edgePoints = new GeoPoint[]{ULHC};
     }
 
     @Override
     public GeoBBox expand(final double angle)
     {
-        final double newTopLat = topLat + angle;
+        final double newTopLat = Math.PI * 0.5;
         final double newBottomLat = bottomLat - angle;
         // Figuring out when we escalate to a special case requires some prefiguring
         double currentLonSpan = rightLon - leftLon;
@@ -142,19 +121,19 @@ public class GeoWideRectangle extends GeoBBoxBase
     @Override
     public boolean isWithin(final Vector point)
     {
-        return topPlane.isWithin(point) &&
+        return
           bottomPlane.isWithin(point) &&
-          (leftPlane.isWithin(point) ||
-          rightPlane.isWithin(point));
+          leftPlane.isWithin(point) &&
+          rightPlane.isWithin(point);
     }
 
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return topPlane.isWithin(x,y,z) &&
+        return
           bottomPlane.isWithin(x,y,z) &&
-          (leftPlane.isWithin(x,y,z) ||
-          rightPlane.isWithin(x,y,z));
+          leftPlane.isWithin(x,y,z) &&
+          rightPlane.isWithin(x,y,z);
     }
 
     @Override
@@ -164,9 +143,8 @@ public class GeoWideRectangle extends GeoBBoxBase
         // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
         // the distance to the right or left edge from the center.
         final double centerAngle = (rightLon - (rightLon + leftLon) * 0.5) * cosMiddleLat;
-        final double topAngle = centerPoint.arcDistance(URHC);
         final double bottomAngle = centerPoint.arcDistance(LLHC);
-        return Math.max(centerAngle,Math.max(topAngle,bottomAngle));
+        return Math.max(centerAngle,bottomAngle);
     }
       
     @Override
@@ -178,12 +156,10 @@ public class GeoWideRectangle extends GeoBBoxBase
     @Override
     public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
-        // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-        return p.intersects(topPlane,notablePoints,topPlanePoints,bounds,bottomPlane,eitherBound) ||
-          p.intersects(bottomPlane,notablePoints,bottomPlanePoints,bounds,topPlane,eitherBound) ||
-          p.intersects(leftPlane,notablePoints,leftPlanePoints,bounds,topPlane,bottomPlane) ||
-          p.intersects(rightPlane,notablePoints,rightPlanePoints,bounds,topPlane,bottomPlane);
+        return
+          p.intersects(bottomPlane,notablePoints,bottomPlanePoints,bounds,leftPlane,rightPlane) ||
+          p.intersects(leftPlane,notablePoints,leftPlanePoints,bounds,rightPlane,bottomPlane) ||
+          p.intersects(rightPlane,notablePoints,rightPlanePoints,bounds,leftPlane,bottomPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -198,46 +174,46 @@ public class GeoWideRectangle extends GeoBBoxBase
     {
         if (bounds == null)
             bounds = new Bounds();
-        bounds.addLatitudeZone(topLat).addLatitudeZone(bottomLat)
+        bounds.noTopLatitudeBound().addLatitudeZone(bottomLat)
             .addLongitudeSlice(leftLon,rightLon);
         return bounds;
     }
 
     @Override
     public int getRelationship(final GeoShape path) {
-        //System.err.println(this+" comparing to "+path);
+        //System.err.println(this+" getrelationship with "+path);
         final int insideRectangle = isShapeInsideBBox(path);
-        if (insideRectangle == SOME_INSIDE) {
+        if (insideRectangle == SOME_INSIDE)
+        {
             //System.err.println(" some inside");
             return OVERLAPS;
         }
+
+        final boolean insideShape = path.isWithin(NORTH_POLE);
         
-        final boolean insideShape = path.isWithin(ULHC);
-        
-        if (insideRectangle == ALL_INSIDE && insideShape)
-        {
-            //System.err.println(" both inside each other");
+        if (insideRectangle == ALL_INSIDE && insideShape) {
+            //System.err.println(" inside of each other");
             return OVERLAPS;
         }
-        
-        if (path.intersects(topPlane,topPlanePoints,bottomPlane,eitherBound) ||
-            path.intersects(bottomPlane,bottomPlanePoints,topPlane,eitherBound) ||
-            path.intersects(leftPlane,leftPlanePoints,topPlane,bottomPlane) ||
-            path.intersects(rightPlane,rightPlanePoints,topPlane,bottomPlane)) {
+
+        if (
+            path.intersects(bottomPlane,bottomPlanePoints,leftPlane,rightPlane) ||
+            path.intersects(leftPlane,leftPlanePoints,bottomPlane,rightPlane) ||
+            path.intersects(rightPlane,rightPlanePoints,leftPlane,bottomPlane)) {
             //System.err.println(" edges intersect");
             return OVERLAPS;
         }
 
-        if (insideRectangle == ALL_INSIDE) {
+        if (insideRectangle == ALL_INSIDE)
+        {
             //System.err.println(" shape inside rectangle");
             return WITHIN;
         }
     
         if (insideShape) {
-            //System.err.println(" rectangle inside shape");
+            //System.err.println(" shape contains rectangle");
             return CONTAINS;
         }
-
         //System.err.println(" disjoint");
         return DISJOINT;
     }
@@ -245,37 +221,23 @@ public class GeoWideRectangle extends GeoBBoxBase
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof GeoWideRectangle))
+        if (!(o instanceof GeoNorthRectangle))
             return false;
-        GeoWideRectangle other = (GeoWideRectangle)o;
-        return other.ULHC.equals(ULHC) && other.LRHC.equals(LRHC);
+        GeoNorthRectangle other = (GeoNorthRectangle)o;
+        return other.LLHC.equals(LLHC) && other.LRHC.equals(LRHC);
     }
 
     @Override
     public int hashCode() {
-        int result = ULHC.hashCode();
+        int result = LLHC.hashCode();
         result = 31 * result + LRHC.hashCode();
         return result;
     }
-
+    
     @Override
     public String toString() {
-        return "GeoWideRectangle: {toplat="+topLat+"("+topLat*180.0/Math.PI+"), bottomlat="+bottomLat+"("+bottomLat*180.0/Math.PI+"), leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightlon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
-    }
-
-    protected class EitherBound implements Membership {
-        public EitherBound() {
-        }
-        
-        @Override
-        public boolean isWithin(final Vector v) {
-            return leftPlane.isWithin(v) || rightPlane.isWithin(v);
-        }
-        
-        @Override
-        public boolean isWithin(final double x, final double y, final double z) {
-            return leftPlane.isWithin(x,y,z) || rightPlane.isWithin(x,y,z);
-        }
+        return "GeoNorthRectangle: {bottomlat="+bottomLat+"("+bottomLat*180.0/Math.PI+"), leftlon="+leftLon+"("+leftLon*180.0/Math.PI+"), rightlon="+rightLon+"("+rightLon*180.0/Math.PI+")}";
     }
 }
   
+

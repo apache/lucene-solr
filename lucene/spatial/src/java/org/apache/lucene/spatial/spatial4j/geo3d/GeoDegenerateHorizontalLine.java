@@ -33,7 +33,9 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
     public final Plane plane;
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
-      
+
+    public final GeoPoint[] planePoints;
+
     public final GeoPoint centerPoint;
     public final GeoPoint[] edgePoints;
     
@@ -83,6 +85,8 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
+        this.planePoints = new GeoPoint[]{LHC,RHC};
+
         this.edgePoints = new GeoPoint[]{centerPoint};
     }
 
@@ -107,7 +111,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
     @Override
     public boolean isWithin(final Vector point)
     {
-        return plane.evaluate(point) == 0.0 &&
+        return plane.evaluateIsZero(point) &&
           leftPlane.isWithin(point) &&
           rightPlane.isWithin(point);
     }
@@ -115,7 +119,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return plane.evaluate(x,y,z) == 0.0 &&
+        return plane.evaluateIsZero(x,y,z) &&
           leftPlane.isWithin(x,y,z) &&
           rightPlane.isWithin(x,y,z);
     }
@@ -135,9 +139,9 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(plane,bounds,leftPlane,rightPlane);
+        return p.intersects(plane,notablePoints,planePoints,bounds,leftPlane,rightPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -158,7 +162,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase
 
     @Override
     public int getRelationship(final GeoShape path) {
-        if (path.intersects(plane,leftPlane,rightPlane))
+        if (path.intersects(plane,planePoints,leftPlane,rightPlane))
             return OVERLAPS;
 
         if (path.isWithin(centerPoint))

@@ -41,42 +41,4 @@ public class GeoPoint extends Vector
         return Tools.safeAcos(evaluate(v));
     }
 
-    /** Find a single point that is a specified arc distance away from this point.
-    */
-    public GeoPoint getSamplePoint(final double sinRotationAngle, final double cosRotationAngle) {
-        // Rotate in the best of three possible directions: x-y, x-z, y-z.
-        final double absX = Math.abs(x);
-        final double absY = Math.abs(y);
-        final double absZ = Math.abs(z);
-        if (absX > absY) {
-            // x > y
-            if (absY > absZ) {
-                // x > y > z
-                // rotate in x-y
-                return new GeoPoint(x*cosRotationAngle-y*sinRotationAngle,x*sinRotationAngle+y*cosRotationAngle,z);
-            } else {
-                // x > z > y OR z > x > y
-                // rotate in x-z
-                return new GeoPoint(x*cosRotationAngle-z*sinRotationAngle,y,x*sinRotationAngle+z*cosRotationAngle);
-            }
-        } else {
-            // y > x
-            if (absX > absZ) {
-                // y > x > z
-                // rotate in x-y
-                return new GeoPoint(x*cosRotationAngle-y*sinRotationAngle,x*sinRotationAngle+y*cosRotationAngle,z);
-            } else {
-                // y > z > x OR z > y > x
-                // rotate in y-z
-                return new GeoPoint(x,y*cosRotationAngle-z*sinRotationAngle,y*sinRotationAngle+z*cosRotationAngle);
-            }
-        }
-    }
-    
-    /** Find a single point that is a specified arc distance away from this point.
-    */
-    public GeoPoint getSamplePoint(final double rotationAngle) {
-        return getSamplePoint(Math.sin(rotationAngle), Math.cos(rotationAngle));
-    }
-
 }

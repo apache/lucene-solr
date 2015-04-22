@@ -22,6 +22,9 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 */
 public abstract class GeoBBoxBase implements GeoBBox {
 
+    protected final static GeoPoint NORTH_POLE = new GeoPoint(0.0,0.0,1.0);
+    protected final static GeoPoint SOUTH_POLE = new GeoPoint(0.0,0.0,-1.0);
+
     @Override
     public abstract boolean isWithin(final Vector point);
 

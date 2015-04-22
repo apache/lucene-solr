@@ -27,10 +27,12 @@ public class GeoWideLongitudeSlice extends GeoBBoxBase
       
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
-      
+    
+    public final static GeoPoint[] planePoints = new GeoPoint[]{NORTH_POLE,SOUTH_POLE};
+    
     public final GeoPoint centerPoint;
-    public final GeoPoint northPole = new GeoPoint(0.0,0.0,1.0);
-    public final GeoPoint[] edgePoints = new GeoPoint[]{northPole};
+
+    public final static GeoPoint[] edgePoints = new GeoPoint[]{NORTH_POLE};
     
     /** Accepts only values in the following ranges: lon: {@code -PI -> PI}.
     * Horizantal angle must be greater than or equal to PI.
@@ -115,12 +117,12 @@ public class GeoWideLongitudeSlice extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
         // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
         // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-        return  p.intersects(leftPlane,bounds) ||
-          p.intersects(rightPlane,bounds);
+        return  p.intersects(leftPlane,notablePoints,planePoints,bounds) ||
+          p.intersects(rightPlane,notablePoints,planePoints,bounds);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -146,13 +148,13 @@ public class GeoWideLongitudeSlice extends GeoBBoxBase
         if (insideRectangle == SOME_INSIDE)
             return OVERLAPS;
 
-        final boolean insideShape = path.isWithin(northPole);
+        final boolean insideShape = path.isWithin(NORTH_POLE);
         
         if (insideRectangle == ALL_INSIDE && insideShape)
             return OVERLAPS;
 
-        if (path.intersects(leftPlane) ||
-            path.intersects(rightPlane))
+        if (path.intersects(leftPlane,planePoints) ||
+            path.intersects(rightPlane,planePoints))
             return OVERLAPS;
 
         if (insideRectangle == ALL_INSIDE)

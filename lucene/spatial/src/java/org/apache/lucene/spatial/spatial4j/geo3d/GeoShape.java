@@ -37,11 +37,14 @@ public interface GeoShape extends Membership {
      * helped for some complex shapes that are built out of overlapping parts.
      *@param plane is the plane to assess for intersection with the shape's edges or
      *  bounding curves.
+     *@param notablePoints represents the intersections of the plane with the supplied
+     *  bounds.  These are used to disambiguate when two planes are identical and it needs
+     *  to be determined whether any points exist that fulfill all the bounds.
      *@param bounds are a set of bounds that define an area that an
      *  intersection must be within in order to qualify (provided by a GeoArea).
      *@return true if there's such an intersection, false if not.
      */
-    public boolean intersects(final Plane plane, final Membership... bounds);
+    public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds);
 
     /** Compute longitude/latitude bounds for the shape.
     *@param bounds is the optional input bounds object.  If this is null,

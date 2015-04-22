@@ -31,7 +31,9 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
     public final Plane plane;
     public final SidedPlane leftPlane;
     public final SidedPlane rightPlane;
-      
+
+    public final GeoPoint[] planePoints;
+    
     public final GeoPoint centerPoint;
 
     public final EitherBound eitherBound;
@@ -87,6 +89,8 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
         this.leftPlane = new SidedPlane(centerPoint,cosLeftLon,sinLeftLon);
         this.rightPlane = new SidedPlane(centerPoint,cosRightLon,sinRightLon);
 
+        this.planePoints = new GeoPoint[]{LHC,RHC};
+        
         this.eitherBound = new EitherBound();
         
         this.edgePoints = new GeoPoint[]{centerPoint};
@@ -115,7 +119,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
     {
         if (point == null)
             return false;
-        return plane.evaluate(point) == 0.0 &&
+        return plane.evaluateIsZero(point) &&
           (leftPlane.isWithin(point) ||
           rightPlane.isWithin(point));
     }
@@ -123,7 +127,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return plane.evaluate(x,y,z) == 0.0 &&
+        return plane.evaluateIsZero(x,y,z) &&
           (leftPlane.isWithin(x,y,z) ||
           rightPlane.isWithin(x,y,z));
     }
@@ -146,11 +150,11 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
         // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
         // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-        return p.intersects(plane,bounds,eitherBound);
+        return p.intersects(plane,notablePoints,planePoints,bounds,eitherBound);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -172,7 +176,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
 
     @Override
     public int getRelationship(final GeoShape path) {
-        if (path.intersects(plane,eitherBound)) {
+        if (path.intersects(plane,planePoints,eitherBound)) {
             return OVERLAPS;
         }
 

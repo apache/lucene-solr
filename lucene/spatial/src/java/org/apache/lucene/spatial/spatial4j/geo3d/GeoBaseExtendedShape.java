@@ -59,7 +59,7 @@ public abstract class GeoBaseExtendedShape implements GeoShape
      *@return true if there's such an intersection, false if not.
      */
     @Override
-    public abstract boolean intersects(final Plane plane, final Membership... bounds);
+    public abstract boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds);
 
     /** Compute longitude/latitude bounds for the shape.
     *@param bounds is the optional input bounds object.  If this is null,

@@ -33,6 +33,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
 
     protected SidedPlane[] edges = null;
     protected boolean[] internalEdges = null;
+    protected GeoPoint[][] notableEdgePoints = null;
     
     protected GeoPoint[] edgePoints = null;
     
@@ -98,6 +99,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
             throw new IllegalArgumentException("Polygon needs at least three points.");
         // Time to construct the planes.  If the polygon is truly convex, then any adjacent point
         edges = new SidedPlane[points.size()];
+        notableEdgePoints = new GeoPoint[points.size()][];
         internalEdges = new boolean[points.size()];
         // to a segment can provide an interior measurement.
         for (int i = 0; i < points.size(); i++) {
@@ -108,6 +110,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
             final SidedPlane sp = new SidedPlane(check,start,end);
             //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
             edges[i] = sp;
+            notableEdgePoints[i] = new GeoPoint[]{start,end};
             internalEdges[i] = isInternalEdge;
         }
         createCenterPoint();
@@ -163,11 +166,14 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
+        //System.err.println("Checking for polygon intersection with plane "+p+"...");
         for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
             final SidedPlane edge = edges[edgeIndex];
+            final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
             if (!internalEdges[edgeIndex]) {
+                //System.err.println(" non-internal edge "+edge);
                 // Edges flagged as 'internal only' are excluded from the matching
                 // Construct boundaries
                 final Membership[] membershipBounds = new Membership[edges.length-1];
@@ -177,10 +183,13 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
                         membershipBounds[count++] = edges[otherIndex];
                     }
                 }
-                if (edge.intersects(p,bounds,membershipBounds))
+                if (edge.intersects(p,notablePoints, points, bounds,membershipBounds)) {
+                    //System.err.println(" intersects!");
                     return true;
+                }
             }
         }
+        //System.err.println(" no intersection");
         return false;
     }
 

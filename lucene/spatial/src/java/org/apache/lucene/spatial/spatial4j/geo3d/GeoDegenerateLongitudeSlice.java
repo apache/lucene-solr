@@ -30,6 +30,8 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
     public final GeoPoint interiorPoint;
     public final GeoPoint[] edgePoints;
 
+    public final static GeoPoint[] planePoints = new GeoPoint[]{NORTH_POLE,SOUTH_POLE};
+
     /** Accepts only values in the following ranges: lon: {@code -PI -> PI} */
     public GeoDegenerateLongitudeSlice(final double longitude)
     {
@@ -65,14 +67,14 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
     @Override
     public boolean isWithin(final Vector point)
     {
-        return plane.evaluate(point) == 0.0 &&
+        return plane.evaluateIsZero(point) &&
             boundingPlane.isWithin(point);
     }
 
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return plane.evaluate(x,y,z) == 0.0 &&
+        return plane.evaluateIsZero(x,y,z) &&
             boundingPlane.isWithin(x,y,z);
     }
 
@@ -89,9 +91,9 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(plane,bounds,boundingPlane);
+        return p.intersects(plane,notablePoints,planePoints,bounds,boundingPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -114,7 +116,7 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
     @Override
     public int getRelationship(final GeoShape path) {
         // Look for intersections.
-        if (path.intersects(plane,boundingPlane))
+        if (path.intersects(plane,planePoints,boundingPlane))
             return OVERLAPS;
 
         if (path.isWithin(interiorPoint))

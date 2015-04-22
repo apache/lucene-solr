@@ -79,9 +79,10 @@ public class SidedPlane extends Plane implements Membership
     @Override
     public boolean isWithin(Vector point)
     {
-        double sigNum = Math.signum(evaluate(point));
-        if (sigNum == 0.0)
+        double evalResult = evaluate(point);
+        if (Math.abs(evalResult) < MINIMUM_RESOLUTION)
             return true;
+        double sigNum = Math.signum(evalResult);
         return sigNum == this.sigNum;
     }
 
@@ -94,7 +95,10 @@ public class SidedPlane extends Plane implements Membership
     @Override
     public boolean isWithin(double x, double y, double z)
     {
-        double sigNum = Math.signum(this.x * x + this.y * y + this.z * z);
+        double evalResult = this.x * x + this.y * y + this.z * z;
+        if (Math.abs(evalResult) < MINIMUM_RESOLUTION)
+            return true;
+        double sigNum = Math.signum(evalResult);
         return sigNum == this.sigNum;
     }
     

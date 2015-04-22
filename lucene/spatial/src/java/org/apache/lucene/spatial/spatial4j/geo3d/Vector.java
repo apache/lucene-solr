@@ -21,6 +21,10 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * going through the origin. */
 public class Vector
 {
+    /** Values that are all considered to be essentially zero have a magnitude
+    * less than this. */
+    public static final double MINIMUM_RESOLUTION = 1e-15;
+    
     public final double x;
     public final double y;
     public final double z;
@@ -56,13 +60,31 @@ public class Vector
      */
     public Vector normalize() {
         double denom = magnitude();
-        if (denom < 1e-10)
+        if (denom < MINIMUM_RESOLUTION)
             // Degenerate, can't normalize
             return null;
         double normFactor = 1.0/denom;
         return new Vector(x*normFactor,y*normFactor,z*normFactor);
     }
     
+    /** Evaluate a vector (dot product) and check for "zero".
+     *@param v is the vector to evaluate.
+     *@return true if the evaluation yielded zero.
+     */
+    public boolean evaluateIsZero(final Vector v) {
+        return Math.abs(evaluate(v)) < MINIMUM_RESOLUTION;
+    }
+    
+    /** Evaluate a vector (do a dot product) snd check for "zero".
+     *@param x is the x value of the vector to evaluate.
+     *@param y is the x value of the vector to evaluate.
+     *@param z is the x value of the vector to evaluate.
+     *@return true if the evaluation yielded zero.
+     */
+    public boolean evaluateIsZero(final double x, final double y, final double z) {
+        return Math.abs(evaluate(x,y,z)) < MINIMUM_RESOLUTION;
+    }
+
     /** Evaluate a vector (do a dot product).
      *@param v is the vector to evaluate.
      *@return the result.

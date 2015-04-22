@@ -216,7 +216,7 @@ public class Plane extends Vector
 
         // Now compute latitude min/max points
         if (!boundsInfo.checkNoTopLatitudeBound() || !boundsInfo.checkNoBottomLatitudeBound()) {
-            if ((Math.abs(A) >= 1e-10 || Math.abs(B) >= 1e-10)) {
+            if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
                 //System.out.println("A = "+A+" B = "+B+" C = "+C+" D = "+D);
                 // sin (phi) = z
                 // cos (theta - phi) = D
@@ -359,11 +359,11 @@ public class Plane extends Vector
             double b;
             double c;
             
-            if (Math.abs(C) < 1e-10) {
+            if (Math.abs(C) < MINIMUM_RESOLUTION) {
                 // Degenerate; the equation describes a line
                 //System.out.println("It's a zero-width ellipse");
                 // Ax + By + D = 0
-                if (Math.abs(D) >= 1e-10) {
+                if (Math.abs(D) >= MINIMUM_RESOLUTION) {
                     if (Math.abs(A) > Math.abs(B)) {
                         // Use equation suitable for A != 0
                         // We need to find the endpoints of the zero-width ellipse.
@@ -432,7 +432,6 @@ public class Plane extends Vector
                         double sqrtClause = b * b - 4.0 * a * c;
 
                         if (sqrtClause >= 0.0) {
-
                             if (sqrtClause == 0.0) {
                                 double x0 = -b / (2.0 * a);
                                 double y0 = (- D - A * x0) / B;
@@ -560,7 +559,7 @@ public class Plane extends Vector
                                 addPoint(boundsInfo, bounds, x0a, y0a, z0a);
                                 addPoint(boundsInfo, bounds, x0b, y0b, z0b);
                             }
-                        }                        
+                        }
 
                     } else {
                         //System.out.println("Using the x quadratic");
@@ -588,7 +587,6 @@ public class Plane extends Vector
                         //System.out.println("sqrtClause="+sqrtClause);
                         
                         if (sqrtClause >= 0.0) {
-                            
                             if (sqrtClause == 0.0) {
                                 //System.out.println("One solution");
                                 double x0 = -b / (2.0 * a);
@@ -634,12 +632,43 @@ public class Plane extends Vector
     /** Determine whether the plane intersects another plane within the
      * bounds provided.
      *@param q is the other plane.
+     *@param notablePoints are points to look at to disambiguate cases when the two planes are identical.
+     *@param moreNotablePoints are additional points to look at to disambiguate cases when the two planes are identical.
      *@param bounds is one part of the bounds.
      *@param moreBounds are more bounds.
      *@return true if there's an intersection.
      */
-    public boolean intersects(final Plane q, final Membership[] bounds, final Membership... moreBounds) {
+    public boolean intersects(final Plane q, final GeoPoint[] notablePoints, final GeoPoint[] moreNotablePoints, final Membership[] bounds, final Membership... moreBounds) {
+        // If the two planes are identical, then the math will find no points of intersection.
+        // So a special case of this is to check for plane equality.  But that is not enough, because
+        // what we really need at that point is to determine whether overlap occurs between the two parts of the intersection
+        // of plane and circle.  That is, are there *any* points on the plane that are within the bounds described?
+	if (equals(q)) {
+            // The only way to efficiently figure this out will be to have a list of trial points available to evaluate.
+            // We look for any point that fulfills all the bounds.
+            for (GeoPoint p : notablePoints) {
+                if (meetsAllBounds(p,bounds,moreBounds))
+                    return true;
+            }
+            for (GeoPoint p : moreNotablePoints) {
+                if (meetsAllBounds(p,bounds,moreBounds))
+                    return true;
+            }
+            return false;
+        }
         return findIntersections(q,bounds,moreBounds).length > 0;
+    }
+
+    protected static boolean meetsAllBounds(final GeoPoint p, final Membership[] bounds, final Membership[] moreBounds) {
+        for (final Membership bound : bounds) {
+            if (!bound.isWithin(p))
+                return false;
+        }
+        for (final Membership bound : moreBounds) {
+            if (!bound.isWithin(p))
+                return false;
+        }
+        return true;
     }
     
     /** Find a sample point on the intersection between two planes and the unit sphere.

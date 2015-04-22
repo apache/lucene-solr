@@ -63,10 +63,10 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
         for (GeoMembershipShape shape : shapes) {
-            if (shape.intersects(p,bounds))
+            if (shape.intersects(p,notablePoints,bounds))
                 return true;
         }
         return false;

@@ -32,7 +32,9 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
     public final SidedPlane bottomPlane;
     public final SidedPlane boundingPlane;
     public final Plane plane;
-      
+
+    public final GeoPoint[] planePoints;
+    
     public final GeoPoint centerPoint;
     public final GeoPoint[] edgePoints;
     
@@ -77,6 +79,8 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
 
         this.boundingPlane = new SidedPlane(centerPoint,-sinLongitude,cosLongitude);
 
+        this.planePoints = new GeoPoint[]{UHC,LHC};
+
         this.edgePoints = new GeoPoint[]{centerPoint};
     }
 
@@ -98,7 +102,7 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
     @Override
     public boolean isWithin(final Vector point)
     {
-        return plane.evaluate(point) == 0.0 &&
+        return plane.evaluateIsZero(point) &&
           boundingPlane.isWithin(point) &&
           topPlane.isWithin(point) &&
           bottomPlane.isWithin(point);
@@ -107,7 +111,7 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
     @Override
     public boolean isWithin(final double x, final double y, final double z)
     {
-        return plane.evaluate(x,y,z) == 0.0 &&
+        return plane.evaluateIsZero(x,y,z) &&
           boundingPlane.isWithin(x,y,z) &&
           topPlane.isWithin(x,y,z) &&
           bottomPlane.isWithin(x,y,z);
@@ -131,9 +135,9 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
     }
       
     @Override
-    public boolean intersects(final Plane p, final Membership... bounds)
+    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {
-        return p.intersects(plane,bounds,boundingPlane,topPlane,bottomPlane);
+        return p.intersects(plane,notablePoints,planePoints,bounds,boundingPlane,topPlane,bottomPlane);
     }
 
     /** Compute longitude/latitude bounds for the shape.
@@ -155,12 +159,18 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase
 
     @Override
     public int getRelationship(final GeoShape path) {
-        if (path.intersects(plane,boundingPlane,topPlane,bottomPlane))
+        //System.err.println(this+" relationship to "+path);
+        if (path.intersects(plane,planePoints,boundingPlane,topPlane,bottomPlane)) {
+            //System.err.println(" overlaps");
             return OVERLAPS;
+        }
 
-        if (path.isWithin(centerPoint))
+        if (path.isWithin(centerPoint)) {
+            //System.err.println(" contains");
             return CONTAINS;
+        }
 
+        //System.err.println(" disjoint");
         return DISJOINT;
     }
 

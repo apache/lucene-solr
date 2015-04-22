@@ -64,7 +64,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
      *@return true if there's such an intersection, false if not.
      */
     @Override
-    public boolean intersects(final Plane plane, final Membership... bounds) {
+    public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
         if (plane.evaluate(this) == 0.0)
             return false;
         
