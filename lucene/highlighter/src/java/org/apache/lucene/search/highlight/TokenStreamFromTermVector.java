@@ -32,6 +32,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -52,8 +53,6 @@ import org.apache.lucene.util.UnicodeUtil;
  */
 public final class TokenStreamFromTermVector extends TokenStream {
 
-  //TODO add a maxStartOffset filter, which highlighters will find handy
-
   //This attribute factory uses less memory when captureState() is called.
   public static final AttributeFactory ATTRIBUTE_FACTORY =
       AttributeFactory.getStaticImplementation(
@@ -65,9 +64,14 @@ public final class TokenStreamFromTermVector extends TokenStream {
 
   private final PositionIncrementAttribute positionIncrementAttribute;
 
+  private final int maxStartOffset;
+
   private OffsetAttribute offsetAttribute;//maybe null
 
   private PayloadAttribute payloadAttribute;//maybe null
+
+  private CharsRefBuilder termCharsBuilder;//term data here
+
   private BytesRefArray payloadsBytesRefArray;//only used when payloadAttribute is non-null
   private BytesRefBuilder spareBytesRefBuilder;//only used when payloadAttribute is non-null
 
@@ -78,13 +82,16 @@ public final class TokenStreamFromTermVector extends TokenStream {
   private boolean initialized = false;//lazy
 
   /**
-   * Constructor.
-   * 
+   * Constructor. The uninversion doesn't happen here; it's delayed till the first call to
+   * {@link #incrementToken}.
+   *
    * @param vector Terms that contains the data for
    *        creating the TokenStream. Must have positions and/or offsets.
+   * @param maxStartOffset if a token's start offset exceeds this then the token is not added. -1 disables the limit.
    */
-  public TokenStreamFromTermVector(Terms vector) throws IOException {
+  public TokenStreamFromTermVector(Terms vector, int maxStartOffset) throws IOException {
     super(ATTRIBUTE_FACTORY);
+    this.maxStartOffset = maxStartOffset < 0 ? Integer.MAX_VALUE : maxStartOffset;
     assert !hasAttribute(PayloadAttribute.class) : "AttributeFactory shouldn't have payloads *yet*";
     if (!vector.hasPositions() && !vector.hasOffsets()) {
       throw new IllegalArgumentException("The term vector needs positions and/or offsets.");
@@ -106,14 +113,21 @@ public final class TokenStreamFromTermVector extends TokenStream {
   //We delay initialization because we can see which attributes the consumer wants, particularly payloads
   private void init() throws IOException {
     assert !initialized;
+    short dpEnumFlags = PostingsEnum.POSITIONS;
     if (vector.hasOffsets()) {
+      dpEnumFlags |= PostingsEnum.OFFSETS;
       offsetAttribute = addAttribute(OffsetAttribute.class);
     }
     if (vector.hasPayloads() && hasAttribute(PayloadAttribute.class)) {
+      dpEnumFlags |= (PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);//must ask for offsets too
       payloadAttribute = getAttribute(PayloadAttribute.class);
       payloadsBytesRefArray = new BytesRefArray(Counter.newCounter());
       spareBytesRefBuilder = new BytesRefBuilder();
     }
+
+    // We put term data here
+    termCharsBuilder = new CharsRefBuilder();
+    termCharsBuilder.grow((int) (vector.size() * 7));//7 is over-estimate of average term len
 
     // Step 1: iterate termsEnum and create a token, placing into an array of tokens by position
 
@@ -124,14 +138,17 @@ public final class TokenStreamFromTermVector extends TokenStream {
     final TermsEnum termsEnum = vector.iterator();
     BytesRef termBytesRef;
     PostingsEnum dpEnum = null;
+    CharsRefBuilder tempCharsRefBuilder = new CharsRefBuilder();//only for UTF8->UTF16 call
     //int sumFreq = 0;
     while ((termBytesRef = termsEnum.next()) != null) {
       //Grab the term (in same way as BytesRef.utf8ToString() but we don't want a String obj)
       // note: if term vectors supported seek by ord then we might just keep an int and seek by ord on-demand
-      final char[] termChars = new char[termBytesRef.length];
-      final int termCharsLen = UnicodeUtil.UTF8toUTF16(termBytesRef, termChars);
+      tempCharsRefBuilder.grow(termBytesRef.length);
+      final int termCharsLen = UnicodeUtil.UTF8toUTF16(termBytesRef, tempCharsRefBuilder.chars());
+      final int termCharsOff = termCharsBuilder.length();
+      termCharsBuilder.append(tempCharsRefBuilder.chars(), 0, termCharsLen);
 
-      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
+      dpEnum = termsEnum.postings(null, dpEnum, dpEnumFlags);
       assert dpEnum != null; // presumably checked by TokenSources.hasPositions earlier
       dpEnum.nextDoc();
       final int freq = dpEnum.freq();
@@ -139,11 +156,14 @@ public final class TokenStreamFromTermVector extends TokenStream {
       for (int j = 0; j < freq; j++) {
         int pos = dpEnum.nextPosition();
         TokenLL token = new TokenLL();
-        token.termChars = termChars;
-        token.termCharsLen = termCharsLen;
+        token.termCharsOff = termCharsOff;
+        token.termCharsLen = (short) Math.min(termCharsLen, Short.MAX_VALUE);
         if (offsetAttribute != null) {
           token.startOffset = dpEnum.startOffset();
-          token.endOffset = dpEnum.endOffset();
+          if (token.startOffset > maxStartOffset) {
+            continue;//filter this token out; exceeds threshold
+          }
+          token.endOffsetInc = (short) Math.min(dpEnum.endOffset() - token.startOffset, Short.MAX_VALUE);
           if (pos == -1) {
             pos = token.startOffset >> 3;//divide by 8
           }
@@ -216,8 +236,8 @@ public final class TokenStreamFromTermVector extends TokenStream {
   }
 
   private TokenLL[] initTokensArray() throws IOException {
-    // Estimate the number of position slots we need. We use some estimation factors taken from Wikipedia
-    //  that reduce the likelihood of needing to expand the array.
+    // Estimate the number of position slots we need from term stats.  We use some estimation factors taken from
+    //  Wikipedia that reduce the likelihood of needing to expand the array.
     int sumTotalTermFreq = (int) vector.getSumTotalTermFreq();
     if (sumTotalTermFreq == -1) {//unfortunately term vectors seem to not have this stat
       int size = (int) vector.size();
@@ -227,7 +247,12 @@ public final class TokenStreamFromTermVector extends TokenStream {
       sumTotalTermFreq = (int)(size * 2.4);
     }
     final int originalPositionEstimate = (int) (sumTotalTermFreq * 1.5);//less than 1 in 10 docs exceed this
-    return new TokenLL[originalPositionEstimate];
+
+    // This estimate is based on maxStartOffset. Err on the side of this being larger than needed.
+    final int offsetLimitPositionEstimate = (int) (maxStartOffset / 5.0);
+
+    // Take the smaller of the two estimates, but no smaller than 64
+    return new TokenLL[Math.max(64, Math.min(originalPositionEstimate, offsetLimitPositionEstimate))];
   }
 
   @Override
@@ -247,10 +272,10 @@ public final class TokenStreamFromTermVector extends TokenStream {
       return false;
     }
     clearAttributes();
-    termAttribute.copyBuffer(incrementToken.termChars, 0, incrementToken.termCharsLen);
+    termAttribute.copyBuffer(termCharsBuilder.chars(), incrementToken.termCharsOff, incrementToken.termCharsLen);
     positionIncrementAttribute.setPositionIncrement(incrementToken.positionIncrement);
     if (offsetAttribute != null) {
-      offsetAttribute.setOffset(incrementToken.startOffset, incrementToken.endOffset);
+      offsetAttribute.setOffset(incrementToken.startOffset, incrementToken.startOffset + incrementToken.endOffsetInc);
     }
     if (payloadAttribute != null) {
       if (incrementToken.payloadIndex == -1) {
@@ -263,11 +288,14 @@ public final class TokenStreamFromTermVector extends TokenStream {
   }
 
   private static class TokenLL {
-    char[] termChars;
-    int termCharsLen;
+    // This class should weigh 32 bytes, including object header
+
+    int termCharsOff; // see termCharsBuilder
+    short termCharsLen;
+
     int positionIncrement;
     int startOffset;
-    int endOffset;
+    short endOffsetInc; // add to startOffset to get endOffset
     int payloadIndex;
 
     TokenLL next;
@@ -297,7 +325,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
     int compareOffsets(TokenLL tokenB) {
       int cmp = Integer.compare(this.startOffset, tokenB.startOffset);
       if (cmp == 0) {
-        cmp = Integer.compare(this.endOffset, tokenB.endOffset);
+        cmp = Short.compare(this.endOffsetInc, tokenB.endOffsetInc);
       }
       return cmp;
     }
