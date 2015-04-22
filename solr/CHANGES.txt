@@ -27,7 +27,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.9.v20150224
+Jetty 9.2.10.v20150310
 
 System Requirements
 ----------------------
@@ -60,6 +60,9 @@ Other Changes
 
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
   affects HDFS support. (Ben Manes via Shawn Heisey)
+
+* SOLR-4839: Upgrade Jetty to 9.2.10.v20150310 and restlet-jee to 2.3.0
+  (Bill Bell, Timothy Potter, Uwe Schindler, Mark Miller, shalin)
 
 ==================  5.2.0 ==================
 
@@ -1325,9 +1328,6 @@ Other Changes
 
 * SOLR-6905: Test pseudo-field retrieval in distributed search.
   (Ramkumar Aiyengar via shalin)
-
-* SOLR-4839: Upgrade Jetty to 9.2.6.v20141205 and restlet-jee to 2.3.0
-  (Bill Bell, Timothy Potter, Uwe Schindler, Mark Miller, shalin)
 
 * SOLR-6897: Nuke non-NRT mode from code and configuration. (Hossman, shalin)
 
