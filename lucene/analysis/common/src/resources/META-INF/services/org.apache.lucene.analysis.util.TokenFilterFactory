@@ -66,6 +66,7 @@ org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory
 org.apache.lucene.analysis.miscellaneous.LengthFilterFactory
 org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilterFactory
+org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilterFactory
 org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilterFactory
 org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
