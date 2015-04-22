@@ -17,6 +17,7 @@ package org.apache.solr.search.mlt;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrDocument;
@@ -27,6 +28,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -55,33 +57,35 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
 
     String id = "id";
     delQ("*:*");
-    indexDoc(sdoc(id, "1", "lowerfilt", "toyota"));
-    indexDoc(sdoc(id, "2", "lowerfilt", "chevrolet"));
-    indexDoc(sdoc(id, "3", "lowerfilt", "bmw usa"));
-    indexDoc(sdoc(id, "4", "lowerfilt", "ford"));
-    indexDoc(sdoc(id, "5", "lowerfilt", "ferrari"));
-    indexDoc(sdoc(id, "6", "lowerfilt", "jaguar"));
-    indexDoc(sdoc(id, "7", "lowerfilt", "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"));
-    indexDoc(sdoc(id, "8", "lowerfilt", "sonata"));
-    indexDoc(sdoc(id, "9", "lowerfilt", "The quick red fox jumped over the lazy big and large brown dogs."));
-    indexDoc(sdoc(id, "10", "lowerfilt", "blue"));
-    indexDoc(sdoc(id, "12", "lowerfilt", "glue"));
-    indexDoc(sdoc(id, "13", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "14", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "15", "lowerfilt", "The fat red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "16", "lowerfilt", "The slim red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "17", "lowerfilt", "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"));
-    indexDoc(sdoc(id, "18", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "19", "lowerfilt", "The hose red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "20", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "21", "lowerfilt", "The court red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "22", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "24", "lowerfilt", "The file red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "25", "lowerfilt", "rod fix"));
-    indexDoc(sdoc(id, "26", "lowerfilt", "bmw usa 328i"));
-    indexDoc(sdoc(id, "27", "lowerfilt", "bmw usa 535i"));
-    indexDoc(sdoc(id, "28", "lowerfilt", "bmw 750Li"));
+    String FIELD1 = "lowerfilt" ;
+    
+    indexDoc(sdoc(id, "1", FIELD1, "toyota"));
+    indexDoc(sdoc(id, "2", FIELD1, "chevrolet"));
+    indexDoc(sdoc(id, "3", FIELD1, "bmw usa"));
+    indexDoc(sdoc(id, "4", FIELD1, "ford"));
+    indexDoc(sdoc(id, "5", FIELD1, "ferrari"));
+    indexDoc(sdoc(id, "6", FIELD1, "jaguar"));
+    indexDoc(sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"));
+    indexDoc(sdoc(id, "8", FIELD1, "sonata"));
+    indexDoc(sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."));
+    indexDoc(sdoc(id, "10", FIELD1, "blue"));
+    indexDoc(sdoc(id, "12", FIELD1, "glue"));
+    indexDoc(sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "17", FIELD1, "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"));
+    indexDoc(sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."));
+    indexDoc(sdoc(id, "25", FIELD1, "rod fix"));
+    indexDoc(sdoc(id, "26", FIELD1, "bmw usa 328i"));
+    indexDoc(sdoc(id, "27", FIELD1, "bmw usa 535i"));
+    indexDoc(sdoc(id, "28", FIELD1, "bmw 750Li"));
 
     commit();
 
@@ -131,22 +135,15 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     String expectedQueryString = "lowerfilt:over lowerfilt:fox lowerfilt:lazy lowerfilt:brown "
         + "lowerfilt:jumped lowerfilt:red lowerfilt:dogs. lowerfilt:quote lowerfilt:the";
     
-    try {
-      ArrayList<String> actualParsedQueries = (ArrayList<String>) queryResponse
-          .getDebugMap().get("parsedquery");
+    ArrayList<String> actualParsedQueries = (ArrayList<String>) queryResponse
+        .getDebugMap().get("parsedquery");
 
-      for (int counter = 0; counter < actualParsedQueries.size(); counter++) {
-        assertTrue("Parsed queries aren't equal",
-            compareParsedQueryStrings(expectedQueryString,
-                actualParsedQueries.get(counter)));
-      }
-    } catch (ClassCastException ex) {
-      // TODO: Adding this to just track a rare test failure.
-      // Once SOLR-6755 is resolved, this should be removed.
-      log.info("QueryResponse.debugMap: {}", queryResponse.getDebugMap().toString());
-      log.info("ClusterState: {}", cloudClient.getZkStateReader().getClusterState().toString());
+    for (int counter = 0; counter < actualParsedQueries.size(); counter++) {
+      assertTrue("Parsed queries aren't equal",
+          compareParsedQueryStrings(expectedQueryString,
+              actualParsedQueries.get(counter)));
     }
-
+  
     // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored + have explicit
     // analyzer are used for MLT Query construction.
     params = new ModifiableSolrParams();
@@ -160,6 +157,18 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
       actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
+  }
+  
+  @Test
+  public void testInvalidDocument() throws IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}nonexistentdocid");
+    try {
+      cloudClient.query(params);
+      fail("The above query is supposed to throw an exception.");
+    } catch (SolrServerException e) {
+      // Do nothing.
+    }
   }
   
   private boolean compareParsedQueryStrings(String expected, String actual) {

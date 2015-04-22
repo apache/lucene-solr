@@ -144,6 +144,9 @@ Bug Fixes
   marked as 'down' if multiple replicas with the same core name exist in the cluster.
   (shalin)
 
+* SOLR-7418: Check and raise a SolrException instead of an NPE when an invalid doc id is sent
+   to the MLTQParser. (Anshum Gupta)
+
 Optimizations
 ----------------------
 
