@@ -9,17 +9,6 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Server Thread Pool                                          -->
-  <!-- =========================================================== -->
-  <Get name="ThreadPool">
-    <!-- Default queued blocking threadpool -->
-    <Set name="minThreads"><Property name="jetty.threads.min" /></Set>
-    <Set name="maxThreads"><Property name="jetty.threads.max" /></Set>
-    <Set name="detailedDump">false</Set>
-    <Set name="idleTimeout"><Property name="jetty.threads.idle.timeout" /></Set>
-  </Get>
-
-  <!-- =========================================================== -->
   <!-- Add a HTTP Connector.                                       -->
   <!-- Configure an o.e.j.server.ServerConnector with a single     -->
   <!-- HttpConnectionFactory instance using the common httpConfig  -->
@@ -33,24 +22,24 @@
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
-        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" default="-1"/></Arg>
-        <Arg name="selectors" type="int"><Property name="jetty.http.selectors" default="-1"/></Arg>
+        <Arg name="acceptors" type="int"><Property name="solr.jetty.http.acceptors" default="-1"/></Arg>
+        <Arg name="selectors" type="int"><Property name="solr.jetty.http.selectors" default="-1"/></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                <Arg name="config">
-                  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-                    <Set name="sendServerVersion">false</Set>
-                    <Set name="sendDateHeader">false</Set>
-                  </New>
-                </Arg>
+                <Arg name="config"><Ref refid="httpConfig" /></Arg>
               </New>
             </Item>
           </Array>
         </Arg>
-        <Set name="port"><Property name="jetty.port" default="8983" /></Set>
         <Set name="host"><Property name="jetty.host" /></Set>
+        <Set name="port"><Property name="jetty.port" default="8983" /></Set>
+        <Set name="idleTimeout"><Property name="solr.jetty.http.idleTimeout" default="30000"/></Set>
+        <Set name="soLingerTime"><Property name="solr.jetty.http.soLingerTime" default="-1"/></Set>
+        <Set name="acceptorPriorityDelta"><Property name="solr.jetty.http.acceptorPriorityDelta" default="0"/></Set>
+        <Set name="selectorPriorityDelta"><Property name="solr.jetty.http.selectorPriorityDelta" default="0"/></Set>
+        <Set name="acceptQueueSize"><Property name="solr.jetty.http.acceptQueueSize" default="0"/></Set>
       </New>
     </Arg>
   </Call>

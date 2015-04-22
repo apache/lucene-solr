@@ -12,6 +12,67 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+  <!-- =========================================================== -->
+  <!-- Configure the Server Thread Pool.                           -->
+  <!-- The server holds a common thread pool which is used by      -->
+  <!-- default as the executor used by all connectors and servlet  -->
+  <!-- dispatches.                                                 -->
+  <!--                                                             -->
+  <!-- Configuring a fixed thread pool is vital to controlling the -->
+  <!-- maximal memory footprint of the server and is a key tuning  -->
+  <!-- parameter for tuning.  In an application that rarely blocks -->
+  <!-- then maximal threads may be close to the number of 5*CPUs.  -->
+  <!-- In an application that frequently blocks, then maximal      -->
+  <!-- threads should be set as high as possible given the memory  -->
+  <!-- available.                                                  -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
+  <!-- for all configuration that may be set here.                 -->
+  <!-- =========================================================== -->
+  <!-- uncomment to change type of threadpool
+  <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
+  -->
+  <Get name="ThreadPool">
+    <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
+    <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
+    <Set name="idleTimeout" type="int"><Property name="solr.jetty.threads.idle.timeout" default="50000"/></Set>
+    <Set name="detailedDump">false</Set>
+  </Get>
+
+
+  <!-- =========================================================== -->
+  <!-- Http Configuration.                                         -->
+  <!-- This is a common configuration instance used by all         -->
+  <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, SPDY)-->
+  <!-- It configures the non wire protocol aspects of the HTTP     -->
+  <!-- semantic.                                                   -->
+  <!--                                                             -->
+  <!-- This configuration is only defined here and is used by      -->
+  <!-- reference from the jetty-http.xml, jetty-https.xml and      -->
+  <!-- jetty-spdy.xml configuration files which instantiate the    -->
+  <!-- connectors.                                                 -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
+  <!-- for all configuration that may be set here.                 -->
+  <!-- =========================================================== -->
+  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+    <Set name="secureScheme">https</Set>
+    <Set name="securePort"><Property name="solr.jetty.secure.port" default="8443" /></Set>
+    <Set name="outputBufferSize"><Property name="solr.jetty.output.buffer.size" default="32768" /></Set>
+    <Set name="outputAggregationSize"><Property name="solr.jetty.output.aggregation.size" default="8192" /></Set>
+    <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="8192" /></Set>
+    <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="8192" /></Set>
+    <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="true" /></Set>
+    <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
+    <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
+    <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
+    <!-- Uncomment to enable handling of X-Forwarded- style headers
+    <Call name="addCustomizer">
+      <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+    </Call>
+    -->
+  </New>
+
     <!-- =========================================================== -->
     <!-- RewriteHandle to redirect root to Solr                      -->
     <!-- =========================================================== -->
@@ -102,7 +163,7 @@
           <Call name="addAppProvider">
             <Arg>
               <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                <Set name="monitoredDirName"><Property name="jetty.home" default="."/>/contexts</Set>
+                <Set name="monitoredDirName"><Property name="jetty.base" default="."/>/contexts</Set>
                 <Set name="scanInterval">0</Set>
               </New>
             </Arg>

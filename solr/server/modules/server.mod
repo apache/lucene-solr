@@ -2,11 +2,6 @@
 # Base Server Module
 #
 
-[optional]
-jvm
-ext
-resources
-
 [lib]
 lib/*.jar
 lib/ext/*.jar

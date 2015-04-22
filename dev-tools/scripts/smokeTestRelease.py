@@ -805,7 +805,7 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
       f.flush()
       #print('SOLR: %s' % line.strip())
       if not startupEvent.isSet():
-        if line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
+        if line.find(b'Started ServerConnector@') != -1 and line.find(b'{HTTP/1.1}{0.0.0.0:8983}') != -1:
           startupEvent.set()
         elif p.poll() is not None:
           failureEvent.set()
