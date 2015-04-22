@@ -150,6 +150,9 @@ Bug Fixes
 * SOLR-7443: Implemented range faceting over date fields in the new facet module
   (JSON Facet API).  (yonik)
 
+* SOLR-7440: DebugComponent does not return the right requestPurpose for pivot facet refinements.
+  (shalin)
+
 Optimizations
 ----------------------
 

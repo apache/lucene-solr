@@ -101,7 +101,6 @@ public class SolrPluginUtils {
   static {
       Map<Integer, String> map = new TreeMap<>();
       map.put(ShardRequest.PURPOSE_PRIVATE, "PRIVATE");
-      map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
       map.put(ShardRequest.PURPOSE_GET_TOP_IDS, "GET_TOP_IDS");
       map.put(ShardRequest.PURPOSE_REFINE_TOP_IDS, "REFINE_TOP_IDS");
       map.put(ShardRequest.PURPOSE_GET_FACETS, "GET_FACETS");
@@ -113,8 +112,10 @@ public class SolrPluginUtils {
       map.put(ShardRequest.PURPOSE_GET_TERMS, "GET_TERMS");
       map.put(ShardRequest.PURPOSE_GET_TOP_GROUPS, "GET_TOP_GROUPS");
       map.put(ShardRequest.PURPOSE_GET_MLT_RESULTS, "GET_MLT_RESULTS");
+      map.put(ShardRequest.PURPOSE_REFINE_PIVOT_FACETS, "REFINE_PIVOT_FACETS");
       map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
-      purposes = Collections.unmodifiableMap(map);
+      map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
+    purposes = Collections.unmodifiableMap(map);
   }
 
   private static final MapSolrParams maskUseParams = new MapSolrParams(ImmutableMap.<String, String>builder()
