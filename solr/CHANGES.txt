@@ -155,6 +155,9 @@ Bug Fixes
 
 * SOLR-7440: DebugComponent does not return the right requestPurpose for pivot facet refinements.
   (shalin)
+  
+* SOLR-7408: Listeners set by SolrCores on config directories in ZK could be removed if collections
+  are created/deleted in paralle against the same config set. (Shai Erera, Anshum Gupta)
 
 Optimizations
 ----------------------
