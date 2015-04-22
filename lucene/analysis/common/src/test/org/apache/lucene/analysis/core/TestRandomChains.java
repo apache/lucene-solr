@@ -70,6 +70,7 @@ import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
+import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
@@ -121,6 +122,18 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           ALWAYS);
       brokenConstructors.put(
           LimitTokenCountFilter.class.getConstructor(TokenStream.class, int.class, boolean.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 3;
+              return !((Boolean) args[2]); // args are broken if consumeAllTokens is false
+            }
+          });
+      brokenConstructors.put(
+          LimitTokenOffsetFilter.class.getConstructor(TokenStream.class, int.class),
+          ALWAYS);
+      brokenConstructors.put(
+          LimitTokenOffsetFilter.class.getConstructor(TokenStream.class, int.class, boolean.class),
           new Predicate<Object[]>() {
             @Override
             public boolean apply(Object[] args) {
