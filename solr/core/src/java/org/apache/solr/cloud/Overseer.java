@@ -100,7 +100,6 @@ public class Overseer implements Closeable {
 
     private final Stats zkStats;
 
-    private Map clusterProps;
     private boolean isClosed = false;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
@@ -113,7 +112,6 @@ public class Overseer implements Closeable {
       this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
-      clusterProps = reader.getClusterProps();
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -344,9 +342,6 @@ public class Overseer implements Closeable {
             return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
           case ADDREPLICA:
             return new SliceMutator(getZkStateReader()).addReplica(clusterState, message);
-          case CLUSTERPROP:
-            handleProp(message);
-            break;
           case ADDREPLICAPROP:
             return new ReplicaMutator(getZkStateReader()).addReplicaProperty(clusterState, message);
           case DELETEREPLICAPROP:
@@ -395,25 +390,6 @@ public class Overseer implements Closeable {
       }
 
       return ZkStateWriter.NO_OP;
-    }
-
-    private void handleProp(ZkNodeProps message)  {
-      String name = message.getStr(NAME);
-      String val = message.getStr("val");
-      Map m =  reader.getClusterProps();
-      if(val ==null) m.remove(name);
-      else m.put(name,val);
-
-      try {
-        if (reader.getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true))
-          reader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, ZkStateReader.toJSON(m), true);
-        else
-          reader.getZkClient().create(ZkStateReader.CLUSTER_PROPS, ZkStateReader.toJSON(m),CreateMode.PERSISTENT, true);
-        clusterProps = reader.getClusterProps();
-      } catch (Exception e) {
-        log.error("Unable to set cluster property", e);
-
-      }
     }
 
     private LeaderStatus amILeader() {

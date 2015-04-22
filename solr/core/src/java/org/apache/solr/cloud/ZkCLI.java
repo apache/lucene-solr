@@ -1,5 +1,8 @@
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.common.params.CommonParams.*;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -10,15 +13,19 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -123,7 +130,9 @@ public class ZkCLI {
             "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)");
     
     options.addOption("h", HELP, false, "bring up this help page");
-    
+    options.addOption(NAME, true, "name of the cluster property to set");
+    options.addOption(VALUE_LONG, true, "value of the cluster to set");
+
     try {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
@@ -145,6 +154,7 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLUSTERPROP + " -" + NAME + " urlScheme -" + VALUE_LONG + " https" );
         return;
       }
       
@@ -294,6 +304,37 @@ public class ZkCLI {
           }
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
+        } else if (CollectionAction.get(line.getOptionValue(CMD)) == CLUSTERPROP) {
+          if(!line.hasOption(NAME)) {
+            System.out.println("-" + NAME + " is required for " + CLUSTERPROP);
+          }
+          String propertyName = line.getOptionValue(NAME);
+          //If -val option is missing, we will use the null value. This is required to maintain
+          //compatibility with Collections API.
+          String propertyValue = line.getOptionValue(VALUE_LONG);
+          ZkStateReader reader = new ZkStateReader(zkClient);
+          try {
+            reader.setClusterProperty(propertyName, propertyValue);
+          } catch (SolrException ex) {
+            //This can happen if two concurrent invocations of this command collide
+            //with each other. Here we are just adding a defensive check to see if
+            //the value is already set to expected value. If yes, then we don't
+            //fail the command.
+            Throwable cause = ex.getCause();
+            if(cause instanceof KeeperException.NodeExistsException
+                || cause instanceof KeeperException.BadVersionException) {
+                String currentValue = (String)reader.getClusterProps().get(propertyName);
+                if((currentValue == propertyValue) || (currentValue != null && currentValue.equals(propertyValue))) {
+                  return;
+                }
+            }
+            System.out.println("Unable to set the cluster property due to following error : " +
+                ex.getLocalizedMessage() +
+                ((cause instanceof KeeperException.BadVersionException)?". Try again":""));
+            System.exit(1);
+          } finally {
+            reader.close();
+          }
         }
       } finally {
         if (solrPort != null) {
