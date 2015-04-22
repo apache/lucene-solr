@@ -34,15 +34,24 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
     super(ctx);
   }
 
+  /** Override to return true if generateRandomShape is essentially a Rectangle. */
+  protected boolean isRandomShapeRectangular() {
+    return false;
+  }
+
   protected abstract S generateRandomShape(Point nearP);
 
+  /** shape has no area; return a point in it */
   protected abstract Point randomPointInEmptyShape(S shape);
 
   @SuppressWarnings("unchecked")
   @Override
   protected Point randomPointIn(Shape shape) {
-    if (!shape.hasArea())
-      return randomPointInEmptyShape((S) shape);
+    if (!shape.hasArea()) {
+      final Point pt = randomPointInEmptyShape((S) shape);
+      assert shape.relate(pt).intersects() : "faulty randomPointInEmptyShape";
+      return pt;
+    }
     return super.randomPointIn(shape);
   }
 
@@ -52,7 +61,7 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
     int laps = 0;
     final int MINLAPSPERCASE = scaledRandomIntBetween(20, 200);
     while(i_C < MINLAPSPERCASE || i_I < MINLAPSPERCASE || i_W < MINLAPSPERCASE
-        || i_D < MINLAPSPERCASE || i_bboxD < MINLAPSPERCASE) {
+        || (!isRandomShapeRectangular() && i_D < MINLAPSPERCASE) || i_bboxD < MINLAPSPERCASE) {
       laps++;
 
       TestLog.clear();
@@ -66,6 +75,11 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
       SpatialRelation ic = s.relate(r);
 
       TestLog.log("S-R Rel: {}, Shape {}, Rectangle {}", ic, s, r);
+
+      if (ic != DISJOINT) {
+        assertTrue("if not disjoint then the shape's bbox shouldn't be disjoint",
+            s.getBoundingBox().relate(r).intersects());
+      }
 
       try {
         int MAX_TRIES = scaledRandomIntBetween(10, 100);
