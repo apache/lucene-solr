@@ -48,7 +48,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
-    zkController.watchZKConfDir(configSetZkPath);
   }
 
   /**
@@ -63,7 +62,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir, parent, coreProperties);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
-    zkController.watchZKConfDir(configSetZkPath);
   }
 
   /**

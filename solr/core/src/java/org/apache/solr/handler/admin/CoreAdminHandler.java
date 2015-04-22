@@ -605,7 +605,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     catch (Exception ex) {
       if (coreContainer.isZooKeeperAware() && dcore != null && !preExisitingZkEntry) {
         try {
-          coreContainer.getZkController().unregister(dcore.getName(), dcore,null);
+          coreContainer.getZkController().unregister(dcore.getName(), dcore);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           SolrException.log(log, null, e);

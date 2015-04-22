@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -33,6 +35,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 
+@Nightly
 public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   
   private MiniSolrCloudCluster solrCluster;
@@ -61,13 +64,41 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       final String collectionName = "collection" + i;
       uploadConfig(configDir, collectionName);
       final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, timeToRunSec, solrClient, failure);
+      threads[i] = new CreateDeleteSearchCollectionThread("create-delete-search-" + i, collectionName, collectionName, 
+          timeToRunSec, solrClient, failure);
     }
     
     startAll(threads);
     joinAll(threads);
     
     assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
+  }
+  
+  public void testConcurrentCreateAndDeleteOverTheSameConfig() {
+    Logger.getLogger("org.apache.solr").setLevel(Level.WARN);
+    final String configName = "testconfig";
+    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    uploadConfig(configDir, configName); // upload config once, to be used by all collections
+    final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    final AtomicReference<Exception> failure = new AtomicReference<>();
+    final int timeToRunSec = 30;
+    final Thread[] threads = new Thread[2];
+    for (int i = 0; i < threads.length; i++) {
+      final String collectionName = "collection" + i;
+      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, 
+          timeToRunSec, solrClient, failure);
+    }
+    
+    startAll(threads);
+    joinAll(threads);
+    
+    assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
+    
+    try {
+      solrClient.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
   
   private void uploadConfig(File configDir, String configName) {
@@ -96,58 +127,59 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   }
   
   private static class CreateDeleteCollectionThread extends Thread {
-    private final String collectionName;
-    private final long timeToRunSec;
-    private final SolrClient solrClient;
-    private final AtomicReference<Exception> failure;
+    protected final String collectionName;
+    protected final String configName;
+    protected final long timeToRunSec;
+    protected final SolrClient solrClient;
+    protected final AtomicReference<Exception> failure;
     
-    public CreateDeleteCollectionThread(String name, String collectionName,
-        long timeToRunSec, SolrClient solrClient, AtomicReference<Exception> failure) {
+    public CreateDeleteCollectionThread(String name, String collectionName, String configName, long timeToRunSec,
+        SolrClient solrClient, AtomicReference<Exception> failure) {
       super(name);
       this.collectionName = collectionName;
       this.timeToRunSec = timeToRunSec;
       this.solrClient = solrClient;
       this.failure = failure;
+      this.configName = configName;
     }
-
+    
     @Override
     public void run() {
       final long timeToStop = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeToRunSec);
       while (System.currentTimeMillis() < timeToStop && failure.get() == null) {
-        createCollection(collectionName);
-        deleteCollection();
-        searchNonExistingCollection();
+        doWork();
       }
     }
     
-    private void searchNonExistingCollection() {
-      try {
-        solrClient.query(collectionName, new SolrQuery("*"));
-      } catch (Exception e) {
-        if (!e.getMessage().contains("not found") && !e.getMessage().contains("Can not find")) {
-          synchronized (failure) {
-            if (failure.get() != null) {
-              failure.get().addSuppressed(e);
-            } else {
-              failure.set(e);
-            }
-          }
+    protected void doWork() {
+      createCollection();
+      deleteCollection();
+    }
+    
+    protected void addFailure(Exception e) {
+      synchronized (failure) {
+        if (failure.get() != null) {
+          failure.get().addSuppressed(e);
+        } else {
+          failure.set(e);
         }
       }
     }
     
-    private void createCollection(String collectionName) {
+    private void createCollection() {
       try {
         final CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
         createCollectionRequest.setCollectionName(collectionName);
         createCollectionRequest.setNumShards(1);
         createCollectionRequest.setReplicationFactor(1);
-        createCollectionRequest.setConfigName(collectionName);
+        createCollectionRequest.setConfigName(configName);
         
         final CollectionAdminResponse response = createCollectionRequest.process(solrClient);
-        assertEquals(0, response.getStatus());
-      } catch (IOException | SolrServerException e) {
-        throw new RuntimeException(e);
+        if (response.getStatus() != 0) {
+          addFailure(new RuntimeException("failed to create collection " + collectionName));
+        }
+      } catch (Exception e) {
+        addFailure(e);
       }
       
     }
@@ -158,11 +190,38 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
         deleteCollectionRequest.setCollectionName(collectionName);
         
         final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
-        assertEquals(0, response.getStatus());
-      } catch (IOException | SolrServerException e) {
-        throw new RuntimeException(e);
+        if (response.getStatus() != 0) {
+          addFailure(new RuntimeException("failed to delete collection " + collectionName));
+        }
+      } catch (Exception e) {
+        addFailure(e);
       }
     }
+  }
+  
+  private static class CreateDeleteSearchCollectionThread extends CreateDeleteCollectionThread {
+
+    public CreateDeleteSearchCollectionThread(String name, String collectionName, String configName, long timeToRunSec,
+        SolrClient solrClient, AtomicReference<Exception> failure) {
+      super(name, collectionName, configName, timeToRunSec, solrClient, failure);
+    }
+    
+    @Override
+    protected void doWork() {
+      super.doWork();
+      searchNonExistingCollection();
+    }
+    
+    private void searchNonExistingCollection() {
+      try {
+        solrClient.query(collectionName, new SolrQuery("*"));
+      } catch (Exception e) {
+        if (!e.getMessage().contains("not found") && !e.getMessage().contains("Can not find")) {
+          addFailure(e);
+        }
+      }
+    }
+    
   }
   
 }
