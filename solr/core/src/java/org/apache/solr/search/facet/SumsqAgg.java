@@ -33,6 +33,6 @@ public class SumsqAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetDoubleMerger();
+    return new SumAgg.Merger();
   }
 }

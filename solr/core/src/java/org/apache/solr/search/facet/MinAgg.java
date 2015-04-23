@@ -33,21 +33,23 @@ public class MinAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetMerger() {
-      double val = Double.NaN;
+    return new Merger();
+  }
 
-      @Override
-      public void merge(Object facetResult) {
-        double result = ((Number)facetResult).doubleValue();
-        if (result < val || Double.isNaN(val)) {
-          val = result;
-        }
-      }
+  private static class Merger extends FacetDoubleMerger {
+    double val = Double.NaN;
 
-      @Override
-      public Object getMergedResult() {
-        return val;
+    @Override
+    public void merge(Object facetResult) {
+      double result = ((Number)facetResult).doubleValue();
+      if (result < val || Double.isNaN(val)) {
+        val = result;
       }
-    };
+    }
+
+    @Override
+    protected double getDouble() {
+      return val;
+    }
   }
 }

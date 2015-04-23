@@ -34,7 +34,20 @@ public class SumAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetDoubleMerger();
+    return new Merger();
+  }
+
+  public static class Merger extends FacetDoubleMerger {
+    double val;
+
+    @Override
+    public void merge(Object facetResult) {
+      val += ((Number)facetResult).doubleValue();
+    }
+
+    protected double getDouble() {
+      return val;
+    }
   }
 }
 
