@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
@@ -40,8 +41,11 @@ public class InitParams {
   public final String name;
   public final Set<String> paths;
   public final NamedList defaults, invariants, appends;
+  private PluginInfo pluginInfo;
+  private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
 
   public InitParams(PluginInfo p) {
+    this.pluginInfo = p;
     this.name = p.attributes.get(NAME);
     Set<String> paths = null;
     String pathStr = p.attributes.get(PATH);
@@ -96,6 +100,16 @@ public class InitParams {
     }
     merge((NamedList) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
     merge((NamedList) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
+
+    if (pluginInfo.initArgs != null) {
+      for (int i = 0; i < pluginInfo.initArgs.size(); i++) {
+        String name = pluginInfo.initArgs.getName(i);
+        if (KNOWN_KEYS.contains(name)) continue;//aready taken care of
+        Object val = info.initArgs.get(name);
+        if (val != null) continue; //this is explicitly specified in the reqhandler , ignore
+        info.initArgs.add(name, pluginInfo.initArgs.getVal(i));
+      }
+    }
   }
 
   private static void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
