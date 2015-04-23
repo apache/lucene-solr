@@ -35,21 +35,25 @@ public class AvgAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetMerger() {
-      long num;
-      double sum;
-
-      @Override
-      public void merge(Object facetResult) {
-        List<Number> numberList = (List<Number>)facetResult;
-        num += numberList.get(0).longValue();
-        sum += numberList.get(1).doubleValue();
-      }
-
-      @Override
-      public Object getMergedResult() {
-        return num==0 ? 0.0d : sum/num;
-      }
-    };
+    return new Merger();
   }
+
+  private static class Merger extends FacetDoubleMerger {
+    long num;
+    double sum;
+
+    @Override
+    public void merge(Object facetResult) {
+      List<Number> numberList = (List<Number>)facetResult;
+      num += numberList.get(0).longValue();
+      sum += numberList.get(1).doubleValue();
+    }
+
+    @Override
+    protected double getDouble() {
+      // TODO: is it worth to try and cache?
+      return num==0 ? 0.0d : sum/num;
+    }
+
+  };
 }

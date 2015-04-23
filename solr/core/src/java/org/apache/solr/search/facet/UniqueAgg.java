@@ -63,41 +63,53 @@ public class UniqueAgg extends StrAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetMerger() {
-      long sumUnique;
-      Set<Object> values;
-      int shardsMissing;
-      long shardsMissingSum;
-      long shardsMissingMax;
-
-      @Override
-      public void merge(Object facetResult) {
-        SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
-        long unique = ((Number)map.get("unique")).longValue();
-        sumUnique += unique;
-
-        List vals = (List)map.get("vals");
-        if (vals != null) {
-          if (values == null) {
-            values = new HashSet<>(vals.size()*4);
-          }
-          values.addAll(vals);
-        } else {
-          shardsMissing++;
-          shardsMissingSum += unique;
-          shardsMissingMax = Math.max(shardsMissingMax, unique);
-        }
-
-        // TODO: somehow get & use the count in the bucket?
-      }
-
-      @Override
-      public Object getMergedResult() {
-        long exactCount = values == null ? 0 : values.size();
-        return exactCount + shardsMissingSum;
-      }
-    };
+    return new Merger();
   }
+
+  private static class Merger extends FacetSortableMerger {
+    long sumUnique;
+    Set<Object> values;
+    int shardsMissing;
+    long shardsMissingSum;
+    long shardsMissingMax;
+
+    @Override
+    public void merge(Object facetResult) {
+      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
+      long unique = ((Number)map.get("unique")).longValue();
+      sumUnique += unique;
+
+      List vals = (List)map.get("vals");
+      if (vals != null) {
+        if (values == null) {
+          values = new HashSet<>(vals.size()*4);
+        }
+        values.addAll(vals);
+      } else {
+        shardsMissing++;
+        shardsMissingSum += unique;
+        shardsMissingMax = Math.max(shardsMissingMax, unique);
+      }
+
+      // TODO: somehow get & use the count in the bucket?
+    }
+
+    private long getLong() {
+      long exactCount = values == null ? 0 : values.size();
+      return exactCount + shardsMissingSum;
+    }
+
+    @Override
+    public Object getMergedResult() {
+      return getLong();
+    }
+
+    @Override
+    public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+      return Long.compare( getLong(), ((Merger)other).getLong() );
+    }
+  }
+
 
 
   static class LongSet {

@@ -155,6 +155,9 @@ Other Changes
 * SOLR-7421: RecoveryAfterSoftCommitTest fails frequently on Jenkins due to full index
   replication taking longer than 30 seconds. (Timothy Potter, shalin)
 
+* SOLR-7387: Facet Module - distributed search didn't work when sorting terms
+  facet by min, max, avg, or unique functions.  (yonik)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

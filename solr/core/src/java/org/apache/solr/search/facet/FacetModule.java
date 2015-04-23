@@ -242,22 +242,21 @@ abstract class FacetSortableMerger extends FacetMerger {
   public abstract int compareTo(FacetSortableMerger other, FacetField.SortDirection direction);
 }
 
-class FacetDoubleMerger extends FacetSortableMerger {
-  double val;
-
+abstract class FacetDoubleMerger extends FacetSortableMerger {
   @Override
-  public void merge(Object facetResult) {
-    val += ((Number)facetResult).doubleValue();
-  }
+  public abstract void merge(Object facetResult);
+
+  protected abstract double getDouble();
 
   @Override
   public Object getMergedResult() {
-    return val;
+    return getDouble();
   }
+
 
   @Override
   public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
-    return compare(val, ((FacetDoubleMerger)other).val, direction);
+    return compare(getDouble(), ((FacetDoubleMerger)other).getDouble(), direction);
   }
 
 
@@ -280,6 +279,9 @@ class FacetDoubleMerger extends FacetSortableMerger {
     return 0;
   }
 }
+
+
+
 
 
 class FacetLongMerger extends FacetSortableMerger {

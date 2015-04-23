@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
@@ -250,6 +252,38 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
   }
 
+  Map<String,String[]> suffixMap = new HashMap<>();
+  {
+    suffixMap.put("_s", new String[]{"_s","_ss","_sd","_sds"} );
+    suffixMap.put("_ss", new String[]{"_ss","_sds"} );
+    suffixMap.put("_l", new String[]{"_l","_ls","_ld","_lds"} );
+    suffixMap.put("_ls", new String[]{"_ls","_lds"} );
+    suffixMap.put("_i", new String[]{"_i","_is","_id","_ids", "_l","_ls","_ld","_lds"} );
+    suffixMap.put("_is", new String[]{"_is","_ids", "_ls","_lds"} );
+    suffixMap.put("_d", new String[]{"_d","_ds","_dd","_dds"} );
+    suffixMap.put("_ds", new String[]{"_ds","_dds"} );
+    suffixMap.put("_f", new String[]{"_f","_fs","_fd","_fds", "_d","_ds","_dd","_dds"} );
+    suffixMap.put("_fs", new String[]{"_fs","_fds","_ds","_dds"} );
+    suffixMap.put("_dt", new String[]{"_dt","_dts","_dtd","_dtds"} );
+    suffixMap.put("_dts", new String[]{"_dts","_dtds"} );
+    suffixMap.put("_b", new String[]{"_b"} );
+  }
+
+  List<String> getAlternatives(String field) {
+    int idx = field.lastIndexOf("_");
+    if (idx<=0 || idx>=field.length()) return Collections.singletonList(field);
+    String suffix = field.substring(idx);
+    String[] alternativeSuffixes = suffixMap.get(suffix);
+    if (alternativeSuffixes == null) return Collections.singletonList(field);
+    String base = field.substring(0, idx);
+    List<String> out = new ArrayList<>(alternativeSuffixes.length);
+    for (String altS : alternativeSuffixes) {
+      out.add( base + altS );
+    }
+    Collections.shuffle(out, random());
+    return out;
+  }
+
   @Test
   public void testStats() throws Exception {
     // single valued strings
@@ -257,11 +291,45 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public void doStats(Client client, ModifiableSolrParams p) throws Exception {
+
+    Map<String, List<String>> fieldLists = new HashMap<>();
+    fieldLists.put("noexist", getAlternatives("noexist_s"));
+    fieldLists.put("cat_s", getAlternatives("cat_s"));
+    fieldLists.put("where_s", getAlternatives("where_s"));
+    fieldLists.put("num_d", getAlternatives("num_f")); // num_d name is historical, which is why we map it to num_f alternatives so we can include floats as well
+    fieldLists.put("num_i", getAlternatives("num_i"));
+    fieldLists.put("super_s", getAlternatives("super_s"));
+    fieldLists.put("val_b", getAlternatives("val_b"));
+    fieldLists.put("date", getAlternatives("date_dt"));
+    fieldLists.put("sparse_s", getAlternatives("sparse_s"));
+    fieldLists.put("multi_ss", getAlternatives("multi_ss"));
+
+    // TODO: if a field will be used as a function source, we can't use multi-valued types for it (currently)
+
+    int maxAlt = 0;
+    for (List<String> fieldList : fieldLists.values()) {
+      maxAlt = Math.max(fieldList.size(), maxAlt);
+    }
+
+    // take the field with the maximum number of alternative types and loop through our variants that many times
+    for (int i=0; i<maxAlt; i++) {
+      ModifiableSolrParams args = params(p);
+      for (String field : fieldLists.keySet()) {
+        List<String> alts = fieldLists.get(field);
+        String alt = alts.get( i % alts.size() );
+        args.add(field, alt);
+      }
+
+      args.set("rows","0");
+      // doStatsTemplated(client, args);
+    }
+
+
     // single valued strings
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_s",  "cat_s","cat_s", "where_s","where_s", "num_d","num_d", "num_i","num_i", "super_s","super_s", "val_b","val_b", "date","date_dt", "sparse_s","sparse_s"    ,"multi_ss","multi_ss") );
 
-    // multi-valued strings
-    doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_d", "num_i","num_i", "super_s","super_ss", "val_b","val_b", "date","date_dt", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
+    // multi-valued strings, long/float substitute for int/double
+    doStatsTemplated(client, params(p, "facet","true", "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_f", "num_i","num_l", "super_s","super_ss", "val_b","val_b", "date","date_dt", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
 
     // single valued docvalues for strings, and single valued numeric doc values for numeric fields
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "super_s","super_sd", "val_b","val_b", "date","date_dtd", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
@@ -372,7 +440,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "'f1':{ allBuckets:{ 'count':1, n1:4.0}, 'buckets':[{ 'val':'A', 'count':1, n1:4.0}, { 'val':'B', 'count':0 /*, n1:0.0 */ }]} } "
     );
 
-    // test sorting by stat
+    // test sorting by other stats
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc', facet:{n1:'sum(${num_d})'}  }}" +
                 " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'sum(${num_d})'}  }} }"
@@ -381,6 +449,32 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 }, { val:'B', count:3, n1:-3.0}]}" +
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
     );
+
+    // test sorting by other stats
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'min(${num_d})'}  }" +
+                " , f2:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'max(${num_d})'}  } " +
+                " , f3:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } " +
+                "}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, x:2.0 },  { val:'B', count:3, x:-9.0}]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, x:11.0 }, { val:'A', count:2, x:4.0 }]} " +
+            ", f3:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
+            "}"
+    );
+
+    // test sorting by stat with function
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc', facet:{n1:'avg(add(${num_d},${num_d}))'}  }}" +
+                " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'avg(add(${num_d},${num_d}))'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 }, { val:'B', count:3, n1:-2.0}]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:-2.0}, { val:'A', count:2, n1:6.0 }]} }"
+    );
+
+
 
     // percentiles 0,10,50,90,100
     // catA: 2.0 2.2 3.0 3.8 4.0
