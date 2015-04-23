@@ -101,7 +101,3 @@ ENABLE_REMOTE_JMX_OPTS="false"
 #-Djavax.net.ssl.keyStorePassword=secret \
 #-Djavax.net.ssl.trustStore=etc/solr-ssl.keystore.jks \
 #-Djavax.net.ssl.trustStorePassword=secret"
-
-# Uncomment to set a specific SSL port (-Djetty.ssl.port=N); if not set
-# and you are using SSL, then the start script will use SOLR_PORT for the SSL port
-#SOLR_SSL_PORT=

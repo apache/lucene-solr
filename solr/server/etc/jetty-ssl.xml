@@ -7,14 +7,12 @@
 <!-- and either jetty-https.xml or jetty-spdy.xml (but not both)   -->
 <!-- ============================================================= -->
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-  <Set name="KeyStorePath"><Property name="solr.jetty.keystore" default="./etc/solr-ssl.keystore.jks"/></Set>
-  <Set name="KeyStorePassword"><Property name="solr.jetty.keystore.password" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-  <Set name="KeyManagerPassword"><Property name="solr.jetty.keymanager.password" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
-  <Set name="TrustStorePath"><Property name="solr.jetty.truststore" default="./etc/solr-ssl.keystore.jks"/></Set>
-  <Set name="TrustStorePassword"><Property name="solr.jetty.truststore.password" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-  <Set name="EndpointIdentificationAlgorithm"></Set>
-  <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
-  <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="KeyStorePath"><Property name="javax.net.ssl.keyStore" default="./etc/solr-ssl.keystore.jks"/></Set>
+  <Set name="KeyStorePassword"><Property name="javax.net.ssl.keyStorePassword" default="secret"/></Set>
+  <Set name="TrustStorePath"><Property name="javax.net.ssl.trustStore" default="./etc/solr-ssl.keystore.jks"/></Set>
+  <Set name="TrustStorePassword"><Property name="javax.net.ssl.trustStorePassword" default="secret"/></Set>
+  <Set name="NeedClientAuth"><Property name="jetty.ssl.clientAuth" default="false"/></Set>
+  <Set name="WantClientAuth"><Property name="jetty.ssl.wantClientAuth" default="false"/></Set>
   <Set name="ExcludeCipherSuites">
     <Array type="String">
       <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>

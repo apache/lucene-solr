@@ -83,7 +83,3 @@ REM set SOLR_PORT=8983
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_OPTS=-Djavax.net.ssl.keyStore=etc/solr-ssl.keystore.jks -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.trustStore=etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStorePassword=secret
-
-REM Uncomment to set a specific SSL port (-Djetty.ssl.port=N); if not set
-REM and you are using SSL, then the start script will use SOLR_PORT for the SSL port
-REM set SOLR_SSL_PORT=

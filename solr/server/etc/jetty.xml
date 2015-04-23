@@ -35,7 +35,8 @@
   <Get name="ThreadPool">
     <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
     <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
-    <Set name="idleTimeout" type="int"><Property name="solr.jetty.threads.idle.timeout" default="50000"/></Set>
+    <Set name="idleTimeout" type="int"><Property name="solr.jetty.threads.idle.timeout" default="5000"/></Set>
+    <Set name="stopTimeout" type="int"><Property name="solr.jetty.threads.stop.timeout" default="60000"/></Set>
     <Set name="detailedDump">false</Set>
   </Get>
 
@@ -62,7 +63,7 @@
     <Set name="outputAggregationSize"><Property name="solr.jetty.output.aggregation.size" default="8192" /></Set>
     <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="8192" /></Set>
     <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="8192" /></Set>
-    <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="true" /></Set>
+    <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="false" /></Set>
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
     <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>

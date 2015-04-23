@@ -41,6 +41,10 @@ set SOLR_URL_SCHEME=http
 IF DEFINED SOLR_SSL_OPTS set SOLR_URL_SCHEME=https
 IF NOT DEFINED SOLR_SSL_OPTS set SOLR_SSL_OPTS=
 
+REM Which Jetty module to use - either HTTPS or HTTP
+set "SOLR_JETTY_CONFIG=--module=http"
+IF NOT "%SOLR_SSL_OPTS%"=="" set "SOLR_JETTY_CONFIG=--module=http"
+
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
 REM Try to detect JAVA_HOME from the registry
@@ -694,7 +698,7 @@ IF "%SCRIPT_CMD%"=="stop" (
             set found_it=1
             @echo Stopping Solr process %%N running on port %SOLR_PORT%
             set /A STOP_PORT=%SOLR_PORT% - 1000
-            "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" "%SOLR_JETTY_CONFIG%" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
             del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
             timeout /T 5
             REM Kill it if it is still running after the graceful shutdown
@@ -857,8 +861,7 @@ IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
 IF NOT "%SOLR_SSL_OPTS%"=="" (
-  set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_PORT%"
-  IF DEFINED SOLR_SSL_PORT set "SSL_PORT_PROP=-Djetty.ssl.port=%SOLR_SSL_PORT%"
+  set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
 )
 
@@ -882,10 +885,10 @@ IF "%FG%"=="1" (
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
   "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Xloggc:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%"
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Xloggc:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 )
 

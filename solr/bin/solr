@@ -142,6 +142,14 @@ if [ -n "$SOLR_SSL_OPTS" ]; then
   SOLR_URL_SCHEME=https
 fi
 
+# Which Jetty module to use - either HTTPS or HTTP
+SOLR_JETTY_CONFIG=()
+if [ -n "$SOLR_SSL_OPTS" ]; then
+  SOLR_JETTY_CONFIG+=("--module=https")
+else
+  SOLR_JETTY_CONFIG+=("--module=http")
+fi
+
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
@@ -1289,11 +1297,8 @@ function launch_solr() {
 
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ -n "$SOLR_SSL_OPTS" ]; then
-    # If using SSL and jetty.ssl.port not set explicitly, use the jetty.port
-    SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_PORT"
-    if [ -n "$SOLR_SSL_PORT" ]; then
-      SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_SSL_PORT"
-    fi
+    # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
+    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
   fi
 
@@ -1352,11 +1357,11 @@ function launch_solr() {
 
   if [ "$run_in_foreground" == "true" ]; then
     echo -e "\nStarting Solr$IN_CLOUD_MODE on port $SOLR_PORT from $SOLR_SERVER_DIR\n"
-    "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar
+    "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar \
-	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
+	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" "${SOLR_JETTY_CONFIG[@]}" \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
     # no lsof on cygwin though
