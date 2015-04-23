@@ -65,7 +65,7 @@ public abstract class CellIterator implements Iterator<Cell> {
   }
 
   @Override
-  public final Cell next() {
+  public Cell next() {
     if (nextCell == null) {
       if (!hasNext())
         throw new NoSuchElementException();
