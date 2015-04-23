@@ -114,6 +114,10 @@ New Features
 * SOLR-7417: JSON Facet API - unique() is now implemented for numeric and date fields.
   (yonik)
 
+* SOLR-7406: Add a new "facet.range.method" parameter to let users choose how to do range 
+  faceting between an implementation based on filters (previous algorithm, using 
+  "facet.range.method=filter") or DocValues ("facet.range.method=dv"). 
+  Input parameters and output of both methods are the same. (Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------
