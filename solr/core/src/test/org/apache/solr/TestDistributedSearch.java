@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
@@ -246,7 +247,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range",tlong,
           "facet.range.start",200, 
           "facet.range.gap",100, 
-          "facet.range.end",900);
+          "facet.range.end",900,
+          "facet.range.method", FacetRangeMethod.FILTER);
+    
+    // simple range facet on one field using dv method
+    query("q",facetQuery, "rows",100, "facet","true", 
+          "facet.range",tlong,
+          "facet.range",tlong,
+          "facet.range.start",200, 
+          "facet.range.gap",100, 
+          "facet.range.end",900,
+          "facet.range.method", FacetRangeMethod.DV);
 
     // range facet on multiple fields
     query("q",facetQuery, "rows",100, "facet","true", 
@@ -257,7 +268,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.end",900,
           "facet.range.start",200, 
           "facet.range.gap",100, 
-          "f."+tlong+".facet.range.end",900);
+          "f."+tlong+".facet.range.end",900,
+          "f."+i1+".facet.range.method", FacetRangeMethod.FILTER,
+          "f."+tlong+".facet.range.method", FacetRangeMethod.DV);
     
     // range facet with "other" param
     QueryResponse response = query("q",facetQuery, "rows",100, "facet","true", 

@@ -281,7 +281,15 @@ public interface FacetParams {
    * @see FacetRangeInclude
    */
   public static final String FACET_RANGE_INCLUDE = FACET_RANGE + ".include";
-
+  
+  /**
+   * String indicating the method to use to resolve range facets.
+   * <p>
+   * Can be overriden on a per field basis.
+   * @see FacetRangeMethod
+   */
+  public static final String FACET_RANGE_METHOD = FACET_RANGE + ".method";
+  
   /**
    * Any field whose values the user wants to enumerate as explicit intervals of terms.
    */
@@ -408,6 +416,32 @@ public interface FacetParams {
 
       // use whatever we've got.
       return include;
+    }
+  }
+  
+  /**
+   * An enumeration of the legal values for {@link #FACET_RANGE_METHOD}
+   * <ul>
+   * <li>filter = </li>
+   * <li>dv = </li>
+   * </ul>
+   * @see #FACET_RANGE_METHOD
+   */
+  public enum FacetRangeMethod {
+    FILTER, DV;
+    @Override
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
+    public static FacetRangeMethod get(String label) {
+      try {
+        return valueOf(label.toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           label+" is not a valid method for range faceting",e);
+      }
+    }
+    public static FacetRangeMethod getDefault() {
+      return FILTER;
     }
   }
 
