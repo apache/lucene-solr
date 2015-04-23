@@ -36,9 +36,9 @@ public abstract class LegacyCell implements Cell {
   private static final byte LEAF_BYTE = '+';//NOTE: must sort before letters & numbers
 
   //Arguably we could simply use a BytesRef, using an extra Object.
-  private byte[] bytes;//generally bigger to potentially hold a leaf
-  private int b_off;
-  private int b_len;//doesn't reflect leaf; same as getLevel()
+  protected byte[] bytes;//generally bigger to potentially hold a leaf
+  protected int b_off;
+  protected int b_len;//doesn't reflect leaf; same as getLevel()
 
   protected boolean isLeaf;
 
@@ -68,25 +68,13 @@ public abstract class LegacyCell implements Cell {
     readLeafAdjust();
   }
 
-  private void readLeafAdjust() {
+  protected void readLeafAdjust() {
     isLeaf = (b_len > 0 && bytes[b_off + b_len - 1] == LEAF_BYTE);
     if (isLeaf)
       b_len--;
     if (getLevel() == getMaxLevels())
       isLeaf = true;
   }
-
-//  @Override
-//  public void copyFrom(Cell source) {
-//    LegacyCell src = (LegacyCell) source;
-//    shapeRel = src.shapeRel;
-//    shape = src.shape;
-//    isLeaf = src.isLeaf;
-//    //we don't actually copy the bytes because in LegacyCell the bytes aren't modified. (leaf byte doesn't count)
-//    bytes = src.bytes;
-//    b_off = src.b_off;
-//    b_len = src.b_len;
-//  }
 
   protected abstract SpatialPrefixTree getGrid();
 
@@ -214,7 +202,7 @@ public abstract class LegacyCell implements Cell {
 
   /** Copied from {@link BytesRef#compareTo(BytesRef)}.
    * This is to avoid creating a BytesRef. */
-  private static int compare(byte[] aBytes, int aUpto, int a_length, byte[] bBytes, int bUpto, int b_length) {
+  protected static int compare(byte[] aBytes, int aUpto, int a_length, byte[] bBytes, int bUpto, int b_length) {
     final int aStop = aUpto + Math.min(a_length, b_length);
     while(aUpto < aStop) {
       int aByte = aBytes[aUpto++] & 0xff;

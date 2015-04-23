@@ -92,9 +92,14 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     return pruneLeafyBranches;
   }
 
-  /** An optional hint affecting non-point shapes: it will
-   * simplify/aggregate sets of complete leaves in a cell to its parent, resulting in ~20-25%
-   * fewer indexed cells. However, it will likely be removed in the future. (default=true)
+  /**
+   * An optional hint affecting non-point shapes: it will
+   * prune away a complete set sibling leaves to their parent (recursively), resulting in ~20-50%
+   * fewer indexed cells, and consequently that much less disk and that much faster indexing.
+   * So if it's a quad tree and all 4 sub-cells are there marked as a leaf, then they will be
+   * removed (pruned) and the parent is marked as a leaf instead.  This occurs recursively on up.  Unfortunately, the
+   * current implementation will buffer all cells to do this, so consider disabling for high precision (low distErrPct)
+   * shapes. (default=true)
    */
   public void setPruneLeafyBranches(boolean pruneLeafyBranches) {
     this.pruneLeafyBranches = pruneLeafyBranches;

@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.PackedQuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
@@ -111,7 +112,13 @@ public class SpatialDocMaker extends DocMaker {
 
     RecursivePrefixTreeStrategy strategy = new RecursivePrefixTreeStrategy(grid, spatialField);
     strategy.setPointsOnly(config.get("spatial.docPointsOnly", false));
-    strategy.setPruneLeafyBranches(config.get("spatial.pruneLeafyBranches", true));
+    final boolean pruneLeafyBranches = config.get("spatial.pruneLeafyBranches", true);
+    if (grid instanceof PackedQuadPrefixTree) {
+      ((PackedQuadPrefixTree) grid).setPruneLeafyBranches(pruneLeafyBranches);
+      strategy.setPruneLeafyBranches(false);//always leave it to packed grid, even though it isn't the same
+    } else {
+      strategy.setPruneLeafyBranches(pruneLeafyBranches);
+    }
 
     int prefixGridScanLevel = config.get("query.spatial.prefixGridScanLevel", -4);
     if (prefixGridScanLevel < 0)

@@ -47,6 +47,7 @@ import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.PackedQuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -72,14 +73,17 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   public void setupGrid(int maxLevels) throws IOException {
     if (randomBoolean())
-      setupQuadGrid(maxLevels);
+      setupQuadGrid(maxLevels, randomBoolean());
     else
       setupGeohashGrid(maxLevels);
     setupCtx2D(ctx);
 
-    //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
-
+    // set prune independently on strategy & grid randomly; should work
     ((RecursivePrefixTreeStrategy)strategy).setPruneLeafyBranches(randomBoolean());
+    if (this.grid instanceof PackedQuadPrefixTree) {
+      ((PackedQuadPrefixTree) this.grid).setPruneLeafyBranches(randomBoolean());
+    }
+
     if (maxLevels == -1 && rarely()) {
       ((PrefixTreeStrategy) strategy).setPointsOnly(true);
     }
@@ -97,7 +101,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     ctx2D = ctxFactory.newSpatialContext();
   }
 
-  private void setupQuadGrid(int maxLevels) {
+  private void setupQuadGrid(int maxLevels, boolean packedQuadPrefixTree) {
     //non-geospatial makes this test a little easier (in gridSnap), and using boundary values 2^X raises
     // the prospect of edge conditions we want to test, plus makes for simpler numbers (no decimals).
     SpatialContextFactory factory = new SpatialContextFactory();
@@ -107,7 +111,11 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     //A fairly shallow grid, and default 2.5% distErrPct
     if (maxLevels == -1)
       maxLevels = randomIntBetween(1, 8);//max 64k cells (4^8), also 256*256
-    this.grid = new QuadPrefixTree(ctx, maxLevels);
+    if (packedQuadPrefixTree) {
+      this.grid = new PackedQuadPrefixTree(ctx, maxLevels);
+    } else {
+      this.grid = new QuadPrefixTree(ctx, maxLevels);
+    }
     this.strategy = newRPT();
   }
 
@@ -148,7 +156,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
   @Test
   public void testContainsPairOverlap() throws IOException {
-    setupQuadGrid(3);
+    setupQuadGrid(3, randomBoolean());
     adoc("0", new ShapePair(ctx.makeRectangle(0, 33, -128, 128), ctx.makeRectangle(33, 128, -128, 128), true));
     commit();
     Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Contains,
@@ -159,7 +167,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   @Test
   public void testWithinDisjointParts() throws IOException {
-    setupQuadGrid(7);
+    setupQuadGrid(7, randomBoolean());
     //one shape comprised of two parts, quite separated apart
     adoc("0", new ShapePair(ctx.makeRectangle(0, 10, -120, -100), ctx.makeRectangle(220, 240, 110, 125), false));
     commit();
@@ -173,7 +181,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   @Test /** LUCENE-4916 */
   public void testWithinLeafApproxRule() throws IOException {
-    setupQuadGrid(2);//4x4 grid
+    setupQuadGrid(2, randomBoolean());//4x4 grid
     //indexed shape will simplify to entire right half (2 top cells)
     adoc("0", ctx.makeRectangle(192, 204, -128, 128));
     commit();

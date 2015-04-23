@@ -35,6 +35,9 @@
     <fieldType name="srpt_quad"   class="solr.SpatialRecursivePrefixTreeFieldType"
               prefixTree="quad" distanceUnits="degrees"
         />
+    <fieldType name="srpt_packedquad"   class="solr.SpatialRecursivePrefixTreeFieldType"
+              prefixTree="packedQuad" distanceUnits="degrees"
+        />
     <fieldType name="srpt_100km"   class="solr.SpatialRecursivePrefixTreeFieldType"
               maxDistErr="100" distanceUnits="kilometers"
         />
@@ -58,6 +61,7 @@
 
     <field name="srpt_geohash" type="srpt_geohash" multiValued="true" />
     <field name="srpt_quad" type="srpt_quad" multiValued="true" />
+    <field name="srpt_packedquad" type="srpt_packedquad" multiValued="true" />
     <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true" />
     <field name="pointvector" type="pointvector" />
     <field name="bbox" type="bbox" />
