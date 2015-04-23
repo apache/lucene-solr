@@ -108,6 +108,14 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
+  public void testArbitraryAttributes() {
+    SolrRequestHandler handler = h.getCore().getRequestHandler("/dump7");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(req("initArgs", "true"), rsp);
+    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+    assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
+  }
+
   public void testMatchPath(){
     InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));

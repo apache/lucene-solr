@@ -81,9 +81,9 @@
       <str>elevator</str>
     </arr>
   </requestHandler>
+  <requestHandler name="/dump7" class="DumpRequestHandler"/>
 
-
-
-
-
+  <initParams path="/dump7">
+    <str name="healthcheckFile">server-enabled.txt</str>
+  </initParams>
 </config>

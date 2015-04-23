@@ -168,6 +168,9 @@ Bug Fixes
 * SOLR-7450: Fix edge case which could cause `bin/solr stop` to hang forever
   (Ramkumar Aiyengar)
 
+* SOLR-7157: initParams must support tags other than appends, defaults and, invariants (Noble Paul)
+
+
 Optimizations
 ----------------------
 
