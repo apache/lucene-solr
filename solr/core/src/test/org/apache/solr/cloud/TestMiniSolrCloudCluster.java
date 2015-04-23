@@ -74,6 +74,12 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
   @Test
   public void testBasics() throws Exception {
+    testCollectionCreateSearchDelete();
+    // sometimes run a second test e.g. to test collection create-delete-create scenario
+    if (random().nextBoolean()) testCollectionCreateSearchDelete();
+  }
+    
+  private void testCollectionCreateSearchDelete() throws Exception {
 
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir().toFile(), solrXml, null, null);
@@ -114,8 +120,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, collectionProperties);
 
       try (SolrZkClient zkClient = new SolrZkClient
-          (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
-        ZkStateReader zkStateReader = new ZkStateReader(zkClient);
+          (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null);
+          ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
         // modify/query collection
@@ -155,6 +161,17 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
             assertEquals(NUM_SERVERS - 1, miniCluster.getJettySolrRunners().size());
           }
         }
+
+        // now restore the original state so that this function could be called multiple times
+        
+        // re-create a server (to restore original NUM_SERVERS count)
+        startedServer = miniCluster.startJettySolrRunner(null, null, null);
+        assertTrue(startedServer.isRunning());
+        assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
+
+        // delete the collection we created earlier
+        miniCluster.deleteCollection(collectionName);
+        AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
       }
     }
     finally {
