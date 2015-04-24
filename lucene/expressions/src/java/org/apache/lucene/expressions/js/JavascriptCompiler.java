@@ -235,31 +235,33 @@ public class JavascriptCompiler {
         int arguments = current.getChildCount() - 1;
         
         Method method = functions.get(call);
-        if (method == null) {
-          throw new IllegalArgumentException("Unrecognized method call (" + call + ").");
+        if (method == null && (arguments > 0 || !call.contains("."))) {
+          throw new IllegalArgumentException("Unrecognized function call (" + call + ").");
+        } else if (method != null) {
+          int arity = method.getParameterTypes().length;
+          if (arguments != arity) {
+            throw new IllegalArgumentException("Expected (" + arity + ") arguments for function call (" +
+                call + "), but found (" + arguments + ").");
+          }
+
+          for (int argument = 1; argument <= arguments; ++argument) {
+            recursiveCompile(current.getChild(argument), Type.DOUBLE_TYPE);
+          }
+
+          gen.invokeStatic(Type.getType(method.getDeclaringClass()),
+              org.objectweb.asm.commons.Method.getMethod(method));
+
+          gen.cast(Type.DOUBLE_TYPE, expected);
+          break;
+        } else {
+          text = call + "()";
+          // intentionally fall through to the variable case to allow this non-static
+          // method to be forwarded to the bindings for processing
         }
-        
-        int arity = method.getParameterTypes().length;
-        if (arguments != arity) {
-          throw new IllegalArgumentException("Expected (" + arity + ") arguments for method call (" +
-              call + "), but found (" + arguments + ").");
-        }
-        
-        for (int argument = 1; argument <= arguments; ++argument) {
-          recursiveCompile(current.getChild(argument), Type.DOUBLE_TYPE);
-        }
-        
-        gen.invokeStatic(Type.getType(method.getDeclaringClass()),
-          org.objectweb.asm.commons.Method.getMethod(method));
-        
-        gen.cast(Type.DOUBLE_TYPE, expected);
-        break;
       case JavascriptParser.VARIABLE:
         int index;
 
-        // normalize quotes
         text = normalizeQuotes(text);
-
         
         if (externalsMap.containsKey(text)) {
           index = externalsMap.get(text);
