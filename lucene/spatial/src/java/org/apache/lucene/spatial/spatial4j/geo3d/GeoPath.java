@@ -335,11 +335,14 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
     public Bounds getBounds(Bounds bounds)
     {
         bounds = super.getBounds(bounds);
-        for (SegmentEndpoint pathPoint : points) {
-            pathPoint.getBounds(bounds);
-        }
+        // For building bounds, order matters.  We want to traverse
+        // never more than 180 degrees longitude at a pop or we risk having the
+        // bounds object get itself inverted.  So do the edges first.
         for (PathSegment pathSegment : segments) {
             pathSegment.getBounds(bounds);
+        }
+        for (SegmentEndpoint pathPoint : points) {
+            pathPoint.getBounds(bounds);
         }
         return bounds;
     }
@@ -465,6 +468,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
 
         public void getBounds(Bounds bounds)
         {
+            bounds.addPoint(point);
             circlePlane.recordBounds(bounds);
         }
 
@@ -664,6 +668,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
         public void getBounds(Bounds bounds)
         {
             // We need to do all bounding planes as well as corner points
+            bounds.addPoint(start).addPoint(end);
             upperConnectingPlane.recordBounds(startCutoffPlane, bounds, lowerConnectingPlane, endCutoffPlane);
             startCutoffPlane.recordBounds(lowerConnectingPlane, bounds, endCutoffPlane, upperConnectingPlane);
             lowerConnectingPlane.recordBounds(endCutoffPlane, bounds, upperConnectingPlane, startCutoffPlane);
@@ -672,6 +677,12 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             lowerConnectingPlane.recordBounds(bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
             startCutoffPlane.recordBounds(bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
             endCutoffPlane.recordBounds(bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+            if (fullDistance >= Math.PI * 0.5) {
+                // Too large a segment basically means that we can confuse the Bounds object.  Specifically, if our span exceeds 180 degrees
+                // in longitude (which even a segment whose actual length is less than that might if it goes close to a pole).
+                // Unfortunately, we can get arbitrarily close to the pole, so this may still not work in all cases.
+                bounds.noLongitudeBound();
+            }
         }
         
     }

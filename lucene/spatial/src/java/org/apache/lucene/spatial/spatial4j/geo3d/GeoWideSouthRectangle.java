@@ -147,7 +147,15 @@ public class GeoWideSouthRectangle extends GeoBBoxBase
         final double topAngle = centerPoint.arcDistance(URHC);
         return Math.max(centerAngle,topAngle);
     }
-      
+
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return centerPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

@@ -152,7 +152,15 @@ public class GeoNorthRectangle extends GeoBBoxBase
     {
         return edgePoints;
     }
-      
+
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return centerPoint;
+    }
+    
     @Override
     public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
     {

@@ -83,7 +83,15 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase
     {
         return Math.PI * 0.5;
     }
-      
+
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return interiorPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

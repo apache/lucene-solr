@@ -144,6 +144,14 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox
         return 0.0;
     }
 
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return this;
+    }
+
     /** Find the spatial relationship between a shape and the current geo area.
      * Note: return value is how the GeoShape relates to the GeoArea, not the
      * other way around. For example, if this GeoArea is entirely within the

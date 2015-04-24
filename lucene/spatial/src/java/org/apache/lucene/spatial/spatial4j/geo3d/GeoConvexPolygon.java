@@ -37,6 +37,8 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     
     protected GeoPoint[] edgePoints = null;
     
+    protected double fullDistance = 0.0;
+    
     /** Create a convex polygon from a list of points.  The first point must be on the
     * external edge.
     */
@@ -98,14 +100,17 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
         if (points.size() < 3)
             throw new IllegalArgumentException("Polygon needs at least three points.");
         // Time to construct the planes.  If the polygon is truly convex, then any adjacent point
+        // to a segment can provide an interior measurement.
         edges = new SidedPlane[points.size()];
         notableEdgePoints = new GeoPoint[points.size()][];
         internalEdges = new boolean[points.size()];
-        // to a segment can provide an interior measurement.
         for (int i = 0; i < points.size(); i++) {
             final GeoPoint start = points.get(i);
             final boolean isInternalEdge = (isInternalEdges!=null?(i == isInternalEdges.size()?isInternalReturnEdge:isInternalEdges.get(i)):false);
             final GeoPoint end = points.get(legalIndex(i+1));
+            final double distance = start.arcDistance(end);
+            if (distance > fullDistance)
+                fullDistance = distance;
             final GeoPoint check = points.get(legalIndex(i+2));
             final SidedPlane sp = new SidedPlane(check,start,end);
             //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
@@ -204,7 +209,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     public Bounds getBounds(Bounds bounds)
     {
         bounds = super.getBounds(bounds);
-        
+
         // Add all the points
         for (final GeoPoint point : points) {
             bounds.addPoint(point);
@@ -224,6 +229,10 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
             edge.recordBounds(bounds,membershipBounds);
         }
 
+        if (fullDistance >= Math.PI * 0.5) {
+            // We can't reliably assume that bounds did its longitude calculation right, so we force it to be unbounded.
+            bounds.noLongitudeBound();
+        }
         return bounds;
     }
 
@@ -250,7 +259,12 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
 
     @Override
     public String toString() {
-        return "GeoConvexPolygon: {" + points + "}";
+        StringBuilder edgeString = new StringBuilder("{");
+        for (int i = 0; i < edges.length; i++) {
+            edgeString.append(edges[i]).append(" internal? ").append(internalEdges[i]).append("; ");
+        }
+        edgeString.append("}");
+        return "GeoConvexPolygon: {points=" + points + " edges="+edgeString+"}";
     }
 }
   

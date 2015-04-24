@@ -109,7 +109,15 @@ public class GeoWideLongitudeSlice extends GeoBBoxBase
             extent += Math.PI * 2.0;
         return Math.max(Math.PI * 0.5, extent * 0.5);
     }
-      
+
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return centerPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

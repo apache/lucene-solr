@@ -86,6 +86,14 @@ public class GeoNorthLatitudeZone extends GeoBBoxBase
         return maxCosLat * Math.PI;
     }
 
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return interiorPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

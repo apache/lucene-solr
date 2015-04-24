@@ -24,6 +24,7 @@ import java.util.List;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
@@ -74,6 +75,36 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     SerializedDVStrategy serializedDVStrategy = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
     this.strategy = new CompositeSpatialStrategy("composite_" + getClass().getSimpleName(),
         rptStrategy, serializedDVStrategy);
+  }
+
+  @Test
+  public void testFailure() throws IOException {
+    setupStrategy();
+    // [junit4]    > Throwable #1: java.lang.AssertionError: [Intersects] qIdx:25 Shouldn't match I#1:Rect(minX=-49.0,maxX=-45.0,minY=73.0,maxY=86.0) 
+    // Q:Geo3dShape{GeoCompositeMembershipShape: {[GeoCompositeMembershipShape: {[GeoConvexPolygon: {[
+    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074], 
+    //  [X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424],
+    // [X=-0.9702957262759965, Y=1.1882695554102554E-16, Z=0.24192189559966773]]}]}, 
+    // GeoConvexPolygon: {[[X=0.8473975608908426, Y=-0.43177062311338915, Z=0.3090169943749474],
+    //[X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424], 
+    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074]]}]}}
+    //
+    // Points in order (I think):
+    // 
+    // [X=0.8473975608908426, Y=-0.43177062311338915, Z=0.3090169943749474],
+    //[X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424], 
+    // [X=-0.9702957262759965, Y=1.1882695554102554E-16, Z=0.24192189559966773],
+    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074], 
+    // Index: 0
+    final List<GeoPoint> points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(-57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(-15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    
+    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(points,0),ctx);
+    final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
+    testOperation(rect,SpatialOperation.Intersects,triangle, false);
   }
 
   @Test

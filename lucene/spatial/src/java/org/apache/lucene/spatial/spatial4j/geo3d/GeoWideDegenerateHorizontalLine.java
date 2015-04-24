@@ -142,7 +142,15 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase
         final double bottomAngle = centerPoint.arcDistance(LHC);
         return Math.max(topAngle,bottomAngle);
     }
-      
+
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return centerPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

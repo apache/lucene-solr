@@ -74,6 +74,14 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
         return cutoffAngle;
     }
 
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return center;
+    }
+
     /** Compute an estimate of "distance" to the GeoPoint.
     * A return value of Double.MAX_VALUE should be returned for
     * points outside of the shape.
@@ -221,6 +229,7 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     public Bounds getBounds(Bounds bounds)
     {
         bounds = super.getBounds(bounds);
+        bounds.addPoint(center);
         circlePlane.recordBounds(bounds);
         return bounds;
     }

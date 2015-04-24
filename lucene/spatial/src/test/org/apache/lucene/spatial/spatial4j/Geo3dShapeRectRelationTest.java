@@ -25,6 +25,9 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
+import org.apache.lucene.spatial.spatial4j.geo3d.Bounds;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
+import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
@@ -46,6 +49,73 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
 
   {
     ctx = SpatialContext.GEO;
+  }
+
+  protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
+  
+  @Test
+  public void testFailure() {
+      /*
+   [junit4]   1> S-R Rel: {}, Shape {}, Rectangle {} [INTERSECTS, Geo3dShape{GeoCompositeMembershipShape: {[
+   GeoConvexPolygon: {
+   points=[
+     [X=0.03206699943821901, Y=-0.7556330442094724, Z=0.6542097599743943], 
+     [X=-0.2848733212046893, Y=-0.9533780638748927, Z=0.09958643576296423], 
+     [X=0.37929990916639644, Y=0.9241954620264722, Z=0.044657887053005746]] 
+   edges={
+     [A=0.5484584327149066, B=-0.18956034526809354, C=-0.2458316687546487, D=0.0, side=1.0] internal? false; 
+     [A=-0.13461318190686059, B=0.05049496664187115, C=0.09833758231919826, D=0.0, side=1.0] internal? false; 
+     [A=0.6383626665235883, B=-0.246709658095017, C=-0.31624772039338794, D=0.0, side=1.0] internal? false; }}]}},
+     X=0.03206699943821901, Y=-0.7556330442094724, Z=0.6542097599743943
+   Rect(minX=-52.0,maxX=50.0,minY=58.0,maxY=68.0)](no slf4j subst; sorry)
+
+    */
+      final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(68 * RADIANS_PER_DEGREE, 58 * RADIANS_PER_DEGREE, -52 * RADIANS_PER_DEGREE, 50 * RADIANS_PER_DEGREE);
+      final List<GeoPoint> points = new ArrayList<GeoPoint>();
+      points.add(new GeoPoint(40.8597568993 * RADIANS_PER_DEGREE, -87.5699819016 * RADIANS_PER_DEGREE));
+      points.add(new GeoPoint(5.71535611517 * RADIANS_PER_DEGREE, -106.636363741 * RADIANS_PER_DEGREE));
+      points.add(new GeoPoint(2.55955969779 * RADIANS_PER_DEGREE, 67.6862179901 * RADIANS_PER_DEGREE));
+      final GeoShape path = GeoPolygonFactory.makeGeoPolygon(points,0);
+      
+      System.err.println("Rectangle = "+rect+"; path = "+path);
+
+      // Edges intersect == OVERLAP.  This seems reasonable... between points 2 and 3 the path could well cross.
+      assertFalse(GeoArea.DISJOINT == rect.getRelationship(path));
+      
+      final GeoBBox pathBounds = getBoundingBox(path);
+      // Path bounds go around the back side of the world rather than the front.  The actual path goes around the front.  This is I think what the problem is.
+      System.err.println("Path bounds = "+pathBounds);
+      assertFalse(GeoArea.DISJOINT == rect.getRelationship(pathBounds));
+      
+      final GeoBBox rectBounds = getBoundingBox(rect);
+      assertFalse(GeoArea.DISJOINT == rectBounds.getRelationship(pathBounds));
+  }
+
+  protected static GeoBBox getBoundingBox(final GeoShape path) {
+      Bounds bounds = path.getBounds(null);
+
+      double leftLon;
+      double rightLon;
+      if (bounds.checkNoLongitudeBound()) {
+        leftLon = -Math.PI;
+        rightLon = Math.PI;
+      } else {
+        leftLon = bounds.getLeftLongitude().doubleValue();
+        rightLon = bounds.getRightLongitude().doubleValue();
+      }
+      double minLat;
+      if (bounds.checkNoBottomLatitudeBound()) {
+        minLat = -Math.PI * 0.5;
+      } else {
+        minLat = bounds.getMinLatitude().doubleValue();
+      }
+      double maxLat;
+      if (bounds.checkNoTopLatitudeBound()) {
+        maxLat = Math.PI * 0.5;
+      } else {
+        maxLat = bounds.getMaxLatitude().doubleValue();
+      }
+      return GeoBBoxFactory.makeGeoBBox(maxLat, minLat, leftLon, rightLon);
   }
 
   @Test

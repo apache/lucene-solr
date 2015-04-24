@@ -40,6 +40,15 @@ public class GeoWorld extends GeoBBoxBase
         return Math.PI;
     }
 
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        // Totally arbitrary
+        return originPoint;
+    }
+
     @Override
     public boolean isWithin(final Vector point)
     {

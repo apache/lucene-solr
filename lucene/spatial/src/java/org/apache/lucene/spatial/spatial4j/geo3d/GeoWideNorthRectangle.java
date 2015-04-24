@@ -150,6 +150,14 @@ public class GeoWideNorthRectangle extends GeoBBoxBase
         return Math.max(centerAngle,bottomAngle);
     }
       
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    @Override
+    public GeoPoint getCenter() {
+        return centerPoint;
+    }
+
     @Override
     public GeoPoint[] getEdgePoints()
     {

@@ -259,6 +259,7 @@ public class Bounds
         if (!noLongitudeBound) {
             // Get a longitude value
             double longitude = Math.atan2(y,x);
+            //System.err.println(" add longitude bound at "+longitude * 180.0/Math.PI);
             addLongitudeBound(longitude);
         }
         if (!noTopLatitudeBound || !noBottomLatitudeBound) {

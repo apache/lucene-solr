@@ -27,4 +27,9 @@ public interface GeoSizeable
      */
     public double getRadius();
 
+    /** Returns the center of a circle into which the area will be inscribed.
+    *@return the center.
+    */
+    public GeoPoint getCenter();
+    
 }

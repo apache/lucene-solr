@@ -39,9 +39,12 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape
     @Override
     public boolean isWithin(final Vector point)
     {
+        //System.err.println("Checking whether point "+point+" is within Composite");
         for (GeoMembershipShape shape : shapes) {
-            if (shape.isWithin(point))
+            if (shape.isWithin(point)) {
+                //System.err.println(" Point is within "+shape);
                 return true;
+            }
         }
         return false;
     }

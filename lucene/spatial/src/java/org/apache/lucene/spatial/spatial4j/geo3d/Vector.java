@@ -23,7 +23,10 @@ public class Vector
 {
     /** Values that are all considered to be essentially zero have a magnitude
     * less than this. */
-    public static final double MINIMUM_RESOLUTION = 1e-15;
+    public static final double MINIMUM_RESOLUTION = 1e-12;
+    /** For squared quantities, the bound is squared too.
+    */
+    public static final double MINIMUM_RESOLUTION_SQUARED = MINIMUM_RESOLUTION * MINIMUM_RESOLUTION;
     
     public final double x;
     public final double y;
@@ -179,7 +182,7 @@ public class Vector
      *@return the square of the normal distance.
      */
     public double normalDistanceSquared(final Vector v) {
-        double t = this.evaluate(v);
+        double t = x*v.x + y*v.y + z*v.z;
         double deltaX = this.x * t - v.x;
         double deltaY = this.y * t - v.y;
         double deltaZ = this.z * t - v.z;
@@ -195,7 +198,7 @@ public class Vector
      *@return the square of the normal distance.
      */
     public double normalDistanceSquared(final double x, final double y, final double z) {
-        double t = this.evaluate(x,y,z);
+        double t = this.x*x + this.y*y + this.z*z;
         double deltaX = this.x * t - x;
         double deltaY = this.y * t - y;
         double deltaZ = this.z * t - z;
