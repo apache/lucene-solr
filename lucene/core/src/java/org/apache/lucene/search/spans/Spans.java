@@ -86,11 +86,12 @@ public abstract class Spans extends DocIdSetIterator {
    *
    * Note that the returned {@link TwoPhaseIterator}'s
    * {@link TwoPhaseIterator#approximation() approximation} must
-   * advance synchronously with this iterator: advancing the approximation must
+   * advance documents synchronously with this iterator:
+   * advancing the approximation must
    * advance this iterator and vice-versa.
    *
-   * Implementing this method is typically useful on {@link Spans}s
-   * that have a high per-document overhead in order to confirm matches.
+   * Implementing this method is typically useful on a {@link Spans}
+   * that has a high per-document overhead for confirming matches.
    *
    * The default implementation returns {@code null}.
    */

@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.CollectionUtil;
-import org.apache.lucene.search.spans.Spans;
 
 /** A conjunction of DocIdSetIterators.
  * This iterates over the doc ids that are present in each given DocIdSetIterator.
@@ -35,20 +34,16 @@ public class ConjunctionDISI extends DocIdSetIterator {
   /** Create a conjunction over the provided iterators, taking advantage of
    *  {@link TwoPhaseIterator}. */
   public static ConjunctionDISI intersect(List<? extends DocIdSetIterator> iterators) {
+    assert iterators.size() >= 2;
     final List<DocIdSetIterator> allIterators = new ArrayList<>();
     final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
-    for (DocIdSetIterator iterator : iterators) {
-      TwoPhaseIterator twoPhaseIterator = null;
-      if (iterator instanceof Scorer) { 
-        twoPhaseIterator = ((Scorer) iterator).asTwoPhaseIterator();
-      } else if (iterator instanceof Spans) {
-        twoPhaseIterator = ((Spans) iterator).asTwoPhaseIterator();
-      }
-      if (twoPhaseIterator != null) {
-        allIterators.add(twoPhaseIterator.approximation());
-        twoPhaseIterators.add(twoPhaseIterator);
+    for (DocIdSetIterator iter : iterators) {
+      TwoPhaseIterator twoPhaseIter = TwoPhaseIterator.asTwoPhaseIterator(iter);
+      if (twoPhaseIter != null) {
+        allIterators.add(twoPhaseIter.approximation());
+        twoPhaseIterators.add(twoPhaseIter);
       } else { // no approximation support, use the iterator as-is
-        allIterators.add(iterator);
+        allIterators.add(iter);
       }
     }
 
@@ -63,6 +58,7 @@ public class ConjunctionDISI extends DocIdSetIterator {
   final DocIdSetIterator[] others;
 
   ConjunctionDISI(List<? extends DocIdSetIterator> iterators) {
+    assert iterators.size() >= 2;
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
     CollectionUtil.timSort(iterators, new Comparator<DocIdSetIterator>() {

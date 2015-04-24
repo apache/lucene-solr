@@ -23,12 +23,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper;
 import org.apache.lucene.util.PriorityQueue;
 
-import static org.apache.lucene.search.ScorerPriorityQueue.leftNode;
-import static org.apache.lucene.search.ScorerPriorityQueue.parentNode;
-import static org.apache.lucene.search.ScorerPriorityQueue.rightNode;
+import static org.apache.lucene.search.DisiPriorityQueue.leftNode;
+import static org.apache.lucene.search.DisiPriorityQueue.parentNode;
+import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
 
 /**
  * A {@link Scorer} for {@link BooleanQuery} when
@@ -83,17 +82,17 @@ final class MinShouldMatchSumScorer extends Scorer {
 
   // list of scorers which 'lead' the iteration and are currently
   // positioned on 'doc'
-  ScorerWrapper lead;
+  DisiWrapper<Scorer> lead;
   int doc;  // current doc ID of the leads
   int freq; // number of scorers on the desired doc ID
 
   // priority queue of scorers that are too advanced compared to the current
   // doc. Ordered by doc ID.
-  final ScorerPriorityQueue head;
+  final DisiPriorityQueue<Scorer> head;
 
   // priority queue of scorers which are behind the current doc.
   // Ordered by cost.
-  final ScorerWrapper[] tail;
+  final DisiWrapper<Scorer>[] tail;
   int tailSize;
 
   final Collection<ChildScorer> childScorers;
@@ -113,13 +112,13 @@ final class MinShouldMatchSumScorer extends Scorer {
     this.coord = coord;
     this.doc = -1;
 
-    head = new ScorerPriorityQueue(scorers.size() - minShouldMatch + 1);
+    head = new DisiPriorityQueue<Scorer>(scorers.size() - minShouldMatch + 1);
     // there can be at most minShouldMatch - 1 scorers beyond the current position
     // otherwise we might be skipping over matching documents
-    tail = new ScorerWrapper[minShouldMatch - 1];
+    tail = new DisiWrapper[minShouldMatch - 1];
 
     for (Scorer scorer : scorers) {
-      addLead(new ScorerWrapper(scorer));
+      addLead(new DisiWrapper<Scorer>(scorer));
     }
 
     List<ChildScorer> children = new ArrayList<>();
@@ -145,13 +144,13 @@ final class MinShouldMatchSumScorer extends Scorer {
     // We are moving to the next doc ID, so scorers in 'lead' need to go in
     // 'tail'. If there is not enough space in 'tail', then we take the least
     // costly scorers and advance them.
-    for (ScorerWrapper s = lead; s != null; s = s.next) {
-      final ScorerWrapper evicted = insertTailWithOverFlow(s);
+    for (DisiWrapper<Scorer> s = lead; s != null; s = s.next) {
+      final DisiWrapper<Scorer> evicted = insertTailWithOverFlow(s);
       if (evicted != null) {
         if (evicted.doc == doc) {
-          evicted.doc = evicted.scorer.nextDoc();
+          evicted.doc = evicted.iterator.nextDoc();
         } else {
-          evicted.doc = evicted.scorer.advance(doc + 1);
+          evicted.doc = evicted.iterator.advance(doc + 1);
         }
         head.add(evicted);
       }
@@ -164,23 +163,23 @@ final class MinShouldMatchSumScorer extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     // Same logic as in nextDoc
-    for (ScorerWrapper s = lead; s != null; s = s.next) {
-      final ScorerWrapper evicted = insertTailWithOverFlow(s);
+    for (DisiWrapper<Scorer> s = lead; s != null; s = s.next) {
+      final DisiWrapper<Scorer> evicted = insertTailWithOverFlow(s);
       if (evicted != null) {
-        evicted.doc = evicted.scorer.advance(target);
+        evicted.doc = evicted.iterator.advance(target);
         head.add(evicted);
       }
     }
 
     // But this time there might also be scorers in 'head' behind the desired
     // target so we need to do the same thing that we did on 'lead' on 'head'
-    ScorerWrapper headTop = head.top();
+    DisiWrapper<Scorer> headTop = head.top();
     while (headTop.doc < target) {
-      final ScorerWrapper evicted = insertTailWithOverFlow(headTop);
+      final DisiWrapper<Scorer> evicted = insertTailWithOverFlow(headTop);
       // We know that the tail is full since it contains at most
       // minShouldMatch - 1 entries and we just moved at least minShouldMatch
       // entries to it, so evicted is not null
-      evicted.doc = evicted.scorer.advance(target);
+      evicted.doc = evicted.iterator.advance(target);
       headTop = head.updateTop(evicted);
     }
 
@@ -188,20 +187,20 @@ final class MinShouldMatchSumScorer extends Scorer {
     return doNext();
   }
 
-  private void addLead(ScorerWrapper lead) {
+  private void addLead(DisiWrapper<Scorer> lead) {
     lead.next = this.lead;
     this.lead = lead;
     freq += 1;
   }
 
   private void pushBackLeads() throws IOException {
-    for (ScorerWrapper s = lead; s != null; s = s.next) {
+    for (DisiWrapper<Scorer> s = lead; s != null; s = s.next) {
       addTail(s);
     }
   }
 
-  private void advanceTail(ScorerWrapper top) throws IOException {
-    top.doc = top.scorer.advance(doc);
+  private void advanceTail(DisiWrapper<Scorer> top) throws IOException {
+    top.doc = top.iterator.advance(doc);
     if (top.doc == doc) {
       addLead(top);
     } else {
@@ -210,7 +209,7 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   private void advanceTail() throws IOException {
-    final ScorerWrapper top = popTail();
+    final DisiWrapper<Scorer> top = popTail();
     advanceTail(top);
   }
 
@@ -276,8 +275,8 @@ final class MinShouldMatchSumScorer extends Scorer {
     // we need to know about all matches
     updateFreq();
     double score = 0;
-    for (ScorerWrapper s = lead; s != null; s = s.next) {
-      score += s.scorer.score();
+    for (DisiWrapper<Scorer> s = lead; s != null; s = s.next) {
+      score += s.iterator.score();
     }
     return coord[freq] * (float) score;
   }
@@ -289,12 +288,12 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   /** Insert an entry in 'tail' and evict the least-costly scorer if full. */
-  private ScorerWrapper insertTailWithOverFlow(ScorerWrapper s) {
+  private DisiWrapper<Scorer> insertTailWithOverFlow(DisiWrapper<Scorer> s) {
     if (tailSize < tail.length) {
       addTail(s);
       return null;
     } else if (tail.length >= 1) {
-      final ScorerWrapper top = tail[0];
+      final DisiWrapper<Scorer> top = tail[0];
       if (top.cost < s.cost) {
         tail[0] = s;
         downHeapCost(tail, tailSize);
@@ -305,16 +304,16 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   /** Add an entry to 'tail'. Fails if over capacity. */
-  private void addTail(ScorerWrapper s) {
+  private void addTail(DisiWrapper<Scorer> s) {
     tail[tailSize] = s;
     upHeapCost(tail, tailSize);
     tailSize += 1;
   }
 
   /** Pop the least-costly scorer from 'tail'. */
-  private ScorerWrapper popTail() {
+  private DisiWrapper<Scorer> popTail() {
     assert tailSize > 0;
-    final ScorerWrapper result = tail[0];
+    final DisiWrapper<Scorer> result = tail[0];
     tail[0] = tail[--tailSize];
     downHeapCost(tail, tailSize);
     return result;
@@ -322,8 +321,8 @@ final class MinShouldMatchSumScorer extends Scorer {
 
   /** Heap helpers */
 
-  private static void upHeapCost(ScorerWrapper[] heap, int i) {
-    final ScorerWrapper node = heap[i];
+  private static void upHeapCost(DisiWrapper<Scorer>[] heap, int i) {
+    final DisiWrapper<Scorer> node = heap[i];
     final long nodeCost = node.cost;
     int j = parentNode(i);
     while (j >= 0 && nodeCost < heap[j].cost) {
@@ -334,9 +333,9 @@ final class MinShouldMatchSumScorer extends Scorer {
     heap[i] = node;
   }
 
-  private static void downHeapCost(ScorerWrapper[] heap, int size) {
+  private static void downHeapCost(DisiWrapper<Scorer>[] heap, int size) {
     int i = 0;
-    final ScorerWrapper node = heap[0];
+    final DisiWrapper<Scorer> node = heap[0];
     int j = leftNode(i);
     if (j < size) {
       int k = rightNode(j);
