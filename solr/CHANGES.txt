@@ -177,6 +177,7 @@ Bug Fixes
 * SOLR-7387: Facet Module - distributed search didn't work when sorting terms
   facet by min, max, avg, or unique functions.  (yonik)
 
+* SOLR-7469: Fix check-licenses to correctly detect if start.jar.sha1 is incorrect (hossman)
 
 Optimizations
 ----------------------
