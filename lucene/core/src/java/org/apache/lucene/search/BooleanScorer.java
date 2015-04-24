@@ -25,8 +25,9 @@ import org.apache.lucene.search.BooleanWeight;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * BulkSorer that is used for pure disjunctions: no MUST clauses and
- * minShouldMatch == 1. This scorer scores documents by batches of 2048 docs.
+ * {@link BulkScorer} that is used for pure disjunctions and disjunctions
+ * that have low values of {@link BooleanQuery#setMinimumNumberShouldMatch(int)}
+ * and dense clauses. This scorer scores documents by batches of 2048 docs.
  */
 final class BooleanScorer extends BulkScorer {
 
