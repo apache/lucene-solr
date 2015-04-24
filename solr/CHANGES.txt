@@ -220,6 +220,8 @@ Other Changes
 * SOLR-7081: Add new test case to test if create/delete/re-create collections work.
   (Christine Poerschke via Ramkumar Aiyengar)
 
+* SOLR-7467: Upgrade t-digest to 3.1 (hossman)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
