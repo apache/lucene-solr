@@ -20,6 +20,7 @@ package org.apache.lucene.expressions.js;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class TestCustomFunctions extends LuceneTestCase {
       JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
       fail();
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Unrecognized method"));
+      assertTrue(e.getMessage().contains("Unrecognized function"));
     }
   }
   
@@ -62,7 +63,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
     assertEquals(5, expr.evaluate(0, null), DELTA);
   }
-  
+
   public static double oneArgMethod(double arg1) { return 3 + arg1; }
   
   /** tests a method with one arguments */
@@ -91,7 +92,28 @@ public class TestCustomFunctions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions, getClass().getClassLoader());
     assertEquals(11, expr.evaluate(0, null), DELTA);
   }
-  
+
+  /** tests invalid methods that are not allowed to become variables to be mapped */
+  public void testInvalidVariableMethods() {
+    try {
+      JavascriptCompiler.compile("method()");
+      fail();
+    } catch (ParseException exception) {
+      fail();
+    } catch (IllegalArgumentException exception) {
+      //expected
+    }
+
+    try {
+      JavascriptCompiler.compile("method.method(1)");
+      fail();
+    } catch (ParseException exception) {
+      fail();
+    } catch (IllegalArgumentException exception) {
+      //expected
+    }
+  }
+
   public static String bogusReturnType() { return "bogus!"; }
   
   /** wrong return type: must be double */

@@ -82,6 +82,9 @@ New Features
    When used, you should typically disable RPT's pruneLeafyBranches option. 
   (Nick Knize, David Smiley)
 
+* LUCENE-6451: Expressions now support bindings keys that look like
+  zero arg functions (Jack Conradson via Ryan Ernst)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

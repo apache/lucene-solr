@@ -50,6 +50,15 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     doTestValidVariable("mixed[23]['key'].sub.sub[1]");
     doTestValidVariable("mixed[23]['key'].sub.sub[1].sub");
     doTestValidVariable("mixed[23]['key'].sub.sub[1].sub['abc']");
+    doTestValidVariable("method.method()");
+    doTestValidVariable("method.getMethod()");
+    doTestValidVariable("method.METHOD()");
+    doTestValidVariable("method['key'].method()");
+    doTestValidVariable("method['key'].getMethod()");
+    doTestValidVariable("method['key'].METHOD()");
+    doTestValidVariable("method[23][\"key\"].method()", "method[23]['key'].method()");
+    doTestValidVariable("method[23][\"key\"].getMethod()", "method[23]['key'].getMethod()");
+    doTestValidVariable("method[23][\"key\"].METHOD()", "method[23]['key'].METHOD()");
   }
 
   void doTestValidVariable(String variable) throws Exception {
@@ -164,14 +173,14 @@ public class TestJavascriptCompiler extends LuceneTestCase {
       JavascriptCompiler.compile("tan()");
       fail();
     } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("arguments for method call"));
+      assertTrue(expected.getMessage().contains("arguments for function call"));
     }
     
     try {
       JavascriptCompiler.compile("tan(1, 1)");
       fail();
     } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("arguments for method call"));
+      assertTrue(expected.getMessage().contains("arguments for function call"));
     }
   }
 
