@@ -293,14 +293,14 @@
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
       <additional-excludes>
-        <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
-        <exclude name="server/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
         <exclude name="server/solr-webapp/**" />
         <exclude name="package/**"/>
       </additional-excludes>
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <!-- start.jar comes from jetty, .jar already stripped by checker defaults --> 
+        <replaceregex pattern="^start$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
         <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
       </additional-filters>
