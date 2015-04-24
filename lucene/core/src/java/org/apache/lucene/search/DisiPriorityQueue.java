@@ -23,37 +23,13 @@ import java.util.Iterator;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * A priority queue of scorers that orders by current doc ID.
+ * A priority queue of DocIdSetIterators that orders by current doc ID.
  * This specialization is needed over {@link PriorityQueue} because the
  * pluggable comparison function makes the rebalancing quite slow.
+ * @lucene.internal
  */
-final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.ScorerPriorityQueue.ScorerWrapper> {
-
-  static class ScorerWrapper {
-    final Scorer scorer;
-    final long cost;
-    int doc; // the current doc, used for comparison
-    ScorerWrapper next; // reference to a next element, see #topList
-
-    // An approximation of the scorer, or the scorer itself if it does not
-    // support two-phase iteration
-    final DocIdSetIterator approximation;
-    // A two-phase view of the scorer, or null if the scorer does not support
-    // two-phase iteration
-    final TwoPhaseIterator twoPhaseView;
-
-    ScorerWrapper(Scorer scorer) {
-      this.scorer = scorer;
-      this.cost = scorer.cost();
-      this.doc = -1;
-      this.twoPhaseView = scorer.asTwoPhaseIterator();
-      if (twoPhaseView != null) {
-        approximation = twoPhaseView.approximation();
-      } else {
-        approximation = scorer;
-      }
-    }
-  }
+public final class DisiPriorityQueue<Iter extends DocIdSetIterator>
+implements Iterable<DisiWrapper<Iter>> {
 
   static int leftNode(int node) {
     return ((node + 1) << 1) - 1;
@@ -67,27 +43,27 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
     return ((node + 1) >>> 1) - 1;
   }
 
-  private final ScorerWrapper[] heap;
+  private final DisiWrapper<Iter>[] heap;
   private int size;
 
-  ScorerPriorityQueue(int maxSize) {
-    heap = new ScorerWrapper[maxSize];
+  public DisiPriorityQueue(int maxSize) {
+    heap = new DisiWrapper[maxSize];
     size = 0;
   }
 
-  int size() {
+  public int size() {
     return size;
   }
 
-  ScorerWrapper top() {
+  public DisiWrapper<Iter> top() {
     return heap[0];
   }
 
   /** Get the list of scorers which are on the current doc. */
-  ScorerWrapper topList() {
-    final ScorerWrapper[] heap = this.heap;
+  public DisiWrapper<Iter> topList() {
+    final DisiWrapper<Iter>[] heap = this.heap;
     final int size = this.size;
-    ScorerWrapper list = heap[0];
+    DisiWrapper<Iter> list = heap[0];
     list.next = null;
     if (size >= 3) {
       list = topList(list, heap, size, 1);
@@ -98,14 +74,15 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
     return list;
   }
 
-  // prepend w1 (scorer) to w2 (list)
-  private static ScorerWrapper prepend(ScorerWrapper w1, ScorerWrapper w2) {
+  // prepend w1 (iterator) to w2 (list)
+  private DisiWrapper<Iter> prepend(DisiWrapper<Iter> w1, DisiWrapper<Iter> w2) {
     w1.next = w2;
     return w1;
   }
 
-  private static ScorerWrapper topList(ScorerWrapper list, ScorerWrapper[] heap, int size, int i) {
-    final ScorerWrapper w = heap[i];
+  private DisiWrapper<Iter> topList(DisiWrapper<Iter> list, DisiWrapper<Iter>[] heap,
+                                    int size, int i) {
+    final DisiWrapper<Iter> w = heap[i];
     if (w.doc == list.doc) {
       list = prepend(w, list);
       final int left = leftNode(i);
@@ -120,37 +97,37 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
     return list;
   }
 
-  ScorerWrapper add(ScorerWrapper entry) {
-    final ScorerWrapper[] heap = this.heap;
+  public DisiWrapper<Iter> add(DisiWrapper<Iter> entry) {
+    final DisiWrapper<Iter>[] heap = this.heap;
     final int size = this.size;
     heap[size] = entry;
-    upHeap(heap, size);
+    upHeap(size);
     this.size = size + 1;
     return heap[0];
   }
 
-  ScorerWrapper pop() {
-    final ScorerWrapper[] heap = this.heap;
-    final ScorerWrapper result = heap[0];
+  public DisiWrapper<Iter> pop() {
+    final DisiWrapper<Iter>[] heap = this.heap;
+    final DisiWrapper<Iter> result = heap[0];
     final int i = --size;
     heap[0] = heap[i];
     heap[i] = null;
-    downHeap(heap, i);
+    downHeap(i);
     return result;
   }
 
-  ScorerWrapper updateTop() {
-    downHeap(heap, size);
+  public DisiWrapper<Iter> updateTop() {
+    downHeap(size);
     return heap[0];
   }
 
-  ScorerWrapper updateTop(ScorerWrapper topReplacement) {
+  DisiWrapper<Iter> updateTop(DisiWrapper<Iter> topReplacement) {
     heap[0] = topReplacement;
     return updateTop();
   }
 
-  static void upHeap(ScorerWrapper[] heap, int i) {
-    final ScorerWrapper node = heap[i];
+  void upHeap(int i) {
+    final DisiWrapper<Iter> node = heap[i];
     final int nodeDoc = node.doc;
     int j = parentNode(i);
     while (j >= 0 && nodeDoc < heap[j].doc) {
@@ -161,9 +138,9 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
     heap[i] = node;
   }
 
-  static void downHeap(ScorerWrapper[] heap, int size) {
+  void downHeap(int size) {
     int i = 0;
-    final ScorerWrapper node = heap[0];
+    final DisiWrapper<Iter> node = heap[0];
     int j = leftNode(i);
     if (j < size) {
       int k = rightNode(j);
@@ -186,8 +163,10 @@ final class ScorerPriorityQueue implements Iterable<org.apache.lucene.search.Sco
   }
 
   @Override
-  public Iterator<ScorerWrapper> iterator() {
+  public Iterator<DisiWrapper<Iter>> iterator() {
     return Arrays.asList(heap).subList(0, size).iterator();
   }
 
 }
+
+

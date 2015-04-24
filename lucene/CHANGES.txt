@@ -50,6 +50,10 @@ New Features
   FilterSpans to just have an accept(Spans candidate) method for
   subclasses. (Robert Muir)
 
+* LUCENE-6373: SpanOrQuery shares disjunction logic with boolean
+  queries, and supports two-phased iterators to avoid loading
+  positions when possible. (Paul Elschot via Robert Muir)
+
 * LUCENE-6352: Added a new query time join to the join module that uses
   global ordinals, which is faster for subsequent joins between reopens.
   (Martijn van Groningen, Adrien Grand)

@@ -89,7 +89,7 @@ public abstract class PriorityQueue<T> {
    * value (i.e., {@link #lessThan} should always favor the
    * non-sentinel values).<br>
    * 
-   * By default, this method returns false, which means the queue will not be
+   * By default, this method returns null, which means the queue will not be
    * filled with sentinel values. Otherwise, the value returned will be used to
    * pre-populate the queue. Adds sentinel values to the queue.<br>
    * 
