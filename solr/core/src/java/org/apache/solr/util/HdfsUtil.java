@@ -26,26 +26,34 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 public class HdfsUtil {
   
+  // Allows tests to easily add additional conf
+  public static Configuration TEST_CONF = null;
+  
   private static final String[] HADOOP_CONF_FILES = {"core-site.xml",
     "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml", "hadoop-site.xml"};
   
   public static void addHdfsResources(Configuration conf, String confDir) {
-  if (confDir != null && confDir.length() > 0) {
-    File confDirFile = new File(confDir);
-    if (!confDirFile.exists()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Resource directory does not exist: " + confDirFile.getAbsolutePath());
-    }
-    if (!confDirFile.isDirectory()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Specified resource directory is not a directory" + confDirFile.getAbsolutePath());
-    }
-    if (!confDirFile.canRead()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Resource directory must be readable by the Solr process: " + confDirFile.getAbsolutePath());
-    }
-    for (String file : HADOOP_CONF_FILES) {
-      if (new File(confDirFile, file).exists()) {
-        conf.addResource(new Path(confDir, file));
+
+    if (confDir != null && confDir.length() > 0) {
+      File confDirFile = new File(confDir);
+      if (!confDirFile.exists()) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Resource directory does not exist: " + confDirFile.getAbsolutePath());
+      }
+      if (!confDirFile.isDirectory()) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Specified resource directory is not a directory" + confDirFile.getAbsolutePath());
+      }
+      if (!confDirFile.canRead()) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Resource directory must be readable by the Solr process: " + confDirFile.getAbsolutePath());
+      }
+      for (String file : HADOOP_CONF_FILES) {
+        if (new File(confDirFile, file).exists()) {
+          conf.addResource(new Path(confDir, file));
+        }
       }
     }
-  }
+    
+    if (TEST_CONF != null) {
+      conf.addResource(TEST_CONF);
+    }
   }
 }

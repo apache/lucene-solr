@@ -1,5 +1,3 @@
-package org.apache.solr.cloud.hdfs;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,71 +15,65 @@ package org.apache.solr.cloud.hdfs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.URI;
+package org.apache.solr.cloud.hdfs;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
+import java.io.IOException;
+
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+@Slow
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
-  
+public class HdfsNNFailoverTest extends BasicDistributedZkTest {
+
+  private static final String COLLECTION = "collection";
   private static MiniDFSCluster dfsCluster;
 
+  
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false, false);
+  public static void setupClass() throws Exception {
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false, true);
   }
-
+  
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void teardownClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
   
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @Override
+  protected String getDataDir(String dataDir) throws IOException {
+    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
   
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public HdfsNNFailoverTest() {
+    super();
+    sliceCount = 1;
+    fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
   }
   
+  protected String getSolrXml() {
+    return "solr-no-core.xml";
+  }
+
   @Test
-  public void testBasic() throws IOException {
-    String uri = HdfsTestUtil.getURI(dfsCluster);
-    Path path = new Path(uri);
-    Configuration conf = new Configuration();
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-    FileSystem fs = FileSystem.get(path.toUri(), conf);
-    Path testFile = new Path(uri.toString() + "/testfile");
-    FSDataOutputStream out = fs.create(testFile);
+  public void test() throws Exception {
+    createCollection(COLLECTION, 1, 1, 1);
     
-    out.write(5);
-    out.hflush();
-    out.close();
-
-    ((DistributedFileSystem) fs).recoverLease(testFile);
-
+    waitForRecoveriesToFinish(COLLECTION, false);
     
-    fs.close();
+    // TODO:  SOLR-7360 Enable HDFS NameNode failover testing. 
+//    dfsCluster.transitionToStandby(0);
+//    dfsCluster.transitionToActive(1);
   }
 
 }

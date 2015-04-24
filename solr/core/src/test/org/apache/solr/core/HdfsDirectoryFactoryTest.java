@@ -61,7 +61,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     // test sys prop config
     
-    System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr1");
+    System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
     hdfsFactory.init(new NamedList<>());
     String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
@@ -72,7 +72,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     // test init args config
     
     NamedList<Object> nl = new NamedList<>();
-    nl.add("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr2");
+    nl.add("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr2");
     hdfsFactory.init(nl);
     dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
@@ -80,7 +80,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     // test sys prop and init args config - init args wins
     
-    System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr1");
+    System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
     hdfsFactory.init(nl);
     dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
@@ -95,7 +95,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     System.setProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY, confDir.toString());
     
-    Directory dir = hdfsFactory.create(dfsCluster.getURI().toString() + "/solr", NoLockFactory.INSTANCE, DirContext.DEFAULT);
+    Directory dir = hdfsFactory.create(HdfsTestUtil.getURI(dfsCluster) + "/solr", NoLockFactory.INSTANCE, DirContext.DEFAULT);
     try {
       assertEquals(confDir.toString(), hdfsFactory.getConfDir());
     } finally {
