@@ -130,6 +130,10 @@ Bug Fixes
   of replacing it with a synonym, when expand=true and there is no
   explicit mapping (Ian Ribas, Robert Muir, Mike McCandless)
 
+* LUCENE-6449: Don't throw NullPointerException if some segments are
+  missing the field being highlighted, in PostingsHighlighter (Roman
+  Khmelichek via Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
