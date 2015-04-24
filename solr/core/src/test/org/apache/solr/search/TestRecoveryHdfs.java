@@ -78,12 +78,11 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
-    hdfsUri = dfsCluster.getFileSystem().getUri().toString();
+    hdfsUri = HdfsTestUtil.getURI(dfsCluster);
     
     try {
       URI uri = new URI(hdfsUri);
-      Configuration conf = new Configuration();
+      Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
       conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
     } catch (IOException | URISyntaxException e) {

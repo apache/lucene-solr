@@ -64,13 +64,11 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   public static void setupClass() throws Exception {
     schemaString = "schema15.xml";      // we need a string id
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty(SOLR_HDFS_HOME, dfsCluster.getURI().toString() + "/solr");
   }
   
   @AfterClass
   public static void teardownClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty(SOLR_HDFS_HOME);
     dfsCluster = null;
   }
   

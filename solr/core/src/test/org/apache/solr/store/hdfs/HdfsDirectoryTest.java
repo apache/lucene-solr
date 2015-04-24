@@ -72,10 +72,10 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
-    Configuration conf = new Configuration();
+    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     conf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), NoLockFactory.INSTANCE, conf);
+    directory = new HdfsDirectory(new Path(HdfsTestUtil.getURI(dfsCluster) + createTempDir().toFile().getAbsolutePath() + "/hdfs"), NoLockFactory.INSTANCE, conf);
     
     random = random();
   }

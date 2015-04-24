@@ -41,17 +41,13 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    
-    System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
     System.setProperty("solr.hdfs.blockcache.enabled", "false");
-    
   }
   
   @AfterClass
   public static void teardownClass() throws Exception {
     assertEquals(0, HdfsUpdateLog.INIT_FAILED_LOGS_COUNT.get());
     HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty("solr.hdfs.home");
     System.clearProperty("solr.hdfs.blockcache.enabled");
     dfsCluster = null;
   }
