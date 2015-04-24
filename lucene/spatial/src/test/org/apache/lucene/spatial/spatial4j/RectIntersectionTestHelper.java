@@ -66,6 +66,12 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
 
       TestLog.clear();
 
+      if (laps > MINLAPSPERCASE * 1000) {
+        fail("Did not find enough intersection cases in a reasonable number" +
+            " of random attempts. CWIDbD: " + i_C + "," + i_W + "," + i_I + "," + i_D + "," + i_bboxD
+            + "  Laps exceeded " + MINLAPSPERCASE * 1000);
+      }
+
       Point nearP = randomPointIn(ctx.getWorldBounds());
 
       S s = generateRandomShape(nearP);
@@ -148,15 +154,13 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
             break;
 
           default: fail(""+ic);
-        }
+        } // switch
       } catch (AssertionError e) {
         onAssertFail(e, s, r, ic);
       }
-      if (laps > MINLAPSPERCASE * 1000)
-        fail("Did not find enough intersection cases in a reasonable number" +
-            " of random attempts. CWIDbD: "+i_C+","+i_W+","+i_I+","+i_D+","+i_bboxD
-            + "  Laps exceeded "+MINLAPSPERCASE * 1000);
-    }
+
+    } // while loop
+
     System.out.println("Laps: "+laps + " CWIDbD: "+i_C+","+i_W+","+i_I+","+i_D+","+i_bboxD);
   }
 
