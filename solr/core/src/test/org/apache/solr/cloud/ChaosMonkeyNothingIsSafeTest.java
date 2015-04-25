@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
-  private static final int FAIL_TOLERANCE = 20;
+  private static final int FAIL_TOLERANCE = 40;
 
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
