@@ -56,7 +56,9 @@ public class FacetRange extends FacetRequest {
 
 class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   SchemaField sf;
-
+  Calc calc;
+  List<Range> rangeList;
+  List<Range> otherList;
 
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
@@ -66,7 +68,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   public void process() throws IOException {
     sf = fcontext.searcher.getSchema().getField(freq.field);
 
-    response = getRangeCountsIndexed();
+    response = getRangeCounts();
   }
 
   @Override
@@ -74,30 +76,44 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     return response;
   }
 
+  private static class Range {
+    Object label;
+    Comparable low;
+    Comparable high;
+    boolean includeLower;
+    boolean includeUpper;
 
-  SimpleOrderedMap<Object> getRangeCountsIndexed() throws IOException {
+    public Range(Object label, Comparable low, Comparable high, boolean includeLower, boolean includeUpper) {
+      this.label = label;
+      this.low = low;
+      this.high = high;
+      this.includeLower = includeLower;
+      this.includeUpper = includeUpper;
+    }
+  }
+
+
+  private SimpleOrderedMap<Object> getRangeCounts() throws IOException {
     final FieldType ft = sf.getType();
-
-    RangeEndpointCalculator<?> calc = null;
 
     if (ft instanceof TrieField) {
       final TrieField trie = (TrieField)ft;
 
       switch (trie.getType()) {
         case FLOAT:
-          calc = new FloatRangeEndpointCalculator(sf);
+          calc = new FloatCalc(sf);
           break;
         case DOUBLE:
-          calc = new DoubleRangeEndpointCalculator(sf);
+          calc = new DoubleCalc(sf);
           break;
         case INTEGER:
-          calc = new IntegerRangeEndpointCalculator(sf);
+          calc = new IntCalc(sf);
           break;
         case LONG:
-          calc = new LongRangeEndpointCalculator(sf);
+          calc = new LongCalc(sf);
           break;
         case DATE:
-          calc = new DateRangeEndpointCalculator(sf, null);
+          calc = new DateCalc(sf, null);
           break;
         default:
           throw new SolrException
@@ -110,30 +126,26 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               "Unable to range facet on field:" + sf);
     }
 
-    return getRangeCountsIndexed(calc);
+    createRangeList();
+    return getRangeCountsIndexed();
   }
 
-  private <T extends Comparable<T>> SimpleOrderedMap getRangeCountsIndexed(RangeEndpointCalculator<T> calc) throws IOException {
 
-    final SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+  private void createRangeList() throws IOException {
 
-    List<SimpleOrderedMap<Object>> buckets = null;
+    rangeList = new ArrayList<>();
+    otherList = new ArrayList<>(3);
 
-    buckets = new ArrayList<>();
-    res.add("buckets", buckets);
-
-    T start = calc.getValue(freq.start.toString());
-    T end = calc.getValue(freq.end.toString());
+    Comparable start = calc.getValue(freq.start.toString());
+    Comparable end = calc.getValue(freq.end.toString());
     EnumSet<FacetParams.FacetRangeInclude> include = freq.include;
 
     String gap = freq.gap.toString();
 
-    final int minCount = 0;
-
-    T low = start;
+    Comparable low = start;
 
     while (low.compareTo(end) < 0) {
-      T high = calc.addGap(low, gap);
+      Comparable high = calc.addGap(low, gap);
       if (end.compareTo(high) < 0) {
         if (freq.hardend) {
           high = end;
@@ -152,20 +164,17 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
                 "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
       }
 
-      final boolean includeLower =
+      boolean incLower =
           (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
               (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
                   0 == low.compareTo(start)));
-      final boolean includeUpper =
+      boolean incUpper =
           (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
               (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
                   0 == high.compareTo(end)));
 
-      final String lowS = calc.formatValue(low);
-      final String highS = calc.formatValue(high);
-
-      Object label = low;
-      buckets.add( rangeStats(low, minCount,lowS, highS, includeLower, includeUpper) );
+      Range range = new Range(low, low, high, incLower, incUpper);
+      rangeList.add( range );
 
       low = high;
     }
@@ -175,52 +184,63 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     if (! freq.others.contains(FacetParams.FacetRangeOther.NONE) ) {
 
       boolean all = freq.others.contains(FacetParams.FacetRangeOther.ALL);
-      final String startS = calc.formatValue(start);
-      final String endS = calc.formatValue(end);
 
       if (all || freq.others.contains(FacetParams.FacetRangeOther.BEFORE)) {
         // include upper bound if "outer" or if first gap doesn't already include it
-        res.add(FacetParams.FacetRangeOther.BEFORE.toString(),
-            rangeStats(null, 0, null, startS,
-                false,
-                (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
-                    (!(include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-                        include.contains(FacetParams.FacetRangeInclude.EDGE))))));
-
+        boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
+            (!(include.contains(FacetParams.FacetRangeInclude.LOWER) ||
+                include.contains(FacetParams.FacetRangeInclude.EDGE))));
+        otherList.add( new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, start, false, incUpper) );
       }
       if (all || freq.others.contains(FacetParams.FacetRangeOther.AFTER)) {
         // include lower bound if "outer" or if last gap doesn't already include it
-        res.add(FacetParams.FacetRangeOther.AFTER.toString(),
-            rangeStats(null, 0, endS, null,
-                (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
-                    (!(include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-                        include.contains(FacetParams.FacetRangeInclude.EDGE)))),
-                false));
+        boolean incLower = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
+            (!(include.contains(FacetParams.FacetRangeInclude.UPPER) ||
+                include.contains(FacetParams.FacetRangeInclude.EDGE))));
+        otherList.add( new Range(FacetParams.FacetRangeOther.AFTER.toString(), end, null, incLower, false));
       }
       if (all || freq.others.contains(FacetParams.FacetRangeOther.BETWEEN)) {
-        res.add(FacetParams.FacetRangeOther.BETWEEN.toString(),
-            rangeStats(null, 0, startS, endS,
-                (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-                    include.contains(FacetParams.FacetRangeInclude.EDGE)),
-                (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-                    include.contains(FacetParams.FacetRangeInclude.EDGE))));
+        boolean incLower = (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
+            include.contains(FacetParams.FacetRangeInclude.EDGE));
+        boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
+            include.contains(FacetParams.FacetRangeInclude.EDGE));
 
+        otherList.add( new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, end, incLower, incUpper) );
       }
     }
 
+  }
+
+
+  private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
+
+    final SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+
+    List<SimpleOrderedMap<Object>> buckets = null;
+
+    buckets = new ArrayList<>();
+    res.add("buckets", buckets);
+    
+    for (Range range : rangeList) {
+      buckets.add( rangeStats( range, false) );
+    }
+
+    for (Range range : otherList) {
+      res.add(range.label.toString(), rangeStats( range, true));
+    }
 
     return res;
   }
 
-  private SimpleOrderedMap<Object> rangeStats(Object label, int mincount, String low, String high, boolean iLow, boolean iHigh) throws IOException {
+  private  SimpleOrderedMap<Object> rangeStats(Range range, boolean special ) throws IOException {
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
 
     // typically the start value of the range, but null for before/after/between
-    if (label != null) {
-      bucket.add("val", label);
+    if (!special) {
+      bucket.add("val", range.label);
     }
 
-    Query rangeQ = sf.getType().getRangeQuery(null, sf, low, high, iLow, iHigh);
+    Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
     fillBucket(bucket, rangeQ);
 
     return bucket;
@@ -238,9 +258,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * directly from some method -- but until then, keep this locked down
    * and private.
    */
-  private static abstract class RangeEndpointCalculator<T extends Comparable<T>> {
+  private static abstract class Calc {
     protected final SchemaField field;
-    public RangeEndpointCalculator(final SchemaField field) {
+    public Calc(final SchemaField field) {
       this.field = field;
     }
 
@@ -248,27 +268,29 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      * Formats a Range endpoint for use as a range label name in the response.
      * Default Impl just uses toString()
      */
-    public String formatValue(final T val) {
+    public String formatValue(final Comparable val) {
       return val.toString();
     }
+
     /**
      * Parses a String param into an Range endpoint value throwing
-     * a useful exception if not possible
+     * an exception if not possible
      */
-    public final T getValue(final String rawval) {
+    public final Comparable getValue(final String rawval) {
       try {
-        return parseVal(rawval);
+        return parseStr(rawval);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Can't parse value "+rawval+" for field: " +
                 field.getName(), e);
       }
     }
+
     /**
      * Parses a String param into an Range endpoint.
      * Can throw a low level format exception as needed.
      */
-    protected abstract T parseVal(final String rawval)
+    protected abstract Comparable parseStr(final String rawval)
         throws java.text.ParseException;
 
     /**
@@ -296,9 +318,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      *
      * Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval)
-        throws java.text.ParseException {
-      return parseVal(rawval);
+    protected Object parseGap(final String rawval) throws java.text.ParseException {
+      return parseStr(rawval);
     }
 
     /**
@@ -306,7 +327,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      * the corrisponding high Range endpoint value, throwing
      * a useful exception if not possible.
      */
-    public final T addGap(T value, String gap) {
+    public final Comparable addGap(Comparable value, String gap) {
       try {
         return parseAndAddGap(value, gap);
       } catch (Exception e) {
@@ -320,82 +341,75 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      * the corrisponding high Range endpoint value.
      * Can throw a low level format exception as needed.
      */
-    protected abstract T parseAndAddGap(T value, String gap)
+    protected abstract Comparable parseAndAddGap(Comparable value, String gap)
         throws java.text.ParseException;
 
   }
 
-  private static class FloatRangeEndpointCalculator
-      extends RangeEndpointCalculator<Float> {
+  private static class FloatCalc extends Calc {
 
-    public FloatRangeEndpointCalculator(final SchemaField f) { super(f); }
+    public FloatCalc(final SchemaField f) { super(f); }
     @Override
-    protected Float parseVal(String rawval) {
+    protected Float parseStr(String rawval) {
       return Float.valueOf(rawval);
     }
     @Override
-    public Float parseAndAddGap(Float value, String gap) {
-      return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
+    public Float parseAndAddGap(Comparable value, String gap) {
+      return new Float(((Number)value).floatValue() + Float.valueOf(gap).floatValue());
     }
   }
-  private static class DoubleRangeEndpointCalculator
-      extends RangeEndpointCalculator<Double> {
+  private static class DoubleCalc extends Calc {
 
-    public DoubleRangeEndpointCalculator(final SchemaField f) { super(f); }
+    public DoubleCalc(final SchemaField f) { super(f); }
     @Override
-    protected Double parseVal(String rawval) {
+    protected Double parseStr(String rawval) {
       return Double.valueOf(rawval);
     }
     @Override
-    public Double parseAndAddGap(Double value, String gap) {
-      return new Double(value.doubleValue() + Double.valueOf(gap).doubleValue());
+    public Double parseAndAddGap(Comparable value, String gap) {
+      return new Double(((Number)value).doubleValue() + Double.valueOf(gap).doubleValue());
     }
   }
-  private static class IntegerRangeEndpointCalculator
-      extends RangeEndpointCalculator<Integer> {
+  private static class IntCalc extends Calc {
 
-    public IntegerRangeEndpointCalculator(final SchemaField f) { super(f); }
+    public IntCalc(final SchemaField f) { super(f); }
     @Override
-    protected Integer parseVal(String rawval) {
+    protected Integer parseStr(String rawval) {
       return Integer.valueOf(rawval);
     }
     @Override
-    public Integer parseAndAddGap(Integer value, String gap) {
-      return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
+    public Integer parseAndAddGap(Comparable value, String gap) {
+      return new Integer(((Number)value).intValue() + Integer.valueOf(gap).intValue());
     }
   }
-  private static class LongRangeEndpointCalculator
-      extends RangeEndpointCalculator<Long> {
+  private static class LongCalc extends Calc {
 
-    public LongRangeEndpointCalculator(final SchemaField f) { super(f); }
+    public LongCalc(final SchemaField f) { super(f); }
     @Override
-    protected Long parseVal(String rawval) {
+    protected Long parseStr(String rawval) {
       return Long.valueOf(rawval);
     }
     @Override
-    public Long parseAndAddGap(Long value, String gap) {
-      return new Long(value.longValue() + Long.valueOf(gap).longValue());
+    public Long parseAndAddGap(Comparable value, String gap) {
+      return new Long(((Number)value).longValue() + Long.valueOf(gap).longValue());
     }
   }
-  private static class DateRangeEndpointCalculator
-      extends RangeEndpointCalculator<Date> {
-    private static final String TYPE_ERR_MSG = "SchemaField must use field type extending TrieDateField or DateRangeField";
+  private static class DateCalc extends Calc {
     private final Date now;
-    public DateRangeEndpointCalculator(final SchemaField f,
-                                       final Date now) {
+    public DateCalc(final SchemaField f,
+                    final Date now) {
       super(f);
       this.now = now;
       if (! (field.getType() instanceof TrieDateField) ) {
-        throw new IllegalArgumentException
-            (TYPE_ERR_MSG);
+        throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField or DateRangeField");
       }
     }
     @Override
-    public String formatValue(Date val) {
-      return ((TrieDateField)field.getType()).toExternal(val);
+    public String formatValue(Comparable val) {
+      return ((TrieDateField)field.getType()).toExternal( (Date)val );
     }
     @Override
-    protected Date parseVal(String rawval) {
+    protected Date parseStr(String rawval) {
       return ((TrieDateField)field.getType()).parseMath(now, rawval);
     }
     @Override
@@ -403,9 +417,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return rawval;
     }
     @Override
-    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+    public Date parseAndAddGap(Comparable value, String gap) throws java.text.ParseException {
       final DateMathParser dmp = new DateMathParser();
-      dmp.setNow(value);
+      dmp.setNow((Date)value);
       return dmp.parseMath(gap);
     }
   }
