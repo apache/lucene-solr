@@ -225,6 +225,9 @@ Other Changes
 
 * SOLR-7471: Stop requiring docValues for interval faceting (Tomás Fernández Löbbe)
 
+* SOLR-7391: Use a time based expiration cache for one off HDFS FileSystem instances.
+  (Mark Miller)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
