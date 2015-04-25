@@ -223,6 +223,8 @@ Other Changes
 
 * SOLR-7467: Upgrade t-digest to 3.1 (hossman)
 
+* SOLR-7471: Stop requiring docValues for interval faceting (Tomás Fernández Löbbe)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

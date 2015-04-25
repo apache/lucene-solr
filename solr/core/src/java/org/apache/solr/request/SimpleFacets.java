@@ -98,7 +98,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -1733,9 +1732,6 @@ public class SimpleFacets {
       parseParams(FacetParams.FACET_INTERVAL, field);
       String[] intervalStrs = required.getFieldParams(facetValue, FacetParams.FACET_INTERVAL_SET);
       SchemaField schemaField = searcher.getCore().getLatestSchema().getField(facetValue);
-      if (!schemaField.hasDocValues()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting only on fields with doc values");
-      }
       if (params.getBool(GroupParams.GROUP_FACET, false)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting can't be used with " + GroupParams.GROUP_FACET);
       }
