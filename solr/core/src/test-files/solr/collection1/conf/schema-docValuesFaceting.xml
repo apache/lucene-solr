@@ -39,12 +39,15 @@
     <dynamicField name="*_ss_dv" type="string" indexed="false" stored="false" docValues="true"  multiValued="true"/>
     <dynamicField name="*_f"     type="float"  indexed="true"  stored="false" docValues="false"/>
     <dynamicField name="*_f_dv"  type="float"  indexed="true"  stored="false" docValues="true"/>
+    <dynamicField name="*_fs"    type="float"  indexed="true"  stored="false" docValues="false"  multiValued="true"/>
     <dynamicField name="*_fs_dv" type="float"  indexed="true"  stored="false" docValues="true"  multiValued="true"/>
     <dynamicField name="*_l"     type="long"   indexed="true"  stored="false" docValues="false"/>
     <dynamicField name="*_l_dv"  type="long"   indexed="true"  stored="false" docValues="true"/>
+    <dynamicField name="*_ls"    type="long"   indexed="true"  stored="false" docValues="false"  multiValued="true"/>
     <dynamicField name="*_ls_dv" type="long"   indexed="true"  stored="false" docValues="true"  multiValued="true"/>
     <dynamicField name="*_d"     type="double" indexed="true"  stored="false" docValues="false"/>
     <dynamicField name="*_d_dv"  type="double" indexed="true"  stored="false" docValues="true"/>
+    <dynamicField name="*_ds"    type="double" indexed="true"  stored="false" docValues="false"  multiValued="true"/>
     <dynamicField name="*_ds_dv" type="double" indexed="true"  stored="false" docValues="true"  multiValued="true"/>
     <dynamicField name="*_dt"    type="date"   indexed="true"  stored="false" docValues="false"/>
     <dynamicField name="*_dt_dv" type="date"   indexed="true"  stored="false" docValues="true"/>
@@ -58,6 +61,12 @@
   <copyField source="*_f" dest="*_f_dv" />
   <copyField source="*_is" dest="*_is_dv" />
   <copyField source="*_s" dest="*_s_dv" />
+  <copyField source="*_l" dest="*_l_dv" />
+  <copyField source="*_d" dest="*_d_dv" />
   <copyField source="*_ss" dest="*_ss_dv" />
+  <copyField source="*_is" dest="*_is_dv" />
+  <copyField source="*_fs" dest="*_fs_dv" />
+  <copyField source="*_ls" dest="*_ls_dv" />
+  <copyField source="*_ds" dest="*_ds_dv" />
   <copyField source="id" dest="id_dv" />
 </schema>
