@@ -20,10 +20,13 @@ package org.apache.solr.core;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -51,6 +54,10 @@ import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrInfoMBean {
   public static Logger LOG = LoggerFactory
@@ -87,10 +94,33 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   public static Metrics metrics;
   private static Boolean kerberosInit;
   
+  // we use this cache for FileSystem instances when we don't have access to a long lived instance
+  private com.google.common.cache.Cache<String,FileSystem> tmpFsCache = CacheBuilder.newBuilder()
+      .concurrencyLevel(10)
+      .maximumSize(1000)
+      .expireAfterAccess(5, TimeUnit.MINUTES).removalListener(new RemovalListener<String,FileSystem>() {
+        @Override
+        public void onRemoval(RemovalNotification<String,FileSystem> rn) {
+          IOUtils.closeQuietly(rn.getValue());
+        }
+      })
+      .build();
+  
   private final static class MetricsHolder {
     // [JCIP SE, Goetz, 16.6] Lazy initialization
     // Won't load until MetricsHolder is referenced
     public static final Metrics metrics = new Metrics();
+  }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    Collection<FileSystem> values = tmpFsCache.asMap().values();
+    for (FileSystem fs : values) {
+      IOUtils.closeQuietly(fs);
+    }
+    tmpFsCache.invalidateAll();
+    tmpFsCache.cleanUp();
   }
 
   @Override
@@ -257,17 +287,26 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   @Override
   public boolean exists(String path) {
-    Path hdfsDirPath = new Path(path);
-    Configuration conf = getConf();
+    final Path hdfsDirPath = new Path(path);
+    final Configuration conf = getConf();
     FileSystem fileSystem = null;
     try {
-      fileSystem = FileSystem.get(hdfsDirPath.toUri(), conf);
+      // no need to close the fs, the cache will do it
+      fileSystem = tmpFsCache.get(path, new Callable<FileSystem>() {
+        @Override
+        public FileSystem call() throws IOException {
+          return FileSystem.get(hdfsDirPath.toUri(), conf);
+        }
+      });
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    try {
       return fileSystem.exists(hdfsDirPath);
     } catch (IOException e) {
       LOG.error("Error checking if hdfs path exists", e);
       throw new RuntimeException("Error checking if hdfs path exists", e);
-    } finally {
-      IOUtils.closeQuietly(fileSystem);
     }
   }
   
@@ -279,12 +318,24 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     return conf;
   }
   
-  protected synchronized void removeDirectory(CacheValue cacheValue)
+  protected synchronized void removeDirectory(final CacheValue cacheValue)
       throws IOException {
-    Configuration conf = getConf();
+    final Configuration conf = getConf();
     FileSystem fileSystem = null;
+    
     try {
-      fileSystem = FileSystem.get(new URI(cacheValue.path), conf);
+      // no need to close the fs, the cache will do it
+      fileSystem = tmpFsCache.get(cacheValue.path, new Callable<FileSystem>() {
+        @Override
+        public FileSystem call() throws IOException {
+          return FileSystem.get(new Path(cacheValue.path).toUri(), conf);
+        }
+      });
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+    
+    try {
       boolean success = fileSystem.delete(new Path(cacheValue.path), true);
       if (!success) {
         throw new RuntimeException("Could not remove directory");
@@ -293,8 +344,6 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       LOG.error("Could not remove directory", e);
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Could not remove directory", e);
-    } finally {
-      IOUtils.closeQuietly(fileSystem);
     }
   }
   
