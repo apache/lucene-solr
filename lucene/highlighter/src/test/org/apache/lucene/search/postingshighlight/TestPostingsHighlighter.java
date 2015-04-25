@@ -34,6 +34,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1140,10 +1141,10 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     doc.add(new StoredField("body", "foo"));
     iw.addDocument(doc);
     
-    IndexReader ir = iw.getReader();
+    IndexReader ir = DirectoryReader.open(iw.w, true);
     iw.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = new IndexSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new MatchAllDocsQuery();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
