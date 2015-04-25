@@ -163,6 +163,9 @@ Other Changes
 * SOLR-7421: RecoveryAfterSoftCommitTest fails frequently on Jenkins due to full index
   replication taking longer than 30 seconds. (Timothy Potter, shalin)
 
+* SOLR-7081: Add new test case to test if create/delete/re-create collections work.
+  (Christine Poerschke via Ramkumar Aiyengar)
+
 * SOLR-7467: Upgrade t-digest to 3.1 (hossman)
 
 * SOLR-7471: Stop requiring docValues for interval faceting (Tomás Fernández Löbbe)
