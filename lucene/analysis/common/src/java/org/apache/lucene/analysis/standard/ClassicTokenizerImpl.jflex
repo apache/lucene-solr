@@ -17,13 +17,6 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-/*
-
-WARNING: if you change ClassicTokenizerImpl.jflex and need to regenerate
-      the tokenizer, only use the trunk version of JFlex 1.5 at the moment!
-
-*/
-
 import java.io.Reader;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
