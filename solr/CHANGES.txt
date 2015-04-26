@@ -27,7 +27,6 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.10.v20150310
 
 System Requirements
 ----------------------
@@ -61,15 +60,18 @@ Other Changes
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
   affects HDFS support. (Ben Manes via Shawn Heisey)
 
-* SOLR-4839: Upgrade Jetty to 9.2.10.v20150310 and restlet-jee to 2.3.0
-  (Bill Bell, Timothy Potter, Uwe Schindler, Mark Miller, shalin)
-
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
 
 Versions of Major Components
 ---------------------
+Apache Tika 1.7
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.10.v20150310
 
 Upgrading from Solr 5.1
 -----------------------
@@ -80,6 +82,16 @@ Upgrading from Solr 5.1
   
 * SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
   You should use Replica.State to compare a replica's state. (Shai Erera)
+
+* SOLR-4839: The way SSL support is configured has been changed. Before this release,
+  the SOLR_SSL_OPTS property configured in solr.in.sh (linux/mac) or solr.in.cmd (windows)
+  was used to enable/disable SSL but starting in 5.2.0, new properties named as
+  SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE,
+  SOLR_SSL_TRUST_STORE_PASSWORD, SOLR_SSL_NEED_CLIENT_AUTH and SOLR_SSL_WANT_CLIENT_AUTH
+  have been introduced. Furthermore, it is now possible to configure the HTTP client with
+  different SSL properties than the ones used for Jetty using the same files. It is no longer
+  allowed to configure the SOLR_SSL_OPTS property inside solr.in.sh or solr.in.cmd. Please refer
+  to the "Enabling SSL" page in Solr Reference Guide for complete details.
 
 Detailed Change List
 ----------------------
@@ -185,6 +197,9 @@ Bug Fixes
 
 * SOLR-7469: Fix check-licenses to correctly detect if start.jar.sha1 is incorrect (hossman)
 
+* SOLR-7449: solr/server/etc/jetty-https-ssl.xml hard codes the key store file and password rather
+  than pulling them from the sysprops defined in solr/bin/solr.in.{sh,cmd}
+
 Optimizations
 ----------------------
 
@@ -238,6 +253,9 @@ Other Changes
   no or multiple shards (Christine Poerschke, Ramkumar Aiyengar)
 
 * SOLR-7425: Improve MDC based logging format. (Mark Miller)
+
+* SOLR-4839: Upgrade Jetty to 9.2.10.v20150310 and restlet-jee to 2.3.0
+  (Bill Bell, Timothy Potter, Uwe Schindler, Mark Miller, shalin)
 
 ==================  5.1.0 ==================
 
