@@ -286,7 +286,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   @Test
   public void testStats() throws Exception {
-    // single valued strings
     doStats(Client.localClient, params());
   }
 

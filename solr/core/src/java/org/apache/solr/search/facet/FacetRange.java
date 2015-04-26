@@ -23,7 +23,9 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -31,6 +33,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequest {
@@ -214,22 +217,68 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
-    final SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+    int slotCount = rangeList.size() + otherList.size();
+    intersections = new DocSet[slotCount];
+    createAccs(fcontext.base.size(), slotCount);
+    prepareForCollection();
 
-    List<SimpleOrderedMap<Object>> buckets = null;
-
-    buckets = new ArrayList<>();
-    res.add("buckets", buckets);
-    
-    for (Range range : rangeList) {
-      buckets.add( rangeStats( range, false) );
+    for (int idx = 0; idx<rangeList.size(); idx++) {
+      rangeStats(rangeList.get(idx), idx);
     }
 
-    for (Range range : otherList) {
-      res.add(range.label.toString(), rangeStats( range, true));
+    for (int idx = 0; idx<otherList.size(); idx++) {
+      rangeStats(otherList.get(idx), rangeList.size() + idx);
+    }
+
+
+    final SimpleOrderedMap res = new SimpleOrderedMap<>();
+    List<SimpleOrderedMap> buckets = new ArrayList<>();
+    res.add("buckets", buckets);
+
+    for (int idx = 0; idx<rangeList.size(); idx++) {
+      Range range = rangeList.get(idx);
+      SimpleOrderedMap bucket = new SimpleOrderedMap();
+      buckets.add(bucket);
+      bucket.add("val", range.label);
+      addStats(bucket, idx);
+      doSubs(bucket, idx);
+    }
+
+    for (int idx = 0; idx<otherList.size(); idx++) {
+      Range range = otherList.get(idx);
+      SimpleOrderedMap bucket = new SimpleOrderedMap();
+      res.add(range.label.toString(), bucket);
+      addStats(bucket, rangeList.size() + idx);
+      doSubs(bucket, rangeList.size() + idx);
     }
 
     return res;
+  }
+
+  private DocSet[] intersections;
+  private void rangeStats(Range range, int slot) throws IOException {
+    Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+    // TODO: specialize count only
+    DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
+    intersections[slot] = intersection;  // save for later
+    int num = collect(intersection, slot);
+    countAcc.incrementCount(slot, num); // TODO: roll this into collect()
+  }
+
+  private void doSubs(SimpleOrderedMap bucket, int slot) throws IOException {
+    // handle sub-facets for this bucket
+    if (freq.getSubFacets().size() > 0) {
+      DocSet subBase = intersections[slot];
+      if (subBase.size() == 0) return;
+      FacetContext subContext = fcontext.sub();
+      subContext.base = subBase;
+      try {
+        fillBucketSubs(bucket, subContext);
+      } finally {
+        // subContext.base.decref();  // OFF-HEAP
+        // subContext.base = null;  // do not modify context after creation... there may be deferred execution (i.e. streaming)
+      }
+    }
   }
 
   private  SimpleOrderedMap<Object> rangeStats(Range range, boolean special ) throws IOException {
