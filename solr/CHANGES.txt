@@ -83,15 +83,25 @@ Upgrading from Solr 5.1
 * SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
   You should use Replica.State to compare a replica's state. (Shai Erera)
 
-* SOLR-4839: The way SSL support is configured has been changed. Before this release,
-  the SOLR_SSL_OPTS property configured in solr.in.sh (linux/mac) or solr.in.cmd (windows)
-  was used to enable/disable SSL but starting in 5.2.0, new properties named as
-  SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE,
-  SOLR_SSL_TRUST_STORE_PASSWORD, SOLR_SSL_NEED_CLIENT_AUTH and SOLR_SSL_WANT_CLIENT_AUTH
-  have been introduced. Furthermore, it is now possible to configure the HTTP client with
-  different SSL properties than the ones used for Jetty using the same files. It is no longer
-  allowed to configure the SOLR_SSL_OPTS property inside solr.in.sh or solr.in.cmd. Please refer
-  to the "Enabling SSL" page in Solr Reference Guide for complete details.
+* SOLR-4839: The upgrade to Jetty 9 changes the following:
+  **  It is no longer possible to run "java -jar start.jar" from inside the server directory.
+      The bin/solr script is the only supported way to run Solr. This is necessary to support
+      HTTP and HTTPS modules in Jetty which can be selectively enabled by the bin/solr scripts.
+      In case you have a pressing need to run solr the old way, you can run
+      "java -jar start.jar --module=http" to get the same behavior as before.
+  **  The way SSL support is configured has been changed. Before this release,
+      the SOLR_SSL_OPTS property configured in solr.in.sh (linux/mac) or solr.in.cmd (windows)
+      was used to enable/disable SSL but starting in 5.2.0, new properties named as
+      SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE,
+      SOLR_SSL_TRUST_STORE_PASSWORD, SOLR_SSL_NEED_CLIENT_AUTH and SOLR_SSL_WANT_CLIENT_AUTH
+      have been introduced. The bin/solr scripts configure the SOLR_SSL_OPTS property
+      automatically based on the above new properties.
+      You should *not* configure the SOLR_SSL_OPTS property directly inside solr.in.{sh,cmd}.
+  **  Support for SOLR_SSL_PORT property has been removed. Instead use the regular SOLR_PORT
+      property or specify the port while invoking the bin/solr script using the "-p" switch.
+  **  Furthermore, it is now possible to configure the HTTP client with
+      different SSL properties than the ones used for Jetty using the same files.
+  **  Please refer to the "Enabling SSL" page in Solr Reference Guide for complete details.
 
 Detailed Change List
 ----------------------
