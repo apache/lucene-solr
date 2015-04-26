@@ -781,6 +781,7 @@ class FacetRangeMerger extends FacetBucketMerger<FacetRange> {
     mergeBucketList(bucketList);
   }
 
+  // TODO: share more merging with field faceting
   public void mergeBucketList(List<SimpleOrderedMap> bucketList) {
     for (SimpleOrderedMap bucketRes : bucketList) {
       Comparable bucketVal = (Comparable)bucketRes.get("val");
@@ -798,14 +799,11 @@ class FacetRangeMerger extends FacetBucketMerger<FacetRange> {
     SimpleOrderedMap result = new SimpleOrderedMap(4);
 
     List<SimpleOrderedMap> resultBuckets = new ArrayList<>(buckets.size());
-    // TODO: if we implement mincount for ranges, we'll need to sort buckets (see FacetFieldMerger)
 
     for (FacetBucket bucket : buckets.values()) {
-      /***
        if (bucket.getCount() < freq.mincount) {
-       continue;
+         continue;
        }
-       ***/
       resultBuckets.add( bucket.getMergedBucket() );
     }
 

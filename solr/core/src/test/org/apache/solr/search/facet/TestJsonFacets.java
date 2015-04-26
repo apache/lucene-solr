@@ -690,6 +690,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " } }"
     );
 
+    // range facet with mincount
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all, mincount:2,    facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}   }}"
+        )
+        , "facets=={count:6, f:{buckets:[  {val:0.0,count:2,x:5.0,ny:{count:1}} ]" +
+            ",before: {count:1,x:-5.0,ny:{count:0}}" +
+            ",after:  {count:1,x:7.0, ny:{count:0}}" +
+            ",between:{count:3,x:0.0, ny:{count:2}}" +
+            " } }"
+    );
 
     // range facet with sub facets and stats, with "other:all", on subset
     client.testJQ(params(p, "q", "id:(3 4 6)"
@@ -701,6 +711,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",between:{count:2,x:-2.0, ny:{count:1}}" +
             " } }"
     );
+
+
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"
