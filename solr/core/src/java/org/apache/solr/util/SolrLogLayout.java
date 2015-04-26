@@ -365,19 +365,19 @@ public class SolrLogLayout extends Layout {
 
   private void appendMDC(StringBuilder sb) {
     if (!StringUtils.isEmpty(MDC.get(NODE_NAME_PROP)))  {
-      sb.append(" N:").append(MDC.get(NODE_NAME_PROP));
+      sb.append(" n:").append(MDC.get(NODE_NAME_PROP));
     }
     if (!StringUtils.isEmpty(MDC.get(COLLECTION_PROP)))  {
-      sb.append(" C:").append(MDC.get(COLLECTION_PROP));
+      sb.append(" c:").append(MDC.get(COLLECTION_PROP));
     }
     if (!StringUtils.isEmpty(MDC.get(SHARD_ID_PROP))) {
-      sb.append(" S:").append(MDC.get(SHARD_ID_PROP));
+      sb.append(" s:").append(MDC.get(SHARD_ID_PROP));
     }
     if (!StringUtils.isEmpty(MDC.get(REPLICA_PROP))) {
-      sb.append(" R:").append(MDC.get(REPLICA_PROP));
+      sb.append(" r:").append(MDC.get(REPLICA_PROP));
     }
     if (!StringUtils.isEmpty(MDC.get(CORE_NAME_PROP))) {
-      sb.append(" c:").append(MDC.get(CORE_NAME_PROP));
+      sb.append(" x:").append(MDC.get(CORE_NAME_PROP));
     }
   }
 }

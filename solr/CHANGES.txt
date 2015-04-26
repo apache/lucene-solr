@@ -231,6 +231,8 @@ Other Changes
 * SOLR-5213: Log when shard splitting unexpectedly leads to documents going to
   no or multiple shards (Christine Poerschke, Ramkumar Aiyengar)
 
+* SOLR-7425: Improve MDC based logging format. (Mark Miller)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
