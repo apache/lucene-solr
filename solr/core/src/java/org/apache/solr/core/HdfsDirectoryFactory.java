@@ -20,8 +20,8 @@ package org.apache.solr.core;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.concurrent.Callable;
@@ -59,7 +59,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
-public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrInfoMBean {
+public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   public static Logger LOG = LoggerFactory
       .getLogger(HdfsDirectoryFactory.class);
   
@@ -438,44 +438,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
 
-  // SolrInfoMBean methods
-
   @Override
-  public String getName() {
-    return getClass().getSimpleName() + "BlockCache";
-  }
-
-  @Override
-  public String getVersion() {
-    return SolrCore.version;
-  }
-
-  @Override
-  public String getDescription() {
-    return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.CACHE;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  @Override
-  public NamedList<?> getStatistics() {
-    if (metrics == null) {
-      return new NamedList<Object>();
-    }
-
-    return metrics.getStatistics();
+  public Collection<SolrInfoMBean> offerMBeans() {
+    return Arrays.<SolrInfoMBean>asList(MetricsHolder.metrics);
   }
 }

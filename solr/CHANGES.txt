@@ -210,6 +210,9 @@ Other Changes
 
 * SOLR-7425: Improve MDC based logging format. (Mark Miller)
 
+* SOLR-7457: Make DirectoryFactory publishing MBeanInfo extensible.
+  (Mike Drob via Mark Miller)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

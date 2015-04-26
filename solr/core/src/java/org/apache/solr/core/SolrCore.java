@@ -830,6 +830,17 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     // from the core.
     resourceLoader.inform(infoRegistry);
 
+    // Allow the directory factory to register MBeans as well
+    for (SolrInfoMBean bean : directoryFactory.offerMBeans()) {
+      log.debug("Registering JMX bean [{}] from directory factory.", bean.getName());
+      // Not worried about concurrency, so no reason to use putIfAbsent
+      if (infoRegistry.containsKey(bean.getName())){
+        log.info("Ignoring JMX bean [{}] due to name conflict.", bean.getName());
+      } else {
+        infoRegistry.put(bean.getName(), bean);
+      }
+    }
+
     bufferUpdatesIfConstructing(coreDescriptor);
     
     // For debugging   
