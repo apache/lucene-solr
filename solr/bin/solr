@@ -136,19 +136,33 @@ fi
   exit 1
 }
 
-# URL scheme for contacting Solr
+# Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
-if [ -n "$SOLR_SSL_OPTS" ]; then
-  SOLR_URL_SCHEME=https
-fi
-
-# Which Jetty config file to use - leave blank to use the default: etc/jetty.xml
 SOLR_JETTY_CONFIG=()
-if [ -n "$SOLR_SSL_OPTS" ]; then
-  SOLR_JETTY_CONFIG+=("$SOLR_TIP/server/etc/jetty-https-ssl.xml")
+SOLR_SSL_OPTS=""
+if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+  SOLR_JETTY_CONFIG+=("--module=https")
+  SOLR_URL_SCHEME=https
+  SOLR_SSL_OPTS=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE \
+    -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD \
+    -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE \
+    -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD \
+    -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH \
+    -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE \
+      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD \
+      -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE \
+      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+  else
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE \
+      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD \
+      -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE \
+      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+  fi
+else
+  SOLR_JETTY_CONFIG+=("--module=http")
 fi
-
-SOLR_JETTY_CONFIG+=('OPTIONS=default,rewrite')
 
 function print_usage() {
   CMD="$1"
@@ -449,13 +463,11 @@ function stop_solr() {
   SOLR_PORT="$2"
   STOP_PORT=`expr $SOLR_PORT - 1000`
   STOP_KEY="$3"
-  
-  
   SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    "$JAVA" $SOLR_SSL_OPTS -jar "$DIR/start.jar" "${SOLR_JETTY_CONFIG[@]}" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    "$JAVA" $SOLR_SSL_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
     (sleep 5) &
     spinner $!
     rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
@@ -1125,10 +1137,12 @@ fi
 if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
     SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
   fi
+
   if [ "$SOLR_PID" != "" ]; then
     echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
@@ -1297,11 +1311,8 @@ function launch_solr() {
 
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ -n "$SOLR_SSL_OPTS" ]; then
-    # If using SSL and jetty.ssl.port not set explicitly, use the jetty.port
-    SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_PORT"
-    if [ -n "$SOLR_SSL_PORT" ]; then
-      SSL_PORT_PROP="-Djetty.ssl.port=$SOLR_SSL_PORT"
-    fi
+    # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
+    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
   fi
 
@@ -1349,7 +1360,7 @@ function launch_solr() {
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
-    "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
@@ -1364,8 +1375,8 @@ function launch_solr() {
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar \
-      "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" "${SOLR_JETTY_CONFIG[@]}" \
-	    1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" "${SOLR_JETTY_CONFIG[@]}" \
+	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
     # no lsof on cygwin though
     if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path

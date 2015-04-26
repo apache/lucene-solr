@@ -59,7 +59,7 @@ def unshortenURL(url):
     response = h.getresponse()
     if int(response.status/100) == 3 and response.getheader('Location'):
       return response.getheader('Location')
-  return url  
+  return url
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -100,7 +100,7 @@ def getHREFs(urlString):
     print('\nFAILED to open url %s' % urlString)
     traceback.print_exc()
     raise
-  
+
   for subUrl, text in reHREF.findall(html):
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
@@ -125,7 +125,7 @@ def download(name, urlString, tmpDir, quiet=False):
     t = time.time()-startTime
     sizeMB = os.path.getsize(fileName)/1024./1024.
     print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
-  
+
 def attemptDownload(urlString, fileName):
   fIn = urllib.request.urlopen(urlString)
   fOut = open(fileName, 'wb')
@@ -177,19 +177,19 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
           raise RuntimeError('%s is missing %s' % (desc, name))
       except KeyError:
         raise RuntimeError('%s is missing %s' % (desc, name))
-      
+
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
-    
+
     for verify in (
-      'Specification-Vendor: The Apache Software Foundation',
-      'Implementation-Vendor: The Apache Software Foundation',
+            'Specification-Vendor: The Apache Software Foundation',
+            'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.7 compiler was used to build release bits:
       'X-Compile-Source-JDK: 1.7',
-      # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
-      'Ant-Version: Apache Ant 1.8',
+            # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
+            'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.7 format:
       'X-Compile-Target-JDK: 1.7',
-      'Specification-Version: %s' % version,
+            'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.7:
       'Created-By: 1.7'):
       if s.find(verify) == -1:
@@ -213,7 +213,7 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
       desc2 = desc
 
     justFileName = os.path.split(desc2)[1]
-    
+
     if justFileName.lower().find('solr') != -1:
       if SOLR_LICENSE is None:
         raise RuntimeError('BUG in smokeTestRelease!')
@@ -239,7 +239,7 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
 
 def normSlashes(path):
   return path.replace(os.sep, '/')
-    
+
 def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
   print('    verify JAR metadata/identity/no javax.* or java.* classes...')
   if project == 'solr':
@@ -250,12 +250,14 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
 
     normRoot = normSlashes(root)
 
+    if project == 'solr' and normRoot.endswith('/server/lib'):
+      # Solr's example intentionally ships servlet JAR:
+      continue
+
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) \
-              or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')) \
-              or (normRoot.endswith('/server/lib/ext') and file.startswith('javax.servlet')):
+          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:
@@ -301,19 +303,19 @@ def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
                            io.BytesIO(jarInsideWarContents),
                            svnRevision,
                            version)
-        if name.lower().find('lucene') != -1:              
+        if name.lower().find('lucene') != -1:
           jarInsideWarFilename = os.path.basename(name)
           if jarInsideWarFilename not in distFilenames:
             raise RuntimeError('Artifact %s in %s is not present in Lucene binary distribution'
-                              % (name, warFileName))
+                               % (name, warFileName))
           distJarName = distFilenames[jarInsideWarFilename]
           with open(distJarName, "rb", buffering=0) as distJarFile:
             distJarContents = distJarFile.readall()
           if jarInsideWarContents != distJarContents:
             raise RuntimeError('Artifact %s in %s is not identical to %s in Lucene binary distribution'
-                              % (name, warFileName, distJarName))
-          
-        
+                               % (name, warFileName, distJarName))
+
+
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
   print('  test basics...')
@@ -326,7 +328,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   if isSigned:
     expectedSigs.append('asc')
   expectedSigs.extend(['md5', 'sha1'])
-  
+
   artifacts = []
   for text, subURL in ents:
     if text == 'KEYS':
@@ -374,7 +376,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   actual = [x[0] for x in artifacts]
   if expected != actual:
     raise RuntimeError('%s: wrong artifacts: expected %s but got %s' % (project, expected, actual))
-                
+
   if keysURL is None:
     raise RuntimeError('%s is missing KEYS' % project)
 
@@ -416,7 +418,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
-        and line.find('WARNING: This key is not certified with a trusted signature') == -1:
+                and line.find('WARNING: This key is not certified with a trusted signature') == -1:
           print('      GPG: %s' % line.strip())
       f.close()
 
@@ -472,7 +474,7 @@ def checkChangesContent(s, version, name, project, isHTML):
   m = r.search(s)
   if m is not None:
     raise RuntimeError('incorrect issue (_ instead of -) in %s: %s' % (name, m.group(1)))
-    
+
   if s.lower().find('not yet released') != -1:
     raise RuntimeError('saw "not yet released" in %s' % name)
 
@@ -481,7 +483,7 @@ def checkChangesContent(s, version, name, project, isHTML):
       sub = 'Lucene %s' % version
     else:
       sub = version
-      
+
     if s.find(sub) == -1:
       # benchmark never seems to include release info:
       if name.find('/benchmark/') == -1:
@@ -549,17 +551,17 @@ def run(command, logFile):
     print('\ncommand "%s" failed:' % command)
     printFileContents(logFile)
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
-    
+
 def verifyDigests(artifact, urlString, tmpDir):
   print('    verify md5/sha1 digests')
   md5Expected, t = load(urlString + '.md5').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('MD5 %s.md5 lists artifact %s but expected *%s' % (urlString, t, artifact))
-  
+
   sha1Expected, t = load(urlString + '.sha1').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
-  
+
   m = hashlib.md5()
   s = hashlib.sha1()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
@@ -638,7 +640,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
 
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
-  
+
   l = os.listdir(unpackPath)
   textFiles = ['LICENSE', 'NOTICE', 'README']
   if project == 'lucene':
@@ -724,14 +726,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
       if java.run_java8:
-        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-        java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
-        java.run_java8('ant jar', '%s/compile.log' % unpackPath)
-        testDemo(java.run_java8, isSrc, version, '1.8')
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+      java.run_java8('ant jar', '%s/compile.log' % unpackPath)
+      testDemo(java.run_java8, isSrc, version, '1.8')
 
-        print('    generate javadocs w/ Java 8...')
-        java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/build/docs' % unpackPath)
+      print('    generate javadocs w/ Java 8...')
+      java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
@@ -749,16 +751,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       testSolrExample(unpackPath, java.java7_home, True)
 
       if java.run_java8:
-        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-        java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
 
-        print('    generate javadocs w/ Java 8...')
-        java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+      print('    generate javadocs w/ Java 8...')
+      java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
-        print('    test solr example w/ Java 8...')
-        java.run_java8('ant clean example', '%s/antexample.log' % unpackPath)
-        testSolrExample(unpackPath, java.java8_home, True)
+      print('    test solr example w/ Java 8...')
+      java.run_java8('ant clean example', '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, java.java8_home, True)
 
       os.chdir('..')
       print('    check NOTICE')
@@ -771,7 +773,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
     if project == 'lucene':
       testDemo(java.run_java7, isSrc, version, '1.7')
       if java.run_java8:
-        testDemo(java.run_java8, isSrc, version, '1.8')
+      testDemo(java.run_java8, isSrc, version, '1.8')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
@@ -789,14 +791,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       testSolrExample(java7UnpackPath, java.java7_home, False)
 
       if java.run_java8:
-        print('    copying unpacked distribution for Java 8 ...')
-        java8UnpackPath = '%s-java8' % unpackPath
-        if os.path.exists(java8UnpackPath):
-          shutil.rmtree(java8UnpackPath)
-        shutil.copytree(unpackPath, java8UnpackPath)
-        os.chdir(java8UnpackPath)
-        print('    test solr example w/ Java 8...')
-        testSolrExample(java8UnpackPath, java.java8_home, False)
+      print('    copying unpacked distribution for Java 8 ...')
+      java8UnpackPath = '%s-java8' % unpackPath
+      if os.path.exists(java8UnpackPath):
+        shutil.rmtree(java8UnpackPath)
+      shutil.copytree(unpackPath, java8UnpackPath)
+      os.chdir(java8UnpackPath)
+      print('    test solr example w/ Java 8...')
+      testSolrExample(java8UnpackPath, java.java8_home, False)
 
       os.chdir(unpackPath)
 
@@ -805,7 +807,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
   if project == 'lucene' and isSrc:
     print('  confirm all releases have coverage in TestBackwardsCompatibility')
     confirmAllReleasesAreTestedForBackCompat(unpackPath)
-    
+
 
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -818,10 +820,10 @@ def testNotice(unpackPath):
 
 """ + luceneNotice + """---
 """
-  
+
   if solrNotice.find(expected) == -1:
     raise RuntimeError('Solr\'s NOTICE.txt does not have the verbatim copy, plus header/footer, of Lucene\'s NOTICE.txt')
-  
+
 def readSolrOutput(p, startupEvent, failureEvent, logFile):
   f = open(logFile, 'wb')
   try:
@@ -837,7 +839,7 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
       f.flush()
       #print('SOLR: %s' % line.strip())
       if not startupEvent.isSet():
-        if line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
+        if line.find(b'Started ServerConnector@') != -1 and line.find(b'{HTTP/1.1}{0.0.0.0:8983}') != -1:
           startupEvent.set()
         elif p.poll() is not None:
           failureEvent.set()
@@ -851,7 +853,7 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     startupEvent.set()
   finally:
     f.close()
-    
+
 def testSolrExample(unpackPath, javaPath, isSrc):
   logFile = '%s/solr-example.log' % unpackPath
   if isSrc:
@@ -868,9 +870,9 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
   try:
-      subprocess.call(['bin/solr','stop','-p','8983'])
+    subprocess.call(['bin/solr','stop','-p','8983'])
   except:
-      print('      Stop failed due to: '+sys.exc_info()[0])
+    print('      Stop failed due to: '+sys.exc_info()[0])
 
   print('      starting Solr on port 8983 from %s' % unpackPath)
   server = subprocess.Popen(['bin/solr', '-f', '-p', '8983'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
@@ -937,7 +939,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     os.chdir(unpackPath+'/solr')
   else:
     os.chdir(unpackPath)
-    
+
 # the weaker check: we can use this on java6 for some checks,
 # but its generated HTML is hopelessly broken so we cannot run
 # the link checking that checkJavadocpathFull does.
@@ -946,7 +948,7 @@ def checkJavadocpath(path, failOnMissing=True):
   # we fail here if its screwed up
   if failOnMissing and checkJavaDocs.checkPackageSummaries(path, 'package'):
     raise RuntimeError('missing javadocs package summaries!')
-    
+
   # now check for level='class'
   if checkJavaDocs.checkPackageSummaries(path):
     # disabled: RM cannot fix all this, see LUCENE-3887
@@ -997,7 +999,7 @@ def testDemo(run_java, isSrc, version, jdk):
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
-  
+
 def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
   # Locate the release branch in subversion
   m = re.match('(\d+)\.(\d+)', version) # Get Major.minor version components
@@ -1040,7 +1042,7 @@ def getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL):
   for project in ('lucene', 'solr'):
     distFiles[project] = getBinaryDistFiles(project, tmpDir, version, baseURL)
   return distFiles
-    
+
 def getBinaryDistFiles(project, tmpDir, version, baseURL):
   distribution = '%s-%s.tgz' % (project, version)
   if not os.path.exists('%s/%s' % (tmpDir, distribution)):
@@ -1094,12 +1096,12 @@ def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
         artifactFilename = os.path.basename(artifact)
         if artifactFilename not in distFilenames:
           raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
-                            % (artifact, project))
+                             % (artifact, project))
         else:
           identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
           if not identical:
             raise RuntimeError('Maven artifact %s is not identical to %s in %s binary distribution'
-                              % (artifact, distFilenames[artifactFilename], project))
+                               % (artifact, distFilenames[artifactFilename], project))
 
 def verifyMavenDigests(artifacts):
   print("    verify Maven artifacts' md5/sha1 digests...")
@@ -1176,8 +1178,8 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
-           and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
-           and line.find('WARNING: using insecure memory') == -1:
+                and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
+                and line.find('WARNING: using insecure memory') == -1:
           print('      GPG: %s' % line.strip())
       f.close()
 
@@ -1190,8 +1192,8 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
-           and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
-           and line.find('WARNING: using insecure memory') == -1:
+                and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
+                and line.find('WARNING: using insecure memory') == -1:
           print('      GPG: %s' % line.strip())
       f.close()
 
@@ -1218,10 +1220,10 @@ def verifyDeployedPOMsCoordinates(artifacts, version):
       treeRoot = ET.parse(POM).getroot()
       groupId, artifactId, packaging, POMversion = getPOMcoordinate(treeRoot)
       POMpath = '%s/%s/%s/%s-%s.pom' \
-              % (groupId.replace('.', '/'), artifactId, version, artifactId, version)
+                % (groupId.replace('.', '/'), artifactId, version, artifactId, version)
       if not POM.endswith(POMpath):
         raise RuntimeError("Mismatch between POM coordinate %s:%s:%s and filepath: %s"
-                          % (groupId, artifactId, POMversion, POM))
+                           % (groupId, artifactId, POMversion, POM))
       # Verify that the corresponding artifact exists
       artifact = POM[:-3] + packaging
       if artifact not in artifacts[project]:
@@ -1245,8 +1247,8 @@ def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
         groupId, artifactId, packaging, POMversion = getPOMcoordinate(treeRoot)
         # Ignore POMversion, since its value will not have been interpolated
         artifact = '%s/maven/%s/%s/%s/%s-%s.%s' \
-                 % (tmpDir, groupId.replace('.', '/'), artifactId,
-                    version, artifactId, version, packaging)
+                   % (tmpDir, groupId.replace('.', '/'), artifactId,
+                      version, artifactId, version, packaging)
         if artifact not in artifacts['lucene'] and artifact not in artifacts['solr']:
           raise RuntimeError('Missing artifact %s' % artifact)
 
@@ -1304,7 +1306,7 @@ def make_java_config(parser, java8_home):
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
                                 shell=True, stderr=subprocess.STDOUT).decode('utf-8')
     if s.find(' version "%s.' % version) == -1:
-      parser.error('got wrong version for java %s:\n%s' % (version, s)) 
+      parser.error('got wrong version for java %s:\n%s' % (version, s))
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
     return run_java
@@ -1314,7 +1316,7 @@ def make_java_config(parser, java8_home):
   run_java7 = _make_runner(java7_home, '1.7')
   run_java8 = None
   if java8_home is not None:
-    run_java8 = _make_runner(java8_home, '1.8')
+  run_java8 = _make_runner(java8_home, '1.8')
 
   jc = namedtuple('JavaConfig', 'run_java7 java7_home run_java8 java8_home')
   return jc(run_java7, java7_home, run_java8, java8_home)
@@ -1358,7 +1360,7 @@ def parse_config():
     if revision_match is None:
       parser.error('Could not find revision in URL')
     c.revision = revision_match.group(1)
-  
+
   c.java = make_java_config(parser, c.test_java8)
 
   if c.tmp_dir:
@@ -1437,7 +1439,7 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
         tup = 4, 0, 0, 1
       else:
         raise RuntimeError('could not parse version %s' % name)
-          
+
       testedIndices.add(tup)
 
   l = list(testedIndices)
@@ -1476,18 +1478,18 @@ def main():
   c = parse_config()
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
-  
+
 def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
-  
+
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
 
   if not os.path.exists(tmpDir):
     os.makedirs(tmpDir)
-  
+
   lucenePath = None
   solrPath = None
   print()
@@ -1496,7 +1498,7 @@ def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
   if newBaseURL != baseURL:
     print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
-    
+
   for text, subURL in getDirEntries(baseURL):
     if text.lower().find('lucene') != -1:
       lucenePath = subURL

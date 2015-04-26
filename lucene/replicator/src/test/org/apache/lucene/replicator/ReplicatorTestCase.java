@@ -24,12 +24,13 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.LuceneTestCase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
@@ -51,12 +52,6 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * {@link #serverPort(Server)}.
    */
   public static synchronized Server newHttpServer(Handler handler) throws Exception {
-    Server server = new Server(0);
-    
-    server.setHandler(handler);
-    
-    final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
-    
     // if this property is true, then jetty will be configured to use SSL
     // leveraging the same system properties as java to specify
     // the keystore/truststore if they are set
@@ -78,7 +73,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
         (System.getProperty("javax.net.ssl.keyStorePassword"));
       }
       if (null != System.getProperty("javax.net.ssl.trustStore")) {
-        sslcontext.setTrustStore
+        sslcontext.setKeyStorePath
         (System.getProperty("javax.net.ssl.trustStore"));
       }
       if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
@@ -88,34 +83,36 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
       sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
     }
     
-    final Connector connector;
-    final QueuedThreadPool threadPool;
-    if ("SelectChannel".equals(connectorName)) {
-      final SelectChannelConnector c = useSsl ? new SslSelectChannelConnector(sslcontext) : new SelectChannelConnector();
-      c.setReuseAddress(true);
-      c.setLowResourcesMaxIdleTime(1500);
+    final QueuedThreadPool threadPool = new QueuedThreadPool();
+    threadPool.setDaemon(true);
+    threadPool.setMaxThreads(10000);
+    threadPool.setIdleTimeout(5000);
+    threadPool.setStopTimeout(30000);
+
+    Server server = new Server(threadPool);
+    server.setStopAtShutdown(true);
+    server.manage(threadPool);
+
+
+    final ServerConnector connector;
+    if (useSsl) {
+      HttpConfiguration configuration = new HttpConfiguration();
+      configuration.setSecureScheme("https");
+      configuration.addCustomizer(new SecureRequestCustomizer());
+      ServerConnector c = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
+          new HttpConnectionFactory(configuration));
       connector = c;
-      threadPool = (QueuedThreadPool) c.getThreadPool();
-    } else if ("Socket".equals(connectorName)) {
-      final SocketConnector c = useSsl ? new SslSocketConnector(sslcontext) : new SocketConnector();
-      c.setReuseAddress(true);
-      connector = c;
-      threadPool = (QueuedThreadPool) c.getThreadPool();
     } else {
-      throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
+      ServerConnector c = new ServerConnector(server, new HttpConnectionFactory());
+      connector = c;
     }
     
     connector.setPort(0);
     connector.setHost("127.0.0.1");
-    if (threadPool != null) {
-      threadPool.setDaemon(true);
-      threadPool.setMaxThreads(10000);
-      threadPool.setMaxIdleTimeMs(5000);
-      threadPool.setMaxStopTimeMs(30000);
-    }
-    
+
     server.setConnectors(new Connector[] {connector});
     server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
+    server.setHandler(handler);
     
     server.start();
     
@@ -124,12 +121,12 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
   
   /** Returns a {@link Server}'s port. */
   public static int serverPort(Server server) {
-    return server.getConnectors()[0].getLocalPort();
+    return ((ServerConnector)server.getConnectors()[0]).getLocalPort();
   }
   
   /** Returns a {@link Server}'s host. */
   public static String serverHost(Server server) {
-    return server.getConnectors()[0].getHost();
+    return ((ServerConnector)server.getConnectors()[0]).getHost();
   }
   
   /**

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
@@ -225,10 +226,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       HttpServletRequest request = getMock("/solr/select", contentType, postBytes.length);
       expect(request.getMethod()).andReturn("POST").anyTimes();
       expect(request.getQueryString()).andReturn(getParams).anyTimes();
-      expect(request.getInputStream()).andReturn(new ServletInputStream() {
-        private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
-        @Override public int read() { return in.read(); }
-      });
+      expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
       replay(request);
       
       MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
@@ -256,6 +254,21 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     }
 
     @Override
+    public boolean isFinished() {
+      return readCount == len;
+    }
+
+    @Override
+    public boolean isReady() {
+      return true;
+    }
+
+    @Override
+    public void setReadListener(ReadListener readListener) {
+      throw new IllegalStateException("Not supported");
+    }
+
+    @Override
     public int read() throws IOException {
       int read = in.read();
       readCount += read;
@@ -275,10 +288,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     HttpServletRequest request = getMock("/solr/select", contentType, postBytes.length);
     expect(request.getMethod()).andReturn("POST").anyTimes();
     expect(request.getQueryString()).andReturn(getParams).anyTimes();
-    expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
-      @Override public int read() { return in.read(); }
-    });
+    expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
     replay(request);
     
     MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
@@ -307,10 +317,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     HttpServletRequest request = getMock("/solr/select", "application/x-www-form-urlencoded", -1);
     expect(request.getMethod()).andReturn("POST").anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
-    expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes(StandardCharsets.US_ASCII));
-      @Override public int read() { return in.read(); }
-    });
+    expect(request.getInputStream()).andReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
     replay(request);
     
     FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );    
@@ -330,7 +337,25 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getQueryString()).andReturn(null).anyTimes();
     // we emulate Jetty that returns empty stream when parameters were parsed before:
     expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      @Override public int read() { return -1; }
+      @Override
+      public int read() {
+        return -1;
+      }
+
+      @Override
+      public boolean isFinished() {
+        return true;
+      }
+
+      @Override
+      public boolean isReady() {
+        return true;
+      }
+
+      @Override
+      public void setReadListener(ReadListener readListener) {
+
+      }
     });
     replay(request);
     
@@ -387,7 +412,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     parsers.setAddRequestHeadersToContext(true);
     solrReq = parsers.parse(h.getCore(), "/select", request);
     assertEquals(request, solrReq.getContext().get("httpRequest"));
-    assertEquals("10.0.0.1", ((HttpServletRequest)solrReq.getContext().get("httpRequest")).getHeaders("X-Forwarded-For").nextElement());
+    assertEquals("10.0.0.1", ((HttpServletRequest) solrReq.getContext().get("httpRequest")).getHeaders("X-Forwarded-For").nextElement());
     
   }
 

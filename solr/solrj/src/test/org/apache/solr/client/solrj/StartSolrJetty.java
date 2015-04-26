@@ -18,8 +18,9 @@
 package org.apache.solr.client.solrj;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -32,9 +33,9 @@ public class StartSolrJetty
     //System.setProperty("solr.solr.home", "../../../example/solr");
 
     Server server = new Server();
-    SocketConnector connector = new SocketConnector();
+    ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     // Set some timeout options to make debugging easier.
-    connector.setMaxIdleTime(1000 * 60 * 60);
+    connector.setIdleTimeout(1000 * 60 * 60);
     connector.setSoLingerTime(-1);
     connector.setPort(8983);
     server.setConnectors(new Connector[] { connector });

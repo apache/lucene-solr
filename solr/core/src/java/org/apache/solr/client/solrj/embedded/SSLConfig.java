@@ -87,7 +87,7 @@ public class SSLConfig {
     if (sslConfig.getKeyStorePassword() != null)
       factory.setKeyStorePassword(sslConfig.getKeyStorePassword());
     if (sslConfig.getTrustStore() != null)
-      factory.setTrustStore(System.getProperty(sslConfig.getTrustStore()));
+      factory.setTrustStorePath(System.getProperty(sslConfig.getTrustStore()));
     if (sslConfig.getTrustStorePassword() != null)
       factory.setTrustStorePassword(sslConfig.getTrustStorePassword());
 
@@ -108,7 +108,7 @@ public class SSLConfig {
           (System.getProperty("javax.net.ssl.keyStorePassword"));
     }
     if (null != System.getProperty("javax.net.ssl.trustStore")) {
-      sslcontext.setTrustStore
+      sslcontext.setTrustStorePath
           (System.getProperty("javax.net.ssl.trustStore"));
     }
     if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
