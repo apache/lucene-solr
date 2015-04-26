@@ -17,12 +17,15 @@ package org.apache.solr.store.blockcache;
  * limitations under the License.
  */
 
+import java.net.URL;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.search.SolrCacheBase;
 
@@ -31,7 +34,7 @@ import org.apache.solr.search.SolrCacheBase;
  *
  * @lucene.experimental
  */
-public class Metrics extends SolrCacheBase {
+public class Metrics extends SolrCacheBase implements SolrInfoMBean {
   
   public static class MethodCall {
     public AtomicLong invokes = new AtomicLong();
@@ -75,7 +78,7 @@ public class Metrics extends SolrCacheBase {
   }
 
   public NamedList<Number> getStatistics() {
-    NamedList<Number> stats = new NamedList<Number>();
+    NamedList<Number> stats = new SimpleOrderedMap<>(21); // room for one method call before growing
     
     long now = System.nanoTime();
     float seconds = (now - previous) / 1000000000.0f;
@@ -119,5 +122,27 @@ public class Metrics extends SolrCacheBase {
 
   private float getPerSecond(long value, float seconds) {
     return (float) (value / seconds);
+  }
+
+  // SolrInfoMBean methods
+
+  @Override
+  public String getName() {
+    return "HdfsBlockCache";
+  }
+
+  @Override
+  public String getDescription() {
+    return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return null;
   }
 }
