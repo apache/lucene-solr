@@ -82,4 +82,16 @@ REM set SOLR_PORT=8983
 
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-REM set SOLR_SSL_OPTS=-Djavax.net.ssl.keyStore=etc/solr-ssl.keystore.jks -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.trustStore=etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStorePassword=secret
+REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
+REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
+REM set SOLR_SSL_NEED_CLIENT_AUTH=false
+REM set SOLR_SSL_WANT_CLIENT_AUTH=false
+
+REM Uncomment if you want to override previously defined SSL values for HTTP client
+REM otherwise keep them commented and the above values will automatically be set for HTTP clients
+REM set SOLR_SSL_CLIENT_KEY_STORE=
+REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+REM setSOLR_SSL_CLIENT_TRUST_STORE=
+REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=

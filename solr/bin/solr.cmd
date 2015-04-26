@@ -36,14 +36,23 @@ REM command line args
 IF "%SOLR_INCLUDE%"=="" set "SOLR_INCLUDE=%SOLR_TIP%\bin\solr.in.cmd"
 IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
 
-REM URL scheme for contacting Solr
+REM Select HTTP OR HTTPS related configurations
 set SOLR_URL_SCHEME=http
-IF DEFINED SOLR_SSL_OPTS set SOLR_URL_SCHEME=https
-IF NOT DEFINED SOLR_SSL_OPTS set SOLR_SSL_OPTS=
-
-REM Which Jetty module to use - either HTTPS or HTTP
 set "SOLR_JETTY_CONFIG=--module=http"
-IF NOT "%SOLR_SSL_OPTS%"=="" set "SOLR_JETTY_CONFIG=--module=http"
+set "SOLR_SSL_OPTS= "
+IF DEFINED SOLR_SSL_KEY_STORE (
+  set "SOLR_JETTY_CONFIG=--module=https"
+  set SOLR_URL_SCHEME=https
+  set "SCRIPT_ERROR=Solr server directory %SOLR_SERVER_DIR% not found!"
+  set "SOLR_SSL_OPTS=-Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE% -Dsolr.jetty.keystore.password=%SOLR_SSL_KEY_STORE_PASSWORD% -Dsolr.jetty.truststore=%SOLR_SSL_TRUST_STORE% -Dsolr.jetty.truststore.password=%SOLR_SSL_TRUST_STORE_PASSWORD% -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH% -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
+  IF DEFINED SOLR_SSL_CLIENT_KEY_STORE  (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_CLIENT_KEY_STORE% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_CLIENT_KEY_STORE_PASSWORD% -Djavax.net.ssl.trustStore=%SOLR_SSL_CLIENT_TRUST_STORE% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD%"
+  ) ELSE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_KEY_STORE% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_KEY_STORE_PASSWORD% -Djavax.net.ssl.trustStore=%SOLR_SSL_TRUST_STORE% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+  )
+) ELSE (
+  set SOLR_SSL_OPTS=
+)
 
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"

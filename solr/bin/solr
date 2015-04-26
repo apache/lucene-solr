@@ -136,16 +136,30 @@ fi
   exit 1
 }
 
-# URL scheme for contacting Solr
+# Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
-if [ -n "$SOLR_SSL_OPTS" ]; then
-  SOLR_URL_SCHEME=https
-fi
-
-# Which Jetty module to use - either HTTPS or HTTP
 SOLR_JETTY_CONFIG=()
-if [ -n "$SOLR_SSL_OPTS" ]; then
+SOLR_SSL_OPTS=""
+if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
+  SOLR_URL_SCHEME=https
+  SOLR_SSL_OPTS=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE \
+    -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD \
+    -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE \
+    -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD \
+    -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH \
+    -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE \
+      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD \
+      -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE \
+      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+  else
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE \
+      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD \
+      -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE \
+      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+  fi
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
