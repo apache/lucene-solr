@@ -119,6 +119,12 @@ New Features
   "facet.range.method=filter") or DocValues ("facet.range.method=dv"). 
   Input parameters and output of both methods are the same. (Tomás Fernández Löbbe)
 
+* SOLR-7473: Facet Module (Json Facet API) range faceting now supports the "mincount"
+  parameter in range facets to supress buckets less than that count.  The default
+  for "mincount" remains 0 for range faceting.
+  Example: prices:{ type:range, field:price, mincount:1, start:0, end:100, gap:10 }
+  (yonik)
+
 Bug Fixes
 ----------------------
 

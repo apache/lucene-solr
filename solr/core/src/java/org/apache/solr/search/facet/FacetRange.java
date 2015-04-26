@@ -23,9 +23,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -44,6 +42,8 @@ public class FacetRange extends FacetRequest {
   boolean hardend = false;
   EnumSet<FacetParams.FacetRangeInclude> include;
   EnumSet<FacetParams.FacetRangeOther> others;
+  long mincount = 0;
+
 
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
@@ -62,6 +62,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   Calc calc;
   List<Range> rangeList;
   List<Range> otherList;
+  long effectiveMincount;
 
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
@@ -69,8 +70,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   @Override
   public void process() throws IOException {
-    sf = fcontext.searcher.getSchema().getField(freq.field);
+    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
+    // But if mincount>0 then our sub mincount can be set to 1.
 
+    effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
+    sf = fcontext.searcher.getSchema().getField(freq.field);
     response = getRangeCounts();
   }
 
@@ -236,6 +240,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     res.add("buckets", buckets);
 
     for (int idx = 0; idx<rangeList.size(); idx++) {
+      if (effectiveMincount > 0 && countAcc.getCount(idx) < effectiveMincount) continue;
       Range range = rangeList.get(idx);
       SimpleOrderedMap bucket = new SimpleOrderedMap();
       buckets.add(bucket);
@@ -245,6 +250,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     for (int idx = 0; idx<otherList.size(); idx++) {
+      // we dont' skip these buckets based on mincount
       Range range = otherList.get(idx);
       SimpleOrderedMap bucket = new SimpleOrderedMap();
       res.add(range.label.toString(), bucket);
