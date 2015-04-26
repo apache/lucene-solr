@@ -228,6 +228,9 @@ Other Changes
 * SOLR-7391: Use a time based expiration cache for one off HDFS FileSystem instances.
   (Mark Miller)
 
+* SOLR-5213: Log when shard splitting unexpectedly leads to documents going to
+  no or multiple shards (Christine Poerschke, Ramkumar Aiyengar)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
