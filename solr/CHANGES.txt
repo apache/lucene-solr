@@ -210,6 +210,9 @@ Bug Fixes
 * SOLR-7449: solr/server/etc/jetty-https-ssl.xml hard codes the key store file and password rather
   than pulling them from the sysprops defined in solr/bin/solr.in.{sh,cmd}
 
+* SOLR-7470: Fix sample data to eliminate file order dependency for successful indexing, also 
+  fixed SolrCloudExampleTest to help catch this in the future. (hossman)
+
 Optimizations
 ----------------------
 
