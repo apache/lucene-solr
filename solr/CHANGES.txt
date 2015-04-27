@@ -80,7 +80,7 @@ Upgrading from Solr 5.1
   to track the respective stats.  Advanced users with client code manipulating these objects will 
   need to update their code accordingly.  See SOLR-7325 and SOLR-7336 for more info.
 
-* Solr has internally bee upgraded to use Jetty 9.  See SOLR-4839 for full details, but there are a few key details all Solr users should know when upgrading:
+* Solr has internally been upgraded to use Jetty 9. See SOLR-4839 for full details, but there are a few key details all Solr users should know when upgrading:
   **  It is no longer possible to run "java -jar start.jar" from inside the server directory.
       The bin/solr script is the only supported way to run Solr. This is necessary to support
       HTTP and HTTPS modules in Jetty which can be selectively enabled by the bin/solr scripts.
