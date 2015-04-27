@@ -19,6 +19,11 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
@@ -96,20 +101,29 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     File exampleDocsDir = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs");
     assertTrue(exampleDocsDir.getAbsolutePath()+" not found!", exampleDocsDir.isDirectory());
 
-    File[] xmlFiles = exampleDocsDir.listFiles(new FilenameFilter() {
+    List<File> xmlFiles = Arrays.asList(exampleDocsDir.listFiles(new FilenameFilter() {
       @Override
       public boolean accept(File dir, String name) {
         return name.endsWith(".xml");
       }
-    });
+    }));
+
+    // force a deterministic random ordering of the files so seeds reproduce regardless of platform/filesystem
+    Collections.sort(xmlFiles, new Comparator<File>() {
+        public int compare(File o1, File o2) {
+          // don't rely on File.compareTo, it's behavior varies by OS
+          return o1.getName().compareTo(o2.getName());
+        }
+      });
+    Collections.shuffle(xmlFiles, new Random(random().nextLong()));
 
     // if you add/remove example XML docs, you'll have to fix these expected values
     int expectedXmlFileCount = 14;
     int expectedXmlDocCount = 32;
 
-    assertTrue("Expected 14 example XML files in "+exampleDocsDir.getAbsolutePath(),
-        xmlFiles.length == expectedXmlFileCount);
-
+    assertEquals("Unexpected # of example XML files in "+exampleDocsDir.getAbsolutePath(),
+                 expectedXmlFileCount, xmlFiles.size());
+    
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
       req.addFile(xml, "application/xml");
@@ -121,7 +135,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
     int numFound = (int)qr.getResults().getNumFound();
-    assertTrue("Expected "+expectedXmlDocCount+" docs but *:* found "+numFound, numFound == expectedXmlDocCount);
+    assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
+                 
 
     log.info("testLoadDocsIntoGettingStartedCollection succeeded ... shutting down now!");
   }
