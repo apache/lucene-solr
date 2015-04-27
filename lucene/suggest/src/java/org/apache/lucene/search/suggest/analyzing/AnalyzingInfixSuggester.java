@@ -559,7 +559,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       //System.out.println("got searcher=" + searcher);
       searcher.search(finalQuery, c2);
 
-      TopFieldDocs hits = (TopFieldDocs) c.topDocs();
+      TopFieldDocs hits = c.topDocs();
 
       // Slower way if postings are not pre-sorted by weight:
       // hits = searcher.search(query, null, num, SORT);
