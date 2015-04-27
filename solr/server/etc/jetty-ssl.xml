@@ -13,6 +13,11 @@
   <Set name="TrustStorePassword"><Property name="solr.jetty.truststore.password" default="secret"/></Set>
   <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
   <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="excludeProtocols">
+    <Array type="java.lang.String">
+      <Item>SSLv3</Item>
+    </Array>
+  </Set>
   <Set name="ExcludeCipherSuites">
     <Array type="String">
       <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
