@@ -76,14 +76,11 @@ Jetty 9.2.10.v20150310
 Upgrading from Solr 5.1
 -----------------------
 
-* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
-  clarify the states a Slice can be in, as well comparing the state of a Slice.
-  (Shai Erera)
-  
-* SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
-  You should use Replica.State to compare a replica's state. (Shai Erera)
+* The Slice and Replica classes have been changed to use State enums instead of string constants 
+  to track the respective stats.  Advanced users with client code manipulating these objects will 
+  need to update their code accordingly.  See SOLR-7325 and SOLR-7336 for more info.
 
-* SOLR-4839: The upgrade to Jetty 9 changes the following:
+* Solr has internally bee upgraded to use Jetty 9.  See SOLR-4839 for full details, but there are a few key details all Solr users should know when upgrading:
   **  It is no longer possible to run "java -jar start.jar" from inside the server directory.
       The bin/solr script is the only supported way to run Solr. This is necessary to support
       HTTP and HTTPS modules in Jetty which can be selectively enabled by the bin/solr scripts.
@@ -101,7 +98,7 @@ Upgrading from Solr 5.1
       property or specify the port while invoking the bin/solr script using the "-p" switch.
   **  Furthermore, it is now possible to configure the HTTP client with
       different SSL properties than the ones used for Jetty using the same files.
-  **  Please refer to the "Enabling SSL" page in Solr Reference Guide for complete details.
+  **  Please refer to the "Enabling SSL" section in the Solr Reference Guide for complete details.
 
 Detailed Change List
 ----------------------
@@ -272,6 +269,13 @@ Other Changes
 
 * SOLR-7457: Make DirectoryFactory publishing MBeanInfo extensible.
   (Mike Drob via Mark Miller)
+
+* SOLR-7325: Slice.getState() now returns a State enum instead of a String. This helps
+  clarify the states a Slice can be in, as well comparing the state of a Slice.
+  (Shai Erera)
+  
+* SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
+  You should use Replica.State to compare a replica's state. (Shai Erera)
 
 ==================  5.1.0 ==================
 
