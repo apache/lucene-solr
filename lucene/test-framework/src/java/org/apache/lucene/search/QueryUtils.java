@@ -521,6 +521,10 @@ public class QueryUtils {
       final BulkScorer bulkScorer = weight.bulkScorer(context, context.reader().getLiveDocs());
       if (scorer == null && bulkScorer == null) {
         continue;
+      } else if (bulkScorer == null) {
+        // ensure scorer is exhausted (it just didnt return null)
+        assert scorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+        continue;
       }
       int upTo = 0;
       while (true) {
