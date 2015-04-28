@@ -172,6 +172,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     doTestMode(Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5595")
   public void testRandomStrings() throws IOException {
     // nfkc_cf
     Analyzer a = new Analyzer() {
