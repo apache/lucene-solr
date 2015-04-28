@@ -64,12 +64,11 @@ class ConjunctionScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    // TODO: sum into a double and cast to float if we ever send required clauses to BS1
-    float sum = 0.0f;
+    double sum = 0.0d;
     for (Scorer scorer : scorers) {
       sum += scorer.score();
     }
-    return sum * coord;
+    return coord * (float)sum;
   }
 
   @Override

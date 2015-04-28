@@ -42,6 +42,10 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
 /**
  * Utility class for sanity-checking queries.
  */
@@ -82,21 +86,21 @@ public class QueryUtils {
     checkUnequal(q, whacky);
     
     // null test
-    Assert.assertFalse(q.equals(null));
+    assertFalse(q.equals(null));
   }
 
   public static void checkEqual(Query q1, Query q2) {
-    Assert.assertEquals(q1, q2);
-    Assert.assertEquals(q1.hashCode(), q2.hashCode());
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
   }
 
   public static void checkUnequal(Query q1, Query q2) {
-    Assert.assertFalse(q1 + " equal to " + q2, q1.equals(q2));
-    Assert.assertFalse(q2 + " equal to " + q1, q2.equals(q1));
+    assertFalse(q1 + " equal to " + q2, q1.equals(q2));
+    assertFalse(q2 + " equal to " + q1, q2.equals(q1));
 
     // possible this test can fail on a hash collision... if that
     // happens, please change test to use a different example.
-    Assert.assertTrue(q1.hashCode() != q2.hashCode());
+    assertTrue(q1.hashCode() != q2.hashCode());
   }
   
   /** deep check that explanations of a query 'score' correctly */
@@ -359,24 +363,36 @@ public class QueryUtils {
               float scorerScore2 = scorer.score();
               float scoreDiff = Math.abs(score - scorerScore);
               float scorerDiff = Math.abs(scorerScore2 - scorerScore);
-              if (!more || doc != scorerDoc || scoreDiff > maxDiff
-                  || scorerDiff > maxDiff) {
-                StringBuilder sbord = new StringBuilder();
-                for (int i = 0; i < order.length; i++)
-                  sbord.append(order[i] == skip_op ? " skip()" : " next()");
-                throw new RuntimeException("ERROR matching docs:" + "\n\t"
-                    + (doc != scorerDoc ? "--> " : "") + "doc=" + doc + ", scorerDoc=" + scorerDoc
-                    + "\n\t" + (!more ? "--> " : "") + "tscorer.more=" + more
-                    + "\n\t" + (scoreDiff > maxDiff ? "--> " : "")
-                    + "scorerScore=" + scorerScore + " scoreDiff=" + scoreDiff
-                    + " maxDiff=" + maxDiff + "\n\t"
-                    + (scorerDiff > maxDiff ? "--> " : "") + "scorerScore2="
-                    + scorerScore2 + " scorerDiff=" + scorerDiff
-                    + "\n\thitCollector.doc=" + doc + " score=" + score
-                    + "\n\t Scorer=" + scorer + "\n\t Query=" + q + "  "
-                    + q.getClass().getName() + "\n\t Searcher=" + s
-                    + "\n\t Order=" + sbord + "\n\t Op="
-                    + (op == skip_op ? " skip()" : " next()"));
+
+              boolean success = false;
+              try {
+                assertTrue(more);
+                assertEquals("scorerDoc=" + scorerDoc + ",doc=" + doc, scorerDoc, doc);
+                assertTrue("score=" + score + ", scorerScore=" + scorerScore, scoreDiff <= maxDiff);
+                assertTrue("scorerScorer=" + scorerScore + ", scorerScore2=" + scorerScore2, scorerDiff <= maxDiff);
+                success = true;
+              } finally {
+                if (!success) {
+                  if (LuceneTestCase.VERBOSE) {
+                    StringBuilder sbord = new StringBuilder();
+                    for (int i = 0; i < order.length; i++) {
+                      sbord.append(order[i] == skip_op ? " skip()" : " next()");
+                    }
+                    System.out.println("ERROR matching docs:" + "\n\t"
+                        + (doc != scorerDoc ? "--> " : "") + "doc=" + doc + ", scorerDoc=" + scorerDoc
+                        + "\n\t" + (!more ? "--> " : "") + "tscorer.more=" + more
+                        + "\n\t" + (scoreDiff > maxDiff ? "--> " : "")
+                        + "scorerScore=" + scorerScore + " scoreDiff=" + scoreDiff
+                        + " maxDiff=" + maxDiff + "\n\t"
+                        + (scorerDiff > maxDiff ? "--> " : "") + "scorerScore2="
+                        + scorerScore2 + " scorerDiff=" + scorerDiff
+                        + "\n\thitCollector.doc=" + doc + " score=" + score
+                        + "\n\t Scorer=" + scorer + "\n\t Query=" + q + "  "
+                        + q.getClass().getName() + "\n\t Searcher=" + s
+                        + "\n\t Order=" + sbord + "\n\t Op="
+                        + (op == skip_op ? " skip()" : " next()"));
+                  }
+                }
               }
             } catch (IOException e) {
               throw new RuntimeException(e);
