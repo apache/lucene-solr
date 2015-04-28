@@ -62,7 +62,7 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
       throw new IllegalArgumentException("Geohash only supports lat-lon world bounds. Got "+bounds);
     int MAXP = getMaxLevelsPossible();
     if (maxLevels <= 0 || maxLevels > MAXP)
-      throw new IllegalArgumentException("maxLen must be [1-"+MAXP+"] but got "+ maxLevels);
+      throw new IllegalArgumentException("maxLevels must be [1-"+MAXP+"] but got "+ maxLevels);
   }
 
   /** Any more than this and there's no point (double lat and lon are the same). */
