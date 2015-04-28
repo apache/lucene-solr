@@ -217,6 +217,9 @@ Bug Fixes
 * SOLR-7470: Fix sample data to eliminate file order dependency for successful indexing, also 
   fixed SolrCloudExampleTest to help catch this in the future. (hossman)
 
+* SOLR-7478: UpdateLog#close shuts down it's executor with interrupts before running it's close logic,
+  possibly preventing a clean close. (Mark Miller)
+
 Optimizations
 ----------------------
 
