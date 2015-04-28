@@ -288,8 +288,6 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         
       @Override
       public int nextStartPosition() throws IOException {
-        DisiWrapper<Spans> topDocSpans = byDocQueue.top();
-        assert topDocSpans.doc != NO_MORE_DOCS;
         if (topPositionSpans == null) {
           byPositionQueue.clear();
           fillPositionQueue(); // fills byPositionQueue at first position

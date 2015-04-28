@@ -46,6 +46,7 @@ implements Iterable<DisiWrapper<Iter>> {
   private final DisiWrapper<Iter>[] heap;
   private int size;
 
+  @SuppressWarnings({"unchecked","rawtypes"})
   public DisiPriorityQueue(int maxSize) {
     heap = new DisiWrapper[maxSize];
     size = 0;

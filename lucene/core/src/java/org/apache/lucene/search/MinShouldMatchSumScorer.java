@@ -98,6 +98,7 @@ final class MinShouldMatchSumScorer extends Scorer {
   final Collection<ChildScorer> childScorers;
   final long cost;
 
+  @SuppressWarnings({"unchecked","rawtypes"})
   MinShouldMatchSumScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch, float[] coord) {
     super(weight);
 
