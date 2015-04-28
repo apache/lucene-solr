@@ -62,20 +62,23 @@ public interface QueryCachingPolicy {
      *  cached while ensuring that at most <tt>33</tt> segments can make it to
      *  the cache (given that some implementations such as {@link LRUQueryCache}
      *  perform better when the number of cached segments is low). */
-    public static final CacheOnLargeSegments DEFAULT = new CacheOnLargeSegments(0.03f);
+    public static final CacheOnLargeSegments DEFAULT = new CacheOnLargeSegments(10000, 0.03f);
 
+    private final int minIndexSize;
     private final float minSizeRatio;
 
     /**
      * Create a {@link CacheOnLargeSegments} instance that only caches on a
-     * given segment if its number of documents divided by the total number of
-     * documents in the index is greater than or equal to
-     * <code>minSizeRatio</code>.
+     * given segment if the total number of documents in the index is greater
+     * than {@code minIndexSize} and the number of documents in the segment
+     * divided by the total number of documents in the index is greater than
+     * or equal to {@code minSizeRatio}.
      */
-    public CacheOnLargeSegments(float minSizeRatio) {
+    public CacheOnLargeSegments(int minIndexSize, float minSizeRatio) {
       if (minSizeRatio <= 0 || minSizeRatio >= 1) {
         throw new IllegalArgumentException("minSizeRatio must be in ]0, 1[, got " + minSizeRatio);
       }
+      this.minIndexSize = minIndexSize;
       this.minSizeRatio = minSizeRatio;
     }
 
@@ -85,6 +88,9 @@ public interface QueryCachingPolicy {
     @Override
     public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
+      if (topLevelContext.reader().maxDoc() < minIndexSize) {
+        return false;
+      }
       final float sizeRatio = (float) context.reader().maxDoc() / topLevelContext.reader().maxDoc();
       return sizeRatio >= minSizeRatio;
     }
