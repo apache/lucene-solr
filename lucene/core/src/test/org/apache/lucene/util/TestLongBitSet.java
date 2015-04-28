@@ -1,3 +1,5 @@
+package org.apache.lucene.util;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,14 +17,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.util;
-
 import java.io.IOException;
-import java.util.BitSet;
 
 public class TestLongBitSet extends LuceneTestCase {
 
-  void doGet(BitSet a, LongBitSet b) {
+  void doGet(java.util.BitSet a, LongBitSet b) {
+    assertEquals(a.cardinality(), b.cardinality());
     long max = b.length();
     for (int i=0; i<max; i++) {
       if (a.get(i) != b.get(i)) {
@@ -31,7 +31,8 @@ public class TestLongBitSet extends LuceneTestCase {
     }
   }
 
-  void doNextSetBit(BitSet a, LongBitSet b) {
+  void doNextSetBit(java.util.BitSet a, LongBitSet b) {
+    assertEquals(a.cardinality(), b.cardinality());
     int aa=-1;
     long bb=-1;
     do {
@@ -41,7 +42,8 @@ public class TestLongBitSet extends LuceneTestCase {
     } while (aa>=0);
   }
 
-  void doPrevSetBit(BitSet a, LongBitSet b) {
+  void doPrevSetBit(java.util.BitSet a, LongBitSet b) {
+    assertEquals(a.cardinality(), b.cardinality());
     int aa = a.size() + random().nextInt(100);
     long bb = aa;
     do {
@@ -64,12 +66,12 @@ public class TestLongBitSet extends LuceneTestCase {
   }
 
   void doRandomSets(int maxSize, int iter, int mode) throws IOException {
-    BitSet a0=null;
+    java.util.BitSet a0=null;
     LongBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
       int sz = TestUtil.nextInt(random(), 2, maxSize);
-      BitSet a = new BitSet(sz);
+      java.util.BitSet a = new java.util.BitSet(sz);
       LongBitSet b = new LongBitSet(sz);
 
       // test the various ways of setting bits
@@ -87,12 +89,12 @@ public class TestLongBitSet extends LuceneTestCase {
           b.clear(idx);
           
           idx = random().nextInt(sz);
-          a.flip(idx);
+          a.flip(idx, idx+1);
           b.flip(idx, idx+1);
 
           idx = random().nextInt(sz);
           a.flip(idx);
-          b.flip(idx, idx+1);
+          b.flip(idx);
 
           boolean val2 = b.get(idx);
           boolean val = b.getAndSet(idx);
@@ -111,12 +113,12 @@ public class TestLongBitSet extends LuceneTestCase {
       int fromIndex, toIndex;
       fromIndex = random().nextInt(sz/2);
       toIndex = fromIndex + random().nextInt(sz - fromIndex);
-      BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
+      java.util.BitSet aa = (java.util.BitSet)a.clone(); aa.flip(fromIndex,toIndex);
       LongBitSet bb = b.clone(); bb.flip(fromIndex,toIndex);
 
       fromIndex = random().nextInt(sz/2);
       toIndex = fromIndex + random().nextInt(sz - fromIndex);
-      aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
+      aa = (java.util.BitSet)a.clone(); aa.clear(fromIndex,toIndex);
       bb = b.clone(); bb.clear(fromIndex,toIndex);
 
       doNextSetBit(aa,bb); // a problem here is from clear() or nextSetBit
@@ -125,7 +127,7 @@ public class TestLongBitSet extends LuceneTestCase {
 
       fromIndex = random().nextInt(sz/2);
       toIndex = fromIndex + random().nextInt(sz - fromIndex);
-      aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
+      aa = (java.util.BitSet)a.clone(); aa.set(fromIndex,toIndex);
       bb = b.clone(); bb.set(fromIndex,toIndex);
 
       doNextSetBit(aa,bb); // a problem here is from set() or nextSetBit
@@ -135,10 +137,10 @@ public class TestLongBitSet extends LuceneTestCase {
       if (b0 != null && b0.length() <= b.length()) {
         assertEquals(a.cardinality(), b.cardinality());
 
-        BitSet a_and = (BitSet)a.clone(); a_and.and(a0);
-        BitSet a_or = (BitSet)a.clone(); a_or.or(a0);
-        BitSet a_xor = (BitSet)a.clone(); a_xor.xor(a0);
-        BitSet a_andn = (BitSet)a.clone(); a_andn.andNot(a0);
+        java.util.BitSet a_and = (java.util.BitSet)a.clone(); a_and.and(a0);
+        java.util.BitSet a_or = (java.util.BitSet)a.clone(); a_or.or(a0);
+        java.util.BitSet a_xor = (java.util.BitSet)a.clone(); a_xor.xor(a0);
+        java.util.BitSet a_andn = (java.util.BitSet)a.clone(); a_andn.andNot(a0);
 
         LongBitSet b_and = b.clone(); assertEquals(b,b_and); b_and.and(b0);
         LongBitSet b_or = b.clone(); b_or.or(b0);
@@ -162,8 +164,9 @@ public class TestLongBitSet extends LuceneTestCase {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() throws IOException {
-    doRandomSets(atLeast(1200), atLeast(1000), 1);
-    doRandomSets(atLeast(1200), atLeast(1000), 2);
+    final int iters = TEST_NIGHTLY ? atLeast(1000) : 100;
+    doRandomSets(atLeast(1200), iters, 1);
+    doRandomSets(atLeast(1200), iters, 2);
   }
 
   // uncomment to run a bigger test (~2 minutes).
@@ -234,16 +237,12 @@ public class TestLongBitSet extends LuceneTestCase {
     }
   }
   
-  private LongBitSet makeLongFixedBitSet(int[] a, int numBits) {
+  private LongBitSet makeLongBitSet(int[] a, int numBits) {
     LongBitSet bs;
     if (random().nextBoolean()) {
       int bits2words = LongBitSet.bits2words(numBits);
       long[] words = new long[bits2words + random().nextInt(100)];
-      for (int i = bits2words; i < words.length; i++) {
-        words[i] = random().nextLong();
-      }
       bs = new LongBitSet(words, numBits);
-
     } else {
       bs = new LongBitSet(numBits);
     }
@@ -253,8 +252,8 @@ public class TestLongBitSet extends LuceneTestCase {
     return bs;
   }
 
-  private BitSet makeBitSet(int[] a) {
-    BitSet bs = new BitSet();
+  private java.util.BitSet makeBitSet(int[] a) {
+    java.util.BitSet bs = new java.util.BitSet();
     for (int e: a) {
       bs.set(e);
     }
@@ -262,8 +261,8 @@ public class TestLongBitSet extends LuceneTestCase {
   }
 
   private void checkPrevSetBitArray(int [] a, int numBits) {
-    LongBitSet obs = makeLongFixedBitSet(a, numBits);
-    BitSet bs = makeBitSet(a);
+    LongBitSet obs = makeLongBitSet(a, numBits);
+    java.util.BitSet bs = makeBitSet(a);
     doPrevSetBit(bs, obs);
   }
 
@@ -275,8 +274,8 @@ public class TestLongBitSet extends LuceneTestCase {
   
   
   private void checkNextSetBitArray(int [] a, int numBits) {
-    LongBitSet obs = makeLongFixedBitSet(a, numBits);
-    BitSet bs = makeBitSet(a);
+    LongBitSet obs = makeLongBitSet(a, numBits);
+    java.util.BitSet bs = makeBitSet(a);
     doNextSetBit(bs, obs);
   }
   
@@ -340,8 +339,8 @@ public class TestLongBitSet extends LuceneTestCase {
     assertEquals(2, LongBitSet.bits2words(128));
     assertEquals(3, LongBitSet.bits2words(129));
     // ...
-    assertEquals(1 << (31-6), LongBitSet.bits2words(1L << 31));
-    assertEquals((1 << (31-6)) + 1, LongBitSet.bits2words((1L << 31)) + 1);
+    assertEquals(1 << (31-6), LongBitSet.bits2words((long)Integer.MAX_VALUE + 1)); // == 1L << 31
+    assertEquals((1 << (31-6)) + 1, LongBitSet.bits2words((long)Integer.MAX_VALUE + 2)); // == (1L << 31) + 1
     // ...
     assertEquals(1 << (32-6), LongBitSet.bits2words(1L << 32));
     assertEquals((1 << (32-6)) + 1, LongBitSet.bits2words((1L << 32)) + 1);

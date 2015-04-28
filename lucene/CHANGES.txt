@@ -140,6 +140,9 @@ Bug Fixes
   missing the field being highlighted, in PostingsHighlighter (Roman
   Khmelichek via Mike McCandless)
 
+* LUCENE-6427: Added assertion about the presence of ghost bits in
+  (Fixed|Long)BitSet. (Luc Vanlerberghe via Adrien Grand)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
