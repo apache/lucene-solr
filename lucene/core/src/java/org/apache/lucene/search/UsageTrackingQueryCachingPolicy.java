@@ -58,13 +58,15 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   /**
    * Create a new instance.
    *
+   * @param minIndexSize              the minimum size of the top-level index
    * @param minSizeRatio              the minimum size ratio for segments to be cached, see {@link QueryCachingPolicy.CacheOnLargeSegments}
    * @param historySize               the number of recently used filters to track
    */
   public UsageTrackingQueryCachingPolicy(
+      int minIndexSize,
       float minSizeRatio,
       int historySize) {
-    this(new QueryCachingPolicy.CacheOnLargeSegments(minSizeRatio), historySize);
+    this(new QueryCachingPolicy.CacheOnLargeSegments(minIndexSize, minSizeRatio), historySize);
   }
 
   /** Create a new instance with an history size of 256. */
