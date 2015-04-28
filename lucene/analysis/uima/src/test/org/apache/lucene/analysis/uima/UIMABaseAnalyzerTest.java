@@ -119,14 +119,14 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     dir.close();
   }
 
-  @Test
+  @Test @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-3869")
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", null);
     checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
 
-  @Test
+  @Test @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-3869")
   public void testRandomStringsWithConfigurationParameters() throws Exception {
     Map<String, Object> cp = new HashMap<>();
     cp.put("line-end", "\r");
