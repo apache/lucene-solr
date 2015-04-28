@@ -32,12 +32,12 @@
     <pathelement path="${memory.jar}"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${join.jar}"/>
+    <pathelement path="${analyzers-common.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-    <target name="init" depends="module-build.init,jar-memory,jar-queries,jar-join"/>
+  <target name="compile-core" depends="jar-memory,jar-queries,jar-join,jar-analyzers-common,common.compile-core" />
 
-  <target name="compile-core" depends="jar-memory, common.compile-core, jar-join" />
   <target name="javadocs" depends="javadocs-memory,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>

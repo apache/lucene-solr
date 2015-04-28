@@ -147,6 +147,9 @@ API Changes
 
 * LUCENE-6446: Simplified Explanation API. (Adrien Grand)
 
+* LUCENE-6445: Two new methods in Highlighter's TokenSources; the existing
+  methods are now marked deprecated. (David Smiley)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 

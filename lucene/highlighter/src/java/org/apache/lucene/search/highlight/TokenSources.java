@@ -24,24 +24,82 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 
 /**
- * Hides implementation issues associated with obtaining a TokenStream for use
- * with the higlighter - can obtain from TermFreqVectors with offsets and
- * (optionally) positions or from Analyzer class reparsing the stored content.
+ * Convenience methods for obtaining a {@link TokenStream} for use with the {@link Highlighter} - can obtain from
+ * term vectors with offsets and positions or from an Analyzer re-parsing the stored content.
+ *
+ * @see TokenStreamFromTermVector
  */
 public class TokenSources {
+
+  private TokenSources() {}
+
+  /**
+   * Get a token stream from either un-inverting a term vector if possible, or by analyzing the text.
+   *
+   * WARNING: Don't call this if there is more than one value for this field.  If there are, and if there are term
+   * vectors, then there is a single tokenstream with offsets suggesting all the field values were concatenated.
+   *
+   * @param field The field to either get term vectors from or to analyze the text from.
+   * @param tvFields from {@link IndexReader#getTermVectors(int)}. Possibly null. For performance, this instance should
+   *                 be re-used for the same document (e.g. when highlighting multiple fields).
+   * @param text the text to analyze, failing term vector un-inversion
+   * @param analyzer the analyzer to analyze {@code text} with, failing term vector un-inversion
+   * @param maxStartOffset Terms with a startOffset greater than this aren't returned.  Use -1 for no limit.
+   *                       Suggest using {@link Highlighter#getMaxDocCharsToAnalyze()} - 1.
+   *
+   * @return a token stream from either term vectors, or from analyzing the text. Never null.
+   */
+  public static TokenStream getTokenStream(String field, Fields tvFields, String text, Analyzer analyzer,
+                                           int maxStartOffset) throws IOException {
+    TokenStream tokenStream = getTermVectorTokenStreamOrNull(field, tvFields, maxStartOffset);
+    if (tokenStream != null) {
+      return tokenStream;
+    }
+    tokenStream = analyzer.tokenStream(field, text);
+    if (maxStartOffset >= 0 && maxStartOffset < text.length() - 1) {
+      tokenStream = new LimitTokenOffsetFilter(tokenStream, maxStartOffset);
+    }
+    return tokenStream;
+  }
+
+  /**
+   * Get a token stream by un-inverting the term vector. This method returns null if {@code tvFields} is null
+   * or if the field has no term vector, or if the term vector doesn't have offsets.  Positions are recommended on the
+   * term vector but it isn't strictly required.
+   *
+   * @param field The field to get term vectors from.
+   * @param tvFields from {@link IndexReader#getTermVectors(int)}. Possibly null. For performance, this instance should
+   *                 be re-used for the same document (e.g. when highlighting multiple fields).
+   * @param maxStartOffset Terms with a startOffset greater than this aren't returned.  Use -1 for no limit.
+   *                       Suggest using {@link Highlighter#getMaxDocCharsToAnalyze()} - 1
+   * @return a token stream from term vectors. Null if no term vectors with the right options.
+   */
+  public static TokenStream getTermVectorTokenStreamOrNull(String field, Fields tvFields, int maxStartOffset)
+      throws IOException {
+    if (tvFields == null) {
+      return null;
+    }
+    final Terms tvTerms = tvFields.terms(field);
+    if (tvTerms == null || !tvTerms.hasOffsets()) {
+      return null;
+    }
+    return new TokenStreamFromTermVector(tvTerms, maxStartOffset);
+  }
+
   /**
    * A convenience method that tries to first get a {@link TokenStreamFromTermVector} for the
    * specified docId, then, falls back to using the passed in
    * {@link org.apache.lucene.document.Document} to retrieve the TokenStream.
    * This is useful when you already have the document, but would prefer to use
    * the vector first.
-   * 
+   *
    * @param reader The {@link org.apache.lucene.index.IndexReader} to use to try
    *        and get the vector from
    * @param docId The docId to retrieve.
@@ -54,7 +112,7 @@ public class TokenSources {
    *         {@link org.apache.lucene.document.Document}
    * @throws IOException if there was an error loading
    */
-
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
       String field, StoredDocument document, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
@@ -83,6 +141,7 @@ public class TokenSources {
    * @return null if field not stored correctly
    * @throws IOException If there is a low-level I/O error
    */
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
       String field, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
@@ -103,7 +162,7 @@ public class TokenSources {
   }
 
   /** Simply calls {@link #getTokenStream(org.apache.lucene.index.Terms)} now. */
-  @Deprecated
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(Terms vector,
                                            boolean tokenPositionsGuaranteedContiguous) throws IOException {
     return getTokenStream(vector);
@@ -119,6 +178,7 @@ public class TokenSources {
    *
    * @throws IllegalArgumentException if no offsets are available
    */
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(final Terms tpv) throws IOException {
 
     if (!tpv.hasOffsets()) {
@@ -144,6 +204,7 @@ public class TokenSources {
    *
    * @see #getTokenStream(org.apache.lucene.index.Terms)
    */
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStreamWithOffsets(IndexReader reader, int docId,
                                                       String field) throws IOException {
 
@@ -164,13 +225,14 @@ public class TokenSources {
     return getTokenStream(vector);
   }
 
-  // convenience method
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(IndexReader reader, int docId,
       String field, Analyzer analyzer) throws IOException {
     StoredDocument doc = reader.document(docId);
     return getTokenStream(doc, field, analyzer);
   }
-  
+
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(StoredDocument doc, String field,
       Analyzer analyzer) {
     String contents = doc.get(field);
@@ -181,7 +243,7 @@ public class TokenSources {
     return getTokenStream(field, contents, analyzer);
   }
 
-  // convenience method
+  @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(String field, String contents,
       Analyzer analyzer) {
     try {
