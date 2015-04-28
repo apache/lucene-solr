@@ -151,6 +151,8 @@ New Features
   Example: prices:{ type:range, field:price, mincount:1, start:0, end:100, gap:10 }
   (yonik)
 
+* SOLR-7437: Make HDFS transaction log replication factor configurable. (Mark Miller)
+
 Bug Fixes
 ----------------------
 

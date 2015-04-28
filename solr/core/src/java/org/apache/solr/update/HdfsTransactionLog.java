@@ -68,11 +68,11 @@ public class HdfsTransactionLog extends TransactionLog {
 
   private volatile boolean isClosed = false;
 
-  HdfsTransactionLog(FileSystem fs, Path tlogFile, Collection<String> globalStrings) {
-    this(fs, tlogFile, globalStrings, false);
+  HdfsTransactionLog(FileSystem fs, Path tlogFile, Collection<String> globalStrings, Integer tlogDfsReplication) {
+    this(fs, tlogFile, globalStrings, false, tlogDfsReplication);
   }
 
-  HdfsTransactionLog(FileSystem fs, Path tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  HdfsTransactionLog(FileSystem fs, Path tlogFile, Collection<String> globalStrings, boolean openExisting, Integer tlogDfsReplication) {
     super();
     boolean success = false;
     this.fs = fs;
@@ -95,7 +95,7 @@ public class HdfsTransactionLog extends TransactionLog {
       } else {
         fs.delete(tlogFile, false);
         
-        tlogOutStream = fs.create(tlogFile, (short)1);
+        tlogOutStream = fs.create(tlogFile, (short)tlogDfsReplication.intValue());
         tlogOutStream.hsync();
       }
 
