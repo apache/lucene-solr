@@ -37,6 +37,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -276,7 +277,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       byte id[] = new byte[StringHelper.ID_LENGTH];
       input.readBytes(id, 0, id.length);
       CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
-      
+
       SegmentInfos infos = new SegmentInfos();
       infos.id = id;
       infos.generation = generation;
@@ -295,10 +296,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         if (hasID == 1) {
           segmentID = new byte[StringHelper.ID_LENGTH];
           input.readBytes(segmentID, 0, segmentID.length);
+        } else if (hasID == 0) {
+          throw new IndexFormatTooOldException(input, "Segment is from Lucene 4.x");
         } else {
           throw new CorruptIndexException("invalid hasID byte, got: " + hasID, input);
         }
-        Codec codec = Codec.forName(input.readString());
+        Codec codec = readCodec(input);
         SegmentInfo info = codec.segmentInfoFormat().read(directory, segName, segmentID, IOContext.READ);
         info.setCodec(codec);
         totalDocs += info.maxDoc();
@@ -341,12 +344,30 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
       CodecUtil.checkFooter(input);
 
-      // LUCENE-6299: check we are in bounds
-      if (totalDocs > IndexWriter.getActualMaxDocs()) {
-        throw new CorruptIndexException("Too many documents: an index cannot exceed " + IndexWriter.getActualMaxDocs() + " but readers have total maxDoc=" + totalDocs, input);
-      }
-      
       return infos;
+    }
+  }
+
+  private static final List<String> unsupportedCodecs = Arrays.asList(
+      "Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45", "Lucene46", "Lucene49", "Lucene410"
+  );
+
+  private static Codec readCodec(DataInput input) throws IOException {
+    final String name = input.readString();
+    try {
+      return Codec.forName(name);
+    } catch (IllegalArgumentException e) {
+      // give better error messages if we can, first check if this is a legacy codec
+      if (unsupportedCodecs.contains(name)) {
+        IOException newExc = new IndexFormatTooOldException(input, "Codec '" + name + "' is too old");
+        newExc.initCause(e);
+        throw newExc;
+      }
+      // or maybe it's an old default codec that moved
+      if (name.startsWith("Lucene")) {
+        throw new IllegalArgumentException("Could not load codec '" + name + "'.  Did you forget to add lucene-backward-codecs.jar?", e);
+      }
+      throw e;
     }
   }
 

@@ -321,7 +321,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.3-cfs",
       "4.10.3-nocfs",
       "4.10.4-cfs",
-      "4.10.4-nocfs"
+      "4.10.4-nocfs",
+      "5x-with-4x-segments-cfs",
+      "5x-with-4x-segments-nocfs"
   };
   
   final static String[] oldSingleSegmentNames = {
@@ -845,7 +847,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
-      .setMaxBufferedDocs(10).setMergePolicy(mp);
+      .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -863,7 +865,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
       conf = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(10).setMergePolicy(mp);
+        .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
       writer.close();

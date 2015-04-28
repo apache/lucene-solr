@@ -928,6 +928,9 @@ Other
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
 
+* LUCENE-6213: Add useful exception message when commit contains segments from legacy codecs.
+  (Ryan Ernst)
+
 ======================= Lucene 4.10.4 ======================
 
 Bug fixes
