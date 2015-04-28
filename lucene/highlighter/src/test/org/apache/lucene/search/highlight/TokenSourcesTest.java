@@ -22,6 +22,7 @@ import java.io.IOException;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -34,6 +35,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -50,6 +52,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 // LUCENE-2874
+
+/** Tests {@link org.apache.lucene.search.highlight.TokenSources} and
+ *  {@link org.apache.lucene.search.highlight.TokenStreamFromTermVector}
+ * indirectly from that.
+ */
 public class TokenSourcesTest extends BaseTokenStreamTestCase {
   private static final String FIELD = "text";
 
@@ -100,6 +107,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
+      // no positions!
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
@@ -122,9 +130,8 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Highlighter highlighter = new Highlighter(
           new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
           new QueryScorer(query));
-      final TokenStream tokenStream = TokenSources
-          .getTokenStream(
-              indexReader.getTermVector(0, FIELD));
+      final TokenStream tokenStream =
+          TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals("<B>the fox</B> did not jump",
           highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
@@ -166,9 +173,8 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Highlighter highlighter = new Highlighter(
           new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
           new QueryScorer(query));
-      final TokenStream tokenStream = TokenSources
-          .getTokenStream(
-              indexReader.getTermVector(0, FIELD));
+      final TokenStream tokenStream =
+          TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals("<B>the fox</B> did not jump",
           highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
@@ -187,6 +193,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
+      // no positions!
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
@@ -209,9 +216,8 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Highlighter highlighter = new Highlighter(
           new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
           new QueryScorer(phraseQuery));
-      final TokenStream tokenStream = TokenSources
-          .getTokenStream(
-              indexReader.getTermVector(0, FIELD));
+      final TokenStream tokenStream =
+          TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals("<B>the fox</B> did not jump",
           highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
@@ -230,6 +236,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
@@ -252,9 +259,8 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       final Highlighter highlighter = new Highlighter(
           new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
           new QueryScorer(phraseQuery));
-      final TokenStream tokenStream = TokenSources
-          .getTokenStream(
-              indexReader.getTermVector(0, FIELD));
+      final TokenStream tokenStream =
+          TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals("<B>the fox</B> did not jump",
           highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
@@ -263,7 +269,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     }
   }
 
-  public void testTermVectorWithoutOffsetsThrowsException()
+  public void testTermVectorWithoutOffsetsDoesntWork()
       throws IOException, InvalidTokenOffsetsException {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
@@ -282,12 +288,9 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
-      TokenSources.getTokenStream(
-              indexReader.getTermVector(0, FIELD));
-      fail("TokenSources.getTokenStream should throw IllegalArgumentException if term vector has no offsets");
-    }
-    catch (IllegalArgumentException e) {
-      // expected
+      final TokenStream tokenStream =
+          TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
+      assertNull(tokenStream);
     }
     finally {
       indexReader.close();
@@ -333,7 +336,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     writer.close();
     assertEquals(1, reader.numDocs());
 
-    TokenStream ts = TokenSources.getTokenStream(reader.getTermVectors(0).terms("field"));
+    TokenStream ts = TokenSources.getTermVectorTokenStreamOrNull("field", reader.getTermVectors(0), -1);
 
     CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = ts.getAttribute(PositionIncrementAttribute.class);
@@ -409,7 +412,8 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     writer.close();
     assertEquals(1, reader.numDocs());
 
-    TokenStream vectorTokenStream = TokenSources.getTokenStream(reader.getTermVectors(0).terms("field"));
+    TokenStream vectorTokenStream =
+        TokenSources.getTermVectorTokenStreamOrNull("field", reader.getTermVectors(0), -1);
 
     //sometimes check payloads
     PayloadAttribute payloadAttribute = null;
@@ -428,6 +432,59 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     }
 
     reader.close();
+    dir.close();
+  }
+
+  public void testMaxStartOffsetConsistency() throws IOException {
+    FieldType tvFieldType = new FieldType(TextField.TYPE_NOT_STORED);
+    tvFieldType.setStoreTermVectors(true);
+    tvFieldType.setStoreTermVectorOffsets(true);
+    tvFieldType.setStoreTermVectorPositions(true);
+
+    Directory dir = newDirectory();
+
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setEnableChecks(false);//we don't necessarily consume the whole stream because of limiting by startOffset
+    Document doc = new Document();
+    final String TEXT = " f gg h";
+    doc.add(new Field("fld_tv", analyzer.tokenStream("fooFld", TEXT), tvFieldType));
+    doc.add(new TextField("fld_notv", analyzer.tokenStream("barFld", TEXT)));
+
+    IndexReader reader;
+    try (RandomIndexWriter writer = new RandomIndexWriter(random(), dir)) {
+      writer.addDocument(doc);
+      reader = writer.getReader();
+    }
+    try {
+      Fields tvFields = reader.getTermVectors(0);
+      for (int maxStartOffset = -1; maxStartOffset <= TEXT.length(); maxStartOffset++) {
+        TokenStream tvStream = TokenSources.getTokenStream("fld_tv", tvFields, TEXT, analyzer, maxStartOffset);
+        TokenStream anaStream = TokenSources.getTokenStream("fld_notv", tvFields, TEXT, analyzer, maxStartOffset);
+
+        //assert have same tokens, none of which has a start offset > maxStartOffset
+        final OffsetAttribute tvOffAtt = tvStream.addAttribute(OffsetAttribute.class);
+        final OffsetAttribute anaOffAtt = anaStream.addAttribute(OffsetAttribute.class);
+        tvStream.reset();
+        anaStream.reset();
+        while (tvStream.incrementToken()) {
+          assertTrue(anaStream.incrementToken());
+          assertEquals(tvOffAtt.startOffset(), anaOffAtt.startOffset());
+          if (maxStartOffset >= 0)
+            assertTrue(tvOffAtt.startOffset() <= maxStartOffset);
+        }
+        assertTrue(anaStream.incrementToken() == false);
+        tvStream.end();
+        anaStream.end();
+        tvStream.close();
+        anaStream.close();
+      }
+
+    } finally {
+      reader.close();
+    }
+
+
+
     dir.close();
   }
 }

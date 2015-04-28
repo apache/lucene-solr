@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
@@ -493,8 +494,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     List<TextFragment> frags = new ArrayList<>();
 
     //Try term vectors, which is faster
+    final Fields tvFields = searcher.getIndexReader().getTermVectors(docId); // TODO add as param; see SOLR-5855
     final TokenStream tvStream =
-        TokenSources.getTokenStreamWithOffsets(searcher.getIndexReader(), docId, fieldName);
+        TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
     final OffsetWindowTokenFilter tvWindowStream;
     if (tvStream != null && fieldValues.size() > 1) {
