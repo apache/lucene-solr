@@ -18,7 +18,7 @@ do
   stopPort=`expr $baseStopPort + $i`
   echo "stopping server$i, stop port is $stopPort"
   cd ../server$i
-  java -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar --stop
+  java -jar start.jar --module=http STOP.PORT=$stopPort STOP.KEY=key --stop
 done
 
 
@@ -46,7 +46,7 @@ do
 done
 
 # stop zk runner
-java -DSTOP.PORT=1313 -DSTOP.KEY=key -jar start.jar --stop
+java -jar start.jar --module=http STOP.PORT=1313 STOP.KEY=key --stop
 
 echo "wait for port to be available: $baseJettyPort"
 
