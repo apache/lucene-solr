@@ -984,4 +984,27 @@ public class TestLRUQueryCache extends LuceneTestCase {
     
     IOUtils.close(w, reader, dir);
   }
+
+  public void testRefuseToCacheTooLargeEntries() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    for (int i = 0; i < 100; ++i) {
+      w.addDocument(new Document());
+    }
+    IndexReader reader = w.getReader();
+
+    // size of 1 byte
+    final LRUQueryCache queryCache = new LRUQueryCache(1, 1);
+    final IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    searcher.count(new MatchAllDocsQuery());
+    assertEquals(0, queryCache.getCacheCount());
+    assertEquals(0, queryCache.getEvictionCount());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
 }

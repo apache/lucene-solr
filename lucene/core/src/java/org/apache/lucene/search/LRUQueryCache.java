@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
@@ -552,6 +553,18 @@ public class LRUQueryCache implements QueryCache, Accountable {
       in.extractTerms(terms);
     }
 
+    private boolean cacheEntryHasReasonableWorstCaseSize(int maxDoc) {
+      // The worst-case (dense) is a bit set which needs one bit per document
+      final long worstCaseRamUsage = maxDoc / 8;
+      final long totalRamAvailable = maxRamBytesUsed;
+      // Imagine the worst-case that a cache entry is large than the size of
+      // the cache: not only will this entry be trashed immediately but it
+      // will also evict all current entries from the cache. For this reason
+      // we only cache on an IndexReader if we have available room for
+      // 5 different filters on this reader to avoid excessive trashing
+      return worstCaseRamUsage * 5 < totalRamAvailable;
+    }
+
     @Override
     protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
       if (context.ord == 0) {
@@ -559,7 +572,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (policy.shouldCache(in.getQuery(), context)) {
+        if (cacheEntryHasReasonableWorstCaseSize(ReaderUtil.getTopLevelContext(context).reader().maxDoc())
+            && policy.shouldCache(in.getQuery(), context)) {
           final Scorer scorer = in.scorer(context, null);
           if (scorer == null) {
             docIdSet = DocIdSet.EMPTY;

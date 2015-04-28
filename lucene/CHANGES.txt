@@ -101,6 +101,9 @@ Optimizations
 * LUCENE-6392: Highligher- reduce memory of tokens in
   TokenStreamFromTermVector, and add maxStartOffset limit. (David Smiley)
 
+* LUCENE-6456: Queries that generate doc id sets that are too large for the
+  query cache are not cached instead of evicting everything. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
