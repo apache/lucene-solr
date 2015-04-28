@@ -127,7 +127,7 @@ public class AtomicUpdateDocumentMerger {
     toDoc.setField(sif.getName(), fieldVal, sif.getBoost());
   }
 
-  private void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
+  protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     toDoc.addField(sif.getName(), fieldVal, sif.getBoost());
   }
 
