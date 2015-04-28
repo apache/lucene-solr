@@ -1,7 +1,5 @@
 package org.apache.lucene.util;
 
-import java.util.Arrays;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +17,8 @@ import java.util.Arrays;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+
 /**
  * BitSet of fixed length (numBits), backed by accessible ({@link #getBits})
  * long[], accessed with a long index. Use it only if you intend to store more
@@ -28,24 +28,25 @@ import java.util.Arrays;
  */
 public final class LongBitSet {
 
-  private final long[] bits;
-  private final long numBits;
-  private final int numWords;
+  private final long[] bits; // Array of longs holding the bits 
+  private final long numBits; // The number of bits in use
+  private final int numWords; // The exact number of longs needed to hold numBits (<= bits.length)
 
   /**
    * If the given {@link LongBitSet} is large enough to hold
-   * {@code numBits}, returns the given bits, otherwise returns a new
+   * {@code numBits+1}, returns the given bits, otherwise returns a new
    * {@link LongBitSet} which can hold the requested number of bits.
-   * 
    * <p>
    * <b>NOTE:</b> the returned bitset reuses the underlying {@code long[]} of
    * the given {@code bits} if possible. Also, calling {@link #length()} on the
    * returned bits may return a value greater than {@code numBits}.
    */
   public static LongBitSet ensureCapacity(LongBitSet bits, long numBits) {
-    if (numBits < bits.length()) {
+    if (numBits < bits.numBits) {
       return bits;
     } else {
+      // Depends on the ghost bits being clear!
+      // (Otherwise, they may become visible in the new instance)
       int numWords = bits2words(numBits);
       long[] arr = bits.getBits();
       if (numWords >= arr.length) {
@@ -60,12 +61,24 @@ public final class LongBitSet {
     return (int)((numBits - 1) >> 6) + 1; // I.e.: get the word-offset of the last bit and add one (make sure to use >> so 0 returns 0!)
   }
   
+  /**
+   * Creates a new LongBitSet.
+   * The internally allocated long array will be exactly the size needed to accommodate the numBits specified.
+   * @param numBits the number of bits needed
+   */
   public LongBitSet(long numBits) {
     this.numBits = numBits;
     bits = new long[bits2words(numBits)];
     numWords = bits.length;
   }
 
+  /**
+   * Creates a new LongBitSet using the provided long[] array as backing store.
+   * The storedBits array must be large enough to accommodate the numBits specified, but may be larger.
+   * In that case the 'extra' or 'ghost' bits must be clear (or they may provoke spurious side-effects)
+   * @param storedBits the array to use as backing store
+   * @param numBits the number of bits actually needed
+   */
   public LongBitSet(long[] storedBits, long numBits) {
     this.numWords = bits2words(numBits);
     if (numWords > storedBits.length) {
@@ -73,6 +86,25 @@ public final class LongBitSet {
     }
     this.numBits = numBits;
     this.bits = storedBits;
+
+    assert verifyGhostBitsClear();
+  }
+  
+  /**
+   * Checks if the bits past numBits are clear.
+   * Some methods rely on this implicit assumption: search for "Depends on the ghost bits being clear!" 
+   * @return true if the bits past numBits are clear.
+   */
+  private boolean verifyGhostBitsClear() {
+    for (int i = numWords; i < bits.length; i++) {
+      if (bits[i] != 0) return false;
+    }
+    
+    if ((numBits & 0x3f) == 0) return true;
+    
+    long mask = -1L << numBits;
+
+    return (bits[numWords - 1] & mask) == 0;
   }
   
   /** Returns the number of bits stored in this bitset. */
@@ -87,13 +119,15 @@ public final class LongBitSet {
 
   /** Returns number of set bits.  NOTE: this visits every
    *  long in the backing bits array, and the result is not
-   *  internally cached! */
+   *  internally cached!
+   */
   public long cardinality() {
-    return BitUtil.pop_array(bits, 0, bits.length);
+    // Depends on the ghost bits being clear!
+    return BitUtil.pop_array(bits, 0, numWords);
   }
 
   public boolean get(long index) {
-    assert index >= 0 && index < numBits: "index=" + index;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int i = (int) (index >> 6);               // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
@@ -109,7 +143,7 @@ public final class LongBitSet {
   }
 
   public boolean getAndSet(long index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = (int) (index >> 6);      // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
@@ -118,14 +152,14 @@ public final class LongBitSet {
   }
 
   public void clear(long index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = (int) (index >> 6);
     long bitmask = 1L << index;
     bits[wordNum] &= ~bitmask;
   }
 
   public boolean getAndClear(long index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = (int) (index >> 6);      // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
@@ -137,7 +171,8 @@ public final class LongBitSet {
    *  -1 is returned if there are no more set bits.
    */
   public long nextSetBit(long index) {
-    assert index >= 0 && index < numBits;
+    // Depends on the ghost bits being clear!
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int i = (int) (index >> 6);
     long word = bits[i] >> index;  // skip all the bits to the right of index
 
@@ -198,6 +233,7 @@ public final class LongBitSet {
 
   /** returns true if the sets have any elements in common */
   public boolean intersects(LongBitSet other) {
+    // Depends on the ghost bits being clear!
     int pos = Math.min(numWords, other.numWords);
     while (--pos>=0) {
       if ((bits[pos] & other.bits[pos]) != 0) return true;
@@ -218,15 +254,30 @@ public final class LongBitSet {
   
   /** this = this AND NOT other */
   public void andNot(LongBitSet other) {
-    int pos = Math.min(numWords, other.bits.length);
+    int pos = Math.min(numWords, other.numWords);
     while (--pos >= 0) {
       bits[pos] &= ~other.bits[pos];
     }
   }
   
-  // NOTE: no .isEmpty() here because that's trappy (ie,
-  // typically isEmpty is low cost, but this one wouldn't
-  // be)
+  /**
+   * Scans the backing store to check if all bits are clear.
+   * The method is deliberately not called "isEmpty" to emphasize it is not low cost (as isEmpty usually is).
+   * @return true if all bits are clear.
+   */
+  public boolean scanIsEmpty() {
+    // This 'slow' implementation is still faster than any external one could be
+    // (e.g.: (bitSet.length() == 0 || bitSet.nextSetBit(0) == -1))
+    // especially for small BitSets
+    // Depends on the ghost bits being clear!
+    final int count = numWords;
+    
+    for (int i = 0; i < count; i++) {
+      if (bits[i] != 0) return false;
+    }
+    
+    return true;
+  }
 
   /** Flips a range of bits
    *
@@ -267,14 +318,22 @@ public final class LongBitSet {
     bits[endWord] ^= endmask;
   }
 
+  /** Flip the bit at the provided index. */
+  public void flip(long index) {
+    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
+    int wordNum = (int) (index >> 6);      // div 64
+    long bitmask = 1L << index; // mod 64 is implicit
+    bits[wordNum] ^= bitmask;
+  }
+
   /** Sets a range of bits
    *
    * @param startIndex lower index
    * @param endIndex one-past the last bit to set
    */
   public void set(long startIndex, long endIndex) {
-    assert startIndex >= 0 && startIndex < numBits;
-    assert endIndex >= 0 && endIndex <= numBits;
+    assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
+    assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;
     if (endIndex <= startIndex) {
       return;
     }
@@ -301,8 +360,8 @@ public final class LongBitSet {
    * @param endIndex one-past the last bit to clear
    */
   public void clear(long startIndex, long endIndex) {
-    assert startIndex >= 0 && startIndex < numBits;
-    assert endIndex >= 0 && endIndex <= numBits;
+    assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
+    assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;
     if (endIndex <= startIndex) {
       return;
     }
@@ -330,7 +389,7 @@ public final class LongBitSet {
   @Override
   public LongBitSet clone() {
     long[] bits = new long[this.bits.length];
-    System.arraycopy(this.bits, 0, bits, 0, bits.length);
+    System.arraycopy(this.bits, 0, bits, 0, numWords);
     return new LongBitSet(bits, numBits);
   }
 
@@ -344,14 +403,16 @@ public final class LongBitSet {
       return false;
     }
     LongBitSet other = (LongBitSet) o;
-    if (numBits != other.length()) {
+    if (numBits != other.numBits) {
       return false;
     }
+    // Depends on the ghost bits being clear!
     return Arrays.equals(bits, other.bits);
   }
 
   @Override
   public int hashCode() {
+    // Depends on the ghost bits being clear!
     long h = 0;
     for (int i = numWords; --i>=0;) {
       h ^= bits[i];

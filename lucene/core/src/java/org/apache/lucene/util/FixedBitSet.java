@@ -1,3 +1,5 @@
+package org.apache.lucene.util;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -35,20 +35,25 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class);
 
+  private final long[] bits; // Array of longs holding the bits 
+  private final int numBits; // The number of bits in use
+  private final int numWords; // The exact number of longs needed to hold numBits (<= bits.length)
+  
   /**
-   * If the given {@link FixedBitSet} is large enough to hold {@code numBits},
+   * If the given {@link FixedBitSet} is large enough to hold {@code numBits+1},
    * returns the given bits, otherwise returns a new {@link FixedBitSet} which
    * can hold the requested number of bits.
-   * 
    * <p>
    * <b>NOTE:</b> the returned bitset reuses the underlying {@code long[]} of
    * the given {@code bits} if possible. Also, calling {@link #length()} on the
    * returned bits may return a value greater than {@code numBits}.
    */
   public static FixedBitSet ensureCapacity(FixedBitSet bits, int numBits) {
-    if (numBits < bits.length()) {
+    if (numBits < bits.numBits) {
       return bits;
     } else {
+      // Depends on the ghost bits being clear!
+      // (Otherwise, they may become visible in the new instance)
       int numWords = bits2words(numBits);
       long[] arr = bits.getBits();
       if (numWords >= arr.length) {
@@ -68,6 +73,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
    * Neither set is modified.
    */
   public static long intersectionCount(FixedBitSet a, FixedBitSet b) {
+    // Depends on the ghost bits being clear!
     return BitUtil.pop_intersect(a.bits, b.bits, 0, Math.min(a.numWords, b.numWords));
   }
 
@@ -76,6 +82,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
    * set is modified.
    */
   public static long unionCount(FixedBitSet a, FixedBitSet b) {
+    // Depends on the ghost bits being clear!
     long tot = BitUtil.pop_union(a.bits, b.bits, 0, Math.min(a.numWords, b.numWords));
     if (a.numWords < b.numWords) {
       tot += BitUtil.pop_array(b.bits, a.numWords, b.numWords - a.numWords);
@@ -90,6 +97,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
    * "intersection(a, not(b))". Neither set is modified.
    */
   public static long andNotCount(FixedBitSet a, FixedBitSet b) {
+    // Depends on the ghost bits being clear!
     long tot = BitUtil.pop_andnot(a.bits, b.bits, 0, Math.min(a.numWords, b.numWords));
     if (a.numWords > b.numWords) {
       tot += BitUtil.pop_array(a.bits, b.numWords, a.numWords - b.numWords);
@@ -97,16 +105,24 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     return tot;
   }
 
-  final long[] bits;
-  final int numBits;
-  final int numWords;
-
+  /**
+   * Creates a new LongBitSet.
+   * The internally allocated long array will be exactly the size needed to accommodate the numBits specified.
+   * @param numBits the number of bits needed
+   */
   public FixedBitSet(int numBits) {
     this.numBits = numBits;
     bits = new long[bits2words(numBits)];
     numWords = bits.length;
   }
 
+  /**
+   * Creates a new LongBitSet using the provided long[] array as backing store.
+   * The storedBits array must be large enough to accommodate the numBits specified, but may be larger.
+   * In that case the 'extra' or 'ghost' bits must be clear (or they may provoke spurious side-effects)
+   * @param storedBits the array to use as backing store
+   * @param numBits the number of bits actually needed
+   */
   public FixedBitSet(long[] storedBits, int numBits) {
     this.numWords = bits2words(numBits);
     if (numWords > storedBits.length) {
@@ -114,8 +130,27 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     }
     this.numBits = numBits;
     this.bits = storedBits;
+
+    assert verifyGhostBitsClear();
   }
 
+  /**
+   * Checks if the bits past numBits are clear.
+   * Some methods rely on this implicit assumption: search for "Depends on the ghost bits being clear!" 
+   * @return true if the bits past numBits are clear.
+   */
+  private boolean verifyGhostBitsClear() {
+    for (int i = numWords; i < bits.length; i++) {
+      if (bits[i] != 0) return false;
+    }
+    
+    if ((numBits & 0x3f) == 0) return true;
+    
+    long mask = -1L << numBits;
+
+    return (bits[numWords - 1] & mask) == 0;
+  }
+  
   @Override
   public int length() {
     return numBits;
@@ -131,9 +166,14 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     return bits;
   }
 
+  /** Returns number of set bits.  NOTE: this visits every
+   *  long in the backing bits array, and the result is not
+   *  internally cached!
+   */
   @Override
   public int cardinality() {
-    return (int) BitUtil.pop_array(bits, 0, bits.length);
+    // Depends on the ghost bits being clear!
+    return (int) BitUtil.pop_array(bits, 0, numWords);
   }
 
   @Override
@@ -154,7 +194,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
   }
 
   public boolean getAndSet(int index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = index >> 6;      // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
@@ -164,14 +204,14 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
 
   @Override
   public void clear(int index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = index >> 6;
     long bitmask = 1L << index;
     bits[wordNum] &= ~bitmask;
   }
 
   public boolean getAndClear(int index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
     int wordNum = index >> 6;      // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
@@ -181,6 +221,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
 
   @Override
   public int nextSetBit(int index) {
+    // Depends on the ghost bits being clear!
     assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int i = index >> 6;
     long word = bits[i] >> index;  // skip all the bits to the right of index
@@ -286,6 +327,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
 
   /** returns true if the sets have any elements in common */
   public boolean intersects(FixedBitSet other) {
+    // Depends on the ghost bits being clear!
     int pos = Math.min(numWords, other.numWords);
     while (--pos>=0) {
       if ((bits[pos] & other.bits[pos]) != 0) return true;
@@ -322,7 +364,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
 
   /** this = this AND NOT other */
   public void andNot(FixedBitSet other) {
-    andNot(other.bits, other.bits.length);
+    andNot(other.bits, other.numWords);
   }
   
   private void andNot(final long[] otherArr, final int otherNumWords) {
@@ -333,9 +375,24 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     }
   }
 
-  // NOTE: no .isEmpty() here because that's trappy (ie,
-  // typically isEmpty is low cost, but this one wouldn't
-  // be)
+  /**
+   * Scans the backing store to check if all bits are clear.
+   * The method is deliberately not called "isEmpty" to emphasize it is not low cost (as isEmpty usually is).
+   * @return true if all bits are clear.
+   */
+  public boolean scanIsEmpty() {
+    // This 'slow' implementation is still faster than any external one could be
+    // (e.g.: (bitSet.length() == 0 || bitSet.nextSetBit(0) == -1))
+    // especially for small BitSets
+    // Depends on the ghost bits being clear!
+    final int count = numWords;
+    
+    for (int i = 0; i < count; i++) {
+      if (bits[i] != 0) return false;
+    }
+    
+    return true;
+  }
 
   /** Flips a range of bits
    *
@@ -380,8 +437,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
   public void flip(int index) {
     assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int wordNum = index >> 6;      // div 64
-    int bit = index & 0x3f;     // mod 64
-    long bitmask = 1L << bit;
+    long bitmask = 1L << index; // mod 64 is implicit
     bits[wordNum] ^= bitmask;
   }
 
@@ -391,8 +447,8 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
    * @param endIndex one-past the last bit to set
    */
   public void set(int startIndex, int endIndex) {
-    assert startIndex >= 0 && startIndex < numBits;
-    assert endIndex >= 0 && endIndex <= numBits;
+    assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
+    assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;
     if (endIndex <= startIndex) {
       return;
     }
@@ -444,11 +500,10 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
   @Override
   public FixedBitSet clone() {
     long[] bits = new long[this.bits.length];
-    System.arraycopy(this.bits, 0, bits, 0, bits.length);
+    System.arraycopy(this.bits, 0, bits, 0, numWords);
     return new FixedBitSet(bits, numBits);
   }
 
-  /** returns true if both sets have the same bits set */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -458,14 +513,16 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
       return false;
     }
     FixedBitSet other = (FixedBitSet) o;
-    if (numBits != other.length()) {
+    if (numBits != other.numBits) {
       return false;
     }
+    // Depends on the ghost bits being clear!
     return Arrays.equals(bits, other.bits);
   }
 
   @Override
   public int hashCode() {
+    // Depends on the ghost bits being clear!
     long h = 0;
     for (int i = numWords; --i>=0;) {
       h ^= bits[i];

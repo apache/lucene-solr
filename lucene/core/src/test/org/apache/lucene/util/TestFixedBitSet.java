@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -32,8 +33,8 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     return set;
   }
 
-
   void doGet(java.util.BitSet a, FixedBitSet b) {
+    assertEquals(a.cardinality(), b.cardinality());
     int max = b.length();
     for (int i=0; i<max; i++) {
       if (a.get(i) != b.get(i)) {
@@ -43,7 +44,9 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
   }
 
   void doNextSetBit(java.util.BitSet a, FixedBitSet b) {
-    int aa=-1,bb=-1;
+    assertEquals(a.cardinality(), b.cardinality());
+    int aa=-1;
+    int bb=-1;
     do {
       aa = a.nextSetBit(aa+1);
       if (aa == -1) {
@@ -55,6 +58,7 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
   }
 
   void doPrevSetBit(java.util.BitSet a, FixedBitSet b) {
+    assertEquals(a.cardinality(), b.cardinality());
     int aa = a.size() + random().nextInt(100);
     int bb = aa;
     do {
@@ -83,6 +87,7 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
   }
 
   void doIterate1(java.util.BitSet a, FixedBitSet b) throws IOException {
+    assertEquals(a.cardinality(), b.cardinality());
     int aa=-1,bb=-1;
     DocIdSetIterator iterator = new BitSetIterator(b, 0);
     do {
@@ -93,6 +98,7 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
   }
 
   void doIterate2(java.util.BitSet a, FixedBitSet b) throws IOException {
+    assertEquals(a.cardinality(), b.cardinality());
     int aa=-1,bb=-1;
     DocIdSetIterator iterator = new BitSetIterator(b, 0);
     do {
@@ -286,11 +292,7 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     if (random().nextBoolean()) {
       int bits2words = FixedBitSet.bits2words(numBits);
       long[] words = new long[bits2words + random().nextInt(100)];
-      for (int i = bits2words; i < words.length; i++) {
-        words[i] = random().nextLong();
-      }
       bs = new FixedBitSet(words, numBits);
-
     } else {
       bs = new FixedBitSet(numBits);
     }
@@ -362,5 +364,133 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     // we grew the long[], so it's not shared
     assertTrue(bits.get(1));
     assertFalse(newBits.get(1));
+  }
+  
+  public void testBits2Words() {
+    assertEquals(0, FixedBitSet.bits2words(0));
+    assertEquals(1, FixedBitSet.bits2words(1));
+    // ...
+    assertEquals(1, FixedBitSet.bits2words(64));
+    assertEquals(2, FixedBitSet.bits2words(65));
+    // ...
+    assertEquals(2, FixedBitSet.bits2words(128));
+    assertEquals(3, FixedBitSet.bits2words(129));
+    // ...
+    assertEquals(1024, FixedBitSet.bits2words(65536));
+    assertEquals(1025, FixedBitSet.bits2words(65537));
+    // ...
+    assertEquals(1 << (31-6), FixedBitSet.bits2words(Integer.MAX_VALUE));
+  }
+  
+  private int[] makeIntArray(Random random, int count, int min, int max) {
+    int[] rv = new int[count];
+    
+    for (int i = 0; i < count; ++i) {
+      rv[i] = TestUtil.nextInt(random, min, max);
+    }
+    
+    return rv;
+  }
+  
+  // Demonstrates that the presence of ghost bits in the last used word can cause spurious failures
+  public void testIntersectionCount() {
+    Random random = random();
+    
+    int numBits1 = TestUtil.nextInt(random, 1000, 2000);
+    int numBits2 = TestUtil.nextInt(random, 1000, 2000);
+    
+    int count1 = TestUtil.nextInt(random, 0, numBits1 - 1);
+    int count2 = TestUtil.nextInt(random, 0, numBits2 - 1);
+
+    int[] bits1 = makeIntArray(random, count1, 0, numBits1 - 1);
+    int[] bits2 = makeIntArray(random, count2, 0, numBits2 - 1);
+    
+    FixedBitSet fixedBitSet1 = makeFixedBitSet(bits1, numBits1);
+    FixedBitSet fixedBitSet2 = makeFixedBitSet(bits2, numBits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertTrue(fixedBitSet1.cardinality() <= bits1.length);
+    //assertTrue(fixedBitSet2.cardinality() <= bits2.length);
+    
+    long intersectionCount = FixedBitSet.intersectionCount(fixedBitSet1, fixedBitSet2);
+    
+    java.util.BitSet bitSet1 = makeBitSet(bits1);
+    java.util.BitSet bitSet2 = makeBitSet(bits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertEquals(bitSet1.cardinality(), fixedBitSet1.cardinality());
+    //assertEquals(bitSet2.cardinality(), fixedBitSet2.cardinality());
+
+    bitSet1.and(bitSet2);
+    
+    assertEquals(bitSet1.cardinality(), intersectionCount);
+  }
+  
+  // Demonstrates that the presence of ghost bits in the last used word can cause spurious failures
+  public void testUnionCount() {
+    Random random = random();
+    
+    int numBits1 = TestUtil.nextInt(random, 1000, 2000);
+    int numBits2 = TestUtil.nextInt(random, 1000, 2000);
+    
+    int count1 = TestUtil.nextInt(random, 0, numBits1 - 1);
+    int count2 = TestUtil.nextInt(random, 0, numBits2 - 1);
+
+    int[] bits1 = makeIntArray(random, count1, 0, numBits1 - 1);
+    int[] bits2 = makeIntArray(random, count2, 0, numBits2 - 1);
+    
+    FixedBitSet fixedBitSet1 = makeFixedBitSet(bits1, numBits1);
+    FixedBitSet fixedBitSet2 = makeFixedBitSet(bits2, numBits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertTrue(fixedBitSet1.cardinality() <= bits1.length);
+    //assertTrue(fixedBitSet2.cardinality() <= bits2.length);
+    
+    long unionCount = FixedBitSet.unionCount(fixedBitSet1, fixedBitSet2);
+    
+    java.util.BitSet bitSet1 = makeBitSet(bits1);
+    java.util.BitSet bitSet2 = makeBitSet(bits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertEquals(bitSet1.cardinality(), fixedBitSet1.cardinality());
+    //assertEquals(bitSet2.cardinality(), fixedBitSet2.cardinality());
+
+    bitSet1.or(bitSet2);
+    
+    assertEquals(bitSet1.cardinality(), unionCount);
+  }
+  
+  // Demonstrates that the presence of ghost bits in the last used word can cause spurious failures
+  public void testAndNotCount() {
+    Random random = random();
+    
+    int numBits1 = TestUtil.nextInt(random, 1000, 2000);
+    int numBits2 = TestUtil.nextInt(random, 1000, 2000);
+    
+    int count1 = TestUtil.nextInt(random, 0, numBits1 - 1);
+    int count2 = TestUtil.nextInt(random, 0, numBits2 - 1);
+
+    int[] bits1 = makeIntArray(random, count1, 0, numBits1 - 1);
+    int[] bits2 = makeIntArray(random, count2, 0, numBits2 - 1);
+    
+    FixedBitSet fixedBitSet1 = makeFixedBitSet(bits1, numBits1);
+    FixedBitSet fixedBitSet2 = makeFixedBitSet(bits2, numBits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertTrue(fixedBitSet1.cardinality() <= bits1.length);
+    //assertTrue(fixedBitSet2.cardinality() <= bits2.length);
+    
+    long andNotCount = FixedBitSet.andNotCount(fixedBitSet1, fixedBitSet2);
+    
+    java.util.BitSet bitSet1 = makeBitSet(bits1);
+    java.util.BitSet bitSet2 = makeBitSet(bits2);
+    
+    // If ghost bits are present, these may fail too, but that's not what we want to demonstrate here
+    //assertEquals(bitSet1.cardinality(), fixedBitSet1.cardinality());
+    //assertEquals(bitSet2.cardinality(), fixedBitSet2.cardinality());
+
+    bitSet1.andNot(bitSet2);
+    
+    assertEquals(bitSet1.cardinality(), andNotCount);
   }
 }
