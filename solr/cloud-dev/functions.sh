@@ -34,14 +34,14 @@ start() {
 
 	setports $1
 	cd ../server$1
-	java $JAVA_OPTS -Djetty.port=$PORT $OPT -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar 1>server$1.log 2>&1 &
+	java $JAVA_OPTS -Djetty.port=$PORT $OPT -jar start.jar --module=http STOP.PORT=$STOP_PORT STOP.KEY=key jetty.base=. 1>server$1.log 2>&1 &
 }
 
 stop() {
 	echo "Stopping instance $1"
 	setports $1
 	cd ../server$1
-	java -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar --stop
+	java -jar start.jar --module=http STOP.PORT=$STOP_PORT STOP.KEY=key --stop
 }
 
 do_kill() {

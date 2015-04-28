@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# These scripts are best effort developer scripts. No promises.
+
 # To run on hdfs, try something along the lines of:
 # export JAVA_OPTS="-Dsolr.directoryFactory=solr.HdfsDirectoryFactory -Dsolr.lock.type=hdfs -Dsolr.hdfs.home=hdfs://localhost:8020/solr -Dsolr.hdfs.confdir=/etc/hadoop_conf/conf"
 
@@ -35,8 +37,8 @@ rm -r -f build
 rm -r -f server/solr/zoo_data
 rm -f server/server.log
 
-ant -f ../build.xml clean
-ant server dist
+#ant -f ../build.xml clean
+#ant server dist
 
 rm -r server/solr-webapp/*
 unzip server/webapps/solr.war -d server/solr-webapp/webapp
@@ -54,7 +56,7 @@ rm -r -f serverzk/solr/collection1/core.properties
 cd serverzk
 stopPort=1313
 jettyPort=8900
-exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jettyPort -DzkRun=localhost:9900/solr -DzkHost=$zkAddress -DzkRunOnly=true -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>serverzk.log 2>&1 &
+exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jettyPort -DzkRun=localhost:9900/solr -DzkHost=$zkAddress -DzkRunOnly=true -jar start.jar --module=http STOP.PORT=$stopPort STOP.KEY=key jetty.base=. 1>serverzk.log 2>&1 &
 cd ..
 
 # upload config files
@@ -68,5 +70,5 @@ do
   cd ../server$i
   stopPort=`expr $baseStopPort + $i`
   jettyPort=`expr $baseJettyPort + $i`
-  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>server$i.log 2>&1 &
+  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -jar start.jar --module=http STOP.PORT=$stopPort STOP.KEY=key jetty.base=. 1>server$i.log 2>&1 &
 done
