@@ -37,8 +37,8 @@ rm -r -f build
 rm -r -f server/solr/zoo_data
 rm -f server/server.log
 
-#ant -f ../build.xml clean
-#ant server dist
+ant -f ../build.xml clean
+ant server dist
 
 rm -r server/solr-webapp/*
 unzip server/webapps/solr.war -d server/solr-webapp/webapp
