@@ -51,6 +51,7 @@
       <str name="dir">${solr.ulog.dir:}</str>
       <str name="maxNumLogsToKeep">${solr.ulog.maxNumLogsToKeep:10}</str>
       <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
+      <int name="tlogDfsReplication">${solr.ulog.tlogDfsReplication:2}</int>
     </updateLog>
   </updateHandler>
 
