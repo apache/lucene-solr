@@ -254,7 +254,7 @@ public class TestBooleanOr extends LuceneTestCase {
         scorer(5000, 100000, 9999998, 9999999)
     );
     Collections.shuffle(optionalScorers, random());
-    BooleanScorer scorer = new BooleanScorer(null, true, 0, optionalScorers, 1);
+    BooleanScorer scorer = new BooleanScorer(null, true, 0, optionalScorers, 1, random().nextBoolean());
     final List<Integer> matches = new ArrayList<>();
     scorer.score(new LeafCollector() {
 
