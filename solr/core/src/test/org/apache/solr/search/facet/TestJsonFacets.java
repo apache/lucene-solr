@@ -824,7 +824,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // nested query facets on subset
     client.testJQ(params(p, "q", "*:*", "fq","{!tag=abc}id:(2 3)"
-            , "json.facet", "{ " +
+            , "json.facet", "{ processEmpty:true," +
                 " f1:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +
                 ",f2:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:abc }}" +
                 ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz,abc,qaz' }}" +
