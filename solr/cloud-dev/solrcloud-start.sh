@@ -7,6 +7,9 @@
 
 # To use ZooKeeper security, try:
 # export JAVA_OPTS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=admin-user -DzkDigestPassword=admin-password -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=readonly-password"
+#
+# To create a collection, curl "localhost:8901/solr/admin/collections?action=CREATE&name=collection1&numShards=2&replicationFactor=1&maxShardsPerNode=10"
+# To add a document, curl http://localhost:8901/solr/collection1/update -H 'Content-type:application/json' -d '[{"id" : "book1"}]'
 
 numServers=$1
 numShards=$2
@@ -21,7 +24,7 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 2 ] || die "2 arguments required, $# provided, usage: solrcloud-start.sh [numServers] [numShards]"
+[ "$#" -eq 1 ] || die "1 argument required, $# provided, usage: solrcloud-start.sh [numServers]"
 
 cd ..
 
@@ -60,7 +63,7 @@ exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jet
 cd ..
 
 # upload config files
-java -classpath "server/solr-webapp/webapp/WEB-INF/lib/*:server/lib/ext/*" $JAVA_OPTS org.apache.solr.cloud.ZkCLI -zkhost $zkAddress -cmd upconfig --confdir server/solr/configsets/basic_configs --confname basic_configs
+java -classpath "server/solr-webapp/webapp/WEB-INF/lib/*:server/lib/ext/*" $JAVA_OPTS org.apache.solr.cloud.ZkCLI -zkhost $zkAddress -cmd upconfig --confdir server/solr/configsets/basic_configs/conf --confname basic_configs
   
 cd server
 
@@ -70,5 +73,5 @@ do
   cd ../server$i
   stopPort=`expr $baseStopPort + $i`
   jettyPort=`expr $baseJettyPort + $i`
-  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -jar start.jar --module=http STOP.PORT=$stopPort STOP.KEY=key jetty.base=. 1>server$i.log 2>&1 &
+  exec -a jetty java -Xmx1g $JAVA_OPTS -Djetty.port=$jettyPort -DzkHost=$zkAddress -jar start.jar --module=http STOP.PORT=$stopPort STOP.KEY=key jetty.base=. 1>server$i.log 2>&1 &
 done
