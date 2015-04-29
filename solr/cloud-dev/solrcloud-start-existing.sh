@@ -17,6 +17,9 @@ die () {
 
 cd ..
 
+# Useful if you want to startup on an existing setup with new code mods
+# ant server dist
+
 cd serverzk
 stopPort=1313
 jettyPort=8900
