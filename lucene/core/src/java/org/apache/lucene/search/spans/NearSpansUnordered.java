@@ -192,30 +192,6 @@ public class NearSpansUnordered extends NearSpans {
   }
 
   @Override
-  int toMatchDoc() throws IOException {
-    // at doc with all subSpans
-    subSpanCellsToPositionQueue();
-    while (true) {
-      if (atMatch()) {
-        atFirstInCurrentDoc = true;
-        oneExhaustedInCurrentDoc = false;
-        return conjunction.docID();
-      }
-      assert minPositionCell().startPosition() != NO_MORE_POSITIONS;
-      if (minPositionCell().nextStartPosition() != NO_MORE_POSITIONS) {
-        spanPositionQueue.updateTop();
-      }
-      else { // exhausted a subSpan in current doc
-        if (conjunction.nextDoc() == NO_MORE_DOCS) {
-          return NO_MORE_DOCS;
-        }
-        // at doc with all subSpans
-        subSpanCellsToPositionQueue();
-      }
-    }
-  }
-
-  @Override
   boolean twoPhaseCurrentDocMatches() throws IOException {
     // at doc with all subSpans
     subSpanCellsToPositionQueue();

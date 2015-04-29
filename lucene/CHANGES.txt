@@ -85,6 +85,9 @@ New Features
 * LUCENE-6451: Expressions now support bindings keys that look like
   zero arg functions (Jack Conradson via Ryan Ernst)
 
+* LUCENE-6083: Add SpanWithinQuery and SpanContainingQuery that return
+  spans inside of / containing another spans. (Paul Elschot via Robert Muir)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

@@ -35,6 +35,12 @@
  * which occur near one another, and can be used to implement things like
  * phrase search (when constructed from {@link org.apache.lucene.search.spans.SpanTermQuery}s)
  * and inter-phrase proximity (when constructed from other {@link org.apache.lucene.search.spans.SpanNearQuery}s).</li>
+ *
+ * <li> A {@link org.apache.lucene.search.spans.SpanWithinQuery SpanWithinQuery} matches spans
+ * which occur inside of another spans. </li>
+ *
+ * <li> A {@link org.apache.lucene.search.spans.SpanContainingQuery SpanContainingQuery} matches spans
+ * which contain another spans. </li>
  * 
  * <li>A {@link org.apache.lucene.search.spans.SpanOrQuery SpanOrQuery} merges spans from a
  * number of other {@link org.apache.lucene.search.spans.SpanQuery}s.</li>

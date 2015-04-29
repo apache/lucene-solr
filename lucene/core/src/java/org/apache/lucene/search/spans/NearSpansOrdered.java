@@ -56,35 +56,6 @@ public class NearSpansOrdered extends NearSpans {
     this.atFirstInCurrentDoc = true; // -1 startPosition/endPosition also at doc -1
   }
 
-  /** Advances the subSpans to just after an ordered match with a minimum slop
-   * that is smaller than the slop allowed by the SpanNearQuery.
-   * @return true iff there is such a match.
-   */
-  @Override
-  int toMatchDoc() throws IOException {
-    subSpansToFirstStartPosition();
-    while (true) {
-      if (! stretchToOrder()) {
-        if (conjunction.nextDoc() == NO_MORE_DOCS) {
-          return NO_MORE_DOCS;
-        }
-        subSpansToFirstStartPosition();
-      } else {
-        if (shrinkToAfterShortestMatch()) {
-          atFirstInCurrentDoc = true;
-          return conjunction.docID();
-        }
-        // not a match, after shortest ordered spans, not at beginning of doc.
-        if (oneExhaustedInCurrentDoc) {
-          if (conjunction.nextDoc() == NO_MORE_DOCS) {
-            return NO_MORE_DOCS;
-          }
-          subSpansToFirstStartPosition();
-        }
-      }
-    }
-  }
-
   @Override
   boolean twoPhaseCurrentDocMatches() throws IOException {
     subSpansToFirstStartPosition();
