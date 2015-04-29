@@ -344,6 +344,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
       CodecUtil.checkFooter(input);
 
+      // LUCENE-6299: check we are in bounds
+      if (totalDocs > IndexWriter.getActualMaxDocs()) {
+        throw new CorruptIndexException("Too many documents: an index cannot exceed " + IndexWriter.getActualMaxDocs() + " but readers have total maxDoc=" + totalDocs, input);
+      }
+
       return infos;
     }
   }
