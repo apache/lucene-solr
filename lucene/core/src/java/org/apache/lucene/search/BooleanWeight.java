@@ -196,6 +196,7 @@ public class BooleanWeight extends Weight {
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
       BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
+      
       if (subScorer == null) {
         if (c.isRequired()) {
           return null;
@@ -221,7 +222,7 @@ public class BooleanWeight extends Weight {
       return null;
     }
 
-    return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.minNrShouldMatch));
+    return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.minNrShouldMatch), needsScores);
   }
 
   @Override

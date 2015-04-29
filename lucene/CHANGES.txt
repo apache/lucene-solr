@@ -110,6 +110,9 @@ Optimizations
 * LUCENE-6455: Require a minimum index size to enable query caching in order
   not to cache eg. on MemoryIndex. (Adrien Grand)
 
+* LUCENE-6330: BooleanScorer (used for top-level disjunctions) does not decode
+  norms when not necessary anymore. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.

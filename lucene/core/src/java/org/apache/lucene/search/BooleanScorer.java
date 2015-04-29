@@ -37,6 +37,35 @@ final class BooleanScorer extends BulkScorer {
   static final int SET_SIZE = 1 << (SHIFT - 6);
   static final int SET_MASK = SET_SIZE - 1;
 
+  private static BulkScorer disableScoring(final BulkScorer scorer) {
+    return new BulkScorer() {
+
+      @Override
+      public int score(final LeafCollector collector, int min, int max) throws IOException {
+        final LeafCollector noScoreCollector = new LeafCollector() {
+          FakeScorer fake = new FakeScorer();
+
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+            collector.setScorer(fake);
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {
+            fake.doc = doc;
+            collector.collect(doc);
+          }
+        };
+        return scorer.score(noScoreCollector, min, max);
+      }
+
+      @Override
+      public long cost() {
+        return scorer.cost();
+      }
+    };
+  }
+
   static class Bucket {
     double score;
     int freq;
@@ -146,7 +175,7 @@ final class BooleanScorer extends BulkScorer {
 
   final OrCollector orCollector = new OrCollector();
 
-  BooleanScorer(BooleanWeight weight, boolean disableCoord, int maxCoord, Collection<BulkScorer> scorers, int minShouldMatch) {
+  BooleanScorer(BooleanWeight weight, boolean disableCoord, int maxCoord, Collection<BulkScorer> scorers, int minShouldMatch, boolean needsScores) {
     if (minShouldMatch < 1 || minShouldMatch > scorers.size()) {
       throw new IllegalArgumentException("minShouldMatch should be within 1..num_scorers. Got " + minShouldMatch);
     }
@@ -158,6 +187,11 @@ final class BooleanScorer extends BulkScorer {
     this.tail = new TailPriorityQueue(minShouldMatch - 1);
     this.minShouldMatch = minShouldMatch;
     for (BulkScorer scorer : scorers) {
+      if (needsScores == false) {
+        // OrCollector calls score() all the time so we have to explicitly
+        // disable scoring in order to avoid decoding useless norms
+        scorer = disableScoring(scorer);
+      }
       final BulkScorerAndDoc evicted = tail.insertWithOverflow(new BulkScorerAndDoc(scorer));
       if (evicted != null) {
         head.add(evicted);
