@@ -91,7 +91,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     String[] makes = {"honda", "toyota", "ford", null};
     Double[] prices = {10000.0, 30000.0, 50000.0, 0.0, null};
     String[] honda_models = {"accord", "civic", "fit", "pilot", null};  // make sure this is alphabetized to match tiebreaks in index
-    String[] other_models = {"a", "b", "c", "x", "y", "z", null};
+    String[] other_models = {"z1", "z2", "z3", "z4", "z5", "z6", null};
 
     int nHonda = 0;
     final int[] honda_model_counts = new int[honda_models.length];
