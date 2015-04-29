@@ -194,6 +194,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
   @Override
   public void process() throws IOException {
+    super.process();
     sf = fcontext.searcher.getSchema().getField(freq.field);
     response = getFieldCacheCounts();
   }
@@ -340,10 +341,9 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
       // handle sub-facets for this bucket
       if (freq.getSubFacets().size() > 0) {
-        FacetContext subContext = fcontext.sub();
-        subContext.base = fcontext.searcher.getDocSet(new TermQuery(new Term(sf.getName(), br.clone())), fcontext.base);
+        TermQuery filter = new TermQuery(new Term(sf.getName(), br.clone()));
         try {
-          fillBucketSubs(bucket, subContext);
+          processSubs(bucket, filter, fcontext.searcher.getDocSet(filter, fcontext.base) );
         } finally {
           // subContext.base.decref();  // OFF-HEAP
           // subContext.base = null;  // do not modify context after creation... there may be deferred execution (i.e. streaming)
@@ -368,13 +368,11 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
         }
 
         if (freq.getSubFacets().size() > 0) {
-          FacetContext subContext = fcontext.sub();
           // TODO: we can do better than this!
           if (missingDocSet == null) {
             missingDocSet = getFieldMissing(fcontext.searcher, fcontext.base, freq.field);
           }
-          subContext.base = missingDocSet;
-          fillBucketSubs(missingBucket, subContext);
+          processSubs(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), missingDocSet);
         }
 
         res.add("missing", missingBucket);
@@ -542,6 +540,8 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
   @Override
   public void process() throws IOException {
+    super.process();
+
     // We need to keep the fcontext open after processing is done (since we will be streaming in the response writer).
     // But if the connection is broken, we want to clean up.
     // fcontext.base.incref();  // OFF-HEAP
@@ -790,13 +790,15 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
         // OK, we have a good bucket to return... first get bucket value before moving to next term
         Object bucketVal = sf.getType().toObject(sf, term);
+        BytesRef termCopy = BytesRef.deepCopyOf(term);
         term = termsEnum.next();
 
         SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
         bucket.add("val", bucketVal);
         addStats(bucket, 0);
         if (hasSubFacets) {
-          processSubs(bucket, termSet);
+          TermQuery filter = new TermQuery(new Term(freq.field, termCopy));
+          processSubs(bucket, filter, termSet);
         }
 
         // TODO... termSet needs to stick around for streaming sub-facets?

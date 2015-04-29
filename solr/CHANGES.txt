@@ -153,6 +153,14 @@ New Features
 
 * SOLR-7437: Make HDFS transaction log replication factor configurable. (Mark Miller)
 
+* SOLR-7477: Multi-select faceting support for the Facet Module via the "excludeTags"
+  parameter which disregards any matching tagged filters for that facet.  Example:
+  & q=shoes
+  & fq={!tag=COLOR}color:blue
+  & json.facet={ colors:{type:terms, field:color, excludeTags=COLOR} } 
+  (yonik)
+
+
 Bug Fixes
 ----------------------
 

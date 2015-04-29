@@ -70,6 +70,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   @Override
   public void process() throws IOException {
+    super.process();
+
     // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
     // But if mincount>0 then our sub mincount can be set to 1.
 
@@ -223,6 +225,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     int slotCount = rangeList.size() + otherList.size();
     intersections = new DocSet[slotCount];
+    filters = new Query[slotCount];
+
+
     createAccs(fcontext.base.size(), slotCount);
     prepareForCollection();
 
@@ -261,12 +266,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     return res;
   }
 
+  private Query[] filters;
   private DocSet[] intersections;
   private void rangeStats(Range range, int slot) throws IOException {
     Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
     // TODO: specialize count only
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
-    intersections[slot] = intersection;  // save for later
+    filters[slot] = rangeQ;
+    intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
     int num = collect(intersection, slot);
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
@@ -275,11 +282,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     // handle sub-facets for this bucket
     if (freq.getSubFacets().size() > 0) {
       DocSet subBase = intersections[slot];
-      if (subBase.size() == 0) return;
-      FacetContext subContext = fcontext.sub();
-      subContext.base = subBase;
       try {
-        fillBucketSubs(bucket, subContext);
+        processSubs(bucket, filters[slot], subBase);
       } finally {
         // subContext.base.decref();  // OFF-HEAP
         // subContext.base = null;  // do not modify context after creation... there may be deferred execution (i.e. streaming)
