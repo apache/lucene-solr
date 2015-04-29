@@ -419,4 +419,37 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Query q2 = nearQuery;
     assertSameSet(q1, q2);
   }
+  
+  /** SpanWithinQuery(A, B) ⊆ SpanNearQuery(A) */
+  public void testSpanWithinVsNear() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    SpanQuery subquery[] = new SpanQuery[] { 
+        spanQuery(new SpanTermQuery(t1)), 
+        spanQuery(new SpanTermQuery(t2)) 
+      };
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
+    
+    Term t3 = randomTerm();
+    SpanQuery termQuery = spanQuery(new SpanTermQuery(t3));
+    Query q1 = spanQuery(new SpanWithinQuery(nearQuery, termQuery));
+    assertSubsetOf(q1, termQuery);
+  }
+  
+  /** SpanWithinQuery(A, B) = SpanContainingQuery(A, B) */
+  public void testSpanWithinVsContaining() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    SpanQuery subquery[] = new SpanQuery[] { 
+        spanQuery(new SpanTermQuery(t1)), 
+        spanQuery(new SpanTermQuery(t2)) 
+      };
+    SpanQuery nearQuery = spanQuery(new SpanNearQuery(subquery, 10, true));
+    
+    Term t3 = randomTerm();
+    SpanQuery termQuery = spanQuery(new SpanTermQuery(t3));
+    Query q1 = spanQuery(new SpanWithinQuery(nearQuery, termQuery));
+    Query q2 = spanQuery(new SpanContainingQuery(nearQuery, termQuery));
+    assertSameSet(q1, q2);
+  }
 }

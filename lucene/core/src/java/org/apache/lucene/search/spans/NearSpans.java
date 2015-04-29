@@ -17,82 +17,18 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.ConjunctionDISI;
-import org.apache.lucene.search.TwoPhaseIterator;
-
-import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 
 /**
- * Common super class for un/ordered Spans
+ * Common super class for un/ordered Spans with a maximum slop between them.
  */
-abstract class NearSpans extends Spans {
+abstract class NearSpans extends ConjunctionSpans {
   final SpanNearQuery query;
   final int allowedSlop;
 
-  final Spans[] subSpans; // in query order
-  final DocIdSetIterator conjunction; // use to move to next doc with all clauses
-  boolean atFirstInCurrentDoc;
-  boolean oneExhaustedInCurrentDoc; // no more results possbile in current doc
-
-  NearSpans(SpanNearQuery query, List<Spans> subSpans)
-  throws IOException {
-    this.query = Objects.requireNonNull(query);
+  NearSpans(SpanNearQuery query, List<Spans> subSpans) {
+    super(subSpans);
+    this.query = query;
     this.allowedSlop = query.getSlop();
-    if (subSpans.size() < 2) {
-      throw new IllegalArgumentException("Less than 2 subSpans: " + query);
-    }
-    this.subSpans = subSpans.toArray(new Spans[subSpans.size()]); // in query order
-    this.conjunction = ConjunctionDISI.intersect(subSpans);
   }
-
-  @Override
-  public int docID() {
-    return conjunction.docID();
-  }
-
-  @Override
-  public long cost() {
-    return conjunction.cost();
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    return (conjunction.nextDoc() == NO_MORE_DOCS)
-            ? NO_MORE_DOCS
-            : toMatchDoc();
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    return (conjunction.advance(target) == NO_MORE_DOCS)
-            ? NO_MORE_DOCS
-            : toMatchDoc();
-  }
-
-  abstract int toMatchDoc() throws IOException;
-
-  abstract boolean twoPhaseCurrentDocMatches() throws IOException;
-
-  /**
-   * Return a {@link TwoPhaseIterator} view of this {@link NearSpans}.
-   */
-  @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
-    TwoPhaseIterator res = new TwoPhaseIterator(conjunction) {
-
-      @Override
-      public boolean matches() throws IOException {
-        return twoPhaseCurrentDocMatches();
-      }
-    };
-    return res;
-  }
-
-  public Spans[] getSubSpans() {
-    return subSpans;
-  }
-
 }

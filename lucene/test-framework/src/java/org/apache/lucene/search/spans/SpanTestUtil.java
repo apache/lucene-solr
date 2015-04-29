@@ -90,6 +90,20 @@ public class SpanTestUtil {
   }
   
   /**
+   * Makes a new SpanContainingQuery (with additional asserts).
+   */
+  public static SpanQuery spanContainingQuery(SpanQuery big, SpanQuery little) {
+    return spanQuery(new SpanContainingQuery(big, little));
+  }
+  
+  /**
+   * Makes a new SpanWithinQuery (with additional asserts).
+   */
+  public static SpanQuery spanWithinQuery(SpanQuery big, SpanQuery little) {
+    return spanQuery(new SpanWithinQuery(big, little));
+  }
+  
+  /**
    * Makes a new ordered SpanNearQuery (with additional asserts) from the provided {@code terms}
    */
   public static SpanQuery spanNearOrderedQuery(String field, int slop, String... terms) {
