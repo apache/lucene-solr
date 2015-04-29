@@ -818,15 +818,32 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    // multi-select / exclude tagged filters via excludeTags
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // nested query facets on subset
+    client.testJQ(params(p, "q", "*:*", "fq","{!tag=abc}id:(2 3)"
+            , "json.facet", "{ " +
+                " f1:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +
+                ",f2:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:abc }}" +
+                ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz,abc,qaz' }}" +
+                ",f4:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz , abc , qaz] }}" +
+                ",f5:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +    // this is repeated, but it did fail when a single context was shared among sub-facets
+                "}"
+        )
+        , "facets=={ 'count':2, " +
+            " 'f1':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            ",'f2':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f3':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f4':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f5':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            "}"
+    );
 
 
-    // TODO:
-    // numdocs('query') stat (don't make a bucket... just a count)
-    // missing(field)
-    // make missing configurable in min, max, etc
-    // exclusions
-    // zeroes
-    // instead of json.facet make it facet?
+
+
   }
 
 

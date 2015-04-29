@@ -19,19 +19,26 @@ package org.apache.solr.search.facet;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -47,7 +54,7 @@ import org.apache.solr.search.SyntaxError;
 public abstract class FacetRequest {
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
   protected Map<String,FacetRequest> subFacets;     // list of facets
-  protected List<String> excludeFilters;
+  protected List<String> excludeTags;
   protected boolean processEmpty;
 
   public FacetRequest() {
@@ -84,6 +91,7 @@ class FacetContext {
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
   SolrIndexSearcher searcher;
+  Query filter;  // TODO: keep track of as a DocSet or as a Query?
   DocSet base;
   FacetContext parent;
   int flags;
@@ -92,15 +100,22 @@ class FacetContext {
     return (flags & IS_SHARD) != 0;
   }
 
-  public FacetContext sub() {
+  /**
+   * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
+   * @param domain The resulting set of documents for this facet.
+   */
+  public FacetContext sub(Query filter, DocSet domain) {
     FacetContext ctx = new FacetContext();
+    ctx.parent = this;
+    ctx.base = domain;
+    ctx.filter = filter;
+
+    // carry over from parent
     ctx.flags = flags;
     ctx.qcontext = qcontext;
     ctx.req = req;
     ctx.searcher = searcher;
-    ctx.base = base;
 
-    ctx.parent = this;
     return ctx;
   }
 }
@@ -121,9 +136,68 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   public void process() throws IOException {
-
-
+    handleDomainChanges();
   }
+
+  protected void handleDomainChanges() throws IOException {
+    if (freq.excludeTags == null || freq.excludeTags.size() == 0) {
+      return;
+    }
+
+    // TODO: somehow remove responsebuilder dependency
+    ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
+    Map tagMap = (Map) rb.req.getContext().get("tags");
+    if (tagMap == null) {
+      // no filters were tagged
+      return;
+    }
+
+    IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<>();
+    for (String excludeTag : freq.excludeTags) {
+      Object olst = tagMap.get(excludeTag);
+      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
+      if (!(olst instanceof Collection)) continue;
+      for (Object o : (Collection<?>)olst) {
+        if (!(o instanceof QParser)) continue;
+        QParser qp = (QParser)o;
+        try {
+          excludeSet.put(qp.getQuery(), Boolean.TRUE);
+        } catch (SyntaxError syntaxError) {
+          // This should not happen since we should only be retrieving a previously parsed query
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      }
+    }
+    if (excludeSet.size() == 0) return;
+
+    List<Query> qlist = new ArrayList<>();
+
+    // add the base query
+    if (!excludeSet.containsKey(rb.getQuery())) {
+      qlist.add(rb.getQuery());
+    }
+
+    // add the filters
+    if (rb.getFilters() != null) {
+      for (Query q : rb.getFilters()) {
+        if (!excludeSet.containsKey(q)) {
+          qlist.add(q);
+        }
+      }
+    }
+
+    // now walk back up the context tree
+    // TODO: we lose parent exclusions...
+    for (FacetContext curr = fcontext; curr != null; curr = curr.parent) {
+      if (curr.filter != null) {
+        qlist.add( curr.filter );
+      }
+    }
+
+    // recompute the base domain
+    fcontext.base = fcontext.searcher.getDocSet(qlist);
+  }
+
 
   public Object getResponse() {
     return null;
@@ -171,8 +245,19 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
 
-  protected void fillBucketSubs(SimpleOrderedMap<Object> response, FacetContext subContext) throws IOException {
+  protected void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
+
+    // TODO: what if a zero bucket has a sub-facet with an exclusion that would yield results?
+    // should we check for domain-altering exclusions, or even ask the sub-facet for
+    // it's domain and then only skip it if it's 0?
+
+    if (domain == null || domain.size() == 0 && !freq.processEmpty) {
+      return;
+    }
+
     for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
+      // make a new context for each sub-facet since they can change the domain
+      FacetContext subContext = fcontext.sub(filter, domain);
       FacetProcessor subProcessor = sub.getValue().createFacetProcessor(subContext);
       subProcessor.process();
       response.add( sub.getKey(), subProcessor.getResponse() );
@@ -235,9 +320,6 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
 
-
-
-
   public void fillBucket(SimpleOrderedMap<Object> bucket, Query q) throws IOException {
     boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
 
@@ -264,7 +346,7 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     try {
       processStats(bucket, result, (int) count);
-      processSubs(bucket, result);
+      processSubs(bucket, q, result);
     } finally {
       if (result != null) {
         // result.decref(); // OFF-HEAP
@@ -273,29 +355,20 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-
-
-
-  protected void processSubs(SimpleOrderedMap<Object> bucket, DocSet result) throws IOException {
-    // TODO: process exclusions, etc
-
-    if (result == null || result.size() == 0 && !freq.processEmpty) {
-      return;
-    }
-
-    FacetContext subContext = fcontext.sub();
-    subContext.base = result;
-
-    fillBucketSubs(bucket, subContext);
-  }
-
-
   public static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     DocSet hasVal = searcher.getDocSet(sf.getType().getRangeQuery(null, sf, null, null, false, false));
     DocSet answer = docs.andNot(hasVal);
     // hasVal.decref(); // OFF-HEAP
     return answer;
+  }
+
+  public static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName) throws IOException {
+    SchemaField sf = searcher.getSchema().getField(fieldName);
+    Query hasVal = sf.getType().getRangeQuery(null, sf, null, null, false, false);
+    BooleanQuery noVal = new BooleanQuery();
+    noVal.add(hasVal, BooleanClause.Occur.MUST_NOT);
+    return noVal;
   }
 
 }
@@ -450,6 +523,14 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   }
 
 
+  protected void parseCommonParams(Object o) {
+    if (o instanceof Map) {
+      Map<String,Object> m = (Map<String,Object>)o;
+      facet.excludeTags = getStringList(m, "excludeTags");
+    }
+  }
+
+
   public String getField(Map<String,Object> args) {
     Object fieldName = args.get("field"); // TODO: pull out into defined constant
     if (fieldName == null) {
@@ -520,6 +601,20 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return (String)o;
   }
 
+  public List<String> getStringList(Map<String,Object> args, String paramName) {
+    Object o = args.get(paramName);
+    if (o == null) {
+      return null;
+    }
+    if (o instanceof List) {
+      return (List<String>)o;
+    }
+    if (o instanceof String) {
+      return StrUtils.splitSmart((String)o, ",", true);
+    }
+
+    throw err("Expected list of string or comma separated string values.");
+  }
 
   public IndexSchema getSchema() {
     return parent.getSchema();
@@ -566,6 +661,8 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
 
   @Override
   public FacetQuery parse(Object arg) throws SyntaxError {
+    parseCommonParams(arg);
+
     String qstring = null;
     if (arg instanceof String) {
       // just the field name...
@@ -601,7 +698,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
   }
 
   public FacetField parse(Object arg) throws SyntaxError {
-
+    parseCommonParams(arg);
     if (arg instanceof String) {
       // just the field name...
       facet.field = (String)arg;
@@ -674,6 +771,8 @@ class FacetRangeParser extends FacetParser<FacetRange> {
   }
 
   public FacetRange parse(Object arg) throws SyntaxError {
+    parseCommonParams(arg);
+
     if (!(arg instanceof Map)) {
       throw err("Missing range facet arguments");
     }
