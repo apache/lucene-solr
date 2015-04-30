@@ -822,7 +822,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // multi-select / exclude tagged filters via excludeTags
     ////////////////////////////////////////////////////////////////////////////////////////////
 
-    // nested query facets on subset
+    // nested query facets on subset (with excludeTags)
     client.testJQ(params(p, "q", "*:*", "fq","{!tag=abc}id:(2 3)"
             , "json.facet", "{ processEmpty:true," +
                 " f1:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +
@@ -830,6 +830,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz,abc,qaz' }}" +
                 ",f4:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz , abc , qaz] }}" +
                 ",f5:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +    // this is repeated, but it did fail when a single context was shared among sub-facets
+                ",f6:{query:{q:'${cat_s}:B', facet:{processEmpty:true, nj:{query:'${where_s}:NJ'}, ny:{ type:query, q:'${where_s}:NY', excludeTags:abc}}  }}" +  // exclude in a sub-facet
+                ",f7:{query:{q:'${cat_s}:B', facet:{processEmpty:true, nj:{query:'${where_s}:NJ'}, ny:{ type:query, q:'${where_s}:NY', excludeTags:xyz}}  }}" +  // exclude in a sub-facet that doesn't match
                 "}"
         )
         , "facets=={ 'count':2, " +
@@ -838,9 +840,47 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",'f3':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
             ",'f4':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
             ",'f5':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            ",'f6':{'count':1, 'nj':{'count':1}, 'ny':{'count':1}}" +
+            ",'f7':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
             "}"
     );
 
+    // terms facet with nested query facet (with excludeTags)
+    client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
+
+            , "json.facet", "{processEmpty:true, " +
+                " f0:{type:terms, field:${cat_s},                                    facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f1:{type:terms, field:${cat_s}, excludeTags:doc3,   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f2:{type:terms, field:${cat_s}, excludeTags:allfilt,missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f3:{type:terms, field:${cat_s}, excludeTags:doc6,   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                "}"
+        )
+        , "facets=={ count:4, " +
+            " f0:{ buckets:[ {val:A, count:2, nj:{ count:1}}, {val:B, count:2, nj:{count:2}} ] }" +
+            ",f1:{ buckets:[ {val:A, count:2, nj:{ count:1}}, {val:B, count:2, nj:{count:2}} ] , missing:{count:1,nj:{count:0}} }" +
+            ",f2:{ buckets:[ {val:B, count:3, nj:{ count:2}}, {val:A, count:2, nj:{count:1}} ] , missing:{count:1,nj:{count:0}} }" +
+            ",f3:{ buckets:[ {val:B, count:3, nj:{ count:2}}, {val:A, count:2, nj:{count:1}} ] , missing:{count:0} }" +
+            "}"
+    );
+
+    // range facet with sub facets and stats, with "other:all" (with excludeTags)
+    client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
+            , "json.facet", "{processEmpty:false " +
+                ", f1:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}} , excludeTags:allfilt }" +
+                ", f2:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}  }" +
+                "}"
+        )
+        , "facets=={count:4" +
+            ",f1:{buckets:[ {val:-5.0,count:1,x:-5.0,ny:{count:1}}, {val:0.0,count:2,x:5.0,ny:{count:1}}, {val:5.0,count:0} ]" +
+              ",before: {count:1,x:-5.0,ny:{count:0}}" +
+              ",after:  {count:1,x:7.0, ny:{count:0}}" +
+              ",between:{count:3,x:0.0, ny:{count:2}} }" +
+            ",f2:{buckets:[ {val:-5.0,count:0}, {val:0.0,count:2,x:5.0,ny:{count:1}}, {val:5.0,count:0} ]" +
+              ",before: {count:1,x:-5.0,ny:{count:0}}" +
+              ",after:  {count:1,x:7.0, ny:{count:0}}" +
+              ",between:{count:2,x:5.0, ny:{count:1}} }" +
+            "}"
+    );
 
 
 
