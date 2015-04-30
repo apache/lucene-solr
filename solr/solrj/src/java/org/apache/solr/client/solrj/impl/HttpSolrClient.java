@@ -695,14 +695,18 @@ public class HttpSolrClient extends SolrClient {
    */
   @Override
   public void close() throws IOException {
-    shutdown();
+    if (httpClient != null && internalClient) {
+      HttpClientUtil.close(httpClient);
+    }
   }
 
   @Override
   @Deprecated
   public void shutdown() {
-    if (httpClient != null && internalClient) {
-      HttpClientUtil.close(httpClient);
+    try {
+      close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
