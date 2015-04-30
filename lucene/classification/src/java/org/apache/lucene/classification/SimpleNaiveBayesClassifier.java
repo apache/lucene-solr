@@ -129,9 +129,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
-    if (leafReader == null) {
-      throw new IOException("You must first call Classifier#train");
-    }
     List<ClassificationResult<BytesRef>> dataList = new ArrayList<>();
 
     Terms terms = MultiFields.getTerms(leafReader, classFieldName);

@@ -113,9 +113,6 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   }
 
   private TopDocs knnSearch(String text) throws IOException {
-    if (mlt == null) {
-      throw new IOException("You must first call Classifier#train");
-    }
     BooleanQuery mltQuery = new BooleanQuery();
     for (String textFieldName : textFieldNames) {
       mltQuery.add(new BooleanClause(mlt.like(textFieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));

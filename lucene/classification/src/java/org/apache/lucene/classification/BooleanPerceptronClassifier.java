@@ -187,9 +187,6 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   @Override
   public ClassificationResult<Boolean> assignClass(String text)
           throws IOException {
-    if (textTerms == null) {
-      throw new IOException("You must first call Classifier#train");
-    }
     Long output = 0l;
     try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
       CharTermAttribute charTermAttribute = tokenStream

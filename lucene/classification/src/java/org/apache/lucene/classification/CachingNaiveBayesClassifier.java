@@ -74,10 +74,6 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
 
 
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
-    if (leafReader == null) {
-      throw new IOException("You must first call Classifier#train");
-    }
-
     String[] tokenizedDoc = tokenizeDoc(inputDocument);
 
     List<ClassificationResult<BytesRef>> dataList = calculateLogLikelihood(tokenizedDoc);
