@@ -58,76 +58,14 @@ import org.apache.lucene.util.fst.Util;
  */
 public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
-  private Double threshold;
-  private final Integer batchSize;
-  private Terms textTerms;
-  private Analyzer analyzer;
-  private String textFieldName;
+  private final Double threshold;
+  private final Terms textTerms;
+  private final Analyzer analyzer;
+  private final String textFieldName;
   private FST<Long> fst;
 
-  /**
-   * Create a {@link BooleanPerceptronClassifier}
-   *
-   * @param threshold the binary threshold for perceptron output evaluation
-   */
-  public BooleanPerceptronClassifier(Double threshold, Integer batchSize) {
-    this.threshold = threshold;
-    this.batchSize = batchSize;
-  }
-
-  /**
-   * Default constructor, no batch updates of FST, perceptron threshold is
-   * calculated via underlying index metrics during
-   * {@link #train(org.apache.lucene.index.LeafReader, String, String, org.apache.lucene.analysis.Analyzer)
-   * training}
-   */
-  public BooleanPerceptronClassifier() {
-    batchSize = 1;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public ClassificationResult<Boolean> assignClass(String text)
-      throws IOException {
-    if (textTerms == null) {
-      throw new IOException("You must first call Classifier#train");
-    }
-    Long output = 0l;
-    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
-      CharTermAttribute charTermAttribute = tokenStream
-          .addAttribute(CharTermAttribute.class);
-      tokenStream.reset();
-      while (tokenStream.incrementToken()) {
-        String s = charTermAttribute.toString();
-        Long d = Util.get(fst, new BytesRef(s));
-        if (d != null) {
-          output += d;
-        }
-      }
-      tokenStream.end();
-    }
-
-    double score = 1 - Math.exp(-1 * Math.abs(threshold - output.doubleValue()) / threshold);
-    return new ClassificationResult<>(output >= threshold, score);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName,
-                    String classFieldName, Analyzer analyzer) throws IOException {
-    train(leafReader, textFieldName, classFieldName, analyzer, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName,
-                    String classFieldName, Analyzer analyzer, Query query) throws IOException {
+  public BooleanPerceptronClassifier(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer,
+                                     Query query, Integer batchSize, Double threshold) throws IOException {
     this.textTerms = MultiFields.getTerms(leafReader, textFieldName);
 
     if (textTerms == null) {
@@ -144,9 +82,11 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         this.threshold = (double) sumDocFreq / 2d;
       } else {
         throw new IOException(
-            "threshold cannot be assigned since term vectors for field "
-                + textFieldName + " do not exist");
+                "threshold cannot be assigned since term vectors for field "
+                        + textFieldName + " do not exist");
       }
+    } else {
+      this.threshold = threshold;
     }
 
     // TODO : remove this map as soon as we have a writable FST
@@ -170,7 +110,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     }
     // run the search and use stored field values
     for (ScoreDoc scoreDoc : indexSearcher.search(q,
-        Integer.MAX_VALUE).scoreDocs) {
+            Integer.MAX_VALUE).scoreDocs) {
       StoredDocument doc = indexSearcher.doc(scoreDoc.doc);
 
       StorableField textField = doc.getField(textFieldName);
@@ -187,17 +127,12 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         long modifier = correctClass.compareTo(assignedClass);
         if (modifier != 0) {
           updateWeights(leafReader, scoreDoc.doc, assignedClass,
-                weights, modifier, batchCount % batchSize == 0);
+                  weights, modifier, batchCount % batchSize == 0);
         }
         batchCount++;
       }
     }
     weights.clear(); // free memory while waiting for GC
-  }
-
-  @Override
-  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    throw new IOException("training with multiple fields not supported by boolean perceptron classifier");
   }
 
   private void updateWeights(LeafReader leafReader,
@@ -210,7 +145,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     if (terms == null) {
       throw new IOException("term vectors must be stored for field "
-          + textFieldName);
+              + textFieldName);
     }
 
     TermsEnum termsEnum = terms.iterator();
@@ -240,9 +175,38 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     for (Map.Entry<String, Double> entry : weights.entrySet()) {
       scratchBytes.copyChars(entry.getKey());
       fstBuilder.add(Util.toIntsRef(scratchBytes.get(), scratchInts), entry
-          .getValue().longValue());
+              .getValue().longValue());
     }
     fst = fstBuilder.finish();
+  }
+
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public ClassificationResult<Boolean> assignClass(String text)
+          throws IOException {
+    if (textTerms == null) {
+      throw new IOException("You must first call Classifier#train");
+    }
+    Long output = 0l;
+    try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
+      CharTermAttribute charTermAttribute = tokenStream
+              .addAttribute(CharTermAttribute.class);
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        String s = charTermAttribute.toString();
+        Long d = Util.get(fst, new BytesRef(s));
+        if (d != null) {
+          output += d;
+        }
+      }
+      tokenStream.end();
+    }
+
+    double score = 1 - Math.exp(-1 * Math.abs(threshold - output.doubleValue()) / threshold);
+    return new ClassificationResult<>(output >= threshold, score);
   }
 
   /**
@@ -250,7 +214,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text)
-      throws IOException {
+          throws IOException {
     throw new RuntimeException("not implemented");
   }
 
@@ -259,7 +223,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text, int max)
-      throws IOException {
+          throws IOException {
     throw new RuntimeException("not implemented");
   }
 

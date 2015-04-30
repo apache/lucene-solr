@@ -17,6 +17,8 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -29,20 +31,32 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
 
   @Test
   public void testBasicUsage() throws Exception {
-    // usage with default MLT min docs / term freq
-    checkCorrectClassification(new KNearestNeighborClassifier(3), POLITICS_INPUT, POLITICS_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
-    // usage without custom min docs / term freq for MLT
-    checkCorrectClassification(new KNearestNeighborClassifier(3, 2, 1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, null, 3, 2, 1, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   @Test
   public void testBasicUsageWithQuery() throws Exception {
-    checkCorrectClassification(new KNearestNeighborClassifier(1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName, new TermQuery(new Term(textFieldName, "it")));
-  }
-
-  @Test
-  public void testPerformance() throws Exception {
-    checkPerformance(new KNearestNeighborClassifier(100), new MockAnalyzer(random()), categoryFieldName);
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      TermQuery query = new TermQuery(new Term(textFieldName, "it"));
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, query, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
 }

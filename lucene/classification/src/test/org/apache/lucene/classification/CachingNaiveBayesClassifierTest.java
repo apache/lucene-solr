@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -35,18 +37,46 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new CachingNaiveBayesClassifier(), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
-    checkCorrectClassification(new CachingNaiveBayesClassifier(), POLITICS_INPUT, POLITICS_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName);
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), POLITICS_INPUT, POLITICS_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   @Test
   public void testBasicUsageWithQuery() throws Exception {
-    checkCorrectClassification(new CachingNaiveBayesClassifier(), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), textFieldName, categoryFieldName, new TermQuery(new Term(textFieldName, "it")));
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      TermQuery query = new TermQuery(new Term(textFieldName, "it"));
+      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   @Test
   public void testNGramUsage() throws Exception {
-    checkCorrectClassification(new CachingNaiveBayesClassifier(), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new NGramAnalyzer(), textFieldName, categoryFieldName);
+    LeafReader leafReader = null;
+    try {
+      NGramAnalyzer analyzer = new NGramAnalyzer();
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   private class NGramAnalyzer extends Analyzer {
@@ -55,11 +85,6 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
       final Tokenizer tokenizer = new KeywordTokenizer();
       return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
     }
-  }
-
-  @Test
-  public void testPerformance() throws Exception {
-    checkPerformance(new CachingNaiveBayesClassifier(), new MockAnalyzer(random()), categoryFieldName);
   }
 
 }

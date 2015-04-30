@@ -41,14 +41,14 @@ import org.junit.Before;
  */
 public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   public final static String POLITICS_INPUT = "Here are some interesting questions and answers about Mitt Romney.. " +
-      "If you don't know the answer to the question about Mitt Romney, then simply click on the answer below the question section.";
+          "If you don't know the answer to the question about Mitt Romney, then simply click on the answer below the question section.";
   public static final BytesRef POLITICS_RESULT = new BytesRef("politics");
 
   public static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
-      " Truth is, Amazon may know more.";
+          " Truth is, Amazon may know more.";
   public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
-  private RandomIndexWriter indexWriter;
+  protected RandomIndexWriter indexWriter;
   private Directory dir;
   private FieldType ft;
 
@@ -79,53 +79,34 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     dir.close();
   }
 
-  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {
-    checkCorrectClassification(classifier, inputDoc, expectedResult, analyzer, textFieldName, classFieldName, null);
+  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult) throws Exception {
+    ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
+    assertNotNull(classificationResult.getAssignedClass());
+    assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
+    double score = classificationResult.getScore();
+    assertTrue("score should be between 0 and 1, got:" + score, score <= 1 && score >= 0);
   }
 
-  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
-    LeafReader leafReader = null;
-    try {
-      populateSampleIndex(analyzer);
-      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
-      ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
-      assertNotNull(classificationResult.getAssignedClass());
-      assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
-      double score = classificationResult.getScore();
-      assertTrue("score should be between 0 and 1, got:" + score, score <= 1 && score >= 0);
-    } finally {
-      if (leafReader != null)
-        leafReader.close();
-    }
-  }
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {
     checkOnlineClassification(classifier, inputDoc, expectedResult, analyzer, textFieldName, classFieldName, null);
   }
 
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
-    LeafReader leafReader = null;
-    try {
-      populateSampleIndex(analyzer);
-      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
-      ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
-      assertNotNull(classificationResult.getAssignedClass());
-      assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
-      double score = classificationResult.getScore();
-      assertTrue("score should be between 0 and 1, got: " + score, score <= 1 && score >= 0);
-      updateSampleIndex();
-      ClassificationResult<T> secondClassificationResult = classifier.assignClass(inputDoc);
-      assertEquals(classificationResult.getAssignedClass(), secondClassificationResult.getAssignedClass());
-      assertEquals(Double.valueOf(score), Double.valueOf(secondClassificationResult.getScore()));
+    populateSampleIndex(analyzer);
 
-    } finally {
-      if (leafReader != null)
-        leafReader.close();
-    }
+    ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
+    assertNotNull(classificationResult.getAssignedClass());
+    assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
+    double score = classificationResult.getScore();
+    assertTrue("score should be between 0 and 1, got: " + score, score <= 1 && score >= 0);
+    updateSampleIndex();
+    ClassificationResult<T> secondClassificationResult = classifier.assignClass(inputDoc);
+    assertEquals(classificationResult.getAssignedClass(), secondClassificationResult.getAssignedClass());
+    assertEquals(Double.valueOf(score), Double.valueOf(secondClassificationResult.getScore()));
+
   }
 
-  private void populateSampleIndex(Analyzer analyzer) throws IOException {
+  protected LeafReader populateSampleIndex(Analyzer analyzer) throws IOException {
     indexWriter.close();
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
@@ -134,8 +115,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     Document doc = new Document();
     text = "The traveling press secretary for Mitt Romney lost his cool and cursed at reporters " +
-        "who attempted to ask questions of the Republican presidential candidate in a public plaza near the Tomb of " +
-        "the Unknown Soldier in Warsaw Tuesday.";
+            "who attempted to ask questions of the Republican presidential candidate in a public plaza near the Tomb of " +
+            "the Unknown Soldier in Warsaw Tuesday.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
     doc.add(new Field(booleanFieldName, "true", ft));
@@ -144,7 +125,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "Mitt Romney seeks to assure Israel and Iran, as well as Jewish voters in the United" +
-        " States, that he will be tougher against Iran's nuclear ambitions than President Barack Obama.";
+            " States, that he will be tougher against Iran's nuclear ambitions than President Barack Obama.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
     doc.add(new Field(booleanFieldName, "true", ft));
@@ -152,8 +133,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "And there's a threshold question that he has to answer for the American people and " +
-        "that's whether he is prepared to be commander-in-chief,\" she continued. \"As we look to the past events, we " +
-        "know that this raises some questions about his preparedness and we'll see how the rest of his trip goes.\"";
+            "that's whether he is prepared to be commander-in-chief,\" she continued. \"As we look to the past events, we " +
+            "know that this raises some questions about his preparedness and we'll see how the rest of his trip goes.\"";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
     doc.add(new Field(booleanFieldName, "true", ft));
@@ -161,8 +142,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "Still, when it comes to gun policy, many congressional Democrats have \"decided to " +
-        "keep quiet and not go there,\" said Alan Lizotte, dean and professor at the State University of New York at " +
-        "Albany's School of Criminal Justice.";
+            "keep quiet and not go there,\" said Alan Lizotte, dean and professor at the State University of New York at " +
+            "Albany's School of Criminal Justice.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "politics", ft));
     doc.add(new Field(booleanFieldName, "true", ft));
@@ -170,8 +151,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "Standing amongst the thousands of people at the state Capitol, Jorstad, director of " +
-        "technology at the University of Wisconsin-La Crosse, documented the historic moment and shared it with the " +
-        "world through the Internet.";
+            "technology at the University of Wisconsin-La Crosse, documented the historic moment and shared it with the " +
+            "world through the Internet.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
     doc.add(new Field(booleanFieldName, "false", ft));
@@ -179,7 +160,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "So, about all those experts and analysts who've spent the past year or so saying " +
-        "Facebook was going to make a phone. A new expert has stepped forward to say it's not going to happen.";
+            "Facebook was going to make a phone. A new expert has stepped forward to say it's not going to happen.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
     doc.add(new Field(booleanFieldName, "false", ft));
@@ -187,8 +168,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     doc = new Document();
     text = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
-        " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
-        "generally transfer or store huge volumes of personal data online.";
+            " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
+            "generally transfer or store huge volumes of personal data online.";
     doc.add(new Field(textFieldName, text, ft));
     doc.add(new Field(categoryFieldName, "technology", ft));
     doc.add(new Field(booleanFieldName, "false", ft));
@@ -200,22 +181,15 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
+    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
   }
 
   protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {
-    LeafReader leafReader = null;
     long trainStart = System.currentTimeMillis();
-    try {
-      populatePerformanceIndex(analyzer);
-      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(leafReader, textFieldName, classFieldName, analyzer);
-      long trainEnd = System.currentTimeMillis();
-      long trainTime = trainEnd - trainStart;
-      assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
-    } finally {
-      if (leafReader != null)
-        leafReader.close();
-    }
+    populatePerformanceIndex(analyzer);
+    long trainEnd = System.currentTimeMillis();
+    long trainTime = trainEnd - trainStart;
+    assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
   }
 
   private void populatePerformanceIndex(Analyzer analyzer) throws IOException {

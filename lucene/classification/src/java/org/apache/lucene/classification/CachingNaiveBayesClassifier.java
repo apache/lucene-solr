@@ -49,49 +49,29 @@ import org.apache.lucene.util.BytesRef;
  */
 public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   //for caching classes this will be the classification class list
-  private ArrayList<BytesRef> cclasses = new ArrayList<>();
+  private final ArrayList<BytesRef> cclasses = new ArrayList<>();
   // it's a term-inmap style map, where the inmap contains class-hit pairs to the
   // upper term
-  private Map<String, Map<BytesRef, Integer>> termCClassHitCache = new HashMap<>();
+  private final Map<String, Map<BytesRef, Integer>> termCClassHitCache = new HashMap<>();
   // the term frequency in classes
-  private Map<BytesRef, Double> classTermFreq = new HashMap<>();
+  private final Map<BytesRef, Double> classTermFreq = new HashMap<>();
   private boolean justCachedTerms;
   private int docsWithClassSize;
 
   /**
-   * Creates a new NaiveBayes classifier with inside caching. Note that you must
-   * call {@link #train(org.apache.lucene.index.LeafReader, String, String, Analyzer) train()} before
-   * you can classify any documents. If you want less memory usage you could
+   * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you could
    * call {@link #reInitCache(int, boolean) reInitCache()}.
    */
-  public CachingNaiveBayesClassifier() {
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(leafReader, textFieldName, classFieldName, analyzer, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    super.train(leafReader, textFieldNames, classFieldName, analyzer, query);
+  public CachingNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
+    super(leafReader, analyzer, query, classFieldName, textFieldNames);
     // building the cache
-    reInitCache(0, true);
+    try {
+      reInitCache(0, true);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
+
 
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     if (leafReader == null) {

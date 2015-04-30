@@ -51,64 +51,38 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * {@link org.apache.lucene.index.LeafReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
    * index
    */
-  protected LeafReader leafReader;
+  protected final LeafReader leafReader;
 
   /**
    * names of the fields to be used as input text
    */
-  protected String[] textFieldNames;
+  protected final String[] textFieldNames;
 
   /**
    * name of the field to be used as a class / category output
    */
-  protected String classFieldName;
+  protected final String classFieldName;
 
   /**
    * {@link org.apache.lucene.analysis.Analyzer} to be used for tokenizing unseen input text
    */
-  protected Analyzer analyzer;
+  protected final Analyzer analyzer;
 
   /**
    * {@link org.apache.lucene.search.IndexSearcher} to run searches on the index for retrieving frequencies
    */
-  protected IndexSearcher indexSearcher;
+  protected final IndexSearcher indexSearcher;
 
   /**
    * {@link org.apache.lucene.search.Query} used to eventually filter the document set to be used to classify
    */
-  protected Query query;
+  protected final Query query;
 
   /**
    * Creates a new NaiveBayes classifier.
-   * Note that you must call {@link #train(org.apache.lucene.index.LeafReader, String, String, Analyzer) train()} before you can
    * classify any documents.
    */
-  public SimpleNaiveBayesClassifier() {
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(leafReader, textFieldName, classFieldName, analyzer, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query)
-      throws IOException {
-    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query)
-      throws IOException {
+  public SimpleNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
     this.leafReader = leafReader;
     this.indexSearcher = new IndexSearcher(this.leafReader);
     this.textFieldNames = textFieldNames;

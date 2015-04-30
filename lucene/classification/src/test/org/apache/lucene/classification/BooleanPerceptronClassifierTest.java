@@ -17,6 +17,8 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
@@ -28,22 +30,45 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new BooleanPerceptronClassifier(), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName);
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, null, 1, null), TECHNOLOGY_INPUT, false);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   @Test
   public void testExplicitThreshold() throws Exception {
-    checkCorrectClassification(new BooleanPerceptronClassifier(100d, 1), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName);
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, null, 1, 100d), TECHNOLOGY_INPUT, false);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
   @Test
   public void testBasicUsageWithQuery() throws Exception {
-    checkCorrectClassification(new BooleanPerceptronClassifier(), TECHNOLOGY_INPUT, false, new MockAnalyzer(random()), textFieldName, booleanFieldName, new TermQuery(new Term(textFieldName, "it")));
-  }
-
-  @Test
-  public void testPerformance() throws Exception {
-    checkPerformance(new BooleanPerceptronClassifier(), new MockAnalyzer(random()), booleanFieldName);
+    TermQuery query = new TermQuery(new Term(textFieldName, "it"));
+    LeafReader leafReader = null;
+    try {
+      MockAnalyzer analyzer = new MockAnalyzer(random());
+      leafReader = populateSampleIndex(analyzer);
+      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, query, 1, null), TECHNOLOGY_INPUT, false);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
   }
 
 }

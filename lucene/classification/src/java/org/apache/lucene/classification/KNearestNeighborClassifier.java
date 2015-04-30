@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -45,37 +46,31 @@ import org.apache.lucene.util.BytesRef;
  */
 public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
-  private MoreLikeThis mlt;
-  private String[] textFieldNames;
-  private String classFieldName;
-  private IndexSearcher indexSearcher;
+  private final MoreLikeThis mlt;
+  private final String[] textFieldNames;
+  private final String classFieldName;
+  private final IndexSearcher indexSearcher;
   private final int k;
-  private Query query;
+  private final Query query;
 
-  private int minDocsFreq;
-  private int minTermFreq;
-
-  /**
-   * Create a {@link Classifier} using kNN algorithm
-   *
-   * @param k the number of neighbors to analyze as an <code>int</code>
-   */
-  public KNearestNeighborClassifier(int k) {
+  public KNearestNeighborClassifier(LeafReader leafReader, Analyzer analyzer, Query query, int k, int minDocsFreq,
+                                    int minTermFreq, String classFieldName, String... textFieldNames) {
+    this.textFieldNames = textFieldNames;
+    this.classFieldName = classFieldName;
+    this.mlt = new MoreLikeThis(leafReader);
+    this.mlt.setAnalyzer(analyzer);
+    this.mlt.setFieldNames(textFieldNames);
+    this.indexSearcher = new IndexSearcher(leafReader);
+    if (minDocsFreq > 0) {
+      mlt.setMinDocFreq(minDocsFreq);
+    }
+    if (minTermFreq > 0) {
+      mlt.setMinTermFreq(minTermFreq);
+    }
+    this.query = query;
     this.k = k;
   }
 
-  /**
-   * Create a {@link Classifier} using kNN algorithm
-   *
-   * @param k           the number of neighbors to analyze as an <code>int</code>
-   * @param minDocsFreq the minimum number of docs frequency for MLT to be set with {@link MoreLikeThis#setMinDocFreq(int)}
-   * @param minTermFreq the minimum number of term frequency for MLT to be set with {@link MoreLikeThis#setMinTermFreq(int)}
-   */
-  public KNearestNeighborClassifier(int k, int minDocsFreq, int minTermFreq) {
-    this.k = k;
-    this.minDocsFreq = minDocsFreq;
-    this.minTermFreq = minTermFreq;
-  }
 
   /**
    * {@inheritDoc}
@@ -136,12 +131,15 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
-      Integer count = classCounts.get(cl);
-      if (count != null) {
-        classCounts.put(cl, count + 1);
-      } else {
-        classCounts.put(cl, 1);
+      StorableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
+      if (storableField != null) {
+        BytesRef cl = new BytesRef(storableField.stringValue());
+        Integer count = classCounts.get(cl);
+        if (count != null) {
+          classCounts.put(cl, count + 1);
+        } else {
+          classCounts.put(cl, 1);
+        }
       }
     }
     List<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
@@ -161,39 +159,4 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     return returnList;
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(leafReader, textFieldName, classFieldName, analyzer, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    this.textFieldNames = textFieldNames;
-    this.classFieldName = classFieldName;
-    mlt = new MoreLikeThis(leafReader);
-    mlt.setAnalyzer(analyzer);
-    mlt.setFieldNames(textFieldNames);
-    indexSearcher = new IndexSearcher(leafReader);
-    if (minDocsFreq > 0) {
-      mlt.setMinDocFreq(minDocsFreq);
-    }
-    if (minTermFreq > 0) {
-      mlt.setMinTermFreq(minTermFreq);
-    }
-    this.query = query;
-  }
 }
