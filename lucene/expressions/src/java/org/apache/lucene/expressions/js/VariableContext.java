@@ -41,9 +41,14 @@ public class VariableContext {
     STR_INDEX,
 
     /**
-     * Brackets containg an integer index (ie an array).
+     * Brackets containing an integer index (ie an array).
      */
-    INT_INDEX
+    INT_INDEX,
+
+    /**
+     * Parenthesis represent a member method to be called.
+     */
+    METHOD
   }
 
   /**
@@ -93,8 +98,13 @@ public class VariableContext {
   // i points to start of member name
   private static int addMember(final char[] text, int i, List<VariableContext> contexts) {
     int j = i + 1;
-    while (j < text.length && text[j] != '[' && text[j] != '.') ++j; // find first array or member access
-    contexts.add(new VariableContext(Type.MEMBER, new String(text, i, j - i), -1));
+    while (j < text.length && text[j] != '[' && text[j] != '.' && text[j] != '(') ++j; // find first array, member access, or method call
+    if (j + 1 < text.length && text[j] == '(' && text[j + 1] == ')') {
+      contexts.add(new VariableContext(Type.METHOD, new String(text, i, j - i), -1));
+      j += 2; //move past the parenthesis
+    } else {
+      contexts.add(new VariableContext(Type.MEMBER, new String(text, i, j - i), -1));
+    }
     return j;
   }
 

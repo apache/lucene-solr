@@ -88,6 +88,10 @@ New Features
 * LUCENE-6083: Add SpanWithinQuery and SpanContainingQuery that return
   spans inside of / containing another spans. (Paul Elschot via Robert Muir)
 
+* LUCENE-6454: Added distinction between member variable and method in
+  expression helper VariableContext
+  (Jack Conradson via Ryan Ernst)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

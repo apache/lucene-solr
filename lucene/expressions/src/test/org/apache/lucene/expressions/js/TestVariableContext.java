@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import static org.apache.lucene.expressions.js.VariableContext.Type.MEMBER;
 import static org.apache.lucene.expressions.js.VariableContext.Type.STR_INDEX;
 import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
+import static org.apache.lucene.expressions.js.VariableContext.Type.METHOD;
 
 public class TestVariableContext extends LuceneTestCase {
 
@@ -65,5 +66,26 @@ public class TestVariableContext extends LuceneTestCase {
     assertEquals(3, x.length);
     assertEquals(x[2].type, INT_INDEX);
     assertEquals(x[2].integer, 1);
+  }
+
+  public void testMethodWithMember() {
+    VariableContext[] x = VariableContext.parse("m.m()");
+    assertEquals(2, x.length);
+    assertEquals(x[1].type, METHOD);
+    assertEquals(x[1].text, "m");
+  }
+
+  public void testMethodWithStrIndex() {
+    VariableContext[] x = VariableContext.parse("member['blah'].getMethod()");
+    assertEquals(3, x.length);
+    assertEquals(x[2].type, METHOD);
+    assertEquals(x[2].text, "getMethod");
+  }
+
+  public void testMethodWithNumericalIndex() {
+    VariableContext[] x = VariableContext.parse("member[0].getMethod()");
+    assertEquals(3, x.length);
+    assertEquals(x[2].type, METHOD);
+    assertEquals(x[2].text, "getMethod");
   }
 }
