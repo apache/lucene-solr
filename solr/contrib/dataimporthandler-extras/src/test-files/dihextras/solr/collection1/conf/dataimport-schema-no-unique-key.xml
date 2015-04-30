@@ -77,6 +77,8 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
+    <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
+
 
     <!--
      Numeric field types that index each value at various levels of precision
@@ -199,7 +201,8 @@
    <field name="title" type="string" indexed="true" stored="true"/>
    <field name="author" type="string" indexed="true" stored="true" />
    <field name="text" type="text" indexed="true" stored="true" />
-   
+   <field name="foo_i" type="int" indexed="true" stored="false" />
+   <field name="home" type="latLon" indexed="true" stored="true" />
  </fields>
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
  <defaultSearchField>text</defaultSearchField>

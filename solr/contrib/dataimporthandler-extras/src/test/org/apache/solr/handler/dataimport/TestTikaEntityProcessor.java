@@ -51,6 +51,18 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
           "  </document>" +
           "</dataConfig>";
 
+  private String spatialConf =
+      "<dataConfig>" +
+          "  <dataSource type=\"BinFileDataSource\"/>" +
+          "  <document>" +
+          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" +
+          getFile("dihextras/test_jpeg.jpg").getAbsolutePath() + "\" spatialMetadataField=\"home\">" +
+          "      <field column=\"text\"/>" +
+          "     </entity>" +
+          "  </document>" +
+          "</dataConfig>";
+
+
   private String[] tests = {
       "//*[@numFound='1']"
       ,"//str[@name='author'][.='Grant Ingersoll']"
@@ -72,6 +84,10 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       , "//str[@name='text'][contains(.,'<h1>')]"
       , "//str[@name='text'][contains(.,'<div>')]"
       , "//str[@name='text'][contains(.,'class=\"classAttribute\"')]" //attributes are lower-cased
+  };
+
+  private String[] testsSpatial = {
+      "//*[@numFound='1']"
   };
 
   private String[] testsEmbedded = {
@@ -119,6 +135,16 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   public void testTikaHTMLMapperIdentity() throws Exception {
     runFullImport(getConfigHTML("identity"));
     assertQ(req("*:*"), testsHTMLIdentity);
+  }
+
+  @Test
+  public void testTikaGeoMetadata() throws Exception {
+    runFullImport(spatialConf);
+    String pt = "38.97,-77.018";
+    Double distance = 5.0d;
+    assertQ(req("q", "*:* OR foo_i:" + random().nextInt(100), "fq",
+        "{!geofilt sfield=\"home\"}\"",
+        "pt", pt, "d", String.valueOf(distance)), testsSpatial);
   }
 
   private String getConfigHTML(String htmlMapper) {

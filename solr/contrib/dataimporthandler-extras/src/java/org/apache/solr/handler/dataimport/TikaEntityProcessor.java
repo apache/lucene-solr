@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -55,6 +56,10 @@ import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
  * <p>An implementation of {@link EntityProcessor} which reads data from rich docs
  * using <a href="http://tika.apache.org/">Apache Tika</a>
  *
+ * <p>To index latitude/longitude data that might
+ * be extracted from a file's metadata, identify
+ * the geo field for this information with this attribute:
+ * <code>spatialMetadataField</code>
  *
  * @since solr 3.1
  */
@@ -67,6 +72,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private String parser;
   static final String AUTO_PARSER = "org.apache.tika.parser.AutoDetectParser";
   private String htmlMapper;
+  private String spatialMetadataField;
 
   @Override
   public void init(Context context) {
@@ -113,6 +119,8 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     if(parser == null) {
       parser = AUTO_PARSER;
     }
+
+    spatialMetadataField = context.getResolvedEntityAttribute("spatialMetadataField");
   }
 
   @Override
@@ -167,8 +175,18 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       if (s != null) row.put(col, s);
     }
     if(!"none".equals(format) ) row.put("text", sw.toString());
+    tryToAddLatLon(metadata, row);
     done = true;
     return row;
+  }
+
+  private void tryToAddLatLon(Metadata metadata, Map<String, Object> row) {
+    if (spatialMetadataField == null) return;
+    String latString = metadata.get(Metadata.LATITUDE);
+    String lonString = metadata.get(Metadata.LONGITUDE);
+    if (latString != null && lonString != null) {
+      row.put(spatialMetadataField, String.format(Locale.ROOT, "%s,%s", latString, lonString));
+    }
   }
 
   private static ContentHandler getHtmlHandler(Writer writer)

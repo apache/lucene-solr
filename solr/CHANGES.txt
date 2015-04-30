@@ -160,6 +160,9 @@ New Features
   & json.facet={ colors:{type:terms, field:color, excludeTags=COLOR} } 
   (yonik)
 
+* SOLR-7231: DIH-TikaEntityprocessor, create lat-lon field from Metadata
+  (Tim Allison via Noble Paul)
+
 
 Bug Fixes
 ----------------------
