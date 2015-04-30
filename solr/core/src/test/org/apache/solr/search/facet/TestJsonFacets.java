@@ -865,7 +865,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // range facet with sub facets and stats, with "other:all" (with excludeTags)
     client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
-            , "json.facet", "{processEmpty:false " +
+            , "json.facet", "{processEmpty:true " +
                 ", f1:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}} , excludeTags:allfilt }" +
                 ", f2:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}  }" +
                 "}"
