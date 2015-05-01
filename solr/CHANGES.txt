@@ -233,6 +233,10 @@ Bug Fixes
 * SOLR-7478: UpdateLog#close shuts down it's executor with interrupts before running it's close logic,
   possibly preventing a clean close. (Mark Miller)
 
+* SOLR-7494: Facet Module - unique() facet function was wildly inaccurate for high cardinality
+  fields. (Andy Crossen, yonik)
+
+
 Optimizations
 ----------------------
 

@@ -886,14 +886,74 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
-
   @Test
   public void testDistrib() throws Exception {
     initServers();
-    Client client = servers.getClient( random().nextInt() );
+    Client client = servers.getClient(random().nextInt());
     client.queryDefaults().set( "shards", servers.getShards() );
     doStats( client, params() );
   }
+
+
+  @Test
+  public void testBigger() throws Exception {
+    ModifiableSolrParams p = params("rows", "0", "cat_s", "cat_ss", "where_s", "where_ss");
+    //    doBigger(Client.localClient, p);
+
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards() );
+    doBigger( client, p );
+  }
+
+  public void doBigger(Client client, ModifiableSolrParams p) throws Exception {
+    MacroExpander m = new MacroExpander(p.getMap());
+
+    String cat_s = m.expand("${cat_s}");
+    String where_s = m.expand("${where_s}");
+
+    client.deleteByQuery("*:*", null);
+
+    Random r = new Random(0);  // make deterministic
+    int numCat = 1;
+    int numWhere = 2000000000;
+    int commitPercent = 10;
+    int ndocs=1000;
+
+    Map<Integer, Map<Integer, List<Integer>>> model = new HashMap();  // cat->where->list<ids>
+    for (int i=0; i<ndocs; i++) {
+      Integer cat = r.nextInt(numCat);
+      Integer where = r.nextInt(numWhere);
+      client.add( sdoc("id", i, cat_s,cat, where_s, where) , null );
+      Map<Integer,List<Integer>> sub = model.get(cat);
+      if (sub == null) {
+        sub = new HashMap<>();
+        model.put(cat, sub);
+      }
+      List<Integer> ids = sub.get(where);
+      if (ids == null) {
+        ids = new ArrayList<>();
+        sub.put(where, ids);
+      }
+      ids.add(i);
+
+      if (r.nextInt(100) < commitPercent) {
+        client.commit();
+      }
+    }
+
+    client.commit();
+
+    int sz = model.get(0).size();
+
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{type:terms, field:${cat_s}, limit:2, facet:{x:'unique($where_s)'}  }}"
+        )
+        , "facets=={ 'count':" + ndocs + "," +
+            "'f1':{  'buckets':[{ 'val':'0', 'count':" + ndocs + ", x:" + sz + " }]} } "
+    );
+  }
+
 
 
   public void XtestPercentiles() {

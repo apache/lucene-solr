@@ -386,17 +386,19 @@ abstract class UniqueSlotAcc extends SlotAcc {
     int maxExplicit=100;
     // TODO: make configurable
     // TODO: share values across buckets
-    if (unique <= maxExplicit) {
+    if (unique > 0) {
+
       List lst = new ArrayList( Math.min(unique, maxExplicit) );
 
-      if (ords != null) {
-        for (int ord=-1;;) {
-          if (++ord >= unique) break;
+      long maxOrd = ords.length();
+      if (ords != null && ords.length() > 0) {
+        for (int ord=0; lst.size() < maxExplicit;) {
           ord = ords.nextSetBit(ord);
           if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
           BytesRef val = lookupOrd(ord);
           Object o = field.getType().toObject(field, val);
           lst.add(o);
+          if (++ord >= maxOrd) break;
         }
       }
 
@@ -553,43 +555,6 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
     docToTerm = uif.new DocToTerm();
     fcontext.qcontext.addCloseHook(this);  // TODO: find way to close accumulators instead of using close hook?
     nTerms = uif.numTerms();
-  }
-
-  @Override
-  public Object getShardValue(int slot) throws IOException {
-    FixedBitSet ords = arr[slot];
-    int unique;
-    if (counts != null) {
-      unique = counts[slot];
-    } else {
-      unique = ords == null ? 0 : ords.cardinality();
-    }
-
-    SimpleOrderedMap map = new SimpleOrderedMap();
-    map.add("unique", unique);
-    map.add("nTerms", nTerms);
-
-    int maxExplicit=100;
-    // TODO: make configurable
-    // TODO: share values across buckets
-    if (unique <= maxExplicit) {
-      List lst = new ArrayList( Math.min(unique, maxExplicit) );
-
-      if (ords != null) {
-        for (int ord=-1;;) {
-          if (++ord >= unique) break;
-          ord = ords.nextSetBit(ord);
-          if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
-          BytesRef val = docToTerm.lookupOrd(ord);
-          Object o = field.getType().toObject(field, val);
-          lst.add(o);
-        }
-      }
-
-      map.add("vals", lst);
-    }
-
-    return map;
   }
 
   @Override
