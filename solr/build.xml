@@ -277,14 +277,32 @@
   <target name="validate" depends="check-example-lucene-match-version,check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
   <target name="check-example-lucene-match-version">
-    <fail message="Some example solrconfig.xml files do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
+    <property name="configsets.dir" value="${server.dir}/solr/configsets"/>
+    <fail message="Some example solrconfig.xml files under ${configsets.dir} do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
       <condition>
         <resourcecount when="greater" count="0">
-          <fileset dir="${example}" includes="**/solrconfig.xml">
+          <fileset dir="${configsets.dir}" includes="**/solrconfig.xml">
             <not>
               <contains text="&lt;luceneMatchVersion&gt;${tests.luceneMatchVersion}&lt;" casesensitive="no"/>
             </not>
           </fileset>
+        </resourcecount>
+      </condition>
+    </fail>
+    <!-- Count the immediate sub-directories of the configsets dir to ensure all sub-dirs have a solrconfig.xml -->
+    <resourcecount property="count.subdirs">
+      <dirset dir="${configsets.dir}" includes="*"/>
+    </resourcecount>
+    <!-- Ensure there is at least one sub-directory -->
+    <fail message="No sub-directories found under ${configsets.dir}">
+      <condition>
+        <equals arg1="${count.subdirs}" arg2="0"/>
+      </condition>
+    </fail>
+    <fail message="At least one sub-directory under ${configsets.dir} does not have a solrconfig.xml file">
+      <condition>
+        <resourcecount when="ne" count="${count.subdirs}">
+          <fileset dir="${configsets.dir}" includes="**/solrconfig.xml"/>
         </resourcecount>
       </condition>
     </fail>
