@@ -128,8 +128,8 @@ fi
 # test that Java exists and is executable on this server
 "$JAVA" -version >/dev/null 2>&1 || {
   echo >&2 "Java not found, or an error was encountered when running java."
-  echo >&2 "A working Java 8 is required to run Solr!"
-  echo >&2 "Please install Java 8 or fix JAVA_HOME before running this script."
+  echo >&2 "A working Java 7 or later is required to run Solr!"
+  echo >&2 "Please install Java or fix JAVA_HOME before running this script."
   echo >&2 "Command that we tried: '${JAVA} -version'"
   echo >&2 "Active Path:"
   echo >&2 "${PATH}"
