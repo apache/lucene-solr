@@ -67,9 +67,10 @@ public class UniqueAgg extends StrAggValueSource {
   }
 
   private static class Merger extends FacetSortableMerger {
+    long answer = -1;
     long sumUnique;
     Set<Object> values;
-    int shardsMissing;
+    long sumAdded;
     long shardsMissingSum;
     long shardsMissingMax;
 
@@ -79,24 +80,35 @@ public class UniqueAgg extends StrAggValueSource {
       long unique = ((Number)map.get("unique")).longValue();
       sumUnique += unique;
 
-      List vals = (List)map.get("vals");
+      int valsListed = 0;
+      List vals = (List) map.get("vals");
       if (vals != null) {
         if (values == null) {
           values = new HashSet<>(vals.size()*4);
         }
         values.addAll(vals);
-      } else {
-        shardsMissing++;
-        shardsMissingSum += unique;
-        shardsMissingMax = Math.max(shardsMissingMax, unique);
+        valsListed = vals.size();
+        sumAdded += valsListed;
       }
 
+      shardsMissingSum += unique - valsListed;
+      shardsMissingMax = Math.max(shardsMissingMax, unique - valsListed);
       // TODO: somehow get & use the count in the bucket?
     }
 
     private long getLong() {
-      long exactCount = values == null ? 0 : values.size();
-      return exactCount + shardsMissingSum;
+      if (answer >= 0) return answer;
+      answer = values == null ? 0 : values.size();
+      if (answer == 0) {
+        // either a real "0", or no values returned from shards
+        answer = shardsMissingSum;
+        return answer;
+      }
+
+      double factor = ((double)values.size()) / sumAdded;  // what fraction of listed values were unique
+      long estimate = (long)(shardsMissingSum * factor);
+      answer = values.size() + estimate;
+      return answer;
     }
 
     @Override
