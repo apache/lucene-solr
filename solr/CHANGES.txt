@@ -304,6 +304,10 @@ Other Changes
 * SOLR-7336: Added Replica.getState() and removed ZkStateReader state-related constants.
   You should use Replica.State to compare a replica's state. (Shai Erera)
 
+* SOLR-7487: Fix check-example-lucene-match-version Ant task to check luceneMatchVersion
+  in solr/server/solr/configsets instead of example and harden error checking / validation
+  logic. (hossman, Timothy Potter)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

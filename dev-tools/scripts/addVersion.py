@@ -118,12 +118,18 @@ def update_latest_constant(new_version):
 
   changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
-  
+
+def onerror(x):
+  raise x
+
 def update_example_solrconfigs(new_version):
   print('  updating example solrconfig.xml files')
   matcher = re.compile('<luceneMatchVersion>')
 
-  for root,dirs,files in os.walk('solr/example'):
+  configset_dir = 'solr/server/solr/configsets'
+  if not os.path.isdir(configset_dir):
+    raise RuntimeError("Can't locate configset dir (layout change?) : " + configset_dir)
+  for root,dirs,files in os.walk(configset_dir, onerror=onerror):
     for f in files:
       if f == 'solrconfig.xml':
         update_solrconfig(os.path.join(root, f), matcher, new_version) 
