@@ -187,7 +187,8 @@ public class Bounds
         double testRightLongitude = rightLongitude;
         if (testRightLongitude < leftLongitude)
             testRightLongitude += Math.PI * 2.0;
-        if (testRightLongitude - leftLongitude >= Math.PI * 2.0) {
+        // If the bound exceeds 180 degrees, we know we could have screwed up.
+        if (testRightLongitude - leftLongitude >= Math.PI) {
             noLongitudeBound = true;
             leftLongitude = null;
             rightLongitude = null;
@@ -244,7 +245,7 @@ public class Bounds
         double testRightLongitude = rightLongitude;
         if (testRightLongitude < leftLongitude)
             testRightLongitude += Math.PI * 2.0;
-        if (testRightLongitude - leftLongitude >= Math.PI * 2.0) {
+        if (testRightLongitude - leftLongitude >= Math.PI) {
             noLongitudeBound = true;
             leftLongitude = null;
             rightLongitude = null;

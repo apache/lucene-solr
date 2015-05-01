@@ -56,39 +56,55 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
   @Test
   public void testFailure() {
       /*
-   [junit4]   1> S-R Rel: {}, Shape {}, Rectangle {} [INTERSECTS, Geo3dShape{GeoCompositeMembershipShape: {[
-   GeoConvexPolygon: {
-   points=[
-     [X=0.03206699943821901, Y=-0.7556330442094724, Z=0.6542097599743943], 
-     [X=-0.2848733212046893, Y=-0.9533780638748927, Z=0.09958643576296423], 
-     [X=0.37929990916639644, Y=0.9241954620264722, Z=0.044657887053005746]] 
-   edges={
-     [A=0.5484584327149066, B=-0.18956034526809354, C=-0.2458316687546487, D=0.0, side=1.0] internal? false; 
-     [A=-0.13461318190686059, B=0.05049496664187115, C=0.09833758231919826, D=0.0, side=1.0] internal? false; 
-     [A=0.6383626665235883, B=-0.246709658095017, C=-0.31624772039338794, D=0.0, side=1.0] internal? false; }}]}},
-     X=0.03206699943821901, Y=-0.7556330442094724, Z=0.6542097599743943
-   Rect(minX=-52.0,maxX=50.0,minY=58.0,maxY=68.0)](no slf4j subst; sorry)
-
+   [junit4]   1> S-R Rel: {}, Shape {}, Rectangle {} [WITHIN, Geo3dShape{GeoCompositeMembershipShape: {[
+    GeoConvexPolygon: {points=[
+      [X=0.35168818443386646, Y=-0.19637966197066342, Z=0.9152870857244183],
+      [X=0.5003343189532654, Y=0.522128543226148, Z=0.6906861469771293], 
+      [X=0.8344549994139991, Y=0.216175219373972, Z=0.5069054433339593]] 
+    edges={
+      [A=-0.6135342247741855, B=0.21504338363863665, C=0.28188192383666794, D=0.0, side=-1.0] internal? false;
+      [A=0.11536057134002048, B=0.32272431860685813, C=-0.3275328920717585, D=0.0, side=-1.0] internal? false;
+      [A=0.29740830615965186, B=-0.5854932295360462, C=-0.2398962611358763, D=0.0, side=-1.0] internal? false; }}]}}, 
+    Rect(minX=-30.0,maxX=62.0,minY=30.0,maxY=88.0)](no slf4j subst; sorry)
+   [junit4] FAILURE 1.85s J2 | Geo3dShapeRectRelationTest.testGeoPolygonRect <<<
+   [junit4]    > Throwable #1: java.lang.AssertionError: Rect(minX=-30.0,maxX=62.0,minY=30.0,maxY=88.0) intersect Pt(x=82.75500168892472,y=34.2730264413182)
+   [junit4]    > 	at __randomizedtesting.SeedInfo.seed([3EBD2127AF6641F7:3A64BDAC8843B64]:0)
+   [junit4]    > 	at org.apache.lucene.spatial.spatial4j.RandomizedShapeTest._assertIntersect(RandomizedShapeTest.java:167)
+   [junit4]    > 	at org.apache.lucene.spatial.spatial4j.RandomizedShapeTest.assertRelation(RandomizedShapeTest.java:152)
+   [junit4]    > 	at org.apache.lucene.spatial.spatial4j.RectIntersectionTestHelper.testRelateWithRectangle(RectIntersectionTestHelper.java:105)
+   [junit4]    > 	at org.apache.lucene.spatial.spatial4j.Geo3dShapeRectRelationTest.testGeoPolygonRect(Geo3dShapeRectRelationTest.java:219)
     */
-      final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(68 * RADIANS_PER_DEGREE, 58 * RADIANS_PER_DEGREE, -52 * RADIANS_PER_DEGREE, 50 * RADIANS_PER_DEGREE);
+      final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
       final List<GeoPoint> points = new ArrayList<GeoPoint>();
-      points.add(new GeoPoint(40.8597568993 * RADIANS_PER_DEGREE, -87.5699819016 * RADIANS_PER_DEGREE));
-      points.add(new GeoPoint(5.71535611517 * RADIANS_PER_DEGREE, -106.636363741 * RADIANS_PER_DEGREE));
-      points.add(new GeoPoint(2.55955969779 * RADIANS_PER_DEGREE, 67.6862179901 * RADIANS_PER_DEGREE));
+      points.add(new GeoPoint(66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
+      points.add(new GeoPoint(43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
+      points.add(new GeoPoint(30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
       final GeoShape path = GeoPolygonFactory.makeGeoPolygon(points,0);
+    
+      final GeoPoint point = new GeoPoint(34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
       
-      System.err.println("Rectangle = "+rect+"; path = "+path);
+      System.err.println("Rectangle = "+rect+"; path = "+path+"; point = "+point);
 
-      // Edges intersect == OVERLAP.  This seems reasonable... between points 2 and 3 the path could well cross.
-      assertFalse(GeoArea.DISJOINT == rect.getRelationship(path));
+      /*
+         [junit4]   2> Rectangle = GeoRectangle: {toplat=1.53588974175501(87.99999999999999), bottomlat=0.5235987755982988(29.999999999999996), leftlon=-0.5235987755982988(-29.999999999999996), rightlon=1.0821041362364843(62.0)};
+         path = GeoCompositeMembershipShape: {[GeoConvexPolygon: {points=[
+         [X=0.3516881844340107, Y=-0.1963796619709742, Z=0.9152870857242963], 
+         [X=0.500334318953081, Y=0.5221285432268337, Z=0.6906861469767445], 
+         [X=0.8344549994140144, Y=0.21617521937373424, Z=0.5069054433340355]] 
+         edges={[A=-0.6135342247748885, B=0.21504338363844255, C=0.28188192383710364, D=0.0, side=-1.0] internal? false;
+         [A=0.1153605713406553, B=0.32272431860660283, C=-0.3275328920724975, D=0.0, side=-1.0] internal? false;
+         [A=0.29740830615958036, B=-0.5854932295358584, C=-0.2398962611360862, D=0.0, side=-1.0] internal? false; }}]};
+         point = [X=0.10421465978661167, Y=0.8197657811637465, Z=0.5631370780889439]
+        */
+      // Apparently the rectangle thinks the polygon is completely within it... "shape inside rectangle"
+      assertTrue(GeoArea.WITHIN == rect.getRelationship(path));
+
+      // Point is within path? Apparently not...
+      assertFalse(path.isWithin(point));
+
+      // If it is within the path, it must be within the rectangle, and similarly visa versa
+      assertFalse(rect.isWithin(point));
       
-      final GeoBBox pathBounds = getBoundingBox(path);
-      // Path bounds go around the back side of the world rather than the front.  The actual path goes around the front.  This is I think what the problem is.
-      System.err.println("Path bounds = "+pathBounds);
-      assertFalse(GeoArea.DISJOINT == rect.getRelationship(pathBounds));
-      
-      final GeoBBox rectBounds = getBoundingBox(rect);
-      assertFalse(GeoArea.DISJOINT == rectBounds.getRelationship(pathBounds));
   }
 
   protected static GeoBBox getBoundingBox(final GeoShape path) {

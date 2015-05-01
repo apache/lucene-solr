@@ -178,6 +178,7 @@ public class GeoPathTest {
         assertEquals(0.4046919,b.getRightLongitude(),0.000001);
         assertEquals(-0.3999999,b.getMinLatitude(),0.000001);
         assertEquals(0.3999999,b.getMaxLatitude(),0.000001);
+
     }
 
 }

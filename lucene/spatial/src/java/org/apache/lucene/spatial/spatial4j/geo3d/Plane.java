@@ -27,6 +27,13 @@ public class Plane extends Vector
     
     public final double D;
   
+    /** Construct a plane with all four coefficients defined.
+    */
+    public Plane(final double A, final double B, final double C, final double D) {
+        super(A,B,C);
+        this.D = D;
+    }
+    
     /** Construct a plane through two points and origin.
      *@param A is the first point (origin based).
      *@param B is the second point (origin based).
@@ -68,9 +75,8 @@ public class Plane extends Vector
      *@param v is the vector.
      *@return the result of the evaluation.
      */
-    @Override
     public double evaluate(final Vector v) {
-        return super.evaluate(v) + D;
+        return dotProduct(v) + D;
     }
 
     /** Evaluate the plane equation for a given point, as represented
@@ -78,9 +84,8 @@ public class Plane extends Vector
      *@param x,y,z is the vector.
      *@return the result of the evaluation.
      */
-    @Override
     public double evaluate(final double x, final double y, final double z) {
-        return super.evaluate(x,y,z) + D;
+        return dotProduct(x,y,z) + D;
     }
 
     /** Evaluate the plane equation for a given point, as represented
@@ -88,7 +93,6 @@ public class Plane extends Vector
      *@param v is the vector.
      *@return true if the result is on the plane.
      */
-    @Override
     public boolean evaluateIsZero(final Vector v) {
         return Math.abs(evaluate(v)) < MINIMUM_RESOLUTION;
     }
@@ -98,7 +102,6 @@ public class Plane extends Vector
      *@param x,y,z is the vector.
      *@return true if the result is on the plane.
      */
-    @Override
     public boolean evaluateIsZero(final double x, final double y, final double z) {
         return Math.abs(evaluate(x,y,z)) < MINIMUM_RESOLUTION;
     }
@@ -113,6 +116,159 @@ public class Plane extends Vector
         return new Plane(normVect,this.D);
     }
 
+    /** Find points on the boundary of the intersection of a plane and the unit sphere, 
+    * given a starting point, and ending point, and a list of proportions of the arc (e.g. 0.25, 0.5, 0.75).
+    * The angle between the starting point and ending point is assumed to be less than pi.
+    */
+    public GeoPoint[] interpolate(final GeoPoint start, final GeoPoint end, final double[] proportions) {
+        // Steps:
+        // (1) Translate (x0,y0,z0) of endpoints into origin-centered place:
+        // x1 = x0 + D*A
+        // y1 = y0 + D*B
+        // z1 = z0 + D*C
+        // (2) Rotate counterclockwise in x-y:
+        // ra = -atan2(B,A)
+        // x2 = x1 cos ra - y1 sin ra
+        // y2 = x1 sin ra + y1 cos ra
+        // z2 = z1
+        // Faster:
+        // cos ra = A/sqrt(A^2+B^2+C^2)
+        // sin ra = -B/sqrt(A^2+B^2+C^2)
+        // cos (-ra) = A/sqrt(A^2+B^2+C^2)
+        // sin (-ra) = B/sqrt(A^2+B^2+C^2)
+        // (3) Rotate clockwise in x-z:
+        // ha = pi/2 - asin(C/sqrt(A^2+B^2+C^2))
+        // x3 = x2 cos ha - z2 sin ha
+        // y3 = y2
+        // z3 = x2 sin ha + z2 cos ha
+        // At this point, z3 should be zero.
+        // Faster:
+        // sin(ha) = cos(asin(C/sqrt(A^2+B^2+C^2))) = sqrt(1 - C^2/(A^2+B^2+C^2)) = sqrt(A^2+B^2)/sqrt(A^2+B^2+C^2)
+        // cos(ha) = sin(asin(C/sqrt(A^2+B^2+C^2))) = C/sqrt(A^2+B^2+C^2)
+        // (4) Compute interpolations by getting longitudes of original points
+        // la = atan2(y3,x3)
+        // (5) Rotate new points (xN0, yN0, zN0) counter-clockwise in x-z:
+        // ha = -(pi - asin(C/sqrt(A^2+B^2+C^2)))
+        // xN1 = xN0 cos ha - zN0 sin ha
+        // yN1 = yN0
+        // zN1 = xN0 sin ha + zN0 cos ha
+        // (6) Rotate new points clockwise in x-y:
+        // ra = atan2(B,A)
+        // xN2 = xN1 cos ra - yN1 sin ra
+        // yN2 = xN1 sin ra + yN1 cos ra
+        // zN2 = zN1
+        // (7) Translate new points:
+        // xN3 = xN2 - D*A
+        // yN3 = yN2 - D*B
+        // zN3 = zN2 - D*C
+
+        // First, calculate the angles and their sin/cos values
+        double A = x;
+        double B = y;
+        double C = z;
+        
+        // Translation amounts
+        final double transX = -D * A;
+        final double transY = -D * B;
+        final double transZ = -D * C;
+
+        double cosRA;
+        double sinRA;
+        double cosHA;
+        double sinHA;
+        
+        double magnitude = magnitude();
+        if (magnitude >= MINIMUM_RESOLUTION) {
+            final double denom = 1.0/magnitude;
+            A *= denom;
+            B *= denom;
+            C *= denom;
+            
+            // cos ra = A/sqrt(A^2+B^2+C^2)
+            // sin ra = -B/sqrt(A^2+B^2+C^2)
+            // cos (-ra) = A/sqrt(A^2+B^2+C^2)
+            // sin (-ra) = B/sqrt(A^2+B^2+C^2)
+            final double xyMagnitude = Math.sqrt(A*A + B*B);
+            if (xyMagnitude >= MINIMUM_RESOLUTION) {
+                final double xyDenom = 1.0/xyMagnitude;
+                cosRA = A * xyDenom;
+                sinRA = -B * xyDenom;
+            } else {
+                cosRA = 1.0;
+                sinRA = 0.0;
+            }
+            
+            // sin(ha) = cos(asin(C/sqrt(A^2+B^2+C^2))) = sqrt(1 - C^2/(A^2+B^2+C^2)) = sqrt(A^2+B^2)/sqrt(A^2+B^2+C^2)
+            // cos(ha) = sin(asin(C/sqrt(A^2+B^2+C^2))) = C/sqrt(A^2+B^2+C^2)
+            sinHA = xyMagnitude;
+            cosHA = C;
+        } else {
+            cosRA = 1.0;
+            sinRA = 0.0;
+            cosHA = 1.0;
+            sinHA = 0.0;
+        }
+        
+        // Forward-translate the start and end points
+        final Vector modifiedStart = modify(start, transX, transY, transZ, sinRA, cosRA, sinHA, cosHA);
+        final Vector modifiedEnd = modify(end, transX, transY, transZ, sinRA, cosRA, sinHA, cosHA);
+        if (Math.abs(modifiedStart.z) >= MINIMUM_RESOLUTION)
+            throw new IllegalArgumentException("Start point was not on plane: "+modifiedStart.z);
+        if (Math.abs(modifiedEnd.z) >= MINIMUM_RESOLUTION)
+            throw new IllegalArgumentException("End point was not on plane: "+modifiedEnd.z);
+        
+        // Compute the angular distance between start and end point
+        final double startAngle = Math.atan2(modifiedStart.y, modifiedStart.x);
+        final double endAngle = Math.atan2(modifiedEnd.y, modifiedEnd.x);
+        
+        final double startMagnitude = Math.sqrt(modifiedStart.x * modifiedStart.x + modifiedStart.y * modifiedStart.y);
+        double delta;
+        double beginAngle;
+        
+        double newEndAngle = endAngle;
+        while (newEndAngle < startAngle)  {
+            newEndAngle += Math.PI * 2.0;
+        }
+        
+        if (newEndAngle - startAngle <= Math.PI) {
+            delta = newEndAngle - startAngle;
+            beginAngle = startAngle;
+        } else {
+            double newStartAngle = startAngle;
+            while (newStartAngle < endAngle) {
+                newStartAngle += Math.PI * 2.0;
+            }
+            delta = newStartAngle - endAngle;
+            beginAngle = endAngle;
+        }
+        
+        final GeoPoint[] returnValues = new GeoPoint[proportions.length];
+        for (int i = 0; i < returnValues.length; i++) {
+            final double newAngle = startAngle + proportions[i] * delta;
+            final double sinNewAngle = Math.sin(newAngle);
+            final double cosNewAngle = Math.cos(newAngle);
+            final Vector newVector = new Vector(cosNewAngle * startMagnitude, sinNewAngle * startMagnitude, 0.0);
+            returnValues[i] = reverseModify(newVector, transX, transY, transZ, sinRA, cosRA, sinHA, cosHA);
+        }
+        
+        return returnValues;
+    }
+    
+    /** Modify a point to produce a vector in translated/rotated space.
+    */
+    protected static Vector modify(final GeoPoint start, final double transX, final double transY, final double transZ,
+        final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
+        return start.translate(transX, transY, transZ).rotateXY(sinRA, cosRA).rotateXZ(sinHA, cosHA);
+    }
+
+    /** Reverse modify a point to produce a GeoPoint in normal space.
+    */
+    protected static GeoPoint reverseModify(final Vector point, final double transX, final double transY, final double transZ,
+        final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
+        final Vector result = point.rotateXZ(-sinHA, cosHA).rotateXY(-sinRA, cosRA).translate(-transX, -transY, -transZ);
+        return new GeoPoint(result.x, result.y, result.z);
+    }
+    
     /** Find the intersection points between two planes, given a set of bounds.
     *@param q is the plane to intersect with.
     *@param bounds is the set of bounds.
@@ -823,14 +979,26 @@ public class Plane extends Vector
     protected boolean isNumericallyIdentical(final Plane p) {
         // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
         // (using D) and see if it also on the other plane.
-        if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION_SQUARED)
+        if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION)
             return false;
-        if (Math.abs(this.z * p.x - this.x * p.z) >= MINIMUM_RESOLUTION_SQUARED)
+        if (Math.abs(this.z * p.x - this.x * p.z) >= MINIMUM_RESOLUTION)
             return false;
-        if (Math.abs(this.x * p.y - this.y * p.x) >= MINIMUM_RESOLUTION_SQUARED)
+        if (Math.abs(this.x * p.y - this.y * p.x) >= MINIMUM_RESOLUTION)
             return false;
 
-        // Now, see whether the parallel planes are in fact on top of one another.  
+        // Now, see whether the parallel planes are in fact on top of one another. 
+        // The math:
+        // We need a single point that fulfills:
+        // Ax + By + Cz + D = 0
+        // Pick:
+        // x0 = -(A * D) / (A^2 + B^2 + C^2)
+        // y0 = -(B * D) / (A^2 + B^2 + C^2)
+        // z0 = -(C * D) / (A^2 + B^2 + C^2)
+        // Check:
+        // A (x0) + B (y0) + C (z0) + D =? 0
+        // A (-(A * D) / (A^2 + B^2 + C^2)) + B (-(B * D) / (A^2 + B^2 + C^2)) + C (-(C * D) / (A^2 + B^2 + C^2)) + D ?= 0
+        // -D [ A^2 / (A^2 + B^2 + C^2) + B^2 / (A^2 + B^2 + C^2) + C^2 / (A^2 + B^2 + C^2)] + D ?= 0
+        // Yes.
         final double denom = 1.0 / (p.x * p.x + p.y * p.y + p.z * p.z);
         return evaluateIsZero(- p.x * p.D * denom, - p.y * p.D * denom, - p.z * p.D * denom);
     }

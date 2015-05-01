@@ -38,7 +38,7 @@ public class GeoPoint extends Vector
           
     public double arcDistance(final GeoPoint v)
     {
-        return Tools.safeAcos(evaluate(v));
+        return Tools.safeAcos(dotProduct(v));
     }
 
 }

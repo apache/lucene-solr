@@ -229,7 +229,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
             edge.recordBounds(bounds,membershipBounds);
         }
 
-        if (fullDistance >= Math.PI * 0.5) {
+        if (fullDistance >= Math.PI) {
             // We can't reliably assume that bounds did its longitude calculation right, so we force it to be unbounded.
             bounds.noLongitudeBound();
         }

@@ -42,7 +42,23 @@ public class PlaneTest {
         final Plane p2 = new Plane(v2,0.2*constant);
         assertTrue(p1.isNumericallyIdentical(p2));
     }
-    
 
+    @Test
+    public void testInterpolation() {
+        // [X=0.35168818443386646, Y=-0.19637966197066342, Z=0.9152870857244183],
+        // [X=0.5003343189532654, Y=0.522128543226148, Z=0.6906861469771293], 
+
+        final GeoPoint start = new GeoPoint(0.35168818443386646,-0.19637966197066342,0.9152870857244183);
+        final GeoPoint end = new GeoPoint(0.5003343189532654,0.522128543226148,0.6906861469771293);
+
+        // [A=-0.6135342247741855, B=0.21504338363863665, C=0.28188192383666794, D=0.0, side=-1.0] internal? false;
+        final Plane p = new Plane(-0.6135342247741855,0.21504338363863665,0.28188192383666794,0.0);
+        
+        final GeoPoint[] points = p.interpolate(start,end,new double[]{0.25,0.50,0.75});
+        
+        for (GeoPoint point : points) {
+            assertTrue(p.evaluateIsZero(point));
+        }
+    }
 }
 

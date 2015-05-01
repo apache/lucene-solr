@@ -70,42 +70,24 @@ public class Vector
         return new Vector(x*normFactor,y*normFactor,z*normFactor);
     }
     
-    /** Evaluate a vector (dot product) and check for "zero".
-     *@param v is the vector to evaluate.
-     *@return true if the evaluation yielded zero.
-     */
-    public boolean evaluateIsZero(final Vector v) {
-        return Math.abs(evaluate(v)) < MINIMUM_RESOLUTION;
-    }
-    
-    /** Evaluate a vector (do a dot product) snd check for "zero".
-     *@param x is the x value of the vector to evaluate.
-     *@param y is the x value of the vector to evaluate.
-     *@param z is the x value of the vector to evaluate.
-     *@return true if the evaluation yielded zero.
-     */
-    public boolean evaluateIsZero(final double x, final double y, final double z) {
-        return Math.abs(evaluate(x,y,z)) < MINIMUM_RESOLUTION;
-    }
-
-    /** Evaluate a vector (do a dot product).
-     *@param v is the vector to evaluate.
+    /** Do a dot product.
+     *@param v is the vector to multiply.
      *@return the result.
      */
-    public double evaluate(final Vector v) {
+    public double dotProduct(final Vector v) {
         return this.x * v.x + this.y * v.y + this.z * v.z;
     }
 
-    /** Evaluate a vector (do a dot product).
-     *@param x is the x value of the vector to evaluate.
-     *@param y is the x value of the vector to evaluate.
-     *@param z is the x value of the vector to evaluate.
+    /** Do a dot product.
+     *@param x is the x value of the vector to multiply.
+     *@param y is the y value of the vector to multiply.
+     *@param z is the z value of the vector to multiply.
      *@return the result.
      */
-    public double evaluate(final double x, final double y, final double z) {
+    public double dotProduct(final double x, final double y, final double z) {
         return this.x * x + this.y * y + this.z * z;
     }
-
+    
     /** Determine if this vector, taken from the origin,
      * describes a point within a set of planes.
      *@param bounds is the first part of the set of planes.
@@ -123,6 +105,48 @@ public class Vector
                 return false;
         }
         return true;
+    }
+
+    /** Translate vector.
+    */
+    public Vector translate(final double xOffset, final double yOffset, final double zOffset) {
+        return new Vector(x - xOffset, y - yOffset, z - zOffset);
+    }
+    
+    /** Rotate vector counter-clockwise in x-y by an angle.
+    */
+    public Vector rotateXY(final double angle) {
+        return rotateXY(Math.sin(angle),Math.cos(angle));
+    }
+    
+    /** Rotate vector counter-clockwise in x-y by an angle, expressed as sin and cos.
+    */
+    public Vector rotateXY(final double sinAngle, final double cosAngle) {
+        return new Vector(x * cosAngle - y * sinAngle, x * sinAngle + y * cosAngle, z);
+    }
+
+    /** Rotate vector counter-clockwise in x-z by an angle.
+    */
+    public Vector rotateXZ(final double angle) {
+        return rotateXZ(Math.sin(angle),Math.cos(angle));
+    }
+    
+    /** Rotate vector counter-clockwise in x-z by an angle, expressed as sin and cos.
+    */
+    public Vector rotateXZ(final double sinAngle, final double cosAngle) {
+        return new Vector(x * cosAngle - z * sinAngle, y, x * sinAngle + z * cosAngle);
+    }
+
+    /** Rotate vector counter-clockwise in z-y by an angle.
+    */
+    public Vector rotateZY(final double angle) {
+        return rotateZY(Math.sin(angle),Math.cos(angle));
+    }
+    
+    /** Rotate vector counter-clockwise in z-y by an angle, expressed as sin and cos.
+    */
+    public Vector rotateZY(final double sinAngle, final double cosAngle) {
+        return new Vector(x, z * sinAngle + y * cosAngle, z * cosAngle - y * sinAngle);
     }
 
     /** Compute the square of a straight-line distance to a point described by the
@@ -182,7 +206,7 @@ public class Vector
      *@return the square of the normal distance.
      */
     public double normalDistanceSquared(final Vector v) {
-        double t = x*v.x + y*v.y + z*v.z;
+        double t = dotProduct(v);
         double deltaX = this.x * t - v.x;
         double deltaY = this.y * t - v.y;
         double deltaZ = this.z * t - v.z;
@@ -198,7 +222,7 @@ public class Vector
      *@return the square of the normal distance.
      */
     public double normalDistanceSquared(final double x, final double y, final double z) {
-        double t = this.x*x + this.y*y + this.z*z;
+        double t = dotProduct(x,y,z);
         double deltaX = this.x * t - x;
         double deltaY = this.y * t - y;
         double deltaZ = this.z * t - z;

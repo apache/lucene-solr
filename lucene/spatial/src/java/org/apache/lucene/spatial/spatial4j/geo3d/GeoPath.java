@@ -677,7 +677,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape
             lowerConnectingPlane.recordBounds(bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
             startCutoffPlane.recordBounds(bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
             endCutoffPlane.recordBounds(bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
-            if (fullDistance >= Math.PI * 0.5) {
+            if (fullDistance >= Math.PI) {
                 // Too large a segment basically means that we can confuse the Bounds object.  Specifically, if our span exceeds 180 degrees
                 // in longitude (which even a segment whose actual length is less than that might if it goes close to a pole).
                 // Unfortunately, we can get arbitrarily close to the pole, so this may still not work in all cases.
