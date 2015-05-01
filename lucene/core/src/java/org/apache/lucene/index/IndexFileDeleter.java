@@ -143,8 +143,6 @@ final class IndexFileDeleter implements Closeable {
 
     // First pass: walk the files and initialize our ref
     // counts:
-    long currentGen = segmentInfos.getGeneration();
-
     CommitPoint currentCommitPoint = null;
     String[] files = directory.listAll();
 
@@ -178,14 +176,6 @@ final class IndexFileDeleter implements Closeable {
               // as if the file does not exist
               if (infoStream.isEnabled("IFD")) {
                 infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
-              }
-            } catch (IOException e) {
-              if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen && directory.fileLength(fileName) > 0) {
-                throw e;
-              } else {
-                // Most likely we are opening an index that
-                // has an aborted "future" commit, so suppress
-                // exc in this case
               }
             }
             if (sis != null) {

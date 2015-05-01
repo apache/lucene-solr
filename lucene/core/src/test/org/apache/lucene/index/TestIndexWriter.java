@@ -73,7 +73,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -2321,7 +2320,9 @@ public class TestIndexWriter extends LuceneTestCase {
       BaseDirectoryWrapper dir = newDirectory();
 
       // Create a corrupt first commit:
-      dir.createOutput("segments_0", IOContext.DEFAULT).close();
+      dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS,
+                                                             "",
+                                                             0), IOContext.DEFAULT).close();
 
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       int mode = i/2;
@@ -2342,9 +2343,6 @@ public class TestIndexWriter extends LuceneTestCase {
           new IndexWriter(dir, iwc).close();
         } else {
           new IndexWriter(dir, iwc).rollback();
-        }
-        if (mode != 0) {
-          fail("expected exception");
         }
       } catch (IOException ioe) {
         // OpenMode.APPEND should throw an exception since no
