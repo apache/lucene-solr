@@ -308,6 +308,10 @@ Other Changes
   in solr/server/solr/configsets instead of example and harden error checking / validation
   logic. (hossman, Timothy Potter)
 
+* SOLR-7409: When there are multiple dataimport handlers defined, the admin UI
+  was listing them in a random order.  Now they are sorted in a natural order
+  that handles numbers properly. (Jellyfrog via Shawn Heisey)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

@@ -45,7 +45,7 @@ sammy.bind
               dataimport_handlers.push( key );
             }
           }
-          params.callback( dataimport_handlers );
+          params.callback( dataimport_handlers.sort(naturalSort) );
         },
         error : function( xhr, text_status, error_thrown)
         {
