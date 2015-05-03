@@ -32,6 +32,7 @@ require
     'lib/order!lib/ZeroClipboard',
     'lib/order!lib/d3',
     'lib/order!lib/chosen',
+    'lib/order!lib/naturalSort',
     'lib/order!scripts/app',
 
     'lib/order!scripts/analysis',
