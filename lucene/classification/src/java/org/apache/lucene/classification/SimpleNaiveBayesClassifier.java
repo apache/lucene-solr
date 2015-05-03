@@ -80,7 +80,13 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
    * Creates a new NaiveBayes classifier.
-   * classify any documents.
+   *
+   * @param leafReader     the reader on the index to be used for classification
+   * @param analyzer       an {@link Analyzer} used to analyze unseen text
+   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
+   *                       if all the indexed docs should be used
+   * @param classFieldName the name of the field used as the output for the classifier
+   * @param textFieldNames the name of the fields used as the inputs for the classifier
    */
   public SimpleNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
     this.leafReader = leafReader;
@@ -183,7 +189,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
         q.add(query, BooleanClause.Occur.MUST);
       }
       indexSearcher.search(q,
-          totalHitCountCollector);
+              totalHitCountCollector);
       docCount = totalHitCountCollector.getTotalHits();
     }
     return docCount;

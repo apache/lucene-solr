@@ -59,8 +59,15 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   private int docsWithClassSize;
 
   /**
-   * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you could
-   * call {@link #reInitCache(int, boolean) reInitCache()}.
+   * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you could call
+   * {@link #reInitCache(int, boolean) reInitCache()}.
+   *
+   * @param leafReader     the reader on the index to be used for classification
+   * @param analyzer       an {@link Analyzer} used to analyze unseen text
+   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
+   *                       if all the indexed docs should be used
+   * @param classFieldName the name of the field used as the output for the classifier
+   * @param textFieldNames the name of the fields used as the inputs for the classifier
    */
   public CachingNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
     super(leafReader, analyzer, query, classFieldName, textFieldNames);
