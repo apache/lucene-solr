@@ -72,7 +72,8 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
    */
   @Override
   public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
-    if (plane.evaluate(this) == 0.0)
+    // If not on the plane, no intersection
+    if (!plane.evaluateIsZero(this))
       return false;
 
     for (Membership m : bounds) {
@@ -183,9 +184,12 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
    */
   @Override
   public int getRelationship(final GeoShape shape) {
-    if (shape.isWithin(this))
+    if (shape.isWithin(this)) {
+      //System.err.println("Degenerate point "+this+" is WITHIN shape "+shape);
       return CONTAINS;
+    }
 
+    //System.err.println("Degenerate point "+this+" is NOT within shape "+shape);
     return DISJOINT;
   }
 

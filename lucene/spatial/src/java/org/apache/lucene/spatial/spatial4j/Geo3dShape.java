@@ -91,6 +91,8 @@ public class Geo3dShape implements Shape {
     return SpatialRelation.DISJOINT;
   }
 
+  protected final double ROUNDOFF_ADJUSTMENT = 0.01;
+  
   @Override
   public Rectangle getBoundingBox() {
     if (boundingBox == null) {
@@ -116,7 +118,7 @@ public class Geo3dShape implements Shape {
       } else {
         maxLat = bounds.getMaxLatitude().doubleValue() * DEGREES_PER_RADIAN;
       }
-      boundingBox = new RectangleImpl(leftLon, rightLon, minLat, maxLat, ctx);
+      boundingBox = new RectangleImpl(leftLon, rightLon, minLat, maxLat, ctx).getBuffered(ROUNDOFF_ADJUSTMENT, ctx);
     }
     return boundingBox;
   }

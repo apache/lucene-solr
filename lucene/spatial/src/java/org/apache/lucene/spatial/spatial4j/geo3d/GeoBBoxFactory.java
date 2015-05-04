@@ -45,17 +45,17 @@ public class GeoBBoxFactory {
       leftLon = -Math.PI;
     if (rightLon > Math.PI)
       rightLon = Math.PI;
-    if (leftLon == -Math.PI && rightLon == Math.PI) {
-      if (topLat == Math.PI * 0.5 && bottomLat == -Math.PI * 0.5)
+    if (Math.abs(leftLon + Math.PI) < Vector.MINIMUM_RESOLUTION && Math.abs(rightLon - Math.PI) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION && Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION)
         return new GeoWorld();
-      if (topLat == bottomLat) {
-        if (topLat == Math.PI * 0.5 || topLat == -Math.PI * 0.5)
+      if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_RESOLUTION) {
+        if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION || Math.abs(topLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION)
           return new GeoDegeneratePoint(topLat, 0.0);
         return new GeoDegenerateLatitudeZone(topLat);
       }
-      if (topLat == Math.PI * 0.5)
+      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION)
         return new GeoNorthLatitudeZone(bottomLat);
-      else if (bottomLat == -Math.PI * 0.5)
+      else if (Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION)
         return new GeoSouthLatitudeZone(topLat);
       return new GeoLatitudeZone(topLat, bottomLat);
     }
@@ -64,7 +64,7 @@ public class GeoBBoxFactory {
     if (extent < 0.0)
       extent += Math.PI * 2.0;
     if (topLat == Math.PI * 0.5 && bottomLat == -Math.PI * 0.5) {
-      if (leftLon == rightLon)
+      if (Math.abs(leftLon - rightLon) < Vector.MINIMUM_RESOLUTION)
         return new GeoDegenerateLongitudeSlice(leftLon);
 
       if (extent >= Math.PI)
@@ -73,32 +73,35 @@ public class GeoBBoxFactory {
       return new GeoLongitudeSlice(leftLon, rightLon);
     }
     //System.err.println(" not longitude slice");
-    if (leftLon == rightLon) {
-      if (topLat == bottomLat)
+    if (Math.abs(leftLon - rightLon) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_RESOLUTION)
         return new GeoDegeneratePoint(topLat, leftLon);
       return new GeoDegenerateVerticalLine(topLat, bottomLat, leftLon);
     }
     //System.err.println(" not vertical line");
     if (extent >= Math.PI) {
-      if (topLat == bottomLat) {
+      if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_RESOLUTION) {
         //System.err.println(" wide degenerate line");
         return new GeoWideDegenerateHorizontalLine(topLat, leftLon, rightLon);
       }
-      if (topLat == Math.PI * 0.5) {
+      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION) {
         return new GeoWideNorthRectangle(bottomLat, leftLon, rightLon);
-      } else if (bottomLat == -Math.PI * 0.5) {
+      } else if (Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION) {
         return new GeoWideSouthRectangle(topLat, leftLon, rightLon);
       }
       //System.err.println(" wide rect");
       return new GeoWideRectangle(topLat, bottomLat, leftLon, rightLon);
     }
-    if (topLat == bottomLat) {
+    if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION || Math.abs(topLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION) {
+        return new GeoDegeneratePoint(topLat, 0.0);
+      }
       //System.err.println(" horizontal line");
       return new GeoDegenerateHorizontalLine(topLat, leftLon, rightLon);
     }
-    if (topLat == Math.PI * 0.5) {
+    if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION) {
       return new GeoNorthRectangle(bottomLat, leftLon, rightLon);
-    } else if (bottomLat == -Math.PI * 0.5) {
+    } else if (Math.abs(bottomLat + Math.PI * 0.5) <  Vector.MINIMUM_RESOLUTION) {
       return new GeoSouthRectangle(topLat, leftLon, rightLon);
     }
     //System.err.println(" rectangle");
