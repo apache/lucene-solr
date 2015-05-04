@@ -17,16 +17,19 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** All bounding box shapes have this interface in common.
-* This describes methods that bounding boxes have above and beyond
-* GeoMembershipShape's.
-*/
+/**
+ * All bounding box shapes have this interface in common.
+ * This describes methods that bounding boxes have above and beyond
+ * GeoMembershipShape's.
+ */
 public interface GeoBBox extends GeoMembershipShape, GeoSizeable, GeoArea {
 
-    /** Expand box by specified angle.
-     *@param angle is the angle amount to expand the GeoBBox by.
-     *@return a new GeoBBox.
-     */
-    public GeoBBox expand(double angle);
-    
+  /**
+   * Expand box by specified angle.
+   *
+   * @param angle is the angle amount to expand the GeoBBox by.
+   * @return a new GeoBBox.
+   */
+  public GeoBBox expand(double angle);
+
 }

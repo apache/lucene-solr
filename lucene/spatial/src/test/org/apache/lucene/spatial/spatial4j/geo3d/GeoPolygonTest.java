@@ -17,65 +17,68 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GeoPolygonTest {
 
 
-    @Test
-    public void testPolygonPointWithin() {
-        GeoMembershipShape c;
-        GeoPoint gp;
-        List<GeoPoint> points;
-        
-        points = new ArrayList<GeoPoint>();
-        points.add(new GeoPoint(-0.1,-0.5));
-        points.add(new GeoPoint(0.0,-0.6));
-        points.add(new GeoPoint(0.1,-0.5));
-        points.add(new GeoPoint(0.0,-0.4));
-        
-        c = GeoPolygonFactory.makeGeoPolygon(points,0);
-        // Sample some points within
-        gp = new GeoPoint(0.0,-0.5);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.55);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.45);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(-0.05,-0.5);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.05,-0.5);
-        assertTrue(c.isWithin(gp));
-        // Sample some nearby points outside
-        gp = new GeoPoint(0.0,-0.65);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.35);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(-0.15,-0.5);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(0.15,-0.5);
-        assertFalse(c.isWithin(gp));        
-        // Random points outside
-        gp = new GeoPoint(0.0,0.0);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(Math.PI * 0.5,0.0);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(0.0,Math.PI);
-        assertFalse(c.isWithin(gp));
-        
-        points = new ArrayList<GeoPoint>();
-        points.add(new GeoPoint(-0.1,-0.5));
-        points.add(new GeoPoint(-0.01,-0.6));
-        points.add(new GeoPoint(-0.1,-0.7));
-        points.add(new GeoPoint(0.0,-0.8));
-        points.add(new GeoPoint(0.1,-0.7));
-        points.add(new GeoPoint(0.01,-0.6));
-        points.add(new GeoPoint(0.1,-0.5));
-        points.add(new GeoPoint(0.0,-0.4));
+  @Test
+  public void testPolygonPointWithin() {
+    GeoMembershipShape c;
+    GeoPoint gp;
+    List<GeoPoint> points;
+
+    points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(-0.1, -0.5));
+    points.add(new GeoPoint(0.0, -0.6));
+    points.add(new GeoPoint(0.1, -0.5));
+    points.add(new GeoPoint(0.0, -0.4));
+
+    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    // Sample some points within
+    gp = new GeoPoint(0.0, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.55);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.45);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(-0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    // Sample some nearby points outside
+    gp = new GeoPoint(0.0, -0.65);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.35);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(-0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    // Random points outside
+    gp = new GeoPoint(0.0, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(0.0, Math.PI);
+    assertFalse(c.isWithin(gp));
+
+    points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(-0.1, -0.5));
+    points.add(new GeoPoint(-0.01, -0.6));
+    points.add(new GeoPoint(-0.1, -0.7));
+    points.add(new GeoPoint(0.0, -0.8));
+    points.add(new GeoPoint(0.1, -0.7));
+    points.add(new GeoPoint(0.01, -0.6));
+    points.add(new GeoPoint(0.1, -0.5));
+    points.add(new GeoPoint(0.0, -0.4));
         
         /*
         System.out.println("Points: ");
@@ -83,60 +86,60 @@ public class GeoPolygonTest {
             System.out.println(" "+p);
         }
         */
-        
-        c = GeoPolygonFactory.makeGeoPolygon(points,0);
-        // Sample some points within
-        gp = new GeoPoint(0.0,-0.5);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.55);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.45);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(-0.05,-0.5);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.05,-0.5);
-        assertTrue(c.isWithin(gp));
-        gp = new GeoPoint(0.0,-0.7);
-        assertTrue(c.isWithin(gp));
-        // Sample some nearby points outside
-        gp = new GeoPoint(0.0,-0.35);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(-0.15,-0.5);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(0.15,-0.5);
-        assertFalse(c.isWithin(gp));        
-        // Random points outside
-        gp = new GeoPoint(0.0,0.0);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(Math.PI * 0.5,0.0);
-        assertFalse(c.isWithin(gp));
-        gp = new GeoPoint(0.0,Math.PI);
-        assertFalse(c.isWithin(gp));
 
-    }
+    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    // Sample some points within
+    gp = new GeoPoint(0.0, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.55);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.45);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(-0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(0.0, -0.7);
+    assertTrue(c.isWithin(gp));
+    // Sample some nearby points outside
+    gp = new GeoPoint(0.0, -0.35);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(-0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    // Random points outside
+    gp = new GeoPoint(0.0, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(0.0, Math.PI);
+    assertFalse(c.isWithin(gp));
 
-    @Test
-    public void testPolygonBounds() {
-        GeoMembershipShape c;
-        Bounds b;
-        List<GeoPoint> points;
-        
-        points = new ArrayList<GeoPoint>();
-        points.add(new GeoPoint(-0.1,-0.5));
-        points.add(new GeoPoint(0.0,-0.6));
-        points.add(new GeoPoint(0.1,-0.5));
-        points.add(new GeoPoint(0.0,-0.4));
-        
-        c = GeoPolygonFactory.makeGeoPolygon(points,0);
+  }
 
-        b = c.getBounds(null);
-        assertFalse(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        assertEquals(-0.6,b.getLeftLongitude(),0.000001);
-        assertEquals(-0.4,b.getRightLongitude(),0.000001);
-        assertEquals(-0.1,b.getMinLatitude(),0.000001);
-        assertEquals(0.1,b.getMaxLatitude(),0.000001);
-    }
+  @Test
+  public void testPolygonBounds() {
+    GeoMembershipShape c;
+    Bounds b;
+    List<GeoPoint> points;
+
+    points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(-0.1, -0.5));
+    points.add(new GeoPoint(0.0, -0.6));
+    points.add(new GeoPoint(0.1, -0.5));
+    points.add(new GeoPoint(0.0, -0.4));
+
+    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+
+    b = c.getBounds(null);
+    assertFalse(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    assertEquals(-0.6, b.getLeftLongitude(), 0.000001);
+    assertEquals(-0.4, b.getRightLongitude(), 0.000001);
+    assertEquals(-0.1, b.getMinLatitude(), 0.000001);
+    assertEquals(0.1, b.getMaxLatitude(), 0.000001);
+  }
 
 }

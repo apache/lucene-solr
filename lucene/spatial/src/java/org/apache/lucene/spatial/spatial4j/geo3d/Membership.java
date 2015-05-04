@@ -17,22 +17,27 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Interface describing 3d shape membership methods.
-*/
+/**
+ * Interface describing 3d shape membership methods.
+ */
 public interface Membership {
 
-    /** Check if a point is within this shape.
-     *@param point is the point to check.
-     *@return true if the point is within this shape
-     */
-    public boolean isWithin(final Vector point);
+  /**
+   * Check if a point is within this shape.
+   *
+   * @param point is the point to check.
+   * @return true if the point is within this shape
+   */
+  public boolean isWithin(final Vector point);
 
-    /** Check if a point is within this shape.
-     *@param x is x coordinate of point to check.
-     *@param y is y coordinate of point to check.
-     *@param z is z coordinate of point to check.
-     *@return true if the point is within this shape
-     */
-    public boolean isWithin(final double x, final double y, final double z);
+  /**
+   * Check if a point is within this shape.
+   *
+   * @param x is x coordinate of point to check.
+   * @param y is y coordinate of point to check.
+   * @param z is z coordinate of point to check.
+   * @return true if the point is within this shape
+   */
+  public boolean isWithin(final double x, final double y, final double z);
 
 }

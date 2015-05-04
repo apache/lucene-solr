@@ -17,7 +17,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Membership shapes have capabilities of both geohashing and membership
+/**
+ * Membership shapes have capabilities of both geohashing and membership
  * determination.
  */
 public interface GeoMembershipShape extends GeoShape, Membership {

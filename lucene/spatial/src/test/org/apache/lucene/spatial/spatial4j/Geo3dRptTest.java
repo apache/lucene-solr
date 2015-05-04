@@ -78,24 +78,8 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  public void testFailure() throws IOException {
+  public void testFailure1() throws IOException {
     setupStrategy();
-    // [junit4]    > Throwable #1: java.lang.AssertionError: [Intersects] qIdx:25 Shouldn't match I#1:Rect(minX=-49.0,maxX=-45.0,minY=73.0,maxY=86.0) 
-    // Q:Geo3dShape{GeoCompositeMembershipShape: {[GeoCompositeMembershipShape: {[GeoConvexPolygon: {[
-    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074], 
-    //  [X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424],
-    // [X=-0.9702957262759965, Y=1.1882695554102554E-16, Z=0.24192189559966773]]}]}, 
-    // GeoConvexPolygon: {[[X=0.8473975608908426, Y=-0.43177062311338915, Z=0.3090169943749474],
-    //[X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424], 
-    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074]]}]}}
-    //
-    // Points in order (I think):
-    // 
-    // [X=0.8473975608908426, Y=-0.43177062311338915, Z=0.3090169943749474],
-    //[X=-0.4668467715008339, Y=0.28050984011500923, Z=-0.838670567945424], 
-    // [X=-0.9702957262759965, Y=1.1882695554102554E-16, Z=0.24192189559966773],
-    // [X=-0.8606462131055999, Y=0.4385211485883089, Z=-0.25881904510252074], 
-    // Index: 0
     final List<GeoPoint> points = new ArrayList<GeoPoint>();
     points.add(new GeoPoint(18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(-57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
@@ -108,8 +92,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 2000)
-  //@Seed("B808B88D6F8E285C")
+  @Repeat(iterations = 10)
   public void testOperations() throws IOException {
     setupStrategy();
 

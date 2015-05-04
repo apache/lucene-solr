@@ -17,28 +17,24 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** This class represents a point on the surface of a unit sphere.
-*/
-public class GeoPoint extends Vector
-{
-    public GeoPoint(final double sinLat, final double sinLon, final double cosLat, final double cosLon)
-    {
-        super(cosLat*cosLon,cosLat*sinLon,sinLat);
-    }
-      
-    public GeoPoint(final double lat, final double lon)
-    {
-        this(Math.sin(lat),Math.sin(lon),Math.cos(lat),Math.cos(lon));
-    }
-          
-    public GeoPoint(final double x, final double y, final double z)
-    {
-        super(x,y,z);
-    }
-          
-    public double arcDistance(final GeoPoint v)
-    {
-        return Tools.safeAcos(dotProduct(v));
-    }
+/**
+ * This class represents a point on the surface of a unit sphere.
+ */
+public class GeoPoint extends Vector {
+  public GeoPoint(final double sinLat, final double sinLon, final double cosLat, final double cosLon) {
+    super(cosLat * cosLon, cosLat * sinLon, sinLat);
+  }
+
+  public GeoPoint(final double lat, final double lon) {
+    this(Math.sin(lat), Math.sin(lon), Math.cos(lat), Math.cos(lon));
+  }
+
+  public GeoPoint(final double x, final double y, final double z) {
+    super(x, y, z);
+  }
+
+  public double arcDistance(final GeoPoint v) {
+    return Tools.safeAcos(dotProduct(v));
+  }
 
 }

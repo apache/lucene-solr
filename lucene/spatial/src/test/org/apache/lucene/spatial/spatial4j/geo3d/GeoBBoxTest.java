@@ -28,241 +28,242 @@ import static org.junit.Assert.assertTrue;
 
 public class GeoBBoxTest {
 
-    protected final double DEGREES_TO_RADIANS = Math.PI/180.0;
-    @Test
-    public void testBBoxDegenerate() {
-        GeoBBox box;
-        GeoConvexPolygon cp;
-        int relationship;
-        List<GeoPoint> points = new ArrayList<GeoPoint>();
-        points.add(new GeoPoint(24*DEGREES_TO_RADIANS,-30*DEGREES_TO_RADIANS));
-        points.add(new GeoPoint(-11*DEGREES_TO_RADIANS,101*DEGREES_TO_RADIANS));
-        points.add(new GeoPoint(-49*DEGREES_TO_RADIANS,-176*DEGREES_TO_RADIANS));
-        GeoMembershipShape shape = GeoPolygonFactory.makeGeoPolygon(points,0);
-        box = GeoBBoxFactory.makeGeoBBox(-64*DEGREES_TO_RADIANS,-64*DEGREES_TO_RADIANS,-180*DEGREES_TO_RADIANS,180*DEGREES_TO_RADIANS);
-        relationship = box.getRelationship(shape);
-        assertEquals(GeoArea.CONTAINS,relationship);
-        box = GeoBBoxFactory.makeGeoBBox(-61.85*DEGREES_TO_RADIANS,-67.5*DEGREES_TO_RADIANS,-180*DEGREES_TO_RADIANS,-168.75*DEGREES_TO_RADIANS);
-        System.out.println("Shape = "+shape+" Rect = "+box);
-        relationship = box.getRelationship(shape);
-        assertEquals(GeoArea.CONTAINS,relationship);
-    }
-    
-    @Test
-    public void testBBoxPointWithin() {
-        GeoBBox box;
-        GeoPoint gp;
-        // Standard normal Rect box, not crossing dateline
-        box = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, -1.0, 1.0);
-        gp = new GeoPoint(-0.1,0.0);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(0.1,0.0);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.5,0.0);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,1.1);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-1.1);
-        assertFalse(box.isWithin(gp));
-        // Standard normal Rect box, crossing dateline
-        box = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, Math.PI-1.0, -Math.PI+1.0);
-        gp = new GeoPoint(-0.1,-Math.PI);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(0.1,-Math.PI);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.5,-Math.PI);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI+1.1);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI-1.1);
-        assertFalse(box.isWithin(gp));
-        // Latitude zone rectangle
-        box = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, -Math.PI, Math.PI);
-        gp = new GeoPoint(-0.1,-Math.PI);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(0.1,-Math.PI);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.5,-Math.PI);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI+1.1);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI-1.1);
-        assertTrue(box.isWithin(gp));
-        // World
-        box = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5,-Math.PI * 0.5, -Math.PI, Math.PI);
-        gp = new GeoPoint(-0.1,-Math.PI);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(0.1,-Math.PI);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.5,-Math.PI);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI+1.1);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-Math.PI-1.1);
-        assertTrue(box.isWithin(gp));
+  protected final double DEGREES_TO_RADIANS = Math.PI / 180.0;
 
-    }
+  @Test
+  public void testBBoxDegenerate() {
+    GeoBBox box;
+    GeoConvexPolygon cp;
+    int relationship;
+    List<GeoPoint> points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(24 * DEGREES_TO_RADIANS, -30 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(-11 * DEGREES_TO_RADIANS, 101 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(-49 * DEGREES_TO_RADIANS, -176 * DEGREES_TO_RADIANS));
+    GeoMembershipShape shape = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    box = GeoBBoxFactory.makeGeoBBox(-64 * DEGREES_TO_RADIANS, -64 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS, 180 * DEGREES_TO_RADIANS);
+    relationship = box.getRelationship(shape);
+    assertEquals(GeoArea.CONTAINS, relationship);
+    box = GeoBBoxFactory.makeGeoBBox(-61.85 * DEGREES_TO_RADIANS, -67.5 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS, -168.75 * DEGREES_TO_RADIANS);
+    System.out.println("Shape = " + shape + " Rect = " + box);
+    relationship = box.getRelationship(shape);
+    assertEquals(GeoArea.CONTAINS, relationship);
+  }
 
-    @Test
-    public void testBBoxExpand() {
-        GeoBBox box;
-        GeoPoint gp;
-        // Standard normal Rect box, not crossing dateline
-        box = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, -1.0, 1.0);
-        box = box.expand(0.1);
-        gp = new GeoPoint(0.05,0.0);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(0.15,0.0);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.25 - 0.05,0.0);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-Math.PI * 0.25 - 0.15,0.0);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-1.05);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,-1.15);
-        assertFalse(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,1.05);
-        assertTrue(box.isWithin(gp));
-        gp = new GeoPoint(-0.1,1.15);
-        assertFalse(box.isWithin(gp));
-    }
+  @Test
+  public void testBBoxPointWithin() {
+    GeoBBox box;
+    GeoPoint gp;
+    // Standard normal Rect box, not crossing dateline
+    box = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, -1.0, 1.0);
+    gp = new GeoPoint(-0.1, 0.0);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(0.1, 0.0);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.5, 0.0);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, 1.1);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -1.1);
+    assertFalse(box.isWithin(gp));
+    // Standard normal Rect box, crossing dateline
+    box = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, Math.PI - 1.0, -Math.PI + 1.0);
+    gp = new GeoPoint(-0.1, -Math.PI);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(0.1, -Math.PI);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.5, -Math.PI);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI + 1.1);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI - 1.1);
+    assertFalse(box.isWithin(gp));
+    // Latitude zone rectangle
+    box = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, -Math.PI, Math.PI);
+    gp = new GeoPoint(-0.1, -Math.PI);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(0.1, -Math.PI);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.5, -Math.PI);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI + 1.1);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI - 1.1);
+    assertTrue(box.isWithin(gp));
+    // World
+    box = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, Math.PI);
+    gp = new GeoPoint(-0.1, -Math.PI);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(0.1, -Math.PI);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.5, -Math.PI);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI + 1.1);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -Math.PI - 1.1);
+    assertTrue(box.isWithin(gp));
 
-    @Test
-    public void testBBoxBounds() {
-        GeoBBox c;
-        Bounds b;
-        
-        c = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, -1.0, 1.0);
+  }
 
-        b = c.getBounds(null);
-        assertFalse(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        assertEquals(-1.0,b.getLeftLongitude(),0.000001);
-        assertEquals(1.0,b.getRightLongitude(),0.000001);
-        assertEquals(-Math.PI * 0.25,b.getMinLatitude(),0.000001);
-        assertEquals(0.0,b.getMaxLatitude(),0.000001);
+  @Test
+  public void testBBoxExpand() {
+    GeoBBox box;
+    GeoPoint gp;
+    // Standard normal Rect box, not crossing dateline
+    box = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, -1.0, 1.0);
+    box = box.expand(0.1);
+    gp = new GeoPoint(0.05, 0.0);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(0.15, 0.0);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.25 - 0.05, 0.0);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-Math.PI * 0.25 - 0.15, 0.0);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -1.05);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, -1.15);
+    assertFalse(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, 1.05);
+    assertTrue(box.isWithin(gp));
+    gp = new GeoPoint(-0.1, 1.15);
+    assertFalse(box.isWithin(gp));
+  }
 
-        c = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, 1.0, -1.0);
+  @Test
+  public void testBBoxBounds() {
+    GeoBBox c;
+    Bounds b;
 
-        b = c.getBounds(null);
-        assertTrue(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        //assertEquals(1.0,b.getLeftLongitude(),0.000001);
-        //assertEquals(-1.0,b.getRightLongitude(),0.000001);
-        assertEquals(-Math.PI * 0.25,b.getMinLatitude(),0.000001);
-        assertEquals(0.0,b.getMaxLatitude(),0.000001);
+    c = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, -1.0, 1.0);
 
-        c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -1.0, 1.0);
+    b = c.getBounds(null);
+    assertFalse(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
+    assertEquals(1.0, b.getRightLongitude(), 0.000001);
+    assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
+    assertEquals(0.0, b.getMaxLatitude(), 0.000001);
 
-        b = c.getBounds(null);
-        assertFalse(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        assertEquals(-1.0,b.getLeftLongitude(),0.000001);
-        assertEquals(1.0,b.getRightLongitude(),0.000001);
+    c = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, 1.0, -1.0);
 
-        c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 1.0, -1.0);
+    b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    //assertEquals(1.0,b.getLeftLongitude(),0.000001);
+    //assertEquals(-1.0,b.getRightLongitude(),0.000001);
+    assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
+    assertEquals(0.0, b.getMaxLatitude(), 0.000001);
 
-        b = c.getBounds(null);
-        assertTrue(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        //assertEquals(1.0,b.getLeftLongitude(),0.000001);
-        //assertEquals(-1.0,b.getRightLongitude(),0.000001);
+    c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -1.0, 1.0);
 
-        // Check wide variants of rectangle and longitude slice
+    b = c.getBounds(null);
+    assertFalse(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
+    assertEquals(1.0, b.getRightLongitude(), 0.000001);
 
-        c = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, -Math.PI+0.1, Math.PI-0.1);
+    c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 1.0, -1.0);
 
-        b = c.getBounds(null);
-        assertTrue(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        //assertEquals(-Math.PI+0.1,b.getLeftLongitude(),0.000001);
-        //assertEquals(Math.PI-0.1,b.getRightLongitude(),0.000001);
-        assertEquals(-Math.PI * 0.25,b.getMinLatitude(),0.000001);
-        assertEquals(0.0,b.getMaxLatitude(),0.000001);
+    b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    //assertEquals(1.0,b.getLeftLongitude(),0.000001);
+    //assertEquals(-1.0,b.getRightLongitude(),0.000001);
 
-        c = GeoBBoxFactory.makeGeoBBox(0.0,-Math.PI * 0.25, Math.PI-0.1, -Math.PI+0.1);
+    // Check wide variants of rectangle and longitude slice
 
-        b = c.getBounds(null);
-        assertFalse(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        assertEquals(Math.PI-0.1,b.getLeftLongitude(),0.000001);
-        assertEquals(-Math.PI+0.1,b.getRightLongitude(),0.000001);
-        assertEquals(-Math.PI * 0.25,b.getMinLatitude(),0.000001);
-        assertEquals(0.0,b.getMaxLatitude(),0.000001);
+    c = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, -Math.PI + 0.1, Math.PI - 0.1);
 
-        c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI+0.1, Math.PI-0.1);
+    b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    //assertEquals(-Math.PI+0.1,b.getLeftLongitude(),0.000001);
+    //assertEquals(Math.PI-0.1,b.getRightLongitude(),0.000001);
+    assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
+    assertEquals(0.0, b.getMaxLatitude(), 0.000001);
 
-        b = c.getBounds(null);
-        assertTrue(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        //assertEquals(-Math.PI+0.1,b.getLeftLongitude(),0.000001);
-        //assertEquals(Math.PI-0.1,b.getRightLongitude(),0.000001);
+    c = GeoBBoxFactory.makeGeoBBox(0.0, -Math.PI * 0.25, Math.PI - 0.1, -Math.PI + 0.1);
 
-        c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, Math.PI-0.1, -Math.PI+0.1);
+    b = c.getBounds(null);
+    assertFalse(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    assertEquals(Math.PI - 0.1, b.getLeftLongitude(), 0.000001);
+    assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.000001);
+    assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
+    assertEquals(0.0, b.getMaxLatitude(), 0.000001);
 
-        b = c.getBounds(null);
-        assertFalse(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        assertEquals(Math.PI-0.1,b.getLeftLongitude(),0.000001);
-        assertEquals(-Math.PI+0.1,b.getRightLongitude(),0.000001);
-        
-        // Check latitude zone
-        c = GeoBBoxFactory.makeGeoBBox(1.0, -1.0, -Math.PI, Math.PI);
+    c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI + 0.1, Math.PI - 0.1);
 
-        b = c.getBounds(null);
-        assertTrue(b.checkNoLongitudeBound());
-        assertFalse(b.checkNoTopLatitudeBound());
-        assertFalse(b.checkNoBottomLatitudeBound());
-        assertEquals(-1.0,b.getMinLatitude(),0.000001);
-        assertEquals(1.0,b.getMaxLatitude(),0.000001);
+    b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    //assertEquals(-Math.PI+0.1,b.getLeftLongitude(),0.000001);
+    //assertEquals(Math.PI-0.1,b.getRightLongitude(),0.000001);
 
-        // Now, combine a few things to test the bounds object
-        GeoBBox c1;
-        GeoBBox c2;
-        
-        c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
-        c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
+    c = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, Math.PI - 0.1, -Math.PI + 0.1);
 
-        b = new Bounds();
-        b = c1.getBounds(b);
-        b = c2.getBounds(b);
-        assertTrue(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
+    b = c.getBounds(null);
+    assertFalse(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    assertEquals(Math.PI - 0.1, b.getLeftLongitude(), 0.000001);
+    assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.000001);
 
-        c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
-        c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI*0.5);
+    // Check latitude zone
+    c = GeoBBoxFactory.makeGeoBBox(1.0, -1.0, -Math.PI, Math.PI);
 
-        b = new Bounds();
-        b = c1.getBounds(b);
-        b = c2.getBounds(b);
-        assertTrue(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        //assertEquals(-Math.PI,b.getLeftLongitude(),0.000001);
-        //assertEquals(Math.PI*0.5,b.getRightLongitude(),0.000001);
+    b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    assertEquals(-1.0, b.getMinLatitude(), 0.000001);
+    assertEquals(1.0, b.getMaxLatitude(), 0.000001);
 
-        c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI * 0.5, 0.0);
-        c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
+    // Now, combine a few things to test the bounds object
+    GeoBBox c1;
+    GeoBBox c2;
 
-        b = new Bounds();
-        b = c1.getBounds(b);
-        b = c2.getBounds(b);
-        assertTrue(b.checkNoLongitudeBound());
-        assertTrue(b.checkNoTopLatitudeBound());
-        assertTrue(b.checkNoBottomLatitudeBound());
-        //assertEquals(-Math.PI * 0.5,b.getLeftLongitude(),0.000001);
-        //assertEquals(Math.PI,b.getRightLongitude(),0.000001);
+    c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
+    c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
 
-    }
+    b = new Bounds();
+    b = c1.getBounds(b);
+    b = c2.getBounds(b);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+
+    c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
+    c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI * 0.5);
+
+    b = new Bounds();
+    b = c1.getBounds(b);
+    b = c2.getBounds(b);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    //assertEquals(-Math.PI,b.getLeftLongitude(),0.000001);
+    //assertEquals(Math.PI*0.5,b.getRightLongitude(),0.000001);
+
+    c1 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, -Math.PI * 0.5, 0.0);
+    c2 = GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
+
+    b = new Bounds();
+    b = c1.getBounds(b);
+    b = c2.getBounds(b);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+    //assertEquals(-Math.PI * 0.5,b.getLeftLongitude(),0.000001);
+    //assertEquals(Math.PI,b.getRightLongitude(),0.000001);
+
+  }
 
 }

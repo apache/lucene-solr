@@ -17,19 +17,23 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Some shapes can compute radii of a geocircle in which they are inscribed.
-*/
-public interface GeoSizeable
-{
-    /** Returns the radius of a circle into which the GeoSizeable area can
-     * be inscribed.
-     *@return the radius.
-     */
-    public double getRadius();
+/**
+ * Some shapes can compute radii of a geocircle in which they are inscribed.
+ */
+public interface GeoSizeable {
+  /**
+   * Returns the radius of a circle into which the GeoSizeable area can
+   * be inscribed.
+   *
+   * @return the radius.
+   */
+  public double getRadius();
 
-    /** Returns the center of a circle into which the area will be inscribed.
-    *@return the center.
-    */
-    public GeoPoint getCenter();
-    
+  /**
+   * Returns the center of a circle into which the area will be inscribed.
+   *
+   * @return the center.
+   */
+  public GeoPoint getCenter();
+
 }

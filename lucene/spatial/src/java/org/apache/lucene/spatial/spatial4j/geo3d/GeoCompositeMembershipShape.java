@@ -20,103 +20,99 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 import java.util.ArrayList;
 import java.util.List;
 
-/** GeoComposite is a set of GeoMembershipShape's, treated as a unit.
-*/
-public class GeoCompositeMembershipShape implements GeoMembershipShape
-{
-    protected final List<GeoMembershipShape> shapes = new ArrayList<GeoMembershipShape>();
-    
-    public GeoCompositeMembershipShape()
-    {
-    }
-    
-    /** Add a shape to the composite.
-    */
-    public void addShape(final GeoMembershipShape shape) {
-        shapes.add(shape);
-    }
+/**
+ * GeoComposite is a set of GeoMembershipShape's, treated as a unit.
+ */
+public class GeoCompositeMembershipShape implements GeoMembershipShape {
+  protected final List<GeoMembershipShape> shapes = new ArrayList<GeoMembershipShape>();
 
-    @Override
-    public boolean isWithin(final Vector point)
-    {
-        //System.err.println("Checking whether point "+point+" is within Composite");
-        for (GeoMembershipShape shape : shapes) {
-            if (shape.isWithin(point)) {
-                //System.err.println(" Point is within "+shape);
-                return true;
-            }
-        }
-        return false;
-    }
+  public GeoCompositeMembershipShape() {
+  }
 
-    @Override
-    public boolean isWithin(final double x, final double y, final double z)
-    {
-        for (GeoMembershipShape shape : shapes) {
-            if (shape.isWithin(x,y,z))
-                return true;
-        }
-        return false;
-    }
+  /**
+   * Add a shape to the composite.
+   */
+  public void addShape(final GeoMembershipShape shape) {
+    shapes.add(shape);
+  }
 
-    @Override
-    public GeoPoint[] getEdgePoints()
-    {
-        return shapes.get(0).getEdgePoints();
+  @Override
+  public boolean isWithin(final Vector point) {
+    //System.err.println("Checking whether point "+point+" is within Composite");
+    for (GeoMembershipShape shape : shapes) {
+      if (shape.isWithin(point)) {
+        //System.err.println(" Point is within "+shape);
+        return true;
+      }
     }
-      
-    @Override
-    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds)
-    {
-        for (GeoMembershipShape shape : shapes) {
-            if (shape.intersects(p,notablePoints,bounds))
-                return true;
-        }
-        return false;
-    }
+    return false;
+  }
 
-    /** Compute longitude/latitude bounds for the shape.
-    *@param bounds is the optional input bounds object.  If this is null,
-    * a bounds object will be created.  Otherwise, the input object will be modified.
-    *@return a Bounds object describing the shape's bounds.  If the bounds cannot
-    * be computed, then return a Bounds object with noLongitudeBound,
-    * noTopLatitudeBound, and noBottomLatitudeBound.
-    */
-    @Override
-    public Bounds getBounds(Bounds bounds)
-    {
-        if (bounds == null)
-            bounds = new Bounds();
-        for (GeoMembershipShape shape : shapes) {
-            bounds = shape.getBounds(bounds);
-        }
-        return bounds;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (!(o instanceof GeoCompositeMembershipShape))
-            return false;
-        GeoCompositeMembershipShape other = (GeoCompositeMembershipShape)o;
-        if (other.shapes.size() != shapes.size())
-            return false;
-        
-        for (int i = 0; i < shapes.size(); i++) {
-            if (!other.shapes.get(i).equals(shapes.get(i)))
-                return false;
-        }
+  @Override
+  public boolean isWithin(final double x, final double y, final double z) {
+    for (GeoMembershipShape shape : shapes) {
+      if (shape.isWithin(x, y, z))
         return true;
     }
+    return false;
+  }
 
-    @Override
-    public int hashCode() {
-        return shapes.hashCode();//TODO cache
-    }
+  @Override
+  public GeoPoint[] getEdgePoints() {
+    return shapes.get(0).getEdgePoints();
+  }
 
-    @Override
-    public String toString() {
-        return "GeoCompositeMembershipShape: {" + shapes + '}';
+  @Override
+  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+    for (GeoMembershipShape shape : shapes) {
+      if (shape.intersects(p, notablePoints, bounds))
+        return true;
     }
+    return false;
+  }
+
+  /**
+   * Compute longitude/latitude bounds for the shape.
+   *
+   * @param bounds is the optional input bounds object.  If this is null,
+   *               a bounds object will be created.  Otherwise, the input object will be modified.
+   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
+   * be computed, then return a Bounds object with noLongitudeBound,
+   * noTopLatitudeBound, and noBottomLatitudeBound.
+   */
+  @Override
+  public Bounds getBounds(Bounds bounds) {
+    if (bounds == null)
+      bounds = new Bounds();
+    for (GeoMembershipShape shape : shapes) {
+      bounds = shape.getBounds(bounds);
+    }
+    return bounds;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof GeoCompositeMembershipShape))
+      return false;
+    GeoCompositeMembershipShape other = (GeoCompositeMembershipShape) o;
+    if (other.shapes.size() != shapes.size())
+      return false;
+
+    for (int i = 0; i < shapes.size(); i++) {
+      if (!other.shapes.get(i).equals(shapes.get(i)))
+        return false;
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return shapes.hashCode();//TODO cache
+  }
+
+  @Override
+  public String toString() {
+    return "GeoCompositeMembershipShape: {" + shapes + '}';
+  }
 }
   

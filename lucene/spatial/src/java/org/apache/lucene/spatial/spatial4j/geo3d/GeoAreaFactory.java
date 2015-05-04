@@ -17,20 +17,21 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-public class GeoAreaFactory
-{
-    private GeoAreaFactory() {
-    }
-  
-    /** Create a GeoArea of the right kind given the specified bounds.
-     *@param topLat is the top latitude
-     *@param bottomLat is the bottom latitude
-     *@param leftLon is the left longitude
-     *@param rightLon is the right longitude
-     *@return a GeoArea corresponding to what was specified.
-     */
-    public static GeoArea makeGeoArea(double topLat, double bottomLat, double leftLon, double rightLon) {
-        return GeoBBoxFactory.makeGeoBBox(topLat, bottomLat, leftLon, rightLon);
-    }
+public class GeoAreaFactory {
+  private GeoAreaFactory() {
+  }
+
+  /**
+   * Create a GeoArea of the right kind given the specified bounds.
+   *
+   * @param topLat    is the top latitude
+   * @param bottomLat is the bottom latitude
+   * @param leftLon   is the left longitude
+   * @param rightLon  is the right longitude
+   * @return a GeoArea corresponding to what was specified.
+   */
+  public static GeoArea makeGeoArea(double topLat, double bottomLat, double leftLon, double rightLon) {
+    return GeoBBoxFactory.makeGeoBBox(topLat, bottomLat, leftLon, rightLon);
+  }
 
 }

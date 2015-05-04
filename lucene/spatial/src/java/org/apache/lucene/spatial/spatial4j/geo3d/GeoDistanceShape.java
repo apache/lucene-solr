@@ -17,7 +17,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Distance shapes have capabilities of both geohashing and distance
+/**
+ * Distance shapes have capabilities of both geohashing and distance
  * computation (which also includes point membership determination).
  */
 public interface GeoDistanceShape extends GeoMembershipShape, GeoDistance {

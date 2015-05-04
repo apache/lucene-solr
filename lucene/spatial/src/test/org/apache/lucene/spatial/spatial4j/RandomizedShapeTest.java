@@ -54,8 +54,9 @@ public abstract class RandomizedShapeTest extends RandomizedTest {
     this.ctx = ctx;
   }
 
-  public static void checkShapesImplementEquals( Class[] classes ) {
-    for( Class clazz : classes ) {
+  @SuppressWarnings("unchecked")
+  public static void checkShapesImplementEquals( Class<?>[] classes ) {
+    for( Class<?> clazz : classes ) {
       try {
         clazz.getDeclaredMethod( "equals", Object.class );
       } catch (Exception e) {

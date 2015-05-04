@@ -17,24 +17,24 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Static methods globally useful for 3d geometric work.
+/**
+ * Static methods globally useful for 3d geometric work.
  */
-public class Tools
-{
-    private Tools()
-    {
-    }
-  
-    /** Java acos yields a NAN if you take an arc-cos of an
-     * angle that's just a tiny bit greater than 1.0, so
-     * here's a more resilient version.
-     */
-    public static double safeAcos(double value) {
-        if (value > 1.0)
-            value = 1.0;
-        else if (value < -1.0)
-            value = -1.0;
-        return Math.acos(value);
-    }
+public class Tools {
+  private Tools() {
+  }
+
+  /**
+   * Java acos yields a NAN if you take an arc-cos of an
+   * angle that's just a tiny bit greater than 1.0, so
+   * here's a more resilient version.
+   */
+  public static double safeAcos(double value) {
+    if (value > 1.0)
+      value = 1.0;
+    else if (value < -1.0)
+      value = -1.0;
+    return Math.acos(value);
+  }
 
 }
