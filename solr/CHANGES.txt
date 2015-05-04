@@ -314,6 +314,12 @@ Other Changes
   was listing them in a random order.  Now they are sorted in a natural order
   that handles numbers properly. (Jellyfrog via Shawn Heisey)
 
+* SOLR-7484: Refactor SolrDispatchFilter to extract all Solr specific implementation detail 
+  to HttpSolrCall and also extract methods from within the current SDF.doFilter(..) logic 
+  making things easier to manage. HttpSolrCall converts the processing to a 3-step process 
+  i.e. Construct, Init, and Call so the context of the request would be available after Init
+   and before the actual call operation. (Anshum Gupta, Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
