@@ -21,7 +21,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * All bounding box shapes can derive from this base class, which furnishes
  * some common code
  *
- * @lucene.external
+ * @lucene.internal
  */
 public abstract class GeoBBoxBase implements GeoBBox {
 
