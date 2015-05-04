@@ -44,6 +44,32 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
   /** shape has no area; return a point in it */
   protected abstract Point randomPointInEmptyShape(S shape);
 
+  // Minimum distribution of relationships
+  
+  // Each shape has different characteristics, so we don't expect (for instance) shapes that
+  // are likely to be long and thin to contain as many rectangles as those that
+  // short and fat.
+  
+  protected int getContainsMinimum(int laps) {
+    return laps/1000;
+  }
+  
+  protected int getIntersectsMinimum(int laps) {
+    return laps/1000;
+  }
+  
+  protected int getWithinMinimum(int laps) {
+    return laps/1000;
+  }
+  
+  protected int getDisjointMinimum(int laps) {
+    return laps/1000;
+  }
+  
+  protected int getBoundingMinimum(int laps) {
+    return laps/1000;
+  }
+  
   @SuppressWarnings("unchecked")
   @Override
   protected Point randomPointIn(Shape shape) {
@@ -59,17 +85,22 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
     //counters for the different intersection cases
     int i_C = 0, i_I = 0, i_W = 0, i_D = 0, i_bboxD = 0;
     int laps = 0;
-    final int MINLAPSPERCASE = scaledRandomIntBetween(20, 200);
-    while(i_C < MINLAPSPERCASE || i_I < MINLAPSPERCASE || i_W < MINLAPSPERCASE
-        || (!isRandomShapeRectangular() && i_D < MINLAPSPERCASE) || i_bboxD < MINLAPSPERCASE) {
+    final int MINLAPS = scaledRandomIntBetween(20000, 200000);
+    while(i_C < getContainsMinimum(MINLAPS) || i_I < getIntersectsMinimum(MINLAPS) || i_W < getWithinMinimum(MINLAPS)
+        || (!isRandomShapeRectangular() && i_D < getDisjointMinimum(MINLAPS)) || i_bboxD < getBoundingMinimum(MINLAPS)) {
       laps++;
 
       TestLog.clear();
 
-      if (laps > MINLAPSPERCASE * 1000) {
-        fail("Did not find enough intersection cases in a reasonable number" +
-            " of random attempts. CWIDbD: " + i_C + "," + i_W + "," + i_I + "," + i_D + "," + i_bboxD
-            + "  Laps exceeded " + MINLAPSPERCASE * 1000);
+      if (laps > MINLAPS) {
+        fail("Did not find enough contains/within/intersection/disjoint/bounds cases in a reasonable number" +
+            " of random attempts. CWIDbD: " +
+            i_C + "("+getContainsMinimum(MINLAPS)+")," +
+            i_W + "("+getWithinMinimum(MINLAPS)+")," +
+            i_I + "("+getIntersectsMinimum(MINLAPS)+")," +
+            i_D + "("+getDisjointMinimum(MINLAPS)+")," +
+            i_bboxD + "("+getBoundingMinimum(MINLAPS)+")"
+            + "  Laps exceeded " + MINLAPS);
       }
 
       Point nearP = randomPointIn(ctx.getWorldBounds());
@@ -109,7 +140,7 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
           case DISJOINT:
             if (!s.getBoundingBox().relate(r).intersects()) {//bboxes are disjoint
               i_bboxD++;
-              if (i_bboxD > MINLAPSPERCASE)
+              if (i_bboxD >= getBoundingMinimum(MINLAPS))
                 break;
             } else {
               i_D++;

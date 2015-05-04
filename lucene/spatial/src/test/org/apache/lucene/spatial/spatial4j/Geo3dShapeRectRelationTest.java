@@ -205,11 +205,15 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
+        final Point centerPoint = randomPoint();
+        final int maxDistance = random().nextInt(160) + 20;
         final int vertexCount = random().nextInt(3) + 3;
         while (true) {
           final List<GeoPoint> geoPoints = new ArrayList<>();
           while (geoPoints.size() < vertexCount) {
             final Point point = randomPoint();
+            if (ctx.getDistCalc().distance(point,centerPoint) > maxDistance)
+              continue;
             final GeoPoint gPt = new GeoPoint(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
             geoPoints.add(gPt);
           }
@@ -230,6 +234,12 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
         throw new IllegalStateException("unexpected; need to finish test code");
       }
 
+      @Override
+      protected int getWithinMinimum(int laps) {
+        // Long/thin so only 10% of the usual figure
+        return laps/10000;
+      }
+
     }.testRelateWithRectangle();
   }
 
@@ -239,14 +249,20 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
+        final Point centerPoint = randomPoint();
+        final int maxDistance = random().nextInt(160) + 20;
         final int pointCount = random().nextInt(5) + 1;
         final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
         while (true) {
           try {
             final GeoPath path = new GeoPath(width);
-            for (int i = 0; i < pointCount; i++) {
+            int i = 0;
+            while (i < pointCount) {
               final Point nextPoint = randomPoint();
+              if (ctx.getDistCalc().distance(nextPoint,centerPoint) > maxDistance)
+                continue;
               path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
+              i++;
             }
             path.done();
             return new Geo3dShape(path, ctx);
@@ -261,6 +277,12 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTest {
       @Override
       protected Point randomPointInEmptyShape(Geo3dShape shape) {
         throw new IllegalStateException("unexpected; need to finish test code");
+      }
+
+      @Override
+      protected int getWithinMinimum(int laps) {
+        // Long/thin so only 10% of the usual figure
+        return laps/10000;
       }
 
     }.testRelateWithRectangle();
