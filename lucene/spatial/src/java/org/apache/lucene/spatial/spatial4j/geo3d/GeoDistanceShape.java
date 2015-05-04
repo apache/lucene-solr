@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * Distance shapes have capabilities of both geohashing and distance
  * computation (which also includes point membership determination).
+ *
+ * @lucene.experimental
  */
 public interface GeoDistanceShape extends GeoMembershipShape, GeoDistance {
 

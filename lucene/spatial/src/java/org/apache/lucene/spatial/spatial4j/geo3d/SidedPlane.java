@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * Combination of a plane, and a sign value indicating what evaluation values are on the correct
  * side of the plane.
+ *
+ * @lucene.experimental
  */
 public class SidedPlane extends Plane implements Membership {
   public final double sigNum;

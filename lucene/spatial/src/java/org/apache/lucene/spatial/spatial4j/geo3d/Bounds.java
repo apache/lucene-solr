@@ -27,6 +27,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * (3) No lower latitude bound possible
  * When any of these have been applied, further application of
  * points cannot override that decision.
+ *
+ * @lucene.experimental
  */
 public class Bounds {
   protected boolean noLongitudeBound = false;

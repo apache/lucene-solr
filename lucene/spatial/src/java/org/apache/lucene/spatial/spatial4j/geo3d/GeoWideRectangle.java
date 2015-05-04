@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * Bounding box wider than PI but limited on four sides (top lat,
  * bottom lat, left lon, right lon).
+ *
+ * @lucene.internal
  */
 public class GeoWideRectangle extends GeoBBoxBase {
   public final double topLat;

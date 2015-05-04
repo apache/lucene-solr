@@ -26,6 +26,8 @@ import java.util.List;
  * The only restrictions on these objects are: (1) they must be convex; (2) they must have
  * a maximum extent no larger than PI.  Violating either one of these limits will
  * cause the logic to fail.
+ *
+ * @lucene.experimental
  */
 public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembershipShape {
   protected final List<GeoPoint> points;

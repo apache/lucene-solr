@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Static methods globally useful for 3d geometric work.
+ *
+ * @lucene.experimental
  */
 public class Tools {
   private Tools() {

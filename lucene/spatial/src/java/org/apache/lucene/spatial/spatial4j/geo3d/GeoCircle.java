@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Circular area with a center and radius.
+ *
+ * @lucene.experimental
  */
 public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape, GeoSizeable {
   public final GeoPoint center;

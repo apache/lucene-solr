@@ -25,6 +25,8 @@ import java.util.List;
  * with a specified half-width.  Path is described by a series of points.
  * Distances are measured from the starting point along the path, and then at right
  * angles to the path.
+ *
+ * @lucene.experimental
  */
 public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
   public final double cutoffAngle;

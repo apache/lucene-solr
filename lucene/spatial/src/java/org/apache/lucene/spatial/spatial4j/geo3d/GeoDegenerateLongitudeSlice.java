@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Degenerate longitude slice.
+ *
+ * @lucene.internal
  */
 public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
   public final double longitude;

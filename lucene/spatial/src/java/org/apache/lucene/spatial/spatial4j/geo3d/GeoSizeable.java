@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Some shapes can compute radii of a geocircle in which they are inscribed.
+ *
+ * @lucene.experimental
  */
 public interface GeoSizeable {
   /**

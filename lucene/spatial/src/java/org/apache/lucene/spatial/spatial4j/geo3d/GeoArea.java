@@ -22,6 +22,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * be bounded in latitude, or bounded in both latitude and longitude, or not
  * bounded at all.  The purpose of the interface is to describe bounding shapes used for
  * computation of geo hashes.
+ *
+ * @lucene.experimental
  */
 public interface GeoArea extends Membership {
   // Since we don't know what each GeoArea's constraints are,

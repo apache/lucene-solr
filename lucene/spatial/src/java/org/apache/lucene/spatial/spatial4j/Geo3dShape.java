@@ -29,7 +29,11 @@ import org.apache.lucene.spatial.spatial4j.geo3d.GeoAreaFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
 
-/** A 3D planar geometry based Spatial4j Shape implementation. */
+/**
+ * A 3D planar geometry based Spatial4j Shape implementation.
+ *
+ * @lucene.experimental
+ */
 public class Geo3dShape implements Shape {
 
   public final SpatialContext ctx;

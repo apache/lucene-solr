@@ -21,6 +21,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * Generic shape.  This describes methods that help GeoAreas figure out
  * how they interact with a shape, for the purposes of coming up with a
  * set of geo hash values.
+ *
+ * @lucene.experimental
  */
 public interface GeoShape extends Membership {
 

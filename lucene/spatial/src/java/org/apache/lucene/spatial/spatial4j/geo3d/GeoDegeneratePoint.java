@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * This class represents a degenerate point bounding box.
  * It is not a simple GeoPoint because we must have the latitude and longitude.
+ *
+ * @lucene.internal
  */
 public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
   public final double latitude;

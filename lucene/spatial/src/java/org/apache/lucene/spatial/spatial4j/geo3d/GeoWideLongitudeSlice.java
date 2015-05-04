@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * Bounding box wider than PI but limited on left and right sides (
  * left lon, right lon).
+ *
+ * @lucene.internal
  */
 public class GeoWideLongitudeSlice extends GeoBBoxBase {
   public final double leftLon;

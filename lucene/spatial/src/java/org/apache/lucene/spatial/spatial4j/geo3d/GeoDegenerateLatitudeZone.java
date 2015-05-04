@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * This GeoBBox represents an area rectangle of one specific latitude with
  * no longitude bounds.
+ *
+ * @lucene.internal
  */
 public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
   public final double latitude;

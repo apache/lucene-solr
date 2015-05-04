@@ -22,6 +22,8 @@ import java.util.List;
 
 /**
  * GeoComposite is a set of GeoMembershipShape's, treated as a unit.
+ *
+ * @lucene.experimental
  */
 public class GeoCompositeMembershipShape implements GeoMembershipShape {
   protected final List<GeoMembershipShape> shapes = new ArrayList<GeoMembershipShape>();

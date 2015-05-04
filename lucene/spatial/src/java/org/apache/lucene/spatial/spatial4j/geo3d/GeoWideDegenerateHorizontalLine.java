@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Degenerate bounding box wider than PI and limited on two sides (left lon, right lon).
+ *
+ * @lucene.internal
  */
 public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
   public final double latitude;

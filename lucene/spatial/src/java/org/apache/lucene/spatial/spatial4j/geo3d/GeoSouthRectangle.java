@@ -22,6 +22,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * other corner is the south pole.
  * The left-right maximum extent for this shape is PI; for anything larger, use
  * GeoWideSouthRectangle.
+ *
+ * @lucene.internal
  */
 public class GeoSouthRectangle extends GeoBBoxBase {
   public final double topLat;

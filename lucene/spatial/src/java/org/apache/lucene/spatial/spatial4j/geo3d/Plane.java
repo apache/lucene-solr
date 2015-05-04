@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * We know about three kinds of planes.  First kind: general plain through two points and origin
  * Second kind: horizontal plane at specified height.  Third kind: vertical plane with specified x and y value, through origin.
+ *
+ * @lucene.experimental
  */
 public class Plane extends Vector {
   protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
@@ -112,7 +114,7 @@ public class Plane extends Vector {
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
-   * 
+   *
    * @return true if the result is on the plane.
    */
   public boolean evaluateIsZero(final double x, final double y, final double z) {

@@ -21,6 +21,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * Degenerate bounding box limited on two sides (left lon, right lon).
  * The left-right maximum extent for this shape is PI; for anything larger, use
  * GeoWideDegenerateHorizontalLine.
+ *
+ * @lucene.internal
  */
 public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
   public final double latitude;

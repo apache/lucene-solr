@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Interface describing 3d shape membership methods.
+ *
+ * @lucene.experimental
  */
 public interface Membership {
 

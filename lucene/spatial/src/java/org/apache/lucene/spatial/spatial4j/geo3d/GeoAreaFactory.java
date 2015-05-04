@@ -17,7 +17,11 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Factory for {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoArea}. */
+/**
+ * Factory for {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoArea}.
+ *
+ * @lucene.experimental
+ */
 public class GeoAreaFactory {
   private GeoAreaFactory() {
   }

@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Bounding box including the entire world.
+ *
+ * @lucene.internal
  */
 public class GeoWorld extends GeoBBoxBase {
   protected final static GeoPoint originPoint = new GeoPoint(1.0, 0.0, 0.0);

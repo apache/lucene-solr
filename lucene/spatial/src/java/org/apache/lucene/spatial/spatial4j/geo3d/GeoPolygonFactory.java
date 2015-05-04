@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * Class which constructs a GeoMembershipShape representing an arbitrary polygon.
+ *
+ * @lucene.experimental
  */
 public class GeoPolygonFactory {
   private GeoPolygonFactory() {

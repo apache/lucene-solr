@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * This class represents a point on the surface of a unit sphere.
+ *
+ * @lucene.experimental
  */
 public class GeoPoint extends Vector {
   public GeoPoint(final double sinLat, final double sinLon, final double cosLat, final double cosLon) {

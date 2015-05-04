@@ -22,6 +22,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * the north pole.
  * The left-right maximum extent for this shape is PI; for anything larger, use
  * GeoWideNorthRectangle.
+ *
+ * @lucene.internal
  */
 public class GeoNorthRectangle extends GeoBBoxBase {
   public final double bottomLat;

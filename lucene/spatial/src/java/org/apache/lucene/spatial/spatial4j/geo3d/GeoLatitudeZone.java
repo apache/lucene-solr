@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * This GeoBBox represents an area rectangle limited only in latitude.
+ *
+ * @lucene.internal
  */
 public class GeoLatitudeZone extends GeoBBoxBase {
   public final double topLat;

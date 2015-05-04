@@ -21,6 +21,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * Bounding box limited on four sides (top lat, bottom lat, left lon, right lon).
  * The left-right maximum extent for this shape is PI; for anything larger, use
  * GeoWideRectangle.
+ *
+ * @lucene.internal
  */
 public class GeoRectangle extends GeoBBoxBase {
   public final double topLat;

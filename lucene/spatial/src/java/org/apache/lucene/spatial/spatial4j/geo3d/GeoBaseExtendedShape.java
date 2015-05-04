@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Base extended shape object.
+ *
+ * @lucene.experimental
  */
 public abstract class GeoBaseExtendedShape implements GeoShape {
   protected final static GeoPoint NORTH_POLE = new GeoPoint(0.0, 0.0, 1.0);

@@ -17,7 +17,11 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-/** Factory for {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox}. */
+/**
+ * Factory for {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox}.
+ *
+ * @lucene.experimental
+ */
 public class GeoBBoxFactory {
   private GeoBBoxFactory() {
   }

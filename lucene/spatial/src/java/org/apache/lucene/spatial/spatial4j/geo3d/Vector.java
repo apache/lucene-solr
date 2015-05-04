@@ -20,6 +20,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * A 3d vector in space, not necessarily
  * going through the origin.
+ *
+ * @lucene.experimental
  */
 public class Vector {
   /**

@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 /**
  * Degenerate bounding box limited on two sides (top lat, bottom lat).
+ *
+ * @lucene.internal
  */
 public class GeoDegenerateVerticalLine extends GeoBBoxBase {
   public final double topLat;

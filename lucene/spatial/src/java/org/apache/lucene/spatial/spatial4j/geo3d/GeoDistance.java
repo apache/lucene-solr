@@ -22,6 +22,8 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * of this interface is capable of computing the described "distance" values,
  * which are meant to provide both actual distance values, as well as
  * distance estimates that can be computed more cheaply.
+ *
+ * @lucene.experimental
  */
 public interface GeoDistance extends Membership {
   /**
