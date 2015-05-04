@@ -107,9 +107,11 @@ public class SnitchContext implements RemoteCallback {
   public SimpleSolrResponse invoke(UpdateShardHandler shardHandler,  final String url, String path, SolrParams params)
       throws IOException, SolrServerException {
     GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
-    NamedList<Object> rsp = new HttpSolrClient(url, shardHandler.getHttpClient(), new BinaryResponseParser()).request(request);
-    request.response.nl = rsp;
-    return request.response;
+    try (HttpSolrClient client = new HttpSolrClient(url, shardHandler.getHttpClient(), new BinaryResponseParser())) {
+      NamedList<Object> rsp = client.request(request);
+      request.response.nl = rsp;
+      return request.response;
+    }
   }
 
 

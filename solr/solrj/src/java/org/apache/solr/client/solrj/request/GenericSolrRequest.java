@@ -48,7 +48,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
 
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
+    return contentStreams;
   }
 
   @Override
