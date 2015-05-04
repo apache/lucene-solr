@@ -153,18 +153,21 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       }
     }
     List<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
+    List<ClassificationResult<BytesRef>> temporaryList = new ArrayList<>();
     int sumdoc = 0;
     for (Map.Entry<BytesRef, Integer> entry : classCounts.entrySet()) {
       Integer count = entry.getValue();
-      returnList.add(new ClassificationResult<>(entry.getKey().clone(), count / (double) k));
+      temporaryList.add(new ClassificationResult<>(entry.getKey().clone(), count / (double) k));
       sumdoc += count;
     }
 
     //correction
     if (sumdoc < k) {
-      for (ClassificationResult<BytesRef> cr : returnList) {
-        cr.setScore(cr.getScore() * (double) k / (double) sumdoc);
+      for (ClassificationResult<BytesRef> cr : temporaryList) {
+        returnList.add(new ClassificationResult<>(cr.getAssignedClass(), cr.getScore() * k / (double) sumdoc));
       }
+    } else {
+      returnList = temporaryList;
     }
     return returnList;
   }

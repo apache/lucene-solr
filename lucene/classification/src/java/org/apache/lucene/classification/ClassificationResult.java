@@ -24,7 +24,7 @@ package org.apache.lucene.classification;
 public class ClassificationResult<T> implements Comparable<ClassificationResult<T>> {
 
   private final T assignedClass;
-  private double score;
+  private final double score;
 
   /**
    * Constructor
@@ -54,16 +54,6 @@ public class ClassificationResult<T> implements Comparable<ClassificationResult<
   public double getScore() {
     return score;
   }
-
-  /**
-   * set the score value
-   *
-   * @param score the score for the assignedClass as a <code>double</code>
-   */
-  public void setScore(double score) {
-    this.score = score;
-  }
-
 
   @Override
   public int compareTo(ClassificationResult<T> o) {

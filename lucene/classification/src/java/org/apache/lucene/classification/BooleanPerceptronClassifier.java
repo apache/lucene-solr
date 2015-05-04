@@ -226,7 +226,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text)
           throws IOException {
-    throw new RuntimeException("not implemented");
+    return null;
   }
 
   /**
@@ -235,7 +235,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   @Override
   public List<ClassificationResult<Boolean>> getClasses(String text, int max)
           throws IOException {
-    throw new RuntimeException("not implemented");
+    return null;
   }
 
 }

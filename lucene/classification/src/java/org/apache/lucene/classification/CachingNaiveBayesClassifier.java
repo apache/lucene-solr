@@ -141,12 +141,22 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
         double wordProbability = num / den;
 
         // modify the value in the result list item
+        int removeIdx = -1;
+        int i = 0;
         for (ClassificationResult<BytesRef> cr : ret) {
           if (cr.getAssignedClass().equals(cclass)) {
-            cr.setScore(cr.getScore() + Math.log(wordProbability));
+            removeIdx = i;
             break;
           }
+          i++;
         }
+
+        if (removeIdx >= 0) {
+          ClassificationResult<BytesRef> toRemove = ret.get(removeIdx);
+          ret.add(new ClassificationResult<>(toRemove.getAssignedClass(), toRemove.getScore() + Math.log(wordProbability)));
+          ret.remove(removeIdx);
+        }
+
       }
     }
 

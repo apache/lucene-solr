@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -91,12 +92,16 @@ public class DatasetSplitter {
 
         // create a new document for indexing
         Document doc = new Document();
+        StoredDocument document = originalIndex.document(scoreDoc.doc);
         if (fieldNames != null && fieldNames.length > 0) {
           for (String fieldName : fieldNames) {
-            doc.add(new Field(fieldName, originalIndex.document(scoreDoc.doc).getField(fieldName).stringValue(), ft));
+            StorableField field = document.getField(fieldName);
+            if (field != null) {
+              doc.add(new Field(fieldName, field.stringValue(), ft));
+            }
           }
         } else {
-          for (StorableField storableField : originalIndex.document(scoreDoc.doc).getFields()) {
+          for (StorableField storableField : document.getFields()) {
             if (storableField.readerValue() != null) {
               doc.add(new Field(storableField.name(), storableField.readerValue(), ft));
             } else if (storableField.binaryValue() != null) {
