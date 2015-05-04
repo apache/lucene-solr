@@ -93,9 +93,6 @@ public class Plane extends Vector {
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
-   *
-   * @param x,y,z is the vector.
-   * @return the result of the evaluation.
    */
   public double evaluate(final double x, final double y, final double z) {
     return dotProduct(x, y, z) + D;
@@ -115,8 +112,7 @@ public class Plane extends Vector {
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
-   *
-   * @param x,y,z is the vector.
+   * 
    * @return true if the result is on the plane.
    */
   public boolean evaluateIsZero(final double x, final double y, final double z) {

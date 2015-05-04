@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Shapes implemented using 3D planar geometry.
- */
-package org.apache.lucene.spatial.spatial4j.geo3d;
+/** Spatial4j stuff that ideally belongs in Spatial4j (isn't related to Lucene). */
+package org.apache.lucene.spatial.spatial4j;
