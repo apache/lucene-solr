@@ -163,6 +163,8 @@ New Features
 * SOLR-7231: DIH-TikaEntityprocessor, create lat-lon field from Metadata
   (Tim Allison via Noble Paul)
 
+* SOLR-6220: Rule Based Replica Assignment during collection creation (Noble Paul)
+
 
 Bug Fixes
 ----------------------

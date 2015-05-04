@@ -138,8 +138,9 @@ public abstract class CoreAdminParams
     TRANSIENT,
     OVERSEEROP,
     REQUESTSTATUS,
-    REJOINLEADERELECTION;
-    
+    REJOINLEADERELECTION,
+    INVOKE;
+
     public static CoreAdminAction get( String p )
     {
       if( p != null ) {
