@@ -811,7 +811,7 @@ public class Overseer implements Closeable {
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
-    overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats);
+    overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this);
     ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "OverseerCollectionProcessor-" + id);
     ccThread.setDaemon(true);
     
@@ -828,6 +828,10 @@ public class Overseer implements Closeable {
 
   public Stats getStats() {
     return stats;
+  }
+
+  ZkController getZkController(){
+    return zkController;
   }
   
   /**

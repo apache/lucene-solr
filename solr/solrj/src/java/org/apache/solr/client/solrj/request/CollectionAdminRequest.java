@@ -190,7 +190,7 @@ public class CollectionAdminRequest extends SolrRequest<CollectionAdminResponse>
     protected Boolean autoAddReplicas;
     protected Integer stateFormat;
     protected String asyncId;
-
+    private String[] rule , snitch;
     public Create() {
       action = CollectionAction.CREATE;
     }
@@ -208,6 +208,8 @@ public class CollectionAdminRequest extends SolrRequest<CollectionAdminResponse>
     public void setAsyncId(String asyncId) {
       this.asyncId = asyncId;
     }
+    public void setRule(String... s){ this.rule = s; }
+    public void setSnitch(String... s){ this.snitch = s; }
 
     public String getConfigName()  { return configName; }
     public String getCreateNodeSet() { return createNodeSet; }
@@ -260,6 +262,8 @@ public class CollectionAdminRequest extends SolrRequest<CollectionAdminResponse>
       if (stateFormat != null) {
         params.set(DocCollection.STATE_FORMAT, stateFormat);
       }
+      if(rule != null) params.set("rule", rule);
+      if(snitch != null) params.set("snitch", snitch);
       return params;
     }
     

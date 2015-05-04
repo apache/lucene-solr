@@ -37,6 +37,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,6 +130,10 @@ public class ZkStateReader implements Closeable {
     CharArr out = new CharArr();
     new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
+  }
+
+  public static String toJSONString(Object o) {
+    return new String(toJSON(o), StandardCharsets.UTF_8);
   }
 
   public static byte[] toUTF8(CharArr out) {

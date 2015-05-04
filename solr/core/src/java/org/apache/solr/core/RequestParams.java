@@ -204,6 +204,10 @@ public class RequestParams implements MapSerializable {
       Object v = e.getValue();
       if (v instanceof Map && maxDepth > 0) {
         v = getDeepCopy((Map) v, maxDepth - 1);
+      } else if (v instanceof Set) {
+        v = new HashSet((Set) v);
+      } else if (v instanceof List) {
+        v = new ArrayList((List) v);
       }
       copy.put(e.getKey(), v);
     }

@@ -286,6 +286,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         handler = cores.getRequestHandler(path);
         if (handler != null) {
           solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
+          solrReq.getContext().put(CoreContainer.class.getName(), cores);
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }

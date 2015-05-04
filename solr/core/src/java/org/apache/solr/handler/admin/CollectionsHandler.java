@@ -48,6 +48,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -803,6 +804,8 @@ public class CollectionsHandler extends RequestHandlerBase {
     if(props.get(DocCollection.STATE_FORMAT) == null){
       props.put(DocCollection.STATE_FORMAT,"2");
     }
+    addRuleMap(req.getParams(), props, "rule");
+    addRuleMap(req.getParams(), props, "snitch");
 
     if(SYSTEM_COLL.equals(name)){
       //We must always create asystem collection with only a single shard
@@ -815,6 +818,15 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CREATE.toLower(), m, rsp);
+  }
+
+  private void addRuleMap(SolrParams params, Map<String, Object> props, String key) {
+    String[] rules = params.getParams(key);
+    if(rules!= null && rules.length >0){
+      ArrayList<Map> l = new ArrayList<>();
+      for (String rule : rules) l.add(Rule.parseRule(rule));
+      props.put(key, l);
+    }
   }
 
   private void createSysConfigSet() throws KeeperException, InterruptedException {
