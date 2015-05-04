@@ -113,10 +113,10 @@ public class Rule {
    * without violating this rule
    *
    * @param testNode       The node in question
-   * @param shardVsNodeSet
+   * @param shardVsNodeSet Set of nodes for every shard 
    * @param nodeVsTags     The pre-fetched tags for all the nodes
    * @param shardName      The shard to which this node should be attempted
-   * @return
+   * @return MatchStatus
    */
   MatchStatus tryAssignNodeToShard(String testNode,
                                    Map<String, Set<String>> shardVsNodeSet,
