@@ -320,6 +320,11 @@ Other Changes
   i.e. Construct, Init, and Call so the context of the request would be available after Init
    and before the actual call operation. (Anshum Gupta, Noble Paul)
 
+* SOLR-6878: Allow symmetric lists of synonyms to be added using the managed synonym REST
+  API to support legacy expand=true type mappings; previously the API only allowed adding
+  explicit mappings, with this feature you can now add a list and have the mappings
+  expanded when the update is applied (Timothy Potter, Vitaliy Zhovtyuk, hossman)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

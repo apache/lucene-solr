@@ -56,7 +56,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
   
   public static final String SYNONYM_MAPPINGS = "synonymMappings";
   public static final String IGNORE_CASE_INIT_ARG = "ignoreCase";
-  
+
   /**
    * Used internally to preserve the case of synonym mappings regardless
    * of the ignoreCase setting.
@@ -102,7 +102,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       implements ManagedResource.ChildResourceSupport
   {
     protected Map<String,CasePreservedSynonymMappings> synonymMappings;
-    
+
     public SynonymManager(String resourceId, SolrResourceLoader loader, StorageIO storageIO)
         throws SolrException {
       super(resourceId, loader, storageIO);
@@ -126,13 +126,13 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       if (initArgs.get(IGNORE_CASE_INIT_ARG) == null) {
         initArgs.add(IGNORE_CASE_INIT_ARG, Boolean.FALSE);
       }
-      
+
       boolean ignoreCase = getIgnoreCase(managedInitArgs);
       synonymMappings = new TreeMap<>();
       if (managedData != null) {
         Map<String,Object> storedSyns = (Map<String,Object>)managedData;
         for (String key : storedSyns.keySet()) {
-          
+
           String caseKey = applyCaseSetting(ignoreCase, key);
           CasePreservedSynonymMappings cpsm = synonymMappings.get(caseKey);
           if (cpsm == null) {
@@ -155,68 +155,100 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
         }
       }
       log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());      
-    }    
+    }
 
     @SuppressWarnings("unchecked")
     @Override
     protected Object applyUpdatesToManagedData(Object updates) {
-      if (!(updates instanceof Map)) {
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-          "Unsupported data format (" + updates.getClass().getName() + "); expected a JSON object (Map)!");
-      }
-      boolean ignoreCase = getIgnoreCase();      
+      boolean ignoreCase = getIgnoreCase();
       boolean madeChanges = false;
-      Map<String,Object> jsonMap = (Map<String,Object>)updates;
-      for (String term : jsonMap.keySet()) {
-        
+      if (updates instanceof List) {
+        madeChanges = applyListUpdates((List<String>)updates, ignoreCase);
+      } else if (updates instanceof Map) {
+        madeChanges = applyMapUpdates((Map<String,Object>)updates, ignoreCase);
+      } else {
+        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+            "Unsupported data format (" + updates.getClass().getName() + "); expected a JSON object (Map or List)!");
+      }
+      return madeChanges ? getStoredView() : null;
+    }
+
+    protected boolean applyListUpdates(List<String> jsonList, boolean ignoreCase) {
+      boolean madeChanges = false;
+      for (String term : jsonList) {
+        // find the mappings using the case aware key
         String origTerm = term;
         term = applyCaseSetting(ignoreCase, term);
-        
-        // find the mappings using the case aware key
         CasePreservedSynonymMappings cpsm = synonymMappings.get(term);
-        if (cpsm == null) {
+        if (cpsm == null)
           cpsm = new CasePreservedSynonymMappings();
-        }
-        
-        Set<String> output = cpsm.mappings.get(origTerm);  
-        
-        Object val = jsonMap.get(origTerm); // IMPORTANT: use the original
-        if (val instanceof String) {
-          String strVal = (String)val;
-          
-          if (output == null) {
-            output = new TreeSet<>();
-            cpsm.mappings.put(origTerm, output);
-          }
-                    
-          if (output.add(strVal)) {
-            madeChanges = true;
-          }
-        } else if (val instanceof List) {
-          List<String> vals = (List<String>)val;
-          
-          if (output == null) {
-            output = new TreeSet<>();
-            cpsm.mappings.put(origTerm, output);
-          }
-          
-          for (String nextVal : vals) {
-            if (output.add(nextVal)) {
-              madeChanges = true;
-            }
-          }          
-          
-        } else {
-          throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Unsupported value "+val+
-              " for "+term+"; expected single value or a JSON array!");
-        }
-        
+
+        Set<String> treeTerms = new TreeSet<>();
+        treeTerms.addAll(jsonList);
+        treeTerms.remove(origTerm);
+        cpsm.mappings.put(origTerm, treeTerms);
+        madeChanges = true;
         // only add the cpsm to the synonymMappings if it has valid data
         if (!synonymMappings.containsKey(term) && cpsm.mappings.get(origTerm) != null) {
           synonymMappings.put(term, cpsm);
         }
       }
-      return madeChanges ? getStoredView() : null;
+      return madeChanges;
+    }
+
+    protected boolean applyMapUpdates(Map<String,Object> jsonMap, boolean ignoreCase) {
+      boolean madeChanges = false;
+
+      for (String term : jsonMap.keySet()) {
+
+        String origTerm = term;
+        term = applyCaseSetting(ignoreCase, term);
+
+        // find the mappings using the case aware key
+        CasePreservedSynonymMappings cpsm = synonymMappings.get(term);
+        if (cpsm == null)
+          cpsm = new CasePreservedSynonymMappings();
+
+        Set<String> output = cpsm.mappings.get(origTerm);
+
+        Object val = jsonMap.get(origTerm); // IMPORTANT: use the original
+        if (val instanceof String) {
+          String strVal = (String)val;
+
+          if (output == null) {
+            output = new TreeSet<>();
+            cpsm.mappings.put(origTerm, output);
+          }
+
+          if (output.add(strVal)) {
+            madeChanges = true;
+          }
+        } else if (val instanceof List) {
+          List<String> vals = (List<String>)val;
+
+          if (output == null) {
+            output = new TreeSet<>();
+            cpsm.mappings.put(origTerm, output);
+          }
+
+          for (String nextVal : vals) {
+            if (output.add(nextVal)) {
+              madeChanges = true;
+            }
+          }
+
+        } else {
+          throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Unsupported value "+val+
+              " for "+term+"; expected single value or a JSON array!");
+        }
+
+        // only add the cpsm to the synonymMappings if it has valid data
+        if (!synonymMappings.containsKey(term) && cpsm.mappings.get(origTerm) != null) {
+          synonymMappings.put(term, cpsm);
+        }
+      }
+
+      return madeChanges;
     }
     
     /**
