@@ -1230,6 +1230,11 @@ else
   GC_LOG_OPTS=()
 fi
 
+# If ZK_HOST is defined, the assume SolrCloud mode
+if [[ -n "$ZK_HOST" ]]; then
+  SOLR_MODE="solrcloud"
+fi
+
 if [ "$SOLR_MODE" == 'solrcloud' ]; then
   if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
     ZK_CLIENT_TIMEOUT="15000"
