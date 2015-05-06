@@ -145,9 +145,6 @@ class HttpSolrCall {
       // this lets you handle /update/commit when /update is a servlet
       path += req.getPathInfo();
     }
-    if (solrDispatchFilter.pathPrefix != null && path.startsWith(solrDispatchFilter.pathPrefix)) {
-      path = path.substring(solrDispatchFilter.pathPrefix.length());
-    }
     // check for management path
     String alternate = cores.getManagementPath();
     if (alternate != null && path.startsWith(alternate)) {
