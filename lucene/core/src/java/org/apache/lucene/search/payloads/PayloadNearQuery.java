@@ -20,6 +20,7 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -64,8 +65,8 @@ public class PayloadNearQuery extends SpanNearQuery {
   public PayloadNearQuery(SpanQuery[] clauses, int slop, boolean inOrder,
       PayloadFunction function) {
     super(clauses, slop, inOrder);
-    fieldName = clauses[0].getField(); // all clauses must have same field
-    this.function = function;
+    this.fieldName = Objects.requireNonNull(clauses[0].getField(), "all clauses must have same non null field");
+    this.function = Objects.requireNonNull(function);
   }
 
   @Override
@@ -111,32 +112,20 @@ public class PayloadNearQuery extends SpanNearQuery {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode() ^ getClass().hashCode();
-    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
-    result = prime * result + ((function == null) ? 0 : function.hashCode());
+    int result = super.hashCode();
+    result = prime * result + fieldName.hashCode();
+    result = prime * result + function.hashCode();
     return result;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
+    if (! super.equals(obj)) {
       return false;
-    if (getClass() != obj.getClass())
-      return false;
+    }
     PayloadNearQuery other = (PayloadNearQuery) obj;
-    if (fieldName == null) {
-      if (other.fieldName != null)
-        return false;
-    } else if (!fieldName.equals(other.fieldName))
-      return false;
-    if (function == null) {
-      if (other.function != null)
-        return false;
-    } else if (!function.equals(other.function))
-      return false;
-    return true;
+    return fieldName.equals(other.fieldName)
+          && function.equals(other.function);
   }
 
   public class PayloadNearSpanWeight extends SpanWeight {

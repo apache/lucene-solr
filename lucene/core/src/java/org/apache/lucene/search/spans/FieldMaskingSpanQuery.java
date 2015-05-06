@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -79,8 +80,8 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   private String field;
     
   public FieldMaskingSpanQuery(SpanQuery maskedQuery, String maskedField) {
-    this.maskedQuery = maskedQuery;
-    this.field = maskedField;
+    this.maskedQuery = Objects.requireNonNull(maskedQuery);
+    this.field = Objects.requireNonNull(maskedField);
   }
 
   @Override
@@ -141,19 +142,19 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof FieldMaskingSpanQuery))
+    if (! super.equals(o)) {
       return false;
+    }
     FieldMaskingSpanQuery other = (FieldMaskingSpanQuery) o;
     return (this.getField().equals(other.getField())
-            && (this.getBoost() == other.getBoost())
             && this.getMaskedQuery().equals(other.getMaskedQuery()));
 
   }
   
   @Override
   public int hashCode() {
-    return getMaskedQuery().hashCode()
-      ^ getField().hashCode()
-      ^ Float.floatToRawIntBits(getBoost());
+    return super.hashCode()
+          ^ getMaskedQuery().hashCode()
+          ^ getField().hashCode();
   }
 }

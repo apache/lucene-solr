@@ -97,22 +97,17 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof SpanPayloadCheckQuery)) return false;
-
+    if (! super.equals(o)) {
+      return false;
+    }
     SpanPayloadCheckQuery other = (SpanPayloadCheckQuery)o;
-    return this.payloadToMatch.equals(other.payloadToMatch)
-         && this.match.equals(other.match)
-         && this.getBoost() == other.getBoost();
+    return this.payloadToMatch.equals(other.payloadToMatch);
   }
 
   @Override
   public int hashCode() {
-    int h = match.hashCode() ^ getClass().hashCode();
-    h ^= (h << 8) | (h >>> 25);  // reversible
-    //TODO: is this right?
-    h ^= payloadToMatch.hashCode();
-    h ^= Float.floatToRawIntBits(getBoost()) ;
+    int h = super.hashCode();
+    h = (h * 63) ^ payloadToMatch.hashCode();
     return h;
   }
 }
