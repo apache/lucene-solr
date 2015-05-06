@@ -72,13 +72,13 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
   
   @SuppressWarnings("unchecked")
   @Override
-  protected Point randomPointIn(Shape shape) {
+  protected Point randomPointInOrNull(Shape shape) {
     if (!shape.hasArea()) {
       final Point pt = randomPointInEmptyShape((S) shape);
       assert shape.relate(pt).intersects() : "faulty randomPointInEmptyShape";
       return pt;
     }
-    return super.randomPointIn(shape);
+    return super.randomPointInOrNull(shape);
   }
 
   public void testRelateWithRectangle() {
@@ -132,7 +132,10 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
           case WITHIN:
             i_W++;
             for (int j = 0; j < MAX_TRIES; j++) {
-              Point p = randomPointIn(s);
+              Point p = randomPointInOrNull(s);
+              if (p == null) {//couldn't find a random point in shape
+                break;
+              }
               assertRelation(null, CONTAINS, r, p);
             }
             break;
