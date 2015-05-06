@@ -217,16 +217,12 @@ public class PayloadTermQuery extends SpanTermQuery {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
+    if (!super.equals(obj)) {
       return false;
-    if (getClass() != obj.getClass())
-      return false;
+    }
     PayloadTermQuery other = (PayloadTermQuery) obj;
-    if (includeSpanScore != other.includeSpanScore)
-      return false;
-    return function.equals(other.function);
+    return (includeSpanScore == other.includeSpanScore)
+         && function.equals(other.function);
   }
 
 }

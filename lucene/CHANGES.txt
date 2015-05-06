@@ -186,6 +186,9 @@ Other
 * LUCENE-6382: Lucene now enforces that positions never exceed the
   maximum value IndexWriter.MAX_POSITION.  (Robert Muir, Mike McCandless)
 
+* LUCENE-6372: Simplified and improved equals/hashcode of span queries.
+  (Paul Elschot via Adrien Grand)
+
 Build
 
 * LUCENE-6420: Update forbiddenapis to v1.8  (Uwe Schindler)

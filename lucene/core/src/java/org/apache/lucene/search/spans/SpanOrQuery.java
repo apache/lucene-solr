@@ -131,21 +131,17 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
+    if (! super.equals(o)) {
+      return false;
+    }
     final SpanOrQuery that = (SpanOrQuery) o;
-
-    if (!clauses.equals(that.clauses)) return false;
-
-    return getBoost() == that.getBoost();
+    return clauses.equals(that.clauses);
   }
 
   @Override
   public int hashCode() {
-    int h = clauses.hashCode();
-    h ^= (h << 10) | (h >>> 23);
-    h ^= Float.floatToRawIntBits(getBoost());
+    int h = super.hashCode();
+    h = (h * 7) ^ clauses.hashCode();
     return h;
   }
 

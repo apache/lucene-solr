@@ -75,12 +75,9 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
+    if (! super.equals(obj)) {
       return false;
-    if (getClass() != obj.getClass())
-      return false;
+    }
     SpanTermQuery other = (SpanTermQuery) obj;
     return term.equals(other.term);
   }
