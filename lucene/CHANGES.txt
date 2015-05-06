@@ -92,6 +92,12 @@ New Features
   expression helper VariableContext
   (Jack Conradson via Ryan Ernst)
 
+* LUCENE-6196: New Spatial "Geo3d" API with partial Spatial4j integration.
+  It is a set of shapes implemented using 3D planar geometry for calculating
+  spatial relations on the surface of a sphere. Shapes include Point, BBox,
+  Circle, Path (buffered line string), and Polygon.
+  (Karl Wright via David Smiley)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if
