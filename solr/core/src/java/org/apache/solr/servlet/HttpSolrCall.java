@@ -390,14 +390,7 @@ class HttpSolrCall {
             writeResponse(solrRsp, responseWriter, reqMethod);
           }
           return RETURN;
-        case FORWARD:
-          return FORWARD;
-        case PASSTHROUGH:
-          return PASSTHROUGH;
-        case RETRY:
-          return RETRY;
-        case RETURN:
-          return RETURN;
+        default: return action;
       }
     } catch (Throwable ex) {
       sendError(ex);
@@ -415,9 +408,6 @@ class HttpSolrCall {
       return RETURN;
     }
 
-    // Otherwise let the webapp handle the request
-
-    return Action.PASSTHROUGH;
   }
 
   void destroy() {
