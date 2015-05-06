@@ -107,6 +107,10 @@ Upgrading from Solr 5.1
 
   - Please refer to the "Enabling SSL" section in the Solr Reference Guide for complete details.
 
+* Support for pathPrefix has been completely removed from Solr. Since 5.0, Solr only officially
+  supported being run as a webapp but you could play around with the web.xml to have a path prefix.
+  That would no longer be true. See SOLR-7500 for more info.
+
 Detailed Change List
 ----------------------
 
@@ -326,6 +330,9 @@ Other Changes
   expanded when the update is applied (Timothy Potter, Vitaliy Zhovtyuk, hossman)
 
 * SOLR-7102: bin/solr should activate cloud mode if ZK_HOST is set (Timothy Potter)
+
+* SOLR-7500: Remove pathPrefix from SolrDispatchFilter as Solr no longer runs as a part
+  of a bigger webapp. (Anshum Gupta)
 
 ==================  5.1.0 ==================
 

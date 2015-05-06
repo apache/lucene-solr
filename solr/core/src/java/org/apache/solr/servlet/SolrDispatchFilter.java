@@ -84,9 +84,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     log.info("SolrDispatchFilter.init()" + this.getClass().getClassLoader());
 
     try {
-      // web.xml configuration
-      this.pathPrefix = config.getInitParameter( "path-prefix" );
-
       Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
       if (extraProperties == null)
         extraProperties = new Properties();
@@ -191,44 +188,5 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       call.destroy();
     }
-  }
-
-
-
-  // TODO: Clean up - we don't need this anymore.
-  //---------------------------------------------------------------------
-  //---------------------------------------------------------------------
-
-  /**
-   * Set the prefix for all paths.  This is useful if you want to apply the
-   * filter to something other then /*, perhaps because you are merging this
-   * filter into a larger web application.
-   *
-   * For example, if web.xml specifies:
-   * <pre class="prettyprint">
-   * {@code
-   * <filter-mapping>
-   *  <filter-name>SolrRequestFilter</filter-name>
-   *  <url-pattern>/xxx/*</url-pattern>
-   * </filter-mapping>}
-   * </pre>
-   *
-   * Make sure to set the PathPrefix to "/xxx" either with this function
-   * or in web.xml.
-   *
-   * <pre class="prettyprint">
-   * {@code
-   * <init-param>
-   *  <param-name>path-prefix</param-name>
-   *  <param-value>/xxx</param-value>
-   * </init-param>}
-   * </pre>
-   */
-  public void setPathPrefix(String pathPrefix) {
-    this.pathPrefix = pathPrefix;
-  }
-
-  public String getPathPrefix() {
-    return pathPrefix;
   }
 }
