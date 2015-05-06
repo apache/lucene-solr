@@ -113,12 +113,12 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
       for (SearchResult result : got.results) {
         String id = result.getId();
         if (!remainingExpectedIds.remove(id)) {
-          fail("Shouldn't match", id, indexedShapes, queryShape, operation);
+          fail("qIdx:" + queryIdx + " Shouldn't match", id, indexedShapes, queryShape, operation);
         }
       }
       if (!remainingExpectedIds.isEmpty()) {
         String id = remainingExpectedIds.iterator().next();
-        fail("Should have matched", id, indexedShapes, queryShape, operation);
+        fail("qIdx:" + queryIdx + " Should have matched", id, indexedShapes, queryShape, operation);
       }
     }
   }
