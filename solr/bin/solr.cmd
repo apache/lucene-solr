@@ -784,6 +784,8 @@ IF EXIST "!SOLR_LOGS_DIR!\solr_gc.log" (
   move /Y "!SOLR_LOGS_DIR!\solr_gc.log" "!SOLR_LOGS_DIR!\solr_gc_log_!now_ts!"
 )
 
+IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
+
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=15000"
 

@@ -325,6 +325,8 @@ Other Changes
   explicit mappings, with this feature you can now add a list and have the mappings
   expanded when the update is applied (Timothy Potter, Vitaliy Zhovtyuk, hossman)
 
+* SOLR-7102: bin/solr should activate cloud mode if ZK_HOST is set (Timothy Potter)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
