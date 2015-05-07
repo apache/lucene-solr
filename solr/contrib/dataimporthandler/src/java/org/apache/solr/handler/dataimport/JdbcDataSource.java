@@ -19,16 +19,12 @@ package org.apache.solr.handler.dataimport;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
@@ -65,7 +61,6 @@ public class JdbcDataSource extends
 
   @Override
   public void init(Context context, Properties initProps) {
-    initProps = decryptPwd(initProps);
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
       convertType = Boolean.parseBoolean(o.toString());
@@ -104,34 +99,6 @@ public class JdbcDataSource extends
       else
         fieldNameVsType.put(n, Types.VARCHAR);
     }
-  }
-
-  private Properties decryptPwd(Properties initProps) {
-    String encryptionKey = initProps.getProperty("encryptKeyFile");
-    if (initProps.getProperty("password") != null && encryptionKey != null) {
-      // this means the password is encrypted and use the file to decode it
-      try {
-        try (FileReader fr = new FileReader(encryptionKey)) {
-          char[] chars = new char[100];//max 100 char password
-          int len = fr.read(chars);
-          if (len < 6)
-            throw new DataImportHandlerException(SEVERE, "There should be a password of length 6 atleast " + encryptionKey);
-          Properties props = new Properties();
-          props.putAll(initProps);
-          String password = null;
-          try {
-            password = CryptoKeys.decodeAES(initProps.getProperty("password"), new String(chars, 0, len)).trim();
-          } catch (SolrException se) {
-            throw new DataImportHandlerException(SEVERE, "Error decoding password", se.getCause());
-          }
-          props.put("password", password);
-          initProps = props;
-        }
-      } catch (IOException e) {
-        throw new DataImportHandlerException(SEVERE, "Could not load encryptKeyFile  " + encryptionKey);
-      }
-    }
-    return initProps;
   }
 
   protected Callable<Connection> createConnectionFactory(final Context context,
@@ -428,7 +395,7 @@ public class JdbcDataSource extends
     }
   }
 
-  Connection getConnection() throws Exception {
+  private Connection getConnection() throws Exception {
     long currTime = System.nanoTime();
     if (currTime - connLastUsed > CONN_TIME_OUT) {
       synchronized (this) {

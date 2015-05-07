@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -123,36 +120,6 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
     Connection conn = jdbcDataSource.createConnectionFactory(context, props)
             .call();
-
-    mockControl.verify();
-
-    assertSame("connection", conn, connection);
-  }
-
-  @Test
-  public void testRetrieveFromJndiWithCredentialsWithEncryptedPwd() throws Exception {
-    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
-    Files.delete(tmpdir.toPath());
-    tmpdir.mkdir();
-    byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
-    createFile(tmpdir, "enckeyfile.txt", content, false);
-
-    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
-    props.put("user", "Fred");
-    props.put("encryptKeyFile", new File(tmpdir, "enckeyfile.txt").getAbsolutePath());
-    props.put("password", "U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=");
-    props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
-    EasyMock.expect(dataSource.getConnection("Fred", "MyPassword")).andReturn(
-        connection);
-    jdbcDataSource.init(context, props);
-
-    connection.setAutoCommit(false);
-    connection.setHoldability(1);
-
-    mockControl.replay();
-
-    Connection conn = jdbcDataSource.getConnection();
 
     mockControl.verify();
 
