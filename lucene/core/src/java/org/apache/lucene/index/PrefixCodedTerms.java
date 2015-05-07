@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMFile;
@@ -31,14 +32,14 @@ import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Prefix codes term instances (prefixes are shared)
- * @lucene.experimental
+ * @lucene.internal
  */
-class PrefixCodedTerms implements Accountable {
+public class PrefixCodedTerms implements Accountable {
   final RAMFile buffer;
   private long delGen;
 
   private PrefixCodedTerms(RAMFile buffer) {
-    this.buffer = buffer;
+    this.buffer = Objects.requireNonNull(buffer);
   }
 
   @Override
@@ -62,6 +63,9 @@ class PrefixCodedTerms implements Accountable {
     private RAMOutputStream output = new RAMOutputStream(buffer, false);
     private Term lastTerm = new Term("");
     private BytesRefBuilder lastTermBytes = new BytesRefBuilder();
+
+    /** Sole constructor. */
+    public Builder() {}
 
     /** add a term */
     public void add(Term term) {
@@ -111,6 +115,7 @@ class PrefixCodedTerms implements Accountable {
     }
   }
 
+  /** An iterator over the list of terms stored in a {@link PrefixCodedTerms}. */
   public static class TermIterator extends FieldTermIterator {
     final IndexInput input;
     final BytesRefBuilder builder = new BytesRefBuilder();
@@ -119,7 +124,7 @@ class PrefixCodedTerms implements Accountable {
     final long delGen;
     String field = "";
 
-    public TermIterator(long delGen, RAMFile buffer) {
+    private TermIterator(long delGen, RAMFile buffer) {
       try {
         input = new RAMInputStream("MergedPrefixCodedTermsIterator", buffer);
       } catch (IOException e) {
@@ -169,7 +174,24 @@ class PrefixCodedTerms implements Accountable {
     }
   }
 
+  /** Return an iterator over the terms stored in this {@link PrefixCodedTerms}. */
   public TermIterator iterator() {
     return new TermIterator(delGen, buffer);
+  }
+
+  @Override
+  public int hashCode() {
+    int h = buffer.hashCode();
+    h = 31 * h + (int) (delGen ^ (delGen >>> 32));
+    return h;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    PrefixCodedTerms other = (PrefixCodedTerms) obj;
+    return buffer.equals(other.buffer) && delGen == other.delGen;
   }
 }

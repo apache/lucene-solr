@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.BytesRefIterator;
 
-// TODO: maybe TermsFilter could use this?
-
 /** Iterates over terms in across multiple fields.  The caller must
  *  check {@link #field} after each {@link #next} to see if the field
  *  changed, but {@code ==} can be used since the iterator
