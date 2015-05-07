@@ -34,6 +34,10 @@ import org.apache.solr.schema.*;
 
 import com.tdunning.math.stats.AVLTreeDigest;
 
+import net.agkn.hll.HLL;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashFunction;
+
 /**
  * Factory class for creating instance of 
  * {@link org.apache.solr.handler.component.StatsValues}
@@ -105,6 +109,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   final protected boolean computeMin;
   final protected boolean computeMax;
   final protected boolean computeMinOrMax;
+  final protected boolean computeCardinality; 
 
   /** 
    * Either a function value source to collect from, or the ValueSource associated 
@@ -129,7 +134,13 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   protected long count;
   protected long countDistinct;
   protected final Set<T> distinctValues;
-  
+
+  /**
+   * Hash function that must be used by implementations of {@link #hash}
+   */
+  protected final HashFunction hasher; 
+  private final HLL hll;
+
   // facetField facetValue
   protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
   
@@ -141,8 +152,19 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     this.computeMin = statsField.calculateStats(Stat.min);
     this.computeMax = statsField.calculateStats(Stat.max);
     this.computeMinOrMax = computeMin || computeMax;
-      
+    
     this.distinctValues = computeCalcDistinct ? new TreeSet<T>() : null;
+
+    this.computeCardinality = statsField.calculateStats(Stat.cardinality);
+    if ( computeCardinality ) {
+
+      hasher = statsField.getHllOptions().getHasher();
+      hll = statsField.getHllOptions().newHLL();
+      assert null != hll : "Cardinality requires an HLL";
+    } else {
+      hll = null;
+      hasher = null;
+    }
 
     // alternatively, we could refactor a common base class that doesn't know/care
     // about either SchemaField or ValueSource - but then there would be a lot of
@@ -186,6 +208,12 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     if (computeMinOrMax) {
       updateMinMax((T) stv.get("min"), (T) stv.get("max"));
     }
+
+    if (computeCardinality) {
+      byte[] data = (byte[]) stv.get("cardinality");
+      hll.union(HLL.fromBytes(data));
+    }
+
     updateTypeSpecificStats(stv);
     
     NamedList f = (NamedList) stv.get(FACETS);
@@ -228,6 +256,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   }
 
   public void accumulate(T value, int count) { 
+    assert null != value : "Can't accumulate null";
+
     if (computeCount) {
       this.count += count;
     }
@@ -237,6 +267,14 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     }
     if (computeMinOrMax) {
       updateMinMax(value, value);
+    }
+    if (computeCardinality) {
+      if (null == hasher) {
+        assert value instanceof Number : "pre-hashed value support only works with numeric longs";
+        hll.addRaw(((Number)value).longValue());
+      } else {
+        hll.addRaw(hash(value));
+      }
     }
     updateTypeSpecificStats(value, count);
   }
@@ -290,6 +328,13 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       res.add("distinctValues", distinctValues);
       res.add("countDistinct", countDistinct);
     }
+    if (statsField.includeInResponse(Stat.cardinality)) {
+      if (statsField.getIsShard()) {
+        res.add("cardinality", hll.toBytes());
+      } else {
+        res.add("cardinality", hll.cardinality());
+      }
+    }
     
     addTypeSpecificStats(res);
     
@@ -325,6 +370,18 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     values = valueSource.getValues(vsContext, ctx);
   }
   
+  /**
+   * Hash function to be used for computing cardinality.
+   *
+   * This method will not be called in cases where the user has indicated the values 
+   * are already hashed.  If this method is called, then {@link #hasher} will be non-null, 
+   * and should be used to generate the appropriate hash value.
+   *
+   * @see Stat#cardinality
+   * @see #hasher
+   */
+  protected abstract long hash(T value);
+
   /**
    * Updates the minimum and maximum statistics based on the given values
    *
@@ -388,9 +445,31 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     
     this.computePercentiles = statsField.calculateStats(Stat.percentiles);
     if ( computePercentiles ) {
-      
       tdigest = new AVLTreeDigest(statsField.getTdigestCompression()); 
     }
+
+  }
+
+  @Override
+  public long hash(Number v) {
+    // have to use a bit of reflection to ensure good hash values since
+    // we don't have truely type specific stats
+    if (v instanceof Long) {
+      return hasher.hashLong(v.longValue()).asLong();
+    } else if (v instanceof Integer) {
+      return hasher.hashInt(v.intValue()).asLong();
+    } else if (v instanceof Double) {
+      return hasher.hashLong(Double.doubleToRawLongBits(v.doubleValue())).asLong();
+    } else if (v instanceof Float) {
+      return hasher.hashInt(Float.floatToRawIntBits(v.floatValue())).asLong();
+    } else if (v instanceof Byte) {
+      return hasher.newHasher().putByte(v.byteValue()).hash().asLong();
+    } else if (v instanceof Short) {
+      return hasher.newHasher().putShort(v.shortValue()).hash().asLong();
+    } 
+    // else...
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                            "Unsupported Numeric Type ("+v.getClass()+") for hashing: " +statsField);
   }
   
   @Override
@@ -540,6 +619,11 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
     super(statsField);
   }
   
+  @Override
+  public long hash(EnumFieldValue v) {
+    return hasher.hashInt(v.toInt().intValue()).asLong();
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -616,6 +700,11 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     super(statsField);
     this.computeSum = statsField.calculateStats(Stat.sum);
     this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
+  }
+
+  @Override
+  public long hash(Date v) {
+    return hasher.hashLong(v.getTime()).asLong();
   }
   
   @Override
@@ -715,6 +804,12 @@ class StringStatsValues extends AbstractStatsValues<String> {
   
   public StringStatsValues(StatsField statsField) {
     super(statsField);
+  }
+
+  @Override
+  public long hash(String v) {
+    // NOTE: renamed hashUnencodedChars starting with guava 15
+    return hasher.hashString(v).asLong();
   }
   
   @Override

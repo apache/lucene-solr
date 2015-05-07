@@ -45,6 +45,7 @@ public class FieldStatsInfo implements Serializable {
   Object mean = null;
   Double sumOfSquares = null;
   Double stddev = null;
+  Long cardinality = null;
   
   Map<String,List<FieldStatsInfo>> facets;
   
@@ -106,6 +107,8 @@ public class FieldStatsInfo implements Serializable {
         for( Map.Entry<String, Object> ev : fields ) {
           percentiles.put(Double.parseDouble(ev.getKey()), (Double)ev.getValue());
         }
+      } else if ( "cardinality".equals(entry.getKey()) ) {
+        cardinality = (Long)entry.getValue();
       }
       else {
         throw new RuntimeException( "unknown key: "+entry.getKey() + " ["+entry.getValue()+"]" );
@@ -149,6 +152,9 @@ public class FieldStatsInfo implements Serializable {
     if( percentiles != null ) {
       sb.append( " percentiles:").append(percentiles);
     }
+    if( cardinality != null ) {
+      sb.append( " cardinality:").append(cardinality);
+    }
     
     sb.append( " }" );
     return sb.toString();
@@ -175,7 +181,8 @@ public class FieldStatsInfo implements Serializable {
   }
 
   public Long getCountDistinct() {
-    return countDistinct;
+    // :TODO: as client convinience, should we return cardinality if this is null?
+    return countDistinct; 
   }
 
   public Collection<Object> getDistinctValues() {
@@ -208,5 +215,13 @@ public class FieldStatsInfo implements Serializable {
    */
   public Map<Double, Double> getPercentiles() {
     return percentiles;
+  }
+
+  /**
+   * The cardinality of of the set of values if requested, otherwise null.
+   */
+  public Long getCardinality() {
+    // :TODO: as client convinience, should we return countDistinct if this is null?
+    return cardinality; 
   }
 }
