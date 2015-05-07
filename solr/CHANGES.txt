@@ -244,6 +244,8 @@ Bug Fixes
 * SOLR-7494: Facet Module - unique() facet function was wildly inaccurate for high cardinality
   fields. (Andy Crossen, yonik)
 
+* SOLR-7502: start script should not try to create configset for .system collection (Noble Paul)
+
 
 Optimizations
 ----------------------
