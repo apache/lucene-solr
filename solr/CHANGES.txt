@@ -169,6 +169,8 @@ New Features
 
 * SOLR-6220: Rule Based Replica Assignment during collection creation (Noble Paul)
 
+* SOLR-4392: Make it possible to specify AES encrypted password in dataconfig.xml (Noble Paul)
+
 
 Bug Fixes
 ----------------------
