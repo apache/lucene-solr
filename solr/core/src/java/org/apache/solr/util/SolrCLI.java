@@ -1199,7 +1199,9 @@ public class SolrCLI {
       boolean configExistsInZk =
           cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/"+confname, true);
 
-      if (configExistsInZk) {
+      if (".system".equals(collectionName)) {
+        //do nothing
+      } else if (configExistsInZk) {
         System.out.println("Re-using existing configuration directory "+confname);
       } else {
         String configSet = cli.getOptionValue("confdir", DEFAULT_CONFIG_SET);
