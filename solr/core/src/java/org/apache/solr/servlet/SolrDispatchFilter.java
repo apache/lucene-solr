@@ -55,7 +55,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   protected volatile CoreContainer cores;
 
-  protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
 
