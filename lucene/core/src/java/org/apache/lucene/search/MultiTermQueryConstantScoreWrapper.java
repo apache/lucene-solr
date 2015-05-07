@@ -19,11 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BitDocIdSet;
@@ -82,7 +80,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new ConstantScoreWeight(this) {
       @Override
-      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final Terms terms = context.reader().terms(query.field);
         if (terms == null) {
           // field does not exist
@@ -106,39 +104,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         if (disi == null) {
           return null;
         }
-        return new Scorer(this) {
-
-          @Override
-          public float score() throws IOException {
-            return score;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
-          }
-
-        };
+        return new ConstantScoreScorer(this, score(), disi);
       }
     };
   }

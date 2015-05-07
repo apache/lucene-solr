@@ -348,7 +348,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new ConstantScoreWeight(this) {
         @Override
-        protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
           return null;
         }
       };
@@ -933,9 +933,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new ConstantScoreWeight(this) {
-        
         @Override
-        protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
           return null;
         }
       };

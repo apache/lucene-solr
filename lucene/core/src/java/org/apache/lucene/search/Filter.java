@@ -100,38 +100,7 @@ public abstract class Filter extends Query {
         if (iterator == null) {
           return null;
         }
-        return new Scorer(this) {
-
-          @Override
-          public float score() throws IOException {
-            return 0f;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return iterator.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return iterator.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return iterator.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return iterator.cost();
-          }
-        };
+        return new ConstantScoreScorer(this, 0f, iterator);
       }
 
     };

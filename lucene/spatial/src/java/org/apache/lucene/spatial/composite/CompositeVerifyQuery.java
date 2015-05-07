@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -93,7 +94,7 @@ public class CompositeVerifyQuery extends Query {
     return new ConstantScoreWeight(this) {
 
       @Override
-      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
         final Scorer indexQueryScorer = indexQueryWeight.scorer(context, acceptDocs);//pass acceptDocs through
         if (indexQueryScorer == null) {
@@ -109,7 +110,7 @@ public class CompositeVerifyQuery extends Query {
           }
         };
 
-        return new ConstantScoreScorer(this, score, twoPhaseIterator);
+        return new ConstantScoreScorer(this, score(), twoPhaseIterator);
       }
     };
   }

@@ -124,7 +124,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
       }
 
       @Override
-      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final LeafReader reader = context.reader();
         final Object key = reader.getCoreCacheKey();
 
@@ -148,19 +148,17 @@ public class CachingWrapperQuery extends Query implements Accountable {
         if (docIdSet == DocIdSet.EMPTY) {
           return null;
         }
-        final DocIdSetIterator approximation = docIdSet.iterator();
-        if (approximation == null) {
+        final DocIdSetIterator disi = docIdSet.iterator();
+        if (disi == null) {
           return null;
         }
 
-        final DocIdSetIterator disi;
-        final TwoPhaseIterator twoPhaseView;
+        // We apply acceptDocs as an approximation
         if (acceptDocs == null) {
-          twoPhaseView = null;
-          disi = approximation;
+          return new ConstantScoreScorer(this, 0f, disi);
         } else {
-          twoPhaseView = new TwoPhaseIterator(approximation) {
-            
+          final TwoPhaseIterator twoPhaseView = new TwoPhaseIterator(disi) {
+
             @Override
             public boolean matches() throws IOException {
               final int doc = approximation.docID();
@@ -168,46 +166,8 @@ public class CachingWrapperQuery extends Query implements Accountable {
             }
 
           };
-          disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);
+          return new ConstantScoreScorer(this, 0f, twoPhaseView);
         }
-        return new Scorer(weight) {
-
-          @Override
-          public TwoPhaseIterator asTwoPhaseIterator() {
-            return twoPhaseView;
-          }
-
-          @Override
-          public float score() throws IOException {
-            return 0f;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
-          }
-          
-        };
       }
     };
   }

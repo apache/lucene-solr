@@ -147,10 +147,10 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreWeight(this) {
+    return new RandomAccessWeight(this) {
 
       @Override
-      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
         final SortedSetDocValues values = DocValues.getSortedSet(context.reader(), field);
         final LongBitSet bits = new LongBitSet(values.getValueCount());
         for (BytesRef term : terms) {
@@ -159,15 +159,10 @@ public class DocValuesTermsQuery extends Query {
             bits.set(ord);
           }
         }
+        return new Bits() {
 
-        final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approximation) {
           @Override
-          public boolean matches() throws IOException {
-            final int doc = approximation.docID();
-            if (acceptDocs != null && acceptDocs.get(doc) == false) {
-              return false;
-            }
+          public boolean get(int doc) {
             values.setDocument(doc);
             for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
               if (bits.get(ord)) {
@@ -176,48 +171,14 @@ public class DocValuesTermsQuery extends Query {
             }
             return false;
           }
-        };
-        final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
-        return new Scorer(this) {
 
           @Override
-          public TwoPhaseIterator asTwoPhaseIterator() {
-            return twoPhaseIterator;
-          }
-
-          @Override
-          public float score() throws IOException {
-            return score;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
+          public int length() {
+            return context.reader().maxDoc();
           }
 
         };
       }
-
     };
   }
 
