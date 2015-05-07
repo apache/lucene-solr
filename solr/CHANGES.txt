@@ -172,6 +172,9 @@ New Features
 * SOLR-6968: New 'cardinality' option for stats.field, uses HyperLogLog to efficiently 
   estimate the cardinality of a field w/bounded RAM. (hossman)
 
+* SOLR-4392: Make it possible to specify AES encrypted password in dataconfig.xml (Noble Paul)
+
+
 Bug Fixes
 ----------------------
 
