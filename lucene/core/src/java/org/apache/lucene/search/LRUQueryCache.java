@@ -30,10 +30,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -582,7 +582,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
+    public Scorer scorer(LeafReaderContext context, final Bits acceptDocs) throws IOException {
       if (context.ord == 0) {
         policy.onUse(getQuery());
       }
@@ -606,64 +606,24 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == DocIdSet.EMPTY) {
         return null;
       }
-      final DocIdSetIterator approximation = docIdSet.iterator();
-      if (approximation == null) {
+      final DocIdSetIterator disi = docIdSet.iterator();
+      if (disi == null) {
         return null;
       }
 
-      final DocIdSetIterator disi;
-      final TwoPhaseIterator twoPhaseView;
+      // we apply acceptDocs as an approximation
       if (acceptDocs == null) {
-        twoPhaseView = null;
-        disi = approximation;
+        return new ConstantScoreScorer(this, 0f, disi);
       } else {
-        twoPhaseView = new TwoPhaseIterator(approximation) {
+        final TwoPhaseIterator twoPhaseView = new TwoPhaseIterator(disi) {
           @Override
           public boolean matches() throws IOException {
             final int doc = approximation.docID();
             return acceptDocs.get(doc);
           }
         };
-        disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);
+        return new ConstantScoreScorer(this, 0f, twoPhaseView);
       }
-      return new Scorer(this) {
-
-        @Override
-        public TwoPhaseIterator asTwoPhaseIterator() {
-          return twoPhaseView;
-        }
-
-        @Override
-        public float score() throws IOException {
-          return 0f;
-        }
-
-        @Override
-        public int freq() throws IOException {
-          return 1;
-        }
-
-        @Override
-        public int docID() {
-          return disi.docID();
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return disi.nextDoc();
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          return disi.advance(target);
-        }
-
-        @Override
-        public long cost() {
-          return disi.cost();
-        }
-
-      };
     }
 
   }

@@ -27,7 +27,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Bits.MatchNoBits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -123,18 +122,10 @@ public final class DocValuesRangeQuery extends Query {
     if (lowerVal == null && upperVal == null) {
       throw new IllegalStateException("Both min and max values cannot be null, call rewrite first");
     }
-    return new ConstantScoreWeight(DocValuesRangeQuery.this) {
-
+    return new RandomAccessWeight(DocValuesRangeQuery.this) {
+      
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
-
-        final Bits docsWithField = context.reader().getDocsWithField(field);
-        if (docsWithField == null || docsWithField instanceof MatchNoBits) {
-          return null;
-        }
-
-        final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseIterator twoPhaseRange;
+      protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
         if (lowerVal instanceof Long || upperVal instanceof Long) {
 
           final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
@@ -161,7 +152,27 @@ public final class DocValuesRangeQuery extends Query {
             return null;
           }
 
-          twoPhaseRange = new TwoPhaseNumericRange(values, min, max, approximation, acceptDocs);
+          return new Bits() {
+
+            @Override
+            public boolean get(int doc) {
+              values.setDocument(doc);
+              final int count = values.count();
+              for (int i = 0; i < count; ++i) {
+                final long value = values.valueAt(i);
+                if (value >= min && value <= max) {
+                  return true;
+                }
+              }
+              return false;
+            }
+
+            @Override
+            public int length() {
+              return context.reader().maxDoc();
+            }
+
+          };
 
         } else if (lowerVal instanceof BytesRef || upperVal instanceof BytesRef) {
 
@@ -199,128 +210,31 @@ public final class DocValuesRangeQuery extends Query {
             return null;
           }
 
-          twoPhaseRange = new TwoPhaseOrdRange(values, minOrd, maxOrd, approximation, acceptDocs);
+          return new Bits() {
+
+            @Override
+            public boolean get(int doc) {
+              values.setDocument(doc);
+              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+                if (ord >= minOrd && ord <= maxOrd) {
+                  return true;
+                }
+              }
+              return false;
+            }
+
+            @Override
+            public int length() {
+              return context.reader().maxDoc();
+            }
+
+          };
 
         } else {
           throw new AssertionError();
         }
-
-        return new RangeScorer(this, twoPhaseRange, score);
       }
-
     };
-  }
-
-  private static class TwoPhaseNumericRange extends TwoPhaseIterator {
-
-    private final SortedNumericDocValues values;
-    private final long min, max;
-    private final Bits acceptDocs;
-
-    TwoPhaseNumericRange(SortedNumericDocValues values, long min, long max, DocIdSetIterator approximation, Bits acceptDocs) {
-      super(approximation);
-      this.values = values;
-      this.min = min;
-      this.max = max;
-      this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public boolean matches() throws IOException {
-      final int doc = approximation.docID();
-      if (acceptDocs == null || acceptDocs.get(doc)) {
-        values.setDocument(doc);
-        final int count = values.count();
-        for (int i = 0; i < count; ++i) {
-          final long value = values.valueAt(i);
-          if (value >= min && value <= max) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-
-  }
-
-  private static class TwoPhaseOrdRange extends TwoPhaseIterator {
-
-    private final SortedSetDocValues values;
-    private final long minOrd, maxOrd;
-    private final Bits acceptDocs;
-
-    TwoPhaseOrdRange(SortedSetDocValues values, long minOrd, long maxOrd, DocIdSetIterator approximation, Bits acceptDocs) {
-      super(approximation);
-      this.values = values;
-      this.minOrd = minOrd;
-      this.maxOrd = maxOrd;
-      this.acceptDocs = acceptDocs;
-    }
-
-    @Override
-    public boolean matches() throws IOException {
-      final int doc = approximation.docID();
-      if (acceptDocs == null || acceptDocs.get(doc)) {
-        values.setDocument(doc);
-        for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-          if (ord >= minOrd && ord <= maxOrd) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-
-  }
-
-  private static class RangeScorer extends Scorer {
-
-    private final TwoPhaseIterator twoPhaseRange;
-    private final DocIdSetIterator disi;
-    private final float score;
-
-    RangeScorer(Weight weight, TwoPhaseIterator twoPhaseRange, float score) {
-      super(weight);
-      this.twoPhaseRange = twoPhaseRange;
-      this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseRange);
-      this.score = score;
-    }
-
-    @Override
-    public TwoPhaseIterator asTwoPhaseIterator() {
-      return twoPhaseRange;
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return 1;
-    }
-
-    @Override
-    public int docID() {
-      return disi.docID();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return disi.nextDoc();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return disi.advance(target);
-    }
-
-    @Override
-    public long cost() {
-      return disi.cost();
-    }
-
   }
 
 }

@@ -35,6 +35,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -189,7 +190,7 @@ public class TermsQuery extends Query implements Accountable {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs, final float score) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final LeafReader reader = context.reader();
         BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
         final Fields fields = reader.fields();
@@ -224,39 +225,7 @@ public class TermsQuery extends Query implements Accountable {
           return null;
         }
 
-        return new Scorer(this) {
-
-          @Override
-          public float score() throws IOException {
-            return score;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
-          }
-
-        };
+        return new ConstantScoreScorer(this, score(), disi);
       }
     };
   }

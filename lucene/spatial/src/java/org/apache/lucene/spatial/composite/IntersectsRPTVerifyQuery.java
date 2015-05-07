@@ -25,6 +25,7 @@ import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -89,7 +90,7 @@ public class IntersectsRPTVerifyQuery extends Query {
 
     return new ConstantScoreWeight(this) {
       @Override
-      protected Scorer scorer(LeafReaderContext context, Bits acceptDocs, float score) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // Compute approx & exact
         final IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor result =
             intersectsDiffFilter.compute(context, acceptDocs);
@@ -104,7 +105,7 @@ public class IntersectsRPTVerifyQuery extends Query {
         if (result.exactDocIdSet != null) {
           // If both sets are the same, there's nothing to verify; we needn't return a TwoPhaseIterator
           if (result.approxDocIdSet.equals(result.exactDocIdSet)) {
-            return new ConstantScoreScorer(this, score, approxDISI);
+            return new ConstantScoreScorer(this, score(), approxDISI);
           }
           exactDocBits = result.exactDocIdSet.bits();
           assert exactDocBits != null;
@@ -125,7 +126,7 @@ public class IntersectsRPTVerifyQuery extends Query {
           }
         };
 
-        return new ConstantScoreScorer(this, score, twoPhaseIterator);
+        return new ConstantScoreScorer(this, score(), twoPhaseIterator);
       }
     };
   }

@@ -82,9 +82,9 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new ConstantScoreWeight(this) {
+      return new RandomAccessWeight(this) {
         @Override
-        protected Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
+        protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
           TermsEnum termsEnum = query.getTermsEnum(new Terms() {
             
@@ -148,15 +148,11 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
               termSet.set(ord);
             }
           } while (termsEnum.next() != null);
-          
-          final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-          final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approximation) {
+
+          return new Bits() {
+
             @Override
-            public boolean matches() throws IOException {
-              final int doc = approximation.docID();
-              if (acceptDocs != null && acceptDocs.get(doc) == false) {
-                return false;
-              }
+            public boolean get(int doc) {
               fcsi.setDocument(doc);
               for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
                 if (termSet.get(ord)) {
@@ -165,43 +161,10 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
               }
               return false;
             }
-          };
-          final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
-          return new Scorer(this) {
 
             @Override
-            public TwoPhaseIterator asTwoPhaseIterator() {
-              return twoPhaseIterator;
-            }
-
-            @Override
-            public float score() throws IOException {
-              return score;
-            }
-
-            @Override
-            public int freq() throws IOException {
-              return 1;
-            }
-
-            @Override
-            public int docID() {
-              return disi.docID();
-            }
-
-            @Override
-            public int nextDoc() throws IOException {
-              return disi.nextDoc();
-            }
-
-            @Override
-            public int advance(int target) throws IOException {
-              return disi.advance(target);
-            }
-
-            @Override
-            public long cost() {
-              return disi.cost();
+            public int length() {
+              return context.reader().maxDoc();
             }
 
           };

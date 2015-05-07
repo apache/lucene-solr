@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Bits.MatchNoBits;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -61,71 +60,13 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreWeight(this) {
+    return new RandomAccessWeight(this) {
 
       @Override
-      public Scorer scorer(LeafReaderContext context, final Bits acceptDocs, final float score) throws IOException {
-        final Bits docsWithField = context.reader().getDocsWithField(field);
-        if (docsWithField == null || docsWithField instanceof MatchNoBits) {
-          return null;
-        }
-
-        final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approximation) {
-
-          @Override
-          public boolean matches() throws IOException {
-            final int doc = approximation.docID();
-            if (acceptDocs != null && acceptDocs.get(doc) == false) {
-              return false;
-            }
-            if (docsWithField.get(doc) == false) {
-              return false;
-            }
-            return true;
-          }
-
-        };
-        final DocIdSetIterator disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
-
-        return new Scorer(this) {
-
-          @Override
-          public TwoPhaseIterator asTwoPhaseIterator() {
-            return twoPhaseIterator;
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public float score() throws IOException {
-            return score;
-          }
-        };
+      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+        return context.reader().getDocsWithField(field);
       }
+
     };
   }
 

@@ -198,7 +198,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     for (String summary : collector.getSummaries()) {
       assertEquals(
           "CoordinatingConjunctionScorer\n" +
-          "    MUST MatchAllScorer\n" +
+          "    MUST ConstantScoreScorer\n" +
           "    MUST MinShouldMatchSumScorer\n" +
           "            SHOULD TermScorer body:nutch\n" +
           "            SHOULD TermScorer body:web\n" +

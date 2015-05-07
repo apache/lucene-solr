@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial.composite;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,35 +19,35 @@ package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
-
 /**
  * A constant-scoring {@link Scorer}.
- *
  * @lucene.internal
  */
 public final class ConstantScoreScorer extends Scorer {
-  // TODO refactor CSQ's Scorer to be re-usable and look like this
 
-  private final Weight weight;
   private final float score;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
 
+  /** Constructor based on a {@link DocIdSetIterator} which will be used to
+   *  drive iteration. Two phase iteration will not be supported.
+   *  @param weight the parent weight
+   *  @param score the score to return on each document
+   *  @param disi the iterator that defines matching documents */
   public ConstantScoreScorer(Weight weight, float score, DocIdSetIterator disi) {
     super(weight);
-    this.weight = weight;
     this.score = score;
     this.twoPhaseIterator = null;
     this.disi = disi;
   }
 
-  protected ConstantScoreScorer(Weight weight, float score, TwoPhaseIterator twoPhaseIterator) {
+  /** Constructor based on a {@link TwoPhaseIterator}. In that case the
+   *  {@link Scorer} will support two-phase iteration.
+   *  @param weight the parent weight
+   *  @param score the score to return on each document
+   *  @param twoPhaseIterator the iterator that defines matching documents */
+  public ConstantScoreScorer(Weight weight, float score, TwoPhaseIterator twoPhaseIterator) {
     super(weight);
-    this.weight = weight;
     this.score = score;
     this.twoPhaseIterator = twoPhaseIterator;
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
@@ -88,3 +88,4 @@ public final class ConstantScoreScorer extends Scorer {
     return disi.cost();
   }
 }
+
