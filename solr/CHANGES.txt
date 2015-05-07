@@ -169,6 +169,8 @@ New Features
 
 * SOLR-6220: Rule Based Replica Assignment during collection creation (Noble Paul)
 
+* SOLR-6968: New 'cardinality' option for stats.field, uses HyperLogLog to efficiently 
+  estimate the cardinality of a field w/bounded RAM. (hossman)
 
 Bug Fixes
 ----------------------

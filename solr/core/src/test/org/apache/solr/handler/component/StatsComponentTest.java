@@ -19,12 +19,14 @@ package org.apache.solr.handler.component;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,6 +35,8 @@ import java.util.TimeZone;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -42,6 +46,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.handler.component.StatsField.HllOptions;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -50,6 +55,9 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 import org.apache.commons.math3.util.Combinations;
 import com.tdunning.math.stats.AVLTreeDigest;
+import net.agkn.hll.HLL;
+import com.google.common.hash.Hashing; 
+import com.google.common.hash.HashFunction; 
 
 import org.junit.BeforeClass;
 
@@ -196,7 +204,6 @@ public class StatsComponentTest extends AbstractSolrTestCase {
                 , kpre + "double[@name='stddev'][.='12.909944487358056']"
 
                 );
-
       }
     }
 
@@ -256,6 +263,17 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , kpre + "double[@name='sumOfSquares'][.='12000.0']"
             , kpre + "double[@name='mean'][.='-50.0']" 
             , kpre + "double[@name='stddev'][.='25.81988897471611']"
+            );
+
+    // simple cardinality over a numeric field
+    assertQ("test function statistics & key override", 
+            // NOTE: baseParams aren't used, we're looking only at the cardinality
+            req("q", "*:*", "stats", "true",
+                "fq", "{!tag=key_ex_tag}-id:4", 
+                "stats.field", "{!key="+key+" cardinality=true}"+f)
+
+            , kpre + "long[@name='cardinality'][.='3']"
+            , "count(" + kpre + "/*)=1"
             );
   }
 
@@ -358,6 +376,10 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               );
     }
 
+    assertQ("cardinality"
+            , req("q", "*:*", "rows", "0", "stats", "true", "stats.field", "{!cardinality=true}" + f) 
+            , "//long[@name='cardinality'][.='8']"
+            );
   }
 
   public void testFieldStatisticsResultsStringField() throws Exception {
@@ -383,6 +405,13 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "//long[@name='missing'][.='1']",
             "//long[@name='countDistinct'][.='3']",
             "count(//arr[@name='distinctValues']/str)=3");
+
+    assertQ("test string cardinality"
+            , req("q", "*:*",
+                  "rows", "0",
+                  "stats","true",
+                  "stats.field","{!cardinality=true}active_s")
+            , "//long[@name='cardinality'][.='3']");
 
     // stats over a string function
     assertQ("strdist func stats",
@@ -430,6 +459,11 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         //  "//date[@name='sum'][.='1970-01-13T20:38:30Z']",  // sometimes 29.999Z
         //  "//date[@name='mean'][.='1970-01-07T10:19:15Z']"  // sometiems 14.999Z
             );
+
+    assertQ("cardinality", 
+            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}active_dt")
+            , "//lst[@name='active_dt']/long[@name='cardinality'][.='2']");
+
   }
 
 
@@ -595,6 +629,16 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               , pre+"/lst[@name='false']/double[@name='stddev'][.='7.0710678118654755']"
               );
     }
+
+    assertQ("stats.facet w/ cardinality"
+            , req("q", "*:*", "stats", "true", 
+                  "fq", "-other_s:bar",
+                  "stats.facet", "active_s", 
+                  "stats.field", "{!cardinality=true}"+f)
+            , pre+"/lst[@name='true' ]/long[@name='cardinality'][.='1']"
+            , pre+"/lst[@name='false']/long[@name='cardinality'][.='2']"
+            );
+
   }
   
   public void doTestFacetStatisticsMissingResult(String f, SolrParams[] baseParamsSet) throws Exception {
@@ -637,6 +681,13 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               );
     }
 
+    assertQ("stats.facet w/ cardinality"
+            , req("q", "*:*", "stats", "true", 
+                  "stats.facet", "active_s", 
+                  "stats.field", "{!cardinality=true}"+f)
+            , "//lst[@name='active_s']/lst[@name='true' ]/long[@name='cardinality'][.='2']"
+            , "//lst[@name='active_s']/lst[@name='false']/long[@name='cardinality'][.='1']"
+            );
   }
 
   public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
@@ -669,6 +720,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             ,"count(//lst[@name='active_i']/*)=8"
             
             );
+
+    // NOTE: empty set percentiles covered in testPercentiles()
+
+    assertQ("test cardinality of missing"
+            , req("q", "*:*", "stats", "true", "stats.field", "{!cardinality=true}active_i")
+            ,"//lst[@name='active_i']/long[@name='cardinality'][.='0']"
+            );
+
   }
 
   public void testFieldStatisticsResultsStringFieldAlwaysMissing() throws Exception {
@@ -695,7 +754,13 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             ,"//lst[@name='active_s']/null[@name='max']"
             // if new stats are supported, this will break - update test to assert values for each
             ,"count(//lst[@name='active_s']/*)=4"
-         );
+            );
+
+    assertQ("test string statistics values"
+            , req("q", "*:*", "stats", "true", "stats.field", "{!cardinality=true}active_s")
+            ,"//lst[@name='active_s']/long[@name='cardinality'][.='0']"
+            );
+
   }
 
   //SOLR-3160
@@ -729,6 +794,12 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             // if new stats are supported, this will break - update test to assert values for each
             ,"count(//lst[@name='active_dt']/*)=8"
             );
+    
+    assertQ("cardinality"
+            , req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}active_dt")
+            ,"//lst[@name='active_dt']/long[@name='cardinality'][.='0']"
+            );
+
   }
 
   public void testStatsFacetMultivaluedErrorHandling() throws Exception {
@@ -822,6 +893,10 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         , "//lst[@name='cat_docValues']/str[@name='min'][.='test']"
         , "//lst[@name='cat_docValues']/str[@name='max'][.='testtw']");
     
+    assertQ("cardinality", 
+            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}cat_docValues")
+            , "//lst[@name='cat_docValues']/long[@name='cardinality'][.='3']");
+    
   }
 
   public void testFieldStatisticsDocValuesAndMultiValuedInteger() throws Exception {
@@ -868,7 +943,11 @@ public class StatsComponentTest extends AbstractSolrTestCase {
           , "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']"
           , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']");
 
-    }
+    assertQ("cardinality", 
+            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}" + fieldName)
+            , "//lst[@name='"+fieldName+"']/long[@name='cardinality'][.='9']");
+
+  }
 
   public void testFieldStatisticsDocValuesAndMultiValuedIntegerFacetStats() throws Exception {
        SolrCore core = h.getCore();
@@ -1054,6 +1133,11 @@ public class StatsComponentTest extends AbstractSolrTestCase {
               ,"count(//lst[@name='" + fieldName + "']/*)=10"
               );
     }
+
+    assertQ("cardinality", 
+            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}"+fieldName)
+            , "//lst[@name='"+fieldName+"']/long[@name='cardinality'][.='9']");
+
   }
   
   public void testEnumFieldTypeStatus() throws Exception {
@@ -1088,7 +1172,10 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//lst[@name='" + fieldName + "']/str[@name='max'][.='Critical']"
             , "//lst[@name='" + fieldName + "']/long[@name='count'][.='15']"
             , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='11']");
-    
+
+    assertQ("cardinality", 
+            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}"+fieldName)
+            , "//lst[@name='" + fieldName + "']/long[@name='cardinality'][.='5']");
     
     assertQ("enum calcdistinct", req("q","*:*", "stats", "true", "stats.field", fieldName, 
                                      StatsParams.STATS_CALC_DISTINCT, "true")
@@ -1139,12 +1226,60 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     return cat_docValues;
   }
   
+  /** Convinience struct used in {@link #testIndividualStatLocalParams} */
+  private static final class ExpectedStat {
+    public final static String KPRE = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
+    public final Stat stat;
+    public final String input;
+    public final int numResponseKeys; // all because calcdistinct is obnoxious
+    public final List<String> perShardXpaths;
+    public final List<String> finalXpaths;
+    
+    public final static Map<Stat,ExpectedStat> ALL = new LinkedHashMap<Stat,ExpectedStat>();
+    private ExpectedStat(Stat stat, String input, int numResponseKeys,
+                         List<String> perShardXpaths, List<String> finalXpaths) {
+      this.stat = stat;
+      this.input = input;
+      this.numResponseKeys = numResponseKeys;
+      this.perShardXpaths = perShardXpaths;
+      this.finalXpaths = finalXpaths;
+    }
+    
+    public static void createSimple(Stat stat, String input, String type, String result) {
+      EnumSet<Stat> deps = stat.getDistribDeps();
+      List<String> perShardXpaths = new ArrayList<String>(deps.size());
+      String xpath = KPRE + type + "[@name='" + stat + "'][.='" + result + "']";
+      for (Stat dep : deps) {
+        if (dep.equals(stat)) { // self dependency
+          perShardXpaths.add(xpath);;
+        } else {
+          ExpectedStat expectedDep = ALL.get(dep);
+          assertNotNull("can't find dep in ExpectedStat.ALL", expectedDep);
+          perShardXpaths.addAll(expectedDep.perShardXpaths);
+        }
+      }
+      ALL.put(stat, new ExpectedStat(stat, input, 1, 
+                                     perShardXpaths, Collections.singletonList(xpath)));
+    }
+    public static void create(Stat stat, String input, int numResponseKeys,
+                              List<String> perShardXpaths, List<String> finalXpaths) {
+      ALL.put(stat, new ExpectedStat(stat, input, numResponseKeys, perShardXpaths, finalXpaths));
+    }
+  }
+  
   public void testIndividualStatLocalParams() throws Exception {
-    final String kpre = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
+    final String kpre = ExpectedStat.KPRE;
     
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "a_i", "9", "foo_t", "how now brown cow"));
     assertU(commit());
+
+    SolrCore core = h.getCore();
+    SchemaField field = core.getLatestSchema().getField("a_i");
+    HllOptions hllOpts = HllOptions.parseHllOptions(params("cardinality","true"), field);
     
+    HLL hll = hllOpts.newHLL();
+    HashFunction hasher = hllOpts.getHasher();
+
     AVLTreeDigest tdigest = new AVLTreeDigest(100);
     
     // some quick sanity check assertions...
@@ -1156,7 +1291,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , kpre + "double[@name='min'][.='9.0']"
             , "count(" + kpre + "*)=2"
             );
-
+    
     // for stats that are true/false, sanity check false does it's job
     assertQ("min=true & max=false: only min should come back",
             req("q","*:*", "stats", "true",
@@ -1173,147 +1308,127 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             // ...but be empty 
             , "count(" + kpre + "*)=0"
             );
-
+    
     double sum = 0;
     double sumOfSquares = 0;
     final int count = 20;
     for (int i = 0; i < count; i++) {
+      int a_i = i % 10;
       assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i",
-          String.valueOf(i % 10), "foo_t", "how now brown cow"));
-      tdigest.add(i % 10);
-      sum += i % 10;
-      sumOfSquares += (i % 10) * (i % 10);
+                   String.valueOf(a_i), "foo_t", "how now brown cow"));
+      tdigest.add(a_i);
+      hll.addRaw(hasher.hashInt(a_i).asLong());
+      sum += a_i;
+      sumOfSquares += (a_i) * (a_i);
     }
-   
+    double stddev = Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (20 * (count - 1.0D)));
+    
     assertU(commit());
     
-    ByteBuffer buf = ByteBuffer.allocate(tdigest.smallByteSize());
-    tdigest.asSmallBytes(buf);
+    ByteBuffer tdigestBuf = ByteBuffer.allocate(tdigest.smallByteSize());
+    tdigest.asSmallBytes(tdigestBuf);
+    byte[] hllBytes = hll.toBytes();
+
     EnumSet<Stat> allStats = EnumSet.allOf(Stat.class);
     
-    Map<Stat,String> expectedStats = new HashMap<>();
-    expectedStats.put(Stat.min, "0.0");
-    expectedStats.put(Stat.max, "9.0");
-    expectedStats.put(Stat.missing, "0");
-    expectedStats.put(Stat.sum, String.valueOf(sum));
-    expectedStats.put(Stat.count, String.valueOf(count));
-    expectedStats.put(Stat.mean, String.valueOf(sum / count));
-    expectedStats.put(Stat.sumOfSquares, String.valueOf(sumOfSquares));
-    expectedStats.put(Stat.stddev, String.valueOf(Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (20 * (count - 1.0D)))));
-    expectedStats.put(Stat.calcdistinct, "10");
-    // NOTE: per shard expected value
-    expectedStats.put(Stat.percentiles, Base64.byteArrayToBase64(buf.array(), 0, buf.array().length));
+    final List<ExpectedStat> expected = new ArrayList<ExpectedStat>(allStats.size());
+    ExpectedStat.createSimple(Stat.min, "true", "double", "0.0");
+    ExpectedStat.createSimple(Stat.max, "true", "double", "9.0");
+    ExpectedStat.createSimple(Stat.missing, "true", "long", "0");
+    ExpectedStat.createSimple(Stat.sum, "true", "double", String.valueOf(sum));
+    ExpectedStat.createSimple(Stat.count, "true", "long", String.valueOf(count));
+    ExpectedStat.createSimple(Stat.mean, "true", "double", String.valueOf(sum / count));
+    ExpectedStat.createSimple(Stat.sumOfSquares, "true", "double", String.valueOf(sumOfSquares));
+    ExpectedStat.createSimple(Stat.stddev, "true", "double", String.valueOf(stddev));
+    final String countDistinctXpath = kpre + "long[@name='countDistinct'][.='10']";
+    ExpectedStat.create(Stat.calcdistinct, "true", 2,
+                        Arrays.asList("count(" + kpre + "arr[@name='distinctValues']/*)=10",
+                                      countDistinctXpath),
+                        Collections.singletonList(countDistinctXpath));
+    final String percentileShardXpath = kpre + "str[@name='percentiles'][.='" 
+      + Base64.byteArrayToBase64(tdigestBuf.array(), 0, tdigestBuf.array().length) + "']";
+    final String p90 = "" + tdigest.quantile(0.90D);
+    final String p99 = "" + tdigest.quantile(0.99D);
+    ExpectedStat.create(Stat.percentiles, "'90, 99'", 1,
+                        Collections.singletonList(percentileShardXpath),
+                        Arrays.asList("count(" + kpre + "lst[@name='percentiles']/*)=2",
+                                      kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]",
+                                      kpre + "lst[@name='percentiles']/double[@name='99.0'][.="+p99+"]"));
+    final String cardinalityShardXpath = kpre + "str[@name='cardinality'][.='" 
+      + Base64.byteArrayToBase64(hllBytes, 0, hllBytes.length) + "']";
+    final String cardinalityXpath = kpre + "long[@name='cardinality'][.='10']"; 
+    ExpectedStat.create(Stat.cardinality, "true", 1,
+                        Collections.singletonList(cardinalityShardXpath),
+                        Collections.singletonList(cardinalityXpath));
+
+    // canary in the coal mine
+    assertEquals("num of ExpectedStat doesn't match all known stats; " + 
+                 "enum was updated w/o updating test?",
+                 ExpectedStat.ALL.size(), allStats.size());
     
-    Map<Stat,String> expectedType = new HashMap<>();
-    expectedType.put(Stat.min, "double");
-    expectedType.put(Stat.max, "double");
-    expectedType.put(Stat.missing, "long");
-    expectedType.put(Stat.sum, "double");
-    expectedType.put(Stat.count, "long");
-    expectedType.put(Stat.mean, "double");
-    expectedType.put(Stat.sumOfSquares, "double");
-    expectedType.put(Stat.stddev, "double");
-    expectedType.put(Stat.calcdistinct, "long");
-    expectedType.put(Stat.percentiles, "str");
-   
-    Map<Stat,String> localParasInput = new HashMap<>();
-    localParasInput.put(Stat.min, "true");
-    localParasInput.put(Stat.max, "true");
-    localParasInput.put(Stat.missing, "true");
-    localParasInput.put(Stat.sum, "true");
-    localParasInput.put(Stat.count, "true");
-    localParasInput.put(Stat.mean, "true");
-    localParasInput.put(Stat.sumOfSquares, "true");
-    localParasInput.put(Stat.stddev, "true");
-    localParasInput.put(Stat.calcdistinct, "true");
-    localParasInput.put(Stat.percentiles, "'90, 99'");
+    // whitebox test: explicitly ask for isShard=true with each individual stat
+    for (ExpectedStat expect : ExpectedStat.ALL.values()) {
+      Stat stat = expect.stat;
 
-   // canary in the coal mine
-   assertEquals("size of expectedStats doesn't match all known stats; " + 
-                "enum was updated w/o updating test?",
-                expectedStats.size(), allStats.size());
-   assertEquals("size of expectedType doesn't match all known stats; " + 
-                "enum was updated w/o updating test?",
-                expectedType.size(), allStats.size());
+      StringBuilder exclude = new StringBuilder();
+      List<String> testXpaths = new ArrayList<String>(5 + expect.perShardXpaths.size());
+      testXpaths.addAll(expect.perShardXpaths);
 
-   // whitebox test: explicitly ask for isShard=true with an individual stat
-   for (Stat stat : expectedStats.keySet()) {
-     EnumSet<Stat> distribDeps = stat.getDistribDeps();
+      int numKeysExpected = 0;
+      EnumSet<Stat> distribDeps = stat.getDistribDeps();
+      for (Stat perShardDep : distribDeps) {
+        numKeysExpected += ExpectedStat.ALL.get(perShardDep).numResponseKeys;
 
-     StringBuilder exclude = new StringBuilder();
-     List<String> testParas = new ArrayList<String>(distribDeps.size() + 2);
-     int calcdistinctFudge = 0;
+        // even if we go out of our way to exclude the dependent stats, 
+        // the shard should return them since they are a dependency for the requested stat
+        if (!stat.equals(perShardDep)){
+          // NOTE: this only works because all the cases where there are distribDeps
+          // beyond a self dependency are simple true/false options
+          exclude.append(perShardDep + "=false ");
+        }
+      }
+      // we don't want to find anything we aren't expecting
+      testXpaths.add("count(" + kpre + "*)=" + numKeysExpected);
 
-     for (Stat perShardStat : distribDeps ){
-       String key = perShardStat.toString();
-       if (perShardStat.equals(Stat.calcdistinct)) {
-         // this abomination breaks all the rules - uses a diff response key and triggers
-         // the additional "distinctValues" stat
-         key = "countDistinct";
-         calcdistinctFudge++;
-         testParas.add("count(" + kpre + "arr[@name='distinctValues']/*)=10");
-       }
-       testParas.add(kpre + expectedType.get(perShardStat) + 
-                     "[@name='" + key + "'][.='" + expectedStats.get(perShardStat) + "']");
-       // even if we go out of our way to exclude the dependent stats, 
-       // the shard should return them since they are a dependency for the requested stat
-       if (!stat.equals(Stat.percentiles)){
-         exclude.append(perShardStat + "=false ");
-       }
-     }
-     testParas.add("count(" + kpre + "*)=" + (distribDeps.size() + calcdistinctFudge));
+      assertQ("ask for only "+stat+", with isShard=true, and expect only deps: " + distribDeps,
+              req("q", "*:*", "isShard", "true", "stats", "true", 
+                  "stats.field", "{!key=k " + exclude + stat +"=" + expect.input + "}a_i")
+              , testXpaths.toArray(new String[testXpaths.size()])
+              );
+    }
+    
+    // test all the possible combinations (of all possible sizes) of stats params
+    for (int numParams = 1; numParams <= allStats.size(); numParams++) {
+      for (EnumSet<Stat> set : new StatSetCombinations(numParams, allStats)) {
+        // EnumSets use natural ordering, we want to randomize the order of the params
+        List<Stat> combo = new ArrayList<Stat>(set);
+        Collections.shuffle(combo, random());
+        
+        StringBuilder paras = new StringBuilder("{!key=k ");
+        List<String> testXpaths = new ArrayList<String>(numParams + 5);
 
-     assertQ("ask for only "+stat+", with isShard=true, and expect only deps: " + distribDeps,
-             req("q", "*:*", "isShard", "true", "stats", "true", 
-                 "stats.field", "{!key=k " + exclude + stat +"=" + localParasInput.get(stat) + "}a_i")
-             , testParas.toArray(new String[testParas.size()])
-             );
-   }
-   
-   // test all the possible combinations (of all possible sizes) of stats params
-   for (int numParams = 1; numParams <= allStats.size(); numParams++) {
-     for (EnumSet<Stat> set : new StatSetCombinations(numParams, allStats)) {
+        int numKeysExpected = 0;
+        for (Stat stat : combo) {
+          ExpectedStat expect = ExpectedStat.ALL.get(stat);
 
-       // EnumSets use natural ordering, we want to randomize the order of the params
-       List<Stat> combo = new ArrayList<Stat>(set);
-       Collections.shuffle(combo, random());
+          paras.append(stat + "=" + expect.input + " ");
 
-       StringBuilder paras = new StringBuilder("{!key=k ");
-       List<String> testParas = new ArrayList<String>(numParams + 2);
+          numKeysExpected += expect.numResponseKeys;
+          testXpaths.addAll(expect.finalXpaths);
+        }
 
-       int calcdistinctFudge = 0;
-       for (Stat stat : combo) {
-         String key = stat.toString();
-         if (stat.equals(Stat.calcdistinct)) {
-           // this abomination breaks all the rules - uses a diff response key and triggers
-           // the additional "distinctValues" stat
-           key = "countDistinct";
-           calcdistinctFudge++; 
-           testParas.add("count(" + kpre + "arr[@name='distinctValues']/*)=10");
-         }
-         paras.append(stat + "=" + localParasInput.get(stat)+ " ");
-         
-         if (!stat.equals(Stat.percentiles)){
-           testParas.add(kpre + expectedType.get(stat) + "[@name='" + key + "'][.='" + expectedStats.get(stat) + "']");
-         } else {
-           testParas.add("count(" + kpre + "lst[@name='percentiles']/*)=2");
-           String p90 = "" + tdigest.quantile(0.90D);
-           String p99 = "" + tdigest.quantile(0.99D);
-           testParas.add(kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]");
-           testParas.add(kpre + "lst[@name='percentiles']/double[@name='99.0'][.="+p99+"]");
-         }
-       }
+        paras.append("}a_i");
 
-       paras.append("}a_i");
-       testParas.add("count(" + kpre + "*)=" + (combo.size() + calcdistinctFudge));
+        // we don't want to find anything we aren't expecting
+        testXpaths.add("count(" + kpre + "*)=" + numKeysExpected);
 
-       assertQ("ask for an get only: "+ combo,
-               req("q","*:*", "stats", "true",
-                   "stats.field", paras.toString())
-               , testParas.toArray(new String[testParas.size()])
-               );
-     }
-   }
+        assertQ("ask for and get only: "+ combo,
+                req("q","*:*", "stats", "true",
+                    "stats.field", paras.toString())
+                , testXpaths.toArray(new String[testXpaths.size()])
+                );
+      }
+    }
   }
   
   // Test for Solr-6349
@@ -1436,6 +1551,285 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     }
   }
 
+  /** Helper used in {@link #testCardinality} */
+  public static String cardinalityXpath(String key, int cardinality) {
+    return XPRE + "lst[@name='stats_fields']/lst[@name='" + key + 
+      "']/long[@name='cardinality'][.='"+cardinality+"']";
+  }
+
+  /** @see #testHllOptions */
+  public void testCardinality() throws Exception {
+    SolrCore core = h.getCore();
+    // insure we have the same hasher a_l would use
+    HashFunction hasher = HllOptions.parseHllOptions
+      (params("cardinality","true"), core.getLatestSchema().getField("a_l")).getHasher();
+
+    String[] baseParams = new String[] { "q","*:*", "stats","true", "indent","true", "rows","0" };
+    assertQ("empty cardinalities"
+            , req(params("stats.field","{!key=a cardinality=true}a_l",
+                         "stats.field","{!key=pa cardinality=true}prehashed_a_l",
+                         "stats.field","{!key=b cardinality=true}b_l", 
+                         "stats.field","{!key=c cardinality=true}c_l"), 
+                  baseParams)
+            , cardinalityXpath("a", 0)
+            , cardinalityXpath("pa", 0)
+            , cardinalityXpath("b", 0)
+            , cardinalityXpath("c", 0)
+            );
+
+    int id = 0;
+    // add trivial docs to test basic cardinality
+    for (int i = 0; i < 100; i++) {
+      // add the same values multiple times (diff docs)
+      for (int j =0; j < 5; j++) {
+        ++id;
+        assertU(adoc("id", ""+id, 
+                     "a_l", ""+i, "prehashed_a_l", ""+hasher.hashLong((long)i).asLong(),
+                     "b_l", ""+(i % 7), "c_l", ""+id));
+      }
+    }
+    assertU(commit());
+
+    assertQ("various cardinalities"
+            , req(params("stats.field","{!key=a cardinality=true}a_l",
+                         "stats.field","{!key=pa hllPreHashed=true cardinality=true}prehashed_a_l",
+                         "stats.field","{!key=b cardinality=true}b_l", 
+                         "stats.field","{!key=c cardinality=true}c_l"), 
+                  baseParams)
+            , cardinalityXpath("a", 100)
+            , cardinalityXpath("pa", 100)
+            , cardinalityXpath("b", 7)
+            , cardinalityXpath("c", 500)
+            );
+    
+    // various ways of explicitly saying "don't bother to compute cardinality"
+    for (SolrParams p : new SolrParams[] {
+        params("stats.field","{!key=a min=true cardinality=false}a_l"),
+        params("stats.field","{!key=a min=true cardinality=$doit}a_l", "doit", "false"),
+        params("stats.field","{!key=a min=true cardinality=$doit}a_l"), // missing doit param
+        // other tunning options shouldn't change things
+        params("stats.field","{!key=a min=true hllPreHashed=true cardinality=false}a_l"),
+        params("stats.field","{!key=a min=true hllRegwidth=4 cardinality=$doit}a_l", "doit", "false"),
+        params("stats.field","{!key=a min=true hllLog2m=18 cardinality=$doit}a_l"), // missing doit param
+      }) {
+      assertQ("min w/cardinality explicitly disabled", req(p, baseParams),
+              "count(//lst[@name='stats_fields']/lst[@name='a']/double[@name='min'])=1",
+              "count(//lst[@name='stats_fields']/lst[@name='a']/long[@name='cardinality'])=0");
+    }
+  }
+
+  /**
+   * whitebox test that HLL Option parsing does the right thing
+   * @see #testCardinality 
+   * @see #testHllOptionsErrors
+   */
+  public void testHllOptions() throws Exception {
+    SolrCore core = h.getCore();
+
+    SchemaField field_l = core.getLatestSchema().getField("field_l");
+    SchemaField field_d = core.getLatestSchema().getField("field_d");
+    SchemaField field_dt = core.getLatestSchema().getField("field_dt");
+    SchemaField field_s = core.getLatestSchema().getField("field_s");
+    SchemaField field_i = core.getLatestSchema().getField("field_i");
+    SchemaField field_f = core.getLatestSchema().getField("field_f");
+    SchemaField field_severity = core.getLatestSchema().getField("severity");
+
+    // simple cases that shouldn't use HLL
+    assertNull(HllOptions.parseHllOptions(params(), field_l));
+    assertNull(HllOptions.parseHllOptions(params("cardinality","false"), field_l));
+
+    // sanity check, future proof againts the HLL library changing stuff on us
+    assertEquals("HLL Changed definition min for log2m, " + 
+                 "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+                 4, HLL.MINIMUM_LOG2M_PARAM);
+    // NOTE: https://github.com/aggregateknowledge/java-hll/issues/14
+    assertEquals("HLL Changed definition max for log2m, " + 
+                 "need to note in upgrade instructions and maybe adjust accuracy hueristic",
+                 30, HLL.MAXIMUM_LOG2M_PARAM);
+    assertEquals("HLL Changed definition min for regwidth, " + 
+                 "need to note in upgrade instructions and probably adjust hueristic",
+                 1, HLL.MINIMUM_REGWIDTH_PARAM);
+    assertEquals("HLL Changed definition max for regwidth, " + 
+                 "need to note in upgrade instructions and probably adjust hueristic",
+                 8, HLL.MAXIMUM_REGWIDTH_PARAM);
+
+    // all of these should produce equivilent HLLOptions (Long, Double, or String using defaults)
+    SolrParams[] longDefaultParams = new SolrParams[] {
+      // basic usage
+      params("cardinality","true"),
+      params("cardinality","0.33"),
+
+      // expert level options
+      params("cardinality","true", "hllLog2m","13"), 
+      params("cardinality","true", "hllRegwidth","6"), 
+      params("cardinality","true", "hllPreHash","false"),
+      params("cardinality","true", "hllLog2m","13", "hllRegwidth","6", "hllPreHash", "false"),
+
+      // explicit hllLog2M should override numeric arg
+      params("cardinality","1.0", "hllLog2m","13", "hllRegwidth","6"),
+      params("cardinality","0.0", "hllLog2m","13", "hllRegwidth","6", "hllPreHash","false")
+    };
+    for (SchemaField field : new SchemaField[] { field_l, field_d, field_dt, field_s }) {
+      final String f = field.getName();
+      for (SolrParams p : longDefaultParams) {
+        HllOptions opts = HllOptions.parseHllOptions(p, field);
+        assertEquals(f + " long defaults: " + p, 13, opts.getLog2m());
+        assertEquals(f + " long defaults: " + p, 6, opts.getRegwidth());
+        assertNotNull(f + " long defaults: " + p, opts.getHasher());
+      }
+
+      // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
+      HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality","0"), field);
+      assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
+      assertEquals(f + " min regwidth", 5, optsMin.getRegwidth()); // lowest hueristic for 64bit
+
+      HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality","1"), field);
+      assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
+      assertEquals(f + " max regwidth", HLL.MAXIMUM_REGWIDTH_PARAM, optsMax.getRegwidth());
+
+    }
+
+    // all of these should produce equivilent HLLOptions (Int, Float, or ValueSource using defaults)
+    SolrParams[] intDefaultParams = new SolrParams[] {
+      // basic usage
+      params("cardinality","true"),
+      params("cardinality","0.33"),
+
+      // expert level options
+      params("cardinality","true", "hllLog2m","13"), 
+      params("cardinality","true", "hllRegwidth","5"), 
+      params("cardinality","true", "hllPreHash","false"),
+      params("cardinality","true", "hllLog2m","13", "hllRegwidth","5", "hllPreHash", "false"),
+
+      // explicit hllLog2M & hllRegwidth should override hueristic float arg
+      params("cardinality","1.0", "hllLog2m","13", "hllRegwidth","5"),
+      params("cardinality","0.0", "hllLog2m","13", "hllRegwidth","5", "hllPreHash","false")
+    };
+    for (SchemaField field : new SchemaField[] { field_i, field_f, field_severity, null }) {
+      final String f = null == field ? "(func)" : field.getName();
+      for (SolrParams p : intDefaultParams) {
+        HllOptions opts = HllOptions.parseHllOptions(p, field);
+        assertEquals(f + " int defaults: " + p, 13, opts.getLog2m());
+        assertEquals(f + " int defaults: " + p, 5, opts.getRegwidth());
+        assertNotNull(f + " int defaults: " + p, opts.getHasher());
+      }
+
+      // non defaults: lower/upper accuracy bounds should give min/max log2m & adjusted regwidth
+      HllOptions optsMin = HllOptions.parseHllOptions(params("cardinality","0"), field);
+      assertEquals(f + " min log2m", HLL.MINIMUM_LOG2M_PARAM, optsMin.getLog2m());
+      assertEquals(f + " min regwidth", 4, optsMin.getRegwidth()); // lowest hueristic for 32bit
+
+      HllOptions optsMax = HllOptions.parseHllOptions(params("cardinality","1"), field);
+      assertEquals(f + " max log2m", HLL.MAXIMUM_LOG2M_PARAM, optsMax.getLog2m());
+      assertEquals(f + " max regwidth", HLL.MAXIMUM_REGWIDTH_PARAM, optsMax.getRegwidth());
+
+    }
+
+    // basic pre-hashed arg check specifically for long fields
+    assertNotNull(HllOptions.parseHllOptions(params("cardinality","true"), field_l).getHasher());
+    assertNotNull(HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "false"), 
+                                             field_l).getHasher());
+    assertNull(HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), 
+                                          field_l).getHasher());
+
+  }
+
+  /**
+   * Test user input errors (split into it's own test to isolate ignored exceptions
+   * @see #testCardinality 
+   * @see #testHllOptions
+   */
+  public void testHllOptionsErrors() throws Exception {
+    String[] baseParams = new String[] { "q","*:*", "stats","true", "indent","true", "rows","0" };
+    SolrCore core = h.getCore();
+    SchemaField foo_s = core.getLatestSchema().getField("foo_s");
+    SchemaField foo_i = core.getLatestSchema().getField("foo_i");
+
+    ignoreException("hllPreHashed");
+    for (SchemaField field : new SchemaField[] { foo_s, foo_i }) {
+      // whitebox - field
+      try {
+        HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), field);
+        fail("hllPreHashed should have failed for " + field.getName());
+      } catch (SolrException e) {
+        assertTrue("MSG: " + e.getMessage(),
+                   e.getMessage().contains("hllPreHashed is only supported with Long"));
+      }
+      // blackbox - field
+      assertQEx("hllPreHashed " + field.getName(), "hllPreHashed is only supported with Long",
+                req(params("stats.field","{!cardinality=true hllPreHashed=true}" + field.getName()),
+                    baseParams),
+                ErrorCode.BAD_REQUEST);
+    }
+    // whitebox - function
+    try {
+      HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), null);
+      fail("hllPreHashed should have failed for function");
+    } catch (SolrException e) {
+      assertTrue("MSG: " + e.getMessage(),
+                 e.getMessage().contains("hllPreHashed is only supported with Long"));
+    }
+    // blackbox - function
+    assertQEx("hllPreHashed function", "hllPreHashed is only supported with Long",
+              req(params("stats.field","{!func cardinality=true hllPreHashed=true}sum(foo_i,foo_l)"),
+                  baseParams),
+              ErrorCode.BAD_REQUEST);
+
+
+    ignoreException("accuracy");
+    for (String invalid : new String[] { "-1", "1.1", "100" }) {
+      // whitebox
+      try {
+        Object trash = HllOptions.parseHllOptions(params("cardinality",invalid), foo_s);
+        fail("Should have failed: " + invalid);
+      } catch (SolrException e) {
+        assertTrue("MSG: " + e.getMessage(),
+                   e.getMessage().contains("number between 0 and 1"));
+      }
+      // blackbox
+      assertQEx("cardinality="+invalid, "number between 0 and 1",
+                req(params("stats.field","{!cardinality="+invalid+"}foo_s"),
+                    baseParams),
+                ErrorCode.BAD_REQUEST);
+    }
+    
+    ignoreException("hllLog2m must be");
+    for (int invalid : new int[] { HLL.MINIMUM_LOG2M_PARAM-1, HLL.MAXIMUM_LOG2M_PARAM+11 }) {
+      // whitebox
+      try {
+        Object trash = HllOptions.parseHllOptions(params("cardinality","true",
+                                                         "hllLog2m", ""+invalid), foo_s);
+        fail("Should have failed: " + invalid);
+      } catch (SolrException e) {
+        assertTrue("MSG: " + e.getMessage(),
+                   e.getMessage().contains("hllLog2m must be"));
+      }
+      // blackbox
+      assertQEx("hllLog2m="+invalid, "hllLog2m must be",
+                req(params("stats.field","{!cardinality=true hllLog2m="+invalid+"}foo_s"),
+                    baseParams),
+                ErrorCode.BAD_REQUEST);
+    }
+
+    ignoreException("hllRegwidth must be");
+    for (int invalid : new int[] { HLL.MINIMUM_REGWIDTH_PARAM-1, HLL.MAXIMUM_REGWIDTH_PARAM+1 }) {
+      // whitebox
+      try {
+        Object trash = HllOptions.parseHllOptions(params("cardinality","true",
+                                                         "hllRegwidth", ""+invalid), foo_s);
+        fail("Should have failed: " + invalid);
+      } catch (SolrException e) {
+        assertTrue("MSG: " + e.getMessage(),
+                   e.getMessage().contains("hllRegwidth must be"));
+      }
+      // blackbox
+      assertQEx("hllRegwidth="+invalid, "hllRegwidth must be",
+                req(params("stats.field","{!cardinality=true hllRegwidth="+invalid+"}foo_s"),
+                    baseParams),
+                ErrorCode.BAD_REQUEST);
+    }
+  }
+
   // simple percentiles test
   public void testPercentiles() throws Exception {
     
@@ -1553,4 +1947,5 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       };
     }
   }
+
 }
