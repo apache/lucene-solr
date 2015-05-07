@@ -123,6 +123,9 @@ Optimizations
 * LUCENE-6330: BooleanScorer (used for top-level disjunctions) does not decode
   norms when not necessary anymore. (Adrien Grand)
 
+* LUCENE-6350: TermsQuery is now compressed with PrefixCodedTerms.
+  (Robert Muir, Mike McCandless, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.

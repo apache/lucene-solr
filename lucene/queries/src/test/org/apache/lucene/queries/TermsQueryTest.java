@@ -37,6 +37,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -185,35 +186,29 @@ public class TermsQueryTest extends LuceneTestCase {
     assertFalse(left.equals(right));
   }
 
-  public void testNoTerms() {
-    List<Term> emptyTerms = Collections.emptyList();
-    List<BytesRef> emptyBytesRef = Collections.emptyList();
-    try {
-      new TermsQuery(emptyTerms);
-      fail("must fail - no terms!");
-    } catch (IllegalArgumentException e) {}
-
-    try {
-      new TermsQuery(emptyTerms.toArray(new Term[0]));
-      fail("must fail - no terms!");
-    } catch (IllegalArgumentException e) {}
-
-    try {
-      new TermsQuery(null, emptyBytesRef.toArray(new BytesRef[0]));
-      fail("must fail - no terms!");
-    } catch (IllegalArgumentException e) {}
-
-    try {
-      new TermsQuery(null, emptyBytesRef);
-      fail("must fail - no terms!");
-    } catch (IllegalArgumentException e) {}
-  }
-
   public void testToString() {
     TermsQuery termsQuery = new TermsQuery(new Term("field1", "a"),
                                               new Term("field1", "b"),
                                               new Term("field1", "c"));
     assertEquals("field1:a field1:b field1:c", termsQuery.toString());
+  }
+
+  public void testDedup() {
+    Query query1 = new TermsQuery(new Term("foo", "bar"));
+    Query query2 = new TermsQuery(new Term("foo", "bar"), new Term("foo", "bar"));
+    QueryUtils.checkEqual(query1, query2);
+  }
+
+  public void testOrderDoesNotMatter() {
+    // order of terms if different
+    Query query1 = new TermsQuery(new Term("foo", "bar"), new Term("foo", "baz"));
+    Query query2 = new TermsQuery(new Term("foo", "baz"), new Term("foo", "bar"));
+    QueryUtils.checkEqual(query1, query2);
+
+    // order of fields is different
+    query1 = new TermsQuery(new Term("foo", "bar"), new Term("bar", "bar"));
+    query2 = new TermsQuery(new Term("bar", "bar"), new Term("foo", "bar"));
+    QueryUtils.checkEqual(query1, query2);
   }
 
   public void testRamBytesUsed() {
@@ -225,8 +220,7 @@ public class TermsQueryTest extends LuceneTestCase {
     TermsQuery query = new TermsQuery(terms);
     final long actualRamBytesUsed = RamUsageTester.sizeOf(query);
     final long expectedRamBytesUsed = query.ramBytesUsed();
-    // error margin within 1%
-    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 100);
+    // error margin within 5%
+    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 20);
   }
-
 }
