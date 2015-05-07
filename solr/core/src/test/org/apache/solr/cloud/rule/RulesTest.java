@@ -42,7 +42,7 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
       create.setCollectionName(rulesColl);
       create.setNumShards(1);
       create.setReplicationFactor(2);
-      create.setRule("cores:<4", "node:*,replica:1", "disk:>1");
+      create.setRule("cores:<4", "node:*,replica:1", "freedisk:>1");
       create.setSnitch("class:ImplicitSnitch");
       rsp = create.process(client);
       assertEquals(0, rsp.getStatus());
@@ -55,7 +55,7 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     assertEquals(3, list.size());
     assertEquals ( "<4", ((Map)list.get(0)).get("cores"));
     assertEquals("1", ((Map) list.get(1)).get("replica"));
-    assertEquals(">1", ((Map) list.get(2)).get("disk"));
+    assertEquals(">1", ((Map) list.get(2)).get("freedisk"));
     list = (List) rulesCollection.get("snitch");
     assertEquals(1, list.size());
     assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));

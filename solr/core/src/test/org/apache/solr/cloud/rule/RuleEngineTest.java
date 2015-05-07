@@ -43,30 +43,30 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     String s = "{" +
         "  '127.0.0.1:49961_':{" +
         "    'node':'127.0.0.1:49961_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}," +
         "  '127.0.0.1:49955_':{" +
         "    'node':'127.0.0.1:49955_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}," +
         "  '127.0.0.1:49952_':{" +
         "    'node':'127.0.0.1:49952_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}," +
         "  '127.0.0.1:49947_':{" +
         "    'node':'127.0.0.1:49947_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}," +
         "  '127.0.0.1:49958_':{" +
         "    'node':'127.0.0.1:49958_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}}";
     MockSnitch.nodeVsTags = (Map) ZkStateReader.fromJSON(s.getBytes(StandardCharsets.UTF_8));
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
 
     List<Rule> rules = parseRules("[{'cores':'<4'}, {" +
             "'replica':'1',shard:'*','node':'*'}," +
-            " {'disk':'>1'}]");
+            " {'freedisk':'>1'}]");
 
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
@@ -88,23 +88,23 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     String s = "{" +
         "  '127.0.0.1:49961_':{" +
         "    'node':'127.0.0.1:49961_'," +
-        "    'disk':992," +
+        "    'freedisk':992," +
         "    'cores':1}," +
         "  '127.0.0.2:49955_':{" +
         "    'node':'127.0.0.1:49955_'," +
-        "    'disk':995," +
+        "    'freedisk':995," +
         "    'cores':1}," +
         "  '127.0.0.3:49952_':{" +
         "    'node':'127.0.0.1:49952_'," +
-        "    'disk':990," +
+        "    'freedisk':990," +
         "    'cores':1}," +
         "  '127.0.0.1:49947_':{" +
         "    'node':'127.0.0.1:49947_'," +
-        "    'disk':980," +
+        "    'freedisk':980," +
         "    'cores':1}," +
         "  '127.0.0.2:49958_':{" +
         "    'node':'127.0.0.1:49958_'," +
-        "    'disk':970," +
+        "    'freedisk':970," +
         "    'cores':1}}";
     MockSnitch.nodeVsTags = (Map) ZkStateReader.fromJSON(s.getBytes(StandardCharsets.UTF_8));
     //test not
@@ -112,7 +112,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
          "[{cores:'<4'}, " +
             "{replica:'1',shard:'*',node:'*'}," +
             "{node:'!127.0.0.1:49947_'}," +
-            "{disk:'>1'}]");
+            "{freedisk:'>1'}]");
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
@@ -124,7 +124,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     rules = parseRules(
          "[{cores:'<4'}, " +
             "{replica:'1',node:'*'}," +
-            "{disk:'>980'}]");
+            "{freedisk:'>980'}]");
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
@@ -136,7 +136,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     rules = parseRules(
         "[{cores:'<4'}, " +
             "{replica:'1',node:'*'}," +
-            "{disk:'>980~'}]");
+            "{freedisk:'>980~'}]");
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
