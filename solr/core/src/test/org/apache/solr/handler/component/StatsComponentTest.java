@@ -1115,8 +1115,11 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     SolrQueryRequest req2 = req(baseParams, 
                                 StatsParams.STATS_FIELD,
                                 "{!min=true, max=true, count=true, sum=true, mean=true, stddev=true, sumOfSquares=true, missing=true, calcdistinct=true}" + fieldName);
+    SolrQueryRequest req3 = req(baseParams, 
+                                StatsParams.STATS_FIELD,
+                                "{!min=true, max=true, count=true, sum=true, mean=true, stddev=true, sumOfSquares=true, missing=true, countDistinct=true, distinctValues=true}" + fieldName);
 
-    for (SolrQueryRequest req : new SolrQueryRequest[] { req1, req2 }) {
+    for (SolrQueryRequest req : new SolrQueryRequest[] { req1, req2, req3 }) {
       assertQ("test status on docValues and multiValued: " + req.toString(), req
               , "//lst[@name='" + fieldName + "']/double[@name='min'][.='-3.0']"
               , "//lst[@name='" + fieldName + "']/double[@name='max'][.='16.0']"
@@ -1231,16 +1234,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     public final static String KPRE = XPRE + "lst[@name='stats_fields']/lst[@name='k']/";
     public final Stat stat;
     public final String input;
-    public final int numResponseKeys; // all because calcdistinct is obnoxious
     public final List<String> perShardXpaths;
     public final List<String> finalXpaths;
     
     public final static Map<Stat,ExpectedStat> ALL = new LinkedHashMap<Stat,ExpectedStat>();
-    private ExpectedStat(Stat stat, String input, int numResponseKeys,
+    private ExpectedStat(Stat stat, String input, 
                          List<String> perShardXpaths, List<String> finalXpaths) {
       this.stat = stat;
       this.input = input;
-      this.numResponseKeys = numResponseKeys;
       this.perShardXpaths = perShardXpaths;
       this.finalXpaths = finalXpaths;
     }
@@ -1258,12 +1259,11 @@ public class StatsComponentTest extends AbstractSolrTestCase {
           perShardXpaths.addAll(expectedDep.perShardXpaths);
         }
       }
-      ALL.put(stat, new ExpectedStat(stat, input, 1, 
-                                     perShardXpaths, Collections.singletonList(xpath)));
+      ALL.put(stat, new ExpectedStat(stat, input, perShardXpaths, Collections.singletonList(xpath)));
     }
-    public static void create(Stat stat, String input, int numResponseKeys,
+    public static void create(Stat stat, String input, 
                               List<String> perShardXpaths, List<String> finalXpaths) {
-      ALL.put(stat, new ExpectedStat(stat, input, numResponseKeys, perShardXpaths, finalXpaths));
+      ALL.put(stat, new ExpectedStat(stat, input, perShardXpaths, finalXpaths));
     }
   }
   
@@ -1340,16 +1340,16 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     ExpectedStat.createSimple(Stat.mean, "true", "double", String.valueOf(sum / count));
     ExpectedStat.createSimple(Stat.sumOfSquares, "true", "double", String.valueOf(sumOfSquares));
     ExpectedStat.createSimple(Stat.stddev, "true", "double", String.valueOf(stddev));
-    final String countDistinctXpath = kpre + "long[@name='countDistinct'][.='10']";
-    ExpectedStat.create(Stat.calcdistinct, "true", 2,
-                        Arrays.asList("count(" + kpre + "arr[@name='distinctValues']/*)=10",
-                                      countDistinctXpath),
-                        Collections.singletonList(countDistinctXpath));
+    final String distinctValsXpath = "count(" + kpre + "arr[@name='distinctValues']/*)=10";
+    ExpectedStat.create(Stat.distinctValues, "true", 
+                        Collections.singletonList(distinctValsXpath),
+                        Collections.singletonList(distinctValsXpath));
+    ExpectedStat.createSimple(Stat.countDistinct, "true", "long", "10");
     final String percentileShardXpath = kpre + "str[@name='percentiles'][.='" 
       + Base64.byteArrayToBase64(tdigestBuf.array(), 0, tdigestBuf.array().length) + "']";
     final String p90 = "" + tdigest.quantile(0.90D);
     final String p99 = "" + tdigest.quantile(0.99D);
-    ExpectedStat.create(Stat.percentiles, "'90, 99'", 1,
+    ExpectedStat.create(Stat.percentiles, "'90, 99'",
                         Collections.singletonList(percentileShardXpath),
                         Arrays.asList("count(" + kpre + "lst[@name='percentiles']/*)=2",
                                       kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]",
@@ -1357,7 +1357,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     final String cardinalityShardXpath = kpre + "str[@name='cardinality'][.='" 
       + Base64.byteArrayToBase64(hllBytes, 0, hllBytes.length) + "']";
     final String cardinalityXpath = kpre + "long[@name='cardinality'][.='10']"; 
-    ExpectedStat.create(Stat.cardinality, "true", 1,
+    ExpectedStat.create(Stat.cardinality, "true",
                         Collections.singletonList(cardinalityShardXpath),
                         Collections.singletonList(cardinalityXpath));
 
@@ -1377,7 +1377,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       int numKeysExpected = 0;
       EnumSet<Stat> distribDeps = stat.getDistribDeps();
       for (Stat perShardDep : distribDeps) {
-        numKeysExpected += ExpectedStat.ALL.get(perShardDep).numResponseKeys;
+        numKeysExpected++;
 
         // even if we go out of our way to exclude the dependent stats, 
         // the shard should return them since they are a dependency for the requested stat
@@ -1413,7 +1413,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
           paras.append(stat + "=" + expect.input + " ");
 
-          numKeysExpected += expect.numResponseKeys;
+          numKeysExpected++;
           testXpaths.addAll(expect.finalXpaths);
         }
 

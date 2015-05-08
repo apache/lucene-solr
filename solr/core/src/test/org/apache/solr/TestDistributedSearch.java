@@ -696,6 +696,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         params("stats.calcdistinct", "false",
                "f."+i1+".stats.calcdistinct", "false",
                "stats.field", "{!min=true calcdistinct=true}" + i1),
+        params("stats.calcdistinct", "false",
+               "f."+i1+".stats.calcdistinct", "false",
+               "stats.field", "{!min=true countDistinct=true distinctValues=true}" + i1),
+        params("stats.field", "{!min=true countDistinct=true distinctValues=true}" + i1),
+        params("yes", "true",
+               "stats.field", "{!min=$yes countDistinct=$yes distinctValues=$yes}" + i1),
       }) {
       
       rsp = query(SolrParams.wrapDefaults
@@ -732,6 +738,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         params("stats.calcdistinct", "true",
                "f."+i1+".stats.calcdistinct", "true",
                "stats.field", "{!min=true calcdistinct=false}" + i1),
+        params("stats.calcdistinct", "true",
+               "f."+i1+".stats.calcdistinct", "true",
+               "stats.field", "{!min=true countDistinct=false distinctValues=false}" + i1),
       }) {
       
       rsp = query(SolrParams.wrapDefaults
@@ -752,7 +761,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNull(p+" expected null for sum", s.getSum());
       assertNull(p+" expected null for percentiles", s.getPercentiles());
       assertNull(p+" expected null for cardinality", s.getCardinality());
-      
     }
 
     // this field doesn't exist in any doc in the result set.
@@ -839,8 +847,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     assertEquals("Sanity check failed: either test broke, or test changed, or you adjusted Stat enum" + 
                  " (adjust constant accordingly if intentional)",
-                 4235, numTotalStatQueries);
-
+                 5082, numTotalStatQueries);
 
     /*** TODO: the failure may come back in "exception"
     try {
@@ -1164,6 +1171,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   private void validateCommonQueryParameters() throws Exception {
+    ignoreException("parameter cannot be negative");
     try {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
@@ -1180,6 +1188,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       fail("Expected the last query to fail, but got response: " + resp);
     } catch (SolrException e) {
       assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-   }
+    }
+    resetExceptionIgnores();
   }
 }

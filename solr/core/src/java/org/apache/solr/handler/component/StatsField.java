@@ -86,7 +86,8 @@ public class StatsField {
     mean(false, sum, count),
     sumOfSquares(true),
     stddev(false, sum, count, sumOfSquares),
-    calcdistinct(true),
+    distinctValues(true),
+    countDistinct(false, distinctValues),
     percentiles(true){
       /** special for percentiles **/
       boolean parseParams(StatsField sf) {
@@ -177,6 +178,13 @@ public class StatsField {
     }
     
   }
+
+  /**
+   * the equivilent stats if "calcdistinct" is specified
+   * @see Stat#countDistinct
+   * @see Stat#distinctValues
+   */
+  private static final EnumSet<Stat> CALCDISTINCT_PSUEDO_STAT = EnumSet.of(Stat.countDistinct, Stat.distinctValues);
 
   /**
    * The set of stats computed by default when no localparams are used to specify explicit stats 
@@ -524,23 +532,30 @@ public class StatsField {
         statSpecifiedByLocalParam = true;
         if (stat.parseParams(this)) {
           statsInResponse.add(stat);
-          statsToCalculate.addAll(stat.getDistribDeps());
         }
       }
     }
 
-    // if no individual stat setting. 
-    if ( ! statSpecifiedByLocalParam ) {
+    // if no individual stat setting use the default set
+    if ( ! ( statSpecifiedByLocalParam
+             // calcdistinct (as a local param) is a psuedo-stat, prevents default set
+             || localParams.getBool("calcdistinct", false) ) ) {
       statsInResponse.addAll(DEFAULT_STATS);
-      for (Stat stat : statsInResponse) {
-        statsToCalculate.addAll(stat.getDistribDeps());
+    }
+
+    // calcDistinct is a psuedo-stat with optional top level param default behavior
+    // if not overridden by the specific individual stats
+    if (localParams.getBool("calcdistinct", topLevelCalcDistinct)) {
+      for (Stat stat : CALCDISTINCT_PSUEDO_STAT) {
+        // assume true, but don't include if specific stat overrides
+        if (localParams.getBool(stat.name(), true)) {
+          statsInResponse.add(stat);
+        }
       }
     }
 
-    // calcDistinct has special "default" behavior using top level CalcDistinct param
-    if (topLevelCalcDistinct && localParams.getBool(Stat.calcdistinct.toString(), true)) {
-      statsInResponse.add(Stat.calcdistinct);
-      statsToCalculate.addAll(Stat.calcdistinct.getDistribDeps());
+    for (Stat stat : statsInResponse) {
+      statsToCalculate.addAll(stat.getDistribDeps());
     }
   }
 
