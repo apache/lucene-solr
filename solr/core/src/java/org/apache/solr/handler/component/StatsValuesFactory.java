@@ -3,7 +3,7 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
+
  * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -105,7 +105,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   // final booleans from StatsField to allow better inlining & JIT optimizing
   final protected boolean computeCount;
   final protected boolean computeMissing;
-  final protected boolean computeCalcDistinct;
+  final protected boolean computeCalcDistinct; // needed for either countDistinct or distinctValues
   final protected boolean computeMin;
   final protected boolean computeMax;
   final protected boolean computeMinOrMax;
@@ -148,7 +148,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     this.statsField = statsField;
     this.computeCount = statsField.calculateStats(Stat.count);
     this.computeMissing = statsField.calculateStats(Stat.missing);
-    this.computeCalcDistinct = statsField.calculateStats(Stat.calcdistinct);
+    this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct) 
+      || statsField.calculateStats(Stat.distinctValues);
     this.computeMin = statsField.calculateStats(Stat.min);
     this.computeMax = statsField.calculateStats(Stat.max);
     this.computeMinOrMax = computeMin || computeMax;
@@ -324,8 +325,10 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     if (statsField.includeInResponse(Stat.missing)) {
       res.add("missing", missing);
     }
-    if (statsField.includeInResponse(Stat.calcdistinct)) {
+    if (statsField.includeInResponse(Stat.distinctValues)) {
       res.add("distinctValues", distinctValues);
+    }
+    if (statsField.includeInResponse(Stat.countDistinct)) {
       res.add("countDistinct", countDistinct);
     }
     if (statsField.includeInResponse(Stat.cardinality)) {
