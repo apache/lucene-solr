@@ -33,7 +33,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -61,11 +63,71 @@ public abstract class SlotAcc implements Closeable {
 
   public abstract void reset();
 
+  public abstract void resize(Resizer resizer);
+
   @Override
   public void close() throws IOException {
   }
-}
 
+  public static abstract class Resizer {
+    public abstract int getNewSize();
+
+    public abstract int getNewSlot(int oldSlot);
+
+    public double[] resize(double[] old, double defaultValue) {
+      double[] values = new double[getNewSize()];
+      if (defaultValue != 0) {
+        Arrays.fill(values, 0, values.length, defaultValue);
+      }
+      for (int i = 0; i < old.length; i++) {
+        double val = old[i];
+        if (val != defaultValue) {
+          int newSlot = getNewSlot(i);
+          if (newSlot >= 0) {
+            values[newSlot] = val;
+          }
+        }
+      }
+      return values;
+    }
+
+    public int[] resize(int[] old, int defaultValue) {
+      int[] values = new int[getNewSize()];
+      if (defaultValue != 0) {
+        Arrays.fill(values, 0, values.length, defaultValue);
+      }
+      for (int i = 0; i < old.length; i++) {
+        int val = old[i];
+        if (val != defaultValue) {
+          int newSlot = getNewSlot(i);
+          if (newSlot >= 0) {
+            values[newSlot] = val;
+          }
+        }
+      }
+      return values;
+    }
+
+    public <T> T[] resize(T[] old, T defaultValue) {
+      T[] values = (T[]) Array.newInstance(old.getClass().getComponentType(), getNewSize());
+      if (defaultValue != null) {
+        Arrays.fill(values, 0, values.length, defaultValue);
+      }
+      for (int i = 0; i < old.length; i++) {
+        T val = old[i];
+        if (val != defaultValue) {
+          int newSlot = getNewSlot(i);
+          if (newSlot >= 0) {
+            values[newSlot] = val;
+          }
+        }
+      }
+      return values;
+    }
+
+  } // end class Resizer
+
+}
 
 // TODO: we should really have a decoupled value provider...
 // This would enhance reuse and also prevent multiple lookups of same value across diff stats
@@ -125,6 +187,11 @@ abstract class DoubleFuncSlotAcc extends FuncSlotAcc {
       result[i] = initialValue;
     }
   }
+
+  @Override
+  public void resize(Resizer resizer) {
+    result = resizer.resize(result, initialValue);
+  }
 }
 
 abstract class IntSlotAcc extends SlotAcc {
@@ -155,6 +222,11 @@ abstract class IntSlotAcc extends SlotAcc {
     for (int i=0; i<result.length; i++) {
       result[i] = initialValue;
     }
+  }
+
+  @Override
+  public void resize(Resizer resizer) {
+    result = resizer.resize(result, initialValue);
   }
 }
 
@@ -270,18 +342,44 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
     }
   }
 
+  @Override
+  public void resize(Resizer resizer) {
+    super.resize(resizer);
+    counts = resizer.resize(counts, 0);
+  }
+}
+
+abstract class CountSlotAcc extends SlotAcc {
+  public CountSlotAcc(FacetContext fcontext) {
+    super(fcontext);
+  }
+
+  public abstract void incrementCount(int slot, int count);
+  public abstract int getCount(int slot);
 }
 
 
 
-class CountSlotAcc extends IntSlotAcc {
-  public CountSlotAcc(FacetContext fcontext, int numSlots) {
-    super(fcontext, numSlots, 0);
+class CountSlotArrAcc extends CountSlotAcc {
+  int[] result;
+  public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
+    super(fcontext);
+    result = new int[numSlots];
   }
 
   @Override
   public void collect(int doc, int slotNum) {       // TODO: count arrays can use fewer bytes based on the number of docs in the base set (that's the upper bound for single valued) - look at ttf?
-    result[slotNum] = result[slotNum] + 1;
+    result[slotNum]++;
+  }
+
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Integer.compare( result[slotA], result[slotB] );
+  }
+
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return result[slotNum];
   }
 
   public void incrementCount(int slot, int count) {
@@ -299,7 +397,12 @@ class CountSlotAcc extends IntSlotAcc {
 
   @Override
   public void reset() {
-    super.reset();
+    Arrays.fill(result, 0);
+  }
+
+  @Override
+  public void resize(Resizer resizer) {
+    resizer.resize(result, 0);
   }
 }
 
@@ -326,6 +429,12 @@ class SortSlotAcc extends SlotAcc {
   @Override
   public void reset() {
     // no-op
+  }
+
+  @Override
+  public void resize(Resizer resizer) {
+    // sort slot only works with direct-mapped accumulators
+    throw new UnsupportedOperationException();
   }
 }
 
@@ -427,6 +536,10 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return counts[slotA] - counts[slotB];
   }
 
+  @Override
+  public void resize(Resizer resizer) {
+    arr = resizer.resize(arr, null);
+  }
 }
 
 

@@ -26,7 +26,7 @@ public class CountAgg extends SimpleAggValueSource {
 
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new CountSlotAcc(fcontext, numSlots);
+    return new CountSlotArrAcc(fcontext, numSlots);
   }
 
   @Override
