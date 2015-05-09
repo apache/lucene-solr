@@ -178,6 +178,11 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[digests.length];
       sortvals = null;
     }
+
+    @Override
+    public void resize(Resizer resizer) {
+      digests = resizer.resize(digests, null);
+    }
   }
 
 

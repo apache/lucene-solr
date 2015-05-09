@@ -304,7 +304,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCountsInArray(FacetFieldProcessorUIF processor, int[] counts) throws IOException {
+  private void getCounts(FacetFieldProcessorUIF processor, CountSlotAcc counts) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -330,7 +330,7 @@ public class UnInvertedField extends DocTermOrds {
     // For the biggest terms, do straight set intersections
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorting by index order
-      counts[tt.termNum] = searcher.numDocs(tt.termQuery, docs);
+      counts.incrementCount(tt.termNum, searcher.numDocs(tt.termQuery, docs));
     }
 
     // TODO: we could short-circuit counting altogether for sorted faceting
@@ -356,7 +356,7 @@ public class UnInvertedField extends DocTermOrds {
             }
             if (delta == 0) break;
             tnum += delta - TNUM_OFFSET;
-            counts[tnum]++;
+            counts.incrementCount(tnum,1);
           }
         } else {
           int tnum = 0;
@@ -366,7 +366,7 @@ public class UnInvertedField extends DocTermOrds {
             if ((code & 0x80) == 0) {
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
-              counts[tnum]++;
+              counts.incrementCount(tnum,1);
               delta = 0;
             }
             code >>>= 8;
@@ -377,16 +377,17 @@ public class UnInvertedField extends DocTermOrds {
 
     if (doNegative) {
       for (int i=0; i<numTermsInField; i++) {
-        counts[i] = maxTermCounts[i] - counts[i];
+ //       counts[i] = maxTermCounts[i] - counts[i];
+        counts.incrementCount(i, maxTermCounts[i] - counts.getCount(i)*2);
       }
     }
 
     if (processor.allBucketsSlot >= 0) {
       int all = 0;  // overflow potential
       for (int i=0; i<numTermsInField; i++) {
-        all += counts[i];
+        all += counts.getCount(i);
       }
-      counts[processor.allBucketsSlot] = all;
+      counts.incrementCount(processor.allBucketsSlot, all);
     }
   }
 
@@ -395,8 +396,7 @@ public class UnInvertedField extends DocTermOrds {
   public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
     if (processor.accs.length == 0 && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField)
     {
-      int[] arr = processor.countAcc.getCountArray();
-      getCountsInArray(processor, arr);
+      getCounts(processor, processor.countAcc);
 
       /*** debugging
       int sz = processor.countAcc.getCountArray().length;

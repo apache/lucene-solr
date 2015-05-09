@@ -210,6 +210,11 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
+    public void resize(Resizer resizer) {
+      resizer.resize(sets, null);
+    }
+
+    @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
       exists = DocValues.getDocsWithField(readerContext.reader(), sf.getName());

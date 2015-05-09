@@ -206,7 +206,7 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
   protected void createAccs(int docCount, int slotCount) throws IOException {
     accMap = new LinkedHashMap<String,SlotAcc>();
-    countAcc = new CountSlotAcc(fcontext, slotCount);
+    countAcc = new CountSlotArrAcc(fcontext, slotCount);
     countAcc.key = "count";
     for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
       SlotAcc acc = entry.getValue().createSlotAcc(fcontext, docCount, slotCount);
