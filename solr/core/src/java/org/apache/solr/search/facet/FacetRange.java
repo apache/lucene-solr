@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -101,6 +102,41 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
 
+  public static Calc getNumericCalc(SchemaField sf) {
+    Calc calc;
+    final FieldType ft = sf.getType();
+
+    if (ft instanceof TrieField) {
+      final TrieField trie = (TrieField)ft;
+
+      switch (trie.getType()) {
+        case FLOAT:
+          calc = new FloatCalc(sf);
+          break;
+        case DOUBLE:
+          calc = new DoubleCalc(sf);
+          break;
+        case INTEGER:
+          calc = new IntCalc(sf);
+          break;
+        case LONG:
+          calc = new LongCalc(sf);
+          break;
+        case DATE:
+          calc = new DateCalc(sf, null);
+          break;
+        default:
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Expected numeric field type :" + sf);
+      }
+    } else {
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+              "Expected numeric field type :" + sf);
+    }
+    return calc;
+  }
 
   private SimpleOrderedMap<Object> getRangeCounts() throws IOException {
     final FieldType ft = sf.getType();
@@ -317,14 +353,22 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * directly from some method -- but until then, keep this locked down
    * and private.
    */
-  private static abstract class Calc {
+  static abstract class Calc {
     protected final SchemaField field;
     public Calc(final SchemaField field) {
       this.field = field;
     }
 
+    public Comparable bitsToValue(long bits) {
+      return bits;
+    }
+
+    public long bitsToSortableBits(long bits) {
+      return bits;
+    }
+
     /**
-     * Formats a Range endpoint for use as a range label name in the response.
+     * Formats a value into a label used in a response
      * Default Impl just uses toString()
      */
     public String formatValue(final Comparable val) {
@@ -332,7 +376,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     /**
-     * Parses a String param into an Range endpoint value throwing
+     * Parses a String param into a value throwing
      * an exception if not possible
      */
     public final Comparable getValue(final String rawval) {
@@ -346,7 +390,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     /**
-     * Parses a String param into an Range endpoint.
+     * Parses a String param into a value.
      * Can throw a low level format exception as needed.
      */
     protected abstract Comparable parseStr(final String rawval)
@@ -407,6 +451,16 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   private static class FloatCalc extends Calc {
 
+    @Override
+    public Comparable bitsToValue(long bits) {
+      return Float.intBitsToFloat( (int)bits );
+    }
+
+    @Override
+    public long bitsToSortableBits(long bits) {
+      return NumericUtils.sortableDoubleBits(bits);
+    }
+
     public FloatCalc(final SchemaField f) { super(f); }
     @Override
     protected Float parseStr(String rawval) {
@@ -418,6 +472,15 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
   private static class DoubleCalc extends Calc {
+    @Override
+    public Comparable bitsToValue(long bits) {
+      return Double.longBitsToDouble(bits);
+    }
+
+    @Override
+    public long bitsToSortableBits(long bits) {
+      return NumericUtils.sortableDoubleBits(bits);
+    }
 
     public DoubleCalc(final SchemaField f) { super(f); }
     @Override
@@ -463,6 +526,12 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField or DateRangeField");
       }
     }
+
+    @Override
+    public Comparable bitsToValue(long bits) {
+      return new Date(bits);
+    }
+
     @Override
     public String formatValue(Comparable val) {
       return ((TrieDateField)field.getType()).toExternal( (Date)val );

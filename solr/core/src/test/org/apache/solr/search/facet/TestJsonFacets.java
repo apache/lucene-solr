@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
+import org.apache.lucene.queryparser.flexible.standard.processors.NumericQueryNodeProcessor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -44,10 +45,13 @@ import org.junit.Test;
 public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
+  private static int origTableSize;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = true;
+    origTableSize = FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE;
+    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -60,6 +64,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
+    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     if (servers != null) {
       servers.stop();
       servers = null;
@@ -368,7 +373,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
 
 
-    // straight query facets
+
+        // straight query facets
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{catA:{query:{q:'${cat_s}:A'}},  catA2:{query:{query:'${cat_s}:A'}},  catA3:{query:'${cat_s}:A'}    }"
         )
@@ -883,6 +889,50 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+    //
+    // facet on numbers
+    //
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{" +
+                " f1:{ type:field, field:${num_i} }" +
+                ",f2:{ type:field, field:${num_i}, sort:'count asc' }" +
+                ",f3:{ type:field, field:${num_i}, sort:'index asc' }" +
+                ",f4:{ type:field, field:${num_i}, sort:'index desc' }" +
+                ",f5:{ type:field, field:${num_i}, sort:'index desc', limit:1, missing:true, allBuckets:true, numBuckets:true }" +
+                ",f6:{ type:field, field:${num_i}, sort:'index desc', mincount:2, numBuckets:true }" +   // mincount should lower numbuckets
+                ",f7:{ type:field, field:${num_i}, sort:'index desc', offset:2, numBuckets:true }" +     // test offset
+                ",f8:{ type:field, field:${num_i}, sort:'index desc', offset:100, numBuckets:true }" +   // test high offset
+                ",f9:{ type:field, field:${num_i}, sort:'x desc', facet:{x:'avg(${num_d})'}, missing:true, allBuckets:true, numBuckets:true }" +            // test stats
+                ",f10:{ type:field, field:${num_i}, facet:{a:{query:'${cat_s}:A'}}, missing:true, allBuckets:true, numBuckets:true }" +     // test subfacets
+                "}"
+        )
+        , "facets=={count:6 " +
+            ",f1:{ buckets:[{val:-5,count:2},{val:2,count:1},{val:3,count:1},{val:7,count:1} ] } " +
+            ",f2:{ buckets:[{val:2,count:1},{val:3,count:1},{val:7,count:1},{val:-5,count:2} ] } " +
+            ",f3:{ buckets:[{val:-5,count:2},{val:2,count:1},{val:3,count:1},{val:7,count:1} ] } " +
+            ",f4:{ buckets:[{val:7,count:1},{val:3,count:1},{val:2,count:1},{val:-5,count:2} ] } " +
+            ",f5:{ buckets:[{val:7,count:1}]   , numBuckets:4, allBuckets:{count:5}, missing:{count:1}  } " +
+            ",f6:{ buckets:[{val:-5,count:2}]  , numBuckets:1  } " +
+            ",f7:{ buckets:[{val:2,count:1},{val:-5,count:2}] , numBuckets:4 } " +
+            ",f8:{ buckets:[] , numBuckets:4 } " +
+            ",f9:{ buckets:[{val:7,count:1,x:11.0},{val:2,count:1,x:4.0},{val:3,count:1,x:2.0},{val:-5,count:2,x:-7.0} ],  numBuckets:4, allBuckets:{count:5,x:0.6},missing:{count:1,x:0.0} } " +  // TODO: should missing exclude "x" because no values were collected?
+            ",f10:{ buckets:[{val:-5,count:2,a:{count:0}},{val:2,count:1,a:{count:1}},{val:3,count:1,a:{count:1}},{val:7,count:1,a:{count:0}} ],  numBuckets:4, allBuckets:{count:5},missing:{count:1,a:{count:0}} } " +
+            "}"
+    );
+
+
+    // facet on a float field - shares same code with integers/longs currently, so we only need to test labels/sorting
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{" +
+                " f1:{ type:field, field:${num_d} }" +
+                ",f2:{ type:field, field:${num_d}, sort:'index desc' }" +
+                "}"
+        )
+        , "facets=={count:6 " +
+            ",f1:{ buckets:[{val:-9.0,count:1},{val:-5.0,count:1},{val:2.0,count:1},{val:4.0,count:1},{val:11.0,count:1} ] } " +
+            ",f2:{ buckets:[{val:11.0,count:1},{val:4.0,count:1},{val:2.0,count:1},{val:-5.0,count:1},{val:-9.0,count:1} ] } " +
+            "}"
+    );
 
   }
 

@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.HashDocSet;
@@ -120,16 +121,26 @@ public class FacetField extends FacetRequest {
       return new FacetFieldProcessorStream(fcontext, this, sf);
     }
 
-    if (!multiToken || sf.hasDocValues()) {
+    org.apache.lucene.document.FieldType.NumericType ntype = ft.getNumericType();
+
+    if (sf.hasDocValues() && ntype==null) {
+      // single and multi-valued string docValues
       return new FacetFieldProcessorDV(fcontext, this, sf);
     }
 
-    if (multiToken) {
-      return new FacetFieldProcessorUIF(fcontext, this, sf);
-    } else {
-      // single valued string
-      return new FacetFieldProcessorFC(fcontext, this, sf);
+    if (!multiToken) {
+      if (sf.getType().getNumericType() != null) {
+        // single valued numeric (docvalues or fieldcache)
+        return new FacetFieldProcessorNumeric(fcontext, this, sf);
+      } else {
+        // single valued string...
+        return new FacetFieldProcessorDV(fcontext, this, sf);
+        // what about FacetFieldProcessorFC?
+      }
     }
+
+    // Multi-valued field cache (UIF)
+    return new FacetFieldProcessorUIF(fcontext, this, sf);
   }
 
   @Override
@@ -143,6 +154,7 @@ public class FacetField extends FacetRequest {
 abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SchemaField sf;
   SlotAcc sortAcc;
+  SlotAcc indexOrderAcc;
   int effectiveMincount;
 
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
@@ -157,6 +169,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   void setSortAcc(int numSlots) {
+    if (indexOrderAcc == null) {
+      // This sorting accumulator just goes by the slot number, so does not need to be collected
+      // and hence does not need to find it's way into the accMap or accs array.
+      indexOrderAcc = new SortSlotAcc(fcontext);
+    }
+
     String sortKey = freq.sortVariable;
     sortAcc = accMap.get(sortKey);
 
@@ -164,15 +182,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if ("count".equals(sortKey)) {
         sortAcc = countAcc;
       } else if ("index".equals(sortKey)) {
-        sortAcc = new SortSlotAcc(fcontext);
-        // This sorting accumulator just goes by the slot number, so does not need to be collected
-        // and hence does not need to find it's way into the accMap or accs array.
+        sortAcc = indexOrderAcc;
       }
     }
   }
 
   static class Slot {
     int slot;
+    public int tiebreakCompare(int slotA, int slotB) {
+      return slotB - slotA;
+    }
   }
 }
 
@@ -249,7 +268,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     // add a modest amount of over-request if this is a shard request
     int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
 
-    int maxsize = freq.limit > 0 ?  off + lim : Integer.MAX_VALUE - 1;
+    int maxsize = (int)(freq.limit > 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
     maxsize = Math.min(maxsize, nTerms);
 
     final int sortMul = freq.sortDirection.getMultiplier();
@@ -612,6 +631,11 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
     if (freq.prefix != null) {
       String indexedPrefix = sf.getType().toInternal(freq.prefix);
       startTermBytes = new BytesRef(indexedPrefix);
+    } else if (sf.getType().getNumericType() != null) {
+      String triePrefix = TrieField.getMainValuePrefix(sf.getType());
+      if (triePrefix != null) {
+        startTermBytes = new BytesRef(triePrefix);
+      }
     }
 
     Fields fields = fcontext.searcher.getLeafReader().fields();
@@ -644,8 +668,6 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
     List<LeafReaderContext> leafList = fcontext.searcher.getTopReaderContext().leaves();
     leaves = leafList.toArray( new LeafReaderContext[ leafList.size() ]);
-
-
   }
 
 
