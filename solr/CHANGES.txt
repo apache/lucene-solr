@@ -177,6 +177,10 @@ New Features
 * SOLR-7461: stats.field now supports individual local params for 'countDistinct' and 'distinctValues'.
   'calcdistinct' is still supported as an alias for both options (hossman)
 
+* SOLR-7522: Facet Module - Implement field/terms faceting over single-valued
+  numeric fields. (yonik)
+
+
 Bug Fixes
 ----------------------
 
