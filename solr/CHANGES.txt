@@ -255,6 +255,7 @@ Bug Fixes
 
 * SOLR-7502: start script should not try to create configset for .system collection (Noble Paul)
 
+* SOLR-7514: SolrClient.getByIds fails with ClassCastException (Tom Farnworth, Ramkumar Aiyengar)
 
 Optimizations
 ----------------------

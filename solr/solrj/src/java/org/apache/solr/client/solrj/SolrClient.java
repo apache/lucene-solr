@@ -39,8 +39,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -1088,7 +1088,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public SolrDocument getById(String collection, String id, SolrParams params) throws SolrServerException, IOException {
-    SolrDocumentList docs = getById(collection, Arrays.asList(id), params);
+    SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
     }
@@ -1169,7 +1169,7 @@ public abstract class SolrClient implements Serializable, Closeable {
     if (StringUtils.isEmpty(reqParams.get(CommonParams.QT))) {
       reqParams.set(CommonParams.QT, "/get");
     }
-    reqParams.set("ids", (String[]) ids.toArray());
+    reqParams.set("ids", ids.toArray(new String[ids.size()]));
 
     return query(collection, reqParams).getResults();
   }
