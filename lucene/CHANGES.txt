@@ -162,6 +162,9 @@ Bug Fixes
 * LUCENE-6427: Added assertion about the presence of ghost bits in
   (Fixed|Long)BitSet. (Luc Vanlerberghe via Adrien Grand)
 
+* LUCENE-6468: Fixed NPE with empty Kuromoji user dictionary.
+  (Jun Ohtani via Christian Moen)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

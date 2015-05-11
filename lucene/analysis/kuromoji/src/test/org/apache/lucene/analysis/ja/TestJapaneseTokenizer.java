@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
@@ -39,7 +40,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
-public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
+public class
+    TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public static UserDictionary readDict() {
     InputStream is = TestJapaneseTokenizer.class.getResourceAsStream("userdict.txt");
@@ -49,7 +51,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     try {
       try {
         Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        return new UserDictionary(reader);
+        return UserDictionary.open(reader);
       } finally {
         is.close();
       }
@@ -685,5 +687,25 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
                               new String[] { "d", "ε", "ε", "ϢϏΎϷΞͺ", "羽田" },
                               new int[] { 1, 1, 1, 1, 1},
                               new int[] { 1, 1, 1, 1, 1});
+  }
+
+  public void testEmptyUserDict() throws Exception {
+    Reader emptyReader = new StringReader("\n# This is an empty user dictionary\n\n");
+    UserDictionary emptyDict = UserDictionary.open(emptyReader);
+
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), emptyDict, false, Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+
+    assertAnalyzesTo(analyzer, "これは本ではない",
+        new String[]{"これ", "は", "本", "で", "は", "ない"},
+        new int[]{0, 2, 3, 4, 5, 6},
+        new int[]{2, 3, 4, 5, 6, 8}
+    );
+    analyzer.close();
   }
 }
