@@ -91,7 +91,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
           .onMalformedInput(CodingErrorAction.REPORT)
           .onUnmappableCharacter(CodingErrorAction.REPORT);
       Reader reader = new InputStreamReader(stream, decoder);
-      userDictionary = new UserDictionary(reader);
+      userDictionary = UserDictionary.open(reader);
     } else {
       userDictionary = null;
     }
