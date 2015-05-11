@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import org.apache.solr.client.solrj.io.TupleStream;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;

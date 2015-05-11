@@ -15,34 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.Comparator;
+import java.util.List;
 
-/**
- *  An descending field Comparator which compares a field of two Tuples and determines sort order.
- **/
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-
-public class DescFieldComp implements Comparator<Tuple>, Serializable {
+public abstract class TupleStream implements Serializable {
 
   private static final long serialVersionUID = 1;
 
-  private String field;
+  public TupleStream() {
 
-  public DescFieldComp(String field) {
-    this.field = field;
   }
+  
+  public abstract void setStreamContext(StreamContext context);
 
-  public int compare(Tuple t1, Tuple t2) {
-    Comparable o1 = (Comparable)t1.get(field);
-    Comparable o2 = (Comparable)t2.get(field);
-    int c = o1.compareTo(o2);
-    if(c == 0) {
-      return 0;
-    } else {
-      return -c;
-    }
+  public abstract List<TupleStream> children();
+
+  public abstract void open() throws IOException;
+
+  public abstract void close() throws IOException;
+
+  public abstract Tuple read() throws IOException;
+
+  public int getCost() {
+    return 0;
   }
 }

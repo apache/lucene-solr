@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
  * A TupleStream that allows a single Tuple to be pushed back onto the stream after it's been read.
@@ -37,7 +41,14 @@ public class PushBackStream extends TupleStream {
 
   public PushBackStream(TupleStream stream) {
     this.stream = stream;
-
+  }
+  
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException{
+    if(stream instanceof ExpressibleStream){
+      return ((ExpressibleStream)stream).toExpression(factory);
+    }
+    
+    throw new IOException("This PushBackStream contains a non-expressible TupleStream - it cannot be converted to an expression");
   }
 
   public void setStreamContext(StreamContext context) {

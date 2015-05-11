@@ -93,11 +93,11 @@ public class Tuple implements Cloneable {
     this.fields.put("_MAPS_", maps);
   }
 
-  public Map<String,Tuple> getMetrics() {
-    return (Map<String,Tuple>)this.fields.get("_METRICS_");
+  public Map<String,Map> getMetrics() {
+    return (Map<String,Map>)this.fields.get("_METRICS_");
   }
 
-  public void setMetrics(Map<String, Tuple> metrics) {
+  public void setMetrics(Map<String, Map> metrics) {
     this.fields.put("_METRICS_", metrics);
   }
 

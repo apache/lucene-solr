@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
  *  The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
@@ -37,6 +40,7 @@ public class StreamContext implements Serializable{
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
+  private StreamFactory streamFactory;
 
   public Object get(Object key) {
     return entries.get(key);
@@ -52,5 +56,13 @@ public class StreamContext implements Serializable{
 
   public SolrClientCache getSolrClientCache() {
     return this.clientCache;
+  }
+
+  public void setStreamFactory(StreamFactory streamFactory) {
+    this.streamFactory = streamFactory;
+  }
+
+  public StreamFactory getStreamFactory() {
+    return this.streamFactory;
   }
 }

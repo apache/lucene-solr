@@ -1,4 +1,4 @@
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.io.InputStream;

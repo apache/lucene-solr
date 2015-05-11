@@ -1,3 +1,7 @@
+package org.apache.solr.client.solrj.io.comp;
+
+import org.apache.solr.client.solrj.io.Tuple;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,30 +19,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
-
-import java.io.Serializable;
-import java.util.Comparator;
-
-
 /**
- *  An ascending field Comparator which compares a field of two Tuples and determines sort order.
- **/
-
-
-public class AscFieldComp implements Comparator<Tuple>, Serializable {
-
-  private static final long serialVersionUID = 1;
-
-  private String field;
-
-  public AscFieldComp(String field) {
-    this.field = field;
-  }
-
-  public int compare(Tuple t1, Tuple t2) {
-    Comparable o1 = (Comparable)t1.get(field);
-    Comparable o2 = (Comparable)t2.get(field);
-    return o1.compareTo(o2);
-  }
+ * Interface for use with a comparator lambda
+ */
+public interface ComparatorLambda {
+  public int compare(Tuple leftTuple, Tuple rightTuple);
 }
