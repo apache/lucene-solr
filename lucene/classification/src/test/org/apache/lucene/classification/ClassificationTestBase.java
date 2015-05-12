@@ -52,9 +52,9 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   private Directory dir;
   private FieldType ft;
 
-  String textFieldName;
-  String categoryFieldName;
-  String booleanFieldName;
+  protected String textFieldName;
+  protected String categoryFieldName;
+  protected String booleanFieldName;
 
   @Override
   @Before
