@@ -25,6 +25,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.spatial.spatial4j.geo3d.Bounds;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
@@ -52,28 +53,6 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
   }
 
   protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
-  
-  @Test
-  public void testFailure1() {
-      final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
-      final List<GeoPoint> points = new ArrayList<GeoPoint>();
-      points.add(new GeoPoint(66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
-      points.add(new GeoPoint(43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
-      points.add(new GeoPoint(30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
-      final GeoShape path = GeoPolygonFactory.makeGeoPolygon(points,0);
-    
-      final GeoPoint point = new GeoPoint(34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
-
-      // Apparently the rectangle thinks the polygon is completely within it... "shape inside rectangle"
-      assertTrue(GeoArea.WITHIN == rect.getRelationship(path));
-
-      // Point is within path? Apparently not...
-      assertFalse(path.isWithin(point));
-
-      // If it is within the path, it must be within the rectangle, and similarly visa versa
-      assertFalse(rect.isWithin(point));
-      
-  }
 
   protected static GeoBBox getBoundingBox(final GeoShape path) {
       Bounds bounds = path.getBounds(null);
@@ -260,4 +239,37 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
         geoPoint.y * DistanceUtils.RADIANS_TO_DEGREES);
   }
 
+  @Test
+  public void testFailure1() {
+    final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
+    final List<GeoPoint> points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
+    points.add(new GeoPoint(43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
+    points.add(new GeoPoint(30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
+    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(points,0);
+
+    final GeoPoint point = new GeoPoint(34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
+
+    // Apparently the rectangle thinks the polygon is completely within it... "shape inside rectangle"
+    assertTrue(GeoArea.WITHIN == rect.getRelationship(path));
+
+    // Point is within path? Apparently not...
+    assertFalse(path.isWithin(point));
+
+    // If it is within the path, it must be within the rectangle, and similarly visa versa
+    assertFalse(rect.isWithin(point));
+
+  }
+
+  @Test
+  public void testFailure2_LUCENE6475() {
+    GeoShape geo3dCircle = new GeoCircle(1.6282053147165243E-4 * RADIANS_PER_DEGREE,
+        -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
+    Geo3dShape geo3dShape = new Geo3dShape(geo3dCircle, ctx);
+    Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);
+    assertTrue(geo3dShape.relate(rect).intersects());
+    // thus the bounding box must intersect too
+    assertTrue(geo3dShape.getBoundingBox().relate(rect).intersects());
+
+  }
 }

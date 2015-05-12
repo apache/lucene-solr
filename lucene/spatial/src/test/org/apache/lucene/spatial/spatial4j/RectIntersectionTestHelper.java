@@ -111,7 +111,7 @@ public abstract class RectIntersectionTestHelper<S extends Shape> extends Random
 
       SpatialRelation ic = s.relate(r);
 
-      LogRule.log("S-R Rel: {}, Shape {}, Rectangle {}", ic, s, r);
+      LogRule.log("S-R Rel: {}, Shape {}, Rectangle {}    lap# {}", ic, s, r, laps);
 
       if (ic != DISJOINT) {
         assertTrue("if not disjoint then the shape's bbox shouldn't be disjoint",

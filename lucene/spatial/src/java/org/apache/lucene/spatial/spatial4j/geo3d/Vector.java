@@ -34,6 +34,8 @@ public class Vector {
    */
   public static final double MINIMUM_RESOLUTION_SQUARED = MINIMUM_RESOLUTION * MINIMUM_RESOLUTION;
 
+  public static final double MINIMUM_RESOLUTION_CUBED = MINIMUM_RESOLUTION_SQUARED * MINIMUM_RESOLUTION;
+
   public final double x;
   public final double y;
   public final double z;

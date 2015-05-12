@@ -808,11 +808,6 @@ public class Plane extends Vector {
 
         //System.err.println("E = " + E + " F = " + F + " G = " + G + " H = "+ H + " I = " + I + " J = " + J);
 
-        double trialX = 2.0;
-        double trialY = 2.0;
-
-        //System.err.println("Trial point evaluates to: "+(E*trialX*trialX + F*trialY*trialY + G*trialX*trialY + H*trialX + I*trialY + J));
-
         // Check if the origin is within, by substituting x = 0, y = 0 and seeing if less than zero
         if (Math.abs(J) >= MINIMUM_RESOLUTION && J > 0.0) {
           // The derivative of the curve above is:
@@ -867,7 +862,7 @@ public class Plane extends Vector {
             double sqrtClause = b * b - 4.0 * a * c;
             //System.out.println("sqrtClause="+sqrtClause);
 
-            if (Math.abs(sqrtClause) < MINIMUM_RESOLUTION_SQUARED) {
+            if (Math.abs(sqrtClause) < MINIMUM_RESOLUTION_CUBED) {
               //System.err.println(" One solution");
               double y0 = -b / (2.0 * a);
               double x0 = (-2.0 * J - I * y0) / H;
@@ -918,7 +913,7 @@ public class Plane extends Vector {
             //System.out.println("a="+a+" b="+b+" c="+c);
             double sqrtClause = b * b - 4.0 * a * c;
             //System.out.println("sqrtClause="+sqrtClause);
-            if (Math.abs(sqrtClause) < MINIMUM_RESOLUTION_SQUARED) {
+            if (Math.abs(sqrtClause) < MINIMUM_RESOLUTION_CUBED) {
               //System.err.println(" One solution; sqrt clause was "+sqrtClause);
               double x0 = -b / (2.0 * a);
               double y0 = (-2.0 * J - H * x0) / I;
