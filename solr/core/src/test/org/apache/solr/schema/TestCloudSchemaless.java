@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrException;
@@ -186,6 +187,15 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
         fail("Expected Bad Request Exception");
       } catch (SolrException se) {
         assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
+      }
+
+      try {
+        CloudSolrClient cloudSolrClient = getCommonCloudSolrClient();
+        cloudSolrClient.add(docs);
+        cloudSolrClient.commit();
+        fail("Expected Bad Request Exception");
+      } catch (SolrException ex) {
+        assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode((ex).code()));
       }
     }
   }

@@ -348,6 +348,11 @@ Other Changes
 * SOLR-7500: Remove pathPrefix from SolrDispatchFilter as Solr no longer runs as a part
   of a bigger webapp. (Anshum Gupta)
 
+* SOLR-7243: CloudSolrClient was always returning SERVER_ERROR for exceptions,
+  even when a more relevant ErrorCode was available, via SolrException.  Now
+  the actual ErrorCode is used when available.
+  (Hrishikesh Gadre via Shawn Heisey)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
