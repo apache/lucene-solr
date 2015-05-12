@@ -28,15 +28,13 @@ import java.io.IOException;
 
 abstract class BaseGlobalOrdinalScorer extends Scorer {
 
-  final LongBitSet foundOrds;
   final SortedDocValues values;
   final Scorer approximationScorer;
 
   float score;
 
-  public BaseGlobalOrdinalScorer(Weight weight, LongBitSet foundOrds, SortedDocValues values, Scorer approximationScorer) {
+  public BaseGlobalOrdinalScorer(Weight weight, SortedDocValues values, Scorer approximationScorer) {
     super(weight);
-    this.foundOrds = foundOrds;
     this.values = values;
     this.approximationScorer = approximationScorer;
   }

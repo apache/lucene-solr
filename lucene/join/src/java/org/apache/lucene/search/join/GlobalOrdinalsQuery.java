@@ -160,11 +160,13 @@ final class GlobalOrdinalsQuery extends Query {
 
   final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {
 
+    final LongBitSet foundOrds;
     final LongValues segmentOrdToGlobalOrdLookup;
 
     public OrdinalMapScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, Scorer approximationScorer, LongValues segmentOrdToGlobalOrdLookup) {
-      super(weight, foundOrds, values, approximationScorer);
+      super(weight, values, approximationScorer);
       this.score = score;
+      this.foundOrds = foundOrds;
       this.segmentOrdToGlobalOrdLookup = segmentOrdToGlobalOrdLookup;
     }
 
@@ -203,9 +205,12 @@ final class GlobalOrdinalsQuery extends Query {
 
   final static class SegmentOrdinalScorer extends BaseGlobalOrdinalScorer {
 
+    final LongBitSet foundOrds;
+
     public SegmentOrdinalScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, Scorer approximationScorer) {
-      super(weight, foundOrds, values, approximationScorer);
+      super(weight, values, approximationScorer);
       this.score = score;
+      this.foundOrds = foundOrds;
     }
 
     @Override

@@ -17,9 +17,6 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -37,6 +34,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
+import java.io.IOException;
+import java.util.Set;
+
 final class GlobalOrdinalsWithScoreQuery extends Query {
 
   private final GlobalOrdinalsWithScoreCollector collector;
@@ -47,14 +47,18 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
   // just for hashcode and equals:
   private final Query fromQuery;
+  private final int min;
+  private final int max;
   private final IndexReader indexReader;
 
-  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReader indexReader) {
+  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max, IndexReader indexReader) {
     this.collector = collector;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
+    this.min = min;
+    this.max = max;
     this.indexReader = indexReader;
   }
 
@@ -71,8 +75,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
     GlobalOrdinalsWithScoreQuery that = (GlobalOrdinalsWithScoreQuery) o;
 
-    if (!fromQuery.equals(that.fromQuery)) return false;
+    if (min != that.min) return false;
+    if (max != that.max) return false;
     if (!joinField.equals(that.joinField)) return false;
+    if (!fromQuery.equals(that.fromQuery)) return false;
     if (!toQuery.equals(that.toQuery)) return false;
     if (!indexReader.equals(that.indexReader)) return false;
 
@@ -85,6 +91,8 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
+    result = 31 * result + min;
+    result = 31 * result + max;
     result = 31 * result + indexReader.hashCode();
     return result;
   }
@@ -92,7 +100,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   @Override
   public String toString(String field) {
     return "GlobalOrdinalsQuery{" +
-        "joinField=" + joinField +
+          "joinField=" + joinField +
+          "min=" + min +
+          "max=" + max +
+          "fromQuery=" + fromQuery +
         '}';
   }
 
@@ -168,7 +179,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     final GlobalOrdinalsWithScoreCollector collector;
 
     public OrdinalMapScorer(Weight weight, GlobalOrdinalsWithScoreCollector collector, SortedDocValues values, Scorer approximationScorer, LongValues segmentOrdToGlobalOrdLookup) {
-      super(weight, collector.getCollectorOrdinals(), values, approximationScorer);
+      super(weight, values, approximationScorer);
       this.segmentOrdToGlobalOrdLookup = segmentOrdToGlobalOrdLookup;
       this.collector = collector;
     }
@@ -178,9 +189,9 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
       for (int docID = approximationScorer.advance(target); docID < NO_MORE_DOCS; docID = approximationScorer.nextDoc()) {
         final long segmentOrd = values.getOrd(docID);
         if (segmentOrd != -1) {
-          final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
-          if (foundOrds.get(globalOrd)) {
-            score = collector.score((int) globalOrd);
+          final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(segmentOrd);
+          if (collector.match(globalOrd)) {
+            score = collector.score(globalOrd);
             return docID;
           }
         }
@@ -196,9 +207,9 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         public boolean matches() throws IOException {
           final long segmentOrd = values.getOrd(approximationScorer.docID());
           if (segmentOrd != -1) {
-            final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
-            if (foundOrds.get(globalOrd)) {
-              score = collector.score((int) globalOrd);
+            final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(segmentOrd);
+            if (collector.match(globalOrd)) {
+              score = collector.score(globalOrd);
               return true;
             }
           }
@@ -214,7 +225,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     final GlobalOrdinalsWithScoreCollector collector;
 
     public SegmentOrdinalScorer(Weight weight, GlobalOrdinalsWithScoreCollector collector, SortedDocValues values, Scorer approximationScorer) {
-      super(weight, collector.getCollectorOrdinals(), values, approximationScorer);
+      super(weight, values, approximationScorer);
       this.collector = collector;
     }
 
@@ -223,7 +234,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
       for (int docID = approximationScorer.advance(target); docID < NO_MORE_DOCS; docID = approximationScorer.nextDoc()) {
         final int segmentOrd = values.getOrd(docID);
         if (segmentOrd != -1) {
-          if (foundOrds.get(segmentOrd)) {
+          if (collector.match(segmentOrd)) {
             score = collector.score(segmentOrd);
             return docID;
           }
@@ -240,7 +251,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         public boolean matches() throws IOException {
           final int segmentOrd = values.getOrd(approximationScorer.docID());
           if (segmentOrd != -1) {
-            if (foundOrds.get(segmentOrd)) {
+            if (collector.match(segmentOrd)) {
               score = collector.score(segmentOrd);
               return true;
             }
