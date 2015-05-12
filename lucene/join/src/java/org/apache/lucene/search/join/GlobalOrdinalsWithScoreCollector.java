@@ -33,23 +33,48 @@ import java.util.Arrays;
 abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   final String field;
+  final boolean doMinMax;
+  final int min;
+  final int max;
   final MultiDocValues.OrdinalMap ordinalMap;
   final LongBitSet collectedOrds;
-  protected final Scores scores;
 
-  GlobalOrdinalsWithScoreCollector(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
+  protected final Scores scores;
+  protected final Occurrences occurrences;
+
+  GlobalOrdinalsWithScoreCollector(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
     if (valueCount > Integer.MAX_VALUE) {
       // We simply don't support more than
       throw new IllegalStateException("Can't collect more than [" + Integer.MAX_VALUE + "] ids");
     }
     this.field = field;
+    this.doMinMax = !(min <= 0 && max == Integer.MAX_VALUE);
+    this.min = min;
+    this.max = max;;
     this.ordinalMap = ordinalMap;
     this.collectedOrds = new LongBitSet(valueCount);
-    this.scores = new Scores(valueCount, unset());
+    if (scoreMode != ScoreMode.None) {
+      this.scores = new Scores(valueCount, unset());
+    } else {
+      this.scores = null;
+    }
+    if (scoreMode == ScoreMode.Avg || doMinMax) {
+      this.occurrences = new Occurrences(valueCount);
+    } else {
+      this.occurrences = null;
+    }
   }
 
-  public LongBitSet getCollectorOrdinals() {
-    return collectedOrds;
+  public boolean match(int globalOrd) {
+    if (collectedOrds.get(globalOrd)) {
+      if (doMinMax) {
+        final int occurrence = occurrences.getOccurrence(globalOrd);
+        return occurrence >= min && occurrence <= max;
+      } else {
+        return true;
+      }
+    }
+    return false;
   }
 
   public float score(int globalOrdinal) {
@@ -96,6 +121,9 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
         float existingScore = scores.getScore(globalOrd);
         float newScore = scorer.score();
         doScore(globalOrd, existingScore, newScore);
+        if (occurrences != null) {
+          occurrences.increment(globalOrd);
+        }
       }
     }
 
@@ -122,6 +150,9 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
         float existingScore = scores.getScore(segmentOrd);
         float newScore = scorer.score();
         doScore(segmentOrd, existingScore, newScore);
+        if (occurrences != null) {
+          occurrences.increment(segmentOrd);
+        }
       }
     }
 
@@ -133,8 +164,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Min extends GlobalOrdinalsWithScoreCollector {
 
-    public Min(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
-      super(field, ordinalMap, valueCount);
+    public Min(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+      super(field, ordinalMap, valueCount, ScoreMode.Min, min, max);
     }
 
     @Override
@@ -150,8 +181,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Max extends GlobalOrdinalsWithScoreCollector {
 
-    public Max(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
-      super(field, ordinalMap, valueCount);
+    public Max(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+      super(field, ordinalMap, valueCount, ScoreMode.Max, min, max);
     }
 
     @Override
@@ -167,8 +198,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Sum extends GlobalOrdinalsWithScoreCollector {
 
-    public Sum(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
-      super(field, ordinalMap, valueCount);
+    public Sum(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+      super(field, ordinalMap, valueCount, ScoreMode.Total, min, max);
     }
 
     @Override
@@ -184,16 +215,12 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Avg extends GlobalOrdinalsWithScoreCollector {
 
-    private final Occurrences occurrences;
-
-    public Avg(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
-      super(field, ordinalMap, valueCount);
-      this.occurrences = new Occurrences(valueCount);
+    public Avg(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+      super(field, ordinalMap, valueCount, ScoreMode.Avg, min, max);
     }
 
     @Override
     protected void doScore(int globalOrd, float existingScore, float newScore) {
-      occurrences.increment(globalOrd);
       scores.setScore(globalOrd, existingScore + newScore);
     }
 
@@ -205,6 +232,71 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     @Override
     protected float unset() {
       return 0f;
+    }
+  }
+
+  static final class NoScore extends GlobalOrdinalsWithScoreCollector {
+
+    public NoScore(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+      super(field, ordinalMap, valueCount, ScoreMode.None, min, max);
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      SortedDocValues docTermOrds = DocValues.getSorted(context.reader(), field);
+      if (ordinalMap != null) {
+        LongValues segmentOrdToGlobalOrdLookup = ordinalMap.getGlobalOrds(context.ord);
+        return new LeafCollector() {
+
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {
+            final long segmentOrd = docTermOrds.getOrd(doc);
+            if (segmentOrd != -1) {
+              final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(segmentOrd);
+              collectedOrds.set(globalOrd);
+              occurrences.increment(globalOrd);
+            }
+          }
+        };
+      } else {
+        return new LeafCollector() {
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {
+            final int segmentOrd = docTermOrds.getOrd(doc);
+            if (segmentOrd != -1) {
+              collectedOrds.set(segmentOrd);
+              occurrences.increment(segmentOrd);
+            }
+          }
+        };
+      }
+    }
+
+    @Override
+    protected void doScore(int globalOrd, float existingScore, float newScore) {
+    }
+
+    @Override
+    public float score(int globalOrdinal) {
+      return 1f;
+    }
+
+    @Override
+    protected float unset() {
+      return 0f;
+    }
+
+    @Override
+    public boolean needsScores() {
+      return false;
     }
   }
 

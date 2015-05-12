@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * Utility for query time joining using TermsQuery and TermsCollector.
+ * Utility for query time joining.
  *
  * @lucene.experimental
  */
@@ -97,17 +97,10 @@ public final class JoinUtil {
   }
 
   /**
-   * A query time join using global ordinals over a dedicated join field.
+   * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, MultiDocValues.OrdinalMap, int, int)},
+   * but disables the min and max filtering.
    *
-   * This join has certain restrictions and requirements:
-   * 1) A document can only refer to one other document. (but can be referred by one or more documents)
-   * 2) Documents on each side of the join must be distinguishable. Typically this can be done by adding an extra field
-   *    that identifies the "from" and "to" side and then the fromQuery and toQuery must take the this into account.
-   * 3) There must be a single sorted doc values join field used by both the "from" and "to" documents. This join field
-   *    should store the join values as UTF-8 strings.
-   * 4) An ordinal map must be provided that is created on top of the join field.
-   *
-   * @param joinField   The {@link org.apache.lucene.index.SortedDocValues} field containing the join values
+   * @param joinField   The {@link SortedDocValues} field containing the join values
    * @param fromQuery   The query containing the actual user query. Also the fromQuery can only match "from" documents.
    * @param toQuery     The query identifying all documents on the "to" side.
    * @param searcher    The index searcher used to execute the from query
@@ -123,6 +116,47 @@ public final class JoinUtil {
                                       IndexSearcher searcher,
                                       ScoreMode scoreMode,
                                       MultiDocValues.OrdinalMap ordinalMap) throws IOException {
+    return createJoinQuery(joinField, fromQuery, toQuery, searcher, scoreMode, ordinalMap, 0, Integer.MAX_VALUE);
+  }
+
+  /**
+   * A query time join using global ordinals over a dedicated join field.
+   *
+   * This join has certain restrictions and requirements:
+   * 1) A document can only refer to one other document. (but can be referred by one or more documents)
+   * 2) Documents on each side of the join must be distinguishable. Typically this can be done by adding an extra field
+   *    that identifies the "from" and "to" side and then the fromQuery and toQuery must take the this into account.
+   * 3) There must be a single sorted doc values join field used by both the "from" and "to" documents. This join field
+   *    should store the join values as UTF-8 strings.
+   * 4) An ordinal map must be provided that is created on top of the join field.
+   *
+   * Note: min and max filtering and the avg score mode will require this join to keep track of the number of times
+   * a document matches per join value. This will increase the per join cost in terms of execution time and memory.
+   *
+   * @param joinField   The {@link SortedDocValues} field containing the join values
+   * @param fromQuery   The query containing the actual user query. Also the fromQuery can only match "from" documents.
+   * @param toQuery     The query identifying all documents on the "to" side.
+   * @param searcher    The index searcher used to execute the from query
+   * @param scoreMode   Instructs how scores from the fromQuery are mapped to the returned query
+   * @param ordinalMap  The ordinal map constructed over the joinField. In case of a single segment index, no ordinal map
+   *                    needs to be provided.
+   * @param min         Optionally the minimum number of "from" documents that are required to match for a "to" document
+   *                    to be a match. The min is inclusive. Setting min to 0 and max to <code>Interger.MAX_VALUE</code>
+   *                    disables the min and max "from" documents filtering
+   * @param max         Optionally the maximum number of "from" documents that are allowed to match for a "to" document
+   *                    to be a match. The max is inclusive. Setting min to 0 and max to <code>Interger.MAX_VALUE</code>
+   *                    disables the min and max "from" documents filtering
+   * @return a {@link Query} instance that can be used to join documents based on the join field
+   * @throws IOException If I/O related errors occur
+   */
+  public static Query createJoinQuery(String joinField,
+                                      Query fromQuery,
+                                      Query toQuery,
+                                      IndexSearcher searcher,
+                                      ScoreMode scoreMode,
+                                      MultiDocValues.OrdinalMap ordinalMap,
+                                      int min,
+                                      int max) throws IOException {
     IndexReader indexReader = searcher.getIndexReader();
     int numSegments = indexReader.leaves().size();
     final long valueCount;
@@ -146,31 +180,34 @@ public final class JoinUtil {
     }
 
     final Query rewrittenFromQuery = searcher.rewrite(fromQuery);
-    if (scoreMode == ScoreMode.None) {
-      GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
-      searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
-      return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
-    }
-
     GlobalOrdinalsWithScoreCollector globalOrdinalsWithScoreCollector;
     switch (scoreMode) {
       case Total:
-        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Sum(joinField, ordinalMap, valueCount);
+        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Sum(joinField, ordinalMap, valueCount, min, max);
         break;
       case Min:
-        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Min(joinField, ordinalMap, valueCount);
+        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Min(joinField, ordinalMap, valueCount, min, max);
         break;
       case Max:
-        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Max(joinField, ordinalMap, valueCount);
+        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Max(joinField, ordinalMap, valueCount, min, max);
         break;
       case Avg:
-        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Avg(joinField, ordinalMap, valueCount);
+        globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Avg(joinField, ordinalMap, valueCount, min, max);
         break;
+      case None:
+        if (min <= 0 && max == Integer.MAX_VALUE) {
+          GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
+          searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
+          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
+        } else {
+          globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.NoScore(joinField, ordinalMap, valueCount, min, max);
+          break;
+        }
       default:
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
     searcher.search(rewrittenFromQuery, globalOrdinalsWithScoreCollector);
-    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
+    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, toQuery, rewrittenFromQuery, min, max, indexReader);
   }
 
 }

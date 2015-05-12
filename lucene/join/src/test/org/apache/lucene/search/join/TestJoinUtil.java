@@ -61,6 +61,7 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
@@ -412,7 +413,7 @@ public class TestJoinUtil extends LuceneTestCase {
         String childId = Integer.toString(p + c);
         Document childDoc = new Document();
         childDoc.add(new StringField("id", childId, Field.Store.YES));
-        parentDoc.add(new StringField("type", "from", Field.Store.NO));
+        childDoc.add(new StringField("type", "from", Field.Store.NO));
         childDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
         int price = random().nextInt(1000);
         childDoc.add(new NumericDocValuesField(priceField, price));
@@ -453,6 +454,76 @@ public class TestJoinUtil extends LuceneTestCase {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
       String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
       assertEquals(highestScoresPerParent.get(id), scoreDoc.score, 0f);
+    }
+
+    searcher.getIndexReader().close();
+    dir.close();
+  }
+
+  public void testMinMaxDocs() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+    );
+
+    int minChildDocsPerParent = 2;
+    int maxChildDocsPerParent = 16;
+    int numParents = RandomInts.randomIntBetween(random(), 16, 64);
+    int[] childDocsPerParent = new int[numParents];
+    for (int p = 0; p < numParents; p++) {
+      String parentId = Integer.toString(p);
+      Document parentDoc = new Document();
+      parentDoc.add(new StringField("id", parentId, Field.Store.YES));
+      parentDoc.add(new StringField("type", "to", Field.Store.NO));
+      parentDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
+      iw.addDocument(parentDoc);
+      int numChildren = RandomInts.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent);
+      childDocsPerParent[p] = numChildren;
+      for (int c = 0; c < numChildren; c++) {
+        String childId = Integer.toString(p + c);
+        Document childDoc = new Document();
+        childDoc.add(new StringField("id", childId, Field.Store.YES));
+        childDoc.add(new StringField("type", "from", Field.Store.NO));
+        childDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
+        iw.addDocument(childDoc);
+      }
+    }
+    iw.close();
+
+    IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(dir));
+    SortedDocValues[] values = new SortedDocValues[searcher.getIndexReader().leaves().size()];
+    for (LeafReaderContext leadContext : searcher.getIndexReader().leaves()) {
+      values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
+    }
+    MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+        searcher.getIndexReader().getCoreCacheKey(), values, PackedInts.DEFAULT
+    );
+    Query fromQuery = new TermQuery(new Term("type", "from"));
+    Query toQuery = new TermQuery(new Term("type", "to"));
+
+    int iters = RandomInts.randomIntBetween(random(), 3, 9);
+    for (int i = 1; i <= iters; i++) {
+      final ScoreMode scoreMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
+      int min = RandomInts.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent - 1);
+      int max = RandomInts.randomIntBetween(random(), min, maxChildDocsPerParent);
+      if (VERBOSE) {
+        System.out.println("iter=" + i);
+        System.out.println("scoreMode=" + scoreMode);
+        System.out.println("min=" + min);
+        System.out.println("max=" + max);
+      }
+      Query joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, searcher, scoreMode, ordinalMap, min, max);
+      TotalHitCountCollector collector = new TotalHitCountCollector();
+      searcher.search(joinQuery, collector);
+      int expectedCount = 0;
+      for (int numChildDocs : childDocsPerParent) {
+        if (numChildDocs >= min && numChildDocs <= max) {
+          expectedCount++;
+        }
+      }
+      assertEquals(expectedCount, collector.getTotalHits());
     }
 
     searcher.getIndexReader().close();

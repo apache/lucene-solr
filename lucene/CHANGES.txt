@@ -54,9 +54,9 @@ New Features
   queries, and supports two-phased iterators to avoid loading
   positions when possible. (Paul Elschot via Robert Muir)
 
-* LUCENE-6352: Added a new query time join to the join module that uses
-  global ordinals, which is faster for subsequent joins between reopens.
-  (Martijn van Groningen, Adrien Grand)
+* LUCENE-6352, LUCENE-6472: Added a new query time join to the join module
+  that uses global ordinals, which is faster for subsequent joins between
+  reopens. (Martijn van Groningen, Adrien Grand)
 
 * LUCENE-5879: Added experimental auto-prefix terms to BlockTree terms
   dictionary, exposed as AutoPrefixPostingsFormat (Adrien Grand,
