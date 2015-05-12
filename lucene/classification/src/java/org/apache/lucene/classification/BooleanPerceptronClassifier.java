@@ -68,18 +68,18 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    * Creates a {@link BooleanPerceptronClassifier}
    *
    * @param leafReader     the reader on the index to be used for classification
-   * @param textFieldName  the name of the field used as input for the classifier
-   * @param classFieldName the name of the field used as the output for the classifier
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param batchSize      the size of the batch of docs to use for updating the perceptron weights
    * @param threshold      the threshold used for class separation
+   * @param classFieldName the name of the field used as the output for the classifier
+   * @param textFieldName  the name of the field used as input for the classifier
    * @throws IOException if the building of the underlying {@link FST} fails and / or {@link TermsEnum} for the text field
    *                     cannot be found
    */
-  public BooleanPerceptronClassifier(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer,
-                                     Query query, Integer batchSize, Double threshold) throws IOException {
+  public BooleanPerceptronClassifier(LeafReader leafReader, Analyzer analyzer, Query query, Integer batchSize,
+                                     Double threshold, String classFieldName, String textFieldName) throws IOException {
     this.textTerms = MultiFields.getTerms(leafReader, textFieldName);
 
     if (textTerms == null) {

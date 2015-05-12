@@ -18,7 +18,6 @@ package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
@@ -34,7 +33,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = populateSampleIndex(analyzer);
-      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, null, 1, null), TECHNOLOGY_INPUT, false);
+      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -48,7 +47,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = populateSampleIndex(analyzer);
-      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, null, 1, 100d), TECHNOLOGY_INPUT, false);
+      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, 50d, booleanFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
+      checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -63,7 +64,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = populateSampleIndex(analyzer);
-      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, textFieldName, booleanFieldName, analyzer, query, 1, null), TECHNOLOGY_INPUT, false);
+      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
     } finally {
       if (leafReader != null) {
         leafReader.close();
