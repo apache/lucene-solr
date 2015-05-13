@@ -2615,5 +2615,35 @@ public class TestIndexWriter extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  public void testManySeparateThreads() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(1000);
+    final IndexWriter w = new IndexWriter(dir, iwc);
+    // Index 100 docs, each from a new thread, but always only 1 thread is in IW at once:
+    for(int i=0;i<100;i++) {
+      Thread thread = new Thread() {
+        @Override
+        public void run() {
+          Document doc = new Document();
+          doc.add(newStringField("foo", "bar", Field.Store.NO));
+          try {
+            w.addDocument(doc);
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+          }
+        }
+        };
+      thread.start();
+      thread.join();
+    }
+    w.close();
+
+    IndexReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.leaves().size());
+    r.close();
+    dir.close();
+  }
 }
 
