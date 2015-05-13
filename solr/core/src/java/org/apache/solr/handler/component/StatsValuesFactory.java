@@ -35,6 +35,7 @@ import org.apache.solr.schema.*;
 import com.tdunning.math.stats.AVLTreeDigest;
 
 import net.agkn.hll.HLL;
+import net.agkn.hll.HLLType;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
@@ -139,7 +140,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    * Hash function that must be used by implementations of {@link #hash}
    */
   protected final HashFunction hasher; 
-  private final HLL hll;
+  // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
+  private HLL hll; 
 
   // facetField facetValue
   protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
@@ -212,7 +214,17 @@ abstract class AbstractStatsValues<T> implements StatsValues {
 
     if (computeCardinality) {
       byte[] data = (byte[]) stv.get("cardinality");
-      hll.union(HLL.fromBytes(data));
+      HLL other = HLL.fromBytes(data);
+      if (hll.getType().equals(HLLType.EMPTY)) {
+        // The HLL.union method goes out of it's way not to modify the "other" HLL.
+        // Which means in the case of merging into an "EMPTY" HLL (garunteed to happen at
+        // least once in every coordination of shard requests) it always clones all
+        // of the internal storage -- but since we're going to throw "other" away after
+        // the merge, this just means a short term doubling of RAM that we can skip.
+        hll = other;
+      } else {
+        hll.union(other);
+      }
     }
 
     updateTypeSpecificStats(stv);
