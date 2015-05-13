@@ -599,7 +599,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
   }
 
 
-  private static Set<String> subPaths = new HashSet<>(Arrays.asList("/overlay", "/params",
+  private static Set<String> subPaths = new HashSet<>(Arrays.asList("/overlay", "/params", "/updateHandler",
       "/query", "/jmx", "/requestDispatcher", "/znodeVersion"));
 
   static {

@@ -80,6 +80,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
@@ -550,7 +551,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
     @Override
     public Map<String, Object> toMap() {
-      return ZkNodeProps.makeMap("never304", never304,
+      return makeMap("never304", never304,
           "etagSeed", etagSeed,
           "lastModFrom", lastModFrom.name().toLowerCase(Locale.ROOT),
           "cacheControl", cacheControlHeader);
@@ -667,19 +668,17 @@ public class SolrConfig extends Config implements MapSerializable {
     @Override
     public Map<String, Object> toMap() {
       LinkedHashMap result = new LinkedHashMap();
-      result.put("class", className);
-      result.put("autoCommmitMaxDocs", autoCommmitMaxDocs);
-      result.put("indexWriterCloseWaitsForMerges", indexWriterCloseWaitsForMerges);
+      result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
       result.put("openSearcher", openSearcher);
       result.put("commitIntervalLowerBound", commitIntervalLowerBound);
-      result.put("commitWithinSoftCommit", commitWithinSoftCommit);
-      result.put("autoCommit", ZkNodeProps.makeMap(
+      result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
+      result.put("autoCommit", makeMap(
           "maxDocs", autoCommmitMaxDocs,
           "maxTime", autoCommmitMaxTime,
           "commitIntervalLowerBound", commitIntervalLowerBound
       ));
       result.put("autoSoftCommit",
-          ZkNodeProps.makeMap("maxDocs", autoSoftCommmitMaxDocs,
+          makeMap("maxDocs", autoSoftCommmitMaxDocs,
               "maxTime", autoSoftCommmitMaxTime));
       return result;
     }
@@ -872,7 +871,7 @@ public class SolrConfig extends Config implements MapSerializable {
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig.toMap());
-    m.put("requestParsers", ZkNodeProps.makeMap("multipartUploadLimitKB", multipartUploadLimitKB,
+    m.put("requestParsers", makeMap("multipartUploadLimitKB", multipartUploadLimitKB,
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
     if (indexConfig != null) result.put("indexConfig", indexConfig.toMap());

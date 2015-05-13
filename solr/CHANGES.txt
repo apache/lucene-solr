@@ -257,6 +257,8 @@ Bug Fixes
 
 * SOLR-7514: SolrClient.getByIds fails with ClassCastException (Tom Farnworth, Ramkumar Aiyengar)
 
+* SOLR-7531: config API shows a few keys merged together (Noble Paul)
+
 Optimizations
 ----------------------
 
