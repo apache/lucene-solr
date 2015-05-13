@@ -57,6 +57,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
 import net.agkn.hll.HLL;
+import net.agkn.hll.HLLType;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
@@ -727,7 +728,14 @@ public class StatsField {
       return hasher;
     }
     public HLL newHLL() {
-      return new HLL(getLog2m(), getRegwidth());
+      // Although it (in theory) saves memory for "medium" size sets, the SPARSE type seems to have
+      // some nasty impacts on response time as it gets larger - particularly in distrib requests.
+      // Merging large SPARSE HLLs is much much slower then merging FULL HLLs with the same num docs
+      //
+      // TODO: add more tunning options for this.
+      return new HLL(getLog2m(), getRegwidth(), -1 /* auto explict threshold */,
+                     false /* no sparse representation */, HLLType.EMPTY);
+                     
     }
   }
 
