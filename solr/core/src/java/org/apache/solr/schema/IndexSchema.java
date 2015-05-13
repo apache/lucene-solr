@@ -1323,9 +1323,11 @@ public class IndexSchema {
         }
       }
     }
-    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
-      if (dynamicCopy.getDestFieldName().equals(destField)) {
-        fieldNames.add(dynamicCopy.getRegex());
+    if (null != dynamicCopyFields) {
+      for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+        if (dynamicCopy.getDestFieldName().equals(destField)) {
+          fieldNames.add(dynamicCopy.getRegex());
+        }
       }
     }
     return fieldNames;
@@ -1340,9 +1342,11 @@ public class IndexSchema {
   // This is useful when we need the maxSize param of each CopyField
   public List<CopyField> getCopyFieldsList(final String sourceField){
     final List<CopyField> result = new ArrayList<>();
-    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
-      if (dynamicCopy.matches(sourceField)) {
-        result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
+    if (null != dynamicCopyFields) {
+      for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+        if (dynamicCopy.matches(sourceField)) {
+          result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
+        }
       }
     }
     List<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
@@ -1446,46 +1450,48 @@ public class IndexSchema {
         }
       }
     }
-    for (IndexSchema.DynamicCopy dynamicCopy : dynamicCopyFields) {
-      final String source = dynamicCopy.getRegex();
-      final String destination = dynamicCopy.getDestFieldName();
-      if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))
-          && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
-        SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<>();
+    if (null != dynamicCopyFields) {
+      for (IndexSchema.DynamicCopy dynamicCopy : dynamicCopyFields) {
+        final String source = dynamicCopy.getRegex();
+        final String destination = dynamicCopy.getDestFieldName();
+        if ((null == requestedSourceFields || requestedSourceFields.contains(source))
+            && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
+          SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<>();
 
-        dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
-        if (showDetails) {
-          IndexSchema.DynamicField sourceDynamicBase = dynamicCopy.getSourceDynamicBase();
-          if (null != sourceDynamicBase) {
-            dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
-          } else if (source.contains("*")) {
-            List<String> sourceExplicitFields = new ArrayList<>();
-            Pattern pattern = Pattern.compile(source.replace("*", ".*"));   // glob->regex
-            for (String field : fields.keySet()) {
-              if (pattern.matcher(field).matches()) {
-                sourceExplicitFields.add(field);
+          dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
+          if (showDetails) {
+            IndexSchema.DynamicField sourceDynamicBase = dynamicCopy.getSourceDynamicBase();
+            if (null != sourceDynamicBase) {
+              dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
+            } else if (source.contains("*")) {
+              List<String> sourceExplicitFields = new ArrayList<>();
+              Pattern pattern = Pattern.compile(source.replace("*", ".*"));   // glob->regex
+              for (String field : fields.keySet()) {
+                if (pattern.matcher(field).matches()) {
+                  sourceExplicitFields.add(field);
+                }
+              }
+              if (sourceExplicitFields.size() > 0) {
+                Collections.sort(sourceExplicitFields);
+                dynamicCopyProps.add(SOURCE_EXPLICIT_FIELDS, sourceExplicitFields);
               }
             }
-            if (sourceExplicitFields.size() > 0) {
-              Collections.sort(sourceExplicitFields);
-              dynamicCopyProps.add(SOURCE_EXPLICIT_FIELDS, sourceExplicitFields);
+          }
+
+          dynamicCopyProps.add(DESTINATION, dynamicCopy.getDestFieldName());
+          if (showDetails) {
+            IndexSchema.DynamicField destDynamicBase = dynamicCopy.getDestDynamicBase();
+            if (null != destDynamicBase) {
+              dynamicCopyProps.add(DESTINATION_DYNAMIC_BASE, destDynamicBase.getRegex());
             }
           }
-        }
-        
-        dynamicCopyProps.add(DESTINATION, dynamicCopy.getDestFieldName());
-        if (showDetails) {
-          IndexSchema.DynamicField destDynamicBase = dynamicCopy.getDestDynamicBase();
-          if (null != destDynamicBase) {
-            dynamicCopyProps.add(DESTINATION_DYNAMIC_BASE, destDynamicBase.getRegex());
+
+          if (0 != dynamicCopy.getMaxChars()) {
+            dynamicCopyProps.add(MAX_CHARS, dynamicCopy.getMaxChars());
           }
-        }
 
-        if (0 != dynamicCopy.getMaxChars()) {
-          dynamicCopyProps.add(MAX_CHARS, dynamicCopy.getMaxChars());
+          copyFieldProperties.add(dynamicCopyProps);
         }
-
-        copyFieldProperties.add(dynamicCopyProps);
       }
     }
     return copyFieldProperties;
