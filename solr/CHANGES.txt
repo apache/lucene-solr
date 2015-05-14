@@ -360,6 +360,8 @@ Other Changes
   the actual ErrorCode is used when available.
   (Hrishikesh Gadre via Shawn Heisey)
 
+* SOLR-7544: CollectionsHandler refactored to be more modular (Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
