@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +43,7 @@ import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -79,16 +81,26 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.AuthorizationContext.CollectionRequest;
+import org.apache.solr.security.AuthorizationContext.RequestType;
+import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
@@ -101,7 +113,9 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 /**
  * This class represents a call made to Solr
  **/
-class HttpSolrCall {
+public class HttpSolrCall {
+  private static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
+
   private final SolrDispatchFilter solrDispatchFilter;
   private final CoreContainer cores;
   private final HttpServletRequest req;
@@ -117,6 +131,19 @@ class HttpSolrCall {
   private SolrConfig config;
   private Map<String, Integer> invalidStates;
 
+  public RequestType getRequestType() {
+    return requestType;
+  }
+
+  private RequestType requestType;
+
+
+  public List<String> getCollectionsList() {
+    return collectionsList;
+  }
+
+  private List<String> collectionsList;
+
   HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
                HttpServletRequest request, HttpServletResponse response, boolean retry) {
     this.solrDispatchFilter = solrDispatchFilter;
@@ -124,6 +151,7 @@ class HttpSolrCall {
     this.req = request;
     this.response = response;
     this.retry = retry;
+    this.requestType = RequestType.UNKNOWN;
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
   }
 
@@ -131,7 +159,20 @@ class HttpSolrCall {
     return path;
   }
 
-  private void setContext() throws Exception {
+
+  public HttpServletRequest getReq() {
+    return req;
+  }
+
+  public SolrCore getCore() {
+    return core;
+  }
+
+  public SolrParams getQueryParams() {
+    return queryParams;
+  }
+  
+  private void init() throws Exception {
     //The states of client that is invalid in this request
     Aliases aliases = null;
     String corename = "";
@@ -158,13 +199,13 @@ class HttpSolrCall {
     }
 
     boolean usingAliases = false;
-    List<String> collectionsList = null;
 
     // Check for container handlers
     handler = cores.getRequestHandler(path);
     if (handler != null) {
       solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
+      requestType = RequestType.ADMIN;
       action = ADMIN;
       return;
     } else {
@@ -210,6 +251,9 @@ class HttpSolrCall {
         // we found a core, update the path
         path = path.substring(idx);
         addMDCValues();
+        if (collectionsList == null)
+          collectionsList = new ArrayList<>();
+        collectionsList.add(corename);
       }
 
       // if we couldn't find it locally, look on other nodes
@@ -351,8 +395,28 @@ class HttpSolrCall {
     }
 
     try {
-      setContext();
-      
+      init();
+      /* Authorize the request if
+       1. Authorization is enabled, and
+       2. The requested resource is not a known static file
+        */
+      // TODO: There should be a better way to ignore the static files.
+      if (cores.getAuthorizationPlugin() != null &&
+          !(req.getRequestURI().endsWith(".html") 
+              || req.getRequestURI().endsWith(".png")
+              || req.getRequestURI().endsWith(".ico")
+              || req.getRequestURI().endsWith(".css")
+          )) {
+        AuthorizationContext context = getAuthCtx();
+        log.info(context.toString());
+        AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
+        if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
+          sendError(authResponse.statusCode,
+              "Unauthorized request, Response code: " + authResponse.statusCode);
+          return RETURN;
+        }
+      }
+
       HttpServletResponse resp = response;
       switch (action) {
         case ADMIN:
@@ -593,7 +657,7 @@ class HttpSolrCall {
 
   private void processAliases(Aliases aliases,
                               List<String> collectionsList) {
-    String collection = solrReq.getParams().get("collection");
+    String collection = solrReq.getParams().get(COLLECTION_PROP);
     if (collection != null) {
       collectionsList = StrUtils.splitSmart(collection, ",", true);
     }
@@ -621,7 +685,7 @@ class HttpSolrCall {
         }
         ModifiableSolrParams params = new ModifiableSolrParams(
             solrReq.getParams());
-        params.set("collection", collectionString.toString());
+        params.set(COLLECTION_PROP, collectionString.toString());
         solrReq.setParams(params);
       }
     }
@@ -760,6 +824,10 @@ class HttpSolrCall {
       return null;
     }
 
+    if (collectionsList == null)
+      collectionsList = new ArrayList<>();
+
+    collectionsList.add(collectionName);
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
         slices, byCoreName, true);
 
@@ -805,6 +873,105 @@ class HttpSolrCall {
       }
     }
     return null;
+  }
+
+  private AuthorizationContext getAuthCtx() {
+
+    String resource = getPath();
+
+    SolrParams params = getQueryParams();
+    final ArrayList<CollectionRequest> collectionRequests = new ArrayList<>();
+    if (getCollectionsList() != null) {
+      for (String collection : getCollectionsList()) {
+        collectionRequests.add(new CollectionRequest(collection));
+      }
+    }
+
+    // Extract collection name from the params in case of a Collection Admin request
+    if (getPath().equals("/admin/collections")) {
+      if (CREATE.isEqual(params.get("action"))||
+          RELOAD.isEqual(params.get("action"))||
+          DELETE.isEqual(params.get("action")))
+        collectionRequests.add(new CollectionRequest(params.get("name")));
+      else if (params.get(COLLECTION_PROP) != null)
+        collectionRequests.add(new CollectionRequest(params.get(COLLECTION_PROP)));
+    }
+    
+    // Handle the case when it's a /select request and collections are specified as a param
+    if(resource.equals("/select") && params.get("collection") != null) {
+      collectionRequests.clear();
+      for(String collection:params.get("collection").split(",")) {
+        collectionRequests.add(new CollectionRequest(collection));
+      }
+    }
+    
+    // Populate the request type if the request is select or update
+    if(requestType == RequestType.UNKNOWN) {
+      if(resource.startsWith("/select"))
+        requestType = RequestType.READ;
+      if(resource.startsWith("/update"))
+        requestType = RequestType.WRITE;
+    }
+
+    // There's no collection explicitly mentioned, let's try and extract it from the core if one exists for
+    // the purpose of processing this request.
+    if (getCore() != null && (getCollectionsList() == null || getCollectionsList().size() == 0)) {
+      collectionRequests.add(new CollectionRequest(getCore().getCoreDescriptor().getCollectionName()));
+    }
+
+    if (getQueryParams().get(COLLECTION_PROP) != null)
+      collectionRequests.add(new CollectionRequest(getQueryParams().get(COLLECTION_PROP)));
+
+    return new AuthorizationContext() {
+      @Override
+      public SolrParams getParams() {
+        return getQueryParams();
+      }
+
+      @Override
+      public Principal getUserPrincipal() {
+        return getReq().getUserPrincipal();
+      }
+
+      @Override
+      public String getHttpHeader(String s) {
+        return getReq().getHeader(s);
+      }
+      
+      @Override
+      public Enumeration getHeaderNames() {
+        return getReq().getHeaderNames();
+      }
+
+      @Override
+      public List<CollectionRequest> getCollectionRequests() {
+        return collectionRequests;
+      }
+
+      @Override
+      public RequestType getRequestType() {
+        return requestType;
+      }
+      
+      public String getResource() {
+        return path;
+      }
+      
+      @Override
+      public String toString() {
+        StringBuilder response = new StringBuilder("userPrincipal: [").append(getUserPrincipal()).append("]")
+            .append(" type: [").append(requestType.toString()).append("], collections: [");
+        for (CollectionRequest collectionRequest : collectionRequests) {
+          response.append(collectionRequest.collectionName).append(", ");
+        }
+        if(collectionRequests.size() > 0)
+          response.delete(response.length() - 1, response.length());
+        
+        response.append("], Path: [").append(resource).append("]");
+        return response.toString();
+      }
+    };
+
   }
 
   static final String CONNECTION_HEADER = "Connection";

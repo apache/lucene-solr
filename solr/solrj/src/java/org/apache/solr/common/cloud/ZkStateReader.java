@@ -84,6 +84,7 @@ public class ZkStateReader implements Closeable {
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
+  public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
 
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
@@ -830,6 +831,23 @@ public class ZkStateReader implements Closeable {
     }
   }
 
+
+
+  /**
+   * Returns the content of /security.json from ZooKeeper as a Map
+   * If the files doesn't exist, it returns null.
+   */
+  public Map getSecurityProps() {
+    try {
+      if(getZkClient().exists(SOLR_SECURITY_CONF_PATH, true)) {
+        return (Map) ZkStateReader.fromJSON(getZkClient()
+            .getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, new Stat(), true)) ;
+      }
+    } catch (KeeperException | InterruptedException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties",e) ;
+    }
+    return null;
+  }
   /**
    * Returns the baseURL corresponding to a given node's nodeName --
    * NOTE: does not (currently) imply that the nodeName (or resulting 

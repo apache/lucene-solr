@@ -17,9 +17,8 @@
 
 package org.apache.solr.core;
 
-import static com.google.common.base.Preconditions.*;
-
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,8 +29,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -43,6 +43,7 @@ import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -50,8 +51,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 
 /**
@@ -63,6 +63,8 @@ public class CoreContainer {
   protected static final Logger log = LoggerFactory.getLogger(CoreContainer.class);
 
   final SolrCores solrCores = new SolrCores(this);
+
+  protected AuthorizationPlugin authorizationPlugin;
 
   public static class CoreLoadFailure {
 
@@ -176,6 +178,27 @@ public class CoreContainer {
     this.containerProperties = new Properties(properties);
   }
 
+  private void intializeAuthorizationPlugin() {
+    //Initialize the Authorization module
+    Map securityProps = getZkController().getZkStateReader().getSecurityProps();
+    if(securityProps != null) {
+      Map authorizationConf = (Map) securityProps.get("authorization");
+      if(authorizationConf == null) return;
+      String klas = (String) authorizationConf.get("class");
+      if(klas == null){
+        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
+      }
+      log.info("Initializing authorization plugin: " + klas);
+      authorizationPlugin = getResourceLoader().newInstance((String) klas,
+          AuthorizationPlugin.class);
+
+      // Read and pass the authorization context to the plugin
+      authorizationPlugin.init(authorizationConf);
+    } else {
+      log.info("Security conf doesn't exist. Skipping setup for authorization module.");
+    }
+  }
+
   /**
    * This method allows subclasses to construct a CoreContainer
    * without any default init behavior.
@@ -246,6 +269,9 @@ public class CoreContainer {
     log.info("Node Name: " + hostName);
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
+    if (isZooKeeperAware()) {
+      intializeAuthorizationPlugin();
+    }
 
     collectionsHandler = createHandler(cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
@@ -396,6 +422,16 @@ public class CoreContainer {
         }
       }
     }
+    
+    // It should be safe to close the authorization plugin at this point.
+    try {
+      if(authorizationPlugin != null) {
+        authorizationPlugin.close();
+      }
+    } catch (IOException e) {
+      log.warn("Exception while closing authorization plugin.", e);
+    }
+    
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 
@@ -448,7 +484,7 @@ public class CoreContainer {
       solrCores.putDynamicDescriptor(name, cd);
     }
 
-    SolrCore old = null;
+    SolrCore old;
 
     if (isShutDown) {
       core.close();
@@ -640,7 +676,7 @@ public class CoreContainer {
 
     coresLocator.swap(this, solrCores.getCoreDescriptor(n0), solrCores.getCoreDescriptor(n1));
 
-    log.info("swapped: "+n0 + " with " + n1);
+    log.info("swapped: " + n0 + " with " + n1);
   }
 
   /**
@@ -689,8 +725,7 @@ public class CoreContainer {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
     }
-    String configSetZkPath =  core.getResourceLoader() instanceof ZkSolrResourceLoader ?  ((ZkSolrResourceLoader)core.getResourceLoader()).getConfigSetZkPath() : null;
-
+    
     core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close)
       core.close();
@@ -705,7 +740,6 @@ public class CoreContainer {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       }
     }
-
   }
 
   public void rename(String name, String toName) {
@@ -885,6 +919,11 @@ public class CoreContainer {
   public SolrResourceLoader getResourceLoader() {
     return loader;
   }
+
+  public AuthorizationPlugin getAuthorizationPlugin() {
+    return authorizationPlugin;
+  }
+  
 }
 
 class CloserThread extends Thread {
