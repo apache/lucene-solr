@@ -119,6 +119,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     m =  getRespMap("/config/updateHandler?wt=json", harness);
     assertNotNull(getObjectByPath(m, true, ImmutableList.of("config","updateHandler", "commitWithin", "softCommit")));
+    assertNotNull(getObjectByPath(m, true, ImmutableList.of("config","updateHandler", "autoCommit", "maxDocs")));
+    assertNotNull(getObjectByPath(m, true, ImmutableList.of("config","updateHandler", "autoCommit", "maxTime")));
 
     m = (Map) getRespMap("/config?wt=json", harness).get("config");
     assertNotNull(m);
