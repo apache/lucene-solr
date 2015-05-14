@@ -877,7 +877,7 @@ public class HttpSolrCall {
 
   private AuthorizationContext getAuthCtx() {
 
-    String resource = getPath();
+    final String resource = getPath();
 
     SolrParams params = getQueryParams();
     final ArrayList<CollectionRequest> collectionRequests = new ArrayList<>();
