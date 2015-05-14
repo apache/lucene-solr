@@ -180,6 +180,8 @@ New Features
 * SOLR-7522: Facet Module - Implement field/terms faceting over single-valued
   numeric fields. (yonik)
 
+* SOLR-7275: Authorization framework for Solr. It defines an interface and a mechanism to create, 
+  load, and use an Authorization plugin. (Noble Paul, Ishan Chattopadhyaya, Anshum Gupta)
 
 Bug Fixes
 ----------------------
