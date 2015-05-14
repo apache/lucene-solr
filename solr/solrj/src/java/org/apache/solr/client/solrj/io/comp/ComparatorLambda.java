@@ -1,5 +1,7 @@
 package org.apache.solr.client.solrj.io.comp;
 
+import java.io.Serializable;
+
 import org.apache.solr.client.solrj.io.Tuple;
 
 /*
@@ -22,6 +24,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 /**
  * Interface for use with a comparator lambda
  */
-public interface ComparatorLambda {
+public interface ComparatorLambda extends Serializable {
   public int compare(Tuple leftTuple, Tuple rightTuple);
 }

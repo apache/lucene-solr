@@ -54,7 +54,10 @@ public class StreamFactory implements Serializable {
     return this;
   }
   public String getCollectionZkHost(String collectionName){
-    return this.collectionZkHosts.getOrDefault(collectionName, null);
+    if(this.collectionZkHosts.containsKey(collectionName)){
+      return this.collectionZkHosts.get(collectionName);
+    }
+    return null;
   }
   
   public Map<String,Class> getStreamFunctions(){

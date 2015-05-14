@@ -70,22 +70,21 @@ public class FieldComparator extends StreamComparator implements Comparator<Tupl
    */
   private void assignComparator(){
     if(ComparatorOrder.DESCENDING == order){
-      // What black magic is this type intersection??
-      // Because this class is serializable we need to make sure the lambda is also serializable.
-      // This can be done by providing this type intersection on the definition of the lambda.
-      // Why not do it in the lambda interface? Functional Interfaces don't allow extends clauses
-      comparator = (ComparatorLambda & Serializable)(leftTuple, rightTuple) -> {
-        Comparable leftComp = (Comparable)leftTuple.get(leftField);
-        Comparable rightComp = (Comparable)rightTuple.get(rightField);
-        return rightComp.compareTo(leftComp);
+      comparator = new ComparatorLambda() {
+        public int compare(Tuple leftTuple, Tuple rightTuple) {
+          Comparable leftComp = (Comparable)leftTuple.get(leftField);
+          Comparable rightComp = (Comparable)rightTuple.get(rightField);
+          return rightComp.compareTo(leftComp);
+        }
       };
     }
     else{
-      // See above for black magic reasoning.
-      comparator = (ComparatorLambda & Serializable)(leftTuple, rightTuple) -> {
-        Comparable leftComp = (Comparable)leftTuple.get(leftField);
-        Comparable rightComp = (Comparable)rightTuple.get(rightField);
-        return leftComp.compareTo(rightComp);
+      comparator = new ComparatorLambda() {
+        public int compare(Tuple leftTuple, Tuple rightTuple) {
+          Comparable leftComp = (Comparable)leftTuple.get(leftField);
+          Comparable rightComp = (Comparable)rightTuple.get(rightField);
+          return leftComp.compareTo(rightComp);
+        }
       };
     }
   }
