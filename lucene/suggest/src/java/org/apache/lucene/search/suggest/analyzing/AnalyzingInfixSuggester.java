@@ -105,9 +105,8 @@ import org.apache.lucene.util.Version;
  *  this suggester best applies when there is a strong
  *  a-priori ranking of all the suggestions.
  *
- *  <p>This suggester supports contexts, however the
- *  contexts must be valid utf8 (arbitrary binary terms will
- *  not work).
+ *  <p>This suggester supports contexts, including arbitrary binary
+ *  terms.
  *
  * @lucene.experimental */    
 
@@ -408,9 +407,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     if (contexts != null) {
       for(BytesRef context : contexts) {
-        // TODO: if we had a BinaryTermField we could fix
-        // this "must be valid ut8f" limitation:
-        doc.add(new StringField(CONTEXTS_FIELD_NAME, context.utf8ToString(), Field.Store.NO));
+        doc.add(new StringField(CONTEXTS_FIELD_NAME, context, Field.Store.NO));
         doc.add(new SortedSetDocValuesField(CONTEXTS_FIELD_NAME, context));
       }
     }
@@ -564,10 +561,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
             // NOTE: we "should" wrap this in
             // ConstantScoreQuery, or maybe send this as a
             // Filter instead to search.
-
-            // TODO: if we had a BinaryTermField we could fix
-            // this "must be valid ut8f" limitation:
-            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), entry.getValue());
+            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey())), entry.getValue());
           }
         }
       }
