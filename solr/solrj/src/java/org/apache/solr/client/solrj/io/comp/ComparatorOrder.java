@@ -1,3 +1,7 @@
+package org.apache.solr.client.solrj.io.comp;
+
+import java.util.Locale;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,31 +19,30 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
-
-public abstract class TupleStream implements Serializable {
-
-  private static final long serialVersionUID = 1;
-
-  public TupleStream() {
-
+/**
+ * Enum for supported comparator ordering
+ */
+public enum ComparatorOrder {
+  ASCENDING, DESCENDING;
+  
+  public static ComparatorOrder fromString(String order){
+    switch(order.toLowerCase(Locale.ROOT)){
+      case "asc":
+        return ComparatorOrder.ASCENDING;
+      case "desc":
+        return ComparatorOrder.DESCENDING;
+      default:
+        throw new IllegalArgumentException(String.format(Locale.ROOT,"Unknown order '%s'", order));
+    }
   }
-
-  public abstract void setStreamContext(StreamContext context);
-
-  public abstract List<TupleStream> children();
-
-  public abstract void open() throws IOException;
-
-  public abstract void close() throws IOException;
-
-  public abstract Tuple read() throws IOException;
-
-  public int getCost() {
-    return 0;
+  
+  public String toString(){
+    switch(this){
+      case DESCENDING:
+        return "desc";
+      default:
+        return "asc";
+        
+    }
   }
 }

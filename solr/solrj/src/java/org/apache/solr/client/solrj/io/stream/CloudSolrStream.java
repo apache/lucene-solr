@@ -15,30 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Comparator;
-import java.util.Random;
-import java.util.TreeSet;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultiComp;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
@@ -49,13 +60,13 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
  * to iterate and merge Tuples from each SolrStream.
  **/
 
-public class CloudSolrStream extends TupleStream {
+public class CloudSolrStream extends TupleStream implements ExpressibleStream {
 
   private static final long serialVersionUID = 1;
 
   protected String zkHost;
   protected String collection;
-  protected Map params;
+  protected Map<String,String> params;
   private Map<String, String> fieldMappings;
   protected Comparator<Tuple> comp;
   private int zkConnectTimeout = 10000;
@@ -70,23 +81,124 @@ public class CloudSolrStream extends TupleStream {
   protected transient TreeSet<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
 
-  public CloudSolrStream(String zkHost, String collection, Map params) throws IOException {
+  // Used by parallel stream
+  protected CloudSolrStream(){
+    
+  }
+  public CloudSolrStream(String zkHost, String collectionName, Map params) throws IOException {
+    init(collectionName, zkHost, params);
+  }
+
+  public CloudSolrStream(StreamExpression expression, StreamFactory factory) throws IOException{   
+    // grab all parameters out
+    String collectionName = factory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
+    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
+    if(expression.getParameters().size() != 1 + namedParams.size()){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+    }
+    
+    // Collection Name
+    if(null == collectionName){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    }
+        
+    // Named parameters - passed directly to solr as solrparams
+    if(0 == namedParams.size()){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    }
+    
+    Map<String,String> params = new HashMap<String,String>();
+    for(StreamExpressionNamedParameter namedParam : namedParams){
+      if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")){
+        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+      }
+    }
+
+    // Aliases, optional, if provided then need to split
+    if(null != aliasExpression && aliasExpression.getParameter() instanceof StreamExpressionValue){
+      fieldMappings = new HashMap<String,String>();
+      for(String mapping : ((StreamExpressionValue)aliasExpression.getParameter()).getValue().split(",")){
+        String[] parts = mapping.trim().split("=");
+        if(2 == parts.length){
+          fieldMappings.put(parts[0], parts[1]);
+        }
+        else{
+          throw new IOException(String.format(Locale.ROOT,"invalid expression %s - alias expected of the format origName=newName",expression));
+        }
+      }
+    }
+
+    // zkHost, optional - if not provided then will look into factory list to get
+    String zkHost = null;
+    if(null == zkHostExpression){
+      zkHost = factory.getCollectionZkHost(collectionName);
+    }
+    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
+      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
+    }
+    if(null == zkHost){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    }
+    
+    // We've got all the required items
+    init(collectionName, zkHost, params);
+  }
+  
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
+    
+    // function name
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    
+    // collection
+    expression.addParameter(collection);
+    
+    // parameters
+    for(Entry<String,String> param : params.entrySet()){
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    }
+    
+    // zkHost
+    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    
+    // aliases
+    if(null != fieldMappings && 0 != fieldMappings.size()){
+      StringBuilder sb = new StringBuilder();
+      for(Entry<String,String> mapping : fieldMappings.entrySet()){
+        if(sb.length() > 0){ sb.append(","); }
+        sb.append(mapping.getKey());
+        sb.append("=");
+        sb.append(mapping.getValue());
+      }
+      
+      expression.addParameter(new StreamExpressionNamedParameter("aliases", sb.toString()));
+    }
+        
+    return expression;   
+  }
+  
+  private void init(String collectionName, String zkHost, Map params) throws IOException {
     this.zkHost = zkHost;
-    this.collection = collection;
+    this.collection = collectionName;
     this.params = params;
-    String sort = (String)params.get("sort");
-    this.comp = parseComp(sort, params);
+
+    // If the comparator is null then it was not explicitly set so we will create one using the sort parameter
+    // of the query. While doing this we will also take into account any aliases such that if we are sorting on
+    // fieldA but fieldA is aliased to alias.fieldA then the comparater will be against alias.fieldA.
+    if(!params.containsKey("fl")){
+      throw new IOException("fl param expected for a stream");
+    }
+    if(!params.containsKey("sort")){
+      throw new IOException("sort param expected for a stream");
+    }
+    this.comp = parseComp((String)params.get("sort"), (String)params.get("fl")); 
   }
-
-  //Used by the ParallelStream
-  protected CloudSolrStream() {
-
-  }
-
-  public void setComp(Comparator<Tuple> comp) {
-    this.comp = comp;
-  }
-
+  
   public void setFieldMappings(Map<String, String> fieldMappings) {
     this.fieldMappings = fieldMappings;
   }
@@ -129,9 +241,8 @@ public class CloudSolrStream extends TupleStream {
     return solrStreams;
   }
 
-  private Comparator<Tuple> parseComp(String sort, Map params) throws IOException {
+  private Comparator<Tuple> parseComp(String sort, String fl) throws IOException {
 
-    String fl = (String)params.get("fl");
     String[] fls = fl.split(",");
     HashSet fieldSet = new HashSet();
     for(String f : fls) {
@@ -142,17 +253,22 @@ public class CloudSolrStream extends TupleStream {
     Comparator[] comps = new Comparator[sorts.length];
     for(int i=0; i<sorts.length; i++) {
       String s = sorts[i];
-      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
 
+      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+      
+      String fieldName = spec[0].trim();
+      String order = spec[1].trim();
+      
       if(!fieldSet.contains(spec[0])) {
         throw new IOException("Fields in the sort spec must be included in the field list:"+spec[0]);
       }
-
-      if(spec[1].trim().equalsIgnoreCase("asc")) {
-        comps[i] = new AscFieldComp(spec[0]);
-      } else {
-        comps[i] = new DescFieldComp(spec[0]);
+      
+      // if there's an alias for the field then use the alias
+      if(null != fieldMappings && fieldMappings.containsKey(fieldName)){
+        fieldName = fieldMappings.get(fieldName);
       }
+      
+      comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
     }
 
     if(comps.length > 1) {

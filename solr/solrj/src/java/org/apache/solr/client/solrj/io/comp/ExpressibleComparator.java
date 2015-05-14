@@ -1,3 +1,13 @@
+package org.apache.solr.client.solrj.io.comp;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Comparator;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,34 +25,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
-
-import java.io.Serializable;
-import java.util.Comparator;
-
-
 /**
- *  Wraps multiple Comparators to provide sub-sorting.
- **/
-
-public class MultiComp implements Comparator<Tuple>, Serializable {
-
-  private static final long serialVersionUID = 1;
-
-  private Comparator<Tuple>[] comps;
-
-  public MultiComp(Comparator<Tuple>... comps) {
-    this.comps = comps;
-  }
-
-  public int compare(Tuple t1, Tuple t2) {
-    for(Comparator<Tuple> comp : comps) {
-      int i = comp.compare(t1, t2);
-      if(i != 0) {
-        return i;
-      }
-    }
-
-    return 0;
-  }
+ * Defines a comparator that can be expressed in an expression
+ */
+public interface ExpressibleComparator {
+  StreamExpressionParameter toExpression(StreamFactory factory) throws IOException;
 }

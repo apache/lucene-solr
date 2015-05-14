@@ -23,7 +23,7 @@ import java.util.*;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.client.solrj.io.TupleStream;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.EnumFieldValue;

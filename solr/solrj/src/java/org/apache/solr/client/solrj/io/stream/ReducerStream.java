@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io;
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.ExpressibleComparator;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
  *  Iterates over a TupleStream and buffers Tuples that are equal based on a comparator.
@@ -39,21 +48,63 @@ import java.util.HashMap;
  *
  **/
 
-public class ReducerStream extends TupleStream {
+public class ReducerStream extends TupleStream implements ExpressibleStream {
 
   private static final long serialVersionUID = 1;
 
   private PushBackStream tupleStream;
   private Comparator<Tuple> comp;
 
-  private Tuple currentGroupHead;
+  private transient Tuple currentGroupHead;
 
   public ReducerStream(TupleStream tupleStream,
                        Comparator<Tuple> comp) {
     this.tupleStream = new PushBackStream(tupleStream);
     this.comp = comp;
   }
+  
+  public ReducerStream(StreamExpression expression, StreamFactory factory) throws IOException{
+    // grab all parameters out
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ExpressibleStream.class, TupleStream.class);
+    StreamExpressionNamedParameter byExpression = factory.getNamedOperand(expression, "by");
+    
+    // validate expression contains only what we want.
+    if(expression.getParameters().size() != streamExpressions.size() + 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    }
+    
+    if(1 != streamExpressions.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    }
+    this.tupleStream = new PushBackStream(factory.constructStream(streamExpressions.get(0)));
+    
+    if(null == byExpression || !(byExpression.getParameter() instanceof StreamExpressionValue)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'by' parameter listing fields to group by but didn't find one",expression));
+    }
+    
+    // Reducing is always done over equality, so always use an EqualTo comparator
+    this.comp = factory.constructComparator(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldComparator.class);
+  }
 
+  @Override
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+    // function name
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    
+    // stream
+    expression.addParameter(tupleStream.toExpression(factory));
+    
+    // over
+    if(comp instanceof ExpressibleComparator){
+      expression.addParameter(new StreamExpressionNamedParameter("by",((ExpressibleComparator)comp).toExpression(factory)));
+    }
+    else{
+      throw new IOException("This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");
+    }
+    
+    return expression;   
+  }
+  
   public void setStreamContext(StreamContext context) {
     this.tupleStream.setStreamContext(context);
   }
