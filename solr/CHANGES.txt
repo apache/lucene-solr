@@ -666,6 +666,8 @@ Bug Fixes
 * SOLR-7286: Using HDFS's FileSystem.newInstance does not guarantee a new instance.
   (Mark Miller)
 
+* SOLR-7508: SolrParams.toMultiMap() does not handle arrays (Thomas Scheffler , Noble Paul)
+
 Optimizations
 ----------------------
 

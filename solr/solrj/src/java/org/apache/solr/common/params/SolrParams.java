@@ -313,8 +313,12 @@ public abstract class SolrParams implements Serializable {
     HashMap<String,String[]> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       String name = params.getName(i);
-      String val = params.getVal(i).toString();
-      MultiMapSolrParams.addParam(name,val,map);
+      Object val = params.getVal(i);
+      if (val instanceof String[]) {
+        MultiMapSolrParams.addParam(name, (String[]) val, map);
+      } else {
+        MultiMapSolrParams.addParam(name, val.toString(), map);
+      }
     }
     return map;
   }
