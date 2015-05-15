@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +61,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.EarlyTerminatingSortingCollector;
@@ -443,22 +443,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Lookup, without any context. */
   public List<LookupResult> lookup(CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    return lookup(key, (Map<BytesRef, BooleanClause.Occur>)null, num, allTermsRequired, doHighlight);
+    return lookup(key, (BooleanQuery)null, num, allTermsRequired, doHighlight);
   }
 
   /** Lookup, with context but without booleans. Context booleans default to SHOULD,
    *  so each suggestion must have at least one of the contexts. */
   public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-
-    if (contexts == null) {
-      return lookup(key, num, allTermsRequired, doHighlight);
-    }
-
-    Map<BytesRef, BooleanClause.Occur> contextInfo = new HashMap<>();
-    for (BytesRef context : contexts) {
-      contextInfo.put(context, BooleanClause.Occur.SHOULD);
-    }
-    return lookup(key, contextInfo, num, allTermsRequired, doHighlight);
+    return lookup(key, toQuery(contexts), num, allTermsRequired, doHighlight);
   }
 
   /** This is called if the last token isn't ended
@@ -477,6 +468,66 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  must match ({@code allTermsRequired}) and whether the hits
    *  should be highlighted ({@code doHighlight}). */
   public List<LookupResult> lookup(CharSequence key, Map<BytesRef, BooleanClause.Occur> contextInfo, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+      return lookup(key, toQuery(contextInfo), num, allTermsRequired, doHighlight);
+  }
+
+  private BooleanQuery toQuery(Map<BytesRef,BooleanClause.Occur> contextInfo) {
+    if (contextInfo == null || contextInfo.isEmpty()) {
+      return null;
+    }
+    
+    BooleanQuery contextFilter = new BooleanQuery();
+    for (Map.Entry<BytesRef,BooleanClause.Occur> entry : contextInfo.entrySet()) {
+      addContextToQuery(contextFilter, entry.getKey(), entry.getValue());
+    }
+    
+    return contextFilter;
+  }
+
+  private BooleanQuery toQuery(Set<BytesRef> contextInfo) {
+    if (contextInfo == null || contextInfo.isEmpty()) {
+      return null;
+    }
+    
+    BooleanQuery contextFilter = new BooleanQuery();
+    for (BytesRef context : contextInfo) {
+      addContextToQuery(contextFilter, context, BooleanClause.Occur.SHOULD);
+    }
+    return contextFilter;
+  }
+
+  
+  /**
+   * This method is handy as we do not need access to internal fields such as CONTEXTS_FIELD_NAME in order to build queries
+   * However, here may not be its best location.
+   * 
+   * @param query an instance of @See {@link BooleanQuery}
+   * @param context the context
+   * @param clause one of {@link Occur}
+   */
+  public void addContextToQuery(BooleanQuery query, BytesRef context, BooleanClause.Occur clause) {
+    // NOTE: we "should" wrap this in
+    // ConstantScoreQuery, or maybe send this as a
+    // Filter instead to search.
+    
+    // TODO: if we had a BinaryTermField we could fix
+    // this "must be valid ut8f" limitation:
+    query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, context)), clause);
+  }
+
+  /**
+   * This is an advanced method providing the capability to send down to the suggester any 
+   * arbitrary lucene query to be used to filter the result of the suggester
+   * 
+   * @param key the keyword being looked for
+   * @param contextQuery an arbitrary Lucene query to be used to filter the result of the suggester. {@link #addContextToQuery} could be used to build this contextQuery.
+   * @param num number of items to return
+   * @param allTermsRequired all searched terms must match or not
+   * @param doHighlight if true, the matching term will be highlighted in the search result
+   * @return the result of the suggester
+   * @throws IOException f the is IO exception while reading data from the index
+   */
+  public List<LookupResult> lookup(CharSequence key, BooleanQuery contextQuery, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
 
     if (searcherMgr == null) {
       throw new IllegalStateException("suggester was not built");
@@ -490,7 +541,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
 
     BooleanQuery query;
-    Set<String> matchedTokens = new HashSet<>();
+    Set<String> matchedTokens;
     String prefixToken = null;
 
     try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
@@ -532,41 +583,33 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           matchedTokens.add(lastToken);
           lastQuery = new TermQuery(new Term(TEXT_FIELD_NAME, lastToken));
         }
+        
         if (lastQuery != null) {
           query.add(lastQuery, occur);
         }
       }
 
-      if (contextInfo != null) {
-        
+      if (contextQuery != null) {
         boolean allMustNot = true;
-        for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
-          if (entry.getValue() != BooleanClause.Occur.MUST_NOT) {
+        for (BooleanClause clause : contextQuery.clauses()) {
+          if (clause.getOccur() != BooleanClause.Occur.MUST_NOT) {
             allMustNot = false;
             break;
           }
         }
-
-        // do not make a subquery if all context booleans are must not
-        if (allMustNot == true) {
-          for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
-            query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), BooleanClause.Occur.MUST_NOT);
+        
+        if (allMustNot) {
+          //all are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
+          for (BooleanClause clause : contextQuery.clauses()) {
+            query.add(clause);
           }
-
         } else {
-          BooleanQuery sub = new BooleanQuery();
-          query.add(sub, BooleanClause.Occur.MUST);
-
-          for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
-            // NOTE: we "should" wrap this in
-            // ConstantScoreQuery, or maybe send this as a
-            // Filter instead to search.
-            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey())), entry.getValue());
-          }
+          //Add contextQuery as sub-query
+          query.add(contextQuery, BooleanClause.Occur.MUST);
         }
       }
     }
-
+    
     // TODO: we could allow blended sort here, combining
     // weight w/ score.  Now we ignore score and sort only
     // by weight:
@@ -602,7 +645,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     return results;
   }
-
+  
   /**
    * Create the results based on the search hits.
    * Can be overridden by subclass to add particular behavior (e.g. weight transformation).
