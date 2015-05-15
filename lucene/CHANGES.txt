@@ -98,6 +98,11 @@ New Features
   Circle, Path (buffered line string), and Polygon.
   (Karl Wright via David Smiley)
 
+* LUCENE-6464: Add a new expert lookup method to
+  AnalyzingInfixSuggester to accept an arbitrary BooleanQuery to
+  express how contexts should be filtered. (Arcadius Ahouansou via
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-6379: IndexWriter.deleteDocuments(Query...) now detects if

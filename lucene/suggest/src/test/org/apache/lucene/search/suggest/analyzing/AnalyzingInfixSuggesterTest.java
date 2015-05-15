@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -949,7 +950,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     return result;
   }
 
-  // LUCENE-5528
+  // LUCENE-5528 and LUCENE-6464
   public void testBasicContext() throws Exception {
     Input keys[] = new Input[] {
       new Input("lend me your ear", 8, new BytesRef("foobar"), asSet("foo", "bar")),
@@ -1174,7 +1175,15 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       assertEquals(2, result.contexts.size());
       assertTrue(result.contexts.contains(new BytesRef("foo")));
       assertTrue(result.contexts.contains(new BytesRef("baz")));
-
+      
+      //LUCENE-6464 Using the advanced context filtering by query. 
+      //Note that this is just a sanity test as all the above tests run through the filter by query method
+      BooleanQuery query = new BooleanQuery();
+      suggester.addContextToQuery(query, new BytesRef("foo"), BooleanClause.Occur.MUST);
+      suggester.addContextToQuery(query, new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), query, 10, true, true);
+      assertEquals(1, results.size());
+      
       suggester.close();
       a.close();
     }
