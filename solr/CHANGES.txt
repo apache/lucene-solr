@@ -111,6 +111,11 @@ Upgrading from Solr 5.1
   supported being run as a webapp but you could play around with the web.xml to have a path prefix.
   That would no longer be true. See SOLR-7500 for more info.
 
+* The package structure under org.apache.solr.client.solrj.io has been changed to support
+  the Streaming Expression Language (SOLR-7377). Any code written with the 5.1 Streaming API will have to
+  be updated to reflect these changes.
+ 
+
 Detailed Change List
 ----------------------
 
@@ -182,6 +187,8 @@ New Features
 
 * SOLR-7275: Authorization framework for Solr. It defines an interface and a mechanism to create, 
   load, and use an Authorization plugin. (Noble Paul, Ishan Chattopadhyaya, Anshum Gupta)
+
+* SOLR-7377: Solr Streaming Expressions (Dennis Gove, Joel Bernstein, Steven Bower)
 
 Bug Fixes
 ----------------------
