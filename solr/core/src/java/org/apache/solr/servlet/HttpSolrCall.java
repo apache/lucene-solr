@@ -400,13 +400,7 @@ public class HttpSolrCall {
        1. Authorization is enabled, and
        2. The requested resource is not a known static file
         */
-      // TODO: There should be a better way to ignore the static files.
-      if (cores.getAuthorizationPlugin() != null &&
-          !(req.getRequestURI().endsWith(".html") 
-              || req.getRequestURI().endsWith(".png")
-              || req.getRequestURI().endsWith(".ico")
-              || req.getRequestURI().endsWith(".css")
-          )) {
+      if (cores.getAuthorizationPlugin() != null) {
         AuthorizationContext context = getAuthCtx();
         log.info(context.toString());
         AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);

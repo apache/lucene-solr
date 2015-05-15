@@ -270,6 +270,9 @@ Optimizations
 * SOLR-7324: IndexFetcher does not need to call isIndexStale if full copy is already needed
   (Stephan Lagraulet via Varun Thacker)
 
+* SOLR-7547: Short circuit SolrDisptachFilter for static content request. Right now it creates
+  a new HttpSolrCall object and tries to process it. (Anshum Gupta)
+
 Other Changes
 ----------------------
 

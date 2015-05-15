@@ -17,10 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -28,6 +24,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -57,6 +59,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   protected String abortErrorMessage = null;
   protected final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+  private ArrayList<Pattern> excludePatterns;
 
   /**
    * Enum to define action that needs to be processed.
@@ -81,7 +84,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init()" + this.getClass().getClassLoader());
-
+    String exclude = config.getInitParameter("excludePatterns");
+    if(exclude != null) {
+      String[] excludeArray = exclude.split(",");
+      excludePatterns = new ArrayList();
+      for (String element : excludeArray) {
+        excludePatterns.add(Pattern.compile(element));
+      }
+    }
     try {
       Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
       if (extraProperties == null)
@@ -170,6 +180,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
+    
+    // No need to even create the HttpSolrCall object if this path is excluded.
+    if(excludePatterns != null) {
+      String servletPath = ((HttpServletRequest) request).getServletPath().toString();
+      for (Pattern p : excludePatterns) {
+        Matcher matcher = p.matcher(servletPath);
+        if (matcher.lookingAt()) {
+          chain.doFilter(request, response);
+          return;
+        }
+      }
+    }
+    
     HttpSolrCall call = new HttpSolrCall(this, cores, (HttpServletRequest) request, (HttpServletResponse) response, retry);
     try {
       Action result = call.call();
