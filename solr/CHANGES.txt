@@ -379,6 +379,10 @@ Other Changes
   ZkCmdExecutor#ensureExists as they were doing the same thing. Also ZkCmdExecutor#ensureExists now respects the
   CreateMode passed to it. (Varun Thacker)
 
+* SOLR-7503: Recovery after ZK session expiration should happen in parallel for all cores
+  using the thread-pool managed by ZkContainer instead of a single thread.
+  (Jessica Cheng Mallet, Timothy Potter, shalin, Mark Miller)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
