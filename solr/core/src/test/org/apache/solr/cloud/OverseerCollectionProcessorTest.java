@@ -330,6 +330,15 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
 
+    solrZkClientMock.makePath(anyObject(String.class), anyObject(byte[].class), anyObject(CreateMode.class), anyBoolean());
+    expectLastCall().andAnswer(new IAnswer<String>() {
+      @Override
+      public String answer() throws Throwable {
+        String key = (String) getCurrentArguments()[0];
+        return key;
+      }
+    }).anyTimes();
+
     solrZkClientMock.exists(anyObject(String.class),anyBoolean());
     expectLastCall().andAnswer(new IAnswer<Boolean>() {
       @Override

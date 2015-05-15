@@ -17,6 +17,7 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -42,6 +43,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -61,7 +63,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
@@ -78,7 +79,6 @@ import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CONFIGS_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -244,17 +244,6 @@ public class CollectionsHandler extends RequestHandlerBase {
     return collectionQueue.containsTaskWithRequestId(asyncId);
   }
 
-  public static void createNodeIfNotExists(SolrZkClient zk, String path, byte[] data) throws KeeperException, InterruptedException {
-    if(!zk.exists(path, true)){
-      //create the config znode
-      try {
-        zk.create(path,data, CreateMode.PERSISTENT,true);
-      } catch (KeeperException.NodeExistsException e) {
-        //no problem . race condition. carry on the good work
-      }
-    }
-  }
-
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {
     Iterator<String> iter =  params.getParameterNamesIterator();
     while (iter.hasNext()) {
@@ -338,12 +327,17 @@ public class CollectionsHandler extends RequestHandlerBase {
 
       private void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
         SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
-        createNodeIfNotExists(zk, CONFIGS_ZKNODE, null);
-        createNodeIfNotExists(zk, CONFIGS_ZKNODE + "/" + SYSTEM_COLL, null);
-        createNodeIfNotExists(zk, CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml",
-            BlobHandler.SCHEMA.replaceAll("'", "\"").getBytes(UTF_8));
-        createNodeIfNotExists(zk, CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml",
-            BlobHandler.CONF.replaceAll("'", "\"").getBytes(UTF_8));
+        ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
+        cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
+        cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL, zk);
+
+        String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
+        byte[] data = BlobHandler.SCHEMA.replaceAll("'", "\"").getBytes(StandardCharsets.UTF_8);
+        cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+
+        path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
+        data = BlobHandler.CONF.replaceAll("'", "\"").getBytes(StandardCharsets.UTF_8);
+        cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
       }
     },
     DELETE_OP(DELETE) {
