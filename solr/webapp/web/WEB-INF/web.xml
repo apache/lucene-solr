@@ -49,27 +49,15 @@
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
-    <!-- If you are wiring Solr into a larger web application which controls
-         the web context root, you will probably want to mount Solr under
-         a path prefix (app.war with /app/solr mounted into it, for example).
-         You will need to put this prefix in front of the SolrDispatchFilter
-         url-pattern mapping too (/solr/*), and also on any paths for
-         legacy Solr servlet mappings you may be using.
-         For the Admin UI to work properly in a path-prefixed configuration,
-         the admin folder containing the resources needs to be under the app context root
-         named to match the path-prefix.  For example:
-
-            .war
-               xxx
-                 js
-                   main.js
-    -->
     <!--
-    <init-param>
-      <param-name>path-prefix</param-name>
-      <param-value>/xxx</param-value>
-    </init-param>
+    Exclude patterns is a list of directories that would be short circuited by the 
+    SolrDispatchFilter. It includes all Admin UI related static content.
+    NOTE: It is NOT a pattern but only matches the start of the HTTP ServletPath.
     -->
+    <init-param>
+      <param-name>excludePatterns</param-name>
+      <param-value>/css/*,/js/*,/img/*,/tpl/*</param-value>
+    </init-param>
   </filter>
 
   <filter-mapping>
