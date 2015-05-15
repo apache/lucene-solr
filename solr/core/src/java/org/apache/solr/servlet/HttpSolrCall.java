@@ -901,7 +901,7 @@ public class HttpSolrCall {
     
     // Populate the request type if the request is select or update
     if(requestType == RequestType.UNKNOWN) {
-      if(resource.startsWith("/select"))
+      if(resource.startsWith("/select") || resource.startsWith("/get"))
         requestType = RequestType.READ;
       if(resource.startsWith("/update"))
         requestType = RequestType.WRITE;
