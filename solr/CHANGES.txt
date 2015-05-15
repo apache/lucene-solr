@@ -271,6 +271,8 @@ Bug Fixes
 * SOLR-7542: Schema API: Can't remove single dynamic copy field directive
   (Steve Rowe)
 
+* SOLR-7472: SortingResponseWriter does not log fl parameters that don't exist. (Joel Bernstein)
+
 Optimizations
 ----------------------
 

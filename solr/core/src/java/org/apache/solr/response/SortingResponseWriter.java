@@ -229,7 +229,13 @@ public class SortingResponseWriter implements QueryResponseWriter {
     FieldWriter[] writers = new FieldWriter[fields.length];
     for(int i=0; i<fields.length; i++) {
       String field = fields[i];
-      SchemaField schemaField = schema.getField(field);
+      SchemaField schemaField = null;
+
+      try {
+        schemaField = schema.getField(field);
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
 
       if(!schemaField.hasDocValues()) {
         throw new IOException(field+" must have DocValues to use this feature.");
