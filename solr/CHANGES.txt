@@ -365,6 +365,9 @@ Other Changes
 
 * SOLR-7544: CollectionsHandler refactored to be more modular (Noble Paul)
 
+* SOLR-7532: Removed occurrences of the unused 'commitIntervalLowerBound' property for
+  updateHandler elements from Solr configuration. (Marius Grama via shalin)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

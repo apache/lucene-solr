@@ -209,7 +209,6 @@ public class ConfigOverlay implements MapSerializable {
       "      maxDocs:20," +
       "      maxTime:20}," +
       "    commitWithin:{softCommit:11}," +
-      "    commitIntervalLowerBound:21," +
       "    indexWriter:{closeWaitsForMerges:11}}," +
       "  query:{" +
       "    filterCache:{" +

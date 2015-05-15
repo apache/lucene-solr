@@ -26,9 +26,7 @@
 
   <xi:include href="collection1/conf/solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
-    <commitIntervalLowerBound>0</commitIntervalLowerBound>
-  </updateHandler>
+  <updateHandler class="solr.DirectUpdateHandler2"/>
 
   <query>
     <maxBooleanClauses>1024</maxBooleanClauses>

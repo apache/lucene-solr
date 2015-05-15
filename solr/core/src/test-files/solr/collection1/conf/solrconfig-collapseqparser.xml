@@ -59,11 +59,6 @@
       <maxTime>3600000</maxTime>
     </autoCommit>
     -->
-    <!-- represents a lower bound on the frequency that commits may
-    occur (in seconds). NOTE: not yet implemented
-
-    <commitIntervalLowerBound>0</commitIntervalLowerBound>
-    -->
 
     <!-- The RunExecutableListener executes an external command.
          exe - the name of the executable to run
