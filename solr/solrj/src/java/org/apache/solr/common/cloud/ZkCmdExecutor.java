@@ -91,7 +91,7 @@ public class ZkCmdExecutor {
       return;
     }
     try {
-      zkClient.makePath(path, data, true);
+      zkClient.makePath(path, data, createMode, true);
     } catch (NodeExistsException e) {
       // it's okay if another beats us creating the node
     }

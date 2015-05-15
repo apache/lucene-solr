@@ -368,6 +368,10 @@ Other Changes
 * SOLR-7532: Removed occurrences of the unused 'commitIntervalLowerBound' property for
   updateHandler elements from Solr configuration. (Marius Grama via shalin)
 
+* SOLR-7541: Removed CollectionsHandler#createNodeIfNotExists. All calls made to this method now call
+  ZkCmdExecutor#ensureExists as they were doing the same thing. Also ZkCmdExecutor#ensureExists now respects the
+  CreateMode passed to it.
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
