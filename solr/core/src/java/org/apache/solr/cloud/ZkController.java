@@ -40,6 +40,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -207,6 +209,25 @@ public final class ZkController {
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after expiration occurred
   private List<OnReconnect> reconnectListeners = new ArrayList<OnReconnect>();
 
+  private class RegisterCoreAsync implements Callable {
+
+    CoreDescriptor descriptor;
+    boolean recoverReloadedCores;
+    boolean afterExpiration;
+
+    RegisterCoreAsync(CoreDescriptor descriptor, boolean recoverReloadedCores, boolean afterExpiration) {
+      this.descriptor = descriptor;
+      this.recoverReloadedCores = recoverReloadedCores;
+      this.afterExpiration = afterExpiration;
+    }
+
+    public Object call() throws Exception {
+      log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
+      register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration);
+      return descriptor;
+    }
+  }
+
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException
   {
@@ -294,10 +315,10 @@ public final class ZkController {
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
 
-              List<CoreDescriptor> descriptors = registerOnReconnect
-                  .getCurrentDescriptors();
+              List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
               // re register all descriptors
               if (descriptors != null) {
+                ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
                 for (CoreDescriptor descriptor : descriptors) {
                   // TODO: we need to think carefully about what happens when it
                   // was
@@ -308,7 +329,11 @@ public final class ZkController {
                     // unload solrcores that have been 'failed over'
                     throwErrorIfReplicaReplaced(descriptor);
 
-                    register(descriptor.getName(), descriptor, true, true);
+                    if (executorService != null) {
+                      executorService.submit(new RegisterCoreAsync(descriptor, true, true));
+                    } else {
+                      register(descriptor.getName(), descriptor, true, true);
+                    }
                   } catch (Exception e) {
                     SolrException.log(log, "Error registering SolrCore", e);
                   }

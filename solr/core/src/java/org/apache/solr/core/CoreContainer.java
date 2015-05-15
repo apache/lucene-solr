@@ -112,6 +112,10 @@ public class CoreContainer {
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
+  public ExecutorService getCoreZkRegisterExecutorService() {
+    return zkSys.getCoreZkRegisterExecutorService();
+  }
+
   public SolrRequestHandler getRequestHandler(String path) {
     return RequestHandlerBase.getRequestHandler(path, containerHandlers);
   }
@@ -964,5 +968,4 @@ class CloserThread extends Thread {
       }
     }
   }
-
 }
