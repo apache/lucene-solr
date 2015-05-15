@@ -370,7 +370,7 @@ Other Changes
 
 * SOLR-7541: Removed CollectionsHandler#createNodeIfNotExists. All calls made to this method now call
   ZkCmdExecutor#ensureExists as they were doing the same thing. Also ZkCmdExecutor#ensureExists now respects the
-  CreateMode passed to it.
+  CreateMode passed to it. (Varun Thacker)
 
 ==================  5.1.0 ==================
 
