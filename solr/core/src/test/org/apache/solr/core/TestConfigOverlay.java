@@ -58,8 +58,6 @@ public class TestConfigOverlay extends LuceneTestCase {
 
     assertTrue(isEditableProp("requestDispatcher.handleSelect", false, null));
 
-    assertTrue(isEditableProp("updateHandler/commitIntervalLowerBound", true, null));
-    assertFalse(isEditableProp("updateHandler/commitIntervalLowerBound1", true, null));
     assertTrue(isEditableProp("query.filterCache.initialSize", false, null));
     assertFalse(isEditableProp("query.filterCache", false, null));
     assertTrue(isEditableProp("query/filterCache/@initialSize", true, null));

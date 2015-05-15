@@ -432,7 +432,6 @@ public class SolrConfig extends Config implements MapSerializable {
         getInt("updateHandler/autoCommit/maxTime", -1),
         getBool("updateHandler/indexWriter/closeWaitsForMerges", true),
         getBool("updateHandler/autoCommit/openSearcher", true),
-        getInt("updateHandler/commitIntervalLowerBound", -1),
         getInt("updateHandler/autoSoftCommit/maxDocs", -1),
         getInt("updateHandler/autoSoftCommit/maxTime", -1),
         getBool("updateHandler/commitWithin/softCommit", true));
@@ -652,7 +651,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public static class UpdateHandlerInfo implements MapSerializable {
     public final String className;
-    public final int autoCommmitMaxDocs, autoCommmitMaxTime, commitIntervalLowerBound,
+    public final int autoCommmitMaxDocs, autoCommmitMaxTime,
         autoSoftCommmitMaxDocs, autoSoftCommmitMaxTime;
     public final boolean indexWriterCloseWaitsForMerges;
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
@@ -661,16 +660,14 @@ public class SolrConfig extends Config implements MapSerializable {
     /**
      * @param autoCommmitMaxDocs       set -1 as default
      * @param autoCommmitMaxTime       set -1 as default
-     * @param commitIntervalLowerBound set -1 as default
      */
-    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean indexWriterCloseWaitsForMerges, boolean openSearcher, int commitIntervalLowerBound,
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean indexWriterCloseWaitsForMerges, boolean openSearcher,
                              int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime, boolean commitWithinSoftCommit) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
       this.indexWriterCloseWaitsForMerges = indexWriterCloseWaitsForMerges;
       this.openSearcher = openSearcher;
-      this.commitIntervalLowerBound = commitIntervalLowerBound;
 
       this.autoSoftCommmitMaxDocs = autoSoftCommmitMaxDocs;
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
@@ -684,12 +681,10 @@ public class SolrConfig extends Config implements MapSerializable {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
       result.put("openSearcher", openSearcher);
-      result.put("commitIntervalLowerBound", commitIntervalLowerBound);
       result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
       result.put("autoCommit", makeMap(
           "maxDocs", autoCommmitMaxDocs,
-          "maxTime", autoCommmitMaxTime,
-          "commitIntervalLowerBound", commitIntervalLowerBound
+          "maxTime", autoCommmitMaxTime
       ));
       result.put("autoSoftCommit",
           makeMap("maxDocs", autoSoftCommmitMaxDocs,
