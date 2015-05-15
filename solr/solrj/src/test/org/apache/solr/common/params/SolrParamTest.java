@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.params;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 
 /**
  */
@@ -78,6 +80,36 @@ public class SolrParamTest extends LuceneTestCase {
     assertEquals(new String[] { "a3" }, append.getParams("yak"));
     assertEquals(new String[] { "b3" }, append.getParams("zot"));
 
+  }
+
+  public void testMultiValues() {
+    NamedList nl = new NamedList();
+    nl.add("x", "X1");
+    nl.add("x", "X2");
+    nl.add("x", new String[]{"X3", "X4"});
+    Map<String, String[]> m = SolrParams.toMultiMap(nl);
+    String[] r = m.get("x");
+    assertTrue(Arrays.asList(r).containsAll(Arrays.asList(new String[]{"X1", "X2", "X3", "X4"})));
+  }
+
+  public void testGetAll() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("x", "X1");
+    params.add("x", "X2");
+    params.add("y", "Y");
+    Map<String, Object> m = params.getAll(null, "x", "y");
+    String[] x = (String[]) m.get("x");
+    assertEquals(2, x.length);
+    assertEquals("X1", x[0]);
+    assertEquals("X2", x[1]);
+    assertEquals("Y", m.get("y"));
+    try {
+      params.required().getAll(null, "z");
+      fail("Error expected");
+    } catch (SolrException e) {
+      assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
+
+    }
   }
 
   public void testModParamAddParams() {
