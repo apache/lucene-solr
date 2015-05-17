@@ -43,6 +43,7 @@ import org.apache.solr.schema.*;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
+import org.apache.solr.search.facet.HLLAgg;
 import org.apache.solr.search.facet.MaxAgg;
 import org.apache.solr.search.facet.MinAgg;
 import org.apache.solr.search.facet.PercentileAgg;
@@ -815,6 +816,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new UniqueAgg(fp.parseArg());
+      }
+    });
+
+    addParser("agg_hll", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new HLLAgg(fp.parseArg());
       }
     });
 
