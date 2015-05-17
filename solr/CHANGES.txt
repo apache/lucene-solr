@@ -279,6 +279,9 @@ Bug Fixes
 
 * SOLR-7472: SortingResponseWriter does not log fl parameters that don't exist. (Joel Bernstein)
 
+* SOLR-7545: Honour SOLR_HOST parameter with bin/solr{,.cmd}
+  (Ishan Chattopadhyaya via Ramkumar Aiyengar)
+
 Optimizations
 ----------------------
 

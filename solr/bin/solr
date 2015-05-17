@@ -164,6 +164,13 @@ else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
 
+# Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
+if [ "$SOLR_HOST" != "" ]; then
+  SOLR_TOOL_HOST="$SOLR_HOST"
+else
+  SOLR_TOOL_HOST="localhost"
+fi
+
 function print_usage() {
   CMD="$1"
   ERROR_MSG="$2"
@@ -427,7 +434,7 @@ function get_info() {
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solr "$SOLR_URL_SCHEME://localhost:$port/solr"
+          run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
@@ -444,7 +451,7 @@ function get_info() {
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status -solr "$SOLR_URL_SCHEME://localhost:$port/solr"
+            run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
             echo ""
           fi
       done
@@ -699,11 +706,11 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ "$SCRIPT_CMD" == "create_core" ]; then
-    run_tool create_core -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://localhost:$CREATE_PORT/solr" \
+    run_tool create_core -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
       -confdir "$CREATE_CONFDIR" -configsetsDir "$SOLR_TIP/server/solr/configsets"
     exit $?
   else
-    run_tool "$SCRIPT_CMD" -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://localhost:$CREATE_PORT/solr" \
+    run_tool "$SCRIPT_CMD" -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
       -shards "$CREATE_NUM_SHARDS" -replicationFactor "$CREATE_REPFACT" \
       -confname "$CREATE_CONFNAME" -confdir "$CREATE_CONFDIR" \
       -configsetsDir "$SOLR_TIP/server/solr/configsets"
@@ -789,7 +796,7 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   fi
 
   run_tool delete -name "$DELETE_NAME" -deleteConfig "$DELETE_CONFIG" \
-    -solrUrl "$SOLR_URL_SCHEME://localhost:$DELETE_PORT/solr"
+    -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr"
   exit $?
 fi
 
@@ -1429,18 +1436,18 @@ if [ "$EXAMPLE" != "cloud" ]; then
 
     run_tool create -name "$EXAMPLE_NAME" -shards 1 -replicationFactor 1 \
       -confname "$EXAMPLE_NAME" -confdir "$EXAMPLE_CONFIGSET" \
-      -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr
+      -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr
     if [ $? -ne 0 ]; then
       exit 1
     fi
 
     if [ "$EXAMPLE" == "techproducts" ]; then
       echo "Indexing tech product example docs from $SOLR_TIP/example/exampledocs"
-      "$JAVA" $SOLR_SSL_OPTS -Durl="$SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr/$EXAMPLE/update" \
+      "$JAVA" $SOLR_SSL_OPTS -Durl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr/$EXAMPLE/update" \
 	-jar "$SOLR_TIP/example/exampledocs/post.jar" "$SOLR_TIP/example/exampledocs"/*.xml
     fi
 
-    echo -e "\nSolr $EXAMPLE example launched successfully. Direct your Web browser to $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr to visit the Solr Admin UI\n"
+    echo -e "\nSolr $EXAMPLE example launched successfully. Direct your Web browser to $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr to visit the Solr Admin UI\n"
   fi
 else
   #
@@ -1553,9 +1560,9 @@ else
    
   run_tool create_collection -name "$CLOUD_COLLECTION" -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
     -confname "$CLOUD_COLLECTION" -confdir "$CLOUD_CONFIG" \
-    -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl "$SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr"
+    -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr"
 
-  echo -e "\n\nSolrCloud example running, please visit $SOLR_URL_SCHEME://localhost:$SOLR_PORT/solr \n\n"
+  echo -e "\n\nSolrCloud example running, please visit $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr \n\n"
 fi
 
 exit $?
