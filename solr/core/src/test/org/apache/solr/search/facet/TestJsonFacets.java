@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
+import net.agkn.hll.HLL;
 import org.apache.lucene.queryparser.flexible.standard.processors.NumericQueryNodeProcessor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.GrowableWriter;
@@ -294,6 +295,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStats(Client.localClient, params());
   }
 
+  @Test
+  public void testDistrib() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards() );
+    doStats( client, params() );
+  }
+
   public void doStats(Client client, ModifiableSolrParams p) throws Exception {
 
     Map<String, List<String>> fieldLists = new HashMap<>();
@@ -373,8 +382,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
 
 
-
-        // straight query facets
+    // straight query facets
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{catA:{query:{q:'${cat_s}:A'}},  catA2:{query:{query:'${cat_s}:A'}},  catA3:{query:'${cat_s}:A'}    }"
         )
@@ -460,12 +468,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
             , "json.facet", "{f1:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'min(${num_d})'}  }" +
                 " , f2:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'max(${num_d})'}  } " +
                 " , f3:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } " +
+                " , f4:{type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'hll(${where_s})'}  } " +
                 "}"
         )
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'A', count:2, x:2.0 },  { val:'B', count:3, x:-9.0}]}" +
             ", f2:{  'buckets':[{ val:'B', count:3, x:11.0 }, { val:'A', count:2, x:4.0 }]} " +
             ", f3:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
+            ", f4:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
             "}"
     );
 
@@ -722,18 +732,28 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})',  med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})'" +
+                ", numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})'" +
+                ", where_hll:'hll(${where_s})', hll_num_i:'hll(${num_i})', hll_num_d:'hll(${num_d})', hll_date:'hll(${date})'" +
+                ", med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={ 'count':6, " +
-            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0, numwhere:2, unique_num_i:4, unique_num_d:5, unique_date:5, med:2.0, perc:[-9.0,2.0,11.0]  }"
+            "sum1:3.0, sumsq1:247.0, avg1:0.5, min1:-9.0, max1:11.0" +
+            ", numwhere:2, unique_num_i:4, unique_num_d:5, unique_date:5" +
+            ", where_hll:2, hll_num_i:4, hll_num_d:5, hll_date:5" +
+            ", med:2.0, perc:[-9.0,2.0,11.0]  }"
     );
 
     // stats at top level, no matches
     client.testJQ(params(p, "q", "id:DOESNOTEXIST"
-            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})', numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})',  med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+            , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})'" +
+                ", numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})'" +
+                ", where_hll:'hll(${where_s})', hll_num_i:'hll(${num_i})', hll_num_d:'hll(${num_d})', hll_date:'hll(${date})'" +
+                ", med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
         )
         , "facets=={count:0 " +
-            "/* ,sum1:0.0, sumsq1:0.0, avg1:0.0, min1:'NaN', max1:'NaN', numwhere:0 */ }"
+            "/* ,sum1:0.0, sumsq1:0.0, avg1:0.0, min1:'NaN', max1:'NaN', numwhere:0 */" +
+            " }"
     );
 
     //
@@ -750,11 +770,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test unique on multi-valued field
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{x:'unique(${multi_ss})', y:{query:{q:'id:2', facet:{x:'unique(${multi_ss})'} }}   }"
+            , "json.facet", "{" +
+                "x:'unique(${multi_ss})'" +
+                ",y:{query:{q:'id:2', facet:{x:'unique(${multi_ss})'} }}  " +
+                ",x2:'hll(${multi_ss})'" +
+                ",y2:{query:{q:'id:2', facet:{x:'hll(${multi_ss})'} }}  " +
+
+                " }"
         )
-        , "facets=={ 'count':6, " +
-            "x:2," +
-            "y:{count:1, x:2}" +  // single document should yield 2 unique values
+        , "facets=={count:6 " +
+            ",x:2" +
+            ",y:{count:1, x:2}" +  // single document should yield 2 unique values
+            ",x2:2" +
+            ",y2:{count:1, x:2}" +  // single document should yield 2 unique values
             " }"
     );
 
@@ -936,13 +964,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
-  @Test
-  public void testDistrib() throws Exception {
-    initServers();
-    Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards() );
-    doStats( client, params() );
-  }
+
 
 
   @Test
@@ -1002,6 +1024,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':" + ndocs + "," +
             "'f1':{  'buckets':[{ 'val':'0', 'count':" + ndocs + ", x:" + sz + " }]} } "
     );
+
+    if (client.local()) {
+      // distrib estimation prob won't match
+      client.testJQ(params(p, "q", "*:*"
+              , "json.facet", "{f1:{type:terms, field:${cat_s}, limit:2, facet:{x:'hll($where_s)'}  }}"
+          )
+          , "facets=={ 'count':" + ndocs + "," +
+              "'f1':{  'buckets':[{ 'val':'0', 'count':" + ndocs + ", x:" + sz + " }]} } "
+      );
+    }
+
   }
 
 
@@ -1086,4 +1119,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     System.out.println(top.quantile(0.5));
     System.out.println(top.quantile(0.9));
   }
+
+  public void XtestHLL() {
+    HLLAgg.HLLFactory fac = new HLLAgg.HLLFactory();
+    HLL hll = fac.getHLL();
+    hll.addRaw(123456789);
+    hll.addRaw(987654321);
+  }
+
 }

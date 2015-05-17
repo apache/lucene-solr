@@ -190,6 +190,12 @@ New Features
 
 * SOLR-7377: Solr Streaming Expressions (Dennis Gove, Joel Bernstein, Steven Bower)
 
+* SOLR-7553: Facet Analytics Module: new "hll" function that uses HyperLogLog to calculate
+  distributed cardinality.  The original "unique" function is still available.
+  Example:  json.facet={ numProducts : "hll(product_id)" }
+  (yonik)
+
+
 Bug Fixes
 ----------------------
 
