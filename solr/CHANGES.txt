@@ -129,8 +129,9 @@ New Features
     http://localhost:8983/solr/techproducts/replication?command=restorestatus
   (Varun Thacker, noble, shalin)
 
-* SOLR-7241, SOLR-7263, SOLR-7279: More functionality moving the Admin UI to Angular JS
-  (Upayavira via Erick)
+* SOLR-7241, SOLR-7263, SOLR-7279, SOLR-7300, SOLR-7396, SOLR-7397, SOLR-7492: 
+  Admin UI - Refactoring using AngularJS. More functionality moving the Admin 
+  UI to Angular JS (Upayavira via Erick)
 
 * SOLR-7372: Limit memory consumed by LRUCache with a new 'maxRamMB' config parameter.
   (yonik, shalin)

@@ -180,6 +180,12 @@ ul
   background-image: url( ../../img/loader-light.gif ) !important;
 }
 
+.universal-loader {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
 #wrapper
 {
   position: relative;

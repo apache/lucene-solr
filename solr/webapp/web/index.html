@@ -28,7 +28,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cores.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/dashboard.css?_=${version}">
-  <link rel="stylesheet" type="text/css" href="css/styles/dataimport.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/dataimport.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/files.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/index.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/java-properties.css?_=${version}">
@@ -37,8 +37,9 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/plugins.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/documents.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/query.css?_=${version}">
-  <link rel="stylesheet" type="text/css" href="css/styles/replication.css?_=${version}">
-  <link rel="stylesheet" type="text/css" href="css/styles/schema-browser.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/replication.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/schema-browser.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/segments.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/chosen.css?_=${version}">
 
@@ -53,6 +54,7 @@ limitations under the License.
   <script src="libs/angular-cookies.min.js"></script>
   <script src="libs/ngtimeago.js"></script>
   <script src="libs/highlight.js"></script>
+  <script src="libs/d3.js"></script>
   <script src="js/angular/app.js"></script>
   <script src="js/angular/services.js"></script>
   <script src="js/angular/controllers/index.js"></script>
@@ -63,10 +65,14 @@ limitations under the License.
   <script src="js/angular/controllers/java-properties.js"></script>
   <script src="js/angular/controllers/core-overview.js"></script>
   <script src="js/angular/controllers/analysis.js"></script>
+  <script src="js/angular/controllers/dataimport.js"></script>
   <script src="js/angular/controllers/documents.js"></script>
   <script src="js/angular/controllers/files.js"></script>
   <script src="js/angular/controllers/query.js"></script>
   <script src="js/angular/controllers/plugins.js"></script>
+  <script src="js/angular/controllers/replication.js"></script>
+  <script src="js/angular/controllers/schema-browser.js"></script>
+  <script src="js/angular/controllers/segments.js"></script>
 
 </head>
 <body ng-controller="MainController">
@@ -91,9 +97,7 @@ limitations under the License.
 
       </div>
 
-      <div id="loading" class="header-message" loading-status-message>
-        Loading...
-      </div>
+      <div id="loading" class="loader universal-loader" loading-status-message>&nbsp;</div>
 
       <div id="connection-box" connection-message>
         <div id="connection-status-modal">
@@ -134,12 +138,12 @@ limitations under the License.
               </ul>
             </li>
 
-            <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:page=='cloud'}"><p><a href="#/~cloud">Cloud</a></p>
+            <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
               <ul ng-show="showingCloud">
                 <li class="tree" ng-class="{active:page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
                 <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud">Graph</a></li>
                 <li class="rgraph" ng-class="{active:page=='cloud-rgraph'}"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
-                <li class="dump" ng-class="{active:page=='cloud-dump'}"><a href="#/~cloud">Dump</a></li>
+                <li class="dump" ng-class="{active:page=='cloud-dump'}"><a ng-click="dumpCloud()">Dump</a></li>
               </ul>
             </li>
 
@@ -175,6 +179,7 @@ limitations under the License.
               <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
               <li class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
               <li class="schema-browser" ng-class="{active:page=='schema-browser'}"><a href="#/{{currentCore.name}}/schema-browser"><span>Schema Browser</span></a></li>
+              <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
 	    </ul>
           </div>
 

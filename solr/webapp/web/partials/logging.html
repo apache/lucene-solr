@@ -25,6 +25,7 @@ limitations under the License.
         <tr>
           <th class="time">Time (<span>{{timezone}}</span>)</th>
           <th class="level">Level</th>
+          <th class="core">Core</th>
           <th class="logger">Logger</th>
           <th class="message">Message</th>
         </tr>
@@ -33,6 +34,7 @@ limitations under the License.
         <tr ng-click="toggleRow(event)" class="{{event.trace ? 'has-trace': ''}} {{'level-'+event.level.toLowerCase()}}">
           <td class="span"><a><span>{{ timezone == "UTC" ? event.utc_time : event.local_time }}</span></a></td>
           <td class="level span"><a><span>{{ event.level }} {{event.showTrace}}</span></span></a></td>
+          <td class="span"><a><span>{{ event.core }}</span></a></td>
           <td class="span"><a><span><abbr title="{{event.logger}}">{{event.loggerBase}}</abbr></span></a></td>
           <td class="message span"><a><span>{{ event.message }}</span></a></td>
         </tr>
