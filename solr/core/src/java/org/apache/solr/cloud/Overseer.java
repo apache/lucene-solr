@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CloudConfig;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.stats.Clock;
@@ -353,6 +354,9 @@ public class Overseer implements Closeable {
               return new ZkWriteCommand(collName, dProp.getDocCollection());
             }
             break;
+          case MODIFYCOLLECTION:
+            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
+            return new CollectionMutator(reader).modifyCollection(clusterState,message);
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());

@@ -569,11 +569,13 @@ New Features
 * SOLR-7226: Make /query/* jmx/* , requestDispatcher/*, <listener> <initParams>
   properties in solrconfig.xml editable (Noble Paul)
 
-* SOLR-7240: '/' redirects to '/solr/' for convinience (Martijn Koster, hossman)
+* SOLR-7240: '/' redirects to '/solr/' for convenience (Martijn Koster, hossman)
 
 * SOLR-5911: Added payload support for term vectors. New "termPayloads" option for fields
   / types in the schema, and "tv.payloads" param for the term vector component.
   (Mike McCandless, David Smiley)
+
+* SOLR-5132: Added a new collection action MODIFYCOLLECTION (Noble Paul)
 
 Bug Fixes
 ----------------------

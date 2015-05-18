@@ -21,12 +21,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
+
+import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
@@ -35,6 +40,8 @@ public class DocCollection extends ZkNodeProps {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
   public static final String STATE_FORMAT = "stateFormat";
+  public static final String RULE = "rule";
+  public static final String SNITCH = "snitch";
   private int znodeVersion = -1; // sentinel
 
   private final String name;
@@ -45,7 +52,7 @@ public class DocCollection extends ZkNodeProps {
 
   private final Integer replicationFactor;
   private final Integer maxShardsPerNode;
-  private final boolean autoAddReplicas;
+  private final Boolean autoAddReplicas;
 
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
@@ -64,25 +71,12 @@ public class DocCollection extends ZkNodeProps {
 
     this.slices = slices;
     this.activeSlices = new HashMap<>();
-    Object replicationFactorObject = (Object) props.get(ZkStateReader.REPLICATION_FACTOR);
-    if (replicationFactorObject != null) {
-      this.replicationFactor = Integer.parseInt(replicationFactorObject.toString());
-    } else {
-      this.replicationFactor = null;
-    }
-    Object maxShardsPerNodeObject = (Object) props.get(ZkStateReader.MAX_SHARDS_PER_NODE);
-    if (maxShardsPerNodeObject != null) {
-      this.maxShardsPerNode = Integer.parseInt(maxShardsPerNodeObject.toString());
-    } else {
-      this.maxShardsPerNode = null;
-    }
-    Object autoAddReplicasObject = (Object) props.get(ZkStateReader.AUTO_ADD_REPLICAS);
-    if (autoAddReplicasObject != null) {
-      this.autoAddReplicas = Boolean.parseBoolean(autoAddReplicasObject.toString());
-    } else {
-      this.autoAddReplicas = false;
-    }
-
+    this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
+    this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
+    Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
+    this.autoAddReplicas = autoAddReplicas == null ? false : autoAddReplicas;
+    verifyProp(props, RULE);
+    verifyProp(props, SNITCH);
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
     while (iter.hasNext()) {
@@ -93,6 +87,24 @@ public class DocCollection extends ZkNodeProps {
     this.router = router;
     this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
+  }
+
+  public static Object verifyProp(Map<String, Object> props, String propName) {
+    Object o = props.get(propName);
+    if (o == null) return null;
+    switch (propName) {
+      case MAX_SHARDS_PER_NODE:
+      case REPLICATION_FACTOR:
+        return Integer.parseInt(o.toString());
+      case AUTO_ADD_REPLICAS:
+        return Boolean.parseBoolean(o.toString());
+      case "snitch":
+      case "rule":
+        return (List) o;
+      default:
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown property " + propName);
+    }
+
   }
 
   /**Use this to make an exact copy of DocCollection with a new set of Slices and every other property as is
@@ -164,7 +176,7 @@ public class DocCollection extends ZkNodeProps {
   
   public int getMaxShardsPerNode() {
     if (maxShardsPerNode == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, ZkStateReader.MAX_SHARDS_PER_NODE + " is not in the cluster state.");
+      throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
     }
     return maxShardsPerNode;
   }

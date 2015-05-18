@@ -29,9 +29,11 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -82,6 +84,17 @@ public class CollectionMutator {
 
     DocCollection newCollection = coll.copyWithSlices(newSlices);
     return new ZkWriteCommand(collection, newCollection);
+  }
+
+  public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message){
+    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+    DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
+    Map<String, Object> m = coll.shallowCopy();
+    for (String prop : CollectionsHandler.MODIFIABLE_COLL_PROPS) {
+      if(message.get(prop)!= null) m.put(prop,message.get(prop));
+    }
+    return new ZkWriteCommand(coll.getName(),
+        new DocCollection(coll.getName(),coll.getSlicesMap(),m,coll.getRouter(),coll.getZNodeVersion(),coll.getZNode()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

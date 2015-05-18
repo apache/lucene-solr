@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.Assign.*;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.*;
@@ -135,13 +136,13 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   public int maxParallelThreads = 10;
 
-  public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
+  public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
-      "rule", null,
-      "snitch",null);
+      DocCollection.RULE, null,
+      DocCollection.SNITCH, null));
 
   static final Random RANDOM;
   static {
@@ -615,6 +616,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         case REBALANCELEADERS:
           processRebalanceLeaders(message);
           break;
+        case MODIFYCOLLECTION:
+          overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
+          break;
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
               + operation);
@@ -1045,7 +1049,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
       // assume the core exists and try to unload it
-      Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
+      Map m = makeMap("qt", adminPath, CoreAdminParams.ACTION,
           CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core,
           CoreAdminParams.DELETE_INSTANCE_DIR, "true",
           CoreAdminParams.DELETE_DATA_DIR, "true");
@@ -1292,8 +1296,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
       DocCollection collection = clusterState.getCollection(collectionName);
-      int maxShardsPerNode = collection.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1);
-      int repFactor = message.getInt(ZkStateReader.REPLICATION_FACTOR, collection.getInt(ZkStateReader.REPLICATION_FACTOR, 1));
+      int maxShardsPerNode = collection.getInt(MAX_SHARDS_PER_NODE, 1);
+      int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
       String createNodeSetStr = message.getStr(CREATE_NODE_SET);
 
       ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, numSlices, maxShardsPerNode, repFactor, createNodeSetStr);
@@ -1981,7 +1985,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     if (clusterState.hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
 
@@ -2065,10 +2069,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     // create a temporary collection with just one node on the shard leader
     String configName = zkStateReader.readConfigName(sourceCollection.getName());
-    Map<String, Object> props = ZkNodeProps.makeMap(
+    Map<String, Object> props = makeMap(
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
         NAME, tempSourceCollectionName,
-        ZkStateReader.REPLICATION_FACTOR, 1,
+        REPLICATION_FACTOR, 1,
         NUM_SLICES, 1,
         COLL_CONF, configName,
         CREATE_NODE_SET, sourceLeader.getNodeName());
@@ -2194,7 +2198,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     try {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
-      props = ZkNodeProps.makeMap(
+      props = makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
       deleteCollection(new ZkNodeProps(props), results);
@@ -2293,7 +2297,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
 
-      int repFactor = message.getInt(ZkStateReader.REPLICATION_FACTOR, 1);
+      int repFactor = message.getInt(REPLICATION_FACTOR, 1);
 
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
       String async = null;
@@ -2312,10 +2316,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         ClusterStateMutator.getShardNames(numSlices, shardNames);
       }
 
-      int maxShardsPerNode = message.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1);
+      int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
 
       if (repFactor <= 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, ZkStateReader.REPLICATION_FACTOR + " must be greater than 0");
+        throw new SolrException(ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than 0");
       }
 
       if (numSlices <= 0) {
@@ -2330,7 +2334,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
       if (repFactor > nodeList.size()) {
         log.warn("Specified "
-            + ZkStateReader.REPLICATION_FACTOR
+            + REPLICATION_FACTOR
             + " of "
             + repFactor
             + " on collection "
@@ -2344,11 +2348,11 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       int requestedShardsToCreate = numSlices * repFactor;
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
-            + ZkStateReader.MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
+            + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
             + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate
             + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-            + " and value of " + ZkStateReader.REPLICATION_FACTOR + " is " + repFactor
+            + " and value of " + REPLICATION_FACTOR + " is " + repFactor
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
       }
@@ -2556,7 +2560,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
       if (node == null) {
-        node = getNodesForNewShard(clusterState, collection, coll.getSlices().size(), coll.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1), coll.getInt(ZkStateReader.REPLICATION_FACTOR, 1), null).get(0).nodeName;
+        node = getNodesForNewShard(clusterState, collection, coll.getSlices().size(), coll.getInt(MAX_SHARDS_PER_NODE, 1), coll.getInt(REPLICATION_FACTOR, 1), null).get(0).nodeName;
         log.info("Node not provided, Identified {} for creating new replica", node);
       }
 
@@ -2684,7 +2688,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     if (configName != null) {
       String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
       log.info("creating collections conf node {} ", collDir);
-      byte[] data = ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP, configName));
+      byte[] data = ZkStateReader.toJSON(makeMap(ZkController.CONFIGNAME_PROP, configName));
       if (zkStateReader.getZkClient().exists(collDir, true)) {
         zkStateReader.getZkClient().setData(collDir, data, true);
       } else {

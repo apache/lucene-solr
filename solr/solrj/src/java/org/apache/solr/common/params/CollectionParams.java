@@ -19,6 +19,8 @@ package org.apache.solr.common.params;
 
 import java.util.Locale;
 
+import org.apache.solr.common.SolrException;
+
 public interface CollectionParams 
 {
   /** What action **/
@@ -50,17 +52,17 @@ public interface CollectionParams
     ADDREPLICAPROP,
     DELETEREPLICAPROP,
     BALANCESHARDUNIQUE,
-    REBALANCELEADERS;
-    
-    public static CollectionAction get( String p )
-    {
+    REBALANCELEADERS,
+    MODIFYCOLLECTION;
+
+    public static CollectionAction get(String p) {
       if( p != null ) {
         try {
           return CollectionAction.valueOf( p.toUpperCase(Locale.ROOT) );
         }
         catch( Exception ex ) {}
       }
-      return null; 
+      return null;
     }
     public boolean isEqual(String s){
       if(s == null) return false;
