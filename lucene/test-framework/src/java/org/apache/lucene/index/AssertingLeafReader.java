@@ -47,6 +47,15 @@ public class AssertingLeafReader extends FilterLeafReader {
     assert in.numDocs() <= in.maxDoc();
     assert in.numDeletedDocs() + in.numDocs() == in.maxDoc();
     assert !in.hasDeletions() || in.numDeletedDocs() > 0 && in.numDocs() < in.maxDoc();
+
+    addCoreClosedListener(new CoreClosedListener() {
+      @Override
+      public void onClose(Object ownerCoreCacheKey) throws IOException {
+        final Object expectedKey = getCoreCacheKey();
+        assert expectedKey == ownerCoreCacheKey
+            : "Core closed listener called on a different key " + expectedKey + " <> " + ownerCoreCacheKey;
+      }
+    });
   }
 
   @Override

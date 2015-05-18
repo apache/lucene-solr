@@ -170,6 +170,9 @@ Bug Fixes
 * LUCENE-6468: Fixed NPE with empty Kuromoji user dictionary.
   (Jun Ohtani via Christian Moen)
 
+* LUCENE-6483: Ensure core closed listeners are called on the same cache key as
+  the reader which has been used to register the listener. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
