@@ -360,8 +360,6 @@ public class SimplePostTool {
   }
 
   private void reset() {
-    fileTypes = DEFAULT_FILE_TYPES;
-    globFileFilter = this.getFileFilterFromFileTypes(fileTypes);
     backlog = new ArrayList<>();
     visited = new HashSet<>();
   }
@@ -774,22 +772,19 @@ public class SimplePostTool {
         if(type == null) {
           type = guessType(file);
         }
-        if(type != null) {
-          if(type.equals("application/xml") || type.equals("text/csv") || type.equals("application/json")) {
-            // Default handler
-          } else {
-            // SolrCell
-            suffix = "/extract";
-            String urlStr = appendUrlPath(solrUrl, suffix).toString();
-            if(urlStr.indexOf("resource.name")==-1)
-              urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
-            if(urlStr.indexOf("literal.id")==-1)
-              urlStr = appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
-            url = new URL(urlStr);
-          }
+        // TODO: Add a flag that disables /update and sends all to /update/extract, to avoid CSV, JSON, and XML files
+        // TODO: from being interpreted as Solr documents internally
+        if(type.equals("application/xml") || type.equals("text/csv") || type.equals("application/json")) {
+          // Default handler
         } else {
-          warn("Skipping "+file.getName()+". Unsupported file type for auto mode.");
-          return;
+          // SolrCell
+          suffix = "/extract";
+          String urlStr = appendUrlPath(solrUrl, suffix).toString();
+          if(urlStr.indexOf("resource.name")==-1)
+            urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
+          if(urlStr.indexOf("literal.id")==-1)
+            urlStr = appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
+          url = new URL(urlStr);
         }
       } else {
         if(type == null) type = DEFAULT_CONTENT_TYPE;
@@ -821,13 +816,15 @@ public class SimplePostTool {
 
   /**
    * Guesses the type of a file, based on file name suffix
+   * Returns "application/octet-stream" if no corresponding mimeMap type.
    * @param file the file
    * @return the content-type guessed
    */
   protected static String guessType(File file) {
     String name = file.getName();
     String suffix = name.substring(name.lastIndexOf(".")+1);
-    return mimeMap.get(suffix.toLowerCase(Locale.ROOT));
+    String type = mimeMap.get(suffix.toLowerCase(Locale.ROOT));
+    return (type != null) ? type : "application/octet-stream";
   }
 
   /**
