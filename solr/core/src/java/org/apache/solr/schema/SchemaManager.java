@@ -129,6 +129,7 @@ public class SchemaManager {
               managedIndexSchema.getResourceName(),
               sw.toString().getBytes(StandardCharsets.UTF_8),
               true);
+          waitForOtherReplicasToUpdate(timeout, startTime);
           return Collections.emptyList();
         } catch (ZkController.ResourceModifiedInZkException e) {
           log.info("Race condition schema modified by another node");
@@ -142,7 +143,6 @@ public class SchemaManager {
           //only for non cloud stuff
           managedIndexSchema.persistManagedSchema(false);
           core.setLatestSchema(managedIndexSchema);
-          waitForOtherReplicasToUpdate(timeout, startTime);
           return Collections.emptyList();
         } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
           String s = "Failed to update schema because schema is modified";
