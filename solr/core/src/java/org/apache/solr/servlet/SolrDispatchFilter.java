@@ -128,7 +128,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return cores;
   }
 
-  private NodeConfig loadNodeConfig(String solrHome, Properties nodeProperties) {
+  /**
+   * Get the NodeConfig whether stored on disk, in ZooKeeper, etc.
+   * This may also be used by custom filters to load relevant configuration.
+   * @return the NodeConfig
+   */
+  public static NodeConfig loadNodeConfig(String solrHome, Properties nodeProperties) {
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
 

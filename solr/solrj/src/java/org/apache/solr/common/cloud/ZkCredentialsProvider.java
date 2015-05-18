@@ -31,11 +31,11 @@ public interface ZkCredentialsProvider {
       this.auth = auth;
     }
     
-    String getScheme() {
+    public String getScheme() {
       return scheme;
     }
     
-    byte[] getAuth() {
+    public byte[] getAuth() {
       return auth;
     }
   }
