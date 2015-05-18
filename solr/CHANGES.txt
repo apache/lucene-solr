@@ -195,6 +195,9 @@ New Features
   Example:  json.facet={ numProducts : "hll(product_id)" }
   (yonik)
 
+* SOLR-7546: bin/post (and SimplePostTool in -Dauto=yes mode) now sends rather than skips files
+  without a known content type, as "application/octet-stream", provided it still is in the
+  allowed filetypes setting. (ehatcher)
 
 Bug Fixes
 ----------------------
