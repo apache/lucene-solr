@@ -96,11 +96,14 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       
       @Override
       public void close() throws IOException {
-        if (!closed) {
-          closed = true;
-          onClose(path, this);
+        try {
+          if (!closed) {
+            closed = true;
+            onClose(path, this);
+          }
+        } finally {
+          super.close();
         }
-        super.close();
       }
 
       @Override
@@ -130,11 +133,14 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
 
       @Override
       public void close() throws IOException {
-        if (!closed) {
-          closed = true;
-          onClose(path, this);
+        try {
+          if (!closed) {
+            closed = true;
+            onClose(path, this);
+          }
+        } finally {
+          super.close();
         }
-        super.close();
       }
       
       @Override
@@ -166,9 +172,12 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       protected void implCloseChannel() throws IOException {
         if (!closed) {
           closed = true;
-          onClose(path, this);
+          try {
+            onClose(path, this);
+          } finally {
+            super.implCloseChannel();
+          }
         }
-        super.implCloseChannel();
       }
 
       @Override
@@ -198,11 +207,14 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       
       @Override
       public void close() throws IOException {
-        if (!closed) {
-          closed = true;
-          onClose(path, this);
+        try {
+          if (!closed) {
+            closed = true;
+            onClose(path, this);
+          }
+        } finally {
+          super.close();
         }
-        super.close();
       }
 
       @Override
@@ -232,11 +244,14 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       
       @Override
       public void close() throws IOException {
-        if (!closed) {
-          closed = true;
-          onClose(path, this);
+        try {
+          if (!closed) {
+            closed = true;
+            onClose(path, this);
+          }
+        } finally {
+          super.close();
         }
-        super.close();
       }
 
       @Override
@@ -273,11 +288,14 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       
       @Override
       public void close() throws IOException {
-        if (!closed) {
-          closed = true;
-          onClose(dir, this);
+        try {
+          if (!closed) {
+            closed = true;
+            onClose(dir, this);
+          }
+        } finally {
+          super.close();
         }
-        super.close();
       }
       
       @Override
