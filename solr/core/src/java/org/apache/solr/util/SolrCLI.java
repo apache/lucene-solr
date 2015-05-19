@@ -63,6 +63,7 @@ import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -174,7 +175,19 @@ public class SolrCLI {
       displayToolOptions(System.err);
       System.exit(1);
     }
-    
+
+    String configurerClassName = System.getProperty("solr.authentication.httpclient.configurer");
+    if (configurerClassName!=null) {
+      try {
+        Class c = Class.forName(configurerClassName);
+        HttpClientConfigurer configurer = (HttpClientConfigurer)c.newInstance();
+        HttpClientUtil.setConfigurer(configurer);
+        log.info("Set HttpClientConfigurer from: "+configurerClassName);
+      } catch (Exception ex) {
+        throw new RuntimeException("Error during loading of configurer '"+configurerClassName+"'.", ex);
+      }
+    }
+
     // Determine the tool
     String toolType = args[0].trim().toLowerCase(Locale.ROOT);
     Tool tool = newTool(toolType);

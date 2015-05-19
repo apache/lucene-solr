@@ -20,8 +20,10 @@ package org.apache.solr.update;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -46,37 +48,51 @@ public class UpdateShardHandler {
   
   private final CloseableHttpClient client;
 
+  private final UpdateShardHandlerConfig cfg;
+
   @Deprecated
   public UpdateShardHandler(NodeConfig cfg) {
     this(cfg.getUpdateShardHandlerConfig());
   }
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    
+    this.cfg = cfg;
     clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
     if (cfg != null ) {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     }
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    ModifiableSolrParams clientParams = getClientParams();
+    log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
+    client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+  }
+
+  protected ModifiableSolrParams getClientParams() {
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      params.set(HttpClientUtil.PROP_SO_TIMEOUT,
+      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT,
           cfg.getDistributedSocketTimeout());
-      params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
           cfg.getDistributedConnectionTimeout());
     }
     // in the update case, we want to do retries, and to use
     // the default Solr retry handler that createClient will 
     // give us
-    params.set(HttpClientUtil.PROP_USE_RETRY, true);
-    log.info("Creating UpdateShardHandler HTTP client with params: {}", params);
-    client = HttpClientUtil.createClient(params, clientConnectionManager);
+    clientParams.set(HttpClientUtil.PROP_USE_RETRY, true);
+    return clientParams;
   }
   
   
   public HttpClient getHttpClient() {
     return client;
+  }
+
+  public void reconfigureHttpClient(HttpClientConfigurer configurer) {
+    log.info("Reconfiguring the default client with: " + configurer);
+    synchronized (client) {
+      configurer.configure((DefaultHttpClient)client, getClientParams());
+    }
   }
 
   public ClientConnectionManager getConnectionManager() {
