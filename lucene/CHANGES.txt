@@ -196,6 +196,9 @@ API Changes
   SpanPayloadNearCheckQuery have moved from the .spans package to the .payloads
   package. (Alan Woodward, David Smiley, Paul Elschot)
 
+* LUCENE-6484: Removed EliasFanoDocIdSet, which was unused.
+  (Paul Elschot via Adrien Grand)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 
