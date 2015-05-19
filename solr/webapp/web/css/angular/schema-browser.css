@@ -1,0 +1,567 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#content #schema-browser .loader
+{
+  background-position: 0 50%;
+  padding-left: 21px;   
+}
+
+#content #schema-browser.loaded
+{
+  background-image: url( ../../img/div.gif );
+  background-position: 21% 0;
+  background-repeat: repeat-y;
+}
+
+#content #schema-browser #data
+{
+  float: right;
+  width: 78%;
+}
+
+#content #schema-browser #related
+{
+  float: left;
+  width: 20%;
+}
+
+#content #schema-browser #related select
+{
+  width: 100%;
+}
+
+#content #schema-browser #related select optgroup
+{
+  font-style: normal;
+  padding: 5px;
+}
+
+#content #schema-browser #related select option
+{
+  padding-left: 10px;
+}
+
+#content #schema-browser #related #f-df-t
+{
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 15px;
+}
+
+#content #schema-browser #related .ukf-dsf dt
+{
+}
+
+#content #schema-browser #related dl
+{
+  margin-top: 15px;
+}
+
+#content #schema-browser #related dl dt,
+#content #schema-browser #related dl dd a
+{
+  color: #c0c0c0;
+}
+
+#content #schema-browser #related dl dt
+{
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+#content #schema-browser #related dl dd a
+{
+  display: block;
+  padding-left: 10px;
+}
+
+#content #schema-browser #related dl dd a:hover
+{
+  background-color: #f8f8f8;
+}
+
+#content #schema-browser #related .field .field,
+#content #schema-browser #related .field .field a,
+#content #schema-browser #related .dynamic-field .dynamic-field,
+#content #schema-browser #related .dynamic-field .dynamic-field a,
+#content #schema-browser #related .type .type,
+#content #schema-browser #related .type .type a,
+#content #schema-browser #related .active,
+#content #schema-browser #related .active a
+{
+  color: #333;
+}
+
+#content #schema-browser #related .copyfield,
+#content #schema-browser #related .copyfield a
+{
+  color: #666;
+}
+
+#content #schema-browser #data
+{
+}
+
+#content #schema-browser #data #index dt
+{
+  float: left;
+  margin-right: 5px;
+  width: 150px;
+}
+
+#content #schema-browser #data #field .field-options
+{
+  margin-bottom: 10px;
+}
+
+#content #schema-browser #data #field .field-options .head h2
+{
+  padding-left: 5px;
+}
+
+#content #schema-browser #data #field .partial
+{
+}
+
+#content #schema-browser #data #field .partial p
+{
+  background-image: url( ../../img/ico/exclamation-button.png );
+  background-position: 0 50%;
+  padding-left: 21px;
+}
+
+#content #schema-browser #data #field .field-options .options dt,
+#content #schema-browser #data #field .field-options .options dd
+{
+  float: left;
+}
+
+#content #schema-browser #data #field .field-options .options dt
+{
+  clear: left;
+  margin-right: 5px;
+  width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .flags
+{
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+#content #schema-browser #data #field .field-options .flags thead td
+{
+  color: #c0c0c0;
+  padding-right: 5px;
+  width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody td,
+#content #schema-browser #data #field .field-options .flags th
+{
+  padding: 2px 5px;
+}
+
+#content #schema-browser #data #field .field-options .flags thead td,
+#content #schema-browser #data #field .field-options .flags tbody th
+{
+  padding-left: 0;
+}
+
+#content #schema-browser #data #field .field-options .flags thead th,
+#content #schema-browser #data #field .field-options .flags tbody td
+{
+  border-left: 1px solid #f0f0f0;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody th,
+#content #schema-browser #data #field .field-options .flags tbody td
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .check
+{
+  background-color: #fafdfa;
+  background-image: url( ../../img/ico/tick.png );
+  background-position: 50% 50%;
+  text-align: center;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .check span
+{
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .text
+{
+  color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .field-options .analyzer,
+#content #schema-browser #data #field .field-options .analyzer li,
+#content #schema-browser #data #field .field-options .analyzer ul,
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+}
+
+#content #schema-browser #data #field .field-options .analyzer p,
+#content #schema-browser #data #field .field-options .analyzer dl
+{
+  float: left;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p
+{
+  margin-right: 5px;
+  text-align: right;
+  width: 125px;
+  white-space: pre;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p a
+{
+  cursor: auto;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p a.analysis
+{
+  cursor: pointer;
+  display: block;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p a.analysis span
+{
+  background-image: url( ../../img/ico/question-white.png );
+  background-position: 0 50%;
+  padding-left: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p a.analysis:hover span
+{
+  background-image: url( ../../img/ico/question.png );
+  color: #008;
+}
+
+#content #schema-browser #data #field .field-options .analyzer a
+{
+  cursor: auto;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .toggle
+{
+  background-image: url( ../../img/ico/chevron-small-expand.png );
+  background-position: 100% 50%;
+  cursor: pointer;
+  display: block;
+  padding-right: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .open .toggle
+{
+  background-image: url( ../../img/ico/chevron-small.png );
+}
+
+#content #schema-browser #data #field .field-options .analyzer li
+{
+  border-top: 1px solid #f0f0f0;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul
+{
+  clear: left;
+  margin-left: 55px;
+  padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .open ul
+{
+  display: block;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+  border-top: 1px solid #f8f8f8;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul p
+{
+  color: #999;
+  margin-right: 5px;
+  text-align: right;
+  width: 70px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+  margin-left: 20px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+  background-image: url( ../../img/ico/document-list.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  padding-left: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-0
+{
+  background-image: url( ../../img/ico/slash.png );
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-1
+{
+  background-image: url( ../../img/ico/tick.png );
+}
+
+#content #schema-browser #data #field .head
+{
+  margin-bottom: 5px;
+}
+
+#content #schema-browser #data #field .terminfo-holder
+{
+  border-top: 1px solid #c0c0c0;
+  padding-top: 10px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger
+{
+  float: left;
+  width: 140px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger button span
+{
+  background-image: url( ../../img/ico/information.png );
+}
+
+#content #schema-browser #data #field .terminfo-holder .status
+{
+  border-left: 1px solid #f0f0f0;
+  float: left;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#content #schema-browser #data #field .terminfo-holder.disabled .trigger button span
+{
+  background-image: url( ../../img/ico/prohibition.png );
+}
+
+#content #schema-browser #data #field .terminfo-holder.disabled .status
+{
+  display: block;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload
+{
+}
+
+#content #schema-browser #data #field .terminfo-holder.loaded .trigger .autoload
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  display: block;
+  margin-top: 10px;
+  padding-left: 21px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload:hover
+{
+  color: #008;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
+}
+
+#content #schema-browser #data #field .topterms-holder,
+#content #schema-browser #data #field .histogram-holder
+{
+  border-left: 1px solid #f0f0f0;
+  float: left;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#content #schema-browser #data #field .topterms-holder .head input
+{
+  height: 18px;
+  line-height: 16px;
+  text-align: right;
+  width: 30px;
+}
+
+#content #schema-browser #data #field .topterms-holder .head .max-holder
+{
+  color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .topterms-holder .head .max-holder:hover .max
+{
+  color: #008;
+}
+
+#content #schema-browser #data #field .topterms-holder .head #query_link
+{
+  background-image: url( ../../img/ico/question-white.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  padding-left: 21px;
+  margin-left: 5px;
+}
+
+#content #schema-browser #data #field .topterms-holder .head #query_link:hover
+{
+  background-image: url( ../../img/ico/question.png );
+}
+
+
+#content #schema-browser #data #field .topterms-holder .head #query_link span
+{
+  visibility: hidden;
+}
+
+#content #schema-browser #data #field .topterms-holder .head #query_link:hover span
+{
+  visibility: visible;
+}
+
+#content #schema-browser .topterms-holder li
+{
+  border-top: 1px solid  #999;
+  margin-bottom: 5px;
+}
+
+/* possible overwrite with inline style */
+#content #schema-browser .topterms-holder li p
+{
+  background-color:  #999;
+  color: #fff;
+  float: left;
+}
+
+#content #schema-browser .topterms-holder li p span
+{
+  display: block;
+  padding-right: 2px;
+  text-align: right;
+}
+
+/* possible overwrite with inline style */
+#content #schema-browser .topterms-holder li ul
+{
+  margin-left: 30px;
+}
+
+#content #schema-browser .topterms-holder li li
+{
+  border-top: 0;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+#content #schema-browser .topterms-holder li li.odd
+{
+  background-color: #f0f0f0;
+}
+
+#content #schema-browser .topterms-holder li li a
+{
+  display: block;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+#content #schema-browser .topterms-holder li li a:hover
+{
+  background-color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .histogram-holder ul
+{
+  margin-left: 25px;
+}
+
+#content #schema-browser #data #field .histogram-holder li
+{
+  margin-bottom: 2px;
+  position: relative;
+  width: 150px;
+}
+
+#content #schema-browser #data #field .histogram-holder li.odd
+{
+  background-color: #f0f0f0;
+}
+
+#content #schema-browser #data #field .histogram-holder li dl,
+#content #schema-browser #data #field .histogram-holder li dt
+{
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dl
+{
+  background-color: #c0c0c0;
+  min-width: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dt
+{
+  color: #a0a0a0;
+  position: absolute;
+  overflow: hidden;
+  left: -25px;
+  top: 0px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dt span
+{
+  display: block;
+  padding-right: 4px;
+  text-align: right;
+}
+
+#content #schema-browser #data #field .histogram-holder li dd
+{
+  clear: left;
+  float: left;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+#content #schema-browser #data #field .histogram-holder li:hover dl
+{
+  background-color: #b0b0b0;
+}
+
+#content #schema-browser #data #field .histogram-holder li:hover dt
+{
+  color: #333;
+}

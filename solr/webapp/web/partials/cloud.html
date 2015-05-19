@@ -17,15 +17,15 @@ limitations under the License.
 <div id="cloud" class="clearfix">
 
   <div id="frame">
-{{here}}
+
     <div id="tree-content" class="content clearfix" ng-show="showTree">
-    <jstree class="tree" on-select="showTreeLink(url)" config="jstree" data="tree" id="tree"></jstree>
+    <jstree class="tree" on-select="showTreeLink(url)" id="tree"></jstree>
 
       <div id="file-content" class="clearfix">
 
         <div id="prop" ng-show="znode.prop && showData">
           <ul>
-            <li ng-class:"odd:$odd" ng-repeat="(key, prop) in znode.prop">
+            <li ng-class="{odd:$odd}" ng-repeat="(key, prop) in znode.prop">
               <dl class="clearfix">
                 <dt>{{ key }}</dt>
                 <dd>{{ prop }}</dd>

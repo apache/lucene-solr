@@ -1,0 +1,72 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="plugins" class="clearfix">
+
+  <div id="frame">
+      <ul>
+      <li class="entry" ng-class="{changed: plugin.changed}" ng-repeat="plugin in type.plugins">
+        <a ng-click="selectPlugin(plugin)">
+          <span>{{ plugin.name }}</span>
+        </a>
+        <ul class="detail" ng-show="plugin.open">
+          <li ng-repeat="(key, value) in plugin.properties" ng-class="{odd: $odd}">
+            <dl class="clearfix">
+              <dt>{{ key }}:</dt>
+              <!--<dd ng-repeat="v in value">{{v}}</dd><!-- is AN ARRAY!!-->
+              <dd>{{value}}</dd>
+            </dl>
+          </li>
+          <li class="stats clearfix" ng-show="plugin.stats">
+            <span>stats:</span>
+            <ul>
+              <li ng-repeat="(key, value) in plugin.stats" ng-class="{odd: $odd}">
+                  <dl class="clearfix">
+                      <dt>{{key}}:</dt>
+                      <dd>{{value}}</dd>
+                  </dl>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </ul>
+  </div>
+
+  <div id="navigation" class="clearfix">
+
+    <ul>
+        <li ng-repeat="type in types" class="{{type.lower}}">
+            <a ng-click="selectPluginType(type)" rel="{{type.name}}">{{type.name}}
+                <span ng-show="type.changes">{{type.changes}}</span>
+            </a>
+        </li>
+        <li class="PLUGINCHANGES"><a ng-click="startRecording()">Watch Changes</a></li>
+        <li class="RELOAD"><a ng-click="refresh()">Refresh Values</a></li>
+    </ul>
+  
+  </div>
+
+  <div id="recording" ng-show="isRecording">
+    <div class="wrapper clearfix">
+
+      <p class="loader">Watching for Changes</p>
+      <button class="primary" ng-click="stopRecording()">Stop &amp; Show Changes</button>
+
+    </div>
+    <div id="blockUI"></div>
+  </div>
+
+</div>

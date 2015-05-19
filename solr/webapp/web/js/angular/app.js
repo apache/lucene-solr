@@ -67,6 +67,14 @@ solrAdminApp.config([
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
       }).
+      when('/:core/dataimport', {
+        templateUrl: 'partials/dataimport.html',
+        controller: 'DataImportController'
+      }).
+      when('/:core/dataimport/:handler*', {
+        templateUrl: 'partials/dataimport.html',
+        controller: 'DataImportController'
+      }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
@@ -89,6 +97,26 @@ solrAdminApp.config([
         templateUrl: 'partials/query.html',
         controller: 'QueryController'
       }).
+      when('/:core/replication', {
+        templateUrl: 'partials/replication.html',
+        controller: 'ReplicationController'
+      }).
+      when('/:core/dataimport', {
+        templateUrl: 'partials/dataimport.html',
+        controller: 'DataImportController'
+      }).
+      when('/:core/dataimport/:handler*', {
+        templateUrl: 'partials/dataimport.html',
+        controller: 'DataImportController'
+      }).
+      when('/:core/schema-browser', {
+        templateUrl: 'partials/schema-browser.html',
+        controller: 'SchemaBrowserController'
+      }).
+      when('/:core/segments', {
+        templateUrl: 'partials/segments.html',
+        controller: 'SegmentsController'
+      }).
       otherwise({
         redirectTo: '/'
       });
@@ -109,6 +137,59 @@ solrAdminApp.config([
       $scope.$on('loadingStatusInactive', hide);
     }
   };
+})
+.filter('readableSeconds', function() {
+    return function(input) {
+    seconds = parseInt(input||0, 10);
+    var minutes = Math.floor( seconds / 60 );
+    var hours = Math.floor( minutes / 60 );
+
+    var text = [];
+    if( 0 !== hours ) {
+      text.push( hours + 'h' );
+      seconds -= hours * 60 * 60;
+      minutes -= hours * 60;
+    }
+
+    if( 0 !== minutes ) {
+      text.push( minutes + 'm' );
+      seconds -= minutes * 60;
+    }
+
+    if( 0 !== seconds ) {
+      text.push( ( '0' + seconds ).substr( -2 ) + 's' );
+    }
+    return text.join(' ');
+  };
+})
+.filter('number', function($locale) {
+    return function(input) {
+        var sep = {
+          'de_CH' : '\'',
+          'de' : '.',
+          'en' : ',',
+          'es' : '.',
+          'it' : '.',
+          'ja' : ',',
+          'sv' : ' ',
+          'tr' : '.',
+          '_' : '' // fallback
+        };
+
+        var browser = {};
+        var match = $locale.id.match( /^(\w{2})([-_](\w{2}))?$/ );
+        if (match[1]) {
+            browser.language = match[1].toLowerCase();
+        }
+        if (match[1] && match[3]) {
+            browser.locale = match[1] + '_' + match[3];
+        }
+
+        var result= ( input || 0 ).toString().replace(/\B(?=(\d{3})+(?!\d))/g,
+            sep[ browser.locale ] || sep[ browser.language ] || sep['_']);
+        console.log(result);
+        return result;
+    };
 })
 .filter('orderObjectBy', function() {
   return function(items, field, reverse) {
@@ -177,7 +258,7 @@ solrAdminApp.config([
       $rootScope.$broadcast('loadingStatusActive');
     }
     activeRequests++;
-    config.timeout = 1000;
+    config.timeout = 10000;
     return config || $q.when(config);
   };
 
@@ -238,24 +319,29 @@ solrAdminApp.config([
     };
 });
 
-var solrAdminControllers = angular.module('solrAdminControllers', []);
-
-solrAdminApp.controller('MainController', function($scope, $routeParams, $rootScope, $location, Cores, Ping) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, System, Ping) {
   $rootScope.hideException = function() {delete $rootScope.exception};
   $scope.refresh = function() {
     Cores.list(function(data) {
-     var cores = [];
-       for (key in data.status) {
-        cores.push(data.status[key]);
+      $scope.cores = [];
+      var currentCoreName = $route.current.params.core;
+      for (key in data.status) {
+        var core = data.status[key];
+        $scope.cores.push(core);
+        if (core.name == currentCoreName) {
+            $scope.currentCore = core;
+        }
       }
       $scope.cores = cores;
+    });
+    System.get(function(data) {
+      $scope.isCloudEnabledCloud = data.mode.match( /solrcloud/i )
     });
   };
   $scope.refresh();
 
   $scope.resetMenu = function(page) {
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
-    $scope.isCloudEnabled = true;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
   };
@@ -274,27 +360,93 @@ solrAdminApp.controller('MainController', function($scope, $routeParams, $rootSc
 
 
 
+(function(window, angular, undefined) {
+  'use strict';
+
+  angular.module('ngClipboard', []).
+    provider('ngClip', function() {
+      var self = this;
+      this.path = '//cdnjs.cloudflare.com/ajax/libs/zeroclipboard/2.1.6/ZeroClipboard.swf';
+      return {
+        setPath: function(newPath) {
+         self.path = newPath;
+        },
+        setConfig: function(config) {
+          self.config = config;
+        },
+        $get: function() {
+          return {
+            path: self.path,
+            config: self.config
+          };
+        }
+      };
+    }).
+    run(['ngClip', function(ngClip) {
+      var config = {
+        swfPath: ngClip.path,
+        trustedDomains: ["*"],
+        allowScriptAccess: "always",
+        forceHandCursor: true,
+      };
+      ZeroClipboard.config(angular.extend(config,ngClip.config || {}));
+    }]).
+    directive('clipCopy', ['ngClip', function (ngClip) {
+      return {
+        scope: {
+          clipCopy: '&',
+          clipClick: '&',
+          clipClickFallback: '&'
+        },
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+          // Bind a fallback function if flash is unavailable
+          if (ZeroClipboard.isFlashUnusable()) {
+            element.bind('click', function($event) {
+              // Execute the expression with local variables `$event` and `copy`
+              scope.$apply(scope.clipClickFallback({
+                $event: $event,
+                copy: scope.$eval(scope.clipCopy)
+              }));
+            });
+
+            return;
+          }
+
+          // Create the client object
+          var client = new ZeroClipboard(element);
+          if (attrs.clipCopy === "") {
+            scope.clipCopy = function(scope) {
+              return element[0].previousElementSibling.innerText;
+            };
+          }
+          client.on( 'ready', function(readyEvent) {
+
+            client.on('copy', function (event) {
+              var clipboard = event.clipboardData;
+              clipboard.setData(attrs.clipCopyMimeType || 'text/plain', scope.$eval(scope.clipCopy));
+            });
+
+            client.on( 'aftercopy', function(event) {
+              if (angular.isDefined(attrs.clipClick)) {
+                scope.$apply(scope.clipClick);
+              }
+            });
+
+            scope.$on('$destroy', function() {
+              client.destroy();
+            });
+          });
+        }
+      };
+    }]);
+})(window, window.angular);
+
+
 /* THE BELOW CODE IS TAKEN FROM js/scripts/app.js, AND STILL REQUIRES INTEGRATING
 
-SolrDate = function( date )
-{
-  // ["Sat Mar 03 11:00:00 CET 2012", "Sat", "Mar", "03", "11:00:00", "CET", "2012"]
-  var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\w+)\s+(\d+)$/ );
-
-  // "Sat Mar 03 2012 10:37:33"
-  return new Date( parts[1] + ' ' + parts[2] + ' ' + parts[3] + ' ' + parts[6] + ' ' + parts[4] );
-}
 
 // @todo clear timeouts
-
-    this.bind
-    (
-      'error',
-      function( message, original_error )
-      {
-        alert( original_error.message );
-      }
-    );
 
     // activate_core
     this.before
@@ -361,12 +513,6 @@ var solr_admin = function( app_config )
   this.timeout = null;
 
   this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
-
-  browser = {
-    locale : null,
-    language : null,
-    country : null
-  };
 
   show_global_error = function( error )
   {
@@ -454,8 +600,6 @@ var solr_admin = function( app_config )
     }
 
     var core_selector = $( '#core-selector' );
-    core_selector.find( '#has-cores' ).toggle( has_cores );
-    core_selector.find( '#has-no-cores' ).toggle( !has_cores );
 
     if( has_cores )
     {
@@ -468,70 +612,10 @@ var solr_admin = function( app_config )
       cores_element.find( '.chzn-drop' )
         .css( 'width', ( selector_width - 2 ) + 'px' );
     }
-
-    this.check_for_init_failures( cores );
   };
-
-  this.remove_init_failures = function remove_init_failures()
-  {
-    $( '#init-failures' )
-      .hide()
-      .find( 'ul' )
-        .empty();
-  }
-
-  this.check_for_init_failures = function check_for_init_failures( cores )
-  {
-    if( !cores.initFailures )
-    {
-      this.remove_init_failures();
-      return false;
-    }
-
-    var failures = [];
-    for( var core_name in cores.initFailures )
-    {
-      failures.push
-      (
-        '<li>' +
-          '<strong>' + core_name.esc() + ':</strong>' + "\n" +
-          cores.initFailures[core_name].esc() + "\n" +
-        '</li>'
-      );
-    }
-
-    if( 0 === failures.length )
-    {
-      this.remove_init_failures();
-      return false;
-    }
-
-    $( '#init-failures' )
-      .show()
-      .find( 'ul' )
-        .html( failures.join( "\n" ) );
-  }
 
   this.run = function()
   {
-    var navigator_language = navigator.userLanguage || navigator.language;
-    var language_match = navigator_language.match( /^(\w{2})([-_](\w{2}))?$/ );
-    if( language_match )
-    {
-      if( language_match[1] )
-      {
-        browser.language = language_match[1].toLowerCase();
-      }
-      if( language_match[3] )
-      {
-        browser.country = language_match[3].toUpperCase();
-      }
-      if( language_match[1] && language_match[3] )
-      {
-        browser.locale = browser.language + '_' + browser.country
-      }
-    }
-
     $.ajax
     (
       {
@@ -619,113 +703,10 @@ var solr_admin = function( app_config )
                   '<requestHandler name="/admin/" class="solr.admin.AdminHandlers" />'.esc() +
                   '</code></pre></div>'
                 );
-              },
-              complete : function()
-              {
-                loader.hide( this );
-              }
-            }
-          );
-        },
-        error : function()
-        {
-        },
-        complete : function()
-        {
-        }
-      }
-    );
-  };
-
-  this.convert_duration_to_seconds = function convert_duration_to_seconds( str )
-  {
-    var seconds = 0;
-    var arr = new String( str || '' ).split( '.' );
-    var parts = arr[0].split( ':' ).reverse();
-    var parts_count = parts.length;
-
-    for( var i = 0; i < parts_count; i++ )
-    {
-      seconds += ( parseInt( parts[i], 10 ) || 0 ) * Math.pow( 60, i );
-    }
-
-    // treat more or equal than .5 as additional second
-    if( arr[1] && 5 <= parseInt( arr[1][0], 10 ) )
-    {
-      seconds++;
-    }
-
-    return seconds;
-  };
-
-  this.convert_seconds_to_readable_time = function convert_seconds_to_readable_time( seconds )
-  {
-    seconds = parseInt( seconds || 0, 10 );
-    var minutes = Math.floor( seconds / 60 );
-    var hours = Math.floor( minutes / 60 );
-
-    var text = [];
-    if( 0 !== hours )
-    {
-      text.push( hours + 'h' );
-      seconds -= hours * 60 * 60;
-      minutes -= hours * 60;
-    }
-
-    if( 0 !== minutes )
-    {
-      text.push( minutes + 'm' );
-      seconds -= minutes * 60;
-    }
-
-    if( 0 !== seconds )
-    {
-      text.push( ( '0' + seconds ).substr( -2 ) + 's' );
-    }
-
-    return text.join( ' ' );
-  };
-
-  this.format_json = function format_json( json_str )
-  {
-    if( JSON.stringify && JSON.parse )
-    {
-      json_str = JSON.stringify( JSON.parse( json_str ), undefined, 2 );
-    }
-
-    return json_str.esc();
-  };
-
-  this.format_number = function format_number( number )
-  {
-    var sep = {
-      'de_CH' : '\'',
-      'de' : '.',
-      'en' : ',',
-      'es' : '.',
-      'it' : '.',
-      'ja' : ',',
-      'sv' : ' ',
-      'tr' : '.',
-      '_' : '' // fallback
-    };
-
-    return ( number || 0 ).toString().replace
-    (
-      /\B(?=(\d{3})+(?!\d))/g,
-      sep[ browser.locale ] || sep[ browser.language ] || sep['_']
-    );
   };
 
   check_fixed_menu = function check_fixed_menu()
   {
     $( '#wrapper' ).toggleClass( 'scroll', $( window ).height() < $( '#menu-wrapper' ).height() + $( '#header' ).height() + 40 );
   }
-
-};
-
-
-
-$.ajaxSetup( { cache: false } );
-var app = new solr_admin( app_config );
 */
