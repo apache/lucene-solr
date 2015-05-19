@@ -105,13 +105,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
-    final Spans includeSpans = include.getSpans(context, acceptDocs, termContexts);
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
+    final Spans includeSpans = include.getSpans(context, acceptDocs, termContexts, collector);
     if (includeSpans == null) {
       return null;
     }
 
-    final Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts);
+    final Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts, collector);
     if (excludeSpans == null) {
       return includeSpans;
     }

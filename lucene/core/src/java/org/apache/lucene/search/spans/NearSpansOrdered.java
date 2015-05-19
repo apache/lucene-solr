@@ -19,12 +19,9 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Collection;
 
 /** A Spans that is formed from the ordered subspans of a SpanNearQuery
- * where the subspans do not overlap and have a maximum slop between them,
- * and that does not need to collect payloads.
- * To also collect payloads, see {@link NearSpansPayloadOrdered}.
+ * where the subspans do not overlap and have a maximum slop between them.
  * <p>
  * The formed spans only contains minimum slop matches.<br>
  * The matching slop is computed from the distance(s) between
@@ -41,6 +38,9 @@ import java.util.Collection;
  * <pre>t1 t2 .. t3      </pre>
  * <pre>      t1 .. t2 t3</pre>
  *
+ * Because the algorithm used to minimize the size of a match consumes
+ * child Spans eagerly, this uses a BufferedSpanCollector to collect
+ * information from subspans.
  *
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
@@ -51,9 +51,13 @@ public class NearSpansOrdered extends NearSpans {
   protected int matchStart = -1;
   protected int matchEnd = -1;
 
-  public NearSpansOrdered(SpanNearQuery query, List<Spans> subSpans) throws IOException {
+  protected final SpanCollector collector;
+  protected BufferedSpanCollector buffer;
+
+  public NearSpansOrdered(SpanNearQuery query, List<Spans> subSpans, SpanCollector collector) throws IOException {
     super(query, subSpans);
     this.atFirstInCurrentDoc = true; // -1 startPosition/endPosition also at doc -1
+    this.collector = collector;
   }
 
   @Override
@@ -140,10 +144,15 @@ public class NearSpansOrdered extends NearSpans {
     matchStart = lastSubSpans.startPosition();
     matchEnd = lastSubSpans.endPosition();
 
+    buffer = collector.buffer();
+    buffer.collectCandidate(subSpans[subSpans.length - 1]);
+    buffer.accept();
+
     int matchSlop = 0;
     int lastStart = matchStart;
     for (int i = subSpans.length - 2; i >= 0; i--) {
       Spans prevSpans = subSpans[i];
+      buffer.collectCandidate(prevSpans);
 
       int prevStart = prevSpans.startPosition();
       int prevEnd = prevSpans.endPosition();
@@ -160,7 +169,10 @@ public class NearSpansOrdered extends NearSpans {
         // prevSpans still before (lastStart, lastEnd)
         prevStart = ppStart;
         prevEnd = ppEnd;
+        buffer.collectCandidate(prevSpans);
       }
+
+      buffer.accept();
 
       assert prevStart <= matchStart;
       if (matchStart > prevEnd) { // Only non overlapping spans add to slop.
@@ -190,13 +202,10 @@ public class NearSpansOrdered extends NearSpans {
   }
 
   @Override
-  public Collection<byte[]> getPayload() throws IOException {
-    return null;
-  }
-
-  @Override
-  public boolean isPayloadAvailable() {
-    return false;
+  public void collect(SpanCollector collector) {
+    assert collector == this.collector
+        : "You must collect using the same SpanCollector as was passed to the NearSpans constructor";
+    buffer.replay();
   }
 
   @Override

@@ -17,10 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -28,6 +24,10 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 /** Wraps a span query with asserts */
 public class AssertingSpanQuery extends SpanQuery {
@@ -43,8 +43,8 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    Spans spans = in.getSpans(context, acceptDocs, termContexts);
+  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
+    Spans spans = in.getSpans(context, acceptDocs, termContexts, collector);
     if (spans == null) {
       return null;
     } else {

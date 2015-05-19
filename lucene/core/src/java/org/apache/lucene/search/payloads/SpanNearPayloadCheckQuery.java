@@ -1,4 +1,4 @@
-package org.apache.lucene.search.spans;
+package org.apache.lucene.search.payloads;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,61 +16,73 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanPositionCheckQuery;
+import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Objects;
 
 
 /**
  * Only return those matches that have a specific payload at
  * the given position.
- * <p>
- * Do not use this with a SpanQuery that contains a {@link org.apache.lucene.search.spans.SpanNearQuery}.
- * Instead, use {@link SpanNearPayloadCheckQuery} since it properly handles the fact that payloads
- * aren't ordered by {@link org.apache.lucene.search.spans.SpanNearQuery}.
  */
-public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
+public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
+
   protected final Collection<byte[]> payloadToMatch;
+  protected final PayloadSpanCollector payloadCollector = new PayloadSpanCollector();
 
   /**
-   * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
+   * @param match          The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.Collection} of payloads to match
    */
-  public SpanPayloadCheckQuery(SpanQuery match, Collection<byte[]> payloadToMatch) {
+  public SpanNearPayloadCheckQuery(SpanNearQuery match, Collection<byte[]> payloadToMatch) {
     super(match);
-    if (match instanceof SpanNearQuery){
-      throw new IllegalArgumentException("SpanNearQuery not allowed");
-    }
-    this.payloadToMatch = payloadToMatch;
+    this.payloadToMatch = Objects.requireNonNull(payloadToMatch);
+  }
+
+  @Override
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new SpanWeight(this, searcher, payloadCollector);
   }
 
   @Override
   protected AcceptStatus acceptPosition(Spans spans) throws IOException {
-    boolean result = spans.isPayloadAvailable();
-    if (result == true){
-      Collection<byte[]> candidate = spans.getPayload();
-      if (candidate.size() == payloadToMatch.size()){
-        //TODO: check the byte arrays are the same
-        Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
-        //check each of the byte arrays, in order
-        //hmm, can't rely on order here
-        for (byte[] candBytes : candidate) {
-          //if one is a mismatch, then return false
-          if (Arrays.equals(candBytes, toMatchIter.next()) == false){
-            return AcceptStatus.NO;
+
+    payloadCollector.reset();
+    spans.collect(payloadCollector);
+
+    Collection<byte[]> candidate = payloadCollector.getPayloads();
+    if (candidate.size() == payloadToMatch.size()) {
+      //TODO: check the byte arrays are the same
+      //hmm, can't rely on order here
+      int matches = 0;
+      for (byte[] candBytes : candidate) {
+        //Unfortunately, we can't rely on order, so we need to compare all
+        for (byte[] payBytes : payloadToMatch) {
+          if (Arrays.equals(candBytes, payBytes) == true) {
+            matches++;
+            break;
           }
         }
+      }
+      if (matches == payloadToMatch.size()){
         //we've verified all the bytes
         return AcceptStatus.YES;
       } else {
         return AcceptStatus.NO;
       }
+    } else {
+      return AcceptStatus.NO;
     }
-    return AcceptStatus.YES;
+
   }
 
   @Override
@@ -89,8 +101,8 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
   }
 
   @Override
-  public SpanPayloadCheckQuery clone() {
-    SpanPayloadCheckQuery result = new SpanPayloadCheckQuery((SpanQuery) match.clone(), payloadToMatch);
+  public SpanNearPayloadCheckQuery clone() {
+    SpanNearPayloadCheckQuery result = new SpanNearPayloadCheckQuery((SpanNearQuery) match.clone(), payloadToMatch);
     result.setBoost(getBoost());
     return result;
   }
@@ -100,14 +112,14 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
     if (! super.equals(o)) {
       return false;
     }
-    SpanPayloadCheckQuery other = (SpanPayloadCheckQuery)o;
+    SpanNearPayloadCheckQuery other = (SpanNearPayloadCheckQuery) o;
     return this.payloadToMatch.equals(other.payloadToMatch);
   }
 
   @Override
   public int hashCode() {
     int h = super.hashCode();
-    h = (h * 63) ^ payloadToMatch.hashCode();
+    h = (h * 15) ^ payloadToMatch.hashCode();
     return h;
   }
 }

@@ -17,18 +17,18 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   SpanQuery big;
@@ -55,12 +55,12 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     little.extractTerms(terms);
   }
 
-  ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
-    Spans bigSpans = big.getSpans(context, acceptDocs, termContexts);
+  ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
+    Spans bigSpans = big.getSpans(context, acceptDocs, termContexts, collector);
     if (bigSpans == null) {
       return null;
     }
-    Spans littleSpans = little.getSpans(context, acceptDocs, termContexts);
+    Spans littleSpans = little.getSpans(context, acceptDocs, termContexts, collector);
     if (littleSpans == null) {
       return null;
     }

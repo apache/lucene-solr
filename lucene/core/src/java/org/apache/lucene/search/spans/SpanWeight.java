@@ -17,12 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -37,6 +31,12 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
 /**
  * Expert-only.  Public for use by other weight implementations
  */
@@ -44,12 +44,14 @@ public class SpanWeight extends Weight {
   protected final Similarity similarity;
   protected final Map<Term,TermContext> termContexts;
   protected final SpanQuery query;
+  protected final SpanCollector collector;
   protected Similarity.SimWeight stats;
 
-  public SpanWeight(SpanQuery query, IndexSearcher searcher) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, SpanCollector collector) throws IOException {
     super(query);
     this.similarity = searcher.getSimilarity();
     this.query = query;
+    this.collector = collector;
 
     termContexts = new HashMap<>();
     TreeSet<Term> terms = new TreeSet<>();
@@ -97,7 +99,7 @@ public class SpanWeight extends Weight {
     if (terms != null && terms.hasPositions() == false) {
       throw new IllegalStateException("field \"" + query.getField() + "\" was indexed without position data; cannot run SpanQuery (query=" + query + ")");
     }
-    Spans spans = query.getSpans(context, acceptDocs, termContexts);
+    Spans spans = query.getSpans(context, acceptDocs, termContexts, collector);
     return (spans == null) ? null : new SpanScorer(spans, this, similarity.simScorer(stats, context));
   }
 
