@@ -41,8 +41,8 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
   public static final String PORT = "port";
   public static final String HOST = "host";
   public static final String CORES = "cores";
-  public static final String DISK = "disk";
-  public static final String SYSPROP = "D.";
+  public static final String DISK = "freedisk";
+  public static final String SYSPROP = "sysprop.";
 
   public static final Set<String> tags = ImmutableSet.of(NODE, PORT, HOST, CORES, DISK);
 
@@ -77,7 +77,7 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
     }
     String[] sysProps = req.getParams().getParams(SYSPROP);
     if (sysProps != null && sysProps.length > 0) {
-      for (String prop : sysProps) result.put(prop, System.getProperty(prop));
+      for (String prop : sysProps) result.put(SYSPROP+prop, System.getProperty(prop));
     }
     return result;
   }

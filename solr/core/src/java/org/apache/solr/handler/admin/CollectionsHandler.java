@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -35,12 +37,15 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -76,6 +81,8 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import static org.apache.solr.common.cloud.DocCollection.RULE;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -91,6 +98,7 @@ import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
+import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionsHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CollectionsHandler.class);
@@ -157,7 +165,9 @@ public class CollectionsHandler extends RequestHandlerBase {
       if (result != null) {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         ZkNodeProps props = new ZkNodeProps(result);
-        handleResponse(operation.action.toLower(), props, rsp, operation.timeOut);
+        if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), props, rsp, operation.timeOut);
+        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(props));
+
       }
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
@@ -287,7 +297,6 @@ public class CollectionsHandler extends RequestHandlerBase {
         Map<String, Object> props = req.getParams().required().getAll(null, NAME);
         props.put("fromApi", "true");
         req.getParams().getAll(props,
-            NAME,
             REPLICATION_FACTOR,
             COLL_CONF,
             NUM_SLICES,
@@ -296,16 +305,18 @@ public class CollectionsHandler extends RequestHandlerBase {
             SHARDS_PROP,
             ASYNC,
             STATE_FORMAT,
-            AUTO_ADD_REPLICAS);
+            AUTO_ADD_REPLICAS,
+            RULE,
+            SNITCH);
 
         if (props.get(STATE_FORMAT) == null) {
           props.put(STATE_FORMAT, "2");
         }
-        addRuleMap(req.getParams(), props, "rule");
-        addRuleMap(req.getParams(), props, "snitch");
-
+        addMapObject(props, RULE);
+        addMapObject(props, SNITCH);
+        verifyRuleParams(h.coreContainer, props);
         if (SYSTEM_COLL.equals(props.get(NAME))) {
-          //We must always create asystem collection with only a single shard
+          //We must always create a .system collection with only a single shard
           props.put(NUM_SLICES, 1);
           props.remove(SHARDS_PROP);
           createSysConfigSet(h.coreContainer);
@@ -314,15 +325,6 @@ public class CollectionsHandler extends RequestHandlerBase {
         copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
         return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
-      }
-
-      private void addRuleMap(SolrParams params, Map<String, Object> props, String key) {
-        String[] rules = params.getParams(key);
-        if (rules != null && rules.length > 0) {
-          ArrayList<Map> l = new ArrayList<>();
-          for (String rule : rules) l.add(Rule.parseRule(rule));
-          props.put(key, l);
-        }
       }
 
       private void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
@@ -396,7 +398,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       }
 
     },
-    SPLITSHARD_OP(SPLITSHARD, DEFAULT_ZK_TIMEOUT * 5) {
+    SPLITSHARD_OP(SPLITSHARD, DEFAULT_ZK_TIMEOUT * 5, true) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h)
           throws Exception {
@@ -670,17 +672,35 @@ public class CollectionsHandler extends RequestHandlerBase {
         new RebalanceLeaders(req,rsp,h).execute();
         return null;
       }
+    },
+    MODIFYCOLLECTION_OP(MODIFYCOLLECTION, DEFAULT_ZK_TIMEOUT, false) {
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
+
+        Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS.toArray(new String[0]));
+        if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
+            formatString("no supported values provided rule, snitch, masShardsPerNode, replicationFactor"));
+        req.getParams().required().getAll(m, COLLECTION_PROP);
+        addMapObject(m, RULE);
+        addMapObject(m, SNITCH);
+        for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
+        verifyRuleParams(h.coreContainer, m);
+        return m;
+      }
     };
     CollectionAction action;
     long timeOut;
+    boolean sendToOCPQueue;
 
     CollectionOperation(CollectionAction action) {
-      this(action, DEFAULT_ZK_TIMEOUT);
+      this(action, DEFAULT_ZK_TIMEOUT, true);
     }
 
-    CollectionOperation(CollectionAction action, long timeOut) {
+    CollectionOperation(CollectionAction action, long timeOut, boolean sendToOCPQueue) {
       this.action = action;
       this.timeOut = timeOut;
+      this.sendToOCPQueue = sendToOCPQueue;
+
     }
 
     /**
@@ -696,5 +716,47 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
     }
   }
+
+  public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
+    List l = (List) m.get(RULE);
+    if (l != null) {
+      for (Object o : l) {
+        Map map = (Map) o;
+        try {
+          new Rule(map);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error in rule " + m, e);
+        }
+      }
+    }
+    ReplicaAssigner.verifySnitchConf(cc, (List) m.get(SNITCH));
+  }
+
+  /**
+   * Converts a String of the form a:b,c:d to a Map
+   */
+  private static Map<String, Object> addMapObject(Map<String, Object> props, String key) {
+    Object v = props.get(key);
+    if (v == null) return props;
+    List<String> val = new ArrayList<>();
+    if (v instanceof String[]) {
+      val.addAll(Arrays.asList((String[]) v));
+    } else {
+      val.add(v.toString());
+    }
+    if (val.size() > 0) {
+      ArrayList<Map> l = new ArrayList<>();
+      for (String rule : val) l.add(Rule.parseRule(rule));
+      props.put(key, l);
+    }
+    return props;
+  }
+
+  public static final List<String> MODIFIABLE_COLL_PROPS = ImmutableList.of(
+      RULE,
+      SNITCH,
+      REPLICATION_FACTOR,
+      MAX_SHARDS_PER_NODE,
+      AUTO_ADD_REPLICAS);
 
 }

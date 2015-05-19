@@ -329,62 +329,39 @@ public class ReplicaAssigner {
 
   public Map<String, SnitchContext> failedNodes = new HashMap<>();
 
+  static class SnitchInfoImpl extends SnitchContext.SnitchInfo {
+    final Snitch snitch;
+    final Set<String> myTags = new HashSet<>();
+    final Map<String, SnitchContext> nodeVsContext = new HashMap<>();
+    private final CoreContainer cc;
+
+    SnitchInfoImpl(Map<String, Object> conf, Snitch snitch, CoreContainer cc) {
+      super(conf);
+      this.snitch = snitch;
+      this.cc = cc;
+    }
+
+    @Override
+    public Set<String> getTagNames() {
+      return myTags;
+    }
+
+    @Override
+    public CoreContainer getCoreContainer() {
+      return cc;
+    }
+  }
+
   /**
    * This method uses the snitches and get the tags for all the nodes
    */
   private Map<String, Map<String, Object>> getTagsForNodes(final CoreContainer cc, List snitchConf) {
 
-    class Info extends SnitchContext.SnitchInfo {
-      final Snitch snitch;
-      final Set<String> myTags = new HashSet<>();
-      final Map<String, SnitchContext> nodeVsContext = new HashMap<>();
-
-      Info(Map<String, Object> conf, Snitch snitch) {
-        super(conf);
-        this.snitch = snitch;
-      }
-
-      @Override
-      public Set<String> getTagNames() {
-        return myTags;
-      }
-
-      @Override
-      public CoreContainer getCoreContainer() {
-        return cc;
-      }
-    }
-
-    Map<Class, Info> snitches = new LinkedHashMap<>();
-    for (Object o : snitchConf) {
-      //instantiating explicitly specified snitches
-      String klas = null;
-      Map map = Collections.emptyMap();
-      if (o instanceof Map) {//it can be a Map
-        map = (Map) o;
-        klas = (String) map.get("class");
-        if (klas == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "snitch must have  a class attribute");
-        }
-      } else { //or just the snitch name
-        klas = o.toString();
-      }
-      try {
-        if (klas.indexOf('.') == -1) klas = Snitch.class.getPackage().getName() + "." + klas;
-        Snitch inst = cc == null ?
-            (Snitch) Snitch.class.getClassLoader().loadClass(klas).newInstance() :
-            cc.getResourceLoader().newInstance(klas, Snitch.class);
-        snitches.put(inst.getClass(), new Info(map, inst));
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-
-      }
-
-    }
+    Map<Class, SnitchInfoImpl> snitches = getSnitchInfos(cc, snitchConf);
     for (Class c : Snitch.WELL_KNOWN_SNITCHES) {
       if (snitches.containsKey(c)) continue;// it is already specified explicitly , ignore
       try {
-        snitches.put(c, new Info(Collections.EMPTY_MAP, (Snitch) c.newInstance()));
+        snitches.put(c, new SnitchInfoImpl(Collections.EMPTY_MAP, (Snitch) c.newInstance(), cc));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error instantiating Snitch " + c.getName());
       }
@@ -392,7 +369,7 @@ public class ReplicaAssigner {
     for (String tagName : tagNames) {
       //identify which snitch is going to provide values for a given tag
       boolean foundProvider = false;
-      for (Info info : snitches.values()) {
+      for (SnitchInfoImpl info : snitches.values()) {
         if (info.snitch.isKnownTag(tagName)) {
           foundProvider = true;
           info.myTags.add(tagName);
@@ -406,7 +383,7 @@ public class ReplicaAssigner {
 
     for (String node : liveNodes) {
       //now use the Snitch to get the tags
-      for (Info info : snitches.values()) {
+      for (SnitchInfoImpl info : snitches.values()) {
         if (!info.myTags.isEmpty()) {
           SnitchContext context = new SnitchContext(info, node);
           info.nodeVsContext.put(node, context);
@@ -420,7 +397,7 @@ public class ReplicaAssigner {
     }
 
     Map<String, Map<String, Object>> result = new HashMap<>();
-    for (Info info : snitches.values()) {
+    for (SnitchInfoImpl info : snitches.values()) {
       for (Map.Entry<String, SnitchContext> e : info.nodeVsContext.entrySet()) {
         SnitchContext context = e.getValue();
         String node = e.getKey();
@@ -449,6 +426,42 @@ public class ReplicaAssigner {
     }
     return result;
 
+  }
+
+  public static void verifySnitchConf(CoreContainer cc, List snitchConf) {
+    getSnitchInfos(cc, snitchConf);
+  }
+
+
+  static Map<Class, SnitchInfoImpl> getSnitchInfos(CoreContainer cc, List snitchConf) {
+    Map<Class, SnitchInfoImpl> snitches = new LinkedHashMap<>();
+    if (snitchConf == null) return snitches;
+    for (Object o : snitchConf) {
+      //instantiating explicitly specified snitches
+      String klas = null;
+      Map map = Collections.emptyMap();
+      if (o instanceof Map) {//it can be a Map
+        map = (Map) o;
+        klas = (String) map.get("class");
+        if (klas == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "snitch must have  a class attribute");
+        }
+      } else { //or just the snitch name
+        klas = o.toString();
+      }
+      try {
+        if (klas.indexOf('.') == -1) klas = Snitch.class.getPackage().getName() + "." + klas;
+        Snitch inst = cc == null ?
+            (Snitch) Snitch.class.getClassLoader().loadClass(klas).newInstance() :
+            cc.getResourceLoader().newInstance(klas, Snitch.class);
+        snitches.put(inst.getClass(), new SnitchInfoImpl(map, inst, cc));
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+
+      }
+
+    }
+    return snitches;
   }
 
 }
