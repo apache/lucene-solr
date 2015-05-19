@@ -332,7 +332,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             $scope.currentCore = core;
         }
       }
-      $scope.cores = cores;
     });
     System.get(function(data) {
       $scope.isCloudEnabledCloud = data.mode.match( /solrcloud/i )
