@@ -31,6 +31,9 @@ import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -40,10 +43,12 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -65,6 +70,8 @@ public class CoreContainer {
   final SolrCores solrCores = new SolrCores(this);
 
   protected AuthorizationPlugin authorizationPlugin;
+
+  protected AuthenticationPlugin authenticationPlugin;
 
   public static class CoreLoadFailure {
 
@@ -109,6 +116,8 @@ public class CoreContainer {
   public static final String CORES_HANDLER_PATH = "/admin/cores";
   public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   public static final String INFO_HANDLER_PATH = "/admin/info";
+
+  final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
@@ -203,6 +212,61 @@ public class CoreContainer {
     }
   }
 
+  private void initializeAuthenticationPlugin() {
+    String pluginClassName = null;
+    Map<String, Object> authenticationConfig = null;
+
+    if (isZooKeeperAware()) {
+      Map securityProps = getZkController().getZkStateReader().getSecurityProps();
+      if (securityProps != null) {
+        authenticationConfig = (Map<String, Object>) securityProps.get("authentication");
+        if (authenticationConfig!=null) {
+          if (authenticationConfig.containsKey("class")) {
+            pluginClassName = String.valueOf(authenticationConfig.get("class"));
+          } else {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "No 'class' specified for authentication in ZK.");
+          }
+        }
+      }
+    }
+
+    if (pluginClassName != null) {
+      log.info("Authentication plugin class obtained from ZK: "+pluginClassName);
+    } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
+      pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
+      log.info("Authentication plugin class obtained from system property '" +
+          AUTHENTICATION_PLUGIN_PROP + "': " + pluginClassName);
+    } else {
+      log.info("No authentication plugin used.");
+    }
+
+    // Initialize the filter
+    if (pluginClassName != null) {
+      try {
+        Class cl = Class.forName(pluginClassName);
+        authenticationPlugin = (AuthenticationPlugin) cl.newInstance();
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+    if (authenticationPlugin != null) {
+      authenticationPlugin.init(authenticationConfig);
+
+      // Setup HttpClient to use the plugin's configurer for internode communication
+      HttpClientConfigurer configurer = authenticationPlugin.getDefaultConfigurer();
+      HttpClientUtil.setConfigurer(configurer);
+
+      // The default http client of the core container's shardHandlerFactory has already been created and
+      // configured using the default httpclient configurer. We need to reconfigure it using the plugin's
+      // http client configurer to set it up for internode communication.
+      log.info("Reconfiguring the shard handler factory and update shard handler.");
+      if (getShardHandlerFactory() instanceof HttpShardHandlerFactory) {
+        ((HttpShardHandlerFactory)getShardHandlerFactory()).reconfigureHttpClient(configurer);
+      }
+      getUpdateShardHandler().reconfigureHttpClient(configurer);
+    }
+  }
+
   /**
    * This method allows subclasses to construct a CoreContainer
    * without any default init behavior.
@@ -273,6 +337,9 @@ public class CoreContainer {
     log.info("Node Name: " + hostName);
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
+
+    initializeAuthenticationPlugin();
+
     if (isZooKeeperAware()) {
       intializeAuthorizationPlugin();
     }
@@ -436,6 +503,16 @@ public class CoreContainer {
       log.warn("Exception while closing authorization plugin.", e);
     }
     
+    // It should be safe to close the authentication plugin at this point.
+    try {
+      if(authenticationPlugin != null) {
+        authenticationPlugin.close();
+        authenticationPlugin = null;
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing authentication plugin.", e);
+    }
+
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 
@@ -927,7 +1004,11 @@ public class CoreContainer {
   public AuthorizationPlugin getAuthorizationPlugin() {
     return authorizationPlugin;
   }
-  
+
+  public AuthenticationPlugin getAuthenticationPlugin() {
+    return authenticationPlugin;
+  }
+
 }
 
 class CloserThread extends Thread {

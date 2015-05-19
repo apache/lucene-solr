@@ -28,6 +28,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,6 +46,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.security.AuthenticationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,7 +188,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
-    
+
+    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference();
+    if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
+      return;
+    }
+    if (wrappedRequest.get() != null) {
+      request = wrappedRequest.get();
+    }
+    if (cores.getAuthenticationPlugin() != null) {
+      log.debug("User principal: "+((HttpServletRequest)request).getUserPrincipal());
+    }
+
     // No need to even create the HttpSolrCall object if this path is excluded.
     if(excludePatterns != null) {
       String servletPath = ((HttpServletRequest) request).getServletPath().toString();
@@ -215,5 +229,33 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       call.destroy();
     }
+  }
+
+  private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
+    final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
+    AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
+    if (authenticationPlugin == null) {
+      return true;
+    } else {
+      try {
+        log.debug("Request to authenticate: "+request+", domain: "+request.getLocalName()+", port: "+request.getLocalPort());
+        // upon successful authentication, this should call the chain's next filter.
+        authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
+          public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
+            isAuthenticated.set(true);
+            wrappedRequest.set(req);
+          }
+        });
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, "+e);
+      }
+    }
+    // failed authentication?
+    if (!isAuthenticated.get()) {
+      response.flushBuffer();
+      return false;
+    }
+    return true;
   }
 }

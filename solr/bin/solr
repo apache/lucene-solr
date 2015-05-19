@@ -164,6 +164,12 @@ else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
 
+# Authentication options
+if [ "$SOLR_AUTHENTICATION_CLIENT_CONFIGURER" != "" ]; then
+  AUTHC_CLIENT_CONFIGURER_ARG="-Dsolr.authentication.httpclient.configurer=$SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
+fi
+AUTHC_OPTS="$AUTHC_CLIENT_CONFIGURER_ARG $SOLR_AUTHENTICATION_OPTS"
+
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
 if [ "$SOLR_HOST" != "" ]; then
   SOLR_TOOL_HOST="$SOLR_HOST"
@@ -414,7 +420,7 @@ function run_tool() {
       "${UNPACK_WAR_CMD[@]}" "$DEFAULT_SERVER_DIR/webapps/solr.war")
   fi
 
-  "$JAVA" $SOLR_SSL_OPTS -Dsolr.install.dir="$SOLR_TIP" \
+  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configuration="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI "$@"
@@ -474,7 +480,7 @@ function stop_solr() {
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    "$JAVA" $SOLR_SSL_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
     (sleep 5) &
     spinner $!
     rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
@@ -1326,6 +1332,11 @@ function launch_solr() {
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
+  fi
+
+  # If authentication system props are set, add them to SOLR_OPTS
+  if [ -n "$AUTHC_OPTS" ]; then
+    SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
   if $verbose ; then

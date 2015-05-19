@@ -59,10 +59,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
-  private static final int NUM_SERVERS = 5;
-  private static final int NUM_SHARDS = 2;
-  private static final int REPLICATION_FACTOR = 2;
+  protected int NUM_SERVERS = 5;
+  protected int NUM_SHARDS = 2;
+  protected int REPLICATION_FACTOR = 2;
 
+  public TestMiniSolrCloudCluster () {
+    NUM_SERVERS = 5;
+    NUM_SHARDS = 2;
+    REPLICATION_FACTOR = 2;
+  }
+  
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -79,7 +85,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     if (random().nextBoolean()) testCollectionCreateSearchDelete();
   }
     
-  private void testCollectionCreateSearchDelete() throws Exception {
+  protected void testCollectionCreateSearchDelete() throws Exception {
 
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir().toFile(), solrXml, null, null);

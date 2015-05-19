@@ -200,6 +200,9 @@ New Features
   without a known content type, as "application/octet-stream", provided it still is in the
   allowed filetypes setting. (ehatcher)
 
+* SOLR-7274: Pluggable authentication module in Solr. This defines an interface and a mechanism to create,
+  load, and use an Authentication plugin. (Noble Paul, Ishan Chattopadhyaya, Gregory Chanan, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 

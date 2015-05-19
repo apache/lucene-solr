@@ -21,6 +21,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -160,14 +161,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
 
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
-    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
-    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
-    if (!useRetries) {
-      clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
-    }
+    ModifiableSolrParams clientParams = getClientParams();
+
     this.defaultClient = HttpClientUtil.createClient(clientParams);
     
     // must come after createClient
@@ -178,6 +173,30 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
     
     this.loadbalancer = createLoadbalancer(defaultClient);
+  }
+  
+  protected ModifiableSolrParams getClientParams() {
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
+    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
+    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
+    if (!useRetries) {
+      clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
+    }
+    return clientParams;
+  }
+
+  /**
+   * For an already created internal httpclient, this can be used to configure it 
+   * again. Useful for authentication plugins.
+   * @param configurer an HttpClientConfigurer instance
+   */
+  public void reconfigureHttpClient(HttpClientConfigurer configurer) {
+    log.info("Reconfiguring the default client with: " + configurer);
+    synchronized (this.defaultClient) {
+      configurer.configure((DefaultHttpClient)this.defaultClient, getClientParams());
+    }
   }
 
   protected ThreadPoolExecutor getThreadPoolExecutor(){
