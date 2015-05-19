@@ -17,14 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.ArrayList;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 
 /** Keep matches that are contained within another Spans. */
 public class SpanWithinQuery extends SpanContainQuery {
@@ -54,8 +54,8 @@ public class SpanWithinQuery extends SpanContainQuery {
    * The payload is from the spans of <code>little</code>.
    */
   @Override
-  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
-    ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, termContexts);
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
+    ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, termContexts, collector);
     if (containerContained == null) {
       return null;
     }

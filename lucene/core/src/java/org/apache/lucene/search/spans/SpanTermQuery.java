@@ -17,13 +17,8 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
-
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
@@ -31,6 +26,11 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /** Matches spans containing a term.
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
@@ -83,7 +83,7 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
     TermContext termContext = termContexts.get(term);
     final TermState state;
     if (termContext == null) {
@@ -115,7 +115,7 @@ public class SpanTermQuery extends SpanQuery {
     final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
     termsEnum.seekExact(term.bytes(), state);
 
-    final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
+    final PostingsEnum postings = termsEnum.postings(acceptDocs, null, collector.requiredPostings());
     return new TermSpans(postings, term);
   }
 }

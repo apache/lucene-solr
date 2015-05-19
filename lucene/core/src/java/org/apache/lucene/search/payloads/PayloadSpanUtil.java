@@ -17,15 +17,6 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -45,6 +36,15 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Experimental class to get set of payloads for most standard Lucene queries.
@@ -187,17 +187,16 @@ public class PayloadSpanUtil {
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(context, term));
     }
+
+    PayloadSpanCollector collector = new PayloadSpanCollector();
     for (LeafReaderContext leafReaderContext : context.leaves()) {
-      final Spans spans = query.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), termContexts);
+      final Spans spans = query.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), termContexts, collector);
       if (spans != null) {
         while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
           while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-            if (spans.isPayloadAvailable()) {
-              Collection<byte[]> payload = spans.getPayload();
-              for (byte [] bytes : payload) {
-                payloads.add(bytes);
-              }
-            }
+            collector.reset();
+            spans.collect(collector);
+            payloads.addAll(collector.getPayloads());
           }
         }
       }

@@ -16,32 +16,23 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.payloads.PayloadHelper;
-import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
@@ -54,6 +45,13 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -74,14 +72,15 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq;
     Spans spans;
     stq = new SpanTermQuery(new Term(PayloadHelper.FIELD, "seventy"));
-    spans = MultiSpansWrapper.wrap(indexReader, stq);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    spans = MultiSpansWrapper.wrap(indexReader, stq, collector);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 100, 1, 1, 1);
+    checkSpans(spans, collector, 100, 1, 1, 1);
 
     stq = new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "seventy"));  
-    spans = MultiSpansWrapper.wrap(indexReader, stq);
+    spans = MultiSpansWrapper.wrap(indexReader, stq, collector);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 100, 0, 0, 0);
+    checkSpans(spans, collector, 100, 0, 0, 0);
   }
 
   public void testSpanFirst() throws IOException {
@@ -90,19 +89,20 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanFirstQuery sfq;
     match = new SpanTermQuery(new Term(PayloadHelper.FIELD, "one"));
     sfq = new SpanFirstQuery(match, 2);
-    Spans spans = MultiSpansWrapper.wrap(indexReader, sfq);
-    checkSpans(spans, 109, 1, 1, 1);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    Spans spans = MultiSpansWrapper.wrap(indexReader, sfq, collector);
+    checkSpans(spans, collector, 109, 1, 1, 1);
     //Test more complicated subclause
     SpanQuery[] clauses = new SpanQuery[2];
     clauses[0] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "one"));
     clauses[1] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "hundred"));
     match = new SpanNearQuery(clauses, 0, true);
     sfq = new SpanFirstQuery(match, 2);
-    checkSpans(MultiSpansWrapper.wrap(indexReader, sfq), 100, 2, 1, 1);
+    checkSpans(MultiSpansWrapper.wrap(indexReader, sfq, collector), collector, 100, 2, 1, 1);
 
     match = new SpanNearQuery(clauses, 0, false);
     sfq = new SpanFirstQuery(match, 2);
-    checkSpans(MultiSpansWrapper.wrap(indexReader, sfq), 100, 2, 1, 1);
+    checkSpans(MultiSpansWrapper.wrap(indexReader, sfq, collector), collector, 100, 2, 1, 1);
     
   }
   
@@ -124,9 +124,9 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
-    
 
-    checkSpans(MultiSpansWrapper.wrap(reader, snq), 1,new int[]{2});
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    checkSpans(MultiSpansWrapper.wrap(reader, snq, collector), collector, 1, new int[]{2});
     reader.close();
     directory.close();
   }
@@ -135,8 +135,10 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq;
     Spans spans;
     IndexSearcher searcher = getSearcher();
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+
     stq = new SpanTermQuery(new Term(PayloadHelper.FIELD, "mark"));
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), stq);
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), stq, collector);
     assertNull(spans);
 
     SpanQuery[] clauses = new SpanQuery[3];
@@ -145,9 +147,9 @@ public class TestPayloadSpans extends LuceneTestCase {
     clauses[2] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "xx"));
     SpanNearQuery spanNearQuery = new SpanNearQuery(clauses, 12, false);
 
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), spanNearQuery);
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), spanNearQuery, collector);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 2, new int[]{3,3});
+    checkSpans(spans, collector, 2, new int[]{3,3});
 
      
     clauses[0] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "xx"));
@@ -156,10 +158,10 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     spanNearQuery = new SpanNearQuery(clauses, 6, true);
    
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), spanNearQuery);
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), spanNearQuery, collector);
 
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 1, new int[]{3});
+    checkSpans(spans, collector, 1, new int[]{3});
      
     clauses = new SpanQuery[2];
      
@@ -178,10 +180,9 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses2, 6, false);
     
     // yy within 6 of xx within 6 of rr
-
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery);
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery, collector);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 2, new int[]{3,3});
+    checkSpans(spans, collector, 2, new int[]{3,3});
     closeIndexReader.close();
     directory.close();
   }
@@ -208,12 +209,13 @@ public class TestPayloadSpans extends LuceneTestCase {
      
     clauses3[0] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "np"));
     clauses3[1] = snq;
-     
+
+    PayloadSpanCollector collector = new PayloadSpanCollector();
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses3, 6, false);
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery);
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery, collector);
 
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 1, new int[]{3});
+    checkSpans(spans, collector, 1, new int[]{3});
     closeIndexReader.close();
     directory.close();
   }
@@ -248,9 +250,10 @@ public class TestPayloadSpans extends LuceneTestCase {
      
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses3, 6, false);
 
-    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), nestedSpanNearQuery, collector);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    checkSpans(spans, 2, new int[]{8, 8});
+    checkSpans(spans, collector, 2, new int[]{8, 8});
     closeIndexReader.close();
     directory.close();
   }
@@ -272,15 +275,17 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 1, true);
-    Spans spans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    Spans spans = MultiSpansWrapper.wrap(is.getIndexReader(), snq, collector);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
         while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-          Collection<byte[]> payloads = spans.getPayload();
-  
+          collector.reset();
+          spans.collect(collector);
+          Collection<byte[]> payloads = collector.getPayloads();
           for (final byte [] payload : payloads) {
             payloadSet.add(new String(payload, StandardCharsets.UTF_8));
           }
@@ -310,14 +315,17 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
-    Spans spans =  MultiSpansWrapper.wrap(is.getIndexReader(), snq);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    Spans spans =  MultiSpansWrapper.wrap(is.getIndexReader(), snq, collector);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
         while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-          Collection<byte[]> payloads = spans.getPayload();
+          collector.reset();
+          spans.collect(collector);
+          Collection<byte[]> payloads = collector.getPayloads();
   
           for (final byte [] payload : payloads) {
             payloadSet.add(new String(payload, StandardCharsets.UTF_8));
@@ -348,14 +356,17 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
-    Spans spans =  MultiSpansWrapper.wrap(is.getIndexReader(), snq);
+    PayloadSpanCollector collector = new PayloadSpanCollector();
+    Spans spans =  MultiSpansWrapper.wrap(is.getIndexReader(), snq, collector);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
         while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-          Collection<byte[]> payloads = spans.getPayload();
+          collector.reset();
+          spans.collect(collector);
+          Collection<byte[]> payloads = collector.getPayloads();
   
           for (final byte [] payload : payloads) {
             payloadSet.add(new String(payload, StandardCharsets.UTF_8));
@@ -401,7 +412,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     directory.close();
   }
 
-  private void checkSpans(Spans spans, int expectedNumSpans, int expectedNumPayloads,
+  private void checkSpans(Spans spans, PayloadSpanCollector collector, int expectedNumSpans, int expectedNumPayloads,
                           int expectedPayloadLength, int expectedFirstByte) throws IOException {
     assertTrue("spans is null and it shouldn't be", spans != null);
     //each position match should have a span associated with it, since there is just one underlying term query, there should
@@ -409,16 +420,16 @@ public class TestPayloadSpans extends LuceneTestCase {
     int seen = 0;
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-        assertEquals("isPayloadAvailable should return true/false as payloads are expected", expectedNumPayloads > 0, spans.isPayloadAvailable());
-        //See payload helper, for the PayloadHelper.FIELD field, there is a single byte payload at every token
-        if (spans.isPayloadAvailable()) {
-          Collection<byte[]> payload = spans.getPayload();
-          assertEquals("payload size", expectedNumPayloads, payload.size());
-          for (final byte [] thePayload : payload) {
-            assertEquals("payload length", expectedPayloadLength, thePayload.length);
-            assertEquals("payload first byte", expectedFirstByte, thePayload[0]);
-          }
+        collector.reset();
+        spans.collect(collector);
+
+        Collection<byte[]> payload = collector.getPayloads();
+        assertEquals("payload size", expectedNumPayloads, payload.size());
+        for (final byte [] thePayload : payload) {
+          assertEquals("payload length", expectedPayloadLength, thePayload.length);
+          assertEquals("payload first byte", expectedFirstByte, thePayload[0]);
         }
+
         seen++;
       }
     }
@@ -446,26 +457,26 @@ public class TestPayloadSpans extends LuceneTestCase {
     return searcher;
   }
   
-  private void checkSpans(Spans spans, int numSpans, int[] numPayloads) throws IOException {
+  private void checkSpans(Spans spans, PayloadSpanCollector collector, int numSpans, int[] numPayloads) throws IOException {
     int cnt = 0;
 
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if(VERBOSE)
           System.out.println("\nSpans Dump --");
-        if (spans.isPayloadAvailable()) {
-          Collection<byte[]> payload = spans.getPayload();
-          if(VERBOSE) {
-            System.out.println("payloads for span:" + payload.size());
-            for (final byte [] bytes : payload) {
-              System.out.println("doc:" + spans.docID() + " s:" + spans.startPosition() + " e:" + spans.endPosition() + " "
+        collector.reset();
+        spans.collect(collector);
+
+        Collection<byte[]> payload = collector.getPayloads();
+        if(VERBOSE) {
+          System.out.println("payloads for span:" + payload.size());
+          for (final byte [] bytes : payload) {
+            System.out.println("doc:" + spans.docID() + " s:" + spans.startPosition() + " e:" + spans.endPosition() + " "
                 + new String(bytes, StandardCharsets.UTF_8));
-            }
           }
-          assertEquals("payload size", numPayloads[cnt], payload.size());
-        } else { // no payload available
-          assertFalse("Expected spans:" + numPayloads[cnt] + " found: 0", numPayloads.length > 0 && numPayloads[cnt] > 0 );
         }
+        assertEquals("payload size", numPayloads[cnt], payload.size());
+
         cnt++;
       }
     }

@@ -17,10 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -29,13 +25,17 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
   /** Expert: Returns the matches for this query in an index.  
    *  Used internally to search for spans.
    *  This may return null to indicate that the SpanQuery has no results.
    */
-  public abstract Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException;
+  public abstract Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException;
 
   /**
    * Extract terms from these spans.
@@ -53,7 +53,7 @@ public abstract class SpanQuery extends Query {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SpanWeight(this, searcher);
+    return new SpanWeight(this, searcher, SpanCollector.NO_OP);
   }
 
 }

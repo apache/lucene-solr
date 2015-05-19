@@ -189,6 +189,12 @@ API Changes
 * LUCENE-6445: Two new methods in Highlighter's TokenSources; the existing
   methods are now marked deprecated. (David Smiley)
 
+* LUCENE-6371: Payload collection from Spans is moved to a more generic
+  SpanCollector framework.  Spans no longer implements .hasPayload() and
+  .getPayload() methods, and instead exposes a collect() method that allows
+  the collection of arbitrary postings information. (Alan Woodward, David
+  Smiley, Paul Elschot)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 

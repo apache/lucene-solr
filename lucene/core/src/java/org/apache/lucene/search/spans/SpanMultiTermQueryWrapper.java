@@ -17,21 +17,21 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.search.ScoringRewrite;
-import org.apache.lucene.search.BooleanClause.Occur; // javadocs only
+import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
@@ -99,7 +99,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
   
   @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
     throw new UnsupportedOperationException("Query should have been rewritten");
   }
 

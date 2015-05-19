@@ -17,26 +17,24 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.util.List;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /** Matches the union of its clauses.
@@ -147,13 +145,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts)
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts, SpanCollector collector)
   throws IOException {
 
     ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
     for (SpanQuery sq : clauses) {
-      Spans spans = sq.getSpans(context, acceptDocs, termContexts);
+      Spans spans = sq.getSpans(context, acceptDocs, termContexts, collector);
       if (spans != null) {
         subSpans.add(spans);
       }
@@ -306,17 +304,9 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       }
 
       @Override
-      public Collection<byte[]> getPayload() throws IOException {
-        return topPositionSpans == null
-                ? null
-                : topPositionSpans.isPayloadAvailable()
-                ? new ArrayList<>(topPositionSpans.getPayload())
-                : null;
-      }
-
-      @Override
-      public boolean isPayloadAvailable() throws IOException {
-        return (topPositionSpans != null) && topPositionSpans.isPayloadAvailable();
+      public void collect(SpanCollector collector) throws IOException {
+        if (topPositionSpans != null)
+          topPositionSpans.collect(collector);
       }
 
       @Override
