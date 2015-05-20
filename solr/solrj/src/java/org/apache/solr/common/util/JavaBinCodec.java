@@ -555,7 +555,7 @@ public class JavaBinCodec {
 
       @Override
       public String toString() {
-        return "MapEntry[" + key.toString() + ":" + value.toString() + "]";
+        return "MapEntry[" + key + ":" + value + "]";
       }
 
       @Override

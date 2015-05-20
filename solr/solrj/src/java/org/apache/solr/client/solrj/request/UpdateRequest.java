@@ -57,7 +57,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
   private Iterator<SolrInputDocument> docIterator = null;
   private Map<String,Map<String,Object>> deleteById = null;
   private List<String> deleteQuery = null;
-  
+
+  private boolean isLastDocInBatch = false;
+
   public UpdateRequest() {
     super(METHOD.POST, "/update");
   }
@@ -460,4 +462,11 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return deleteQuery;
   }
   
+  public boolean isLastDocInBatch() {
+    return isLastDocInBatch;
+  }
+  
+  public void lastDocInBatch() {
+    isLastDocInBatch = true;
+  }
 }

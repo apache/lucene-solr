@@ -126,7 +126,6 @@ public class JavaBinUpdateRequestCodec {
 
       @Override
       public List readIterator(DataInputInputStream fis) throws IOException {
-
         // default behavior for reading any regular Iterator in the stream
         if (seenOuterMostDocIterator) return super.readIterator(fis);
 
@@ -142,9 +141,16 @@ public class JavaBinUpdateRequestCodec {
         if (handler == null) return super.readIterator(fis);
         Integer commitWithin = null;
         Boolean overwrite = null;
+        Object o = null;
         while (true) {
-          Object o = readVal(fis);
-          if (o == END_OBJ) break;
+          if (o == null) {
+            o = readVal(fis);
+          }
+
+          if (o == END_OBJ) {
+            break;
+          }
+
           SolrInputDocument sdoc = null;
           if (o instanceof List) {
             sdoc = listToSolrInputDocument((List<NamedList>) o);
@@ -160,9 +166,16 @@ public class JavaBinUpdateRequestCodec {
               overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
             }
           } else  {
-          
             sdoc = (SolrInputDocument) o;
           }
+
+          // peek at the next object to see if we're at the end
+          o = readVal(fis);
+          if (o == END_OBJ) {
+            // indicate that we've hit the last doc in the batch, used to enable optimizations when doing replication
+            updateRequest.lastDocInBatch();
+          }
+
           handler.update(sdoc, updateRequest, commitWithin, overwrite);
         }
         return Collections.EMPTY_LIST;

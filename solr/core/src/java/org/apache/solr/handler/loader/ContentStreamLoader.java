@@ -31,6 +31,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
  */
 public abstract class ContentStreamLoader {
 
+  protected static final int pollQueueTime = Integer.getInteger("solr.cloud.replication.poll-queue-time-ms", 25);
+
   /**
    * This should be called once for each RequestHandler
    */

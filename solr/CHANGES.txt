@@ -303,6 +303,10 @@ Optimizations
 * SOLR-7547: Short circuit SolrDisptachFilter for static content request. Right now it creates
   a new HttpSolrCall object and tries to process it. (Anshum Gupta)
 
+* SOLR-7333: Make the poll queue time a leader uses when distributing updates to replicas 
+  configurable and use knowledge that a batch is being processed to poll efficiently.
+  (Timothy Potter)
+
 Other Changes
 ----------------------
 

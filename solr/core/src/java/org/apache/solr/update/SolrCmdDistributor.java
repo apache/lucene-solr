@@ -196,12 +196,14 @@ public class SolrCmdDistributor {
   }
   
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous, RequestReplicationTracker rrt) throws IOException {  
-
+    String cmdStr = cmd.toString();
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
+      if (cmd.isLastDocInBatch)
+        uReq.lastDocInBatch();
       uReq.setParams(params);
       uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-      submit(new Req(cmd.toString(), node, uReq, synchronous, rrt), false);
+      submit(new Req(cmdStr, node, uReq, synchronous, rrt, cmd.pollQueueTime), false);
     }
     
   }
@@ -310,17 +312,19 @@ public class SolrCmdDistributor {
     public boolean synchronous;
     public String cmdString;
     public RequestReplicationTracker rfTracker;
+    public int pollQueueTime;
 
     public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous) {
-      this(cmdString, node, uReq, synchronous, null);
+      this(cmdString, node, uReq, synchronous, null, 0);
     }
     
-    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker) {
+    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker, int pollQueueTime) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
       this.cmdString = cmdString;
       this.rfTracker = rfTracker;
+      this.pollQueueTime = pollQueueTime;
     }
     
     public String toString() {
