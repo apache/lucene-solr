@@ -156,7 +156,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
       log.debug("starting runner: {}", this);
       HttpPost method = null;
-      HttpResponse response = null;            
+      HttpResponse response = null;
       try {
         while (!queue.isEmpty()) {
           try {
@@ -207,7 +207,14 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                       }
                     }
                     out.flush();
-                    req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+
+                    if (pollQueueTime > 0 && threadCount == 1 && req.isLastDocInBatch()) {
+                      // no need to wait to see another doc in the queue if we've hit the last doc in a batch
+                      req = queue.poll(0, TimeUnit.MILLISECONDS);
+                    } else {
+                      req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                    }
+
                   }
                   
                   if (isXml) {

@@ -87,7 +87,7 @@ public class StreamingSolrClients {
       };
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
-      client.setPollQueueTime(0);
+      client.setPollQueueTime(req.pollQueueTime);
       Set<String> queryParams = new HashSet<>(2);
       queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
       queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
