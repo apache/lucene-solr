@@ -191,7 +191,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected Double sortVal;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext) {
       byte[] arr = (byte[])facetResult;
       AVLTreeDigest subDigest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(arr));
       if (digest == null) {

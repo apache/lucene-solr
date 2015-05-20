@@ -41,7 +41,7 @@ public class SumAgg extends SimpleAggValueSource {
     double val;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext) {
       val += ((Number)facetResult).doubleValue();
     }
 
