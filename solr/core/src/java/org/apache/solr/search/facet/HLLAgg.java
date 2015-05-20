@@ -81,7 +81,7 @@ public class HLLAgg extends StrAggValueSource {
     long answer = -1;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       byte[] serialized = ((byte[])map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);

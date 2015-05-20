@@ -40,7 +40,7 @@ public class MinAgg extends SimpleAggValueSource {
     double val = Double.NaN;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext) {
       double result = ((Number)facetResult).doubleValue();
       if (result < val || Double.isNaN(val)) {
         val = result;

@@ -43,7 +43,7 @@ public class AvgAgg extends SimpleAggValueSource {
     double sum;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext1) {
       List<Number> numberList = (List<Number>)facetResult;
       num += numberList.get(0).longValue();
       sum += numberList.get(1).doubleValue();

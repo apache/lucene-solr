@@ -72,7 +72,7 @@ public class UniqueAgg extends StrAggValueSource {
     long shardsMissingMax;
 
     @Override
-    public void merge(Object facetResult) {
+    public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       long unique = ((Number)map.get("unique")).longValue();
       sumUnique += unique;
