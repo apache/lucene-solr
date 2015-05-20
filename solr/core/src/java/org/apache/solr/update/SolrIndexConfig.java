@@ -259,17 +259,12 @@ public class SolrIndexConfig implements MapSerializable {
       if (maxMergeDocs != -1)
         logMergePolicy.setMaxMergeDocs(maxMergeDocs);
 
-      logMergePolicy.setNoCFSRatio(getUseCompoundFile() ? 1.0 : 0.0);
-
       if (mergeFactor != -1)
         logMergePolicy.setMergeFactor(mergeFactor);
-
 
     } else if (policy instanceof TieredMergePolicy) {
       TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) policy;
       fixUseCFMergePolicyInitArg(TieredMergePolicy.class);
-      
-      tieredMergePolicy.setNoCFSRatio(getUseCompoundFile() ? 1.0 : 0.0);
       
       if (mergeFactor != -1) {
         tieredMergePolicy.setMaxMergeAtOnce(mergeFactor);
