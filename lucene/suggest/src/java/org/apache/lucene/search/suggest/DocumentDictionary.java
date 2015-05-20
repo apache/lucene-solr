@@ -18,6 +18,7 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,17 +42,14 @@ import org.apache.lucene.util.BytesRef;
  * <b>NOTE:</b> 
  *  <ul>
  *    <li>
- *      The term and (optionally) payload fields have to be
- *      stored
+ *      The term field has to be stored; if it is missing, the document is skipped.
+ *    </li>
+ *    <li>
+ *      The payload and contexts field are optional and are not required to be stored.
  *    </li>
  *    <li>
  *      The weight field can be stored or can be a {@link NumericDocValues}.
  *      If the weight field is not defined, the value of the weight is <code>0</code>
- *    </li>
- *    <li>
- *      if any of the term or (optionally) payload fields supplied
- *      do not have a value for a document, then the document is 
- *      skipped by the dictionary
  *    </li>
  *  </ul>
  */
@@ -90,7 +88,7 @@ public class DocumentDictionary implements Dictionary {
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>weightField</code> for the weights that will be used for the 
    * the corresponding terms, <code>payloadField</code> for the corresponding payloads
-   * for the entry and <code>contextsFeild</code> for associated contexts.
+   * for the entry and <code>contextsField</code> for associated contexts.
    */
   public DocumentDictionary(IndexReader reader, String field, String weightField, String payloadField, String contextsField) {
     this.reader = reader;
@@ -167,25 +165,26 @@ public class DocumentDictionary implements Dictionary {
 
         StoredDocument doc = reader.document(currentDocId, relevantFields);
 
-        Set<BytesRef> tempContexts = new HashSet<>();
-
-        BytesRef tempPayload;
+        BytesRef tempPayload = null;
         if (hasPayloads) {
           StorableField payload = doc.getField(payloadField);
-          if (payload == null) {
-            continue;
-          } else if (payload.binaryValue() != null) {
-            tempPayload =  payload.binaryValue();
-          } else if (payload.stringValue() != null) {
-            tempPayload = new BytesRef(payload.stringValue());
-          } else {
-            continue;
+          if (payload != null) {
+            if (payload.binaryValue() != null) {
+              tempPayload =  payload.binaryValue();
+            } else if (payload.stringValue() != null) {
+              tempPayload = new BytesRef(payload.stringValue());
+            }
           }
-        } else {
-          tempPayload = null;
+          // in case that the iterator has payloads configured, use empty values
+          // instead of null for payload
+          if (tempPayload == null) {
+            tempPayload = new BytesRef();
+          }
         }
 
+        Set<BytesRef> tempContexts;
         if (hasContexts) {
+          tempContexts = new HashSet<>();
           final StorableField[] contextFields = doc.getFields(contextsField);
           for (StorableField contextField : contextFields) {
             if (contextField.binaryValue() != null) {
@@ -196,6 +195,8 @@ public class DocumentDictionary implements Dictionary {
               continue;
             }
           }
+        } else {
+          tempContexts = Collections.emptySet();
         }
 
         currentDocFields = doc.getFields(field);

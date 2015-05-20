@@ -55,63 +55,6 @@ public class DocumentDictionaryTest extends LuceneTestCase {
   static final String PAYLOAD_FIELD_NAME = "p1";
   static final String CONTEXT_FIELD_NAME = "c1";
   
-  /** Returns Pair(list of invalid document terms, Map of document term -&gt; document) */
-  private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresPayload, boolean requiresContexts) {
-    Map<String, Document> docs = new HashMap<>();
-    List<String> invalidDocTerms = new ArrayList<>();
-    for(int i = 0; i < ndocs ; i++) {
-      Document doc = new Document();
-      boolean invalidDoc = false;
-      Field field = null;
-      // usually have valid term field in document
-      if (usually()) {
-        field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
-        doc.add(field);
-      } else {
-        invalidDoc = true;
-      }
-      
-      // even if payload is not required usually have it
-      if (requiresPayload || usually()) {
-        // usually have valid payload field in document
-        if (usually()) {
-          Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
-          doc.add(payload);
-        } else if (requiresPayload) {
-          invalidDoc = true;
-        }
-      }
-      
-      if (requiresContexts || usually()) {
-        if (usually()) {
-          for (int j = 0; j < atLeast(2); j++) {
-            doc.add(new StoredField(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j)));
-          }
-        }
-        // we should allow entries without context
-      }
-      
-      // usually have valid weight field in document
-      if (usually()) {
-        Field weight = (rarely()) ? 
-            new StoredField(WEIGHT_FIELD_NAME, 100d + i) : 
-            new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
-        doc.add(weight);
-      }
-      
-      String term = null;
-      if (invalidDoc) {
-        term = (field!=null) ? field.stringValue() : "invalid_" + i;
-        invalidDocTerms.add(term);
-      } else {
-        term = field.stringValue();
-      }
-      
-      docs.put(term, doc);
-    }
-    return new SimpleEntry<>(invalidDocTerms, docs);
-  }
-  
   @Test
   public void testEmptyReader() throws IOException {
     Directory dir = newDirectory();
@@ -140,7 +83,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -157,7 +100,9 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       Field weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
-      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+      Field payloadField = doc.getField(PAYLOAD_FIELD_NAME);
+      if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
+      else assertEquals(inputIterator.payload(), payloadField.binaryValue());
     }
     
     for (String invalidTerm : invalidDocTerms) {
@@ -165,6 +110,41 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     }
     assertTrue(docs.isEmpty());
     
+    IOUtils.close(ir, analyzer, dir);
+  }
+
+  @Test
+  public void testWithOptionalPayload() throws IOException {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    // Create a document that is missing the payload field
+    Document doc = new Document();
+    Field field = new TextField(FIELD_NAME, "some field", Field.Store.YES);
+    doc.add(field);
+    // do not store the payload or the contexts
+    Field weight = new NumericDocValuesField(WEIGHT_FIELD_NAME, 100);
+    doc.add(weight);
+    writer.addDocument(doc);
+    writer.commit();
+    writer.close();
+    IndexReader ir = DirectoryReader.open(dir);
+
+    // Even though the payload field is missing, the dictionary iterator should not skip the document
+    // because the payload field is optional.
+    Dictionary dictionaryOptionalPayload =
+        new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
+    InputIterator inputIterator = dictionaryOptionalPayload.getEntryIterator();
+    BytesRef f = inputIterator.next();
+    assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+    Field weightField = doc.getField(WEIGHT_FIELD_NAME);
+    assertEquals(inputIterator.weight(), weightField.numericValue().longValue());
+    Field payloadField = doc.getField(PAYLOAD_FIELD_NAME);
+    assertNull(payloadField);
+    assertTrue(inputIterator.payload().length == 0);
     IOUtils.close(ir, analyzer, dir);
   }
  
@@ -175,7 +155,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -192,7 +172,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       Field weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
-      assertEquals(inputIterator.payload(), null);
+      assertNull(inputIterator.payload());
     }
     
     for (String invalidTerm : invalidDocTerms) {
@@ -211,7 +191,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true, true);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -228,7 +208,9 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       Field weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
-      assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
+      Field payloadField = doc.getField(PAYLOAD_FIELD_NAME);
+      if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
+      else assertEquals(inputIterator.payload(), payloadField.binaryValue());
       Set<BytesRef> oriCtxs = new HashSet<>();
       Set<BytesRef> contextSet = inputIterator.contexts();
       for (StorableField ctxf : doc.getFields(CONTEXT_FIELD_NAME)) {
@@ -252,7 +234,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     Random rand = random();
@@ -291,7 +273,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       Field weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
-      assertEquals(inputIterator.payload(), null);
+      assertNull(inputIterator.payload());
     }
     
     for (String invalidTerm : invalidDocTerms) {
@@ -324,11 +306,63 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       assertTrue(f.equals(nextSuggestion.term));
       long weight = nextSuggestion.weight;
       assertEquals(inputIterator.weight(), (weight != -1) ? weight : 0);
-      assertTrue(inputIterator.payload().equals(nextSuggestion.payload));
+      assertEquals(inputIterator.payload(), nextSuggestion.payload);
       assertTrue(inputIterator.contexts().equals(nextSuggestion.contexts));
     }
     assertFalse(suggestionsIter.hasNext());
     IOUtils.close(ir, analyzer, dir);
+  }
+
+  /** Returns Pair(list of invalid document terms, Map of document term -&gt; document) */
+  private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresContexts) {
+    Map<String, Document> docs = new HashMap<>();
+    List<String> invalidDocTerms = new ArrayList<>();
+    for(int i = 0; i < ndocs ; i++) {
+      Document doc = new Document();
+      boolean invalidDoc = false;
+      Field field = null;
+      // usually have valid term field in document
+      if (usually()) {
+        field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
+        doc.add(field);
+      } else {
+        invalidDoc = true;
+      }
+
+      // even if payload is not required usually have it
+      if (usually()) {
+        Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
+        doc.add(payload);
+      }
+
+      if (requiresContexts || usually()) {
+        if (usually()) {
+          for (int j = 0; j < atLeast(2); j++) {
+            doc.add(new StoredField(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j)));
+          }
+        }
+        // we should allow entries without context
+      }
+
+      // usually have valid weight field in document
+      if (usually()) {
+        Field weight = (rarely()) ?
+                new StoredField(WEIGHT_FIELD_NAME, 100d + i) :
+                new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
+        doc.add(weight);
+      }
+
+      String term = null;
+      if (invalidDoc) {
+        term = (field!=null) ? field.stringValue() : "invalid_" + i;
+        invalidDocTerms.add(term);
+      } else {
+        term = field.stringValue();
+      }
+
+      docs.put(term, doc);
+    }
+    return new SimpleEntry<>(invalidDocTerms, docs);
   }
 
   private List<Suggestion> indexMultiValuedDocuments(int numDocs, RandomIndexWriter writer) throws IOException {

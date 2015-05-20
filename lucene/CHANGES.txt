@@ -178,6 +178,10 @@ Bug Fixes
 * LUCENE-6483: Ensure core closed listeners are called on the same cache key as
   the reader which has been used to register the listener. (Adrien Grand)
 
+* LUCENE-6486 DocumentDictionary iterator no longer skips
+  documents with no payloads and now returns an empty BytesRef instead
+  (Marius Grama via Michael McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
