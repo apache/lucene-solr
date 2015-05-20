@@ -131,6 +131,9 @@ Optimizations
 * LUCENE-6350: TermsQuery is now compressed with PrefixCodedTerms.
   (Robert Muir, Mike McCandless, Adrien Grand)
 
+* LUCENE-6458: Multi-term queries matching few terms per segment now execute
+  like a disjunction. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.

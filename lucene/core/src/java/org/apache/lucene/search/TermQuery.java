@@ -56,9 +56,21 @@ public class TermQuery extends Query {
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
-      this.stats = similarity.computeWeight(getBoost(),
-          searcher.collectionStatistics(term.field()),
-          searcher.termStatistics(term, termStates));
+      
+      final CollectionStatistics collectionStats;
+      final TermStatistics termStats;
+      if (needsScores) {
+        collectionStats = searcher.collectionStatistics(term.field());
+        termStats = searcher.termStatistics(term, termStates);
+      } else {
+        // do not bother computing actual stats, scores are not needed
+        final int maxDoc = searcher.getIndexReader().maxDoc();
+        final int docFreq = termStates.docFreq();
+        final long totalTermFreq = termStates.totalTermFreq();
+        collectionStats = new CollectionStatistics(term.field(), maxDoc, -1, -1, -1);
+        termStats = new TermStatistics(term.bytes(), docFreq, totalTermFreq);
+      }
+      this.stats = similarity.computeWeight(getBoost(), collectionStats, termStats);
     }
 
     @Override
