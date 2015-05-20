@@ -144,6 +144,7 @@ public class UpdateLog implements PluginInfoInitialized {
   protected final int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
+  protected int numVersionBuckets; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
@@ -224,6 +225,10 @@ public class UpdateLog implements PluginInfoInitialized {
     return maxNumLogsToKeep;
   }
 
+  public int getNumVersionBuckets() {
+    return numVersionBuckets;
+  }
+
   protected static int objToInt(Object obj, int def) {
     if (obj != null) {
       return Integer.parseInt(obj.toString());
@@ -238,9 +243,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 256);
+    if (numVersionBuckets <= 0)
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Number of version buckets must be greater than 0!");
 
-    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
-        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep);
+    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
+        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, numVersionBuckets);
   }
 
   /* Note, when this is called, uhandler is not completely constructed.
@@ -292,7 +301,7 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     try {
-      versionInfo = new VersionInfo(this, 256);
+      versionInfo = new VersionInfo(this, numVersionBuckets);
     } catch (SolrException e) {
       log.error("Unable to use updateLog: " + e.getMessage(), e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

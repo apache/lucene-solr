@@ -406,6 +406,11 @@ Other Changes
   ZkCmdExecutor#ensureExists as they were doing the same thing. Also ZkCmdExecutor#ensureExists now respects the
   CreateMode passed to it. (Varun Thacker)
 
+* SOLR-6820: Make the number of version buckets used by the UpdateLog configurable as
+  increasing beyond the default 256 has been shown to help with high volume indexing
+  performance in SolrCloud; helps overcome a limitation where Lucene uses the request
+  thread to perform expensive index housekeeping work. (Mark Miller, yonik, Timothy Potter)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

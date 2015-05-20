@@ -327,9 +327,17 @@
          uncommitted changes to the index, so use of a hard autoCommit
          is recommended (see below).
          "dir" - the target directory for transaction logs, defaults to the
-                solr data directory.  --> 
+                solr data directory.
+         "numVersionBuckets" - sets the number of buckets used to keep
+                track of max version values when checking for re-ordered
+                updates; increase this value to reduce the cost of
+                synchronizing access to version buckets during high-volume
+                indexing, this requires 8 bytes (long) * numVersionBuckets
+                of heap space per Solr core.
+    -->
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
+      <int name="">${solr.ulog.numVersionBuckets:256}</int>
     </updateLog>
  
     <!-- AutoCommit
