@@ -17,21 +17,21 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.solr.update.SolrIndexConfigTest;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrIndexConfigTest;
+import org.apache.solr.util.RefCounted;
 import org.junit.After;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** @see SolrIndexConfigTest */
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
@@ -42,6 +42,22 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public void after() throws Exception {
     deleteCore();
   }
+  
+  public void testSetNoCFSMergePolicyConfig() throws Exception {
+    final boolean useCompoundFile = random().nextBoolean();
+    System.setProperty("testSetNoCFSMergePolicyConfig.useCompoundFile", String.valueOf(useCompoundFile));
+    try {
+      initCore("solrconfig-mergepolicy-nocfs.xml","schema-minimal.xml");
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+      assertEquals(useCompoundFile, iwc.getUseCompoundFile());
+
+      TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
+                                                 iwc.getMergePolicy());
+      assertEquals(0.5D, tieredMP.getNoCFSRatio(), 0.0D);
+    } finally {
+      System.getProperties().remove("testSetNoCFSMergePolicyConfig.useCompoundFile");
+    }
+  }
 
   public void testDefaultMergePolicyConfig() throws Exception {
     initCore("solrconfig-mergepolicy-defaults.xml","schema-minimal.xml");
@@ -50,7 +66,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
                                                iwc.getMergePolicy());
-    assertEquals(0.0D, tieredMP.getNoCFSRatio(), 0.0D);
+    assertEquals(TieredMergePolicy.DEFAULT_NO_CFS_RATIO, tieredMP.getNoCFSRatio(), 0.0D);
 
     assertCommitSomeNewDocs();
     assertCompoundSegments(h.getCore(), false);
@@ -70,7 +86,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
     assertEquals(7, tieredMP.getMaxMergeAtOnce());
     assertEquals(7.0D, tieredMP.getSegmentsPerTier(), 0.0D);
-    assertEquals(expectCFS ? 1.0D : 0.0D, tieredMP.getNoCFSRatio(), 0.0D);
 
     assertCommitSomeNewDocs();
     assertCompoundSegments(h.getCore(), expectCFS);

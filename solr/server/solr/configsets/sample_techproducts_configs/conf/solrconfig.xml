@@ -199,6 +199,7 @@
         <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
           <int name="maxMergeAtOnce">10</int>
           <int name="segmentsPerTier">10</int>
+          <double name="noCFSRatio">0.1</double>
         </mergePolicy>
       -->
        
