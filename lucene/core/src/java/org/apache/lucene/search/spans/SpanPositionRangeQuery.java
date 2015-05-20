@@ -40,7 +40,7 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
 
 
   @Override
-  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
     assert spans.startPosition() != spans.endPosition();
     AcceptStatus res = (spans.startPosition() >= end)
                       ? AcceptStatus.NO_MORE_IN_CURRENT_DOC

@@ -192,12 +192,12 @@ API Changes
 * LUCENE-6445: Two new methods in Highlighter's TokenSources; the existing
   methods are now marked deprecated. (David Smiley)
 
-* LUCENE-6371: Payload collection from Spans is moved to a more generic
+* LUCENE-6371, LUCENE-6490: Payload collection from Spans is moved to a more generic
   SpanCollector framework.  Spans no longer implements .hasPayload() and
   .getPayload() methods, and instead exposes a collect() method that allows
   the collection of arbitrary postings information. SpanPayloadCheckQuery and
   SpanPayloadNearCheckQuery have moved from the .spans package to the .payloads
-  package. (Alan Woodward, David Smiley, Paul Elschot)
+  package. (Alan Woodward, David Smiley, Paul Elschot, Robert Muir)
 
 * LUCENE-6484: Removed EliasFanoDocIdSet, which was unused.
   (Paul Elschot via Adrien Grand)

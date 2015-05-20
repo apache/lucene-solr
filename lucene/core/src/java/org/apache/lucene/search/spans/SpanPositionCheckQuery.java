@@ -68,13 +68,14 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
    *
    *
    * @param spans The {@link Spans} instance, positioned at the spot to check
+   * @param collector the {@link SpanCollector} associated with the Spans
    *
    * @return whether the match is accepted, rejected, or rejected and should move to the next doc.
    *
    * @see Spans#nextDoc()
    *
    */
-  protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
+  protected abstract AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException;
 
   @Override
   public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
@@ -82,7 +83,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
       @Override
       protected AcceptStatus accept(Spans candidate) throws IOException {
-        return acceptPosition(candidate);
+        return acceptPosition(candidate, collector);
       }
     };
   }

@@ -27,6 +27,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.spans.BufferedSpanCollector;
 import org.apache.lucene.search.spans.SpanCollector;
+import org.apache.lucene.search.spans.SpanCollectorFactory;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -69,10 +70,10 @@ public class PayloadTermQuery extends SpanTermQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PayloadTermWeight(this, searcher, new PayloadTermCollector());
+    return new PayloadTermWeight(this, searcher);
   }
 
-  protected class PayloadTermCollector implements SpanCollector {
+  private static class PayloadTermCollector implements SpanCollector {
 
     BytesRef payload;
 
@@ -102,33 +103,32 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
   }
 
-  protected class PayloadTermWeight extends SpanWeight {
+  private class PayloadTermWeight extends SpanWeight {
 
-    final PayloadTermCollector payloadCollector;
-
-    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher, PayloadTermCollector collector)
+    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher)
         throws IOException {
-      super(query, searcher, collector);
-      this.payloadCollector = collector;
+      super(query, searcher, SpanCollectorFactory.NO_OP_FACTORY);
     }
 
     @Override
     public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      TermSpans spans = (TermSpans) query.getSpans(context, acceptDocs, termContexts, payloadCollector);
+      PayloadTermCollector collector = new PayloadTermCollector();
+      TermSpans spans = (TermSpans) query.getSpans(context, acceptDocs, termContexts, collector);
       return (spans == null)
               ? null
-              : new PayloadTermSpanScorer(spans, this, similarity.simScorer(stats, context));
+              : new PayloadTermSpanScorer(spans, this, collector, similarity.simScorer(stats, context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
       protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
-      private final TermSpans termSpans;
+      private final PayloadTermCollector payloadCollector;
 
-      public PayloadTermSpanScorer(TermSpans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(TermSpans spans, SpanWeight weight, PayloadTermCollector collector,
+                                   Similarity.SimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
-        termSpans = spans; // CHECKME: generics to use SpansScorer.spans as TermSpans.
+        this.payloadCollector = collector;
       }
 
       @Override

@@ -53,7 +53,11 @@ public abstract class SpanQuery extends Query {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SpanWeight(this, searcher, SpanCollector.NO_OP);
+    return new SpanWeight(this, searcher, getSpanCollectorFactory());
+  }
+
+  protected SpanCollectorFactory<? extends SpanCollector> getSpanCollectorFactory() {
+    return SpanCollectorFactory.NO_OP_FACTORY;
   }
 
 }
