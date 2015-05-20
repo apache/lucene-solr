@@ -145,6 +145,7 @@ public class UpdateLog implements PluginInfoInitialized {
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
   protected int numVersionBuckets; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
+  protected Long maxVersionFromIndex = null;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
@@ -703,6 +704,7 @@ public class UpdateLog implements PluginInfoInitialized {
         SolrCore.verbose("TLOG: postSoftCommit: disposing of prevMap="+ System.identityHashCode(prevMap) + ", prevMap2=" + System.identityHashCode(prevMap2));
       }
       clearOldMaps();
+
     }
   }
 
@@ -1052,6 +1054,15 @@ public class UpdateLog implements PluginInfoInitialized {
         log.decref();
       }
     }
+
+    public long getMaxRecentVersion() {
+      long maxRecentVersion = 0L;
+      if (updates != null) {
+        for (Long key : updates.keySet())
+          maxRecentVersion = Math.max(maxRecentVersion, Math.abs(key.longValue()));
+      }
+      return maxRecentVersion;
+    }
   }
 
   /** The RecentUpdates object returned must be closed after use */
@@ -1257,6 +1268,12 @@ public class UpdateLog implements PluginInfoInitialized {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
         if (finishing) {
+
+          // after replay, update the max from the index
+          log.info("Re-computing max version from index after log re-play.");
+          maxVersionFromIndex = null;
+          getMaxVersionFromIndex();
+
           versionInfo.unblockUpdates();
         }
 
@@ -1527,6 +1544,69 @@ public class UpdateLog implements PluginInfoInitialized {
       }
     }
   }
-  
+
+  // this method is primarily used for unit testing and is not part of the public API for this class
+  Long getMaxVersionFromIndex() {
+    if (maxVersionFromIndex == null && versionInfo != null) {
+      RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
+          ? uhandler.core.getRealtimeSearcher() : null;
+      if (newestSearcher == null)
+        throw new IllegalStateException("No searcher available to lookup max version from index!");
+
+      try {
+        maxVersionFromIndex = seedBucketsWithHighestVersion(newestSearcher.get(), versionInfo);
+      } finally {
+        newestSearcher.decref();
+      }
+    }
+    return maxVersionFromIndex;
+  }
+
+  /**
+   * Used to seed all version buckets with the max value of the version field in the index.
+   */
+  protected Long seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher, VersionInfo versions) {
+    Long highestVersion = null;
+    long startMs = System.currentTimeMillis();
+
+    RecentUpdates recentUpdates = null;
+    try {
+      recentUpdates = getRecentUpdates();
+      long maxVersionFromRecent = recentUpdates.getMaxRecentVersion();
+      long maxVersionFromIndex = versions.getMaxVersionFromIndex(newSearcher);
+
+      long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
+      if (maxVersion == 0L) {
+        maxVersion = versions.getNewClock();
+        log.warn("Could not find max version in index or recent updates, using new clock {}", maxVersion);
+      }
+
+      // seed all version buckets with the highest value from recent and index
+      versions.seedBucketsWithHighestVersion(maxVersion);
+
+      highestVersion = maxVersion;
+    } catch (IOException ioExc) {
+      log.warn("Failed to determine the max value of the version field due to: "+ioExc, ioExc);
+    } finally {
+      if (recentUpdates != null)
+        recentUpdates.close();
+    }
+
+    long tookMs = (System.currentTimeMillis() - startMs);
+    log.info("Took {} ms to seed version buckets with highest version {}",
+        tookMs, String.valueOf(highestVersion));
+
+    return highestVersion;
+  }
+
+  public void onFirstSearcher(SolrIndexSearcher newSearcher) {
+    log.info("On first searcher opened, looking up max value of version field");
+    versionInfo.blockUpdates();
+    try {
+      maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
 }
 

@@ -307,6 +307,10 @@ Optimizations
   configurable and use knowledge that a batch is being processed to poll efficiently.
   (Timothy Potter)
 
+* SOLR-7332: Initialize the highest value for all version buckets with the max value from
+  the index or recent updates to avoid unnecessary lookups to the index to check for reordered
+  updates when processing new documents. (Timothy Potter, yonik)
+
 Other Changes
 ----------------------
 
