@@ -40,9 +40,14 @@ solrAdminApp.controller('DataImportController',
             });
 
             DataImport.config({core: $routeParams.core}, function (data) {
+                try {
+                    var xml = $.parseXML(data.config);
+                } catch (err) {
+                    $scope.hasHandlers = false;
+                    return;
+                }
                 $scope.config = data.config;
                 $scope.entities = [];
-                var xml = $.parseXML($scope.config);
                 $('document > entity', xml).each(function (i, element) {
                     $scope.entities.push($(element).attr('name'));
                 });
@@ -134,6 +139,10 @@ solrAdminApp.controller('DataImportController',
 
             $scope.isStatusLoading = true;
             DataImport.status({core: $routeParams.core}, function (data) {
+                if (data[0] == "<") {
+                    $scope.hasHandlers = false;
+                    return;
+                }
 
                 var now = new Date();
                 $scope.lastUpdate = now.toTimeString().split(' ').shift();
