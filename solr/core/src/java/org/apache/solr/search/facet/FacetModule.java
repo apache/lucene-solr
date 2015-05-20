@@ -221,14 +221,9 @@ class FacetComponentState {
 // files after the interfaces are locked down more.
 //
 
-class FacetMerger {
-  public void merge(Object facetResult) {
-
-  }
-
-  public Object getMergedResult() {
-    return null; // TODO
-  }
+abstract class FacetMerger {
+  public abstract void merge(Object facetResult);
+  public abstract Object getMergedResult();
 }
 
 
@@ -305,7 +300,7 @@ class FacetLongMerger extends FacetSortableMerger {
 
 
 // base class for facets that create buckets (and can hence have sub-facets)
-class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
+abstract class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
   FacetRequestT freq;
 
   public FacetBucketMerger(FacetRequestT freq) {
@@ -454,7 +449,7 @@ class FacetFieldMerger extends FacetBucketMerger<FacetField> {
 
   private static class SortVal implements Comparable<SortVal> {
     FacetBucket bucket;
-    FacetSortableMerger merger;
+    FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
     FacetField.SortDirection direction;
 
     @Override
