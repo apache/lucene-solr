@@ -18,18 +18,12 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * <p>Wrapper to allow {@link SpanQuery} objects participate in composite 
@@ -94,20 +88,10 @@ public class FieldMaskingSpanQuery extends SpanQuery {
 
   // :NOTE: getBoost and setBoost are not proxied to the maskedQuery
   // ...this is done to be more consistent with things like SpanFirstQuery
-  
-  @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
-    return maskedQuery.getSpans(context, acceptDocs, termContexts, collector);
-  }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    maskedQuery.extractTerms(terms);
-  }  
-
-  @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return maskedQuery.createWeight(searcher, needsScores);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+    return maskedQuery.createWeight(searcher, needsScores, factory);
   }
 
   @Override

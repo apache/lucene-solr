@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -90,13 +91,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public String getField() { return field; }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    for (final SpanQuery clause : clauses) {
-      clause.extractTerms(terms);
-    }
-  }
-
-  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNear([");
@@ -118,27 +112,61 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+    List<SpanWeight> subWeights = new ArrayList<>();
+    for (SpanQuery q : clauses) {
+      subWeights.add(q.createWeight(searcher, false, factory));
+    }
+    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, subWeights);
+    return new SpanNearWeight(subWeights, similarity, factory);
+  }
 
-    Terms terms = context.reader().terms(field);
-    if (terms == null) {
-      return null; // field does not exist
+  public class SpanNearWeight extends SpanWeight {
+
+    final List<SpanWeight> subWeights;
+
+    public SpanNearWeight(List<SpanWeight> subWeights, SpanSimilarity similarity, SpanCollectorFactory factory) throws IOException {
+      super(SpanNearQuery.this, similarity, factory);
+      this.subWeights = subWeights;
     }
 
-    ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
-    SpanCollector subSpanCollector = inOrder ? collector.bufferedCollector() : collector;
-    for (SpanQuery seq : clauses) {
-      Spans subSpan = seq.getSpans(context, acceptDocs, termContexts, subSpanCollector);
-      if (subSpan != null) {
-        subSpans.add(subSpan);
-      } else {
-        return null; // all required
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      for (SpanWeight w : subWeights) {
+        w.extractTermContexts(contexts);
       }
     }
 
-    
-    // all NearSpans require at least two subSpans
-    return (! inOrder) ? new NearSpansUnordered(this, subSpans) : new NearSpansOrdered(this, subSpans, collector);
+    @Override
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
+
+      Terms terms = context.reader().terms(field);
+      if (terms == null) {
+        return null; // field does not exist
+      }
+
+      ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
+      SpanCollector subSpanCollector = inOrder ? collector.bufferedCollector() : collector;
+      for (SpanWeight w : subWeights) {
+        Spans subSpan = w.getSpans(context, acceptDocs, subSpanCollector);
+        if (subSpan != null) {
+          subSpans.add(subSpan);
+        } else {
+          return null; // all required
+        }
+      }
+
+      // all NearSpans require at least two subSpans
+      return (!inOrder) ? new NearSpansUnordered(SpanNearQuery.this, subSpans)
+          : new NearSpansOrdered(SpanNearQuery.this, subSpans, collector);
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      for (SpanWeight w : subWeights) {
+        w.extractTerms(terms);
+      }
+    }
   }
 
   @Override

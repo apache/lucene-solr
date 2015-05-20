@@ -17,97 +17,91 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Expert-only.  Public for use by other weight implementations
  */
-public class SpanWeight extends Weight {
-  protected final Similarity similarity;
-  protected final Map<Term,TermContext> termContexts;
-  protected final SpanQuery query;
-  protected final SpanCollectorFactory<?> collectorFactory;
-  protected Similarity.SimWeight stats;
+public abstract class SpanWeight extends Weight {
 
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, SpanCollectorFactory<?> collectorFactory) throws IOException {
+  protected final SpanSimilarity similarity;
+  protected final SpanCollectorFactory collectorFactory;
+
+  /**
+   * Create a new SpanWeight
+   * @param query the parent query
+   * @param similarity a SpanSimilarity to be used for scoring
+   * @param collectorFactory a SpanCollectorFactory to be used for Span collection
+   * @throws IOException on error
+   */
+  public SpanWeight(SpanQuery query, SpanSimilarity similarity, SpanCollectorFactory collectorFactory) throws IOException {
     super(query);
-    this.similarity = searcher.getSimilarity();
-    this.query = query;
+    this.similarity = similarity;
     this.collectorFactory = collectorFactory;
-
-    termContexts = new HashMap<>();
-    TreeSet<Term> terms = new TreeSet<>();
-    query.extractTerms(terms);
-    final IndexReaderContext context = searcher.getTopReaderContext();
-    final TermStatistics termStats[] = new TermStatistics[terms.size()];
-    int i = 0;
-    for (Term term : terms) {
-      TermContext state = TermContext.build(context, term);
-      termStats[i] = searcher.termStatistics(term, state);
-      termContexts.put(term, state);
-      i++;
-    }
-    final String field = query.getField();
-    if (field != null) {
-      stats = similarity.computeWeight(query.getBoost(),
-                                       searcher.collectionStatistics(query.getField()),
-                                       termStats);
-    }
   }
 
   /**
-   * @return the SpanCollectorFactory associated with this SpanWeight
+   * Collect all TermContexts used by this Weight
+   * @param contexts a map to add the TermContexts to
    */
-  public SpanCollectorFactory<?> getSpanCollectorFactory() {
-    return collectorFactory;
-  }
+  public abstract void extractTermContexts(Map<Term, TermContext> contexts);
 
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    query.extractTerms(terms);
+  /**
+   * Expert: Return a Spans object iterating over matches from this Weight
+   * @param ctx a LeafReaderContext for this Spans
+   * @param acceptDocs a bitset of documents to check
+   * @param collector a SpanCollector to use for postings data collection
+   * @return a Spans
+   * @throws IOException on error
+   */
+  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs, SpanCollector collector) throws IOException;
+
+  /**
+   * Expert: Return a Spans object iterating over matches from this Weight, without
+   * collecting any postings data.
+   * @param ctx a LeafReaderContext for this Spans
+   * @param acceptDocs a bitset of documents to check
+   * @return a Spans
+   * @throws IOException on error
+   */
+  public final Spans getSpans(LeafReaderContext ctx, Bits acceptDocs) throws IOException {
+    return getSpans(ctx, acceptDocs, collectorFactory.newCollector());
   }
 
   @Override
   public float getValueForNormalization() throws IOException {
-    return stats == null ? 1.0f : stats.getValueForNormalization();
+    return similarity == null ? 1.0f : similarity.getValueForNormalization();
   }
 
   @Override
   public void normalize(float queryNorm, float topLevelBoost) {
-    if (stats != null) {
-      stats.normalize(queryNorm, topLevelBoost);
+    if (similarity != null) {
+      similarity.normalize(queryNorm, topLevelBoost);
     }
   }
 
   @Override
   public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    if (stats == null) {
+    if (similarity == null) {
       return null;
     }
-    Terms terms = context.reader().terms(query.getField());
+    Terms terms = context.reader().terms(similarity.getField());
     if (terms != null && terms.hasPositions() == false) {
-      throw new IllegalStateException("field \"" + query.getField() + "\" was indexed without position data; cannot run SpanQuery (query=" + query + ")");
+      throw new IllegalStateException("field \"" + similarity.getField() + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
     }
-    Spans spans = query.getSpans(context, acceptDocs, termContexts, collectorFactory.newCollector());
-    return (spans == null) ? null : new SpanScorer(spans, this, similarity.simScorer(stats, context));
+    Spans spans = getSpans(context, acceptDocs, collectorFactory.newCollector());
+    return (spans == null) ? null : new SpanScorer(spans, this, similarity.simScorer(context));
   }
 
   @Override
@@ -117,7 +111,7 @@ public class SpanWeight extends Weight {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        SimScorer docScorer = similarity.simScorer(stats, context);
+        SimScorer docScorer = similarity.simScorer(context);
         Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
         Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
         return Explanation.match(scoreExplanation.getValue(),

@@ -29,7 +29,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
@@ -68,7 +67,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 
 /**
@@ -301,15 +299,9 @@ public class WeightedSpanTermExtractor {
         q = spanQuery;
       }
       LeafReaderContext context = getLeafContext();
-      Map<Term,TermContext> termContexts = new HashMap<>();
-      TreeSet<Term> extractedTerms = new TreeSet<>();
       SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, false);
-      w.extractTerms(extractedTerms);
-      for (Term term : extractedTerms) {
-        termContexts.put(term, TermContext.build(context, term));
-      }
       Bits acceptDocs = context.reader().getLiveDocs();
-      final Spans spans = q.getSpans(context, acceptDocs, termContexts, w.getSpanCollectorFactory().newCollector());
+      final Spans spans = w.getSpans(context, acceptDocs);
       if (spans == null) {
         return;
       }
