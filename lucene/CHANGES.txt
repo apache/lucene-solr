@@ -204,6 +204,9 @@ API Changes
 * LUCENE-6484: Removed EliasFanoDocIdSet, which was unused.
   (Paul Elschot via Adrien Grand)
 
+* LUCENE-6466: Moved SpanQuery.getSpans() and .extractTerms() to SpanWeight
+  (Alan Woodward)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 

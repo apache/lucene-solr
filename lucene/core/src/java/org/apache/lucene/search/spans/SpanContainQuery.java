@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 
 abstract class SpanContainQuery extends SpanQuery implements Cloneable {
+
   SpanQuery big;
   SpanQuery little;
 
@@ -48,26 +49,48 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   @Override
   public String getField() { return big.getField(); }
 
-  /** Extract terms from both <code>big</code> and <code>little</code>. */
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    big.extractTerms(terms);
-    little.extractTerms(terms);
-  }
+  public abstract class SpanContainWeight extends SpanWeight {
 
-  ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
-    Spans bigSpans = big.getSpans(context, acceptDocs, termContexts, collector);
-    if (bigSpans == null) {
-      return null;
+    final SpanWeight bigWeight;
+    final SpanWeight littleWeight;
+
+    public SpanContainWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
+                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
+      super(SpanContainQuery.this, similarity, factory);
+      this.bigWeight = bigWeight;
+      this.littleWeight = littleWeight;
     }
-    Spans littleSpans = little.getSpans(context, acceptDocs, termContexts, collector);
-    if (littleSpans == null) {
-      return null;
+
+    /**
+     * Extract terms from both <code>big</code> and <code>little</code>.
+     */
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      bigWeight.extractTerms(terms);
+      littleWeight.extractTerms(terms);
     }
-    ArrayList<Spans> bigAndLittle = new ArrayList<>();
-    bigAndLittle.add(bigSpans);
-    bigAndLittle.add(littleSpans);
-    return bigAndLittle;
+
+    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
+      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, collector);
+      if (bigSpans == null) {
+        return null;
+      }
+      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, collector);
+      if (littleSpans == null) {
+        return null;
+      }
+      ArrayList<Spans> bigAndLittle = new ArrayList<>();
+      bigAndLittle.add(bigSpans);
+      bigAndLittle.add(littleSpans);
+      return bigAndLittle;
+    }
+
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      bigWeight.extractTermContexts(contexts);
+      littleWeight.extractTermContexts(contexts);
+    }
+
   }
 
   String toString(String field, String name) {

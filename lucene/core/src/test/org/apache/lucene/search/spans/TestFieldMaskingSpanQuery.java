@@ -17,9 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,7 +33,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.apache.lucene.search.spans.SpanTestUtil.assertFinished;
+import static org.apache.lucene.search.spans.SpanTestUtil.assertNext;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
@@ -141,7 +142,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.extractTerms(terms);
+    qr.createWeight(searcher, false).extractTerms(terms);
     assertEquals(1, terms.size());
   }
   
@@ -161,7 +162,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.extractTerms(terms);
+    qr.createWeight(searcher, false).extractTerms(terms);
     assertEquals(2, terms.size());
   }
   

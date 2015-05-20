@@ -19,19 +19,18 @@ package org.apache.lucene.search.spans;
 
 /**
  * Interface defining a factory for creating new {@link SpanCollector}s
- * @param <T> the SpanCollector type
  */
-public interface SpanCollectorFactory<T extends SpanCollector> {
+public interface SpanCollectorFactory {
 
   /**
    * @return a new SpanCollector
    */
-  T newCollector();
+  SpanCollector newCollector();
 
   /**
    * Factory for creating NO_OP collectors
    */
-  public static final SpanCollectorFactory<?> NO_OP_FACTORY = new SpanCollectorFactory() {
+  public static final SpanCollectorFactory NO_OP_FACTORY = new SpanCollectorFactory() {
     @Override
     public SpanCollector newCollector() {
       return SpanCollector.NO_OP;

@@ -21,6 +21,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.util.Bits;
@@ -47,17 +48,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
    * */
   public SpanQuery getMatch() { return match; }
 
-
-
   @Override
   public String getField() { return match.getField(); }
-
-
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    match.extractTerms(terms);
-  }
 
   /**
    * Implementing classes are required to return whether the current position is a match for the passed in
@@ -65,7 +57,6 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
    *
    * This is only called if the underlying last {@link Spans#nextStartPosition()} for the
    * match indicated a valid start position.
-   *
    *
    * @param spans The {@link Spans} instance, positioned at the spot to check
    * @param collector the {@link SpanCollector} associated with the Spans
@@ -78,14 +69,47 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected abstract AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException;
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
-    Spans matchSpans = match.getSpans(context, acceptDocs, termContexts, collector);
-    return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
-      @Override
-      protected AcceptStatus accept(Spans candidate) throws IOException {
-        return acceptPosition(candidate, collector);
-      }
-    };
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, false, factory);
+    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, matchWeight);
+    return new SpanPositionCheckWeight(matchWeight, similarity, factory);
+  }
+
+  public class SpanPositionCheckWeight extends SpanWeight {
+
+    final SpanWeight matchWeight;
+
+    public SpanPositionCheckWeight(SpanWeight matchWeight, SpanSimilarity similarity,
+                                   SpanCollectorFactory collectorFactory) throws IOException {
+      super(SpanPositionCheckQuery.this, similarity, collectorFactory);
+      this.matchWeight = matchWeight;
+    }
+
+    public SpanPositionCheckWeight(SpanWeight matchWeight, SpanSimilarity similarity) throws IOException {
+      this(matchWeight, similarity, SpanCollectorFactory.NO_OP_FACTORY);
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      matchWeight.extractTerms(terms);
+    }
+
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      matchWeight.extractTermContexts(contexts);
+    }
+
+    @Override
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
+      Spans matchSpans = matchWeight.getSpans(context, acceptDocs, collector);
+      return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
+        @Override
+        protected AcceptStatus accept(Spans candidate) throws IOException {
+          return acceptPosition(candidate, collector);
+        }
+      };
+    }
+
   }
 
   @Override

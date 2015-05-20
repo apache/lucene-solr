@@ -34,7 +34,7 @@ import java.util.Collection;
  */
 public class PayloadSpanCollector implements SpanCollector {
 
-  public static final SpanCollectorFactory<PayloadSpanCollector> FACTORY = new SpanCollectorFactory<PayloadSpanCollector>() {
+  public static final SpanCollectorFactory FACTORY = new SpanCollectorFactory() {
     @Override
     public PayloadSpanCollector newCollector() {
       return new PayloadSpanCollector();

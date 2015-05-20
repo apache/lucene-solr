@@ -58,7 +58,7 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SpanWeight(this, searcher, PayloadSpanCollector.FACTORY);
+    return super.createWeight(searcher, needsScores, PayloadSpanCollector.FACTORY);
   }
 
   @Override

@@ -18,20 +18,17 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.TopTermsRewrite;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
@@ -75,11 +72,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     }
   }
 
-  @Override
-  protected void extractTerms(Set<Term> terms) {
-    throw new IllegalStateException("Rewrite first");
-  }
-
   /**
    * Expert: returns the rewriteMethod
    */
@@ -97,17 +89,17 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   public final void setRewriteMethod(SpanRewriteMethod rewriteMethod) {
     query.setRewriteMethod(rewriteMethod);
   }
-  
-  @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts, SpanCollector collector) throws IOException {
-    throw new UnsupportedOperationException("Query should have been rewritten");
-  }
 
   @Override
   public String getField() {
     return query.getField();
   }
-  
+
+  @Override
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+    throw new IllegalArgumentException("Rewrite first!");
+  }
+
   /** Returns the wrapped query */
   public Query getWrappedQuery() {
     return query;
