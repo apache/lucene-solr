@@ -18,10 +18,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -158,12 +158,17 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.timSort(scoreTerms, scoreTermSortByTermComp);
     
+    adjustScoreTerms(reader, scoreTerms);
+
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes.toBytesRef());
-      assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
     return q;
+  }
+
+  void adjustScoreTerms(IndexReader reader, ScoreTerm[] scoreTerms) {
+    //no-op but allows subclasses the ability to tweak the score terms used in ranking e.g. balancing IDF.
   }
 
   @Override

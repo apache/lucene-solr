@@ -18,13 +18,16 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.FilteredTermsEnum; // javadocs
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SingleTermsEnum;   // javadocs
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
@@ -184,6 +187,106 @@ public abstract class MultiTermQuery extends Query {
     }
   }
   
+  /**
+   * A rewrite method that first translates each term into
+   * {@link BooleanClause.Occur#SHOULD} clause in a BooleanQuery, but adjusts
+   * the frequencies used for scoring to be blended across the terms, otherwise
+   * the rarest term typically ranks highest (often not useful eg in the set of
+   * expanded terms in a FuzzyQuery).
+   * 
+   * <p>
+   * This rewrite method only uses the top scoring terms so it will not overflow
+   * the boolean max clause count.
+   * 
+   * @see #setRewriteMethod
+   */
+  public static final class TopTermsBlendedFreqScoringRewrite extends
+      TopTermsRewrite<BooleanQuery> {
+
+    /**
+     * Create a TopTermsBlendedScoringBooleanQueryRewrite for at most
+     * <code>size</code> terms.
+     * <p>
+     * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than
+     * <code>size</code>, then it will be used instead.
+     */
+    public TopTermsBlendedFreqScoringRewrite(int size) {
+      super(size);
+    }
+
+    @Override
+    protected int getMaxSize() {
+      return BooleanQuery.getMaxClauseCount();
+    }
+
+    @Override
+    protected BooleanQuery getTopLevelQuery() {
+      return new BooleanQuery(true);
+    }
+
+    @Override
+    protected void addClause(BooleanQuery topLevel, Term term, int docCount,
+        float boost, TermContext states) {
+      final TermQuery tq = new TermQuery(term, states);
+      tq.setBoost(boost);
+      topLevel.add(tq, BooleanClause.Occur.SHOULD);
+    }
+
+    @Override
+    void adjustScoreTerms(IndexReader reader, ScoreTerm[] scoreTerms) {
+      if (scoreTerms.length <= 1) {
+        return;
+      }
+      int maxDoc = reader.maxDoc();
+      int maxDf = 0;
+      long maxTtf = 0;
+      for (ScoreTerm scoreTerm : scoreTerms) {
+        TermContext ctx = scoreTerm.termState;
+        int df = ctx.docFreq();
+        maxDf = Math.max(df, maxDf);
+        long ttf = ctx.totalTermFreq();
+        maxTtf = ttf == -1 || maxTtf == -1 ? -1 : Math.max(ttf, maxTtf);
+      }
+
+      assert maxDf >= 0 : "DF must be >= 0";
+      if (maxDf == 0) {
+        return; // we are done that term doesn't exist at all
+      }
+      assert (maxTtf == -1) || (maxTtf >= maxDf);
+
+      for (int i = 0; i < scoreTerms.length; i++) {
+        TermContext ctx = scoreTerms[i].termState;
+        ctx = adjustFrequencies(ctx, maxDf, maxTtf);
+
+        ScoreTerm adjustedScoreTerm = new ScoreTerm(ctx);
+        adjustedScoreTerm.boost = scoreTerms[i].boost;
+        adjustedScoreTerm.bytes.copyBytes(scoreTerms[i].bytes);
+        scoreTerms[i] = adjustedScoreTerm;
+      }
+    }
+  }
+
+  private static TermContext adjustFrequencies(TermContext ctx, int artificialDf,
+      long artificialTtf) {
+    List<LeafReaderContext> leaves = ctx.topReaderContext.leaves();
+    final int len;
+    if (leaves == null) {
+      len = 1;
+    } else {
+      len = leaves.size();
+    }
+    TermContext newCtx = new TermContext(ctx.topReaderContext);
+    for (int i = 0; i < len; ++i) {
+      TermState termState = ctx.get(i);
+      if (termState == null) {
+        continue;
+      }
+      newCtx.register(termState, i);
+    }
+    newCtx.accumulateStatistics(artificialDf, artificialTtf);
+    return newCtx;
+  }
+
   /**
    * A rewrite method that first translates each term into
    * {@link BooleanClause.Occur#SHOULD} clause in a BooleanQuery, but the scores
