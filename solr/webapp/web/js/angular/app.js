@@ -280,6 +280,9 @@ solrAdminApp.config([
   };
 
   var failed = function(rejection) {
+    if (rejection.config.params.doNotIntercept) {
+        return rejection;
+    }
     activeRequests--;
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');

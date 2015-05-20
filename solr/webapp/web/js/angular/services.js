@@ -133,10 +133,12 @@ solrAdminServices.factory('System',
 .factory('DataImport',
   ['$resource', function($resource) {
     return $resource('/solr/:core/dataimport', {core: '@core', indent:'on', wt:'json', _:Date.now()}, {
-      "config": {params: {command: "show-config"}, transformResponse: function(data) {
-          return {config: data};
-      }},
-      "status": {params: {command: "status"}},
+      "config": {params: {command: "show-config", doNotIntercept: "true"},
+                 transformResponse: function(data) {
+                    return {config: data};
+                 }
+                },
+      "status": {params: {command: "status", doNotIntercept: "true"}},
       "reload": {params: {command: "reload-config"}},
       "post": {method: "POST",
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
