@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.List;
-import java.util.Arrays;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -28,7 +28,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -241,6 +244,90 @@ public class TestFuzzyQuery extends LuceneTestCase {
     directory.close();
   }
   
+  public void testSingleQueryExactMatchScoresHighest() throws Exception {
+    //See issue LUCENE-329 - IDF shouldn't wreck similarity ranking 
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    addDoc("smith", writer);
+    addDoc("smith", writer);
+    addDoc("smith", writer);
+    addDoc("smith", writer);
+    addDoc("smith", writer);
+    addDoc("smith", writer);
+    addDoc("smythe", writer);
+    addDoc("smdssasd", writer);
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setSimilarity(new DefaultSimilarity()); //avoid randomisation of similarity algo by test framework
+    writer.close();
+    String searchTerms[] = { "smith", "smythe", "smdssasd" };
+    for (String searchTerm : searchTerms) {
+      FuzzyQuery query = new FuzzyQuery(new Term("field", searchTerm), 2, 1);
+      ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+      StoredDocument bestDoc = searcher.doc(hits[0].doc);
+      assertTrue(hits.length > 0);
+      String topMatch = bestDoc.get("field");
+      assertEquals(searchTerm, topMatch);
+      if (hits.length > 1) {
+        StoredDocument worstDoc = searcher.doc(hits[hits.length - 1].doc);
+        String worstMatch = worstDoc.get("field");
+        assertNotSame(searchTerm, worstMatch);
+      }
+    }
+    reader.close();
+    directory.close();
+  }
+  
+  public void testMultipleQueriesIdfWorks() throws Exception {
+    // With issue LUCENE-329 - it could be argued a MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite
+    // is the solution as it disables IDF.
+    // However - IDF is still useful as in this case where there are multiple FuzzyQueries.
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+
+    addDoc("michael smith", writer);
+    addDoc("michael lucero", writer);
+    addDoc("doug cutting", writer);
+    addDoc("doug cuttin", writer);
+    addDoc("michael wardle", writer);
+    addDoc("micheal vegas", writer);
+    addDoc("michael lydon", writer);
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setSimilarity(new DefaultSimilarity()); //avoid randomisation of similarity algo by test framework
+
+    writer.close();
+
+    BooleanQuery query = new BooleanQuery();
+    String commonSearchTerm = "michael";
+    FuzzyQuery commonQuery = new FuzzyQuery(new Term("field", commonSearchTerm), 2, 1);
+    query.add(commonQuery, Occur.SHOULD);
+
+    String rareSearchTerm = "cutting";
+    FuzzyQuery rareQuery = new FuzzyQuery(new Term("field", rareSearchTerm), 2, 1);
+    query.add(rareQuery, Occur.SHOULD);
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+
+    // Matches on the rare surname should be worth more than matches on the common forename
+    assertEquals(7, hits.length);
+    StoredDocument bestDoc = searcher.doc(hits[0].doc);
+    String topMatch = bestDoc.get("field");
+    assertTrue(topMatch.contains(rareSearchTerm));
+
+    StoredDocument runnerUpDoc = searcher.doc(hits[1].doc);
+    String runnerUpMatch = runnerUpDoc.get("field");
+    assertTrue(runnerUpMatch.contains("cuttin"));
+
+    StoredDocument worstDoc = searcher.doc(hits[hits.length - 1].doc);
+    String worstMatch = worstDoc.get("field");
+    assertTrue(worstMatch.contains("micheal")); //misspelling of common name
+
+    reader.close();
+    directory.close();
+  }
+
   /** 
    * MultiTermQuery provides (via attribute) information about which values
    * must be competitive to enter the priority queue. 

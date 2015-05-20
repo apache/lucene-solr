@@ -117,16 +117,31 @@ public final class TermContext {
    * should be derived from a {@link IndexReaderContext}'s leaf ord.
    */
   public void register(TermState state, final int ord, final int docFreq, final long totalTermFreq) {
+    register(state, ord);
+    accumulateStatistics(docFreq, totalTermFreq);
+  }
+
+  /**
+   * Expert: Registers and associates a {@link TermState} with an leaf ordinal. The
+   * leaf ordinal should be derived from a {@link IndexReaderContext}'s leaf ord.
+   * On the contrary to {@link #register(TermState, int, int, long)} this method
+   * does NOT update term statistics.
+   */
+  public void register(TermState state, final int ord) {
     assert state != null : "state must not be null";
     assert ord >= 0 && ord < states.length;
     assert states[ord] == null : "state for ord: " + ord
         + " already registered";
+    states[ord] = state;
+  }
+
+  /** Expert: Accumulate term statistics. */
+  public void accumulateStatistics(final int docFreq, final long totalTermFreq) {
     this.docFreq += docFreq;
     if (this.totalTermFreq >= 0 && totalTermFreq >= 0)
       this.totalTermFreq += totalTermFreq;
     else
       this.totalTermFreq = -1;
-    states[ord] = state;
   }
 
   /**

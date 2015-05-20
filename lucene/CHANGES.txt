@@ -135,6 +135,8 @@ Optimizations
   like a disjunction. (Adrien Grand)
 
 Bug Fixes
+* LUCENE-329: Fix FuzzyQuery defaults to rank exact matches highest.
+  (Mark Harwood, Adrien Grand)
 
 * LUCENE-6378: Fix all RuntimeExceptions to throw the underlying root cause.
   (Varun Thacker, Adrien Grand, Mike McCandless)
