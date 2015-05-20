@@ -41,10 +41,10 @@ public class MultiSpansWrapper {
 
   public static Spans wrap(IndexReader reader, SpanQuery spanQuery, SpanCollector collector) throws IOException {
 
-    IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setQueryCache(null);
     LeafReader lr = SlowCompositeReaderWrapper.wrap(reader); // slow, but ok for testing
     LeafReaderContext lrContext = lr.getContext();
+    IndexSearcher searcher = new IndexSearcher(lr);
+    searcher.setQueryCache(null);
 
     SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
 
