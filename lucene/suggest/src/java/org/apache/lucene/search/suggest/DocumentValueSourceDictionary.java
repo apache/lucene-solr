@@ -31,7 +31,8 @@ import org.apache.lucene.queries.function.ValueSource;
 
 /**
  * <p>
- * Dictionary with terms and optionally payload information 
+ * Dictionary with terms and optionally payload and
+ * optionally contexts information
  * taken from stored fields in a Lucene index. Similar to 
  * {@link DocumentDictionary}, except it obtains the weight
  * of the terms in a document based on a {@link ValueSource}.
@@ -39,13 +40,10 @@ import org.apache.lucene.queries.function.ValueSource;
  * <b>NOTE:</b> 
  *  <ul>
  *    <li>
- *      The term and (optionally) payload fields have to be
- *      stored
+ *      The term field has to be stored; if it is missing, the document is skipped.
  *    </li>
  *    <li>
- *      if the term or (optionally) payload fields supplied
- *      do not have a value for a document, then the document is 
- *      rejected by the dictionary
+ *      The payload and contexts field are optional and are not required to be stored.
  *    </li>
  *  </ul>
  *  <p>
