@@ -56,7 +56,6 @@ public class PayloadNearQuery extends SpanNearQuery {
 
   protected String fieldName;
   protected PayloadFunction function;
-  protected final PayloadSpanCollector payloadCollector = new PayloadSpanCollector();
 
   public PayloadNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
     this(clauses, slop, inOrder, new AveragePayloadFunction());
@@ -132,15 +131,16 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     public PayloadNearSpanWeight(SpanQuery query, IndexSearcher searcher)
         throws IOException {
-      super(query, searcher, payloadCollector);
+      super(query, searcher, PayloadSpanCollector.FACTORY);
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Spans spans = query.getSpans(context, acceptDocs, termContexts, payloadCollector);
+      PayloadSpanCollector collector = PayloadSpanCollector.FACTORY.newCollector();
+      Spans spans = query.getSpans(context, acceptDocs, termContexts, collector);
       return (spans == null)
               ? null
-              : new PayloadNearSpanScorer(spans, this, similarity.simScorer(stats, context));
+              : new PayloadNearSpanScorer(spans, this, collector, similarity.simScorer(stats, context));
     }
     
     @Override
@@ -176,10 +176,13 @@ public class PayloadNearQuery extends SpanNearQuery {
     Spans spans;
     protected float payloadScore;
     private int payloadsSeen;
+    private final PayloadSpanCollector collector;
 
-    protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
+    protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, PayloadSpanCollector collector,
+                                    Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
       this.spans = spans;
+      this.collector = collector;
     }
 
     // TODO change the whole spans api to use bytesRef, or nuke spans
@@ -218,9 +221,9 @@ public class PayloadNearQuery extends SpanNearQuery {
       do {
         int matchLength = spans.endPosition() - startPos;
         freq += docScorer.computeSlopFactor(matchLength);
-        payloadCollector.reset();
-        spans.collect(payloadCollector);
-        processPayloads(payloadCollector.getPayloads(), startPos, spans.endPosition());
+        collector.reset();
+        spans.collect(collector);
+        processPayloads(collector.getPayloads(), startPos, spans.endPosition());
         startPos = spans.nextStartPosition();
       } while (startPos != Spans.NO_MORE_POSITIONS);
     }

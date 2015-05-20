@@ -21,6 +21,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.BufferedSpanCollector;
 import org.apache.lucene.search.spans.SpanCollector;
+import org.apache.lucene.search.spans.SpanCollectorFactory;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
@@ -32,6 +33,13 @@ import java.util.Collection;
  * SpanCollector implementation that collects payloads from a {@link Spans}
  */
 public class PayloadSpanCollector implements SpanCollector {
+
+  public static final SpanCollectorFactory<PayloadSpanCollector> FACTORY = new SpanCollectorFactory<PayloadSpanCollector>() {
+    @Override
+    public PayloadSpanCollector newCollector() {
+      return new PayloadSpanCollector();
+    }
+  };
 
   private final Collection<byte[]> payloads = new ArrayList<>();
   BufferedPayloadCollector bufferedCollector;

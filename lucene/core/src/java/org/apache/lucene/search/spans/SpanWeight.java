@@ -44,14 +44,14 @@ public class SpanWeight extends Weight {
   protected final Similarity similarity;
   protected final Map<Term,TermContext> termContexts;
   protected final SpanQuery query;
-  protected final SpanCollector collector;
+  protected final SpanCollectorFactory<?> collectorFactory;
   protected Similarity.SimWeight stats;
 
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, SpanCollector collector) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, SpanCollectorFactory<?> collectorFactory) throws IOException {
     super(query);
     this.similarity = searcher.getSimilarity();
     this.query = query;
-    this.collector = collector;
+    this.collectorFactory = collectorFactory;
 
     termContexts = new HashMap<>();
     TreeSet<Term> terms = new TreeSet<>();
@@ -71,6 +71,13 @@ public class SpanWeight extends Weight {
                                        searcher.collectionStatistics(query.getField()),
                                        termStats);
     }
+  }
+
+  /**
+   * @return the SpanCollectorFactory associated with this SpanWeight
+   */
+  public SpanCollectorFactory<?> getSpanCollectorFactory() {
+    return collectorFactory;
   }
 
   @Override
@@ -99,7 +106,7 @@ public class SpanWeight extends Weight {
     if (terms != null && terms.hasPositions() == false) {
       throw new IllegalStateException("field \"" + query.getField() + "\" was indexed without position data; cannot run SpanQuery (query=" + query + ")");
     }
-    Spans spans = query.getSpans(context, acceptDocs, termContexts, collector);
+    Spans spans = query.getSpans(context, acceptDocs, termContexts, collectorFactory.newCollector());
     return (spans == null) ? null : new SpanScorer(spans, this, similarity.simScorer(stats, context));
   }
 

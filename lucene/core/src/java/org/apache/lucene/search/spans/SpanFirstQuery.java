@@ -37,7 +37,7 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
   }
 
   @Override
-  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
     assert spans.startPosition() != spans.endPosition() : "start equals end: " + spans.startPosition();
     if (spans.startPosition() >= end)
       return AcceptStatus.NO_MORE_IN_CURRENT_DOC;

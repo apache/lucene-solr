@@ -18,6 +18,7 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
+import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanPositionCheckQuery;
 import org.apache.lucene.search.spans.SpanWeight;
@@ -37,7 +38,6 @@ import java.util.Objects;
 public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
 
   protected final Collection<byte[]> payloadToMatch;
-  protected final PayloadSpanCollector payloadCollector = new PayloadSpanCollector();
 
   /**
    * @param match          The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
@@ -50,11 +50,13 @@ public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SpanWeight(this, searcher, payloadCollector);
+    return new SpanWeight(this, searcher, PayloadSpanCollector.FACTORY);
   }
 
   @Override
-  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
+
+    PayloadSpanCollector payloadCollector = (PayloadSpanCollector) collector;
 
     payloadCollector.reset();
     spans.collect(payloadCollector);

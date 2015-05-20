@@ -48,13 +48,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
-import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -303,12 +303,13 @@ public class WeightedSpanTermExtractor {
       LeafReaderContext context = getLeafContext();
       Map<Term,TermContext> termContexts = new HashMap<>();
       TreeSet<Term> extractedTerms = new TreeSet<>();
-      searcher.createNormalizedWeight(q, false).extractTerms(extractedTerms);
+      SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, false);
+      w.extractTerms(extractedTerms);
       for (Term term : extractedTerms) {
         termContexts.put(term, TermContext.build(context, term));
       }
       Bits acceptDocs = context.reader().getLiveDocs();
-      final Spans spans = q.getSpans(context, acceptDocs, termContexts, SpanCollector.NO_OP);
+      final Spans spans = q.getSpans(context, acceptDocs, termContexts, w.getSpanCollectorFactory().newCollector());
       if (spans == null) {
         return;
       }
