@@ -16,7 +16,6 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -56,7 +55,6 @@ import java.io.IOException;
  *
  *
  **/
-@Seed("35DE1D7C6E4744B0:BD8A22A6C0BB2948")
 public class TestPayloadTermQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
