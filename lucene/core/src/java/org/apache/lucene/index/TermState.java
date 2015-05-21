@@ -50,6 +50,12 @@ public abstract class TermState implements Cloneable {
     }
   } 
 
+  /** Returns true if this term is real (e.g., not an auto-prefix term).
+   *  @lucene.internal */
+  public boolean isRealTerm() {
+    return true;
+  }
+
   @Override
   public String toString() {
     return "TermState";

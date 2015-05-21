@@ -42,7 +42,7 @@ public class BlockTermState extends OrdTermState {
   /** True if this term is "real" (e.g., not an auto-prefix term or
    *  some other "secret" term; currently only {@link BlockTreeTermsReader}
    *  sets this). */
-  public boolean isRealTerm;
+  public boolean isRealTerm = true;
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -59,6 +59,11 @@ public class BlockTermState extends OrdTermState {
     termBlockOrd = other.termBlockOrd;
     blockFilePointer = other.blockFilePointer;
     isRealTerm = other.isRealTerm;
+  }
+
+  @Override
+  public boolean isRealTerm() {
+    return isRealTerm;
   }
 
   @Override
