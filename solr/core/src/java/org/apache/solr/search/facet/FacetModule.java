@@ -215,22 +215,6 @@ class FacetComponentState {
   FacetMerger merger;
 }
 
-//
-// The FacetMerger code is in the prototype stage, and this is the reason that
-// many implementations are all in this file.  They can be moved to separate
-// files after the interfaces are locked down more.
-//
-
-abstract class FacetMerger {
-  public abstract void merge(Object facetResult, Context mcontext);
-  public abstract Object getMergedResult();
-
-  public static class Context {
-    FacetComponentState state;  // todo: is this needed?
-    Object root;
-  }
-}
-
 
 abstract class FacetSortableMerger extends FacetMerger {
   public void prepareSort() {
@@ -307,6 +291,7 @@ class FacetLongMerger extends FacetSortableMerger {
 // base class for facets that create buckets (and can hence have sub-facets)
 abstract class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
   FacetRequestT freq;
+  int bucketNumber;
 
   public FacetBucketMerger(FacetRequestT freq) {
     this.freq = freq;
@@ -314,7 +299,7 @@ abstract class FacetBucketMerger<FacetRequestT extends FacetRequest> extends Fac
 
   /** Bucketval is the representative value for the bucket.  Only applicable to terms and range queries to distinguish buckets. */
   FacetBucket newBucket(Comparable bucketVal) {
-    return new FacetBucket(this, bucketVal);
+    return new FacetBucket(this, bucketVal, bucketNumber++);
   }
 
   // do subs...
@@ -360,14 +345,17 @@ class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
 
 
 class FacetBucket {
-  FacetBucketMerger parent;
-  Comparable bucketValue;
+  final FacetBucketMerger parent;
+  final Comparable bucketValue;
+  final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, etc)
+
   long count;
   Map<String, FacetMerger> subs;
 
-  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue) {
+  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue, int bucketNumber) {
     this.parent = parent;
     this.bucketValue = bucketValue;
+    this.bucketNumber = bucketNumber;
   }
 
   public long getCount() {
@@ -448,7 +436,7 @@ class FacetFieldMerger extends FacetBucketMerger<FacetField> {
   FacetBucket allBuckets;
   FacetMerger numBuckets;
 
-  LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<Object,FacetBucket>();
+  LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
   int numReturnedBuckets; // the number of buckets in the bucket lists returned from all of the shards
 
@@ -727,11 +715,6 @@ class FacetRangeMerger extends FacetBucketMerger<FacetRange> {
 
   public FacetRangeMerger(FacetRange freq) {
     super(freq);
-  }
-
-  @Override
-  FacetBucket newBucket(Comparable bucketVal) {
-    return super.newBucket(bucketVal);
   }
 
   @Override
