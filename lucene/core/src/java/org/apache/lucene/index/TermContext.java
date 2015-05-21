@@ -182,12 +182,11 @@ public final class TermContext {
    *
    *  @lucene.internal */
   public boolean hasOnlyRealTerms() {
-    for(TermState termState : states) {
-      if (termState instanceof BlockTermState && ((BlockTermState) termState).isRealTerm == false) {
+    for (TermState termState : states) {
+      if (termState != null && termState.isRealTerm() == false) {
         return false;
       }
     }
-
     return true;
   }
 
