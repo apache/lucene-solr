@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.Assign.*;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
@@ -142,7 +143,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
-      DocCollection.SNITCH, null));
+      SNITCH, null));
 
   static final Random RANDOM;
   static {
@@ -1296,11 +1297,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
       DocCollection collection = clusterState.getCollection(collectionName);
-      int maxShardsPerNode = collection.getInt(MAX_SHARDS_PER_NODE, 1);
       int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
       String createNodeSetStr = message.getStr(CREATE_NODE_SET);
-
-      ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, numSlices, maxShardsPerNode, repFactor, createNodeSetStr);
+      List<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, sliceName, repFactor,
+          createNodeSetStr, overseer.getZkController().getCoreContainer());
 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
       // wait for a while until we see the shard
@@ -2483,31 +2483,15 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     Map<String, Integer> sharVsReplicaCount = new HashMap<>();
 
     for (String shard : shardNames) sharVsReplicaCount.put(shard, repFactor);
-    maps = (List<Map>) message.get("snitch");
-    List snitchList = maps == null? Collections.emptyList(): maps;
     ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
         sharVsReplicaCount,
-        snitchList,
+        (List<Map>) message.get(SNITCH),
         new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
         nodeList,
         overseer.getZkController().getCoreContainer(),
         clusterState);
 
-    Map<Position, String> nodeMappings = replicaAssigner.getNodeMappings();
-    if(nodeMappings == null){
-      String msg = "Could not identify nodes matching the rules " + rules ;
-      if(!replicaAssigner.failedNodes.isEmpty()){
-        Map<String, String> failedNodes = new HashMap<>();
-        for (Map.Entry<String, SnitchContext> e : replicaAssigner.failedNodes.entrySet()) {
-          failedNodes.put(e.getKey(), e.getValue().getErrMsg());
-        }
-        msg+=" Some nodes where excluded from assigning replicas because tags could not be obtained from them "+ failedNodes;
-      }
-      msg+= ZkStateReader.toJSONString(replicaAssigner.getNodeVsTags());
-
-      throw new SolrException(ErrorCode.BAD_REQUEST, msg);
-    }
-    return nodeMappings;
+    return replicaAssigner.getNodeMappings();
   }
 
   private Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
@@ -2560,7 +2544,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
       if (node == null) {
-        node = getNodesForNewShard(clusterState, collection, coll.getSlices().size(), coll.getInt(MAX_SHARDS_PER_NODE, 1), coll.getInt(REPLICATION_FACTOR, 1), null).get(0).nodeName;
+
+        node = getNodesForNewShard(clusterState, collection, shard, 1,
+            null, overseer.getZkController().getCoreContainer()).get(0).nodeName;
         log.info("Node not provided, Identified {} for creating new replica", node);
       }
 

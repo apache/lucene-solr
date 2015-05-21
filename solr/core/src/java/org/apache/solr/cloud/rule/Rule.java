@@ -119,7 +119,7 @@ public class Rule {
    * @return MatchStatus
    */
   MatchStatus tryAssignNodeToShard(String testNode,
-                                   Map<String, Set<String>> shardVsNodeSet,
+                                   Map<String, Map<String,Integer>> shardVsNodeSet,
                                    Map<String, Map<String, Object>> nodeVsTags,
                                    String shardName, Phase phase) {
 
@@ -153,21 +153,21 @@ public class Rule {
 
   private int getNumberOfNodesWithSameTagVal(Condition shardCondition,
                                              Map<String, Map<String, Object>> nodeVsTags,
-                                             Map<String, Set<String>> shardVsNodeSet,
+                                             Map<String, Map<String,Integer>> shardVsNodeSet,
                                              String shardName,
                                              Condition tagCondition,
                                              Phase phase) {
 
     int countMatchingThisTagValue = 0;
-    for (Map.Entry<String, Set<String>> entry : shardVsNodeSet.entrySet()) {
+    for (Map.Entry<String, Map<String,Integer>> entry : shardVsNodeSet.entrySet()) {
       //check if this shard is relevant. either it is a ANY Wild card (**)
       // or this shard is same as the shard in question
       if (shardCondition.val.equals(WILD_WILD_CARD) || entry.getKey().equals(shardName)) {
-        Set<String> nodesInThisShard = shardVsNodeSet.get(shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
+        Map<String,Integer> nodesInThisShard = shardVsNodeSet.get(shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
         if (nodesInThisShard != null) {
-          for (String aNode : nodesInThisShard) {
-            Object obj = nodeVsTags.get(aNode).get(tag.name);
-            if (tagCondition.canMatch(obj, phase)) countMatchingThisTagValue++;
+          for (Map.Entry<String,Integer> aNode : nodesInThisShard.entrySet()) {
+            Object obj = nodeVsTags.get(aNode.getKey()).get(tag.name);
+            if (tagCondition.canMatch(obj, phase)) countMatchingThisTagValue += aNode.getValue();
           }
         }
       }
@@ -177,7 +177,7 @@ public class Rule {
 
   public int compare(String n1, String n2,
                      Map<String, Map<String, Object>> nodeVsTags,
-                     Map<String, Set<String>> currentState) {
+                     Map<String, Map<String,Integer>> currentState) {
     return tag.compare(n1, n2, nodeVsTags);
   }
 

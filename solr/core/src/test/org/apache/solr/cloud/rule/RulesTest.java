@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -43,15 +44,17 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
   static final Logger log = LoggerFactory.getLogger(RulesTest.class);
 
   @Test
+  @ShardsFixed(num = 5)
   public void doIntegrationTest() throws Exception {
     String rulesColl = "rulesColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
       CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
       create.setCollectionName(rulesColl);
-      create.setNumShards(1);
+      create.setShards("shard1");
+      create.setRouterName(ImplicitDocRouter.NAME);
       create.setReplicationFactor(2);
-      create.setRule("cores:<4", "node:*,replica:1", "freedisk:>1");
+      create.setRule("cores:<4", "node:*,replica:<2", "freedisk:>1");
       create.setSnitch("class:ImplicitSnitch");
       rsp = create.process(client);
       assertEquals(0, rsp.getStatus());
@@ -63,11 +66,29 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     List list = (List) rulesCollection.get("rule");
     assertEquals(3, list.size());
     assertEquals ( "<4", ((Map)list.get(0)).get("cores"));
-    assertEquals("1", ((Map) list.get(1)).get("replica"));
+    assertEquals("<2", ((Map) list.get(1)).get("replica"));
     assertEquals(">1", ((Map) list.get(2)).get("freedisk"));
     list = (List) rulesCollection.get("snitch");
     assertEquals(1, list.size());
     assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
+
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      CollectionAdminResponse rsp;
+      CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard();
+      createShard.setCollectionName(rulesColl);
+      createShard.setShardName("shard2");
+      rsp = createShard.process(client);
+      assertEquals(0, rsp.getStatus());
+      assertTrue(rsp.isSuccess());
+
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
+      addReplica.setCollectionName(rulesColl);
+      addReplica.setShardName("shard2");
+      rsp = createShard.process(client);
+      assertEquals(0, rsp.getStatus());
+      assertTrue(rsp.isSuccess());
+    }
+
 
   }
 
