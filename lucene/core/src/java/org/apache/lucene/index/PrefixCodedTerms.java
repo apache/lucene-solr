@@ -29,6 +29,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Prefix codes term instances (prefixes are shared)
@@ -36,15 +37,17 @@ import org.apache.lucene.util.BytesRefBuilder;
  */
 public class PrefixCodedTerms implements Accountable {
   final RAMFile buffer;
+  private final long size;
   private long delGen;
 
-  private PrefixCodedTerms(RAMFile buffer) {
+  private PrefixCodedTerms(RAMFile buffer, long size) {
     this.buffer = Objects.requireNonNull(buffer);
+    this.size = size;
   }
 
   @Override
   public long ramBytesUsed() {
-    return buffer.ramBytesUsed();
+    return buffer.ramBytesUsed() + 2 * RamUsageEstimator.NUM_BYTES_LONG;
   }
   
   @Override
@@ -63,6 +66,7 @@ public class PrefixCodedTerms implements Accountable {
     private RAMOutputStream output = new RAMOutputStream(buffer, false);
     private Term lastTerm = new Term("");
     private BytesRefBuilder lastTermBytes = new BytesRefBuilder();
+    private long size;
 
     /** Sole constructor. */
     public Builder() {}
@@ -85,6 +89,7 @@ public class PrefixCodedTerms implements Accountable {
         lastTermBytes.copyBytes(term.bytes);
         lastTerm.bytes = lastTermBytes.get();
         lastTerm.field = term.field;
+        size += 1;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -94,7 +99,7 @@ public class PrefixCodedTerms implements Accountable {
     public PrefixCodedTerms finish() {
       try {
         output.close();
-        return new PrefixCodedTerms(buffer);
+        return new PrefixCodedTerms(buffer, size);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -177,6 +182,11 @@ public class PrefixCodedTerms implements Accountable {
   /** Return an iterator over the terms stored in this {@link PrefixCodedTerms}. */
   public TermIterator iterator() {
     return new TermIterator(delGen, buffer);
+  }
+
+  /** Return the number of terms stored in this {@link PrefixCodedTerms}. */
+  public long size() {
+    return size;
   }
 
   @Override

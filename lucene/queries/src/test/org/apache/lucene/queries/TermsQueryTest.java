@@ -25,13 +25,21 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FilterDirectoryReader;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -48,6 +56,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 public class TermsQueryTest extends LuceneTestCase {
@@ -222,5 +231,95 @@ public class TermsQueryTest extends LuceneTestCase {
     final long expectedRamBytesUsed = query.ramBytesUsed();
     // error margin within 5%
     assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 20);
+  }
+
+  private static class TermsCountingDirectoryReaderWrapper extends FilterDirectoryReader {
+
+    private final AtomicInteger counter;
+    
+    public TermsCountingDirectoryReaderWrapper(DirectoryReader in, AtomicInteger counter) throws IOException {
+      super(in, new TermsCountingSubReaderWrapper(counter));
+      this.counter = counter;
+    }
+
+    private static class TermsCountingSubReaderWrapper extends SubReaderWrapper {
+      private final AtomicInteger counter;
+
+      public TermsCountingSubReaderWrapper(AtomicInteger counter) {
+        this.counter = counter;
+      }
+
+      @Override
+      public LeafReader wrap(LeafReader reader) {
+        return new TermsCountingLeafReaderWrapper(reader, counter);
+      }
+    }
+
+    private static class TermsCountingLeafReaderWrapper extends FilterLeafReader {
+
+      private final AtomicInteger counter;
+
+      public TermsCountingLeafReaderWrapper(LeafReader in, AtomicInteger counter) {
+        super(in);
+        this.counter = counter;
+      }
+
+      @Override
+      public Fields fields() throws IOException {
+        return new FilterFields(in.fields()) {
+          @Override
+          public Terms terms(String field) throws IOException {
+            final Terms in = this.in.terms(field);
+            if (in == null) {
+              return null;
+            }
+            return new FilterTerms(in) {
+              @Override
+              public TermsEnum iterator() throws IOException {
+                counter.incrementAndGet();
+                return super.iterator();
+              }
+            };
+          }
+        };
+      }
+      
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new TermsCountingDirectoryReaderWrapper(in, counter);
+    }
+
+  }
+
+  public void testPullOneTermsEnumPerField() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "1", Store.NO));
+    doc.add(new StringField("bar", "2", Store.NO));
+    doc.add(new StringField("baz", "3", Store.NO));
+    w.addDocument(doc);
+    DirectoryReader reader = w.getReader();
+    w.close();
+    final AtomicInteger counter = new AtomicInteger();
+    DirectoryReader wrapped = new TermsCountingDirectoryReaderWrapper(reader, counter);
+
+    final List<Term> terms = new ArrayList<>();
+    final Set<String> fields = new HashSet<>();
+    // enough terms to avoid the rewrite
+    final int numTerms = TestUtil.nextInt(random(), TermsQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD + 1, 100);
+    for (int i = 0; i < numTerms; ++i) {
+      final String field = RandomPicks.randomFrom(random(), new String[] {"foo", "bar", "baz"});
+      final BytesRef term = new BytesRef(RandomStrings.randomUnicodeOfCodepointLength(random(), 10));
+      fields.add(field);
+      terms.add(new Term(field, term));
+    }
+
+    new IndexSearcher(wrapped).count(new TermsQuery(terms));
+    assertEquals(fields.size(), counter.get());
+    wrapped.close();
+    dir.close();
   }
 }
