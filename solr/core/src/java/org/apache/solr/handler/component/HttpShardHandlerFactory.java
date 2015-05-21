@@ -194,9 +194,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   public void reconfigureHttpClient(HttpClientConfigurer configurer) {
     log.info("Reconfiguring the default client with: " + configurer);
-    synchronized (this.defaultClient) {
-      configurer.configure((DefaultHttpClient)this.defaultClient, getClientParams());
-    }
+    configurer.configure((DefaultHttpClient)this.defaultClient, getClientParams());
   }
 
   protected ThreadPoolExecutor getThreadPoolExecutor(){
