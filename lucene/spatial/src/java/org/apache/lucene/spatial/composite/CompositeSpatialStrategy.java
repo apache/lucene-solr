@@ -62,6 +62,18 @@ public class CompositeSpatialStrategy extends SpatialStrategy {
     this.geometryStrategy = geometryStrategy;
   }
 
+  public RecursivePrefixTreeStrategy getIndexStrategy() {
+    return indexStrategy;
+  }
+
+  public SerializedDVStrategy getGeometryStrategy() {
+    return geometryStrategy;
+  }
+
+  public boolean isOptimizePredicates() {
+    return optimizePredicates;
+  }
+
   /** Set to false to NOT use optimized search predicates that avoid checking the geometry sometimes. Only useful for
    * benchmarking. */
   public void setOptimizePredicates(boolean optimizePredicates) {
