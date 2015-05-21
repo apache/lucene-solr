@@ -24,6 +24,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -105,6 +108,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         solrHome = SolrResourceLoader.locateSolrHome();
 
       this.cores = createCoreContainer(solrHome, extraProperties);
+
+      if (this.cores.getAuthenticationPlugin() != null) {
+        HttpClientConfigurer configurer = this.cores.getAuthenticationPlugin().getDefaultConfigurer();
+        if (configurer != null) {
+          configurer.configure((DefaultHttpClient)httpClient, new ModifiableSolrParams());
+        }
+      }
 
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
@@ -248,7 +258,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         });
       } catch (Exception e) {
         e.printStackTrace();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, "+e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }
     // failed authentication?

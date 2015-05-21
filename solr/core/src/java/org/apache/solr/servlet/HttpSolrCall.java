@@ -511,7 +511,11 @@ public class HttpSolrCall {
 
       for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements(); ) {
         String headerName = e.nextElement();
-        method.addHeader(headerName, req.getHeader(headerName));
+        if (!"host".equalsIgnoreCase(headerName)
+            && !"authorization".equalsIgnoreCase(headerName)
+            && !"accept".equalsIgnoreCase(headerName)) {
+          method.addHeader(headerName, req.getHeader(headerName));
+        }
       }
       // These headers not supported for HttpEntityEnclosingRequests
       if (method instanceof HttpEntityEnclosingRequest) {

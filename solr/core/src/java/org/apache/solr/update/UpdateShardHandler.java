@@ -90,9 +90,7 @@ public class UpdateShardHandler {
 
   public void reconfigureHttpClient(HttpClientConfigurer configurer) {
     log.info("Reconfiguring the default client with: " + configurer);
-    synchronized (client) {
-      configurer.configure((DefaultHttpClient)client, getClientParams());
-    }
+    configurer.configure((DefaultHttpClient)client, getClientParams());
   }
 
   public ClientConnectionManager getConnectionManager() {
