@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class ReplicaAssigner {
   List<Rule> rules;
   Map<String, Integer> shardVsReplicaCount;
   Map<String, Map<String, Object>> nodeVsTags;
-  Map<String, Set<String>> shardVsNodes;
+  Map<String, HashMap<String, Integer>> shardVsNodes;
   List<String> liveNodes;
   Set<String> tagNames = new HashSet<>();
   private Map<String, AtomicInteger> nodeVsCores = new HashMap<>();
@@ -93,7 +94,7 @@ public class ReplicaAssigner {
   public ReplicaAssigner(List<Rule> rules,
                          Map<String, Integer> shardVsReplicaCount,
                          List snitches,
-                         Map<String, Set<String>> shardVsNodes,
+                         Map<String, Map<String, Integer>> shardVsNodes,
                          List<String> liveNodes,
                          CoreContainer cc, ClusterState clusterState) {
     this.rules = rules;
@@ -129,6 +130,27 @@ public class ReplicaAssigner {
    * the specified rule
    */
   public Map<Position, String> getNodeMappings() {
+    Map<Position, String> result = getNodeMappings0();
+    if (result == null) {
+      String msg = "Could not identify nodes matching the rules " + rules;
+      if (!failedNodes.isEmpty()) {
+        Map<String, String> failedNodes = new HashMap<>();
+        for (Map.Entry<String, SnitchContext> e : this.failedNodes.entrySet()) {
+          failedNodes.put(e.getKey(), e.getValue().getErrMsg());
+        }
+        msg += " Some nodes where excluded from assigning replicas because tags could not be obtained from them " + failedNodes;
+      }
+      msg += "\n tag values" + ZkStateReader.toJSONString(getNodeVsTags());
+      if (!shardVsNodes.isEmpty()) {
+        msg += "\nInitial state for the coll : " + ZkStateReader.toJSONString(shardVsNodes);
+      }
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+    }
+    return result;
+
+  }
+
+  Map<Position, String> getNodeMappings0() {
     List<String> shardNames = new ArrayList<>(shardVsReplicaCount.keySet());
     int[] shardOrder = new int[shardNames.size()];
     for (int i = 0; i < shardNames.size(); i++) shardOrder[i] = i;
@@ -152,7 +174,6 @@ public class ReplicaAssigner {
       result = tryAllPermutations(shardNames, shardOrder, nonWildCardShardRules, true);
     }
     return result;
-
   }
 
   private Map<Position, String> tryAllPermutations(List<String> shardNames,
@@ -191,7 +212,7 @@ public class ReplicaAssigner {
     final Map<String, Map<String, Object>> nodeVsTagsCopy = getDeepCopy(nodeVsTags, 2);
     Map<Position, String> result = new LinkedHashMap<>();
     int startPosition = 0;
-    final Map<String, Set<String>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
+    final Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
     List<String> sortedLiveNodes = new ArrayList<>(this.liveNodes);
     Collections.sort(sortedLiveNodes, new Comparator<String>() {
       @Override
@@ -235,9 +256,11 @@ public class ReplicaAssigner {
         //We have reached this far means this node can be applied to this position
         //and all rules are fine. So let us change the currentState
         result.put(position, liveNode);
-        Set<String> nodeNames = copyOfCurrentState.get(position.shard);
-        if (nodeNames == null) copyOfCurrentState.put(position.shard, nodeNames = new HashSet<>());
-        nodeNames.add(liveNode);
+        Map<String, Integer> nodeNames = copyOfCurrentState.get(position.shard);
+        if (nodeNames == null) copyOfCurrentState.put(position.shard, nodeNames = new HashMap<>());
+        Integer n = nodeNames.get(liveNode);
+        n = n == null ? 1 : n + 1;
+        nodeNames.put(liveNode, n);
         Number coreCount = (Number) nodeVsTagsCopy.get(liveNode).get(ImplicitSnitch.CORES);
         if (coreCount != null) {
           nodeVsTagsCopy.get(liveNode).put(ImplicitSnitch.CORES, coreCount.intValue() + 1);
@@ -434,8 +457,8 @@ public class ReplicaAssigner {
 
 
   static Map<Class, SnitchInfoImpl> getSnitchInfos(CoreContainer cc, List snitchConf) {
+    if (snitchConf == null) snitchConf = Collections.emptyList();
     Map<Class, SnitchInfoImpl> snitches = new LinkedHashMap<>();
-    if (snitchConf == null) return snitches;
     for (Object o : snitchConf) {
       //instantiating explicitly specified snitches
       String klas = null;

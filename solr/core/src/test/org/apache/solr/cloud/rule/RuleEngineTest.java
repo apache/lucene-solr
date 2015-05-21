@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
@@ -129,7 +130,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
-        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
+        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
 
 
@@ -141,7 +142,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
-        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
+        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNotNull(mapping);
     assertFalse(mapping.containsValue("127.0.0.2:49958_"));
 
@@ -164,7 +165,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
-        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
+        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
 
     rules = parseRules(
@@ -206,7 +207,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
-        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null ,null).getNodeMappings();
+        new HashMap(), new ArrayList<String>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
     rulesStr = "rack:*,replica:<2~";
     rules = parse(Arrays.asList(rulesStr));

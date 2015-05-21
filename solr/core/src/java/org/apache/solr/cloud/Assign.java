@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import org.apache.solr.cloud.rule.ReplicaAssigner;
+import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -24,6 +26,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +45,7 @@ import java.util.regex.Pattern;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 
 public class Assign {
@@ -129,9 +134,13 @@ public class Assign {
     }
   }
 
-  public static ArrayList<Node> getNodesForNewShard(ClusterState clusterState, String collectionName, int numSlices, int maxShardsPerNode, int repFactor, String createNodeSetStr) {
+  public static List<Node> getNodesForNewShard(ClusterState clusterState, String collectionName,String shard,int numberOfNodes,
+                                                    String createNodeSetStr, CoreContainer cc) {
+    DocCollection coll = clusterState.getCollection(collectionName);
+    Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
+    Integer repFactor = coll.getInt(REPLICATION_FACTOR, 1);
+    int numSlices = coll.getSlices().size();
     List<String> createNodeList = createNodeSetStr  == null ? null: StrUtils.splitSmart(createNodeSetStr, ",", true);
-
 
     Set<String> nodes = clusterState.getLiveNodes();
 
@@ -191,14 +200,46 @@ public class Assign {
           + " shards to be created (higher than the allowed number)");
     }
 
-    ArrayList<Node> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-    Collections.sort(sortedNodeList, new Comparator<Node>() {
-      @Override
-      public int compare(Node x, Node y) {
-        return (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1);
+    List l = (List) coll.get(DocCollection.RULE);
+    if(l != null) {
+      ArrayList<Rule> rules = new ArrayList<>();
+      for (Object o : l) rules.add(new Rule((Map) o));
+      Map<String, Map<String,Integer>> shardVsNodes = new LinkedHashMap<>();
+      for (Slice slice : coll.getSlices()) {
+        LinkedHashMap<String, Integer> n = new LinkedHashMap<>();
+        shardVsNodes.put(slice.getName(), n);
+        for (Replica replica : slice.getReplicas()) {
+          Integer count = n.get(replica.getNodeName());
+          if(count == null) count = 0;
+          n.put(replica.getNodeName(),++count);
+        }
       }
-    });
-    return sortedNodeList;
+      List snitches = (List) coll.get(DocCollection.SNITCH);
+      List<String> nodesList = createNodeList == null ?
+          new ArrayList<>(clusterState.getLiveNodes()) :
+          createNodeList ;
+      Map<ReplicaAssigner.Position, String> positions = new ReplicaAssigner(
+          rules,
+          Collections.singletonMap(shard, numberOfNodes),
+          snitches,
+          shardVsNodes,
+          nodesList, cc, clusterState).getNodeMappings();
+
+      List<Node> n = new ArrayList<>();
+      for (String s : positions.values()) n.add(new Node(s));
+      return n;
+
+    }else {
+
+      ArrayList<Node> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
+      Collections.sort(sortedNodeList, new Comparator<Node>() {
+        @Override
+        public int compare(Node x, Node y) {
+          return (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1);
+        }
+      });
+      return sortedNodeList;
+    }
   }
 
 }
