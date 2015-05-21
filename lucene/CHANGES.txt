@@ -138,6 +138,7 @@ Optimizations
   terms or less. (Adrien Grand)
 
 Bug Fixes
+
 * LUCENE-329: Fix FuzzyQuery defaults to rank exact matches highest.
   (Mark Harwood, Adrien Grand)
 
