@@ -145,10 +145,12 @@ public abstract class Weight {
     return new DefaultBulkScorer(scorer);
   }
 
-  /** Just wraps a Scorer and performs top scoring using it. */
-  static class DefaultBulkScorer extends BulkScorer {
+  /** Just wraps a Scorer and performs top scoring using it.
+   *  @lucene.internal */
+  protected static class DefaultBulkScorer extends BulkScorer {
     private final Scorer scorer;
 
+    /** Sole constructor. */
     public DefaultBulkScorer(Scorer scorer) {
       if (scorer == null) {
         throw new NullPointerException();

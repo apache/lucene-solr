@@ -34,7 +34,7 @@ class CoalescedUpdates {
   final List<PrefixCodedTerms> terms = new ArrayList<>();
   final List<NumericDocValuesUpdate> numericDVUpdates = new ArrayList<>();
   final List<BinaryDocValuesUpdate> binaryDVUpdates = new ArrayList<>();
-  int totalTermCount;
+  long totalTermCount;
   
   @Override
   public String toString() {
@@ -46,7 +46,7 @@ class CoalescedUpdates {
   }
 
   void update(FrozenBufferedUpdates in) {
-    totalTermCount += in.termCount;
+    totalTermCount += in.terms.size();
     terms.add(in.terms);
 
     for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {

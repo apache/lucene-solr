@@ -44,7 +44,6 @@ class FrozenBufferedUpdates {
   
   // Terms, in sorted order:
   final PrefixCodedTerms terms;
-  int termCount; // just for debugging
 
   // Parallel array of deleted query, and the docIDUpto for each
   final Query[] queries;
@@ -68,7 +67,6 @@ class FrozenBufferedUpdates {
     this.isSegmentPrivate = isSegmentPrivate;
     assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries"; 
     Term termsArray[] = deletes.terms.keySet().toArray(new Term[deletes.terms.size()]);
-    termCount = termsArray.length;
     ArrayUtil.timSort(termsArray);
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     for (Term term : termsArray) {
@@ -167,7 +165,7 @@ class FrozenBufferedUpdates {
   public String toString() {
     String s = "";
     if (numTermDeletes != 0) {
-      s += " " + numTermDeletes + " deleted terms (unique count=" + termCount + ")";
+      s += " " + numTermDeletes + " deleted terms (unique count=" + terms.size() + ")";
     }
     if (queries.length != 0) {
       s += " " + queries.length + " deleted queries";
@@ -180,6 +178,6 @@ class FrozenBufferedUpdates {
   }
   
   boolean any() {
-    return termCount > 0 || queries.length > 0 || numericDVUpdates.length > 0 || binaryDVUpdates.length > 0;
+    return terms.size() > 0 || queries.length > 0 || numericDVUpdates.length > 0 || binaryDVUpdates.length > 0;
   }
 }

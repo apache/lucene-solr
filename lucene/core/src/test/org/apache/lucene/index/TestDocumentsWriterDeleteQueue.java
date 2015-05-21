@@ -136,7 +136,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       assertTrue(queue.anyChanges());
       if (random().nextInt(5) == 0) {
         FrozenBufferedUpdates freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
-        assertEquals(termsSinceFreeze, freezeGlobalBuffer.termCount);
+        assertEquals(termsSinceFreeze, freezeGlobalBuffer.terms.size());
         assertEquals(queriesSinceFreeze, freezeGlobalBuffer.queries.length);
         queriesSinceFreeze = 0;
         termsSinceFreeze = 0;
@@ -168,7 +168,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     assertTrue("changes in global buffer", queue.anyChanges());
     FrozenBufferedUpdates freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
     assertTrue(freezeGlobalBuffer.any());
-    assertEquals(1, freezeGlobalBuffer.termCount);
+    assertEquals(1, freezeGlobalBuffer.terms.size());
     assertFalse("all changes applied", queue.anyChanges());
   }
 

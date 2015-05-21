@@ -64,6 +64,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     
     TermIterator iter = pb.iterator();
     Iterator<Term> expected = terms.iterator();
+    assertEquals(terms.size(), pb.size());
     //System.out.println("TEST: now iter");
     while (iter.next() != null) {
       assertTrue(expected.hasNext());
