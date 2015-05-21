@@ -325,6 +325,9 @@ Optimizations
   the index or recent updates to avoid unnecessary lookups to the index to check for reordered
   updates when processing new documents. (Timothy Potter, yonik)
 
+* SOLR-5855: DefaultSolrHighlighter now re-uses the document's term vectors instance when highlighting
+  more than one field. Applies to the standard and FVH highlighters. (David Smiley, Daniel Debray)
+
 Other Changes
 ----------------------
 
