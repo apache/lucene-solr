@@ -19,6 +19,8 @@ package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,7 +30,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-spatial.xml");
+    initCore("solrconfig-spatial.xml", "schema-spatial.xml");
   }
 
   @Override
@@ -72,19 +74,19 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     );
 
     //area2D
-    assertJQ(req("q", "{!field f="+fieldName+" filter=false score=area2D}" +
+    assertJQ(req("q", "{!field f=" + fieldName + " filter=false score=area2D}" +
                 "Intersects(ENVELOPE(0,0,12,12))",//pt
             "fl", "id,score",
             "debug", "results"),//explain info
-        "/response/docs/[0]/id=='1'" ,
+        "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/score==" + (30f * 5f) + "]"//150
     );
     //area (not 2D)
-    assertJQ(req("q", "{!field f="+fieldName+" filter=false score=area}" +
+    assertJQ(req("q", "{!field f=" + fieldName + " filter=false score=area}" +
                 "Intersects(ENVELOPE(0,0,12,12))",//pt
             "fl", "id,score",
             "debug", "results"),//explain info
-        "/response/docs/[0]/id=='1'" ,
+        "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/score==" + 146.39793f + "]"//a bit less than 150
     );
   }
@@ -94,8 +96,53 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     String fieldName = "bbox";
     assertQEx("expect friendly error message",
         "area2D",
-        req("{!field f="+fieldName+" filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
+        req("{!field f=" + fieldName + " filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
         SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testRptWithGeometryField() throws Exception {
+    String fieldName = "srptgeom"; //note: fails with "srpt_geohash" because it's not as precise
+    assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
+    assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
+    assertU(optimize());// one segment.
+    assertU(commit());
+
+    // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to
+    //  eliminate id=0.  id=1 is found and doesn't require validation.  cache=false means no query cache.
+    final SolrQueryRequest sameReq = req(
+        "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
+        "sort", "id asc");
+    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+
+    // The tricky thing is verifying the cache works correctly...
+
+    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("perSegSpatialFieldCache_srptgeom");
+    assertEquals("1", cache.getStatistics().get("cumulative_inserts").toString());
+    assertEquals("0", cache.getStatistics().get("cumulative_hits").toString());
+
+    // Repeat the query earlier
+    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+    assertEquals("1", cache.getStatistics().get("cumulative_hits").toString());
+
+    assertEquals("1 segment",
+        1, ((SolrIndexSearcher) h.getCore().getInfoRegistry().get("searcher")).getRawReader().leaves().size());
+    // add new segment
+    assertU(adoc("id", "3"));
+    assertU(commit()); // sometimes merges (to one seg), sometimes won't
+    boolean newSeg =
+      (((SolrIndexSearcher)h.getCore().getInfoRegistry().get("searcher")).getRawReader().leaves().size() > 1);
+
+    // can still find the same document
+    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+
+    // when there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+    assertEquals(newSeg ? "2" : "1", cache.getStatistics().get("cumulative_hits").toString());
+
+    // Now try to see if heatmaps work:
+    assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
+        "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
+
   }
 
 }

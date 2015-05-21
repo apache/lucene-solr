@@ -47,10 +47,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.RptWithGeometrySpatialField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.util.DistanceUnits;
 import org.apache.solr.util.SpatialUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,13 +77,24 @@ public class SpatialHeatmapFacets {
     //get the strategy from the field type
     final SchemaField schemaField = rb.req.getSchema().getField(fieldName);
     final FieldType type = schemaField.getType();
-    if (!(type instanceof AbstractSpatialPrefixTreeFieldType)) {
+
+    final PrefixTreeStrategy strategy;
+    final DistanceUnits distanceUnits;
+    // note: the two instanceof conditions is not ideal, versus one. If we start needing to add more then refactor.
+    if ((type instanceof AbstractSpatialPrefixTreeFieldType)) {
+      AbstractSpatialPrefixTreeFieldType rptType = (AbstractSpatialPrefixTreeFieldType) type;
+      strategy = (PrefixTreeStrategy) rptType.getStrategy(fieldName);
+      distanceUnits = rptType.getDistanceUnits();
+    } else if (type instanceof RptWithGeometrySpatialField) {
+      RptWithGeometrySpatialField rptSdvType  = (RptWithGeometrySpatialField) type;
+      strategy = rptSdvType.getStrategy(fieldName).getIndexStrategy();
+      distanceUnits = rptSdvType.getDistanceUnits();
+    } else {
       //FYI we support the term query one too but few people use that one
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "heatmap field needs to be of type "
-          + SpatialRecursivePrefixTreeFieldType.class);
+          + SpatialRecursivePrefixTreeFieldType.class + " or " + RptWithGeometrySpatialField.class);
     }
-    AbstractSpatialPrefixTreeFieldType rptType = (AbstractSpatialPrefixTreeFieldType) type;
-    final PrefixTreeStrategy strategy = (PrefixTreeStrategy) rptType.getStrategy(fieldName);
+
     final SpatialContext ctx = strategy.getSpatialContext();
 
     //get the bbox (query Rectangle)
@@ -106,7 +119,7 @@ public class SpatialHeatmapFacets {
       final Double distErrObj = params.getFieldDouble(fieldKey, FacetParams.FACET_HEATMAP_DIST_ERR);
       if (distErrObj != null) {
         // convert distErr units based on configured units
-        spatialArgs.setDistErr(distErrObj * rptType.getDistanceUnits().multiplierFromThisUnitToDegrees());
+        spatialArgs.setDistErr(distErrObj * distanceUnits.multiplierFromThisUnitToDegrees());
       }
       spatialArgs.setDistErrPct(params.getFieldDouble(fieldKey, FacetParams.FACET_HEATMAP_DIST_ERR_PCT));
       double distErr = spatialArgs.resolveDistErr(ctx, DEFAULT_DIST_ERR_PCT);

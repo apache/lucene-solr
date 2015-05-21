@@ -50,6 +50,8 @@
     <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
                numberType="tdouble" distanceUnits="degrees"/>
 
+    <fieldType name="srptgeom" class="solr.RptWithGeometrySpatialField" />
+
     <fieldType name="bbox" class="solr.BBoxField"
                numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
   </types>
@@ -64,6 +66,7 @@
     <field name="srpt_packedquad" type="srpt_packedquad" multiValued="true" />
     <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true" />
     <field name="pointvector" type="pointvector" />
+    <field name="srptgeom" type="srptgeom" />
     <field name="bbox" type="bbox" />
 
     <dynamicField name="bboxD_*" type="bbox" indexed="true" />

@@ -212,6 +212,10 @@ New Features
 * SOLR-7274: Pluggable authentication module in Solr. This defines an interface and a mechanism to create,
   load, and use an Authentication plugin. (Noble Paul, Ishan Chattopadhyaya, Gregory Chanan, Anshum Gupta)
 
+* SOLR-7379: (experimental) New spatial RptWithGeometrySpatialField, based on CompositeSpatialStrategy,
+  which blends RPT indexes for speed with serialized geometry for accuracy.  Includes a Lucene segment based
+  in-memory shape cache. (David Smiley)
+
 Bug Fixes
 ----------------------
 
