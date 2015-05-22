@@ -30,11 +30,13 @@ import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
 
@@ -52,7 +54,7 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
           "hi_IN");
 
   Configuration originalConfig = Configuration.getConfiguration();
-
+  
   @Override
   public void distribSetUp() throws Exception {
     //SSLTestConfig.setSSLSystemProperties();
@@ -144,26 +146,30 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
   
   @Test
   public void testKerberizedSolr() throws Exception {
+    HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
+    CloudSolrClient testClient = createCloudClient("testcollection");
+    
     CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
     create.setCollectionName("testcollection");
     create.setConfigName("conf1");
     create.setNumShards(1);
     create.setReplicationFactor(1);
-    create.process(cloudClient);
+    create.process(testClient);
     
-    waitForCollection(cloudClient.getZkStateReader(), "testcollection", 1);
+    waitForCollection(testClient.getZkStateReader(), "testcollection", 1);
     CollectionAdminRequest.List list = new CollectionAdminRequest.List();
     
-    CollectionAdminResponse response = list.process(cloudClient);
+    CollectionAdminResponse response = list.process(testClient);
     assertTrue("Expected to see testcollection but it doesn't exist",
         ((ArrayList) response.getResponse().get("collections")).contains("testcollection"));
     
-    cloudClient.setDefaultCollection("testcollection");
-    indexDoc(cloudClient, params("commit", "true"), getDoc("id", 1));
+    testClient.setDefaultCollection("testcollection");
+    indexDoc(testClient, params("commit", "true"), getDoc("id", 1));
     //cloudClient.commit();
 
-    QueryResponse queryResponse = cloudClient.query(new SolrQuery("*:*"));
+    QueryResponse queryResponse = testClient.query(new SolrQuery("*:*"));
     assertEquals("Expected #docs and actual isn't the same", 1, queryResponse.getResults().size());
+    testClient.close();
   }
   
   @Override
