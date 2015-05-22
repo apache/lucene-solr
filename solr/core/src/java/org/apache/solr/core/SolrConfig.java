@@ -666,11 +666,11 @@ public class SolrConfig extends Config implements MapSerializable {
     public Map<String, Object> toMap() {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
-      result.put("openSearcher", openSearcher);
       result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
       result.put("autoCommit", makeMap(
           "maxDocs", autoCommmitMaxDocs,
-          "maxTime", autoCommmitMaxTime
+          "maxTime", autoCommmitMaxTime,
+          "openSearcher", openSearcher
       ));
       result.put("autoSoftCommit",
           makeMap("maxDocs", autoSoftCommmitMaxDocs,
