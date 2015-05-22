@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -137,75 +136,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
     int numFound = (int)qr.getResults().getNumFound();
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
-
-    log.info("Updating Config for " + testCollectionName);
-    doTestConfigUpdate(testCollectionName, solrUrl);
-
-    log.info("Running healthcheck for " + testCollectionName);
-    doTestHealthcheck(testCollectionName, cloudClient.getZkHost());
-
-    // verify the delete action works too
-    log.info("Running delete for "+testCollectionName);
-    doTestDeleteAction(testCollectionName, solrUrl);
+                 
 
     log.info("testLoadDocsIntoGettingStartedCollection succeeded ... shutting down now!");
-  }
-
-  protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
-    String[] args = new String[]{
-        "healthcheck",
-        "-collection", testCollectionName,
-        "-zkHost", zkHost
-    };
-    SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    assertTrue("Healthcheck action failed!", tool.runTool(cli) == 0);
-  }
-
-  protected void doTestDeleteAction(String testCollectionName, String solrUrl) throws Exception {
-    String[] args = new String[] {
-        "delete",
-        "-name", testCollectionName,
-        "-solrUrl", solrUrl
-    };
-    SolrCLI.DeleteTool tool = new SolrCLI.DeleteTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    assertTrue("Delete action failed!", tool.runTool(cli) == 0);
-    assertTrue(!SolrCLI.safeCheckCollectionExists(solrUrl, testCollectionName)); // it should not exist anymore
-  }
-
-  /**
-   * Uses the SolrCLI config action to activate soft auto-commits for the getting started collection.
-   */
-  protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
-    if (!solrUrl.endsWith("/"))
-      solrUrl += "/";
-    String configUrl = solrUrl + testCollectionName + "/config";
-
-    Map<String, Object> configJson = SolrCLI.getJson(configUrl);
-    Object maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(new Long(-1L), maxTimeFromConfig);
-
-    String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = new Long(3000L);
-    String[] args = new String[]{
-        "config",
-        "-collection", testCollectionName,
-        "-property", prop,
-        "-value", maxTime.toString(),
-        "-solrUrl", solrUrl
-    };
-    SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    log.info("Sending set-property '" + prop + "'=" + maxTime + " to SolrCLI.ConfigTool.");
-    assertTrue("Set config property failed!", tool.runTool(cli) == 0);
-
-    configJson = SolrCLI.getJson(configUrl);
-    maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(maxTime, maxTimeFromConfig);
   }
 }
