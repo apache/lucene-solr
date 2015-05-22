@@ -217,6 +217,8 @@ New Features
   which blends RPT indexes for speed with serialized geometry for accuracy.  Includes a Lucene segment based
   in-memory shape cache. (David Smiley)
 
+* SOLR-7465: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
+
 Bug Fixes
 ----------------------
 
