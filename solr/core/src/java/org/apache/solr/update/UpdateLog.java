@@ -244,7 +244,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
-    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 256);
+    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
     if (numVersionBuckets <= 0)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Number of version buckets must be greater than 0!");
