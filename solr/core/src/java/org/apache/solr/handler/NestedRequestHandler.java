@@ -23,7 +23,7 @@ import org.apache.solr.request.SolrRequestHandler;
 /**An interface for RequestHandlers need to handle all paths under its registered path
  */
 public interface NestedRequestHandler {
-  /** Return a SolrRequestHandler to handle a subpath from the path this handler is registered.
+  /** Return a Requestandler to handle a subpath from the path this handler is registered.
    */
   public SolrRequestHandler getSubHandler(String subPath);
 }
