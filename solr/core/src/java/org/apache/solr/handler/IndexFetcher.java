@@ -29,7 +29,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Adler32;
@@ -78,11 +76,12 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
+import org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -111,6 +110,8 @@ import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
 import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import static org.apache.solr.handler.ReplicationHandler.TLOG_FILE;
+import static org.apache.solr.handler.ReplicationHandler.TLOG_FILES;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -138,14 +139,18 @@ public class IndexFetcher {
 
   private volatile List<Map<String, Object>> confFilesToDownload;
 
+  private volatile List<Map<String, Object>> tlogFilesToDownload;
+
   private volatile List<Map<String, Object>> filesDownloaded;
 
   private volatile List<Map<String, Object>> confFilesDownloaded;
 
+  private volatile List<Map<String, Object>> tlogFilesDownloaded;
+
   private volatile Map<String, Object> currentFile;
 
   private volatile DirectoryFileFetcher dirFileFetcher;
-  
+
   private volatile LocalFsFileFetcher localFileFetcher;
 
   private volatile ExecutorService fsyncService;
@@ -180,7 +185,7 @@ public class IndexFetcher {
       LOG.warn("'masterUrl' must be specified without the /replication suffix");
     }
     this.masterUrl = masterUrl;
-    
+
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
     useInternal = INTERNAL.equals(compress);
@@ -207,7 +212,7 @@ public class IndexFetcher {
     try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
-      
+
       return client.request(req);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
@@ -243,6 +248,10 @@ public class IndexFetcher {
       if (files != null)
         confFilesToDownload = Collections.synchronizedList(files);
 
+      files = (List<Map<String, Object>>) response.get(TLOG_FILES);
+      if (files != null) {
+        tlogFilesToDownload = Collections.synchronizedList(files);
+      }
     } catch (SolrServerException e) {
       throw new IOException(e);
     }
@@ -251,18 +260,18 @@ public class IndexFetcher {
   boolean fetchLatestIndex(boolean forceReplication) throws IOException, InterruptedException {
     return fetchLatestIndex(forceReplication, false);
   }
-  
+
   /**
    * This command downloads all the necessary files from master to install a index commit point. Only changed files are
    * downloaded. It also downloads the conf files (if they are modified).
    *
-   * @param forceReplication force a replication in all cases 
+   * @param forceReplication force a replication in all cases
    * @param forceCoreReload force a core reload in all cases
    * @return true on success, false if slave is already in sync
    * @throws IOException if an exception occurs
    */
   boolean fetchLatestIndex(boolean forceReplication, boolean forceCoreReload) throws IOException, InterruptedException {
-    
+
     boolean cleanupDone = false;
     boolean successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
@@ -271,14 +280,14 @@ public class IndexFetcher {
     Directory indexDir = null;
     String indexDirPath;
     boolean deleteTmpIdxDir = true;
-    
+
     if (!solrCore.getSolrCoreState().getLastReplicateIndexSuccess()) {
       // if the last replication was not a success, we force a full replication
       // when we are a bit more confident we may want to try a partial replication
       // if the error is connection related or something, but we have to be careful
       forceReplication = true;
     }
-    
+
     try {
       //get the current 'replicateable' index version in the master
       NamedList response;
@@ -323,12 +332,12 @@ public class IndexFetcher {
           SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
           solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
         }
-        
+
         //there is nothing to be replicated
         successfulInstall = true;
         return true;
       }
-      
+
       if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
         //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
@@ -345,6 +354,9 @@ public class IndexFetcher {
         return false;
       }
       LOG.info("Number of files in latest index in master: " + filesToDownload.size());
+      if (tlogFilesToDownload != null) {
+        LOG.info("Number of tlog files in master: " + tlogFilesToDownload.size());
+      }
 
       // Create the sync service
       fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("fsyncService"));
@@ -356,11 +368,12 @@ public class IndexFetcher {
           .getCommitTimestamp(commit) >= latestVersion
           || commit.getGeneration() >= latestGeneration || forceReplication;
 
-      String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+      String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+      String tmpIdxDirName = "index." + timestamp;
       tmpIndex = solrCore.getDataDir() + tmpIdxDirName;
 
       tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-      
+
       // cindex dir...
       indexDirPath = solrCore.getIndexDir();
       indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -372,7 +385,7 @@ public class IndexFetcher {
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
-        
+
         if (!isFullCopyNeeded) {
           // a searcher might be using some flushed but not committed segments
           // because of soft commits (which open a searcher on IW's data)
@@ -410,13 +423,16 @@ public class IndexFetcher {
           solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
         }
         boolean reloadCore = false;
-        
+
         try {
           LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
               + isFullCopyNeeded);
           successfulInstall = false;
-          
+
           downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
+          if (tlogFilesToDownload != null) {
+            downloadTlogFiles(timestamp, latestGeneration);
+          }
           LOG.info("Total time taken for download : "
               + ((System.currentTimeMillis() - replicationStartTime) / 1000)
               + " secs");
@@ -440,7 +456,7 @@ public class IndexFetcher {
                   solrCore.getDirectoryFactory().remove(indexDir);
                 }
               }
-              
+
               LOG.info("Configuration files are modified, core will be reloaded");
               logReplicationTimeAndConfFiles(modifiedConfFiles,
                   successfulInstall);// write to a file time of replication and
@@ -464,7 +480,7 @@ public class IndexFetcher {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
         }
-        
+
         // we must reload the core after we open the IW back up
        if (successfulInstall && (reloadCore || forceCoreReload)) {
           LOG.info("Reloading SolrCore {}", solrCore.getName());
@@ -484,10 +500,10 @@ public class IndexFetcher {
           if (isFullCopyNeeded) {
             solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
           }
-          
+
           openNewSearcherAndUpdateCommitPoint();
         }
-        
+
         if (!isFullCopyNeeded && !forceReplication && !successfulInstall) {
           cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, successfulInstall);
           cleanupDone = true;
@@ -497,7 +513,7 @@ public class IndexFetcher {
               reloadCore);
           successfulInstall = fetchLatestIndex(true, reloadCore);
         }
-        
+
         replicationStartTime = 0;
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
@@ -605,7 +621,7 @@ public class IndexFetcher {
     Directory dir = null;
     try {
       dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
-      
+
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
         indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
@@ -696,7 +712,7 @@ public class IndexFetcher {
   private void openNewSearcherAndUpdateCommitPoint() throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
-    
+
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
     try {
@@ -719,7 +735,7 @@ public class IndexFetcher {
 
     // update the commit point in replication handler
     replicationHandler.indexCommitPoint = commitPoint;
-    
+
   }
 
   private void reloadCore() {
@@ -756,7 +772,7 @@ public class IndexFetcher {
       }
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, true, latestGeneration);
+        localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -767,6 +783,34 @@ public class IndexFetcher {
       copyTmpConfFiles2Conf(tmpconfDir);
     } finally {
       delTree(tmpconfDir);
+    }
+  }
+
+  private void downloadTlogFiles(String timestamp, long latestGeneration) throws Exception {
+    UpdateLog ulog = solrCore.getUpdateHandler().getUpdateLog();
+
+    LOG.info("Starting download of tlog files from master: " + tlogFilesToDownload);
+    tlogFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
+    File tmpTlogDir = new File(ulog.getLogDir(), "tlog." + getDateAsStr(new Date()));
+    try {
+      boolean status = tmpTlogDir.mkdirs();
+      if (!status) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to create temporary tlog folder: " + tmpTlogDir.getName());
+      }
+      for (Map<String, Object> file : tlogFilesToDownload) {
+        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+        localFileFetcher = new LocalFsFileFetcher(tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
+        currentFile = file;
+        localFileFetcher.fetchFile();
+        tlogFilesDownloaded.add(new HashMap<>(file));
+      }
+      // this is called before copying the files to the original conf dir
+      // so that if there is an exception avoid corrupting the original files.
+      terminateAndWaitFsyncService();
+      copyTmpTlogFiles2Tlog(tmpTlogDir, timestamp);
+    } finally {
+      delTree(tmpTlogDir);
     }
   }
 
@@ -790,7 +834,7 @@ public class IndexFetcher {
       if (!compareResult.equal || downloadCompleteIndex
           || filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult)) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
-            (String) file.get(NAME), false, latestGeneration);
+            (String) file.get(NAME), FILE, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
         filesDownloaded.add(new HashMap<>(file));
@@ -829,10 +873,10 @@ public class IndexFetcher {
             LOG.warn("Could not retrieve checksum from file.", e);
           }
         }
-        
+
         if (!compareResult.checkSummed) {
           // we don't have checksums to compare
-          
+
           if (indexFileLen == backupIndexFileLen) {
             compareResult.equal = true;
             return compareResult;
@@ -843,9 +887,9 @@ public class IndexFetcher {
             return compareResult;
           }
         }
-        
+
         // we have checksums to compare
-        
+
         if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
           compareResult.equal = true;
           return compareResult;
@@ -878,7 +922,7 @@ public class IndexFetcher {
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
     }
-  }  
+  }
 
   /**
    * All the files which are common between master and slave must have same size and same checksum else we assume
@@ -969,7 +1013,7 @@ public class IndexFetcher {
   }
 
   /**
-   * Make file list 
+   * Make file list
    */
   private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
     File[] files = dir.listFiles();
@@ -982,7 +1026,7 @@ public class IndexFetcher {
     }
     return fileList;
   }
-  
+
   /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
@@ -1018,6 +1062,30 @@ public class IndexFetcher {
         throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Unable to rename: " + file + " to: " + oldFile);
       }
+    }
+  }
+
+  /**
+   * The tlog files are copied from the tmp dir to the tlog dir by renaming the directory if possible.
+   * A backup of the old file is maintained.
+   */
+  private void copyTmpTlogFiles2Tlog(File tmpTlogDir, String timestamp) {
+    File tlogDir = new File(solrCore.getUpdateHandler().getUpdateLog().getLogDir());
+    File backupTlogDir = new File(tlogDir.getParent(), UpdateLog.TLOG_NAME + "." + timestamp);
+
+    try {
+      org.apache.commons.io.FileUtils.moveDirectory(tlogDir, backupTlogDir);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Unable to rename: " + tlogDir + " to: " + backupTlogDir, e);
+    }
+
+    try {
+      tmpTlogDir = new File(backupTlogDir, tmpTlogDir.getName());
+      org.apache.commons.io.FileUtils.moveDirectory(tmpTlogDir, tlogDir);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Unable to rename: " + tmpTlogDir + " to: " + tlogDir, e);
     }
   }
 
@@ -1114,10 +1182,10 @@ public class IndexFetcher {
     }
     return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
   }
-  
-  /** 
+
+  /**
    * This simulates File.delete exception-wise, since this class has some strange behavior with it.
-   * The only difference is it returns null on success, throws SecurityException on SecurityException, 
+   * The only difference is it returns null on success, throws SecurityException on SecurityException,
    * otherwise returns Throwable preventing deletion (instead of false), for additional information.
    */
   static Throwable delete(File file) {
@@ -1130,7 +1198,7 @@ public class IndexFetcher {
       return other;
     }
   }
-  
+
   static boolean delTree(File dir) {
     try {
       org.apache.lucene.util.IOUtils.rm(dir.toPath());
@@ -1157,6 +1225,20 @@ public class IndexFetcher {
     if (getReplicationStartTime() > 0)
       timeElapsed = TimeUnit.SECONDS.convert(System.currentTimeMillis() - getReplicationStartTime(), TimeUnit.MILLISECONDS);
     return timeElapsed;
+  }
+
+  List<Map<String, Object>> getTlogFilesToDownload() {
+    //make a copy first because it can be null later
+    List<Map<String, Object>> tmp = tlogFilesToDownload;
+    //create a new instance. or else iterator may fail
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+  }
+
+  List<Map<String, Object>> getTlogFilesDownloaded() {
+    //make a copy first because it can be null later
+    List<Map<String, Object>> tmp = tlogFilesDownloaded;
+    // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesToDownload() {
@@ -1219,7 +1301,7 @@ public class IndexFetcher {
     private boolean includeChecksum = true;
     private String fileName;
     private String saveAs;
-    private boolean isConf;
+    private String solrParamOutput;
     private Long indexGen;
 
     private long size;
@@ -1230,11 +1312,11 @@ public class IndexFetcher {
     private boolean aborted = false;
 
     FileFetcher(FileInterface file, Map<String, Object> fileDetails, String saveAs,
-                boolean isConf, long latestGen) throws IOException {
+                String solrParamOutput, long latestGen) throws IOException {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
-      this.isConf = isConf;
+      this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
       if (includeChecksum)
@@ -1404,12 +1486,7 @@ public class IndexFetcher {
       params.set(GENERATION, Long.toString(indexGen));
       params.set(CommonParams.QT, "/replication");
       //add the version to download. This is used to reserve the download
-      if (isConf) {
-        //set cf instead of file for config file
-        params.set(CONF_FILE_SHORT, fileName);
-      } else {
-        params.set(FILE, fileName);
-      }
+      params.set(solrParamOutput, fileName);
       if (useInternal) {
         params.set(COMPRESSION, "true");
       }
@@ -1478,8 +1555,8 @@ public class IndexFetcher {
 
   private class DirectoryFileFetcher extends FileFetcher {
     DirectoryFileFetcher(Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
-                boolean isConf, long latestGen) throws IOException {
-      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, isConf, latestGen);
+                         String solrParamOutput, long latestGen) throws IOException {
+      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
     }
   }
 
@@ -1527,8 +1604,8 @@ public class IndexFetcher {
 
   private class LocalFsFileFetcher extends FileFetcher {
     LocalFsFileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
-                boolean isConf, long latestGen) throws IOException {
-      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, isConf, latestGen);
+                       String solrParamOutput, long latestGen) throws IOException {
+      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
     }
   }
 

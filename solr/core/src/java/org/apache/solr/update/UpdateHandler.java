@@ -82,8 +82,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     for (SolrEventListener listener : softCommitCallbacks) {
       listener.postSoftCommit();
     }
-  }  
-  
+  }
+
   protected void callPostOptimizeCallbacks() {
     for (SolrEventListener listener : optimizeCallbacks) {
       listener.postCommit();
@@ -93,18 +93,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public UpdateHandler(SolrCore core)  {
     this(core, null);
   }
-  
+
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
-    
+
 
     if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
       String dataDir = (String)ulogPluginInfo.initArgs.get("dir");
-      
+
       String ulogDir = core.getCoreDescriptor().getUlogDir();
       if (ulogDir != null) {
         dataDir = ulogDir;
@@ -112,7 +112,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
       if (dataDir == null || dataDir.length()==0) {
         dataDir = core.getDataDir();
       }
-           
+
       if (dataDir != null && dataDir.startsWith("hdfs:/")) {
         DirectoryFactory dirFactory = core.getDirectoryFactory();
         if (dirFactory instanceof HdfsDirectoryFactory) {
@@ -120,17 +120,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         } else {
           ulog = new HdfsUpdateLog();
         }
-        
+
       } else {
-        ulog = new UpdateLog();
+        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
+        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
       }
-      
+
       if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
       }
-      
+
       log.info("Using UpdateLog implementation: " + ulog.getClass().getName());
-      
+
       ulog.init(ulogPluginInfo);
 
       ulog.init(this, core);
@@ -144,9 +145,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   /**
    * Called when the Writer should be opened again - eg when replication replaces
    * all of the index files.
-   * 
+   *
    * @param rollback IndexWriter if true else close
-   * 
+   *
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void newIndexWriter(boolean rollback) throws IOException;
@@ -173,7 +174,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   {
     commitCallbacks.add( listener );
   }
-  
+
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.

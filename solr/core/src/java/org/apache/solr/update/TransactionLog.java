@@ -75,7 +75,7 @@ public class TransactionLog {
   OutputStream os;
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
   int numRecords;
-  
+
   protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
@@ -84,7 +84,7 @@ public class TransactionLog {
 
   long snapshot_size;
   int snapshot_numRecords;
-  
+
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -133,9 +133,7 @@ public class TransactionLog {
       }
     }
 
-
   }
-
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {
     this(tlogFile, globalStrings, false);
@@ -147,6 +145,10 @@ public class TransactionLog {
       if (debug) {
         log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
       }
+
+      // Parse tlog id from the filename
+      String filename = tlogFile.getName();
+      id = Long.parseLong(filename.substring(filename.indexOf('.') + 1, filename.indexOf('.') + 20));
 
       this.tlogFile = tlogFile;
       raf = new RandomAccessFile(this.tlogFile, "rw");
@@ -214,7 +216,6 @@ public class TransactionLog {
       size = fos.size();
     }
 
-    
     // the end of the file should have the end message (added during a commit) plus a 4 byte size
     byte[] buf = new byte[ END_MESSAGE.length() ];
     long pos = size - END_MESSAGE.length() - 4;
@@ -234,9 +235,9 @@ public class TransactionLog {
       snapshot_size = fos.size();
       snapshot_numRecords = numRecords;
       return snapshot_size;
-    }    
+    }
   }
-  
+
   // This could mess with any readers or reverse readers that are open, or anything that might try to do a log lookup.
   // This should only be used to roll back buffered updates, not actually applied updates.
   public void rollback(long pos) throws IOException {
@@ -249,7 +250,6 @@ public class TransactionLog {
       numRecords = snapshot_numRecords;
     }
   }
-
 
   public long writeData(Object o) {
     LogCodec codec = new LogCodec(resolver);
@@ -323,7 +323,7 @@ public class TransactionLog {
 
   private void checkWriteHeader(LogCodec codec, SolrInputDocument optional) throws IOException {
 
-    // Unsynchronized access.  We can get away with an unsynchronized access here
+    // Unsynchronized access. We can get away with an unsynchronized access here
     // since we will never get a false non-zero when the position is in fact 0.
     // rollback() is the only function that can reset to zero, and it blocks updates.
     if (fos.size() != 0) return;
@@ -454,7 +454,7 @@ public class TransactionLog {
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
         endRecord(pos);
-        
+
         fos.flush();  // flush since this will be the last record in a log fill
         assert fos.size() == channel.size();
 
@@ -561,7 +561,7 @@ public class TransactionLog {
       assert ObjectReleaseTracker.release(this);
     }
   }
-  
+
   public void forceClose() {
     if (refcount.get() > 0) {
       log.error("Error: Forcing close of " + this);
@@ -595,7 +595,7 @@ public class TransactionLog {
   }
 
   public class LogReader {
-    private ChannelFastInputStream fis;
+    protected ChannelFastInputStream fis;
     private LogCodec codec = new LogCodec(resolver);
 
     public LogReader(long startingPos) {
@@ -613,7 +613,6 @@ public class TransactionLog {
      */
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
-
 
       synchronized (TransactionLog.this) {
         if (trace) {
@@ -664,7 +663,7 @@ public class TransactionLog {
     public long currentPos() {
       return fis.position();
     }
-    
+
     // returns best effort current size
     // for info purposes
     public long currentSize() throws IOException {
@@ -674,8 +673,6 @@ public class TransactionLog {
   }
 
   public abstract class ReverseReader {
-
-
 
     /** Returns the next object from the log, or null if none available.
      *
@@ -691,9 +688,8 @@ public class TransactionLog {
     @Override
     public abstract String toString() ;
 
-
   }
-  
+
   public class FSReverseReader extends ReverseReader {
     ChannelFastInputStream fis;
     private LogCodec codec = new LogCodec(resolver) {
@@ -726,7 +722,6 @@ public class TransactionLog {
         nextLength = fis.readInt();
       }
     }
-
 
     /** Returns the next object from the log, or null if none available.
      *
@@ -835,7 +830,7 @@ class ChannelFastInputStream extends FastInputStream {
   public void close() throws IOException {
     ch.close();
   }
-  
+
   @Override
   public String toString() {
     return "readFromStream="+readFromStream +" pos="+pos +" end="+end + " bufferPos="+getBufferPos() + " position="+position() ;

@@ -59,9 +59,37 @@ Other Changes
 
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
   affects HDFS support. (Ben Manes via Shawn Heisey)
+  
 
 ==================  5.3.0 ==================
-(No Changes)
+Versions of Major Components
+---------------------
+(no changes)
+
+Upgrading from Solr 5.2
+-----------------------
+(no changes)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
+  SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
+
+Bug Fixes
+----------------------
+(no changes)
+
+Optimizations
+----------------------
+(no changes)
+
+Other Changes
+----------------------
+(no changes)
 
 ==================  5.2.0 ==================
 

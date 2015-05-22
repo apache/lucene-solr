@@ -964,7 +964,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
    */
-  private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
+  protected boolean versionAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (idBytes == null) {
@@ -1226,7 +1226,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private ModifiableSolrParams filterParams(SolrParams params) {
+  protected ModifiableSolrParams filterParams(SolrParams params) {
     ModifiableSolrParams fparams = new ModifiableSolrParams();
     passParam(params, fparams, UpdateParams.UPDATE_CHAIN);
     passParam(params, fparams, TEST_DISTRIB_SKIP_SERVERS);
@@ -1333,53 +1333,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
-    // Find the version
-    long versionOnUpdate = cmd.getVersion();
-    if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
-      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
-    }
-    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
-
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
 
-    if (!leaderLogic && versionOnUpdate==0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
-
-    vinfo.blockUpdates();
-    try {
-
-      if (versionsStored) {
-        if (leaderLogic) {
-          long version = vinfo.getNewClock();
-          cmd.setVersion(-version);
-          // TODO update versions in all buckets
-
-          doLocalDelete(cmd);
-
-        } else {
-          cmd.setVersion(-versionOnUpdate);
-
-          if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-            // we're not in an active state, and this update isn't from a replay, so buffer it.
-            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-            ulog.deleteByQuery(cmd);
-            return;
-          }
-
-          doLocalDelete(cmd);
-        }
-      }
-
-      // since we don't know which documents were deleted, the easiest thing to do is to invalidate
-      // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
-      // (so cache misses will see up-to-date data)
-
-    } finally {
-      vinfo.unblockUpdates();
-    }
+    versionDeleteByQuery(cmd);
 
     if (zkEnabled)  {
       // forward to all replicas
@@ -1449,6 +1406,56 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  protected void versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    // Find the version
+    long versionOnUpdate = cmd.getVersion();
+    if (versionOnUpdate == 0) {
+      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+    }
+    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+
+    boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+
+    if (!leaderLogic && versionOnUpdate == 0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
+    }
+
+    vinfo.blockUpdates();
+    try {
+
+      if (versionsStored) {
+        if (leaderLogic) {
+          long version = vinfo.getNewClock();
+          cmd.setVersion(-version);
+          // TODO update versions in all buckets
+
+          doLocalDelete(cmd);
+
+        } else {
+          cmd.setVersion(-versionOnUpdate);
+
+          if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.deleteByQuery(cmd);
+            return;
+          }
+
+          doLocalDelete(cmd);
+        }
+      }
+
+      // since we don't know which documents were deleted, the easiest thing to do is to invalidate
+      // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
+      // (so cache misses will see up-to-date data)
+
+    } finally {
+      vinfo.unblockUpdates();
+    }
+  }
+
   // internal helper method to tell if we are the leader for an add or deleteById update
   boolean isLeader(UpdateCommand cmd) {
     updateCommand = cmd;
@@ -1482,7 +1489,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
   }
 
-  private boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
+  protected boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
 

@@ -144,7 +144,7 @@ public class SolrCLI {
     }
     
     /**
-     * Runs a SolrCloud tool with CloudSolrServer initialized
+     * Runs a SolrCloud tool with CloudSolrClient initialized
      */
     protected abstract int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
@@ -1217,10 +1217,10 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
 
-      try (CloudSolrClient cloudSolrServer = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
         System.out.println("Connecting to ZooKeeper at " + zkHost);
-        cloudSolrServer.connect();
-        toolExitStatus = runCloudTool(cloudSolrServer, cli);
+        cloudSolrClient.connect();
+        toolExitStatus = runCloudTool(cloudSolrClient, cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
