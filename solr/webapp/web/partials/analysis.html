@@ -41,13 +41,13 @@ limitations under the License.
           <li class="settings-holder clearfix">
             <div class="settings clearfix">
               <label for="type_or_name">Analyse Fieldname / FieldType:</label>
-              <select chosen id="type_or_name" ng-model="fieldOrType" ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
+              <select style="width:130px" chosen id="type_or_name" ng-model="fieldOrType" ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
 
               <a id="tor_schema" href="#"><span>Schema Browser</span>&nbsp;</a>
 
               <div class="buttons clearfix">
 
-                <button type="submit" ng-click="analyse()"><span>Analyse Values</span></button>
+                <button type="submit" ng-click="updateQueryString()"><span>Analyse Values</span></button>
 
                 <div class="verbose_output" ng-class="{active:verbose}">
                   <a ng-click="toggleVerbose()">Verbose Output</a>
