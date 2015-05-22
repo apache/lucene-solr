@@ -102,10 +102,6 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
   
-  // This is a special case, because the network config of the ASF Jenkins server is broken,
-  // see: http://freebsd.1045724.n5.nabble.com/jail-external-and-localhost-distinction-td3967320.html
-  permission java.net.SocketPermission "lucene.zones.apache.org:1024-", "accept,listen,connect,resolve";
-
   // SSL related properties for jetty
   permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
   permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
