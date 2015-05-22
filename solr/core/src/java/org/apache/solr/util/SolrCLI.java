@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -60,12 +61,14 @@ import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -75,6 +78,8 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -253,6 +258,8 @@ public class SolrCLI {
       return new CreateTool();
     else if ("delete".equals(toolType))
       return new DeleteTool();
+    else if ("config".equals(toolType))
+      return new ConfigTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -275,6 +282,7 @@ public class SolrCLI {
     formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
     formatter.printHelp("create", getToolOptions(new CreateTool()));
     formatter.printHelp("delete", getToolOptions(new DeleteTool()));
+    formatter.printHelp("config", getToolOptions(new ConfigTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -1098,6 +1106,35 @@ public class SolrCLI {
             .create("configsetsDir")
   };
 
+  /**
+   * Get the base URL of a live Solr instance from either the solrUrl command-line option from ZooKeeper.
+   */
+  public static String resolveSolrUrl(CommandLine cli) throws Exception {
+    String solrUrl = cli.getOptionValue("solrUrl");
+    if (solrUrl == null) {
+      String zkHost = cli.getOptionValue("zkHost");
+      if (zkHost == null)
+        throw new IllegalStateException("Must provide either the '-solrUrl' or '-zkHost' parameters!");
+
+      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+        cloudSolrClient.connect();
+        Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+        if (liveNodes.isEmpty())
+          throw new IllegalStateException("No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: "+zkHost);
+
+        String firstLiveNode = liveNodes.iterator().next();
+        solrUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
+      }
+    }
+    return solrUrl;
+  }
+
+  /**
+   * Get the ZooKeeper connection string from either the zkHost command-line option or by looking it
+   * up from a running Solr instance based on the solrUrl option.
+   */
   public static String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null)
@@ -1134,6 +1171,18 @@ public class SolrCLI {
     }
 
     return zkHost;
+  }
+
+  public static boolean safeCheckCollectionExists(String url, String collection) {
+    boolean exists = false;
+    try {
+      Map<String,Object> existsCheckResult = getJson(url);
+      List<String> collections = (List<String>) existsCheckResult.get("collections");
+      exists = collections != null && collections.contains(collection);
+    } catch (Exception exc) {
+      // just ignore it since we're only interested in a positive result here
+    }
+    return exists;
   }
 
   /**
@@ -1299,18 +1348,6 @@ public class SolrCLI {
       System.out.println();
 
       return 0;
-    }
-
-    protected boolean safeCheckCollectionExists(String url, String collection) {
-      boolean exists = false;
-      try {
-        Map<String,Object> existsCheckResult = getJson(url);
-        List<String> collections = (List<String>) existsCheckResult.get("collections");
-        exists = collections != null && collections.contains(collection);
-      } catch (Exception exc) {
-        // just ignore it since we're only interested in a positive result here
-      }
-      return exists;
     }
 
     protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
@@ -1733,4 +1770,115 @@ public class SolrCLI {
     }
 
   } // end DeleteTool class
+
+  /**
+   * Sends a POST to the Config API to perform a specified action.
+   */
+  public static class ConfigTool implements Tool {
+
+    @Override
+    public String getName() {
+      return "config";
+    }
+
+    @SuppressWarnings("static-access")
+    @Override
+    public Option[] getOptions() {
+      return new Option[] {
+          OptionBuilder
+              .withArgName("ACTION")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Config API action, one of: set-property, unset-property; default is set-property")
+              .create("action"),
+          OptionBuilder
+              .withArgName("PROP")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Name of the Config API property to apply the action to, such as: updateHandler.autoSoftCommit.maxTime")
+              .create("property"),
+          OptionBuilder
+              .withArgName("VALUE")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Set the property to this value; accepts JSON objects and strings")
+              .create("value"),
+          OptionBuilder
+              .withArgName("COLL")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Collection; defaults to gettingstarted")
+              .create("collection"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Address of the Zookeeper ensemble")
+              .create("zkHost"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
+              .create("solrUrl")
+      };
+    }
+
+    @Override
+    public int runTool(CommandLine cli) throws Exception {
+      String solrUrl = resolveSolrUrl(cli);
+      String action = cli.getOptionValue("action", "set-property");
+      String collection = cli.getOptionValue("collection", "gettingstarted");
+      String property = cli.getOptionValue("property");
+      String value = cli.getOptionValue("value");
+
+      Map<String,Object> jsonObj = new HashMap<>();
+      if (value != null) {
+        Map<String,String> setMap = new HashMap<>();
+        setMap.put(property, value);
+        jsonObj.put(action, setMap);
+      } else {
+        jsonObj.put(action, property);
+      }
+
+      CharArr arr = new CharArr();
+      (new JSONWriter(arr, 0)).write(jsonObj);
+      String jsonBody = arr.toString();
+
+      String updatePath = "/"+collection+"/config";
+
+      System.out.println("\nPOSTing request to Config API: "+solrUrl+updatePath);
+      System.out.println(jsonBody);
+      System.out.println();
+
+      int exitStatus = 0;
+      try (SolrClient solrClient = new HttpSolrClient(solrUrl)) {
+        NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
+        Integer statusCode = (Integer)((NamedList)result.get("responseHeader")).get("status");
+        if (statusCode == 0) {
+          if (value != null) {
+            System.out.println("Successfully "+action+" "+property+" to "+value);
+          } else {
+            System.out.println("Successfully "+action+" "+property);
+          }
+        } else {
+          String errMsg = "Failed to "+action+" property due to:\n"+result;
+          System.err.println("\nERROR: "+errMsg+"\n");
+          exitStatus = 1;
+        }
+      }
+      return exitStatus;
+    }
+
+  } // end ConfigTool class
+
+  public static final String JSON_CONTENT_TYPE = "application/json";
+
+  public static NamedList<Object> postJsonToSolr(SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
+    ContentStreamBase.StringStream contentStream = new ContentStreamBase.StringStream(jsonBody);
+    contentStream.setContentType(JSON_CONTENT_TYPE);
+    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest(updatePath);
+    req.addContentStream(contentStream);
+    return solrClient.request(req);
+  }
 }
