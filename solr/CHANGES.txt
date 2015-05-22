@@ -60,6 +60,9 @@ Other Changes
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
   affects HDFS support. (Ben Manes via Shawn Heisey)
 
+==================  5.3.0 ==================
+(No Changes)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
