@@ -17,12 +17,12 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Public for extension only.
@@ -42,7 +42,7 @@ public class SpanScorer extends Scorer {
 
   protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
     super(weight);
-    this.docScorer = docScorer;
+    this.docScorer = Objects.requireNonNull(docScorer);
     this.spans = Objects.requireNonNull(spans);
   }
 
@@ -91,10 +91,6 @@ public class SpanScorer extends Scorer {
       // assert (startPos != prevStartPos) || (endPos > prevEndPos) : "non increased endPos="+endPos;
       assert (startPos != prevStartPos) || (endPos >= prevEndPos) : "decreased endPos="+endPos;
       numMatches++;
-      if (docScorer == null) {  // scores not required, break out here
-        freq = 1;
-        return;
-      }
       int matchLength = endPos - startPos;
       freq += docScorer.computeSlopFactor(matchLength);
       prevStartPos = startPos;

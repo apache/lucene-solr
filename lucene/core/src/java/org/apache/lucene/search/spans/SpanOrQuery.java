@@ -17,25 +17,26 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.DisiPriorityQueue;
-import org.apache.lucene.search.DisiWrapper;
-import org.apache.lucene.search.DisjunctionDISIApproximation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
-
 import java.io.IOException;
+
+import java.util.List;
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.DisiPriorityQueue;
+import org.apache.lucene.search.DisiWrapper;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.DisjunctionDISIApproximation;
 
 
 /** Matches the union of its clauses.
@@ -71,6 +72,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
   @Override
   public String getField() { return field; }
+
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    for(final SpanQuery clause: clauses) {
+      clause.extractTerms(terms);
+    }
+  }
 
   @Override
   public SpanOrQuery clone() {
@@ -137,223 +145,198 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     return h;
   }
 
+
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
-    for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, factory));
-    }
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, subWeights);
-    return new SpanOrWeight(similarity, factory, subWeights);
-  }
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts)
+  throws IOException {
 
-  public class SpanOrWeight extends SpanWeight {
+    final ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
-    final List<SpanWeight> subWeights;
-
-    public SpanOrWeight(SpanSimilarity similarity, SpanCollectorFactory factory, List<SpanWeight> subWeights) throws IOException {
-      super(SpanOrQuery.this, similarity, factory);
-      this.subWeights = subWeights;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (final SpanWeight w: subWeights) {
-        w.extractTerms(terms);
+    for (SpanQuery sq : clauses) {
+      Spans spans = sq.getSpans(context, acceptDocs, termContexts);
+      if (spans != null) {
+        subSpans.add(spans);
       }
     }
 
-    @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      for (SpanWeight w : subWeights) {
-        w.extractTermContexts(contexts);
-      }
+    if (subSpans.size() == 0) {
+      return null;
+    } else if (subSpans.size() == 1) {
+      return subSpans.get(0);
     }
 
-    @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector)
-        throws IOException {
+    final DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
+    for (Spans spans : subSpans) {
+      byDocQueue.add(new DisiWrapper<>(spans));
+    }
 
-      final ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
+    final SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
 
-      for (SpanWeight w : subWeights) {
-        Spans spans = w.getSpans(context, acceptDocs, collector);
-        if (spans != null) {
-          subSpans.add(spans);
-        }
+    return new Spans() {
+      Spans topPositionSpans = null;
+
+      @Override
+      public int nextDoc() throws IOException {
+        topPositionSpans = null;
+        DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+        int currentDoc = topDocSpans.doc;
+        do {
+          topDocSpans.doc = topDocSpans.iterator.nextDoc();
+          topDocSpans = byDocQueue.updateTop();
+        } while (topDocSpans.doc == currentDoc);
+        return topDocSpans.doc;
       }
 
-      if (subSpans.size() == 0) {
-        return null;
-      } else if (subSpans.size() == 1) {
-        return subSpans.get(0);
+      @Override
+      public int advance(int target) throws IOException {
+        topPositionSpans = null;
+        DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+        do {
+          topDocSpans.doc = topDocSpans.iterator.advance(target);
+          topDocSpans = byDocQueue.updateTop();
+        } while (topDocSpans.doc < target);
+        return topDocSpans.doc;
       }
 
-      final DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
-      for (Spans spans : subSpans) {
-        byDocQueue.add(new DisiWrapper<>(spans));
+      @Override
+      public int docID() {
+        DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+        return topDocSpans.doc;
       }
 
-      final SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
-
-      return new Spans() {
-        Spans topPositionSpans = null;
-
-        @Override
-        public int nextDoc() throws IOException {
-          topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
-          int currentDoc = topDocSpans.doc;
-          do {
-            topDocSpans.doc = topDocSpans.iterator.nextDoc();
-            topDocSpans = byDocQueue.updateTop();
-          } while (topDocSpans.doc == currentDoc);
-          return topDocSpans.doc;
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
-          do {
-            topDocSpans.doc = topDocSpans.iterator.advance(target);
-            topDocSpans = byDocQueue.updateTop();
-          } while (topDocSpans.doc < target);
-          return topDocSpans.doc;
-        }
-
-        @Override
-        public int docID() {
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
-          return topDocSpans.doc;
-        }
-
-        @Override
-        public TwoPhaseIterator asTwoPhaseIterator() {
-          boolean hasApproximation = false;
-          for (DisiWrapper<Spans> w : byDocQueue) {
-            if (w.twoPhaseView != null) {
-              hasApproximation = true;
-              break;
-            }
+      @Override
+      public TwoPhaseIterator asTwoPhaseIterator() {
+        boolean hasApproximation = false;
+        for (DisiWrapper<Spans> w : byDocQueue) {
+          if (w.twoPhaseView != null) {
+            hasApproximation = true;
+            break;
           }
-
-          if (!hasApproximation) { // none of the sub spans supports approximations
-            return null;
-          }
-
-          return new TwoPhaseIterator(new DisjunctionDISIApproximation<Spans>(byDocQueue)) {
-            @Override
-            public boolean matches() throws IOException {
-              return twoPhaseCurrentDocMatches();
-            }
-          };
         }
 
-        int lastDocTwoPhaseMatched = -1;
-
-        boolean twoPhaseCurrentDocMatches() throws IOException {
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
-          // remove the head of the list as long as it does not match
-          final int currentDoc = listAtCurrentDoc.doc;
-          while (listAtCurrentDoc.twoPhaseView != null) {
-            if (listAtCurrentDoc.twoPhaseView.matches()) {
-              // use this spans for positions at current doc:
-              listAtCurrentDoc.lastApproxMatchDoc = currentDoc;
-              break;
-            }
-            // do not use this spans for positions at current doc:
-            listAtCurrentDoc.lastApproxNonMatchDoc = currentDoc;
-            listAtCurrentDoc = listAtCurrentDoc.next;
-            if (listAtCurrentDoc == null) {
-              return false;
-            }
-          }
-          lastDocTwoPhaseMatched = currentDoc;
-          topPositionSpans = null;
-          return true;
+        if (! hasApproximation) { // none of the sub spans supports approximations
+          return null;
         }
 
-        void fillPositionQueue() throws IOException { // called at first nextStartPosition
-          assert byPositionQueue.size() == 0;
-          // add all matching Spans at current doc to byPositionQueue
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
-          while (listAtCurrentDoc != null) {
-            Spans spansAtDoc = listAtCurrentDoc.iterator;
-            if (lastDocTwoPhaseMatched == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
-              if (listAtCurrentDoc.twoPhaseView != null) { // matched by approximation
-                if (listAtCurrentDoc.lastApproxNonMatchDoc == listAtCurrentDoc.doc) { // matches() returned false
-                  spansAtDoc = null;
-                } else {
-                  if (listAtCurrentDoc.lastApproxMatchDoc != listAtCurrentDoc.doc) {
-                    if (!listAtCurrentDoc.twoPhaseView.matches()) {
-                      spansAtDoc = null;
-                    }
+        return new TwoPhaseIterator(new DisjunctionDISIApproximation<Spans>(byDocQueue)) {
+          @Override
+          public boolean matches() throws IOException {
+            return twoPhaseCurrentDocMatches();
+          }
+        };
+      }
+      
+      int lastDocTwoPhaseMatched = -1;
+
+      boolean twoPhaseCurrentDocMatches() throws IOException {
+        DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+        // remove the head of the list as long as it does not match
+        final int currentDoc = listAtCurrentDoc.doc;
+        while (listAtCurrentDoc.twoPhaseView != null) {
+          if (listAtCurrentDoc.twoPhaseView.matches()) {
+            // use this spans for positions at current doc:
+            listAtCurrentDoc.lastApproxMatchDoc = currentDoc;
+            break;
+          }
+          // do not use this spans for positions at current doc:
+          listAtCurrentDoc.lastApproxNonMatchDoc = currentDoc;
+          listAtCurrentDoc = listAtCurrentDoc.next;
+          if (listAtCurrentDoc == null) {
+            return false;
+          }
+        }
+        lastDocTwoPhaseMatched = currentDoc;
+        topPositionSpans = null;
+        return true;
+      }
+
+      void fillPositionQueue() throws IOException { // called at first nextStartPosition
+        assert byPositionQueue.size() == 0;
+        // add all matching Spans at current doc to byPositionQueue
+        DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+        while (listAtCurrentDoc != null) {
+          Spans spansAtDoc = listAtCurrentDoc.iterator;
+          if (lastDocTwoPhaseMatched == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
+            if (listAtCurrentDoc.twoPhaseView != null) { // matched by approximation
+              if (listAtCurrentDoc.lastApproxNonMatchDoc == listAtCurrentDoc.doc) { // matches() returned false
+                spansAtDoc = null;
+              } else {
+                if (listAtCurrentDoc.lastApproxMatchDoc != listAtCurrentDoc.doc) {
+                  if (! listAtCurrentDoc.twoPhaseView.matches()) {
+                    spansAtDoc = null;
                   }
                 }
-              }
-            }
-
-            if (spansAtDoc != null) {
-              assert spansAtDoc.docID() == listAtCurrentDoc.doc;
-              assert spansAtDoc.startPosition() == -1;
-              spansAtDoc.nextStartPosition();
-              assert spansAtDoc.startPosition() != NO_MORE_POSITIONS;
-              byPositionQueue.add(spansAtDoc);
-            }
-            listAtCurrentDoc = listAtCurrentDoc.next;
-          }
-          assert byPositionQueue.size() > 0;
-        }
-
-        @Override
-        public int nextStartPosition() throws IOException {
-          if (topPositionSpans == null) {
-            byPositionQueue.clear();
-            fillPositionQueue(); // fills byPositionQueue at first position
-            topPositionSpans = byPositionQueue.top();
-          } else {
-            topPositionSpans.nextStartPosition();
-            topPositionSpans = byPositionQueue.updateTop();
-          }
-          return topPositionSpans.startPosition();
-        }
-
-        @Override
-        public int startPosition() {
-          return topPositionSpans == null ? -1 : topPositionSpans.startPosition();
-        }
-
-        @Override
-        public int endPosition() {
-          return topPositionSpans == null ? -1 : topPositionSpans.endPosition();
-        }
-
-        @Override
-        public void collect(SpanCollector collector) throws IOException {
-          if (topPositionSpans != null)
-            topPositionSpans.collect(collector);
-        }
-
-        @Override
-        public String toString() {
-          return "spanOr(" + SpanOrQuery.this + ")@" + docID() + ": " + startPosition() + " - " + endPosition();
-        }
-
-        long cost = -1;
-
-        @Override
-        public long cost() {
-          if (cost == -1) {
-            cost = 0;
-            for (Spans spans : subSpans) {
-              cost += spans.cost();
+              } 
             }
           }
-          return cost;
+
+          if (spansAtDoc != null) {
+            assert spansAtDoc.docID() == listAtCurrentDoc.doc;
+            assert spansAtDoc.startPosition() == -1;
+            spansAtDoc.nextStartPosition();
+            assert spansAtDoc.startPosition() != NO_MORE_POSITIONS;
+            byPositionQueue.add(spansAtDoc);
+          }
+          listAtCurrentDoc = listAtCurrentDoc.next;
         }
-      };
-    }
+        assert byPositionQueue.size() > 0;
+      }
+        
+      @Override
+      public int nextStartPosition() throws IOException {
+        if (topPositionSpans == null) {
+          byPositionQueue.clear();
+          fillPositionQueue(); // fills byPositionQueue at first position
+          topPositionSpans = byPositionQueue.top();
+        } else {
+          topPositionSpans.nextStartPosition();
+          topPositionSpans = byPositionQueue.updateTop();
+        }
+        return topPositionSpans.startPosition();
+      }
+
+      @Override
+      public int startPosition() {
+        return topPositionSpans == null ? -1 : topPositionSpans.startPosition();
+      }
+
+      @Override
+      public int endPosition() {
+        return topPositionSpans == null ? -1 : topPositionSpans.endPosition();
+      }
+
+      @Override
+      public Collection<byte[]> getPayload() throws IOException {
+        return topPositionSpans == null
+                ? null
+                : topPositionSpans.isPayloadAvailable()
+                ? new ArrayList<>(topPositionSpans.getPayload())
+                : null;
+      }
+
+      @Override
+      public boolean isPayloadAvailable() throws IOException {
+        return (topPositionSpans != null) && topPositionSpans.isPayloadAvailable();
+      }
+
+      @Override
+      public String toString() {
+        return "spanOr("+SpanOrQuery.this+")@"+docID()+": "+startPosition()+" - "+endPosition();
+      }
+
+      long cost = -1;
+
+      @Override
+      public long cost() {
+        if (cost == -1) {
+          cost = 0;
+          for (Spans spans : subSpans) {
+            cost += spans.cost();
+          }
+        }
+        return cost;
+      }
+    };
   }
 
 }

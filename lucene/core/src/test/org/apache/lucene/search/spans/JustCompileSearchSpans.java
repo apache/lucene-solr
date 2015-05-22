@@ -17,10 +17,16 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.Similarity;
-
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -59,14 +65,19 @@ final class JustCompileSearchSpans {
     public int endPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
+    
     @Override
-    public void collect(SpanCollector collector) throws IOException {
-
+    public int nextStartPosition() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public int nextStartPosition() throws IOException {
+    public Collection<byte[]> getPayload() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -79,12 +90,17 @@ final class JustCompileSearchSpans {
   static final class JustCompileSpanQuery extends SpanQuery {
 
     @Override
+    protected void extractTerms(Set<Term> terms) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public String getField() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+    public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -121,14 +137,19 @@ final class JustCompileSearchSpans {
     public int endPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
+    
     @Override
-    public void collect(SpanCollector collector) throws IOException {
-
+    public int nextStartPosition() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public int nextStartPosition() throws IOException {
+    public Collection<byte[]> getPayload() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

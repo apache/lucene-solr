@@ -22,7 +22,10 @@ import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Similar to {@link NearSpansOrdered}, but for the unordered case.
@@ -115,8 +118,13 @@ public class NearSpansUnordered extends NearSpans {
     }
 
     @Override
-    public void collect(SpanCollector collector) throws IOException {
-      in.collect(collector);
+    public Collection<byte[]> getPayload() throws IOException {
+      return in.getPayload();
+    }
+
+    @Override
+    public boolean isPayloadAvailable() throws IOException {
+      return in.isPayloadAvailable();
     }
 
     @Override
@@ -241,11 +249,31 @@ public class NearSpansUnordered extends NearSpans {
           : maxEndPositionCell.endPosition();
   }
 
+
+  /**
+   * WARNING: The List is not necessarily in order of the positions.
+   * @return Collection of <code>byte[]</code> payloads
+   * @throws IOException if there is a low-level I/O error
+   */
   @Override
-  public void collect(SpanCollector collector) throws IOException {
+  public Collection<byte[]> getPayload() throws IOException {
+    Set<byte[]> matchPayload = new HashSet<>();
     for (SpansCell cell : subSpanCells) {
-      cell.collect(collector);
+      if (cell.isPayloadAvailable()) {
+        matchPayload.addAll(cell.getPayload());
+      }
     }
+    return matchPayload;
+  }
+
+  @Override
+  public boolean isPayloadAvailable() throws IOException {
+    for (SpansCell cell : subSpanCells) {
+      if (cell.isPayloadAvailable()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

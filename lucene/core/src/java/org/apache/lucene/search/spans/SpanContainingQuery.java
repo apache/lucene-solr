@@ -17,12 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
+import java.util.Map;
 import java.util.ArrayList;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Bits;
 
 /** Keep matches that contain another Spans. */
 public class SpanContainingQuery extends SpanContainQuery {
@@ -46,79 +48,63 @@ public class SpanContainingQuery extends SpanContainQuery {
           (SpanQuery) big.clone(),
           (SpanQuery) little.clone());
   }
-
+  
+  /** 
+   * Return spans from <code>big</code> that contain at least one spans from <code>little</code>.
+   * The payload is from the spans of <code>big</code>.
+   */
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    SpanWeight bigWeight = big.createWeight(searcher, false, factory);
-    SpanWeight littleWeight = little.createWeight(searcher, false, factory);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, bigWeight, littleWeight);
-    return new SpanContainingWeight(similarity, factory, bigWeight, littleWeight);
-  }
-
-  public class SpanContainingWeight extends SpanContainWeight {
-
-    public SpanContainingWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
-                                SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(similarity, factory, bigWeight, littleWeight);
+  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
+    ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, termContexts);
+    if (containerContained == null) {
+      return null;
     }
+    
+    Spans big = containerContained.get(0);
+    Spans little = containerContained.get(1);
 
-    /**
-     * Return spans from <code>big</code> that contain at least one spans from <code>little</code>.
-     * The payload is from the spans of <code>big</code>.
-     */
-    @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
-      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, collector);
-      if (containerContained == null) {
-        return null;
+    return new ContainSpans(big, little, big) {
+
+      @Override
+      boolean twoPhaseCurrentDocMatches() throws IOException {
+        oneExhaustedInCurrentDoc = false;
+        assert littleSpans.startPosition() == -1;
+        while (bigSpans.nextStartPosition() != NO_MORE_POSITIONS) {
+          while (littleSpans.startPosition() < bigSpans.startPosition()) {
+            if (littleSpans.nextStartPosition() == NO_MORE_POSITIONS) {
+              oneExhaustedInCurrentDoc = true;
+              return false;
+            }
+          }
+          if (bigSpans.endPosition() >= littleSpans.endPosition()) {
+            atFirstInCurrentDoc = true;
+            return true;
+          }
+        } 
+        oneExhaustedInCurrentDoc = true;
+        return false;
       }
 
-      Spans big = containerContained.get(0);
-      Spans little = containerContained.get(1);
-
-      return new ContainSpans(big, little, big) {
-
-        @Override
-        boolean twoPhaseCurrentDocMatches() throws IOException {
-          oneExhaustedInCurrentDoc = false;
-          assert littleSpans.startPosition() == -1;
-          while (bigSpans.nextStartPosition() != NO_MORE_POSITIONS) {
-            while (littleSpans.startPosition() < bigSpans.startPosition()) {
-              if (littleSpans.nextStartPosition() == NO_MORE_POSITIONS) {
-                oneExhaustedInCurrentDoc = true;
-                return false;
-              }
-            }
-            if (bigSpans.endPosition() >= littleSpans.endPosition()) {
-              atFirstInCurrentDoc = true;
-              return true;
+      @Override
+      public int nextStartPosition() throws IOException {
+        if (atFirstInCurrentDoc) {
+          atFirstInCurrentDoc = false;
+          return bigSpans.startPosition();
+        }
+        while (bigSpans.nextStartPosition() != NO_MORE_POSITIONS) {
+          while (littleSpans.startPosition() < bigSpans.startPosition()) {
+            if (littleSpans.nextStartPosition() == NO_MORE_POSITIONS) {
+              oneExhaustedInCurrentDoc = true;
+              return NO_MORE_POSITIONS;
             }
           }
-          oneExhaustedInCurrentDoc = true;
-          return false;
-        }
-
-        @Override
-        public int nextStartPosition() throws IOException {
-          if (atFirstInCurrentDoc) {
-            atFirstInCurrentDoc = false;
+          if (bigSpans.endPosition() >= littleSpans.endPosition()) {
             return bigSpans.startPosition();
           }
-          while (bigSpans.nextStartPosition() != NO_MORE_POSITIONS) {
-            while (littleSpans.startPosition() < bigSpans.startPosition()) {
-              if (littleSpans.nextStartPosition() == NO_MORE_POSITIONS) {
-                oneExhaustedInCurrentDoc = true;
-                return NO_MORE_POSITIONS;
-              }
-            }
-            if (bigSpans.endPosition() >= littleSpans.endPosition()) {
-              return bigSpans.startPosition();
-            }
-          }
-          oneExhaustedInCurrentDoc = true;
-          return NO_MORE_POSITIONS;
         }
-      };
-    }
+        oneExhaustedInCurrentDoc = true;
+        return NO_MORE_POSITIONS;
+      }
+    };
   }
 }

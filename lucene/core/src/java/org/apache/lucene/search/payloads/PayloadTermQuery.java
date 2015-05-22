@@ -17,28 +17,25 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.spans.BufferedSpanCollector;
-import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
-import org.apache.lucene.search.spans.SpanSimilarity;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * This class is very similar to
@@ -70,67 +67,33 @@ public class PayloadTermQuery extends SpanTermQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    TermContext context = TermContext.build(searcher.getTopReaderContext(), term);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, searcher.termStatistics(term, context));
-    return new PayloadTermWeight(context, similarity);
+    return new PayloadTermWeight(this, searcher);
   }
 
-  private static class PayloadTermCollector implements SpanCollector {
+  protected class PayloadTermWeight extends SpanWeight {
 
-    BytesRef payload;
-
-    @Override
-    public void reset() {
-      payload = null;
-    }
-
-    @Override
-    public int requiredPostings() {
-      return PostingsEnum.PAYLOADS;
-    }
-
-    @Override
-    public void collectLeaf(PostingsEnum postings, Term term) throws IOException {
-      payload = postings.getPayload();
-    }
-
-    @Override
-    public BufferedSpanCollector buffer() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SpanCollector bufferedCollector() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  private class PayloadTermWeight extends SpanTermWeight {
-
-    public PayloadTermWeight(TermContext context, SpanSimilarity similarity)
+    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher)
         throws IOException {
-      super(context, similarity, PayloadSpanCollector.FACTORY);
+      super(query, searcher);
     }
 
     @Override
     public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      PayloadTermCollector collector = new PayloadTermCollector();
-      Spans spans = super.getSpans(context, acceptDocs, collector);
+      TermSpans spans = (TermSpans) query.getSpans(context, acceptDocs, termContexts);
       return (spans == null)
               ? null
-              : new PayloadTermSpanScorer(spans, this, collector, similarity.simScorer(context));
+              : new PayloadTermSpanScorer(spans, this, similarity.simScorer(stats, context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
       protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
-      private final PayloadTermCollector payloadCollector;
+      private final TermSpans termSpans;
 
-      public PayloadTermSpanScorer(Spans spans, SpanWeight weight, PayloadTermCollector collector,
-                                   Similarity.SimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(TermSpans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
-        this.payloadCollector = collector;
+        termSpans = spans; // CHECKME: generics to use SpansScorer.spans as TermSpans.
       }
 
       @Override
@@ -146,22 +109,29 @@ public class PayloadTermQuery extends SpanTermQuery {
 
           freq += docScorer.computeSlopFactor(matchLength);
           numMatches++;
-          payloadCollector.reset();
-          spans.collect(payloadCollector);
-          processPayload();
+          processPayload(similarity);
 
           startPos = spans.nextStartPosition();
         } while (startPos != Spans.NO_MORE_POSITIONS);
       }
 
-      protected void processPayload() throws IOException {
+      protected void processPayload(Similarity similarity) throws IOException {
+        if (spans.isPayloadAvailable()) {
+          final PostingsEnum postings = termSpans.getPostings();
+          payload = postings.getPayload();
+          if (payload != null) {
+            payloadScore = function.currentScore(docID(), term.field(),
+                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore,
+                                                 docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payload));
+          } else {
+            payloadScore = function.currentScore(docID(), term.field(),
+                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore, 1F);
+          }
+          payloadsSeen++;
 
-        float payloadFactor = payloadCollector.payload == null ? 1F :
-            docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payloadCollector.payload);
-        payloadScore = function.currentScore(docID(), term.field(), spans.startPosition(), spans.endPosition(),
-                                             payloadsSeen, payloadScore, payloadFactor);
-        payloadsSeen++;
-
+        } else {
+          // zero out the payload?
+        }
       }
 
       /**
@@ -208,7 +178,7 @@ public class PayloadTermQuery extends SpanTermQuery {
         if (newDoc == doc) {
           float freq = scorer.sloppyFreq();
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
-          SimScorer docScorer = similarity.simScorer(context);
+          SimScorer docScorer = similarity.simScorer(stats, context);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           Explanation expl = Explanation.match(
               scoreExplanation.getValue(),

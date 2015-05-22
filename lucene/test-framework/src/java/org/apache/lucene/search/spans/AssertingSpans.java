@@ -17,10 +17,12 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
-
-import java.io.IOException;
+import org.apache.lucene.search.spans.Spans;
 
 /** 
  * Wraps a Spans with additional asserts 
@@ -123,13 +125,19 @@ class AssertingSpans extends Spans {
     checkCurrentPositions();
     return in.endPosition();
   }
-
+  
   @Override
-  public void collect(SpanCollector collector) throws IOException {
-    assert state == State.ITERATING : "collect() called in illegal state: " + state + ": " + in;
-    in.collect(collector);
+  public Collection<byte[]> getPayload() throws IOException {
+    assert state == State.ITERATING : "getPayload() called in illegal state: " + state + ": " + in;
+    return in.getPayload();
   }
-
+  
+  @Override
+  public boolean isPayloadAvailable() throws IOException {
+    assert state == State.ITERATING : "isPayloadAvailable() called in illegal state: " + state + ": " + in;
+    return in.isPayloadAvailable();
+  }
+  
   @Override
   public int docID() {
     int doc = in.docID();

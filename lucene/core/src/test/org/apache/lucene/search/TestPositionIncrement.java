@@ -17,37 +17,34 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockPayloadAnalyzer;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.payloads.PayloadSpanCollector;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Term position unit test.
@@ -56,7 +53,7 @@ import java.util.Collection;
  */
 public class TestPositionIncrement extends LuceneTestCase {
 
-  final static boolean VERBOSE = true;
+  final static boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {
@@ -241,17 +238,14 @@ public class TestPositionIncrement extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\ngetPayloadSpans test");
     }
-    PayloadSpanCollector collector = new PayloadSpanCollector();
-    Spans pspans = MultiSpansWrapper.wrap(is.getIndexReader(), snq, collector);
+    Spans pspans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
     while (pspans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (pspans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if (VERBOSE) {
           System.out.println("doc " + pspans.docID() + ": span " + pspans.startPosition()
               + " to " + pspans.endPosition());
         }
-        collector.reset();
-        pspans.collect(collector);
-        Collection<byte[]> payloads = collector.getPayloads();
+        Collection<byte[]> payloads = pspans.getPayload();
         sawZero |= pspans.startPosition() == 0;
         for (byte[] bytes : payloads) {
           count++;
@@ -262,7 +256,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
     }
     assertTrue(sawZero);
-    assertEquals(8, count);
+    assertEquals(5, count);
 
     // System.out.println("\ngetSpans test");
     Spans spans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
@@ -288,7 +282,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       //System.out.println(s);
       sawZero |= s.equals("pos: 0");
     }
-    assertEquals(8, count);
+    assertEquals(5, count);
     assertTrue(sawZero);
     writer.close();
     is.getIndexReader().close();

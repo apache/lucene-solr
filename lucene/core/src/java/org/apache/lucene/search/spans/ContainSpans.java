@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 abstract class ContainSpans extends ConjunctionSpans {
@@ -48,8 +49,12 @@ abstract class ContainSpans extends ConjunctionSpans {
   }
 
   @Override
-  public void collect(SpanCollector collector) throws IOException {
-    sourceSpans.collect(collector);
+  public boolean isPayloadAvailable() throws IOException {
+    return sourceSpans.isPayloadAvailable();
   }
 
+  @Override
+  public Collection<byte[]> getPayload() throws IOException {
+    return sourceSpans.getPayload();
+  }
 }

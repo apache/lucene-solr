@@ -17,10 +17,11 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
-
-import java.io.IOException;
 
 /** Iterates through combinations of start/end positions per-doc.
  *  Each start/end position represents a range of term positions within the current document.
@@ -50,12 +51,33 @@ public abstract class Spans extends DocIdSetIterator {
   public abstract int endPosition();
 
   /**
-   * Collect data from the current Spans
-   * @param collector a SpanCollector
-   *
+   * Returns the payload data for the current start/end position.
+   * This is only valid after {@link #nextStartPosition()}
+   * returned an available start position.
+   * This method must not be called more than once after each call
+   * of {@link #nextStartPosition()}. However, most payloads are loaded lazily,
+   * so if the payload data for the current position is not needed,
+   * this method may not be called at all for performance reasons.
+   * <br>
+   * Note that the return type is a collection, thus the ordering should not be relied upon.
+   * <br>
    * @lucene.experimental
+   *
+   * @return a List of byte arrays containing the data of this payload, otherwise null if isPayloadAvailable is false
+   * @throws IOException if there is a low-level I/O error
    */
-  public abstract void collect(SpanCollector collector) throws IOException;
+  public abstract Collection<byte[]> getPayload() throws IOException;
+
+  /**
+   * Checks if a payload can be loaded at the current start/end position.
+   * <p>
+   * Payloads can only be loaded once per call to
+   * {@link #nextStartPosition()}.
+   *
+   * @return true if there is a payload available at this start/end position
+   *              that can be loaded
+   */
+  public abstract boolean isPayloadAvailable() throws IOException;
 
   /**
    * Optional method: Return a {@link TwoPhaseIterator} view of this

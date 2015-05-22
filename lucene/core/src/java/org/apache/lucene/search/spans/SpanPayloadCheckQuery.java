@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.search.spans;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +16,7 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.search.spans.SpanCollector;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanPositionCheckQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanWeight;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -37,11 +30,10 @@ import java.util.Iterator;
  * the given position.
  * <p>
  * Do not use this with a SpanQuery that contains a {@link org.apache.lucene.search.spans.SpanNearQuery}.
- * Instead, use {@link org.apache.lucene.search.payloads.SpanNearPayloadCheckQuery} since it properly handles the fact that payloads
+ * Instead, use {@link SpanNearPayloadCheckQuery} since it properly handles the fact that payloads
  * aren't ordered by {@link org.apache.lucene.search.spans.SpanNearQuery}.
  */
 public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
-
   protected final Collection<byte[]> payloadToMatch;
 
   /**
@@ -57,36 +49,28 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return super.createWeight(searcher, needsScores, PayloadSpanCollector.FACTORY);
-  }
-
-  @Override
-  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
-
-    PayloadSpanCollector payloadCollector = (PayloadSpanCollector) collector;
-
-    payloadCollector.reset();
-    spans.collect(payloadCollector);
-
-    Collection<byte[]> candidate = payloadCollector.getPayloads();
-    if (candidate.size() == payloadToMatch.size()){
-      //TODO: check the byte arrays are the same
-      Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
-      //check each of the byte arrays, in order
-      //hmm, can't rely on order here
-      for (byte[] candBytes : candidate) {
-        //if one is a mismatch, then return false
-        if (Arrays.equals(candBytes, toMatchIter.next()) == false){
-          return AcceptStatus.NO;
+  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
+    boolean result = spans.isPayloadAvailable();
+    if (result == true){
+      Collection<byte[]> candidate = spans.getPayload();
+      if (candidate.size() == payloadToMatch.size()){
+        //TODO: check the byte arrays are the same
+        Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
+        //check each of the byte arrays, in order
+        //hmm, can't rely on order here
+        for (byte[] candBytes : candidate) {
+          //if one is a mismatch, then return false
+          if (Arrays.equals(candBytes, toMatchIter.next()) == false){
+            return AcceptStatus.NO;
+          }
         }
+        //we've verified all the bytes
+        return AcceptStatus.YES;
+      } else {
+        return AcceptStatus.NO;
       }
-      //we've verified all the bytes
-      return AcceptStatus.YES;
-    } else {
-      return AcceptStatus.NO;
     }
-
+    return AcceptStatus.YES;
   }
 
   @Override

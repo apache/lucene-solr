@@ -17,21 +17,20 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+import java.util.Objects;
+
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 abstract class SpanContainQuery extends SpanQuery implements Cloneable {
-
   SpanQuery big;
   SpanQuery little;
 
@@ -49,48 +48,26 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   @Override
   public String getField() { return big.getField(); }
 
-  public abstract class SpanContainWeight extends SpanWeight {
+  /** Extract terms from both <code>big</code> and <code>little</code>. */
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    big.extractTerms(terms);
+    little.extractTerms(terms);
+  }
 
-    final SpanWeight bigWeight;
-    final SpanWeight littleWeight;
-
-    public SpanContainWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
-                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(SpanContainQuery.this, similarity, factory);
-      this.bigWeight = bigWeight;
-      this.littleWeight = littleWeight;
+  ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
+    Spans bigSpans = big.getSpans(context, acceptDocs, termContexts);
+    if (bigSpans == null) {
+      return null;
     }
-
-    /**
-     * Extract terms from both <code>big</code> and <code>little</code>.
-     */
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      bigWeight.extractTerms(terms);
-      littleWeight.extractTerms(terms);
+    Spans littleSpans = little.getSpans(context, acceptDocs, termContexts);
+    if (littleSpans == null) {
+      return null;
     }
-
-    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
-      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, collector);
-      if (bigSpans == null) {
-        return null;
-      }
-      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, collector);
-      if (littleSpans == null) {
-        return null;
-      }
-      ArrayList<Spans> bigAndLittle = new ArrayList<>();
-      bigAndLittle.add(bigSpans);
-      bigAndLittle.add(littleSpans);
-      return bigAndLittle;
-    }
-
-    @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      bigWeight.extractTermContexts(contexts);
-      littleWeight.extractTermContexts(contexts);
-    }
-
+    ArrayList<Spans> bigAndLittle = new ArrayList<>();
+    bigAndLittle.add(bigSpans);
+    bigAndLittle.add(littleSpans);
+    return bigAndLittle;
   }
 
   String toString(String field, String name) {

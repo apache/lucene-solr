@@ -17,22 +17,21 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -91,6 +90,13 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public String getField() { return field; }
 
   @Override
+  public void extractTerms(Set<Term> terms) {
+    for (final SpanQuery clause : clauses) {
+      clause.extractTerms(terms);
+    }
+  }
+
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNear([");
@@ -112,61 +118,27 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    List<SpanWeight> subWeights = new ArrayList<>();
-    for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, factory));
-    }
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, subWeights);
-    return new SpanNearWeight(subWeights, similarity, factory);
-  }
+  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+    ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
-  public class SpanNearWeight extends SpanWeight {
-
-    final List<SpanWeight> subWeights;
-
-    public SpanNearWeight(List<SpanWeight> subWeights, SpanSimilarity similarity, SpanCollectorFactory factory) throws IOException {
-      super(SpanNearQuery.this, similarity, factory);
-      this.subWeights = subWeights;
-    }
-
-    @Override
-    public void extractTermContexts(Map<Term, TermContext> contexts) {
-      for (SpanWeight w : subWeights) {
-        w.extractTermContexts(contexts);
+    for (SpanQuery seq : clauses) {
+      Spans subSpan = seq.getSpans(context, acceptDocs, termContexts);
+      if (subSpan != null) {
+        subSpans.add(subSpan);
+      } else {
+        return null; // all required
       }
     }
 
-    @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
-
-      Terms terms = context.reader().terms(field);
-      if (terms == null) {
-        return null; // field does not exist
-      }
-
-      ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
-      SpanCollector subSpanCollector = inOrder ? collector.bufferedCollector() : collector;
-      for (SpanWeight w : subWeights) {
-        Spans subSpan = w.getSpans(context, acceptDocs, subSpanCollector);
-        if (subSpan != null) {
-          subSpans.add(subSpan);
-        } else {
-          return null; // all required
-        }
-      }
-
-      // all NearSpans require at least two subSpans
-      return (!inOrder) ? new NearSpansUnordered(SpanNearQuery.this, subSpans)
-          : new NearSpansOrdered(SpanNearQuery.this, subSpans, collector);
+    Terms terms = context.reader().terms(field);
+    if (terms == null) {
+      return null; // field does not exist
     }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (SpanWeight w : subWeights) {
-        w.extractTerms(terms);
-      }
-    }
+    
+    // all NearSpans require at least two subSpans
+    return (! inOrder) ? new NearSpansUnordered(this, subSpans)
+          : collectPayloads && terms.hasPayloads() ? new NearSpansPayloadOrdered(this, subSpans)
+          : new NearSpansOrdered(this, subSpans);
   }
 
   @Override

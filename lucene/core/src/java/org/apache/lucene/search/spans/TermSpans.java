@@ -16,11 +16,14 @@ package org.apache.lucene.search.spans;
  */
 
 
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -106,7 +109,6 @@ public class TermSpans extends Spans {
     return postings.cost();
   }
 
-  /*
   @Override
   public Collection<byte[]> getPayload() throws IOException {
     final BytesRef payload = postings.getPayload();
@@ -124,12 +126,6 @@ public class TermSpans extends Spans {
   @Override
   public boolean isPayloadAvailable() throws IOException {
     return readPayload == false && postings.getPayload() != null;
-  }
-  */
-
-  @Override
-  public void collect(SpanCollector collector) throws IOException {
-    collector.collectLeaf(postings, term);
   }
 
   @Override
