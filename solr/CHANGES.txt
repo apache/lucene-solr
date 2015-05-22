@@ -107,6 +107,11 @@ Jetty 9.2.10.v20150310
 Upgrading from Solr 5.1
 -----------------------
 
+* A bug was introduced in Solr 4.10 that caused index time document boosts to trigger excessive field
+  boosts in multivalued fields -- the result being that some field norms might be excessively large.
+  This bug has now been fixed, but users of document boosts are strongly encouraged to re-index.
+  See SOLR-7335 for more details.
+
 * The Slice and Replica classes have been changed to use State enums instead of string constants 
   to track the respective stats.  Advanced users with client code manipulating these objects will 
   need to update their code accordingly.  See SOLR-7325 and SOLR-7336 for more info.
@@ -343,6 +348,8 @@ Bug Fixes
   using the thread-pool managed by ZkContainer instead of a single thread.
   (Jessica Cheng Mallet, Timothy Potter, shalin, Mark Miller)
 
+* SOLR-7335: Fix doc boosts to no longer be multiplied in each field value in multivalued fields that
+  are not used in copyFields (Shingo Sasaki via hossman)
 
 Optimizations
 ----------------------
