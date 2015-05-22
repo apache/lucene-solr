@@ -443,6 +443,10 @@ Other Changes
 * SOLR-7463: Stop forcing MergePolicy's "NoCFSRatio" based on the IWC "useCompoundFile" configuration
   (Tomás Fernández Löbbe)
 
+* SOLR-7583: Allow auto-commit to be set with system properties in data_driven_schema_configs and
+  enable auto soft-commits for the bin/solr -e cloud example using the Config API.
+  (Timothy Potter)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

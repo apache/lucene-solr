@@ -1099,6 +1099,12 @@ goto create_collection
   org.apache.solr.util.SolrCLI create_collection -name !CLOUD_COLLECTION! -shards !CLOUD_NUM_SHARDS! -replicationFactor !CLOUD_REPFACT! ^
   -confdir !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
 
+@echo.
+echo Enabling auto soft-commits with maxTime 3 secs using the Config API
+"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI config -collection !CLOUD_COLLECTION! -property updateHandler.autoSoftCommit.maxTime -value 3000 -zkHost %zk_host%
+
 echo.
 echo SolrCloud example is running, please visit !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%NODE1_PORT%/solr"
 echo.

@@ -1573,6 +1573,11 @@ else
     -confname "$CLOUD_COLLECTION" -confdir "$CLOUD_CONFIG" \
     -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr"
 
+  # enable soft-autocommits for the gettingstarted collection
+  echo -e "\nEnabling auto soft-commits with maxTime 3 secs using the Config API"
+  run_tool config -collection "$CLOUD_COLLECTION" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr" \
+    -property updateHandler.autoSoftCommit.maxTime -value 3000
+
   echo -e "\n\nSolrCloud example running, please visit $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr \n\n"
 fi
 
