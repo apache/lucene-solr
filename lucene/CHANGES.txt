@@ -176,6 +176,9 @@ API Changes
 * LUCENE-6484: Removed EliasFanoDocIdSet, which was unused.
   (Paul Elschot via Adrien Grand)
 
+* LUCENE-6497: Allow subclasses of FieldType to check frozen state
+  (Ryan Ernst)
+
 Other
 
 * LUCENE-6413: Test runner should report the number of suites completed/ 
