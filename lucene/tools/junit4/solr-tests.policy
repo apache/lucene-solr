@@ -88,4 +88,7 @@ grant {
   permission javax.security.auth.kerberos.ServicePermission "krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "accept";
+  permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "initiate";
+  permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "accept";
+
 };

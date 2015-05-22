@@ -219,6 +219,9 @@ New Features
 
 * SOLR-7465: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
 
+* SOLR-7468: Kerberos authenticaion plugin for Solr. This would allow running a Kerberized Solr.
+  (Noble Paul, Ishan Chattopadhyaya, Gregory Chanan, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 

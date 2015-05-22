@@ -46,6 +46,7 @@ public class KerberosTestUtil {
 
     private static AppConfigurationEntry[] clientEntry;
     private static AppConfigurationEntry[] serverEntry;
+    private String clientAppName = "Client", serverAppName = "Server";
 
     /**
      * Add an entry to the jaas configuration with the passed in name,
@@ -58,7 +59,7 @@ public class KerberosTestUtil {
      */
     public JaasConfiguration(String clientPrincipal, File clientKeytab,
         String serverPrincipal, File serverKeytab) {
-      Map<String, String> clientOptions = new HashMap<String, String>();
+      Map<String, String> clientOptions = new HashMap();
       clientOptions.put("principal", clientPrincipal);
       clientOptions.put("keyTab", clientKeytab.getAbsolutePath());
       clientOptions.put("useKeyTab", "true");
@@ -73,20 +74,36 @@ public class KerberosTestUtil {
         new AppConfigurationEntry(getKrb5LoginModuleName(),
         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
         clientOptions)};
-      Map<String, String> serverOptions = new HashMap<String, String>(clientOptions);
-      serverOptions.put("principal", serverPrincipal);
-      serverOptions.put("keytab", serverKeytab.getAbsolutePath());
-      serverEntry =  new AppConfigurationEntry[]{
-        new AppConfigurationEntry(getKrb5LoginModuleName(),
-        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-        serverOptions)};
+      if(serverPrincipal!=null && serverKeytab!=null) {
+        Map<String, String> serverOptions = new HashMap(clientOptions);
+        serverOptions.put("principal", serverPrincipal);
+        serverOptions.put("keytab", serverKeytab.getAbsolutePath());
+        serverEntry =  new AppConfigurationEntry[]{
+            new AppConfigurationEntry(getKrb5LoginModuleName(),
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                serverOptions)};
+      }
+    }
+
+    /**
+     * Add an entry to the jaas configuration with the passed in principal and keytab, 
+     * along with the app name.
+     * 
+     * @param principal The principal
+     * @param keytab The keytab containing credentials for the principal
+     * @param appName The app name of the configuration
+     */
+    public JaasConfiguration(String principal, File keytab, String appName) {
+      this(principal, keytab, null, null);
+      clientAppName = appName;
+      serverAppName = null;
     }
 
     @Override
     public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-      if ("Client".equals(name)) {
+      if (name.equals(clientAppName)) {
         return clientEntry;
-      } else if ("Server".equals(name)) {
+      } else if (name.equals(serverAppName)) {
         return serverEntry;
       }
       return null;
