@@ -32,7 +32,7 @@ public class FieldType implements IndexableFieldType  {
   /** Data type of the numeric value
    * @since 3.2
    */
-  public static enum NumericType {
+  public enum NumericType {
     /** 32-bit integer numeric type */
     INT, 
     /** 64-bit long numeric type */
@@ -80,7 +80,11 @@ public class FieldType implements IndexableFieldType  {
   public FieldType() {
   }
 
-  private void checkIfFrozen() {
+  /**
+   * Throws an exception if this FieldType is frozen. Subclasses should
+   * call this within setters for additional state.
+   */
+  protected void checkIfFrozen() {
     if (frozen) {
       throw new IllegalStateException("this FieldType is already frozen and cannot be changed");
     }
