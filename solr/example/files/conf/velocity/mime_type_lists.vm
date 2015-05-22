@@ -1,0 +1,68 @@
+#**
+ *  Define some Mime-Types, short and long form
+ *#
+
+## MimeType to extension map for detecting file type
+## and showing proper icon
+## List of types match the icons in /solr/img/filetypes
+
+## Short MimeType Names
+## Was called $supportedtypes
+#set($supportedMimeTypes = "7z;ai;aiff;asc;audio;bin;bz2;c;cfc;cfm;chm;class;conf;cpp;cs;css;csv;deb;divx;doc;dot;eml;enc;file;gif;gz;hlp;htm;html;image;iso;jar;java;jpeg;jpg;js;lua;m;mm;mov;mp3;mpg;odc;odf;odg;odi;odp;ods;odt;ogg;pdf;pgp;php;pl;png;ppt;ps;py;ram;rar;rb;rm;rpm;rtf;sig;sql;swf;sxc;sxd;sxi;sxw;tar;tex;tgz;txt;vcf;video;vsd;wav;wma;wmv;xls;xml;xpi;xvid;zip")
+
+## Long Form: map MimeType headers to our Short names
+## Was called $extMap
+#set( $mimeExtensionsMap = {
+   "application/x-7z-compressed": "7z",
+   "application/postscript": "ai",
+   "application/pgp-signature": "asc",
+   "application/octet-stream": "bin",
+   "application/x-bzip2": "bz2",
+   "text/x-c": "c",
+   "application/vnd.ms-htmlhelp": "chm",
+   "application/java-vm": "class",
+   "text/css": "css",
+   "text/csv": "csv",
+   "application/x-debian-package": "deb",
+   "application/msword": "doc",
+   "message/rfc822": "eml",
+   "image/gif": "gif",
+   "application/winhlp": "hlp",
+   "text/html": "html",
+   "application/java-archive": "jar",
+   "text/x-java-source": "java",
+   "image/jpeg": "jpeg",
+   "application/javascript": "js",
+   "application/vnd.oasis.opendocument.chart": "odc",
+   "application/vnd.oasis.opendocument.formula": "odf",
+   "application/vnd.oasis.opendocument.graphics": "odg",
+   "application/vnd.oasis.opendocument.image": "odi",
+   "application/vnd.oasis.opendocument.presentation": "odp",
+   "application/vnd.oasis.opendocument.spreadsheet": "ods",
+   "application/vnd.oasis.opendocument.text": "odt",
+   "application/pdf": "pdf",
+   "application/pgp-encrypted": "pgp",
+   "image/png": "png",
+   "application/vnd.ms-powerpoint": "ppt",
+   "audio/x-pn-realaudio": "ram",
+   "application/x-rar-compressed": "rar",
+   "application/vnd.rn-realmedia": "rm",
+   "application/rtf": "rtf",
+   "application/x-shockwave-flash": "swf",
+   "application/vnd.sun.xml.calc": "sxc",
+   "application/vnd.sun.xml.draw": "sxd",
+   "application/vnd.sun.xml.impress": "sxi",
+   "application/vnd.sun.xml.writer": "sxw",
+   "application/x-tar": "tar",
+   "application/x-tex": "tex",
+   "text/plain": "txt",
+   "text/x-vcard": "vcf",
+   "application/vnd.visio": "vsd",
+   "audio/x-wav": "wav",
+   "audio/x-ms-wma": "wma",
+   "video/x-ms-wmv": "wmv",
+   "application/vnd.ms-excel": "xls",
+   "application/xml": "xml",
+   "application/x-xpinstall": "xpi",
+   "application/zip": "zip"
+})

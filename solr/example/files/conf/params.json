@@ -1,0 +1,27 @@
+{"params":{
+  "query":{
+    "defType":"edismax",
+    "q.alt":"*:*",
+    "rows":"10",
+    "fl":"*,score",
+    "":{"v":0}},
+  "facets":{
+    "facet":"on",
+    "facet.mincount":"1",
+    "facet.field":["text_shingles","{!ex=type}doc_type"],
+    "f.text_shingles.facet.limit":10,
+    "facet.query":"{!ex=type key=all_types}*:*",
+    "f.doc_type.facet.missing":true,
+    "":{"v":0}},
+  "browse":{
+    "fq":"{!switch v=$type tag=type case='*:*' case.all='*:*' case.unknown='-doc_type:[* TO *]' default=$type_fq}",
+    "type_fq":"{!field f=doc_type v=$type}",
+    "hl":"on",
+    "hl.fl":"content",
+    "debug":"true",
+    "":{"v":0}},
+  "velocity":{
+    "wt":"velocity",
+    "v.template":"browse",
+    "v.layout":"layout",
+    "":{"v":0}}}}
