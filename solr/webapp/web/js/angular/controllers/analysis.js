@@ -17,20 +17,7 @@
 
 solrAdminApp.controller('AnalysisController',
   function($scope, $location, $routeParams, Luke, Analysis) {
-    $scope.resetMenu("analysis");
-
-    // Read initial values from URL:
-    $scope.init = function() {
-      var params = $location.search();
-      $scope.indexText = params["analysis.fieldvalue"];
-      $scope.queryText = params["analysis.query"];
-      if (params["analysis.fieldname"]) {
-        $scope.fieldOrType = "fieldname=" + params["analysis.fieldname"];
-      } else {
-        $scope.fieldOrType = "fieldtype=" + params["analysis.fieldtype"];
-      }
-      $scope.verbose = params["verboxe_output"]=="1";
-    };
+      $scope.resetMenu("analysis");
 
       $scope.refresh = function() {
         Luke.schema({core: $routeParams.core}, function(data) {
@@ -49,20 +36,9 @@ solrAdminApp.controller('AnalysisController',
           }
         });
 
+        $scope.parseQueryString();
         // @todo - if URL param, set $scope.verbose;
         // @todo - set defaultSearchField either to context["analysis.fieldname"] or context["analysis.fieldtype"]
-        /** @todo: not sure:
-                      var fields = 0;
-              for( var key in context.params )
-              {
-                if( 'string' === typeof context.params[key] && 0 !== context.params[key].length )
-                {
-                  fields++;
-                  $( '[name="' + key + '"]', analysis_form )
-                    .val( context.params[key] );
-                }
-              }
-          */
 
       };
       $scope.verbose = true;
@@ -111,62 +87,85 @@ solrAdminApp.controller('AnalysisController',
         return tokens;
       };
 
-      var mangle = function(data) {
-        response = [];
-        for (var i=0; i < data.length; i+=2) {
-          var component = {
-            name: data[i],
-            short: getShortComponentName(data[i]),
-            captions: getCaptionsForComponent(data[i+1]),
-            tokens: getTokensForComponent(data[i+1])
-          };
-          response.push(component);
+      var extractComponents = function(data, result, name) {
+        if (data) {
+            result[name] = [];
+            for (var i = 0; i < data.length; i += 2) {
+                var component = {
+                    name: data[i],
+                    short: getShortComponentName(data[i]),
+                    captions: getCaptionsForComponent(data[i + 1]),
+                    tokens: getTokensForComponent(data[i + 1])
+                };
+                result[name].push(component);
+            }
         }
-        return response;
       };
 
       var processAnalysisData = function(analysis, fieldOrType) {
         var fieldname;
-        console.log(fieldOrType);
-        console.dir(analysis[fieldOrType]);
         for (fieldname in analysis[fieldOrType]) {console.log(fieldname);break;}
-        var index = mangle(analysis[fieldOrType][fieldname].index);
-        var query = mangle(analysis[fieldOrType][fieldname].query);
-        response = {index: index, query: query};
+        var response = {};
+        extractComponents(analysis[fieldOrType][fieldname].index, response, "index");
+        extractComponents(analysis[fieldOrType][fieldname].query, response, "query");
         return response;
       };
 
-      $scope.analyse = function() {
+      $scope.updateQueryString = function() {
+
         var parts = $scope.fieldOrType.split("=");
-        var fieldOrType = parts[0] == "fieldname" ? "field_names" : "field_types";
+        var fieldOrType = parts[0];
+        var name = parts[1];
 
-        params = {
-          "analysis.fieldvalue": $scope.indexText,
-          "analysis.query": $scope.queryText
-        };
+        if ($scope.indexText) {
+            $location.search("analysis.fieldvalue", $scope.indexText);
+        }
+        if ($scope.queryText) {
+          $location.search("analysis.query", $scope.queryText);
+        }
 
-        if (fieldOrType == "field_names") {
-          params["analysis.fieldname"] = parts[1];
+        if (fieldOrType == "fieldname") {
+          $location.search("analysis.fieldname", name);
+          $location.search("analysis.fieldtype", null);
         } else {
-          params["analysis.fieldtype"] = parts[1];
+          $location.search("analysis.fieldtype", name);
+          $location.search("analysis.fieldname", null);
         }
-
-        $location.search("analysis.fieldname", null);
-        $location.search("analysis.fieldtype", null);
-        for (var param in params) {
-          $location.search(param, params[param]);
-        }
-
-        params.core = $routeParams.core;
-        Analysis.field(params, function(data) {
-          $scope.analysis = data;
-          $scope.result = processAnalysisData(data.analysis, fieldOrType);
-        });
       };
+
+      $scope.parseQueryString = function () {
+          var params = {};
+          var search = $location.search();
+
+          if (Object.keys(search).length == 0) {
+              return;
+          }
+          for (var key in search) {
+              params[key]=search[key];
+          }
+          $scope.indexText = search["analysis.fieldvalue"];
+          $scope.queryText = search["analysis.query"];
+          if (search["analysis.fieldname"]) {
+              $scope.fieldOrType = "fieldname=" + search["analysis.fieldname"];
+          } else {
+              $scope.fieldOrType = "fieldtype=" + search["analysis.fieldtype"];
+          }
+          $scope.verbose = search["verbose_output"] == "1";
+
+          if ($scope.fieldOrType || $scope.indexText || $scope.queryText) {
+            params.core = $routeParams.core;
+            var parts = $scope.fieldOrType.split("=");
+            var fieldOrType = parts[0] == "fieldname" ? "field_names" : "field_types";
+
+              Analysis.field(params, function(data) {
+              $scope.result = processAnalysisData(data.analysis, fieldOrType);
+            });
+          }
+      };
+
 
       $scope.toggleVerbose = function() {$scope.verbose = !$scope.verbose};
 
-      $scope.init();
       $scope.refresh();
     }
 );

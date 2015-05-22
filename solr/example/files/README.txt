@@ -134,23 +134,20 @@ You can use the Admin_UI as a visual tool for most of the things you’ll be doi
 	re-create or patch a core/collection with an updated configuration), Solr can be started with a special system property
 	set to the _absolute_ path to the conf/velocity directory, like this:
 
-
 	 bin/solr start -Dvelocity.template.base.dir=</full/path/to>/example/files/conf/velocity/
+
+* How do I index image files?  Or how do I get all files index?
+
+	The bin/post tool has a built-in default constrained list of file types that it will index.  (see `bin/post -h` for
+	details).  In order to index all file types, add `-filetypes "*"` (note the double quotes to avoid shell filename expansion)
+	or `-filetypes png,tiff,jpg` to index those image types.  Full example:
+
+	   bin/post -c files ~/Documents -filetypes png # to index just PNG files
 	
-	
+## Concise Script
+
 bin/solr stop
 rm -Rf server/solr/files/
-
-# templates extracted with:
-#    unzip  -j dist/solr-velocity-*.jar velocity/* -x *.properties -d example/files/templates/
-bin/solr start -Dvelocity.template.base.dir=<absolute path to example/files/templates>
-# TODO: make it so an install dir relative path can be used somehow?
-bin/solr create_core -c files
+bin/solr start # -Dvelocity.template.base.dir=<absolute path to example/files/templates>
+bin/solr core -c files -d example/files/conf
 bin/post -c files ~/Documents
-curl http://localhost:8983/solr/files/config/params -H 'Content-type:application/json'  -d '{
-"update" : {
-  "facets": {
-    "facet.field":"content_type"
-    }
-  }
-}'

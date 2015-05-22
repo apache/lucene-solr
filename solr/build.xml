@@ -208,6 +208,11 @@
       <globmapper from="*.mdtext" to="*.html"/>
     </pegdown>
 
+    <pegdown todir="${javadoc.dir}/files">
+      <fileset dir="example/files" includes="README.txt"/>
+      <globmapper from="*.txt" to="*.html"/>
+    </pegdown>
+
     <copy todir="${javadoc.dir}">
       <fileset dir="site/assets" />
     </copy>

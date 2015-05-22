@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.response.transform;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,13 +17,21 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import org.apache.solr.request.SolrRequestHandler;
+import java.io.IOException;
 
+import org.apache.solr.common.SolrDocument;
 
-/**An interface for RequestHandlers need to handle all paths under its registered path
+/**
+ * Created by erikhatcher on 2/18/15.
  */
-public interface NestedRequestHandler {
-  /** Return a SolrRequestHandler to handle a subpath from the path this handler is registered.
-   */
-  public SolrRequestHandler getSubHandler(String subPath);
+public class HighlightingAugmenter extends TransformerWithContext {
+  @Override
+  public String getName() {
+    return null;
+  }
+
+  @Override
+  public void transform(SolrDocument doc, int docid) throws IOException {
+
+  }
 }
