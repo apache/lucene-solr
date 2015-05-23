@@ -17,6 +17,8 @@
 
 package org.apache.solr.update;
 
+import java.util.List;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -33,6 +35,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
+import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.request.SolrQueryRequest;
@@ -221,12 +224,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(add(xml, new String[0])));
   }
   
-  public void testMultiValuedFieldAndDocBoosts() throws Exception {
+  private void assertMultiValuedFieldAndDocBoosts(SolrInputField field) throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     SolrInputDocument doc = new SolrInputDocument();
     doc.setDocumentBoost(3.0f);
-    SolrInputField field = new SolrInputField( "foo_t" );
     field.addValue( "summer time" , 1.0f );
     field.addValue( "in the city" , 5.0f ); // using boost
     field.addValue( "living is easy" , 1.0f );
@@ -245,6 +247,27 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertEquals(1.0f, outF[1].boost(), 0.0f);
     assertEquals(1.0f, outF[2].boost(), 0.0f);
     
+  }
+
+  public void testMultiValuedFieldAndDocBoostsWithCopy() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    SolrInputField field = new SolrInputField( "foo_t" );
+    List<CopyField> copyFields = schema.getCopyFieldsList(field.getName());
+    
+    assertNotNull( copyFields );
+    assertFalse( copyFields.isEmpty() );
+    assertMultiValuedFieldAndDocBoosts( field );
+  }
+  
+  public void testMultiValuedFieldAndDocBoostsNoCopy() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    SolrInputField field = new SolrInputField( "t_foo" );
+    List<CopyField> copyFields = schema.getCopyFieldsList(field.getName());
+
+    assertTrue( copyFields == null || copyFields.isEmpty() );
+    assertMultiValuedFieldAndDocBoosts( field );
   }
 
   public void testCopyFieldsAndFieldBoostsAndDocBoosts() throws Exception {
