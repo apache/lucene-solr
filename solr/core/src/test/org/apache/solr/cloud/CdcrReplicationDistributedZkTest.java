@@ -21,11 +21,13 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Ignore
 @Slow
 public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest {
 
