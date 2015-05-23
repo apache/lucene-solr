@@ -1370,7 +1370,7 @@ public class SolrCLI {
               .withArgName("URL")
               .hasArg()
               .isRequired(false)
-              .withDescription("Base Solr URL, default is http://localhost:8983/solr")
+              .withDescription("Base Solr URL, default is " + DEFAULT_SOLR_URL)
               .create("solrUrl"),
           OptionBuilder
               .withArgName("NAME")
@@ -1396,7 +1396,7 @@ public class SolrCLI {
     @Override
     public int runTool(CommandLine cli) throws Exception {
 
-      String solrUrl = cli.getOptionValue("solrUrl", "http://localhost:8983/solr");
+      String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/"))
         solrUrl += "/";
 
@@ -1532,7 +1532,7 @@ public class SolrCLI {
     @Override
     public int runTool(CommandLine cli) throws Exception {
 
-      String solrUrl = cli.getOptionValue("solrUrl", "http://localhost:8983/solr");
+      String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/"))
         solrUrl += "/";
 
@@ -1577,7 +1577,7 @@ public class SolrCLI {
               .withArgName("URL")
               .hasArg()
               .isRequired(false)
-              .withDescription("Base Solr URL, default is http://localhost:8983/solr")
+              .withDescription("Base Solr URL, default is " + DEFAULT_SOLR_URL)
               .create("solrUrl"),
           OptionBuilder
               .withArgName("NAME")
@@ -1611,7 +1611,7 @@ public class SolrCLI {
       LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
       LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
 
-      String solrUrl = cli.getOptionValue("solrUrl", "http://localhost:8983/solr");
+      String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/"))
         solrUrl += "/";
 
