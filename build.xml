@@ -28,7 +28,7 @@
   <loadproperties srcFile="lucene/version.properties"/>
 
   <!-- define here, as common-build is not included! TODO: maybe include into a property file like the version? -->
-  <property name="python32.exe" value="python3.2" />
+  <property name="python32.exe" value="python3" />
   <property name="args" value=""/>
 
   <!-- other settings: -->
