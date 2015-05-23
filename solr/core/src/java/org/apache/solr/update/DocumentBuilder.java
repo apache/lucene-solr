@@ -160,13 +160,13 @@ public class DocumentBuilder {
               // record the field as having a value
               usedFields.add(destinationField.getName());
             }
-            
-            // The final boost for a given field named is the product of the 
-            // *all* boosts on values of that field. 
-            // For multi-valued fields, we only want to set the boost on the
-            // first field.
-            fieldBoost = compoundBoost = 1.0f;
           }
+
+          // The final boost for a given field named is the product of the 
+          // *all* boosts on values of that field. 
+          // For multi-valued fields, we only want to set the boost on the
+          // first field.
+          fieldBoost = compoundBoost = 1.0f;
         }
       }
       catch( SolrException ex ) {
