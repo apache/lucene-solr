@@ -1537,7 +1537,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
 ]]></fail>
     <echo>Code coverage with Atlassian Clover enabled.</echo>
-    <ivy:cachepath organisation="com.atlassian.clover" module="clover" revision="4.0.3"
+    <ivy:cachepath organisation="com.atlassian.clover" module="clover" revision="4.0.4"
       inline="true" conf="master" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
