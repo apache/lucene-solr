@@ -1578,7 +1578,7 @@ public class UpdateLog implements PluginInfoInitialized {
       long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
       if (maxVersion == 0L) {
         maxVersion = versions.getNewClock();
-        log.warn("Could not find max version in index or recent updates, using new clock {}", maxVersion);
+        log.info("Could not find max version in index or recent updates, using new clock {}", maxVersion);
       }
 
       // seed all version buckets with the highest value from recent and index

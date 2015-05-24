@@ -234,7 +234,7 @@ public class VersionInfo {
         maxVersionInIndex = NumericUtils.getMaxLong(versionTerms);
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
       } else {
-        log.warn("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
+        log.info("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
       }
     } else {
       ValueSource vs = versionField.getType().getValueSource(versionField, null);
