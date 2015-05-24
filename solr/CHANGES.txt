@@ -351,6 +351,9 @@ Bug Fixes
 * SOLR-7335: Fix doc boosts to no longer be multiplied in each field value in multivalued fields that
   are not used in copyFields (Shingo Sasaki via hossman)
 
+* SOLR-7585: Fix NoSuchElementException in LFUCache resulting from heavy writes
+  making concurrent put() calls. (Maciej Zasada via Shawn Heisey)
+
 Optimizations
 ----------------------
 
