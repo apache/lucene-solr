@@ -146,30 +146,34 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
   
   @Test
   public void testKerberizedSolr() throws Exception {
-    HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
-    CloudSolrClient testClient = createCloudClient("testcollection");
-    
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setCollectionName("testcollection");
-    create.setConfigName("conf1");
-    create.setNumShards(1);
-    create.setReplicationFactor(1);
-    create.process(testClient);
-    
-    waitForCollection(testClient.getZkStateReader(), "testcollection", 1);
-    CollectionAdminRequest.List list = new CollectionAdminRequest.List();
-    
-    CollectionAdminResponse response = list.process(testClient);
-    assertTrue("Expected to see testcollection but it doesn't exist",
-        ((ArrayList) response.getResponse().get("collections")).contains("testcollection"));
-    
-    testClient.setDefaultCollection("testcollection");
-    indexDoc(testClient, params("commit", "true"), getDoc("id", 1));
-    //cloudClient.commit();
+    CloudSolrClient testClient = null;
+    try {
+      HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
+      testClient = createCloudClient("testcollection");
 
-    QueryResponse queryResponse = testClient.query(new SolrQuery("*:*"));
-    assertEquals("Expected #docs and actual isn't the same", 1, queryResponse.getResults().size());
-    testClient.close();
+      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
+      create.setCollectionName("testcollection");
+      create.setConfigName("conf1");
+      create.setNumShards(1);
+      create.setReplicationFactor(1);
+      create.process(testClient);
+
+      waitForCollection(testClient.getZkStateReader(), "testcollection", 1);
+      CollectionAdminRequest.List list = new CollectionAdminRequest.List();
+
+      CollectionAdminResponse response = list.process(testClient);
+      assertTrue("Expected to see testcollection but it doesn't exist",
+          ((ArrayList) response.getResponse().get("collections")).contains("testcollection"));
+
+      testClient.setDefaultCollection("testcollection");
+      indexDoc(testClient, params("commit", "true"), getDoc("id", 1));
+
+      QueryResponse queryResponse = testClient.query(new SolrQuery("*:*"));
+      assertEquals("Expected #docs and actual isn't the same", 1, queryResponse.getResults().size());
+    } finally {
+      if(testClient != null)
+        testClient.close();
+    }
   }
   
   @Override
