@@ -51,6 +51,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
   private final boolean newThreadForCleanup;
   private volatile boolean islive = true;
   private final Stats stats = new Stats();
+  @SuppressWarnings("unused")
   private final int acceptableWaterMark;
   private long lowHitCount = 0;  // not volatile, only accessed in the cleaning method
   private final EvictionListener<K, V> evictionListener;
@@ -154,57 +155,64 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
   }
 
   /**
-   * Removes items from the cache to bring the size down
-   * to an acceptable value ('acceptableWaterMark').
-   * <p/>
-   * It is done in two stages. In the first stage, least recently used items are evicted.
-   * If, after the first stage, the cache size is still greater than 'acceptableSize'
-   * config parameter, the second stage takes over.
-   * <p/>
-   * The second stage is more intensive and tries to bring down the cache size
-   * to the 'lowerWaterMark' config parameter.
+   * Removes items from the cache to bring the size down to the lowerWaterMark.
    */
   private void markAndSweep() {
     if (!markAndSweepLock.tryLock()) return;
     try {
       long lowHitCount = this.lowHitCount;
       isCleaning = true;
-      this.lowHitCount = lowHitCount;     // volatile write to make isCleaning visible
-
+      this.lowHitCount = lowHitCount; // volatile write to make isCleaning visible
+      
       int sz = stats.size.get();
-
+      if (sz <= upperWaterMark) {
+        /* SOLR-7585: Even though we acquired a lock, multiple threads might detect a need for calling this method.
+         * Locking keeps these from executing at the same time, so they run sequentially.  The second and subsequent
+         * sequential runs of this method don't need to be done, since there are no elements to remove.
+        */
+        return;
+      }
+      
       int wantToRemove = sz - lowerWaterMark;
-
-      TreeSet<CacheEntry> tree = new TreeSet<>();
-
+      
+      TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
+      
       for (CacheEntry<K, V> ce : map.values()) {
-        // set hitsCopy to avoid later Atomic reads
+        // set hitsCopy to avoid later Atomic reads.  Primitive types are faster than the atomic get().
         ce.hitsCopy = ce.hits.get();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (timeDecay) {
           ce.hits.set(ce.hitsCopy >>> 1);
         }
-
+        
         if (tree.size() < wantToRemove) {
           tree.add(ce);
         } else {
-          // If the hits are not equal, we can remove before adding
-          // which is slightly faster
-          if (ce.hitsCopy < tree.first().hitsCopy) {
-            tree.remove(tree.first());
-            tree.add(ce);
-          } else if (ce.hitsCopy == tree.first().hitsCopy) {
-            tree.add(ce);
-            tree.remove(tree.first());
+          /*
+           * SOLR-7585: Before doing this part, make sure the TreeSet actually has an element, since the first() method
+           * fails with NoSuchElementException if the set is empty.  If that test passes, check hits. This test may
+           * never actually fail due to the upperWaterMark check above, but we'll do it anyway.
+           */
+          if (tree.size() > 0) {
+            /* If hits are not equal, we can remove before adding which is slightly faster. I can no longer remember
+             * why removing first is faster, but I vaguely remember being sure about it!
+             */
+            if (ce.hitsCopy < tree.first().hitsCopy) {
+              tree.remove(tree.first());
+              tree.add(ce);
+            } else if (ce.hitsCopy == tree.first().hitsCopy) {
+              tree.add(ce);
+              tree.remove(tree.first());
+            }
           }
         }
       }
-
+      
       for (CacheEntry<K, V> e : tree) {
         evictEntry(e.key);
       }
     } finally {
-      isCleaning = false;  // set before markAndSweep.unlock() for visibility
+      isCleaning = false; // set before markAndSweep.unlock() for visibility
       markAndSweepLock.unlock();
     }
   }
@@ -230,12 +238,12 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     Map<K, V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<>();
+    TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
     // we need to grab the lock since we are changing the copy variables
     markAndSweepLock.lock();
     try {
       for (Map.Entry<Object, CacheEntry<K, V>> entry : map.entrySet()) {
-        CacheEntry ce = entry.getValue();
+        CacheEntry<K, V> ce = entry.getValue();
         ce.hitsCopy = ce.hits.get();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
@@ -274,7 +282,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     Map<K, V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<>();
+    TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
     // we need to grab the lock since we are changing the copy variables
     markAndSweepLock.lock();
     try {
