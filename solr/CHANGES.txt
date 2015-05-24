@@ -143,8 +143,8 @@ Upgrading from Solr 5.1
 
   - Please refer to the "Enabling SSL" section in the Solr Reference Guide for complete details.
 
-* Support for pathPrefix has been completely removed from Solr. Since 5.0, Solr only officially
-  supported being run as a webapp but you could play around with the web.xml to have a path prefix.
+* Support for pathPrefix has been completely removed from Solr. Since 5.0, Solr no longer officially
+  supports being run as a webapp but allowed users to play around with the web.xml to have a path prefix.
   That would no longer be true. See SOLR-7500 for more info.
 
 * The package structure under org.apache.solr.client.solrj.io has been changed to support
