@@ -849,6 +849,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     this.ruleExpiryLock = new ReentrantLock();
     registerConfListener();
+
+    // seed version buckets with max from index during core initialization
+    if (this.updateHandler != null && this.updateHandler.getUpdateLog() != null) {
+      RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
+      if (newestSearcher != null) {
+        try {
+          this.updateHandler.getUpdateLog().onFirstSearcher(newestSearcher.get());
+        } finally {
+          newestSearcher.decref();
+        }
+      }
+    }
   }
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
@@ -1806,10 +1818,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         }
 
         if (currSearcher == null) {
-          if (updateHandler != null && updateHandler.getUpdateLog() != null) {
-            updateHandler.getUpdateLog().onFirstSearcher(newSearcher);
-          }
-
           future = searcherExecutor.submit(new Callable() {
             @Override
             public Object call() throws Exception {
