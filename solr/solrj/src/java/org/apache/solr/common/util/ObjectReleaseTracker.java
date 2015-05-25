@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -40,20 +41,30 @@ public class ObjectReleaseTracker {
     return true;
   }
   
-  public static boolean clearObjectTrackerAndCheckEmpty() {
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty() {
+    String error = null;
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
     boolean empty = entries.isEmpty();
     if (entries.size() > 0) {
-      System.err.println("ObjectTracker found objects that were not released!!!");
-    }
-    
-    for (Entry<Object,String> entry : entries) {
-      System.err.println(entry.getValue());
+      Set<String> objects = new HashSet<>();
+      for (Entry<Object,String> entry : entries) {
+        objects.add(entry.getKey().getClass().getSimpleName());
+      }
+      
+      error = "ObjectTracker found " + entries.size() + " object(s) that were not released!!! " + objects;
+      
+      System.err.println(error);
+      for (Entry<Object,String> entry : entries) {
+        System.err.println(entry.getValue());
+      }
     }
     
     OBJECTS.clear();
     
-    return empty;
+    return error;
   }
   
   private static class ObjectTrackerException extends RuntimeException {
