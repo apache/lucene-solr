@@ -230,11 +230,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       deleteCore();
       resetExceptionIgnores();
       endTrackingSearchers();
+      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
       if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-        assertTrue("Some resources were not closed, shutdown, or released.", ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+        assertNull(orr, orr);
       } else {
-        if (!ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty()) {
-          log.warn("Some resources were not closed, shutdown, or released. Remove the SuppressObjectReleaseTracker annotation to get more information on the fail.");
+        if (orr != null) {
+          log.warn("Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation.");
         }
       }
       resetFactory();
