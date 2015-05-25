@@ -56,17 +56,24 @@ public class KerberosPlugin extends AuthenticationPlugin {
   HttpClientConfigurer kerberosConfigurer = new Krb5HttpClientConfigurer();
   Filter kerberosFilter = new KerberosFilter();
   
+  final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
+  final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
+  final String COOKIE_PATH_PARAM = "solr.kerberos.cookie.path";
+  final String PRINCIPAL_PARAM = "solr.kerberos.principal";
+  final String KEYTAB_PARAM = "solr.kerberos.keytab";
+  final String TOKEN_VALID_PARAM = "solr.kerberos.token.valid";
+
   @Override
   public void init(Map<String, Object> pluginConfig) {
     try {
       Map<String, String> params = new HashMap();
       params.put("type", "kerberos");
-      params.put("kerberos.name.rules", System.getProperty("solr.kerberos.name.rules", "DEFAULT"));
-      params.put("token.valid", System.getProperty("solr.kerberos.token.valid", "30"));
-      params.put("cookie.domain", System.getProperty("solr.kerberos.cookie.domain"));
-      params.put("cookie.path", System.getProperty("solr.kerberos.cookie.path", "/"));
-      params.put("kerberos.principal", System.getProperty("solr.kerberos.principal"));
-      params.put("kerberos.keytab", System.getProperty("solr.kerberos.keytab"));
+      putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
+      putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
+      putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
+      putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
+      putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
+      putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
 
       log.info("Params: "+params);
 
@@ -96,6 +103,14 @@ public class KerberosPlugin extends AuthenticationPlugin {
     } catch (ServletException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: "+e);
     }
+  }
+
+  private void putParam(Map<String, String> params, String internalParamName, String externalParamName, String defaultValue) {
+    String value = System.getProperty(externalParamName, defaultValue);
+    if (value==null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+externalParamName+"'.");
+    }
+    params.put(internalParamName, value);
   }
 
   @Override

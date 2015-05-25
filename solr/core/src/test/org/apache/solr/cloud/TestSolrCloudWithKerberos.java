@@ -61,6 +61,10 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
     if (brokenLocales.contains(Locale.getDefault().toString())) {
       Locale.setDefault(Locale.US);
     }
+    // Use just one jetty
+    this.sliceCount = 0;
+    this.fixShardCount(1);
+
     setupMiniKdc();
     super.distribSetUp();
     //useExternalKdc();
@@ -72,6 +76,8 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
   }
 
   private void setupMiniKdc() throws Exception {
+    System.setProperty("solr.jaas.debug", "true");
+
     String kdcDir = createTempDir()+File.separator+"minikdc";
     kdc = KerberosTestUtil.getKdc(new File(kdcDir));
     File keytabFile = new File(kdcDir, "keytabs");
