@@ -107,8 +107,8 @@ public class TestWindowsFS extends MockFileSystemTestCase {
   }
 
   public void testOpenDeleteConcurrently() throws IOException, Exception {
-    Path dir = wrap(createTempDir());
-    Path file = dir.resolve("thefile");
+    final Path dir = wrap(createTempDir());
+    final Path file = dir.resolve("thefile");
     final CyclicBarrier barrier = new CyclicBarrier(2);
     final AtomicBoolean stopped = new AtomicBoolean(false);
     Thread t = new Thread() {
@@ -147,10 +147,10 @@ public class TestWindowsFS extends MockFileSystemTestCase {
           stream.write(0);
           // just create
         } catch (FileNotFoundException | NoSuchFileException ex) {
-          assertEquals("File handle leaked - file is closed but still regeistered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+          assertEquals("File handle leaked - file is closed but still registered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
           assertFalse("caught FNF on close", opened);
         }
-        assertEquals("File handle leaked - file is closed but still regeistered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+        assertEquals("File handle leaked - file is closed but still registered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
         Files.deleteIfExists(file);
       }
     } finally {
