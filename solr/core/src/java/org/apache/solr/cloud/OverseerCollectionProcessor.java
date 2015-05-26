@@ -42,7 +42,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
@@ -61,7 +60,6 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.rule.SnitchContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -105,8 +103,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import com.google.common.collect.ImmutableSet;
 
 
 public class OverseerCollectionProcessor implements Runnable, Closeable {
@@ -818,62 +814,48 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     byte[] bytes = ZkStateReader.toJSON(clusterState);
     Map<String, Object> stateMap = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
 
+    Set<String> collections = new HashSet<>();
+    String routeKey = message.getStr(ShardParams._ROUTE_);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
     if (collection == null) {
-      Set<String> collections = clusterState.getCollections();
-      for (String name : collections) {
-        Map<String, Object> collectionStatus = null;
-        if (clusterState.getCollection(name).getStateFormat() > 1) {
-          bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
-          Map<String, Object> docCollection = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
-          collectionStatus = getCollectionStatus(docCollection, name, shard);
-        } else  {
-          collectionStatus = getCollectionStatus((Map<String,Object>) stateMap.get(name), name, shard);
-        }
-        if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
-          collectionStatus.put("aliases", collectionVsAliases.get(name));
-        }
-        String configName = zkStateReader.readConfigName(name);
-        collectionStatus.put("configName", configName);
-        collectionProps.add(name, collectionStatus);
-      }
-    } else {
-      String routeKey = message.getStr(ShardParams._ROUTE_);
-      Map<String, Object> docCollection = null;
-      if (clusterState.getCollection(collection).getStateFormat() > 1) {
-        bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
-        docCollection = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
-      } else  {
-        docCollection = (Map<String,Object>) stateMap.get(collection);
-      }
-      if (routeKey == null) {
-        Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, shard);
-        if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
-          collectionStatus.put("aliases", collectionVsAliases.get(collection));
-        }
-        String configName = zkStateReader.readConfigName(collection);
-        collectionStatus.put("configName", configName);
-        collectionProps.add(collection, collectionStatus);
-      } else {
-        DocCollection coll = clusterState.getCollection(collection);
-        DocRouter router = coll.getRouter();
-        Collection<Slice> slices = router.getSearchSlices(routeKey, null, coll);
-        String s = "";
+      collections = new HashSet<>(clusterState.getCollections());
+    } else  {
+      collections = Collections.singleton(collection);
+    }
+
+    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
+
+    for (String name : collections) {
+      Map<String, Object> collectionStatus = null;
+      DocCollection clusterStateCollection = clusterState.getCollection(name);
+
+      Set<String> requestedShards = new HashSet<>();
+      if (routeKey != null) {
+        DocRouter router = clusterStateCollection.getRouter();
+        Collection<Slice> slices = router.getSearchSlices(routeKey, null, clusterStateCollection);
         for (Slice slice : slices) {
-          s += slice.getName() + ",";
+          requestedShards.add(slice.getName());
         }
-        if (shard != null)  {
-          s += shard;
-        }
-        Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, s);
-        if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
-          collectionStatus.put("aliases", collectionVsAliases.get(collection));
-        }
-        String configName = zkStateReader.readConfigName(collection);
-        collectionStatus.put("configName", configName);
-        collectionProps.add(collection, collectionStatus);
       }
+      if (shard != null) {
+        requestedShards.add(shard);
+      }
+
+      if (clusterStateCollection.getStateFormat() > 1) {
+        bytes = ZkStateReader.toJSON(clusterStateCollection);
+        Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+        collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+      } else {
+        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, requestedShards);
+      }
+
+      collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
+      if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
+        collectionStatus.put("aliases", collectionVsAliases.get(name));
+      }
+      String configName = zkStateReader.readConfigName(name);
+      collectionStatus.put("configName", configName);
+      collectionProps.add(name, collectionStatus);
     }
 
     List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
@@ -946,21 +928,21 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
    *
    * @param collection collection map parsed from JSON-serialized {@link ClusterState}
    * @param name  collection name
-   * @param shardStr comma separated shard names
+   * @param requestedShards a set of shards to be returned in the status.
+   *                        An empty or null values indicates <b>all</b> shards.
    * @return map of collection properties
    */
   @SuppressWarnings("unchecked")
-  private Map<String, Object> getCollectionStatus(Map<String, Object> collection, String name, String shardStr) {
+  private Map<String, Object> getCollectionStatus(Map<String, Object> collection, String name, Set<String> requestedShards) {
     if (collection == null)  {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
     }
-    if (shardStr == null) {
+    if (requestedShards == null || requestedShards.isEmpty()) {
       return collection;
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
       Map<String, Object>  selected = new HashMap<>();
-      List<String> selectedShards = Arrays.asList(shardStr.split(","));
-      for (String selectedShard : selectedShards) {
+      for (String selectedShard : requestedShards) {
         if (!shards.containsKey(selectedShard)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " shard: " + selectedShard + " not found");
         }
