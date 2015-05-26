@@ -249,9 +249,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    // nocommit put back:
-    // int numThreads = TestUtil.nextInt(random(), 2, 5);
-    int numThreads = 1;
+    // Make sure queries are thread safe:
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
 
     List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(100);
@@ -304,8 +303,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
               double bboxLon0 = lon0;
               double bboxLon1 = lon1;
 
-              // nocommit remove true || below:
-              if (true || random().nextBoolean()) {
+              if (random().nextBoolean()) {
                 query = new GeoPointInBBoxQuery(FIELD_NAME, lon0, lat0, lon1, lat1);
               } else {
                 // nocommit remove "false &&" below
