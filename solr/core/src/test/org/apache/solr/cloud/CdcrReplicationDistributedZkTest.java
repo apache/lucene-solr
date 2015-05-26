@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-@Ignore
 @Slow
 public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest {
 

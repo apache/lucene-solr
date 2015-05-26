@@ -80,6 +80,7 @@ import org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -808,7 +809,9 @@ public class IndexFetcher {
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
       terminateAndWaitFsyncService();
+      ((CdcrUpdateLog) ulog).reset(); // reset the update log before copying the new tlog directory
       copyTmpTlogFiles2Tlog(tmpTlogDir, timestamp);
+      ulog.init(solrCore.getUpdateHandler(), solrCore); // re-initialise the update log with the new directory
     } finally {
       delTree(tmpTlogDir);
     }
