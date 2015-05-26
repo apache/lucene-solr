@@ -69,6 +69,7 @@
     <property name="example.heap.size" value="512M"/>
     <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
+      <arg value="--module=http"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
       <sysproperty key="jetty.home" value="${server.dir}"/>
