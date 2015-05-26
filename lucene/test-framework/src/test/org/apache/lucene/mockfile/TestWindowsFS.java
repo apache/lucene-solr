@@ -17,15 +17,25 @@ package org.apache.lucene.mockfile;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.Exception;
+import java.lang.InterruptedException;
+import java.lang.NoSuchFieldException;
+import java.lang.RuntimeException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.Constants;
 
 /** Basic tests for WindowsFS */
@@ -94,5 +104,58 @@ public class TestWindowsFS extends MockFileSystemTestCase {
       assertTrue(e.getMessage().contains("access denied"));
     }
     is.close();
+  }
+
+  public void testOpenDeleteConcurrently() throws IOException, Exception {
+    Path dir = wrap(createTempDir());
+    Path file = dir.resolve("thefile");
+    final CyclicBarrier barrier = new CyclicBarrier(2);
+    final AtomicBoolean stopped = new AtomicBoolean(false);
+    Thread t = new Thread() {
+      @Override
+      public void run() {
+        try {
+          barrier.await();
+        } catch (Exception ex) {
+          throw new RuntimeException(ex);
+        }
+        while (stopped.get() == false) {
+          try {
+            if (random().nextBoolean()) {
+              Files.delete(file);
+            } else if (random().nextBoolean()) {
+              Files.deleteIfExists(file);
+            } else {
+              Path target = file.resolveSibling("other");
+              Files.move(file, target);
+              Files.delete(target);
+            }
+          } catch (IOException ex) {
+            // continue
+          }
+        }
+      }
+    };
+    t.start();
+    barrier.await();
+    try {
+      final int iters = 10 + random().nextInt(100);
+      for (int i = 0; i < iters; i++) {
+        boolean opened = false;
+        try (OutputStream stream = Files.newOutputStream(file)) {
+          opened = true;
+          stream.write(0);
+          // just create
+        } catch (FileNotFoundException | NoSuchFileException ex) {
+          assertEquals("File handle leaked - file is closed but still regeistered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+          assertFalse("caught FNF on close", opened);
+        }
+        assertEquals("File handle leaked - file is closed but still regeistered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+        Files.deleteIfExists(file);
+      }
+    } finally {
+      stopped.set(true);
+      t.join();
+    }
   }
 }
