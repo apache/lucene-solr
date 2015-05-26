@@ -400,7 +400,6 @@ final class StandardDirectoryReader extends DirectoryReader {
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(true));
       generation = infos.getGeneration();
-      System.out.println("getGen: " + generation);
       segmentCount = infos.size();
     }
 
