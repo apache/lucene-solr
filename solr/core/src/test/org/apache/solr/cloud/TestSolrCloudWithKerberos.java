@@ -38,8 +38,10 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.CreateMode;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.Slow
 public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
