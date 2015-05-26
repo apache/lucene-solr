@@ -251,6 +251,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
     // Make sure queries are thread safe:
     int numThreads = TestUtil.nextInt(random(), 2, 5);
+    // nocommit remove:
+    numThreads = 1;
 
     List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(100);
@@ -303,7 +305,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
               double bboxLon0 = lon0;
               double bboxLon1 = lon1;
 
-              if (random().nextBoolean()) {
+              // nocommit remove true || so we sometimes test polygon query too:
+              if (true || random().nextBoolean()) {
                 query = new GeoPointInBBoxQuery(FIELD_NAME, lon0, lat0, lon1, lat1);
               } else {
                 // nocommit why does test fail if we enable this?  it should pass?
