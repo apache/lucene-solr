@@ -212,14 +212,16 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
     @Override
     protected final BytesRef nextSeekTerm(BytesRef term) {
       while (!rangeBounds.isEmpty()) {
-        if (currentRange == null)
+        if (currentRange == null) {
           nextRange();
+        }
 
         // if the new upper bound is before the term parameter, the sub-range is never a hit
         if (term != null && term.compareTo(currentUpperBound) > 0) {
           nextRange();
-	        if (!rangeBounds.isEmpty())
-	          continue;
+          if (!rangeBounds.isEmpty()) {
+            continue;
+          }
         }
         // never seek backwards, so use current term if lower bound is smaller
         return (term != null && term.compareTo(currentLowerBound) > 0) ?
