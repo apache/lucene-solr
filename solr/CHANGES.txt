@@ -68,7 +68,9 @@ Versions of Major Components
 
 Upgrading from Solr 5.2
 -----------------------
-(no changes)
+
+* SolrJ's CollectionAdminRequest class is now marked as abstract. Use one of its concrete
+  sub-classes instead.
 
 Detailed Change List
 ----------------------
@@ -92,7 +94,8 @@ Optimizations
 
 Other Changes
 ----------------------
-(no changes)
+
+* SOLR-7595: Allow method chaining for all CollectionAdminRequests in Solrj. (shalin)
 
 ==================  5.2.0 ==================
 

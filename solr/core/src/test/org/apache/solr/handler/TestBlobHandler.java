@@ -62,10 +62,10 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse response1;
-      CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-      createCollectionRequest.setCollectionName(".system");
-      createCollectionRequest.setNumShards(1);
-      createCollectionRequest.setReplicationFactor(2);
+      CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
+              .setCollectionName(".system")
+              .setNumShards(1)
+              .setReplicationFactor(2);
       response1 = createCollectionRequest.process(client);
       assertEquals(0, response1.getStatus());
       assertTrue(response1.isSuccess());
@@ -105,10 +105,10 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   public static void createSystemCollection(SolrClient client) throws SolrServerException, IOException {
     CollectionAdminResponse response1;
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-    createCollectionRequest.setCollectionName(".system");
-    createCollectionRequest.setNumShards(1);
-    createCollectionRequest.setReplicationFactor(2);
+    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
+            .setCollectionName(".system")
+            .setNumShards(1)
+            .setReplicationFactor(2);
     response1 = createCollectionRequest.process(client);
     assertEquals(0, response1.getStatus());
     assertTrue(response1.isSuccess());

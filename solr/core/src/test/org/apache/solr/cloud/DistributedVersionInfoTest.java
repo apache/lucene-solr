@@ -250,8 +250,8 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete()
+              .setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {
       // don't fail the test

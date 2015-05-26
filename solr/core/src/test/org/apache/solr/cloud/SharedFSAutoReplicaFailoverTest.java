@@ -120,14 +120,14 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   // serially
   private void testBasics() throws Exception {
     String collection1 = "solrj_collection";
-    Create createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName(collection1);
-    createCollectionRequest.setNumShards(2);
-    createCollectionRequest.setReplicationFactor(2);
-    createCollectionRequest.setMaxShardsPerNode(2);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setRouterField("myOwnField");
-    createCollectionRequest.setAutoAddReplicas(true);
+    Create createCollectionRequest = new Create()
+            .setCollectionName(collection1)
+            .setNumShards(2)
+            .setReplicationFactor(2)
+            .setMaxShardsPerNode(2)
+            .setConfigName("conf1")
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(true);
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
 
     assertEquals(0, response.getStatus());
@@ -135,14 +135,14 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     waitForRecoveriesToFinish(collection1, false);
     
     String collection2 = "solrj_collection2";
-    createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName(collection2);
-    createCollectionRequest.setNumShards(2);
-    createCollectionRequest.setReplicationFactor(2);
-    createCollectionRequest.setMaxShardsPerNode(2);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setRouterField("myOwnField");
-    createCollectionRequest.setAutoAddReplicas(false);
+    createCollectionRequest = new Create()
+            .setCollectionName(collection2)
+            .setNumShards(2)
+            .setReplicationFactor(2)
+            .setMaxShardsPerNode(2)
+            .setConfigName("conf1")
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(false);
     CollectionAdminResponse response2 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response2.getStatus());
@@ -151,14 +151,14 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     waitForRecoveriesToFinish(collection2, false);
     
     String collection3 = "solrj_collection3";
-    createCollectionRequest = new Create();
-    createCollectionRequest.setCollectionName(collection3);
-    createCollectionRequest.setNumShards(5);
-    createCollectionRequest.setReplicationFactor(1);
-    createCollectionRequest.setMaxShardsPerNode(1);
-    createCollectionRequest.setConfigName("conf1");
-    createCollectionRequest.setRouterField("myOwnField");
-    createCollectionRequest.setAutoAddReplicas(true);
+    createCollectionRequest = new Create()
+            .setCollectionName(collection3)
+            .setNumShards(5)
+            .setReplicationFactor(1)
+            .setMaxShardsPerNode(1)
+            .setConfigName("conf1")
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(true);
     CollectionAdminResponse response3 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response3.getStatus());

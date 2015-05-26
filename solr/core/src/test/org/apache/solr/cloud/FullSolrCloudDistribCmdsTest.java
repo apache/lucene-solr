@@ -157,13 +157,13 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-    createCollectionRequest.setCollectionName("implicit_collection_without_routerfield");
-    createCollectionRequest.setRouterName("implicit");
-    createCollectionRequest.setNumShards(2);
-    createCollectionRequest.setShards("shard1,shard2");
-    createCollectionRequest.setReplicationFactor(2);
-    createCollectionRequest.setConfigName("conf1");
+    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
+            .setCollectionName("implicit_collection_without_routerfield")
+            .setRouterName("implicit")
+            .setNumShards(2)
+            .setShards("shard1,shard2")
+            .setReplicationFactor(2)
+            .setConfigName("conf1");
     response = createCollectionRequest.process(server);
 
     assertEquals(0, response.getStatus());
@@ -285,15 +285,15 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-    createCollectionRequest.setCollectionName("compositeid_collection_with_routerfield");
-    createCollectionRequest.setRouterName("compositeId");
-    createCollectionRequest.setRouterField("routefield_s");
-    createCollectionRequest.setNumShards(2);
-    createCollectionRequest.setShards("shard1,shard2");
-    createCollectionRequest.setReplicationFactor(2);
-    createCollectionRequest.setConfigName("conf1");
-    response = createCollectionRequest.process(server);
+    response = new CollectionAdminRequest.Create()
+            .setCollectionName("compositeid_collection_with_routerfield")
+            .setRouterName("compositeId")
+            .setRouterField("routefield_s")
+            .setNumShards(2)
+            .setShards("shard1,shard2")
+            .setReplicationFactor(2)
+            .setConfigName("conf1")
+            .process(server);
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());

@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,8 +31,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.Test;
-
-import java.io.IOException;
 
 /**
  * Tests the Cloud Collections API.
@@ -58,11 +58,11 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   @ShardsFixed(num = 1)
   public void testSolrJAPICalls() throws Exception {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      Create createCollectionRequest = new Create();
-      createCollectionRequest.setCollectionName("testasynccollectioncreation");
-      createCollectionRequest.setNumShards(1);
-      createCollectionRequest.setConfigName("conf1");
-      createCollectionRequest.setAsyncId("1001");
+      Create createCollectionRequest = new Create()
+              .setCollectionName("testasynccollectioncreation")
+              .setNumShards(1)
+              .setConfigName("conf1")
+              .setAsyncId("1001");
       createCollectionRequest.process(client);
   
       String state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, client);
@@ -70,30 +70,30 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
       assertEquals("CreateCollection task did not complete!", "completed", state);
   
   
-      createCollectionRequest = new Create();
-      createCollectionRequest.setCollectionName("testasynccollectioncreation");
-      createCollectionRequest.setNumShards(1);
-      createCollectionRequest.setConfigName("conf1");
-      createCollectionRequest.setAsyncId("1002");
+      createCollectionRequest = new Create()
+              .setCollectionName("testasynccollectioncreation")
+              .setNumShards(1)
+              .setConfigName("conf1")
+              .setAsyncId("1002");
       createCollectionRequest.process(client);
   
       state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, client);
   
       assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
   
-      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
-      addReplica.setCollectionName("testasynccollectioncreation");
-      addReplica.setShardName("shard1");
-      addReplica.setAsyncId("1003");
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
+              .setCollectionName("testasynccollectioncreation")
+              .setShardName("shard1")
+              .setAsyncId("1003");
       client.request(addReplica);
       state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, client);
       assertEquals("Add replica did not complete", "completed", state);
   
   
-      SplitShard splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("testasynccollectioncreation");
-      splitShardRequest.setShardName("shard1");
-      splitShardRequest.setAsyncId("1004");
+      SplitShard splitShardRequest = new SplitShard()
+              .setCollectionName("testasynccollectioncreation")
+              .setShardName("shard1")
+              .setAsyncId("1004");
       splitShardRequest.process(client);
   
       state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, client);

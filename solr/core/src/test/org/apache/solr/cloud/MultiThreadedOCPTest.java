@@ -76,12 +76,12 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-        Create createCollectionRequest = new Create();
-        createCollectionRequest.setCollectionName("ocptest" + i);
-        createCollectionRequest.setNumShards(4);
-        createCollectionRequest.setConfigName("conf1");
-        createCollectionRequest.setAsyncId(String.valueOf(i));
-        createCollectionRequest.process(client);
+        new Create()
+                .setCollectionName("ocptest" + i)
+                .setNumShards(4)
+                .setConfigName("conf1")
+                .setAsyncId(String.valueOf(i))
+                .process(client);
       }
   
       boolean pass = false;
@@ -112,23 +112,23 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testTaskExclusivity() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      Create createCollectionRequest = new Create();
-      createCollectionRequest.setCollectionName("ocptest_shardsplit");
-      createCollectionRequest.setNumShards(4);
-      createCollectionRequest.setConfigName("conf1");
-      createCollectionRequest.setAsyncId("1000");
+      Create createCollectionRequest = new Create()
+              .setCollectionName("ocptest_shardsplit")
+              .setNumShards(4)
+              .setConfigName("conf1")
+              .setAsyncId("1000");
       createCollectionRequest.process(client);
   
-      SplitShard splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("ocptest_shardsplit");
-      splitShardRequest.setShardName(SHARD1);
-      splitShardRequest.setAsyncId("1001");
+      SplitShard splitShardRequest = new SplitShard()
+              .setCollectionName("ocptest_shardsplit")
+              .setShardName(SHARD1)
+              .setAsyncId("1001");
       splitShardRequest.process(client);
   
-      splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("ocptest_shardsplit");
-      splitShardRequest.setShardName(SHARD2);
-      splitShardRequest.setAsyncId("1002");
+      splitShardRequest = new SplitShard()
+              .setCollectionName("ocptest_shardsplit")
+              .setShardName(SHARD2)
+              .setAsyncId("1002");
       splitShardRequest.process(client);
   
       int iterations = 0;
@@ -167,30 +167,30 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      Create createCollectionRequest = new Create();
-      createCollectionRequest.setCollectionName("ocptest_shardsplit2");
-      createCollectionRequest.setNumShards(4);
-      createCollectionRequest.setConfigName("conf1");
-      createCollectionRequest.setAsyncId("3000");
-      createCollectionRequest.process(client);
+      new Create()
+              .setCollectionName("ocptest_shardsplit2")
+              .setNumShards(4)
+              .setConfigName("conf1")
+              .setAsyncId("3000")
+              .process(client);
   
-      SplitShard splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("ocptest_shardsplit2");
-      splitShardRequest.setShardName(SHARD1);
-      splitShardRequest.setAsyncId("3001");
+      SplitShard splitShardRequest = new SplitShard()
+              .setCollectionName("ocptest_shardsplit2")
+              .setShardName(SHARD1)
+              .setAsyncId("3001");
       splitShardRequest.process(client);
   
-      splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("ocptest_shardsplit2");
-      splitShardRequest.setShardName(SHARD2);
-      splitShardRequest.setAsyncId("3002");
+      splitShardRequest = new SplitShard()
+              .setCollectionName("ocptest_shardsplit2")
+              .setShardName(SHARD2)
+              .setAsyncId("3002");
       splitShardRequest.process(client);
   
       // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
-      splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("ocptest_shardsplit2");
-      splitShardRequest.setShardName(SHARD1);
-      splitShardRequest.setAsyncId("3002");
+      splitShardRequest = new SplitShard()
+              .setCollectionName("ocptest_shardsplit2")
+              .setShardName(SHARD1)
+              .setAsyncId("3002");
       CollectionAdminResponse response = splitShardRequest.process(client);
   
       NamedList r = response.getResponse();
@@ -223,10 +223,10 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     indexThread.start();
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
-      SplitShard splitShardRequest = new SplitShard();
-      splitShardRequest.setCollectionName("collection1");
-      splitShardRequest.setShardName(SHARD1);
-      splitShardRequest.setAsyncId("2000");
+      SplitShard splitShardRequest = new SplitShard()
+              .setCollectionName("collection1")
+              .setShardName(SHARD1)
+              .setAsyncId("2000");
       splitShardRequest.process(client);
 
       String state = getRequestState("2000", client);

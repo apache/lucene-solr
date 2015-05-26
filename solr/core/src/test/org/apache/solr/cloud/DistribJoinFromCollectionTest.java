@@ -152,8 +152,8 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
     // try to clean up
     for (String c : new String[]{ toColl, fromColl }) {
       try {
-        CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-        req.setCollectionName(c);
+        CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete()
+                .setCollectionName(c);
         req.process(cloudClient);
       } catch (Exception e) {
         // don't fail the test

@@ -49,13 +49,13 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     String rulesColl = "rulesColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setCollectionName(rulesColl);
-      create.setShards("shard1");
-      create.setRouterName(ImplicitDocRouter.NAME);
-      create.setReplicationFactor(2);
-      create.setRule("cores:<4", "node:*,replica:<2", "freedisk:>1");
-      create.setSnitch("class:ImplicitSnitch");
+      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
+              .setCollectionName(rulesColl)
+              .setShards("shard1")
+              .setRouterName(ImplicitDocRouter.NAME)
+              .setReplicationFactor(2)
+              .setRule("cores:<4", "node:*,replica:<2", "freedisk:>1")
+              .setSnitch("class:ImplicitSnitch");
       rsp = create.process(client);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.isSuccess());
@@ -74,16 +74,16 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
 
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
-      CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard();
-      createShard.setCollectionName(rulesColl);
-      createShard.setShardName("shard2");
+      CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard()
+              .setCollectionName(rulesColl)
+              .setShardName("shard2");
       rsp = createShard.process(client);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.isSuccess());
 
-      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
-      addReplica.setCollectionName(rulesColl);
-      addReplica.setShardName("shard2");
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
+              .setCollectionName(rulesColl)
+              .setShardName("shard2");
       rsp = createShard.process(client);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.isSuccess());
@@ -97,12 +97,12 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     String rulesColl = "modifyColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setCollectionName(rulesColl);
-      create.setNumShards(1);
-      create.setReplicationFactor(2);
-      create.setRule("cores:<4", "node:*,replica:1", "freedisk:>1");
-      create.setSnitch("class:ImplicitSnitch");
+      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
+              .setCollectionName(rulesColl)
+              .setNumShards(1)
+              .setReplicationFactor(2)
+              .setRule("cores:<4", "node:*,replica:1", "freedisk:>1")
+              .setSnitch("class:ImplicitSnitch");
       rsp = create.process(client);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.isSuccess());
