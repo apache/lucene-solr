@@ -10,7 +10,34 @@ See http://lucene.apache.org/solr for more information.
 
 
 ==================  5.3.0 ==================
-(No Changes)
+Versions of Major Components
+---------------------
+(no changes)
+
+Upgrading from Solr 5.2
+-----------------------
+(no changes)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-7389: Expose znodeVersion property for each of the collections returned for the clusterstatus
+  operation in the collections API (Marius Grama via shalin)
+
+Bug Fixes
+----------------------
+(no changes)
+
+Optimizations
+----------------------
+(no changes)
+
+Other Changes
+----------------------
+(no changes)
 
 ==================  5.2.0 ==================
 
