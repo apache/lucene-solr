@@ -41,17 +41,15 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         break;
       }
     }
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
     String collectionName = "SimpleCollectionCreateDeleteTest";
-    create.setCollectionName(collectionName);
-    create.setNumShards(1);
-    create.setReplicationFactor(1);
-    create.setCreateNodeSet(overseerNode);
-    ModifiableSolrParams params = new ModifiableSolrParams(create.getParams());
-    params.set("stateFormat", "2");
-    QueryRequest req = new QueryRequest(params);
-    req.setPath("/admin/collections");
-    NamedList<Object> request = cloudClient.request(req);
+    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
+            .setCollectionName(collectionName)
+            .setNumShards(1)
+            .setReplicationFactor(1)
+            .setCreateNodeSet(overseerNode)
+            .setStateFormat(2);
+
+    NamedList<Object> request = create.process(cloudClient).getResponse();
 
     if (request.get("success") != null) {
       assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
@@ -63,16 +61,13 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
       // create collection again on a node other than the overseer leader
-      create = new CollectionAdminRequest.Create();
-      create.setCollectionName(collectionName);
-      create.setNumShards(1);
-      create.setReplicationFactor(1);
-      create.setCreateNodeSet(notOverseerNode);
-      params = new ModifiableSolrParams(create.getParams());
-      params.set("stateFormat", "2");
-      req = new QueryRequest(params);
-      req.setPath("/admin/collections");
-      request = cloudClient.request(req);
+      create = new CollectionAdminRequest.Create()
+              .setCollectionName(collectionName)
+              .setNumShards(1)
+              .setReplicationFactor(1)
+              .setCreateNodeSet(notOverseerNode)
+              .setStateFormat(2);
+      request = create.process(cloudClient).getResponse();
       assertTrue("Collection creation should not have failed", request.get("success") != null);
     }
   }

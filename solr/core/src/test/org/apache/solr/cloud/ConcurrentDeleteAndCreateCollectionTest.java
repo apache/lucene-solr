@@ -168,13 +168,11 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void createCollection() {
       try {
-        final CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
-        createCollectionRequest.setCollectionName(collectionName);
-        createCollectionRequest.setNumShards(1);
-        createCollectionRequest.setReplicationFactor(1);
-        createCollectionRequest.setConfigName(configName);
-        
-        final CollectionAdminResponse response = createCollectionRequest.process(solrClient);
+        final CollectionAdminResponse response = new CollectionAdminRequest.Create()
+                .setCollectionName(collectionName)
+                .setNumShards(1)
+                .setReplicationFactor(1)
+                .setConfigName(configName).process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to create collection " + collectionName));
         }
@@ -186,8 +184,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void deleteCollection() {
       try {
-        final CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();
-        deleteCollectionRequest.setCollectionName(collectionName);
+        final CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete()
+                .setCollectionName(collectionName);
         
         final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
         if (response.getStatus() != 0) {

@@ -879,8 +879,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
                 "conf1");
 
             // remove collection
-            CollectionAdminRequest.Delete delete = new CollectionAdminRequest.Delete();
-            delete.setCollectionName(collectionName);
+            CollectionAdminRequest.Delete delete = new CollectionAdminRequest.Delete()
+                    .setCollectionName(collectionName);
             client.request(delete);
           } catch (SolrServerException | IOException e) {
             e.printStackTrace();

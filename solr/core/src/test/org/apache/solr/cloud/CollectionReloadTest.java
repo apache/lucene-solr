@@ -123,9 +123,8 @@ public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
+      new CollectionAdminRequest.Delete()
+              .setCollectionName(testCollectionName).process(cloudClient);
     } catch (Exception e) {
       // don't fail the test
       log.warn("Could not delete collection {} after test completed", testCollectionName);

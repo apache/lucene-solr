@@ -175,12 +175,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
 
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setCollectionName(cname);
-      create.setMaxShardsPerNode(1);
-      create.setNumShards(1);
-      create.setReplicationFactor(1);
-      create.setConfigName("conf1");
+      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
+              .setCollectionName(cname)
+              .setMaxShardsPerNode(1)
+              .setNumShards(1)
+              .setReplicationFactor(1)
+              .setConfigName("conf1");
       create.process(client);
 
       waitForRecoveriesToFinish(cname, true);
@@ -203,9 +203,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Integer znodeVersion = (Integer) collection.get("znodeVersion");
       assertNotNull(znodeVersion);
 
-      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
-      addReplica.setCollectionName(cname);
-      addReplica.setShardName("shard1");
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
+              .setCollectionName(cname)
+              .setShardName("shard1");
       addReplica.process(client);
 
       waitForRecoveriesToFinish(cname, true);
