@@ -17,15 +17,19 @@ package org.apache.lucene.mockfile;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /** 
  * FileSystem that (imperfectly) acts like windows. 
@@ -33,8 +37,7 @@ import java.util.Map;
  * Currently this filesystem only prevents deletion of open files.
  */
 public class WindowsFS extends HandleTrackingFS {
-  private final Map<Object,Integer> openFiles = new HashMap<>();
-  
+  final Map<Object,Integer> openFiles = new HashMap<>();
   // TODO: try to make this as realistic as possible... it depends e.g. how you
   // open files, if you map them, etc, if you can delete them (Uwe knows the rules)
   
@@ -60,8 +63,10 @@ public class WindowsFS extends HandleTrackingFS {
 
   @Override
   protected void onOpen(Path path, Object stream) throws IOException {
-    Object key = getKey(path);
     synchronized (openFiles) {
+      final Object key = getKey(path);
+      // we have to read the key under the lock otherwise me might leak the openFile handle
+      // if we concurrently delete or move this file.
       Integer v = openFiles.get(key);
       if (v != null) {
         v = Integer.valueOf(v.intValue()+1);
@@ -74,9 +79,10 @@ public class WindowsFS extends HandleTrackingFS {
 
   @Override
   protected void onClose(Path path, Object stream) throws IOException {
-    Object key = getKey(path);
+    Object key = getKey(path); // here we can read this outside of the lock
     synchronized (openFiles) {
       Integer v = openFiles.get(key);
+      assert v != null;
       if (v != null) {
         if (v.intValue() == 1) {
           openFiles.remove(key);
@@ -111,19 +117,25 @@ public class WindowsFS extends HandleTrackingFS {
 
   @Override
   public void delete(Path path) throws IOException {
-    checkDeleteAccess(path);
-    super.delete(path);
+    synchronized (openFiles) {
+      checkDeleteAccess(path);
+      super.delete(path);
+    }
   }
 
   @Override
   public void move(Path source, Path target, CopyOption... options) throws IOException {
-    checkDeleteAccess(source);
-    super.move(source, target, options);
+    synchronized (openFiles) {
+      checkDeleteAccess(source);
+      super.move(source, target, options);
+    }
   }
 
   @Override
   public boolean deleteIfExists(Path path) throws IOException {
-    checkDeleteAccess(path);
-    return super.deleteIfExists(path);
+    synchronized (openFiles) {
+      checkDeleteAccess(path);
+      return super.deleteIfExists(path);
+    }
   }
 }
