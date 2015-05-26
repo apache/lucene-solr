@@ -121,7 +121,13 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
   @Override
   public String toString(String field) {
     final StringBuilder sb = new StringBuilder();
-    if (!getField().equals(field)) sb.append(getField()).append(':');
+    sb.append(getClass().getSimpleName());
+    sb.append(':');
+    if (!getField().equals(field)) {
+      sb.append(" field=");
+      sb.append(getField());
+      sb.append(':');
+    }
     return sb.append(" Lower Left: [")
         .append(minLon)
         .append(',')
@@ -170,7 +176,6 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
      * @param start starting value on the space-filling curve for a cell at a given res
      * @param end ending value on the space-filling curve for a cell at a given res
      * @param res spatial res represented as a bit shift (MSB is lower res)
-     * @return
      */
     private void relateAndRecurse(final long start, final long end, final short res) {
       final double minLon = GeoUtils.mortonUnhash(start, true);

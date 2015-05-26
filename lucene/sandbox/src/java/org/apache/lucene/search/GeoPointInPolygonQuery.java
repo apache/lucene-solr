@@ -70,6 +70,19 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   public GeoPointInPolygonQuery(final String field, final double minLon, final double minLat, final double maxLon,
                                 final double maxLat, final double[] polyLons, final double[] polyLats) {
     super(field, minLon, minLat, maxLon, maxLat);
+    if (polyLats.length != polyLons.length) {
+      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
+    }
+    if (polyLats.length < 4) {
+      throw new IllegalArgumentException("at least 4 polygon points required");
+    }
+    if (polyLats[0] != polyLats[polyLats.length-1]) {
+      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLats[0]=" + polyLats[0] + " polyLats[" + (polyLats.length-1) + "]=" + polyLats[polyLats.length-1]);
+    }
+    if (polyLons[0] != polyLons[polyLons.length-1]) {
+      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
+    }
+
     this.x = polyLons;
     this.y = polyLats;
   }
@@ -80,6 +93,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    * GeoPolygonQuery(field, minLon, minLat, maxLon, maxLat, polyLons, polyLats)} by first computing the bounding
    * box lat/lon ranges
    */
+  // TODO: change this to normal ctor ... silly java requiring super() first
   public static GeoPointInPolygonQuery newPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
     assert polyLons.length == polyLats.length;
     double minLon, maxLon, minLat, maxLat;
@@ -130,7 +144,13 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     assert x.length == y.length;
 
     final StringBuilder sb = new StringBuilder();
-    if (!getField().equals(field)) sb.append(getField()).append(':');
+    sb.append(getClass().getSimpleName());
+    sb.append(':');
+    if (!getField().equals(field)) {
+      sb.append(" field=");
+      sb.append(getField());
+      sb.append(':');
+    }
     sb.append(" Points: ");
     for (int i=0; i<x.length; ++i) {
       sb.append("[")
@@ -146,12 +166,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
   private final class GeoPolygonTermsEnum extends GeoBBoxTermsEnum {
     GeoPolygonTermsEnum(final TermsEnum tenum) {
-            super(tenum);
-        }
-
-    @Override
-    protected boolean isWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIsWithin(minLon, minLat, maxLon, maxLat, x, y);
+      super(tenum);
     }
 
     /**
@@ -178,7 +193,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       final double lon = GeoUtils.mortonUnhash(val, true);
       final double lat = GeoUtils.mortonUnhash(val, false);
       // post-filter by point in polygon
-      if (x!=null && !GeoUtils.pointInPolygon(x, y, lat, lon)) {
+      if (!GeoUtils.pointInPolygon(x, y, lat, lon)) {
         return AcceptStatus.NO;
       }
       return AcceptStatus.YES;

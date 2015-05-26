@@ -18,8 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -116,8 +119,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @Test
   public void testPolyQuery() throws Exception {
     TopDocs td = polygonQuery( new double[] { -96.7682647, -96.8280029, -96.6288757, -96.4929199,
-        -96.6041564, -96.7449188, -96.76826477}, new double[] { 33.073130, 32.9942669, 32.938386, 33.0374494,
-        33.1369762, 33.1162747, 33.073130}, 5);
+                                              -96.6041564, -96.7449188, -96.76826477, -96.7682647},
+      new double[] { 33.073130, 32.9942669, 32.938386, 33.0374494,
+                     33.1369762, 33.1162747, 33.073130, 33.073130}, 5);
     assertEquals("GeoPolygonQuery failed", td.totalHits, 1);
   }
 
@@ -204,7 +208,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     verify(lats, lons);
   }
 
-  private static void verify(double[] lats, double[] lons) throws IOException {
+  private static void verify(double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     Directory dir;
     if (lats.length > 100000) {
@@ -223,7 +227,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id]);
         }
-        doc.add(new GeoPointField("point", lons[id], lats[id], Field.Store.NO));
+        doc.add(new GeoPointField(FIELD_NAME, lons[id], lats[id], Field.Store.NO));
       } else if (VERBOSE) {
         System.out.println("  id=" + id + " skipped");
       }
@@ -243,66 +247,139 @@ public class TestGeoPointQuery extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w, true);
     w.close();
 
-    // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
-    IndexSearcher s = newSearcher(r, false);
+    IndexSearcher s = newSearcher(r);
 
-    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+    // nocommit put back:
+    // int numThreads = TestUtil.nextInt(random(), 2, 5);
+    int numThreads = 1;
 
-    int iters = atLeast(100);
-    for (int iter=0;iter<iters;iter++) {
-      double lat0 = randomLat();
-      double lat1 = randomLat();
-      double lon0 = randomLon();
-      double lon1 = randomLon();
+    List<Thread> threads = new ArrayList<>();
+    final int iters = atLeast(100);
 
-      if (lat1 < lat0) {
-        double x = lat0;
-        lat0 = lat1;
-        lat1 = x;
-      }
+    final CountDownLatch startingGun = new CountDownLatch(1);
 
-      if (lon1 < lon0) {
-        double x = lon0;
-        lon0 = lon1;
-        lon1 = x;
-      }
-
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1);
-      }
-
-      // nocommit test "in polygon" query too!
-      Query query = new GeoPointInBBoxQuery("point", lon0, lat0, lon1, lat1);
-
-      final FixedBitSet hits = new FixedBitSet(r.maxDoc());
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
+    for(int i=0;i<numThreads;i++) {
+      Thread thread = new Thread() {
           @Override
-          public boolean needsScores() {
-            return false;
+          public void run() {
+            try {
+              _run();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
           }
 
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-          }
+          private void _run() throws Exception {
+            startingGun.await();
 
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
+            NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
-      for(int docID=0;docID<r.maxDoc();docID++) {
-        int id = (int) docIDToID.get(docID);
-        boolean expected = deleted.contains(id) == false && rectContainsPointEnc(lat0, lat1, lon0, lon1, lats[id], lons[id]);
-        if (hits.get(docID) != expected) {
-          fail("id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id));
-        }
-      }
+            for (int iter=0;iter<iters;iter++) {
+              double lat0 = randomLat();
+              double lat1 = randomLat();
+              double lon0 = randomLon();
+              double lon1 = randomLon();
+
+              if (lat1 < lat0) {
+                double x = lat0;
+                lat0 = lat1;
+                lat1 = x;
+              }
+
+              if (lon1 < lon0) {
+                double x = lon0;
+                lon0 = lon1;
+                lon1 = x;
+              }
+
+              if (VERBOSE) {
+                System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1);
+              }
+
+              Query query;
+              boolean tooBigBBox = false;
+
+              double bboxLat0 = lat0;
+              double bboxLat1 = lat1;
+              double bboxLon0 = lon0;
+              double bboxLon1 = lon1;
+
+              // nocommit remove true || below:
+              if (true || random().nextBoolean()) {
+                query = new GeoPointInBBoxQuery(FIELD_NAME, lon0, lat0, lon1, lat1);
+              } else {
+                // nocommit remove "false &&" below
+                if (false && random().nextBoolean()) {
+                  // Intentionally pass a "too big" bounding box:
+                  double pct = random().nextDouble()*0.5;
+                  double width = lon1-lon0;
+                  bboxLon0 = Math.max(-180.0, lon0-width*pct);
+                  bboxLon1 = Math.min(180.0, lon1+width*pct);
+                  double height = lat1-lat0;
+                  bboxLat0 = Math.max(-90.0, lat0-height*pct);
+                  bboxLat1 = Math.min(90.0, lat1+height*pct);
+                  tooBigBBox = true;
+                }
+                double[] lats = new double[5];
+                double[] lons = new double[5];
+                lats[0] = bboxLat0;
+                lons[0] = bboxLon0;
+                lats[1] = bboxLat1;
+                lons[1] = bboxLon0;
+                lats[2] = bboxLat1;
+                lons[2] = bboxLon1;
+                lats[3] = bboxLat0;
+                lons[3] = bboxLon1;
+                lats[4] = bboxLat0;
+                lons[4] = bboxLon0;
+                query = new GeoPointInPolygonQuery(FIELD_NAME, bboxLon0, bboxLat0, bboxLon1, bboxLat1, lons, lats);
+              }
+
+              final FixedBitSet hits = new FixedBitSet(r.maxDoc());
+              s.search(query, new SimpleCollector() {
+
+                  private int docBase;
+
+                  @Override
+                  public boolean needsScores() {
+                    return false;
+                  }
+
+                  @Override
+                  protected void doSetNextReader(LeafReaderContext context) throws IOException {
+                    docBase = context.docBase;
+                  }
+
+                  @Override
+                  public void collect(int doc) {
+                    hits.set(docBase+doc);
+                  }
+                });
+
+              for(int docID=0;docID<r.maxDoc();docID++) {
+                int id = (int) docIDToID.get(docID);
+                boolean expected = deleted.contains(id) == false && rectContainsPointEnc(lat0, lat1, lon0, lon1, lats[id], lons[id]);
+                if (hits.get(docID) != expected) {
+                  System.out.println(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query);
+                  if (tooBigBBox) {
+                    System.out.println("  passed too-big bbox: lat=" + bboxLat0 + " TO " + bboxLat1 + " lon=" + bboxLon0 + " TO " + bboxLon1);
+                  }
+                  fail("wrong result");
+                }
+              }
+            }
+          }
+        };
+      thread.setName("T" + i);
+      thread.start();
+      threads.add(thread);
     }
+
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+
     IOUtils.close(r, dir);
   }
 
@@ -312,19 +389,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     if (Double.isNaN(pointLat)) {
       return false;
     }
-    /*
-    int rectLatMinEnc = BKDTreeWriter.encodeLat(rectLatMin);
-    int rectLatMaxEnc = BKDTreeWriter.encodeLat(rectLatMax);
-    int rectLonMinEnc = BKDTreeWriter.encodeLon(rectLonMin);
-    int rectLonMaxEnc = BKDTreeWriter.encodeLon(rectLonMax);
-    int pointLatEnc = BKDTreeWriter.encodeLat(pointLat);
-    int pointLonEnc = BKDTreeWriter.encodeLon(pointLon);
 
-    return pointLatEnc >= rectLatMinEnc &&
-      pointLatEnc < rectLatMaxEnc &&
-      pointLonEnc >= rectLonMinEnc &&
-      pointLonEnc < rectLonMaxEnc;
-    */
     return GeoUtils.bboxContains(pointLon, pointLat, rectLonMin, rectLatMin, rectLonMax, rectLatMax);
   }
 
@@ -335,5 +400,4 @@ public class TestGeoPointQuery extends LuceneTestCase {
   private static double randomLon() {
     return -180 + 360.0 * random().nextDouble();
   }
-
 }
