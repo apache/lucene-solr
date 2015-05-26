@@ -631,6 +631,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
+    System.out.println("UPDATE GEN: " + lastGeneration + " " + generation);
   }
 
   void setGeneration(long generation) {
@@ -712,6 +713,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     pendingCommit = false;
     lastGeneration = generation;
+    System.out.println("finishCommit: " + lastGeneration);
     return dest;
   }
 

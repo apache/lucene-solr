@@ -167,8 +167,7 @@ import org.apache.lucene.index.Term; // for javadocs
 public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
   private NumericRangeQuery(final String field, final int precisionStep, final NumericType dataType,
-    T min, T max, final boolean minInclusive, final boolean maxInclusive
-  ) {
+    T min, T max, final boolean minInclusive, final boolean maxInclusive) {
     super(field);
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");

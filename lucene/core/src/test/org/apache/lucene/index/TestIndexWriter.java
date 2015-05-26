@@ -2721,5 +2721,25 @@ public class TestIndexWriter extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
+  public void testCommitWithNRTReader() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.commit();
+    DirectoryReader r = DirectoryReader.open(w, true);
+    System.out.println("R: " + r.getIndexCommit().getGeneration());
+    w.addDocument(new Document());
+    w.commit();
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+    assertNotNull(r2);
+    System.out.println("R2: " + r2.getIndexCommit().getGeneration());
+    w.addDocument(new Document());
+    w.commit();
+    DirectoryReader r3 = DirectoryReader.openIfChanged(r2);
+    assertNotNull(r3);
+    System.out.println("R3: " + r3.getIndexCommit().getGeneration());
+    IOUtils.close(r, r2, r3, w, dir);
+  }
 }
 

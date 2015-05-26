@@ -20,8 +20,6 @@ package org.apache.lucene.queries;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -197,11 +195,6 @@ public class TermsQuery extends Query implements Accountable {
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + termData.ramBytesUsed();
-  }
-
-  @Override
-  public Collection<Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   private static class TermAndState {
