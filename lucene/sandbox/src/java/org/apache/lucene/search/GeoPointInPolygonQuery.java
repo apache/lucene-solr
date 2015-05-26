@@ -190,8 +190,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       }
 
       final long val = NumericUtils.prefixCodedToLong(term);
-      final double lon = GeoUtils.mortonUnhash(val, true);
-      final double lat = GeoUtils.mortonUnhash(val, false);
+      final double lon = GeoUtils.mortonUnhashLon(val);
+      final double lat = GeoUtils.mortonUnhashLat(val);
       // post-filter by point in polygon
       if (!GeoUtils.pointInPolygon(x, y, lat, lon)) {
         return AcceptStatus.NO;

@@ -44,19 +44,31 @@ public final class GeoUtils {
   }
 
   public static final Long mortonHash(final double lon, final double lat) {
-    return BitUtil.interleave(scale(lon, true), scale(lat, false));
+    return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
-  public static final double mortonUnhash(final long hash, final boolean isLon) {
-    return unscale(BitUtil.deinterleave((isLon) ? hash : hash >>> 1), isLon);
+  public static final double mortonUnhashLon(final long hash) {
+    return unscaleLon(BitUtil.deinterleave(hash));
   }
 
-  private static long scale(final double val, final boolean lon) {
-    return (long) ((lon == true) ? (val-MIN_LON) * LON_SCALE : (val-MIN_LAT) * LAT_SCALE);
+  public static final double mortonUnhashLat(final long hash) {
+    return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
 
-  public static double unscale(final long val, final boolean lon) {
-    return (lon == true) ? (val / LON_SCALE) + MIN_LON : (val / LAT_SCALE) + MIN_LAT;
+  private static long scaleLon(final double val) {
+    return (long) ((val-MIN_LON) * LON_SCALE);
+  }
+
+  private static long scaleLat(final double val) {
+    return (long) ((val-MIN_LAT) * LAT_SCALE);
+  }
+
+  private static double unscaleLon(final long val) {
+    return (val / LON_SCALE) + MIN_LON;
+  }
+
+  private static double unscaleLat(final long val) {
+    return (val / LAT_SCALE) + MIN_LAT;
   }
 
   public static final double compare(final double v1, final double v2) {

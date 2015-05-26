@@ -178,10 +178,10 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
      * @param res spatial res represented as a bit shift (MSB is lower res)
      */
     private void relateAndRecurse(final long start, final long end, final short res) {
-      final double minLon = GeoUtils.mortonUnhash(start, true);
-      final double minLat = GeoUtils.mortonUnhash(start, false);
-      final double maxLon = GeoUtils.mortonUnhash(end, true);
-      final double maxLat = GeoUtils.mortonUnhash(end, false);
+      final double minLon = GeoUtils.mortonUnhashLon(start);
+      final double minLat = GeoUtils.mortonUnhashLat(start);
+      final double maxLon = GeoUtils.mortonUnhashLon(end);
+      final double maxLat = GeoUtils.mortonUnhashLat(end);
 
       final short level = (short)(62-res>>>1);
 
@@ -263,8 +263,8 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
       // final-filter boundary ranges by bounding box
       if (currentRange.boundary) {
         final long val = NumericUtils.prefixCodedToLong(term);
-        final double lon = GeoUtils.mortonUnhash(val, true);
-        final double lat = GeoUtils.mortonUnhash(val, false);
+        final double lon = GeoUtils.mortonUnhashLon(val);
+        final double lat = GeoUtils.mortonUnhashLat(val);
         if (!GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat)) {
           return AcceptStatus.NO;
         }
