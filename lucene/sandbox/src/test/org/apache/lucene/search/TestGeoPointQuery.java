@@ -306,7 +306,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
               if (random().nextBoolean()) {
                 query = new GeoPointInBBoxQuery(FIELD_NAME, lon0, lat0, lon1, lat1);
               } else {
-                // nocommit remove "false &&" below
+                // nocommit why does test fail if we enable this?  it should pass?
                 if (false && random().nextBoolean()) {
                   // Intentionally pass a "too big" bounding box:
                   double pct = random().nextDouble()*0.5;

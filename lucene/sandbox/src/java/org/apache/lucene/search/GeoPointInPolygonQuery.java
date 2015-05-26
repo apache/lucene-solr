@@ -83,6 +83,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
     }
 
+    // nocommit we should at least assert that bbox does in fact fully contain the poly?
     this.x = polyLons;
     this.y = polyLats;
   }
@@ -167,6 +168,11 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   private final class GeoPolygonTermsEnum extends GeoBBoxTermsEnum {
     GeoPolygonTermsEnum(final TermsEnum tenum) {
       super(tenum);
+    }
+
+    @Override
+    protected boolean isWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectIsWithin(minLon, minLat, maxLon, maxLat, x, y);
     }
 
     /**
