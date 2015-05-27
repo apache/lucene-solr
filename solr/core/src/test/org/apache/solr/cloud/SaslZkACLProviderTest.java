@@ -3,8 +3,6 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 
 import javax.security.auth.login.Configuration;
@@ -52,12 +50,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       .getLogger(SaslZkACLProviderTest.class);
 
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
-  // These Locales don't generate dates that are compatibile with Hadoop MiniKdc.
-  protected final static List<String> brokenLocales =
-    Arrays.asList(
-      "th_TH_TH_#u-nu-thai",
-      "ja_JP_JP_#u-ca-japanese",
-      "hi_IN");
+
   protected Locale savedLocale = null;
 
   protected ZkTestServer zkServer;
@@ -77,10 +70,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (brokenLocales.contains(Locale.getDefault().toString())) {
-      savedLocale = Locale.getDefault();
-      Locale.setDefault(Locale.US);
-    }
+    savedLocale = KerberosTestUtil.overrideLocaleIfNotSpportedByMiniKdc();
     log.info("####SETUP_START " + getTestName());
     createTempDir();
 
@@ -124,10 +114,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     zkServer.shutdown();
-
-    if (savedLocale != null) {
-      Locale.setDefault(savedLocale);
-    }
+    Locale.setDefault(savedLocale);
     super.tearDown();
   }
 

@@ -18,10 +18,9 @@ package org.apache.solr.cloud;
  */
 
 import javax.security.auth.login.Configuration;
+
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.io.Charsets;
@@ -49,20 +48,14 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
   static final int TIMEOUT = 10000;
   private MiniKdc kdc;
 
-  protected final static List<String> brokenLocales =
-      Arrays.asList(
-          "th_TH_TH_#u-nu-thai",
-          "ja_JP_JP_#u-ca-japanese",
-          "hi_IN");
+  private Locale savedLocale; // in case locale is broken and we need to fill in a working locale
 
   Configuration originalConfig = Configuration.getConfiguration();
   
   @Override
   public void distribSetUp() throws Exception {
     //SSLTestConfig.setSSLSystemProperties();
-    if (brokenLocales.contains(Locale.getDefault().toString())) {
-      Locale.setDefault(Locale.US);
-    }
+    savedLocale = KerberosTestUtil.overrideLocaleIfNotSpportedByMiniKdc();
     // Use just one jetty
     this.sliceCount = 0;
     this.fixShardCount(1);
@@ -198,6 +191,7 @@ public class TestSolrCloudWithKerberos extends AbstractFullDistribZkTestBase {
       kdc.stop();
     }
     //SSLTestConfig.clearSSLSystemProperties();
+    Locale.setDefault(savedLocale);
     super.distribTearDown();
   }
 }

@@ -491,6 +491,9 @@ Other Changes
   enable auto soft-commits for the bin/solr -e cloud example using the Config API.
   (Timothy Potter)
 
+* SOLR-7183: Fix Locale blacklisting for Minikdc based tests. (Ishan Chattopadhyaya, hossman
+  via Anshum Gupta)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
