@@ -90,7 +90,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.logging.MDCUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -711,7 +711,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     
     this.coreDescriptor = coreDescriptor;
     setName(name);
-    MDCUtils.setCore(name); // show the core name in the error logs
+    MDCLoggingContext.setCore(this);
     
     resourceLoader = config.getResourceLoader();
     this.solrConfig = config;

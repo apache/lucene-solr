@@ -1,5 +1,7 @@
 package org.apache.solr.common.util;
 
+import java.util.Collection;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -128,8 +130,19 @@ public class ExecutorUtil {
     @Override
     public void execute(final Runnable command) {
       final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
-      String ctxStr = submitterContext != null && !submitterContext.isEmpty() ?
-          submitterContext.toString().replace("/", "//") : "";
+      StringBuilder contextString = new StringBuilder();
+      if (submitterContext != null) {
+        Collection<String> values = submitterContext.values();
+        
+        for (String value : values) {
+          contextString.append(value + " ");
+        }
+        if (contextString.length() > 1) {
+          contextString.setLength(contextString.length() - 1);
+        }
+      }
+      
+      String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = new Exception("Submitter stack trace");
       super.execute(new Runnable() {

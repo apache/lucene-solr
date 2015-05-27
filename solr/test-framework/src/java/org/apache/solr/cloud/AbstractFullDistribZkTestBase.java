@@ -16,9 +16,10 @@ package org.apache.solr.cloud;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.*;
-import static org.apache.solr.common.cloud.ZkNodeProps.*;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -92,8 +93,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @BeforeClass
   public static void beforeFullSolrCloudTest() {
-    // shorten the log output more for this test type
-    if (formatter != null) formatter.setShorterFormat();
   }
 
   public static final String SHARD1 = "shard1";
