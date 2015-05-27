@@ -61,14 +61,20 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private static final String FIELD_NAME = "geoField";
 
-  private static boolean smallBBox;
+  // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
+  private static double originLat;
+  private static double originLon;
+  private static double range;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    smallBBox = random().nextBoolean();
+    // Between 1.0 and 3.0:
+    range = 2*(random().nextDouble() + 0.5);
+    originLon = GeoUtils.MIN_LON_INCL + range + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2*range) * random().nextDouble();
+    originLat = GeoUtils.MIN_LAT_INCL + range + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2*range) * random().nextDouble();
     if (VERBOSE) {
-      System.out.println("TEST: smallBBox=" + smallBBox);
+      System.out.println("TEST: originLon=" + originLon + " originLat=" + originLat + " range=" + range);
     }
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
@@ -112,7 +118,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
   }
 
   private TopDocs polygonQuery(double[] lon, double[] lat, int limit) throws Exception {
-    GeoPointInPolygonQuery q = GeoPointInPolygonQuery.newPolygonQuery(FIELD_NAME, lon, lat);
+    GeoPointInPolygonQuery q = new GeoPointInPolygonQuery(FIELD_NAME, lon, lat);
     return searcher.search(q, limit);
   }
 
@@ -401,18 +407,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
   }
 
   private static double randomLat() {
-    if (smallBBox) {
-      return 2.0 * (random().nextDouble()-0.5);
-    } else {
-      return -90 + 180.0 * random().nextDouble();
-    }
+    return originLat + range * (random().nextDouble()-0.5);
   }
 
   private static double randomLon() {
-    if (smallBBox) {
-      return 2.0 * (random().nextDouble()-0.5);
-    } else {
-      return -180 + 360.0 * random().nextDouble();
-    }
+    return originLon + range * (random().nextDouble()-0.5);
   }
 }

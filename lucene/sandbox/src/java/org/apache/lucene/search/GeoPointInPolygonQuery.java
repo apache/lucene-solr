@@ -55,8 +55,16 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
   /**
    * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.document.GeoPointField} terms
-   * that fall within or on the boundary of the polygon defined by the input parameters. This constructor requires a
-   * precomputed bounding box. As an alternative the {@link GeoPointInPolygonQuery#newPolygonQuery} static factory can
+   * that fall within or on the boundary of the polygon defined by the input parameters.
+   */
+  public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
+    this(field, computeBBox(polyLons, polyLats), polyLons, polyLats);
+  }
+
+  /**
+   * Expert: constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.document.GeoPointField} terms
+   * that fall within or on the boundary of the polygon defined by the input parameters.  This constructor requires a
+   * precomputed bounding box. As an alternative, {@link GeoPointInPolygonQuery(String,double[],double[])} can
    * be used to compute the bounding box during construction
    *
    * @param field the field name
@@ -69,7 +77,14 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    */
   public GeoPointInPolygonQuery(final String field, final double minLon, final double minLat, final double maxLon,
                                 final double maxLat, final double[] polyLons, final double[] polyLats) {
-    super(field, minLon, minLat, maxLon, maxLat);
+    // TODO: should we remove this?  It's dangerous .. app could accidentally provide too-small bbox?
+    // we should at least verify that bbox does in fact fully contain the poly?
+    this(field, new GeoBoundingBox(minLon, maxLon, minLat, maxLat), polyLons, polyLats);
+  }
+
+  /** Common constructor, used only internally. */
+  private GeoPointInPolygonQuery(final String field, GeoBoundingBox bbox, final double[] polyLons, final double[] polyLats) {
+    super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
     }
@@ -83,37 +98,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
     }
 
-    // nocommit we should at least assert that bbox does in fact fully contain the poly?
-    for(int i=0;i<polyLons.length;i++) {
-      if (GeoUtils.isValidLon(polyLons[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
-      }
-      if (GeoUtils.isValidLat(polyLats[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
-      }
-    }
     this.x = polyLons;
     this.y = polyLats;
-  }
-
-  /**
-   * Static method call to construct a
-   * {@link #GeoPointInPolygonQuery(String, double, double, double, double, double[], double[])
-   * GeoPolygonQuery(field, minLon, minLat, maxLon, maxLat, polyLons, polyLats)} by first computing the bounding
-   * box lat/lon ranges
-   */
-  // TODO: change this to normal ctor ... silly java requiring super() first
-  public static GeoPointInPolygonQuery newPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
-    assert polyLons.length == polyLats.length;
-    double minLon, maxLon, minLat, maxLat;
-    int i=1;
-    for(minLon=maxLon=polyLons[0], minLat=maxLat=polyLats[0]; i<polyLons.length; ++i) {
-      minLon = Math.min(polyLons[i], minLon);
-      maxLon = Math.max(polyLons[i], maxLon);
-      minLat = Math.min(polyLats[i], minLat);
-      maxLat = Math.max(polyLats[i], maxLat);
-    }
-    return new GeoPointInPolygonQuery(field, minLon, minLat, maxLon, maxLat, polyLons, polyLats);
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -212,5 +198,31 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       }
       return AcceptStatus.YES;
     }
+  }
+
+  private static GeoBoundingBox computeBBox(double[] polyLons, double[] polyLats) {
+    if (polyLons.length != polyLats.length) {
+      throw new IllegalArgumentException("polyLons and polyLats must be equal length");
+    }
+
+    double minLon = Double.POSITIVE_INFINITY;
+    double maxLon = Double.NEGATIVE_INFINITY;
+    double minLat = Double.POSITIVE_INFINITY;
+    double maxLat = Double.NEGATIVE_INFINITY;
+
+    for (int i=0;i<polyLats.length;i++) {
+      if (GeoUtils.isValidLon(polyLons[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
+      }
+      if (GeoUtils.isValidLat(polyLats[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
+      }
+      minLon = Math.min(polyLons[i], minLon);
+      maxLon = Math.max(polyLons[i], maxLon);
+      minLat = Math.min(polyLats[i], minLat);
+      maxLat = Math.max(polyLats[i], maxLat);
+    }
+
+    return new GeoBoundingBox(minLon, maxLon, minLat, maxLat);
   }
 }
