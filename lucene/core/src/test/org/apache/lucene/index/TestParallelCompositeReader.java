@@ -25,7 +25,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -123,15 +127,26 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     dir2.close();    
   }
   
-  // closeSubreaders=false
-  public void testReaderClosedListener1() throws Exception {
-    Directory dir1 = getDir1(random());
-    CompositeReader ir1 = DirectoryReader.open(dir1);
+  private void testReaderClosedListener(boolean closeSubReaders, int wrapMultiReaderType) throws IOException {
+    final Directory dir1 = getDir1(random());
+    final CompositeReader ir2, ir1 = DirectoryReader.open(dir1);
+    switch (wrapMultiReaderType) {
+      case 0:
+        ir2 = ir1;
+        break;
+      case 1:
+        // default case, does close subreaders:
+        ir2 = new MultiReader(ir1); break;
+      case 2:
+        ir2 = new MultiReader(new CompositeReader[] {ir1}, false); break;
+      default:
+        throw new AssertionError();
+    }
     
     // with overlapping
-    ParallelCompositeReader pr = new ParallelCompositeReader(false,
-     new CompositeReader[] {ir1},
-     new CompositeReader[] {ir1});
+    ParallelCompositeReader pr = new ParallelCompositeReader(closeSubReaders,
+     new CompositeReader[] {ir2},
+     new CompositeReader[] {ir2});
 
     final int[] listenerClosedCount = new int[1];
 
@@ -146,36 +161,36 @@ public class TestParallelCompositeReader extends LuceneTestCase {
         });
     }
     pr.close();
-    ir1.close();
+    if (!closeSubReaders) {
+      ir1.close();
+    }
     assertEquals(3, listenerClosedCount[0]);
+    
+    // We have to close the extra MultiReader, because it will not close its own subreaders:
+    if (wrapMultiReaderType == 2) {
+      ir2.close();
+    }
     dir1.close();
   }
 
-  // closeSubreaders=true
+  public void testReaderClosedListener1() throws Exception {
+    testReaderClosedListener(false, 0);
+  }
+
   public void testReaderClosedListener2() throws Exception {
-    Directory dir1 = getDir1(random());
-    CompositeReader ir1 = DirectoryReader.open(dir1);
-    
-    // with overlapping
-    ParallelCompositeReader pr = new ParallelCompositeReader(true,
-     new CompositeReader[] {ir1},
-     new CompositeReader[] {ir1});
+    testReaderClosedListener(true, 0);
+  }
 
-    final int[] listenerClosedCount = new int[1];
+  public void testReaderClosedListener3() throws Exception {
+    testReaderClosedListener(false, 1);
+  }
 
-    assertEquals(3, pr.leaves().size());
+  public void testReaderClosedListener4() throws Exception {
+    testReaderClosedListener(true, 1);
+  }
 
-    for(LeafReaderContext cxt : pr.leaves()) {
-      cxt.reader().addReaderClosedListener(new ReaderClosedListener() {
-          @Override
-          public void onClose(IndexReader reader) {
-            listenerClosedCount[0]++;
-          }
-        });
-    }
-    pr.close();
-    assertEquals(3, listenerClosedCount[0]);
-    dir1.close();
+  public void testReaderClosedListener5() throws Exception {
+    testReaderClosedListener(false, 2);
   }
 
   public void testCloseInnerReader() throws Exception {
@@ -395,7 +410,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {new MultiReader(ir1)});
     
     final String s = pr.toString();
-    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelCompositeReader(ParallelLeafReader("));
+    assertTrue("toString incorrect (should be flattened): " + s, s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
 
     pr.close();
     dir1.close();
