@@ -56,7 +56,7 @@ public class Plane extends Vector {
    */
   public Plane(final PlanetModel planetModel, final double sinLat) {
     super(0.0, 0.0, 1.0);
-    D = -sinLat * computeMagnitude(planetModel, sinLat);
+    D = -sinLat * computeDesiredEllipsoidMagnitude(planetModel, sinLat);
   }
 
   /**

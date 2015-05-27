@@ -307,20 +307,28 @@ public class Vector {
     return Math.sqrt(x * x + y * y + z * z);
   }
 
-  /** Compute the magnitude of a vector projected to a given
+  /** Compute the desired magnitude of a unit vector projected to a given
    * planet model.
+   * @param planetModel is the planet model.
+   * @param x is the unit vector x value.
+   * @param y is the unit vector y value.
+   * @param z is the unit vector z value.
+   * @return a magnitude value for that (x,y,z) that projects the vector onto the specified ellipsoid.
    */
-  protected static double computeMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
+  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
     return 1.0 / Math.sqrt(x*x*planetModel.inverseAbSquared + y*y*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
   }
 
-  /** Compute the magnitude of a vector projected to a given
-   * planet model.
+  /** Compute the desired magnitude of a unit vector projected to a given
+   * planet model.  The unit vector is specified only by a z value.
+   * @param planetModel is the planet model.
+   * @param z is the unit vector z value.
+   * @return a magnitude value for that z value that projects the vector onto the specified ellipsoid.
    */
-  protected static double computeMagnitude(final PlanetModel planetModel, final double z) {
+  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double z) {
     return 1.0 / Math.sqrt((1.0-z*z)*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
   }
-  
+
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof Vector))

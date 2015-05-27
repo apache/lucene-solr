@@ -237,7 +237,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
   }
 
   private Point geoPointToSpatial4jPoint(GeoPoint geoPoint) {
-    return ctx.makePoint(geoPoint.x * DistanceUtils.RADIANS_TO_DEGREES,
-        geoPoint.y * DistanceUtils.RADIANS_TO_DEGREES);
+    return ctx.makePoint(geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES,
+        geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES);
   }
 }
