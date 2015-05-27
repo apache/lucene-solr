@@ -70,6 +70,18 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
    */
   public GeoPointInBBoxQuery(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {
     super(field);
+    if (GeoUtils.isValidLon(minLon) == false) {
+      throw new IllegalArgumentException("invalid minLon " + minLon);
+    }
+    if (GeoUtils.isValidLon(maxLon) == false) {
+      throw new IllegalArgumentException("invalid maxLon " + maxLon);
+    }
+    if (GeoUtils.isValidLat(minLat) == false) {
+      throw new IllegalArgumentException("invalid minLat " + minLat);
+    }
+    if (GeoUtils.isValidLat(maxLat) == false) {
+      throw new IllegalArgumentException("invalid maxLat " + maxLat);
+    }
     this.minLon = minLon;
     this.minLat = minLat;
     this.maxLon = maxLon;

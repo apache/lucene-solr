@@ -39,6 +39,18 @@ public final class GeoUtils {
   private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
   private static final double TOLERANCE = 1E-7;
 
+  /** Minimum longitude value. */
+  public static final double MIN_LON_INCL = -180.0D;
+
+  /** Maximum longitude value. */
+  public static final double MAX_LON_INCL = 180.0D;
+
+  /** Minimum latitude value. */
+  public static final double MIN_LAT_INCL = -90.0D;
+
+  /** Maximum latitude value. */
+  public static final double MAX_LAT_INCL = 90.0D;
+
   // No instance:
   private GeoUtils() {
   }
@@ -261,5 +273,13 @@ public final class GeoUtils {
     // nocommit is this really correct?  poly can be convex, and then all 4 bbox corners can be within it, yet not fully contained?
     return !(!pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
         !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
+  }
+
+  public static boolean isValidLat(double lat) {
+    return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;
+  }
+
+  public static boolean isValidLon(double lon) {
+    return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
   }
 }

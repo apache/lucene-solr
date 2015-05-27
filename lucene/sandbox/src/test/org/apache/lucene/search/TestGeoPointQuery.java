@@ -67,7 +67,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     smallBBox = random().nextBoolean();
-    System.out.println("smallBBox=" + smallBBox);
+    if (VERBOSE) {
+      System.out.println("TEST: smallBBox=" + smallBBox);
+    }
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))

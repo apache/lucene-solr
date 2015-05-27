@@ -84,6 +84,14 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     }
 
     // nocommit we should at least assert that bbox does in fact fully contain the poly?
+    for(int i=0;i<polyLons.length;i++) {
+      if (GeoUtils.isValidLon(polyLons[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
+      }
+      if (GeoUtils.isValidLat(polyLats[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
+      }
+    }
     this.x = polyLons;
     this.y = polyLats;
   }
