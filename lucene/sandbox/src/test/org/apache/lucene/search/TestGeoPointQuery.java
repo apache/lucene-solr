@@ -400,7 +400,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private static double randomLat() {
     if (smallBBox) {
-      return -90 + 2.0 * (random().nextDouble()-0.5);
+      return 2.0 * (random().nextDouble()-0.5);
     } else {
       return -90 + 180.0 * random().nextDouble();
     }
@@ -408,7 +408,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private static double randomLon() {
     if (smallBBox) {
-      return -180 + 2.0 * (random().nextDouble()-0.5);
+      return 2.0 * (random().nextDouble()-0.5);
     } else {
       return -180 + 360.0 * random().nextDouble();
     }
