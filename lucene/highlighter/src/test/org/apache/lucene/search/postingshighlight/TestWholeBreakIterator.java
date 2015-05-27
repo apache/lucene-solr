@@ -17,12 +17,12 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase;
+
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Locale;
-
-import org.apache.lucene.util.LuceneTestCase;
 
 public class TestWholeBreakIterator extends LuceneTestCase {
   
@@ -70,18 +70,18 @@ public class TestWholeBreakIterator extends LuceneTestCase {
     assertSameBreaks("000ab000", 3, 2, 4, expected, actual);
   }
 
-  public void assertSameBreaks(String text, BreakIterator expected, BreakIterator actual) {
+  public static void assertSameBreaks(String text, BreakIterator expected, BreakIterator actual) {
     assertSameBreaks(new StringCharacterIterator(text), 
                      new StringCharacterIterator(text), 
                      expected, 
                      actual);
   }
   
-  public void assertSameBreaks(String text, int offset, int length, BreakIterator expected, BreakIterator actual) {
+  public static void assertSameBreaks(String text, int offset, int length, BreakIterator expected, BreakIterator actual) {
     assertSameBreaks(text, offset, length, offset, expected, actual);
   }
   
-  public void assertSameBreaks(String text, int offset, int length, int current, BreakIterator expected, BreakIterator actual) {
+  public static void assertSameBreaks(String text, int offset, int length, int current, BreakIterator expected, BreakIterator actual) {
     assertSameBreaks(new StringCharacterIterator(text, offset, offset+length, current), 
                      new StringCharacterIterator(text, offset, offset+length, current), 
                      expected, 
@@ -89,7 +89,7 @@ public class TestWholeBreakIterator extends LuceneTestCase {
   }
 
   /** Asserts that two breakiterators break the text the same way */
-  public void assertSameBreaks(CharacterIterator one, CharacterIterator two, BreakIterator expected, BreakIterator actual) {
+  public static void assertSameBreaks(CharacterIterator one, CharacterIterator two, BreakIterator expected, BreakIterator actual) {
     expected.setText(one);
     actual.setText(two);
 
