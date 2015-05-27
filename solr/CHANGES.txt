@@ -363,6 +363,11 @@ Bug Fixes
 * SOLR-7585: Fix NoSuchElementException in LFUCache resulting from heavy writes
   making concurrent put() calls. (Maciej Zasada via Shawn Heisey)
 
+* SOLR-7587: Seeding bucket versions from index when the firstSearcher event fires has a race condition
+  that leads to an infinite wait on VersionInfo's ReentrantReadWriteLock because the read-lock acquired
+  during a commit cannot be upgraded to a write-lock needed to block updates; solution is to move the
+  call out of the firstSearcher event path and into the SolrCore constructor. (Timothy Potter)
+
 Optimizations
 ----------------------
 

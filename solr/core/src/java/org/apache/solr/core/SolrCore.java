@@ -841,6 +841,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
 
+    // seed version buckets with max from index during core initialization ... requires a searcher!
+    seedVersionBucketsWithMaxFromIndex();
+
     bufferUpdatesIfConstructing(coreDescriptor);
     
     // For debugging   
@@ -849,16 +852,20 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     this.ruleExpiryLock = new ReentrantLock();
     registerConfListener();
+  }
 
-    // seed version buckets with max from index during core initialization
-    if (this.updateHandler != null && this.updateHandler.getUpdateLog() != null) {
+  private void seedVersionBucketsWithMaxFromIndex() {
+    UpdateHandler uh = getUpdateHandler();
+    if (uh != null && uh.getUpdateLog() != null) {
       RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
       if (newestSearcher != null) {
         try {
-          this.updateHandler.getUpdateLog().onFirstSearcher(newestSearcher.get());
+          uh.getUpdateLog().onFirstSearcher(newestSearcher.get());
         } finally {
           newestSearcher.decref();
         }
+      } else {
+        log.warn("No searcher available! Cannot seed version buckets with max from index.");
       }
     }
   }
