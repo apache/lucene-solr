@@ -258,6 +258,7 @@ public final class GeoUtils {
    */
   public static boolean rectIsWithin(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                      final double[] shapeX, final double[] shapeY) {
+    // nocommit is this really correct?  poly can be convex, and then all 4 bbox corners can be within it, yet not fully contained?
     return !(!pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
         !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
   }
