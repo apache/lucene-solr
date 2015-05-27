@@ -86,7 +86,9 @@ New Features
 
 Bug Fixes
 ----------------------
-(no changes)
+
+* SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
+  requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
 Optimizations
 ----------------------

@@ -1068,7 +1068,7 @@ public class CloudSolrClient extends SolrClient {
         for (String s : collectionNames) {
           if(s!=null) collectionStateCache.remove(s);
         }
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Not enough nodes to handle the request");
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Could not find a healthy node to handle the request.");
       }
 
       Collections.shuffle(theUrlList, rand);

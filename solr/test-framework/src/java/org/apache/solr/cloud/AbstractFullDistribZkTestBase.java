@@ -118,7 +118,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<>();
   private boolean cloudInit;
-  protected boolean checkCreatedVsState;
   protected boolean useJettyDataDir = true;
 
   protected Map<URI,SocketProxy> proxies = new HashMap<>();
@@ -305,7 +304,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     initCloud();
 
-    createJettys(numServers, checkCreatedVsState).size();
+    createJettys(numServers).size();
 
     int cnt = getTotalReplicas(DEFAULT_COLLECTION);
     if (cnt > 0) {
@@ -336,10 +335,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
-    return createJettys(numJettys, false);
-  }
-
   protected String defaultStateFormat = String.valueOf( 1 + random().nextInt(2));
 
   protected String getStateFormat()  {
@@ -350,13 +345,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return defaultStateFormat; // random
   }
 
-  /**
-   * @param checkCreatedVsState
-   *          if true, make sure the number created (numJettys) matches the
-   *          number in the cluster state - if you add more jetties this may not
-   *          be the case
-   */
-  protected List<JettySolrRunner> createJettys(int numJettys, boolean checkCreatedVsState) throws Exception {
+  protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = new ArrayList<>();
     List<SolrClient> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
@@ -393,26 +382,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     this.clients.addAll(clients);
 
     int numShards = getTotalReplicas(DEFAULT_COLLECTION);
-    if (checkCreatedVsState) {
-      // now wait until we see that the number of shards in the cluster state
-      // matches what we expect
-      int retries = 0;
-      while (numShards != getShardCount()) {
-        numShards = getTotalReplicas(DEFAULT_COLLECTION);
-        if (numShards == getShardCount()) break;
-        if (retries++ == 60) {
-          printLayoutOnTearDown = true;
-          fail("Shards in the state does not match what we set:" + numShards
-              + " vs " + getShardCount());
-        }
-        Thread.sleep(500);
-      }
 
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      // also make sure we have a leader for each shard
-      for (int i = 1; i <= sliceCount; i++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
+    // now wait until we see that the number of shards in the cluster state
+    // matches what we expect
+    int retries = 0;
+    while (numShards != getShardCount()) {
+      numShards = getTotalReplicas(DEFAULT_COLLECTION);
+      if (numShards == getShardCount()) break;
+      if (retries++ == 60) {
+        printLayoutOnTearDown = true;
+        fail("Shards in the state does not match what we set:" + numShards + " vs " + getShardCount());
       }
+      Thread.sleep(500);
+    }
+    
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    // make sure we have a leader for each shard
+    for (int i = 1; i <= sliceCount; i++) {
+      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
     }
 
     if (numShards > 0) {
@@ -1784,7 +1771,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
- public  static void waitForNon403or404or503(HttpSolrClient collectionClient)
+ public static void waitForNon403or404or503(HttpSolrClient collectionClient)
       throws Exception {
     SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;

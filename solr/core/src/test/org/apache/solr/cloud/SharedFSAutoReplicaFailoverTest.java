@@ -100,8 +100,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
-    checkCreatedVsState = false;
-    
   }
 
   @Test

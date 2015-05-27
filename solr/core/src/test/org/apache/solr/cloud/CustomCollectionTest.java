@@ -93,8 +93,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   public CustomCollectionTest() {
     sliceCount = 2;
-    checkCreatedVsState = false;
-
   }
 
   @Override

@@ -1902,7 +1902,7 @@ public final class ZkController {
     } catch (NoNodeException nne) {
       return;
     } catch (Exception e) {
-      log.warn("could not readd the overseer designate ", e);
+      log.warn("could not read the overseer designate ", e);
     }
   }
 

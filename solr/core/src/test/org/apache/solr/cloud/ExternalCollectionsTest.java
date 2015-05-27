@@ -49,7 +49,6 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   }
 
   public ExternalCollectionsTest() {
-    checkCreatedVsState = false;
   }
 
 
