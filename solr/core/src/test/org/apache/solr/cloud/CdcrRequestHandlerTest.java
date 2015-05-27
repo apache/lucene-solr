@@ -23,6 +23,7 @@ import org.apache.solr.handler.CdcrParams;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 @Slow
 public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
 
