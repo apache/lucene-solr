@@ -61,9 +61,13 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private static final String FIELD_NAME = "geoField";
 
+  private static boolean smallBBox;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
+    smallBBox = random().nextBoolean();
+    System.out.println("smallBBox=" + smallBBox);
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
@@ -395,10 +399,18 @@ public class TestGeoPointQuery extends LuceneTestCase {
   }
 
   private static double randomLat() {
-    return -90 + 180.0 * random().nextDouble();
+    if (smallBBox) {
+      return -90 + 2.0 * (random().nextDouble()-0.5);
+    } else {
+      return -90 + 180.0 * random().nextDouble();
+    }
   }
 
   private static double randomLon() {
-    return -180 + 360.0 * random().nextDouble();
+    if (smallBBox) {
+      return -180 + 2.0 * (random().nextDouble()-0.5);
+    } else {
+      return -180 + 360.0 * random().nextDouble();
+    }
   }
 }
