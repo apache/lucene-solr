@@ -34,6 +34,13 @@ API Changes
 
 ======================= Lucene 5.3.0 =======================
 
+New Features
+
+* LUCENE-6485: Add CustomSeparatorBreakIterator to postings
+  highlighter which splits on any character. For example, it 
+  can be used with getMultiValueSeparator render whole field
+  values.  (Luca Cavanna via Robert Muir)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
