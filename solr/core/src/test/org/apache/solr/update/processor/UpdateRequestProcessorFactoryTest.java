@@ -70,6 +70,8 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
+
+    final int EXPECTED_CHAIN_LENGTH = 5;
     SolrCore core = h.getCore();
     for (final String name : Arrays.asList("distrib-chain-explicit",
                                            "distrib-chain-implicit",
@@ -79,8 +81,9 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
       UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(name);
       assertNotNull(name, chain);
 
+      
       // either explicitly, or because of injection
-      assertEquals(name + " chain length", 5,
+      assertEquals(name + " chain length", EXPECTED_CHAIN_LENGTH,
                    chain.getFactories().length);
 
       // Custom comes first in all three of our chains
@@ -92,24 +95,41 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
       // varies depending on chain, but definitely shouldn't be Custom
       proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "non_blank_value"),
                                    new SolrQueryResponse());
+
+      assertNotNull(name + " distrib chain had no proc's in it",
+                    proc);
       assertFalse(name + " post distrib proc should not be a CustomUpdateRequestProcessor: " 
                  + proc.getClass().getName(),
                  proc instanceof CustomUpdateRequestProcessor);
 
       int n=0;
       boolean foundLog = false;
+      String seen = "";
       for (;;) {
         n++;
+        seen = seen + proc.toString() + ", ";
         if (proc instanceof LogUpdateProcessor) {
           foundLog = true;
         }
-        proc = proc.next;
-        if (proc == null) break;
+        if (null == proc.next)  {
+          break;
+        } else {
+          proc = proc.next;
+        }
       }
 
-      assertTrue( n < chain.getFactories().length );   // some processors should have been dropped
-      assertTrue( foundLog );  // make sure the marker interface was successful in keeping the log processor
+      // some processors should have been dropped
+      assertTrue(name + " expected a distrib chain shorter then " + EXPECTED_CHAIN_LENGTH + " but got: " + n
+                 + " (" + seen +")",
+                 n < EXPECTED_CHAIN_LENGTH );   
+      // make sure the marker interface was successful in keeping the log processor even though it comes
+      // before distrib
+      assertTrue(name + " expected LogUpdateProcessor in chain due to @RunAllways, but not found: " + seen,
+                 foundLog );  
 
+      // all of these (shortened) distrib chains should still end with RunUpdateprocessor
+      assertTrue(name + " last processor isn't a RunUpdateProcessor: " + proc.getClass().getName(),
+                 proc instanceof RunUpdateProcessor);
     }
 
   }
