@@ -97,6 +97,9 @@ Other Changes
 
 * SOLR-7595: Allow method chaining for all CollectionAdminRequests in Solrj. (shalin)
 
+* SOLR-7146: MiniSolrCloudCluster based tests can fail with ZooKeeperException NoNode for /live_nodes.
+  (Vamsee Yarlagadda via shalin)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
