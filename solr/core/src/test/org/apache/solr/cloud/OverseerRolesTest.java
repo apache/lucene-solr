@@ -80,8 +80,6 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   public OverseerRolesTest() {
     sliceCount = 2;
     fixShardCount(TEST_NIGHTLY ? 6 : 2);
-
-    checkCreatedVsState = false;
   }
 
   @Test

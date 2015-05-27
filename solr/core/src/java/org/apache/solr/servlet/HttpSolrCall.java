@@ -71,6 +71,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -232,6 +233,14 @@ public class HttpSolrCall {
         core = cores.getCore(corename);
         if (core != null) {
           path = path.substring(idx);
+        } else if (cores.isCoreLoading(corename)) { // extra mem barriers, so don't look at this before trying to get core
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is loading");
+        } else {
+          // the core may have just finished loading
+          core = cores.getCore(corename);
+          if (core != null) {
+            path = path.substring(idx);
+          } 
         }
       }
       if (core == null) {

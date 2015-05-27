@@ -25,12 +25,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 class SolrCores {
@@ -46,8 +49,10 @@ class SolrCores {
   private final Map<String, SolrCore> createdCores = new LinkedHashMap<>();
 
   private final CoreContainer container;
+  
+  private Set<String> currentlyLoadingCores = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
-  private static final Logger logger = LoggerFactory.getLogger(SolrCores.class);
+  private static final Logger log = LoggerFactory.getLogger(SolrCores.class);
 
   // This map will hold objects that are being currently operated on. The core (value) may be null in the case of
   // initial load. The rule is, never to any operation on a core that is currently being operated upon.
@@ -72,7 +77,7 @@ class SolrCores {
           if (size() > cacheSize) {
             synchronized (modifyLock) {
               SolrCore coreToClose = eldest.getValue();
-              logger.info("Closing transient core [{}]", coreToClose.getName());
+              log.info("Closing transient core [{}]", coreToClose.getName());
               pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
               modifyLock.notifyAll(); // Wakes up closer thread too
             }
@@ -395,6 +400,7 @@ class SolrCores {
 
   /**
    * Return the CoreDescriptor corresponding to a given core name.
+   * Blocks if the SolrCore is still loading until it is ready.
    * @param coreName the name of the core
    * @return the CoreDescriptor
    */
@@ -424,5 +430,64 @@ class SolrCores {
       }
     }
     return cds;
+  }
+
+  // cores marked as loading will block on getCore
+  public void markCoreAsLoading(CoreDescriptor cd) {
+    synchronized (modifyLock) {
+      currentlyLoadingCores.add(cd.getName());
+    }
+  }
+
+  //cores marked as loading will block on getCore
+  public void markCoreAsNotLoading(CoreDescriptor cd) {
+    synchronized (modifyLock) {
+      currentlyLoadingCores.remove(cd.getName());
+    }
+  }
+
+  // returns when no cores are marked as loading
+  public void waitForLoadingCoresToFinish(long timeoutMs) {
+    long time = System.nanoTime();
+    long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
+    synchronized (modifyLock) {
+      while (!currentlyLoadingCores.isEmpty()) {
+        try {
+          modifyLock.wait(500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        if (System.nanoTime() >= timeout) {
+          log.warn("Timed out waiting for SolrCores to finish loading.");
+          break;
+        }
+      }
+    }
+  }
+  
+  // returns when core is finished loading, throws exception if no such core loading or loaded
+  public void waitForLoadingCoreToFinish(String core, long timeoutMs) {
+    long time = System.nanoTime();
+    long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
+    synchronized (modifyLock) {
+      while (isCoreLoading(core)) {
+        try {
+          modifyLock.wait(500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        if (System.nanoTime() >= timeout) {
+          log.warn("Timed out waiting for SolrCore, {},  to finish loading.", core);
+          break;
+        }
+      }
+    }
+  }
+
+  public boolean isCoreLoading(String name) {
+    if (currentlyLoadingCores.contains(name)) {
+      return true;
+    }
+    return false;
   }
 }

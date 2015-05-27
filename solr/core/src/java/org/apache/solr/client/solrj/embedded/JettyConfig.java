@@ -30,6 +30,8 @@ public class JettyConfig {
   public final String context;
 
   public final boolean stopAtShutdown;
+  
+  public final Long waitForLoadingCoresToFinishMs;
 
   public final Map<ServletHolder, String> extraServlets;
 
@@ -37,11 +39,12 @@ public class JettyConfig {
 
   public final SSLConfig sslConfig;
 
-  private JettyConfig(int port, String context, boolean stopAtShutdown, Map<ServletHolder, String> extraServlets,
+  private JettyConfig(int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
+    this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
@@ -67,6 +70,7 @@ public class JettyConfig {
     int port = 0;
     String context = "/solr";
     boolean stopAtShutdown = true;
+    Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new TreeMap<>();
     SSLConfig sslConfig = null;
@@ -83,6 +87,11 @@ public class JettyConfig {
 
     public Builder stopAtShutdown(boolean stopAtShutdown) {
       this.stopAtShutdown = stopAtShutdown;
+      return this;
+    }
+    
+    public Builder waitForLoadingCoresToFinish(Long waitForLoadingCoresToFinishMs) {
+      this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
       return this;
     }
 
@@ -114,7 +123,7 @@ public class JettyConfig {
     }
 
     public JettyConfig build() {
-      return new JettyConfig(port, context, stopAtShutdown, extraServlets, extraFilters, sslConfig);
+      return new JettyConfig(port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
     }
 
   }

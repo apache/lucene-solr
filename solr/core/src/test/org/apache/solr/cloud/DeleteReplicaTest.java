@@ -70,7 +70,6 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
   public DeleteReplicaTest() {
     sliceCount = 2;
-    checkCreatedVsState = false;
   }
 
   @Test

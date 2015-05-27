@@ -69,7 +69,6 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
 
   public DeleteLastCustomShardedReplicaTest() {
     sliceCount = 2;
-    checkCreatedVsState = false;
   }
 
   @Test

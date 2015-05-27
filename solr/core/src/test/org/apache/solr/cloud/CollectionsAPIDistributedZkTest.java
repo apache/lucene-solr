@@ -158,8 +158,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   public CollectionsAPIDistributedZkTest() {
     sliceCount = 2;
-    checkCreatedVsState = false;
-    
   }
   
   @Override

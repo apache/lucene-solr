@@ -519,7 +519,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
       } finally {
         if (executor != null) {
-          ExecutorUtil.shutdownAndAwaitTermination(executor, 120, TimeUnit.SECONDS);
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
         }
       }
     }
