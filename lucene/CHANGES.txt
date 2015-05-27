@@ -33,7 +33,23 @@ API Changes
   implementation returning the empty list.  (Robert Muir)
 
 ======================= Lucene 5.3.0 =======================
-(No Changes)
+
+Bug fixes
+
+* LUCENE-6500: ParallelCompositeReader did not always call
+  closed listeners. This was fixed by LUCENE-6501.
+  (Adrien Grand, Uwe Schindler)
+
+Changes in Runtime Behavior
+
+* LUCENE-6501: The subreader structure in ParallelCompositeReader
+  was flattened, because the current implementation had too many
+  hidden bugs regarding refounting and close listeners.
+  If you create a new ParallelCompositeReader, it will just take
+  all leaves of the passed readers and form a flat structure of
+  ParallelLeafReaders instead of trying to assemble the original
+  structure of composite and leaf readers.  (Adrien Grand,
+  Uwe Schindler)
 
 ======================= Lucene 5.2.0 =======================
 
