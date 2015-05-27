@@ -46,6 +46,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -80,6 +81,7 @@ public class PeerSync  {
   private final boolean getNoVersionsIsSuccess;
   private final HttpClient client;
   private final boolean onlyIfActive;
+  private SolrCore core;
 
   // comparator that sorts by absolute value, putting highest first
   private static Comparator<Long> absComparator = new Comparator<Long>() {
@@ -128,6 +130,7 @@ public class PeerSync  {
   }
   
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess, boolean onlyIfActive) {
+    this.core = core;
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
@@ -175,95 +178,102 @@ public class PeerSync  {
     if (ulog == null) {
       return false;
     }
-
-    log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
-
-    // TODO: does it ever make sense to allow sync when buffering or applying buffered?  Someone might request that we do it...
-    if (!(ulog.getState() == UpdateLog.State.ACTIVE || ulog.getState()==UpdateLog.State.REPLAYING)) {
-      log.error(msg() + "ERROR, update log not in ACTIVE or REPLAY state. " + ulog);
-      // return false;
-    }
-    
-    if (debug) {
-      if (startingVersions != null) {
-        log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
-      }
-    }
-
-    // Fire off the requests before getting our own recent updates (for better concurrency)
-    // This also allows us to avoid getting updates we don't need... if we got our updates and then got their updates, they would
-    // have newer stuff that we also had (assuming updates are going on and are being forwarded).
-    for (String replica : replicas) {
-      requestVersions(replica);
-    }
-
-    recentUpdates = ulog.getRecentUpdates();
+    MDCLoggingContext.setCore(core);
     try {
-      ourUpdates = recentUpdates.getVersions(nUpdates);
-    } finally {
-      recentUpdates.close();
-    }
-
-    Collections.sort(ourUpdates, absComparator);
-
-    if (startingVersions != null) {
-      if (startingVersions.size() == 0) {
-        log.warn("no frame of reference to tell if we've missed updates");
-        return false;
+      log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
+      
+      // TODO: does it ever make sense to allow sync when buffering or applying buffered? Someone might request that we
+      // do it...
+      if (!(ulog.getState() == UpdateLog.State.ACTIVE || ulog.getState() == UpdateLog.State.REPLAYING)) {
+        log.error(msg() + "ERROR, update log not in ACTIVE or REPLAY state. " + ulog);
+        // return false;
       }
-      Collections.sort(startingVersions, absComparator);
-
-      ourLowThreshold = percentile(startingVersions, 0.8f);
-      ourHighThreshold = percentile(startingVersions, 0.2f);
-
-      // now make sure that the starting updates overlap our updates
-      // there shouldn't be reorders, so any overlap will do.
-
-      long smallestNewUpdate = Math.abs(ourUpdates.get(ourUpdates.size()-1));
-
-      if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
-        log.warn(msg() + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
-        return false;
-      }
-
-      // let's merge the lists
-      List<Long> newList = new ArrayList<>(ourUpdates);
-      for (Long ver : startingVersions) {
-        if (Math.abs(ver) < smallestNewUpdate) {
-          newList.add(ver);
+      
+      if (debug) {
+        if (startingVersions != null) {
+          log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
         }
       }
-
-      ourUpdates = newList;
-    }  else {
-
-      if (ourUpdates.size() > 0) {
-        ourLowThreshold = percentile(ourUpdates, 0.8f);
-        ourHighThreshold = percentile(ourUpdates, 0.2f);
-      }  else {
-        // we have no versions and hence no frame of reference to tell if we can use a peers
-        // updates to bring us into sync
-        log.info(msg() + "DONE.  We have no versions.  sync failed.");
-        return false;
+      
+      // Fire off the requests before getting our own recent updates (for better concurrency)
+      // This also allows us to avoid getting updates we don't need... if we got our updates and then got their updates,
+      // they would
+      // have newer stuff that we also had (assuming updates are going on and are being forwarded).
+      for (String replica : replicas) {
+        requestVersions(replica);
       }
-    }
-
-    ourUpdateSet = new HashSet<>(ourUpdates);
-    requestedUpdateSet = new HashSet<>(ourUpdates);
-
-    for(;;) {
-      ShardResponse srsp = shardHandler.takeCompletedOrError();
-      if (srsp == null) break;
-      boolean success = handleResponse(srsp);
-      if (!success) {
-        log.info(msg() +  "DONE. sync failed");
-        shardHandler.cancelAll();
-        return false;
+      
+      recentUpdates = ulog.getRecentUpdates();
+      try {
+        ourUpdates = recentUpdates.getVersions(nUpdates);
+      } finally {
+        recentUpdates.close();
       }
+      
+      Collections.sort(ourUpdates, absComparator);
+      
+      if (startingVersions != null) {
+        if (startingVersions.size() == 0) {
+          log.warn("no frame of reference to tell if we've missed updates");
+          return false;
+        }
+        Collections.sort(startingVersions, absComparator);
+        
+        ourLowThreshold = percentile(startingVersions, 0.8f);
+        ourHighThreshold = percentile(startingVersions, 0.2f);
+        
+        // now make sure that the starting updates overlap our updates
+        // there shouldn't be reorders, so any overlap will do.
+        
+        long smallestNewUpdate = Math.abs(ourUpdates.get(ourUpdates.size() - 1));
+        
+        if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
+          log.warn(msg()
+              + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
+          return false;
+        }
+        
+        // let's merge the lists
+        List<Long> newList = new ArrayList<>(ourUpdates);
+        for (Long ver : startingVersions) {
+          if (Math.abs(ver) < smallestNewUpdate) {
+            newList.add(ver);
+          }
+        }
+        
+        ourUpdates = newList;
+      } else {
+        
+        if (ourUpdates.size() > 0) {
+          ourLowThreshold = percentile(ourUpdates, 0.8f);
+          ourHighThreshold = percentile(ourUpdates, 0.2f);
+        } else {
+          // we have no versions and hence no frame of reference to tell if we can use a peers
+          // updates to bring us into sync
+          log.info(msg() + "DONE.  We have no versions.  sync failed.");
+          return false;
+        }
+      }
+      
+      ourUpdateSet = new HashSet<>(ourUpdates);
+      requestedUpdateSet = new HashSet<>(ourUpdates);
+      
+      for (;;) {
+        ShardResponse srsp = shardHandler.takeCompletedOrError();
+        if (srsp == null) break;
+        boolean success = handleResponse(srsp);
+        if (!success) {
+          log.info(msg() + "DONE. sync failed");
+          shardHandler.cancelAll();
+          return false;
+        }
+      }
+      
+      log.info(msg() + "DONE. sync succeeded");
+      return true;
+    } finally {
+      MDCLoggingContext.clear();
     }
-
-    log.info(msg() +  "DONE. sync succeeded");
-    return true;
   }
   
   private void requestVersions(String replica) {

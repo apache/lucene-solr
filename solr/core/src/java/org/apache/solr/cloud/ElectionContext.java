@@ -1,5 +1,11 @@
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -15,7 +21,7 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.RetryUtil.RetryCmd;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.logging.MDCUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
@@ -25,14 +31,6 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -117,8 +115,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.shardId = shardId;
     this.collection = collection;
 
-    Map previousMDCContext = MDC.getCopyOfContextMap();
-    MDCUtils.setMDC(collection, shardId, null, null);
     try {
       new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
           .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
@@ -128,8 +124,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } finally {
-      MDCUtils.cleanupMDC(previousMDCContext);
     }
   }
   
@@ -203,158 +197,152 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    */
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
-      InterruptedException, IOException {
-    log.info("Running the leader process for shard " + shardId);
-    
+ InterruptedException, IOException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
-
       if (core == null) {
         cancelElection();
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "SolrCore not found:" + coreName + " in "
-                + cc.getCoreNames());
+        throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
       }
-      
+      MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
     }
-    
-    lt.minimumWaitBetweenActions();
-    lt.markAttemptingAction();
-    
-    // clear the leader in clusterstate
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-        ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
-        collection);
-    Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
-    
-    int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
-    if (!weAreReplacement) {
-      waitForReplicasToComeUp(leaderVoteWait);
-    }
 
-    try (SolrCore core = cc.getCore(coreName)) {
-
-      if (core == null) {
-        cancelElection();
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "SolrCore not found:" + coreName + " in "
-                + cc.getCoreNames());
-      }
-      
-      // should I be leader?
-      if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
-        rejoinLeaderElection(core);
-        return;
-      }
-      
-      log.info("I may be the new leader - try and sync");
- 
-      
-      // we are going to attempt to be the leader
-      // first cancel any current recovery
-      core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-      
-      if (weAreReplacement) {
-        // wait a moment for any floating updates to finish
-        try {
-          Thread.sleep(2500);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
-        }
-      }
-      
-      boolean success = false;
-      try {
-        success = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
-      } catch (Exception e) {
-        SolrException.log(log, "Exception while trying to sync", e);
-        success = false;
-      }
-      
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-
-      if (!success) {
-        boolean hasRecentUpdates = false;
-        if (ulog != null) {
-          // TODO: we could optimize this if necessary
-          UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-          try {
-            hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
-          } finally {
-            recentUpdates.close();
-          }
-        }
-
-        if (!hasRecentUpdates) {
-          // we failed sync, but we have no versions - we can't sync in that case
-          // - we were active
-          // before, so become leader anyway
-          log.info("We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-          success = true;
-        }
-      }
-      
-      // solrcloud_debug
-      if (log.isDebugEnabled()) {
-        try {
-          RefCounted<SolrIndexSearcher> searchHolder = core
-              .getNewestSearcher(false);
-          SolrIndexSearcher searcher = searchHolder.get();
-          try {
-            log.debug(core.getCoreDescriptor().getCoreContainer()
-                .getZkController().getNodeName()
-                + " synched "
-                + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-          } finally {
-            searchHolder.decref();
-          }
-        } catch (Exception e) {
-          log.error("Error in solrcloud_debug block", e);
-        }
-      }
-      if (!success) {
-        rejoinLeaderElection(core);
-        return;
-      }
-
-      log.info("I am the new leader: "
-          + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
-      core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-    }
-
-    boolean isLeader = true;
     try {
-      super.runLeaderProcess(weAreReplacement, 0);
-    } catch (Exception e) {
-      isLeader = false;
-      SolrException.log(log, "There was a problem trying to register as the leader", e);
-  
+      lt.minimumWaitBetweenActions();
+      lt.markAttemptingAction();
+      
+      log.info("Running the leader process for shard " + shardId);
+      // clear the leader in clusterstate
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+          ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
+      Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
+      
+      int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
+      if (!weAreReplacement) {
+        waitForReplicasToComeUp(leaderVoteWait);
+      }
+      
       try (SolrCore core = cc.getCore(coreName)) {
-
+        
         if (core == null) {
-          log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          cancelElection();
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+        }
+        
+        // should I be leader?
+        if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
+          rejoinLeaderElection(core);
           return;
         }
         
-        core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
+        log.info("I may be the new leader - try and sync");
         
-        // we could not publish ourselves as leader - try and rejoin election
-        rejoinLeaderElection(core);
+        // we are going to attempt to be the leader
+        // first cancel any current recovery
+        core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+        
+        if (weAreReplacement) {
+          // wait a moment for any floating updates to finish
+          try {
+            Thread.sleep(2500);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+          }
+        }
+        
+        boolean success = false;
+        try {
+          success = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+        } catch (Exception e) {
+          SolrException.log(log, "Exception while trying to sync", e);
+          success = false;
+        }
+        
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        
+        if (!success) {
+          boolean hasRecentUpdates = false;
+          if (ulog != null) {
+            // TODO: we could optimize this if necessary
+            UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+            try {
+              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+            } finally {
+              recentUpdates.close();
+            }
+          }
+          
+          if (!hasRecentUpdates) {
+            // we failed sync, but we have no versions - we can't sync in that case
+            // - we were active
+            // before, so become leader anyway
+            log.info(
+                "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+            success = true;
+          }
+        }
+        
+        // solrcloud_debug
+        if (log.isDebugEnabled()) {
+          try {
+            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+            SolrIndexSearcher searcher = searchHolder.get();
+            try {
+              log.debug(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " synched "
+                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+            } finally {
+              searchHolder.decref();
+            }
+          } catch (Exception e) {
+            log.error("Error in solrcloud_debug block", e);
+          }
+        }
+        if (!success) {
+          rejoinLeaderElection(core);
+          return;
+        }
+        
+        log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
+        core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
       }
-    }
-
-    if (isLeader) {
-      // check for any replicas in my shard that were set to down by the previous leader
+      
+      boolean isLeader = true;
       try {
-        startLeaderInitiatedRecoveryOnReplicas(coreName);
-      } catch (Exception exc) {
-        // don't want leader election to fail because of
-        // an error trying to tell others to recover
+        super.runLeaderProcess(weAreReplacement, 0);
+      } catch (Exception e) {
+        isLeader = false;
+        SolrException.log(log, "There was a problem trying to register as the leader", e);
+        
+        try (SolrCore core = cc.getCore(coreName)) {
+          
+          if (core == null) {
+            log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+            return;
+          }
+          
+          core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
+          
+          // we could not publish ourselves as leader - try and rejoin election
+          rejoinLeaderElection(core);
+        }
       }
-    }    
+      
+      if (isLeader) {
+        // check for any replicas in my shard that were set to down by the previous leader
+        try {
+          startLeaderInitiatedRecoveryOnReplicas(coreName);
+        } catch (Exception exc) {
+          // don't want leader election to fail because of
+          // an error trying to tell others to recover
+        }
+      }
+    } finally {
+      MDCLoggingContext.clear();
+    }
   }
   
   private void startLeaderInitiatedRecoveryOnReplicas(String coreName) throws Exception {
@@ -493,8 +481,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core, boolean weAreReplacement) {
-    log.info("Checking if I (core={},coreNodeName={}) should try and be the leader.", core.getName(),
-        core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+    log.info("Checking if I should try and be the leader.");
     
     if (isClosed) {
       log.info("Bailing on leader process because we have been closed");
@@ -534,7 +521,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 }
 
 final class OverseerElectionContext extends ElectionContext {
-  
+  private static Logger log = LoggerFactory.getLogger(OverseerElectionContext.class);
   private final SolrZkClient zkClient;
   private Overseer overseer;
   public static final String PATH = "/overseer_elect";

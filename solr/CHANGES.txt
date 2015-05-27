@@ -100,6 +100,8 @@ Other Changes
 * SOLR-7146: MiniSolrCloudCluster based tests can fail with ZooKeeperException NoNode for /live_nodes.
   (Vamsee Yarlagadda via shalin)
 
+* SOLR-7590: Finish and improve MDC context logging support. (Mark Miller)  
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

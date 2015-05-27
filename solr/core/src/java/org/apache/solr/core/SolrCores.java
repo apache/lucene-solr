@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +114,7 @@ class SolrCores {
       }
 
       for (SolrCore core : coreList) {
+        MDCLoggingContext.setCore(core);
         try {
           core.close();
         } catch (Throwable e) {
@@ -120,6 +122,8 @@ class SolrCores {
           if (e instanceof Error) {
             throw (Error) e;
           }
+        } finally {
+          MDCLoggingContext.clear();
         }
       }
     } while (coreList.size() > 0);

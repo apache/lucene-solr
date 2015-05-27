@@ -46,6 +46,7 @@ import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -312,7 +313,6 @@ public class CoreContainer {
    * Load the cores defined for this CoreContainer
    */
   public void load()  {
-
     log.info("Loading cores into CoreContainer [instanceDir={}]", loader.getInstanceDir());
 
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
@@ -334,7 +334,6 @@ public class CoreContainer {
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     hostName = cfg.getNodeName();
-    log.info("Node Name: " + hostName);
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
 
@@ -627,7 +626,7 @@ public class CoreContainer {
 
     SolrCore core = null;
     try {
-
+      MDCLoggingContext.setCore(core);
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -657,6 +656,8 @@ public class CoreContainer {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       IOUtils.closeQuietly(core);
       throw t;
+    } finally {
+      MDCLoggingContext.clear();
     }
 
   }
