@@ -23,7 +23,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
-import java.util.function.Supplier;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -39,12 +38,13 @@ import org.slf4j.MDC;
  */
 public class MDCLoggingContext {
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
-  private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(new Supplier<Integer>() {
+  private static ThreadLocal<Integer> CALL_DEPTH = new ThreadLocal<Integer>() {
     @Override
-    public Integer get() {
+    protected Integer initialValue() {
       return 0;
     }
-  });
+  };
+  
   
   private static void setCollection(String collection) {
     if (collection != null) {
