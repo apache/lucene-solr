@@ -167,6 +167,29 @@ public class MiniSolrCloudCluster {
       throw startupError;
     }
 
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
+        AbstractZkTestCase.TIMEOUT, 45000, null)) {
+      int numliveNodes = 0;
+      int retries = 60;
+      String liveNodesPath = "/solr/live_nodes";
+      // Wait up to 60 seconds for number of live_nodes to match up number of servers
+      do {
+        if (zkClient.exists(liveNodesPath, true)) {
+          numliveNodes = zkClient.getChildren(liveNodesPath, null, true).size();
+          if (numliveNodes == numServers) {
+            break;
+          }
+        }
+        retries--;
+        if (retries == 0) {
+          throw new IllegalStateException("Solr servers failed to register with ZK."
+              + " Current count: " + numliveNodes + "; Expected count: " + numServers);
+        }
+
+        Thread.sleep(1000);
+      } while (numliveNodes != numServers);
+    }
+
     solrClient = buildSolrClient();
   }
 
