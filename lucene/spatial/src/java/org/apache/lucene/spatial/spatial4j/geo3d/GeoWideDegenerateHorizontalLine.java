@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
+public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
   public final double latitude;
   public final double leftLon;
   public final double rightLon;
@@ -46,7 +46,8 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
    * Horizontal angle must be greater than or equal to PI.
    */
-  public GeoWideDegenerateHorizontalLine(final double latitude, final double leftLon, double rightLon) {
+  public GeoWideDegenerateHorizontalLine(final PlanetModel planetModel, final double latitude, final double leftLon, double rightLon) {
+    super(planetModel);
     // Argument checking
     if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
       throw new IllegalArgumentException("Latitude out of range");
@@ -73,10 +74,10 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the two points
-    this.LHC = new GeoPoint(sinLatitude, sinLeftLon, cosLatitude, cosLeftLon);
-    this.RHC = new GeoPoint(sinLatitude, sinRightLon, cosLatitude, cosRightLon);
+    this.LHC = new GeoPoint(planetModel, sinLatitude, sinLeftLon, cosLatitude, cosLeftLon);
+    this.RHC = new GeoPoint(planetModel, sinLatitude, sinRightLon, cosLatitude, cosRightLon);
 
-    this.plane = new Plane(sinLatitude);
+    this.plane = new Plane(planetModel, sinLatitude);
 
     // Normalize
     while (leftLon > rightLon) {
@@ -86,7 +87,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
     double sinMiddleLon = Math.sin(middleLon);
     double cosMiddleLon = Math.cos(middleLon);
 
-    this.centerPoint = new GeoPoint(sinLatitude, sinMiddleLon, cosLatitude, cosMiddleLon);
+    this.centerPoint = new GeoPoint(planetModel, sinLatitude, sinMiddleLon, cosLatitude, cosMiddleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
@@ -112,7 +113,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
@@ -160,7 +161,7 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
     // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-    return p.intersects(plane, notablePoints, planePoints, bounds, eitherBound);
+    return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, eitherBound);
   }
 
   /**
@@ -199,19 +200,20 @@ public class GeoWideDegenerateHorizontalLine extends GeoBBoxBase {
     if (!(o instanceof GeoWideDegenerateHorizontalLine))
       return false;
     GeoWideDegenerateHorizontalLine other = (GeoWideDegenerateHorizontalLine) o;
-    return other.LHC.equals(LHC) && other.RHC.equals(RHC);
+    return super.equals(other) && other.LHC.equals(LHC) && other.RHC.equals(RHC);
   }
 
   @Override
   public int hashCode() {
-    int result = LHC.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + LHC.hashCode();
     result = 31 * result + RHC.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoWideDegenerateHorizontalLine: {latitude=" + latitude + "(" + latitude * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightLon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoWideDegenerateHorizontalLine: {planetmodel="+planetModel+", latitude=" + latitude + "(" + latitude * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightLon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 
   protected class EitherBound implements Membership {

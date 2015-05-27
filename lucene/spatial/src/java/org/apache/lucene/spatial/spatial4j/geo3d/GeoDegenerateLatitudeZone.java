@@ -23,7 +23,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
+public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   public final double latitude;
 
   public final double sinLatitude;
@@ -32,14 +32,15 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
   public final GeoPoint[] edgePoints;
   public final static GeoPoint[] planePoints = new GeoPoint[0];
 
-  public GeoDegenerateLatitudeZone(final double latitude) {
+  public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final double latitude) {
+    super(planetModel);
     this.latitude = latitude;
 
     this.sinLatitude = Math.sin(latitude);
     double cosLatitude = Math.cos(latitude);
-    this.plane = new Plane(sinLatitude);
+    this.plane = new Plane(planetModel, sinLatitude);
     // Compute an interior point.
-    interiorPoint = new GeoPoint(cosLatitude, 0.0, sinLatitude);
+    interiorPoint = new GeoPoint(planetModel, sinLatitude, 0.0, cosLatitude, 1.0);
     edgePoints = new GeoPoint[]{interiorPoint};
   }
 
@@ -47,7 +48,7 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
   public GeoBBox expand(final double angle) {
     double newTopLat = latitude + angle;
     double newBottomLat = latitude - angle;
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, -Math.PI, Math.PI);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, -Math.PI, Math.PI);
   }
 
   @Override
@@ -83,7 +84,7 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(plane, notablePoints, planePoints, bounds);
+    return p.intersects(planetModel, plane, notablePoints, planePoints, bounds);
   }
 
   /**
@@ -125,19 +126,20 @@ public class GeoDegenerateLatitudeZone extends GeoBBoxBase {
     if (!(o instanceof GeoDegenerateLatitudeZone))
       return false;
     GeoDegenerateLatitudeZone other = (GeoDegenerateLatitudeZone) o;
-    return other.latitude == latitude;
+    return super.equals(other) && other.latitude == latitude;
   }
 
   @Override
   public int hashCode() {
+    int result = super.hashCode();
     long temp = Double.doubleToLongBits(latitude);
-    int result = (int) (temp ^ (temp >>> 32));
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoDegenerateLatitudeZone: {lat=" + latitude + "(" + latitude * 180.0 / Math.PI + ")}";
+    return "GeoDegenerateLatitudeZone: {planetmodel="+planetModel+", lat=" + latitude + "(" + latitude * 180.0 / Math.PI + ")}";
   }
 }
 

@@ -18,25 +18,30 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * Factory for {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoArea}.
+ * All bounding box shapes can derive from this base class, which furnishes
+ * some common code
  *
- * @lucene.experimental
+ * @lucene.internal
  */
-public class GeoAreaFactory {
-  private GeoAreaFactory() {
-  }
+public abstract class GeoBaseShape {
 
-  /**
-   * Create a GeoArea of the right kind given the specified bounds.
-   *
-   * @param topLat    is the top latitude
-   * @param bottomLat is the bottom latitude
-   * @param leftLon   is the left longitude
-   * @param rightLon  is the right longitude
-   * @return a GeoArea corresponding to what was specified.
-   */
-  public static GeoArea makeGeoArea(final PlanetModel planetModel, final double topLat, final double bottomLat, final double leftLon, final double rightLon) {
-    return GeoBBoxFactory.makeGeoBBox(planetModel, topLat, bottomLat, leftLon, rightLon);
+  protected final PlanetModel planetModel;
+  
+  public GeoBaseShape(final PlanetModel planetModel) {
+    this.planetModel = planetModel;
   }
-
+  
+  @Override
+  public int hashCode() {
+    return planetModel.hashCode();
+  }
+  
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof GeoBaseShape))
+      return false;
+    return planetModel.equals(((GeoBaseShape)o).planetModel);
+  }
 }
+
+

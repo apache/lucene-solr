@@ -25,45 +25,42 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape, GeoSizeable {
   public final GeoPoint center;
   public final double cutoffAngle;
-  public final double cutoffNormalDistance;
-  public final double cutoffLinearDistance;
   public final SidedPlane circlePlane;
   public final GeoPoint[] edgePoints;
   public static final GeoPoint[] circlePoints = new GeoPoint[0];
 
-  public GeoCircle(final double lat, final double lon, final double cutoffAngle) {
-    super();
+  public GeoCircle(final PlanetModel planetModel, final double lat, final double lon, final double cutoffAngle) {
+    super(planetModel);
     if (lat < -Math.PI * 0.5 || lat > Math.PI * 0.5)
       throw new IllegalArgumentException("Latitude out of bounds");
     if (lon < -Math.PI || lon > Math.PI)
       throw new IllegalArgumentException("Longitude out of bounds");
     if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
-    final double sinAngle = Math.sin(cutoffAngle);
     final double cosAngle = Math.cos(cutoffAngle);
-    this.center = new GeoPoint(lat, lon);
-    this.cutoffNormalDistance = sinAngle;
-    // Need the chord distance.  This is just the chord distance: sqrt((1 - cos(angle))^2 + (sin(angle))^2).
-    final double xDiff = 1.0 - cosAngle;
-    this.cutoffLinearDistance = Math.sqrt(xDiff * xDiff + sinAngle * sinAngle);
+    this.center = new GeoPoint(planetModel, lat, lon);
+    final double magnitude = center.magnitude();
+    // In an ellipsoidal world, cutoff distances make no sense, unfortunately.  Only membership
+    // can be used to make in/out determination.
     this.cutoffAngle = cutoffAngle;
-    this.circlePlane = new SidedPlane(center, center, -cosAngle);
+    // The plane's normal vector needs to be normalized, since we compute D on that basis
+    this.circlePlane = new SidedPlane(center, center.normalize(), -cosAngle * magnitude);
 
     // Compute a point on the circle boundary.
     if (cutoffAngle == Math.PI)
       this.edgePoints = new GeoPoint[0];
     else {
-      // Move from center only in latitude.  Then, if we go past the north pole, adjust the longitude also.
-      double newLat = lat + cutoffAngle;
-      double newLon = lon;
-      if (newLat > Math.PI * 0.5) {
-        newLat = Math.PI - newLat;
-        newLon += Math.PI;
+      // We already have circle plane, which is the definitive determination of the edge of the "circle".
+      // Next, compute vertical plane going through origin and the center point (C = 0, D = 0).
+      Plane verticalPlane = Plane.constructNormalizedVerticalPlane(this.center.x, this.center.y);
+      if (verticalPlane == null) {
+        verticalPlane = new Plane(1.0,0.0);
       }
-      while (newLon > Math.PI) {
-        newLon -= Math.PI * 2.0;
+      // Finally, use Plane.findIntersections() to find the intersection points.
+      final GeoPoint edgePoint = this.circlePlane.getSampleIntersectionPoint(planetModel, verticalPlane);
+      if (edgePoint == null) {
+        throw new RuntimeException("Could not find edge point for circle at lat="+lat+" lon="+lon+" cutoffAngle="+cutoffAngle+" planetModel="+planetModel);
       }
-      final GeoPoint edgePoint = new GeoPoint(newLat, newLon);
       //if (Math.abs(circlePlane.evaluate(edgePoint)) > 1e-10)
       //    throw new RuntimeException("Computed an edge point that does not satisfy circlePlane equation! "+circlePlane.evaluate(edgePoint));
       this.edgePoints = new GeoPoint[]{edgePoint};
@@ -92,10 +89,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeNormalDistance(final GeoPoint point) {
-    double normalDistance = this.center.normalDistance(point);
-    if (normalDistance > cutoffNormalDistance)
+    if (!isWithin(point))
       return Double.MAX_VALUE;
-    return normalDistance;
+    return this.center.normalDistance(point);
   }
 
   /**
@@ -105,10 +101,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeNormalDistance(final double x, final double y, final double z) {
-    double normalDistance = this.center.normalDistance(x, y, z);
-    if (normalDistance > cutoffNormalDistance)
+    if (!isWithin(x,y,z))
       return Double.MAX_VALUE;
-    return normalDistance;
+    return this.center.normalDistance(x, y, z);
   }
 
   /**
@@ -118,10 +113,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeSquaredNormalDistance(final GeoPoint point) {
-    double normalDistanceSquared = this.center.normalDistanceSquared(point);
-    if (normalDistanceSquared > cutoffNormalDistance * cutoffNormalDistance)
+    if (!isWithin(point))
       return Double.MAX_VALUE;
-    return normalDistanceSquared;
+    return this.center.normalDistanceSquared(point);
   }
 
   /**
@@ -131,10 +125,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeSquaredNormalDistance(final double x, final double y, final double z) {
-    double normalDistanceSquared = this.center.normalDistanceSquared(x, y, z);
-    if (normalDistanceSquared > cutoffNormalDistance * cutoffNormalDistance)
+    if (!isWithin(x,y,z))
       return Double.MAX_VALUE;
-    return normalDistanceSquared;
+    return this.center.normalDistanceSquared(x, y, z);
   }
 
   /**
@@ -143,10 +136,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeLinearDistance(final GeoPoint point) {
-    double linearDistance = this.center.linearDistance(point);
-    if (linearDistance > cutoffLinearDistance)
+    if (!isWithin(point))
       return Double.MAX_VALUE;
-    return linearDistance;
+    return this.center.linearDistance(point);
   }
 
   /**
@@ -155,10 +147,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeLinearDistance(final double x, final double y, final double z) {
-    double linearDistance = this.center.linearDistance(x, y, z);
-    if (linearDistance > cutoffLinearDistance)
+    if (!isWithin(x,y,z))
       return Double.MAX_VALUE;
-    return linearDistance;
+    return this.center.linearDistance(x, y, z);
   }
 
   /**
@@ -166,10 +157,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeSquaredLinearDistance(final GeoPoint point) {
-    double linearDistanceSquared = this.center.linearDistanceSquared(point);
-    if (linearDistanceSquared > cutoffLinearDistance * cutoffLinearDistance)
+    if (!isWithin(point))
       return Double.MAX_VALUE;
-    return linearDistanceSquared;
+    return this.center.linearDistanceSquared(point);
   }
 
   /**
@@ -177,10 +167,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeSquaredLinearDistance(final double x, final double y, final double z) {
-    double linearDistanceSquared = this.center.linearDistanceSquared(x, y, z);
-    if (linearDistanceSquared > cutoffLinearDistance * cutoffLinearDistance)
+    if (!isWithin(x,y,z))
       return Double.MAX_VALUE;
-    return linearDistanceSquared;
+    return this.center.linearDistanceSquared(x, y, z);
   }
 
   /**
@@ -189,10 +178,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
    */
   @Override
   public double computeArcDistance(final GeoPoint point) {
-    double dist = this.center.arcDistance(point);
-    if (dist > cutoffAngle)
+    if (!isWithin(point))
       return Double.MAX_VALUE;
-    return dist;
+    return this.center.arcDistance(point);
   }
 
   @Override
@@ -214,7 +202,7 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return circlePlane.intersects(p, notablePoints, circlePoints, bounds);
+    return circlePlane.intersects(planetModel, p, notablePoints, circlePoints, bounds);
   }
 
   /**
@@ -230,7 +218,7 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
   public Bounds getBounds(Bounds bounds) {
     bounds = super.getBounds(bounds);
     bounds.addPoint(center);
-    circlePlane.recordBounds(bounds);
+    circlePlane.recordBounds(planetModel, bounds);
     return bounds;
   }
 
@@ -239,21 +227,20 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     if (!(o instanceof GeoCircle))
       return false;
     GeoCircle other = (GeoCircle) o;
-    return other.center.equals(center) && other.cutoffAngle == cutoffAngle;
+    return super.equals(other) && other.center.equals(center) && other.cutoffAngle == cutoffAngle;
   }
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    result = center.hashCode();
-    temp = Double.doubleToLongBits(cutoffAngle);
+    int result = super.hashCode();
+    result = 31 * result + center.hashCode();
+    long temp = Double.doubleToLongBits(cutoffAngle);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoCircle: {center=" + center + ", radius=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + ")}";
+    return "GeoCircle: {planetmodel=" + planetModel+", center=" + center + ", radius=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + ")}";
   }
 }

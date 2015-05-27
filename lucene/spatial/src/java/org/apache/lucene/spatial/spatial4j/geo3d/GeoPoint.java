@@ -23,20 +23,36 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * @lucene.experimental
  */
 public class GeoPoint extends Vector {
-  public GeoPoint(final double sinLat, final double sinLon, final double cosLat, final double cosLon) {
-    super(cosLat * cosLon, cosLat * sinLon, sinLat);
+  
+  protected double magnitude = Double.NEGATIVE_INFINITY;
+  
+  public GeoPoint(final PlanetModel planetModel, final double sinLat, final double sinLon, final double cosLat, final double cosLon) {
+    this(computeMagnitude(planetModel, cosLat * cosLon, cosLat * sinLon, sinLat),
+      cosLat * cosLon, cosLat * sinLon, sinLat);
   }
 
-  public GeoPoint(final double lat, final double lon) {
-    this(Math.sin(lat), Math.sin(lon), Math.cos(lat), Math.cos(lon));
+  public GeoPoint(final PlanetModel planetModel, final double lat, final double lon) {
+    this(planetModel, Math.sin(lat), Math.sin(lon), Math.cos(lat), Math.cos(lon));
   }
 
+  public GeoPoint(final double magnitude, final double x, final double y, final double z) {
+    super(x * magnitude, y * magnitude, z * magnitude);
+    this.magnitude = magnitude;
+  }
+  
   public GeoPoint(final double x, final double y, final double z) {
     super(x, y, z);
   }
 
   public double arcDistance(final GeoPoint v) {
-    return Tools.safeAcos(dotProduct(v));
+    return Tools.safeAcos(dotProduct(v)/(magnitude() * v.magnitude()));
   }
 
+  @Override
+  public double magnitude() {
+    if (this.magnitude == Double.NEGATIVE_INFINITY) {
+      this.magnitude = super.magnitude();
+    }
+    return magnitude;
+  }
 }

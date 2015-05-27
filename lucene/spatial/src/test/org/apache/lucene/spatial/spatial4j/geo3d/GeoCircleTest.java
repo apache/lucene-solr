@@ -30,16 +30,16 @@ public class GeoCircleTest {
   public void testCircleDistance() {
     GeoCircle c;
     GeoPoint gp;
-    c = new GeoCircle(0.0, -0.5, 0.1);
-    gp = new GeoPoint(0.0, 0.0);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertEquals(Double.MAX_VALUE, c.computeArcDistance(gp), 0.0);
     assertEquals(Double.MAX_VALUE, c.computeLinearDistance(gp), 0.0);
     assertEquals(Double.MAX_VALUE, c.computeNormalDistance(gp), 0.0);
-    gp = new GeoPoint(0.0, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertEquals(0.0, c.computeArcDistance(gp), 0.000001);
     assertEquals(0.0, c.computeLinearDistance(gp), 0.000001);
     assertEquals(0.0, c.computeNormalDistance(gp), 0.000001);
-    gp = new GeoPoint(0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
     assertEquals(0.05, c.computeArcDistance(gp), 0.000001);
     assertEquals(0.049995, c.computeLinearDistance(gp), 0.000001);
     assertEquals(0.049979, c.computeNormalDistance(gp), 0.000001);
@@ -49,18 +49,18 @@ public class GeoCircleTest {
   public void testCirclePointWithin() {
     GeoCircle c;
     GeoPoint gp;
-    c = new GeoCircle(0.0, -0.5, 0.1);
-    gp = new GeoPoint(0.0, 0.0);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.55);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.45);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
   }
 
@@ -71,7 +71,7 @@ public class GeoCircleTest {
 
 
     // Vertical circle cases
-    c = new GeoCircle(0.0, -0.5, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -80,7 +80,7 @@ public class GeoCircleTest {
     assertEquals(-0.4, b.getRightLongitude(), 0.000001);
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
-    c = new GeoCircle(0.0, 0.5, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.5, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -89,7 +89,7 @@ public class GeoCircleTest {
     assertEquals(0.6, b.getRightLongitude(), 0.000001);
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
-    c = new GeoCircle(0.0, 0.0, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -98,7 +98,7 @@ public class GeoCircleTest {
     assertEquals(0.1, b.getRightLongitude(), 0.000001);
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
-    c = new GeoCircle(0.0, Math.PI, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -108,13 +108,13 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     // Horizontal circle cases
-    c = new GeoCircle(Math.PI * 0.5, 0.0, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
     b = c.getBounds(null);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
     assertEquals(Math.PI * 0.5 - 0.1, b.getMinLatitude(), 0.000001);
-    c = new GeoCircle(-Math.PI * 0.5, 0.0, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
     b = c.getBounds(null);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -122,7 +122,7 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.5 + 0.1, b.getMaxLatitude(), 0.000001);
 
     // Now do a somewhat tilted plane, facing different directions.
-    c = new GeoCircle(0.01, 0.0, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, 0.0, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -132,7 +132,7 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(0.01, Math.PI, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -142,7 +142,7 @@ public class GeoCircleTest {
     assertEquals(Math.PI - 0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(0.01, Math.PI * 0.5, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.5, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -152,7 +152,7 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.5 - 0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(Math.PI * 0.5 + 0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(0.01, -Math.PI * 0.5, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.5, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -163,7 +163,7 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.5 + 0.1, b.getRightLongitude(), 0.00001);
 
     // Slightly tilted, PI/4 direction.
-    c = new GeoCircle(0.01, Math.PI * 0.25, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.25, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -173,7 +173,7 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 - 0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(0.01, -Math.PI * 0.25, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.25, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -183,7 +183,7 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.25 - 0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(-Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(-0.01, Math.PI * 0.25, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, -0.01, Math.PI * 0.25, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -193,7 +193,7 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 - 0.1, b.getLeftLongitude(), 0.00001);
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
-    c = new GeoCircle(-0.01, -Math.PI * 0.25, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, -0.01, -Math.PI * 0.25, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
@@ -204,7 +204,7 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     // Now do a somewhat tilted plane.
-    c = new GeoCircle(0.01, -0.5, 0.1);
+    c = new GeoCircle(PlanetModel.SPHERE, 0.01, -0.5, 0.1);
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
