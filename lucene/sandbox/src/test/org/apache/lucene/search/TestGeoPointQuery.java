@@ -69,6 +69,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
+    
+    // nocommit when we randomly test the full lat/lon space it can result in very very slow query times ... is this expected?
+
     // Between 1.0 and 3.0:
     range = 2*(random().nextDouble() + 0.5);
     originLon = GeoUtils.MIN_LON_INCL + range + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2*range) * random().nextDouble();

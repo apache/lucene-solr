@@ -45,8 +45,8 @@ import org.apache.lucene.util.ToStringUtils;
  *    1.  All latitude/longitude values must be in decimal degrees.
  *    2.  Complex computational geometry (e.g., dateline wrapping) is not supported
  *    3.  For more advanced GeoSpatial indexing and query operations see spatial module
- *    4.  This is well suited for small rectangles, large bounding boxes, could result
- *        in visiting every term in terms dictionary (see LUCENE-6481)
+ *    4.  This is well suited for small rectangles, large bounding boxes result
+ *        in too many terms
  *
  * @lucene.experimental
  */
