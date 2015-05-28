@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -32,7 +33,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
@@ -82,5 +82,24 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     dir.close();
   }
   
-
+  public void testDoubleObtain() throws Exception {
+    String uri = HdfsTestUtil.getURI(dfsCluster);
+    Path lockPath = new Path(uri, "/basedir/lock");
+    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+    HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
+    Lock lock = dir.makeLock("foo");
+    assertTrue(lock.obtain());
+    try {
+      lock.obtain();
+      fail("did not hit double-obtain failure");
+    } catch (LockObtainFailedException lofe) {
+      // expected
+    }
+    lock.close();
+    
+    lock = dir.makeLock("foo");
+    assertTrue(lock.obtain());
+    lock.close();
+    dir.close();
+  }
 }

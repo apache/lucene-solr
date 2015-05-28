@@ -44,6 +44,7 @@ public final class SingleInstanceLockFactory extends LockFactory {
 
     private final String lockName;
     private final HashSet<String> locks;
+    private boolean obtained = false;
 
     public SingleInstanceLock(HashSet<String> locks, String lockName) {
       this.locks = locks;
@@ -53,14 +54,23 @@ public final class SingleInstanceLockFactory extends LockFactory {
     @Override
     public boolean obtain() throws IOException {
       synchronized(locks) {
-        return locks.add(lockName);
+        if (obtained) {
+          // Our instance is already locked:
+          throw new LockObtainFailedException("this lock instance was already obtained");
+        }
+        obtained = locks.add(lockName);
+
+        return obtained;
       }
     }
 
     @Override
     public void close() {
       synchronized(locks) {
-        locks.remove(lockName);
+        if (obtained) {
+          locks.remove(lockName);
+          obtained = false;
+        }
       }
     }
 

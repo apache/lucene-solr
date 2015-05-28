@@ -78,6 +78,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
 
     Path lockFile;
     Path lockDir;
+    boolean obtained = false;
 
     public SimpleFSLock(Path lockDir, String lockFileName) {
       this.lockDir = lockDir;
@@ -85,28 +86,38 @@ public final class SimpleFSLockFactory extends FSLockFactory {
     }
 
     @Override
-    public boolean obtain() throws IOException {
+    public synchronized boolean obtain() throws IOException {
+      if (obtained) {
+        // Our instance is already locked:
+        throw new LockObtainFailedException("this lock instance was already obtained");
+      }
+      
       try {
         Files.createDirectories(lockDir);
         Files.createFile(lockFile);
-        return true;
+        obtained = true;
       } catch (IOException ioe) {
         // On Windows, on concurrent createNewFile, the 2nd process gets "access denied".
         // In that case, the lock was not aquired successfully, so return false.
         // We record the failure reason here; the obtain with timeout (usually the
         // one calling us) will use this as "root cause" if it fails to get the lock.
         failureReason = ioe;
-        return false;
       }
+
+      return obtained;
     }
 
     @Override
-    public void close() throws LockReleaseFailedException {
+    public synchronized void close() throws LockReleaseFailedException {
       // TODO: wierd that clearLock() throws the raw IOException...
-      try {
-        Files.deleteIfExists(lockFile);
-      } catch (Throwable cause) {
-        throw new LockReleaseFailedException("failed to delete " + lockFile, cause);
+      if (obtained) {
+        try {
+          Files.deleteIfExists(lockFile);
+        } catch (Throwable cause) {
+          throw new LockReleaseFailedException("failed to delete " + lockFile, cause);
+        } finally {
+          obtained = false;
+        }
       }
     }
 
