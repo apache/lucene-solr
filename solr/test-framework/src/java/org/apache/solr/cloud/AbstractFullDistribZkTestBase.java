@@ -16,10 +16,6 @@ package org.apache.solr.cloud;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,6 +78,11 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -250,10 +251,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    client.getLbClient().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 30000);
-    client.getLbClient().getHttpClient().getParams()
-    .setParameter(CoreConnectionPNames.SO_TIMEOUT, 60000);
+    client.getLbClient().setConnectionTimeout(30000);
+    client.getLbClient().setSoTimeout(60000);
     return client;
   }
 
@@ -304,7 +303,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     initCloud();
 
-    createJettys(numServers).size();
+    createJettys(numServers);
 
     int cnt = getTotalReplicas(DEFAULT_COLLECTION);
     if (cnt > 0) {
@@ -1507,8 +1506,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (VERBOSE || printLayoutOnTearDown) {
       super.printLayout();
     }
-    if (commondCloudSolrClient != null) {
-      commondCloudSolrClient.close();
+    if (commonCloudSolrClient != null) {
+      commonCloudSolrClient.close();
     }
     if (controlClient != null) {
       controlClient.close();
@@ -1733,20 +1732,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
-  private CloudSolrClient commondCloudSolrClient;
+  private CloudSolrClient commonCloudSolrClient;
   
   protected CloudSolrClient getCommonCloudSolrClient() {
     synchronized (this) {
-      if (commondCloudSolrClient == null) {
-        commondCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(),
-            random().nextBoolean());
-        commondCloudSolrClient.getLbClient().setConnectionTimeout(30000);
-        commondCloudSolrClient.setParallelUpdates(random().nextBoolean());
-        commondCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
-        commondCloudSolrClient.connect();
+      if (commonCloudSolrClient == null) {
+        boolean updatesToLeaders = random().nextBoolean();
+        boolean parallelUpdates = random().nextBoolean();
+        commonCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(),
+                updatesToLeaders);
+        commonCloudSolrClient.getLbClient().setConnectionTimeout(5000);
+        commonCloudSolrClient.getLbClient().setSoTimeout(120000);
+        commonCloudSolrClient.setParallelUpdates(parallelUpdates);
+        commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
+        commonCloudSolrClient.connect();
+        log.info("Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}", updatesToLeaders, parallelUpdates);
       }
     }
-    return commondCloudSolrClient;
+    return commonCloudSolrClient;
   }
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
@@ -1797,24 +1800,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
-  protected void checkForMissingCollection(String collectionName)
-      throws Exception {
-    // check for a  collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 45000;
-    boolean found = true;
-    while (System.currentTimeMillis() < timeoutAt) {
-      getCommonCloudSolrClient().getZkStateReader().updateClusterState(true);
-      ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-      if (!clusterState.hasCollection(collectionName)) {
-        found = false;
-        break;
-      }
-      Thread.sleep(100);
-    }
-    if (found) {
-      fail("Found collection that should be gone " + collectionName);
-    }
+  protected void assertCollectionNotExists(String collectionName, int timeoutSeconds) throws Exception {
+    waitForCollectionToDisappear(collectionName, getCommonCloudSolrClient().getZkStateReader(), false, true, timeoutSeconds);
   }
+
 
   protected NamedList<Object> invokeCollectionApi(String... args) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();

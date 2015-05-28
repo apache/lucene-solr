@@ -83,7 +83,7 @@ public class CollectionStateFormat2Test extends AbstractFullDistribZkTestBase {
 
     client.request(request);
 
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     assertFalse("collection state should not exist externally", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
   }

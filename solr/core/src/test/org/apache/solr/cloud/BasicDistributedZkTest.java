@@ -1104,21 +1104,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  volatile CloudSolrClient commondCloudSolrClient;
-  protected CloudSolrClient getCommonCloudSolrClient() {
-    if (commondCloudSolrClient == null) {
-      synchronized(this) {
-        commondCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
-        commondCloudSolrClient.setParallelUpdates(random().nextBoolean());
-        commondCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
-        commondCloudSolrClient.getLbClient().setConnectionTimeout(15000);
-        commondCloudSolrClient.getLbClient().setSoTimeout(30000);
-        commondCloudSolrClient.connect();
-      }
-    }
-    return commondCloudSolrClient;
-  }
-
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
 
@@ -1135,9 +1120,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    if (commondCloudSolrClient != null) {
-      commondCloudSolrClient.close();
-    }
     if (otherCollectionClients != null) {
       for (List<SolrClient> clientList : otherCollectionClients.values()) {
         IOUtils.close(clientList);

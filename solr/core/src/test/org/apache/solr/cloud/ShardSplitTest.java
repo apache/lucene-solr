@@ -241,7 +241,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 
@@ -315,7 +315,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 

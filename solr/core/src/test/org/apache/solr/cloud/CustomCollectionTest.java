@@ -72,7 +72,6 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
-  private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
 
   protected String getSolrXml() {

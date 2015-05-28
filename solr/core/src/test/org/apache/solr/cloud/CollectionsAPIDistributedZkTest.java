@@ -208,7 +208,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       
     }
     
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     
     assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
 
@@ -236,8 +236,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
 
     makeRequest(baseUrl, request);
-    
-    checkForMissingCollection(collectionName);
+
+    assertCollectionNotExists(collectionName, 45);
     
     // now creating that collection should work
     params = new ModifiableSolrParams();
@@ -734,7 +734,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     makeRequest(baseUrl, request);
     
     // ensure its out of the state
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     
     //collectionNameList.remove(collectionName);
 
