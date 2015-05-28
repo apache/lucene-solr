@@ -478,56 +478,55 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testRandomContextQueryScoring() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int numSuggestions = atLeast(20);
-    int numContexts = atLeast(5);
+    try(RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"))) {
+      int numSuggestions = atLeast(20);
+      int numContexts = atLeast(5);
 
-    Set<Integer> seenWeights = new HashSet<>();
-    List<Entry> expectedEntries = new ArrayList<>();
-    List<CharSequence> contexts = new ArrayList<>();
-    for (int i = 1; i <= numContexts; i++) {
-      CharSequence context = TestUtil.randomSimpleString(random(), 10) + i;
-      contexts.add(context);
-      for (int j = 1; j <= numSuggestions; j++) {
-        String suggestion = "sugg_" + TestUtil.randomSimpleString(random(), 10) + j;
-        int weight = TestUtil.nextInt(random(), 1, 1000 * numContexts * numSuggestions);
-        while (seenWeights.contains(weight)) {
-          weight = TestUtil.nextInt(random(), 1, 1000 * numContexts * numSuggestions);
+      Set<Integer> seenWeights = new HashSet<>();
+      List<Entry> expectedEntries = new ArrayList<>();
+      List<CharSequence> contexts = new ArrayList<>();
+      for (int i = 1; i <= numContexts; i++) {
+        CharSequence context = TestUtil.randomSimpleString(random(), 10) + i;
+        contexts.add(context);
+        for (int j = 1; j <= numSuggestions; j++) {
+          String suggestion = "sugg_" + TestUtil.randomSimpleString(random(), 10) + j;
+          int weight = TestUtil.nextInt(random(), 1, 1000 * numContexts * numSuggestions);
+          while (seenWeights.contains(weight)) {
+            weight = TestUtil.nextInt(random(), 1, 1000 * numContexts * numSuggestions);
+          }
+          seenWeights.add(weight);
+          Document document = new Document();
+          document.add(new ContextSuggestField("suggest_field", Collections.singletonList(context), suggestion, weight));
+          iw.addDocument(document);
+          expectedEntries.add(new Entry(suggestion, context.toString(), i * weight));
         }
-        seenWeights.add(weight);
-        Document document = new Document();
-        document.add(new ContextSuggestField("suggest_field", Collections.singletonList(context), suggestion, weight));
-        iw.addDocument(document);
-        expectedEntries.add(new Entry(suggestion, context.toString(), i * weight));
-      }
-      if (rarely()) {
-        iw.commit();
-      }
-    }
-    Entry[] expectedResults = expectedEntries.toArray(new Entry[expectedEntries.size()]);
-
-    ArrayUtil.introSort(expectedResults, new Comparator<Entry>() {
-      @Override
-      public int compare(Entry o1, Entry o2) {
-        int cmp = Float.compare(o2.value, o1.value);
-        if (cmp != 0) {
-          return cmp;
-        } else {
-          return o1.output.compareTo(o2.output);
+        if (rarely()) {
+          iw.commit();
         }
       }
-    });
+      Entry[] expectedResults = expectedEntries.toArray(new Entry[expectedEntries.size()]);
 
-    DirectoryReader reader = iw.getReader();
-    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
-    for (int i = 0; i < contexts.size(); i++) {
-      query.addContext(contexts.get(i), i + 1);
+      ArrayUtil.introSort(expectedResults, new Comparator<Entry>() {
+        @Override
+        public int compare(Entry o1, Entry o2) {
+          int cmp = Float.compare(o2.value, o1.value);
+          if (cmp != 0) {
+            return cmp;
+          } else {
+            return o1.output.compareTo(o2.output);
+          }
+        }
+      });
+
+      try(DirectoryReader reader = iw.getReader()) {
+        SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+        ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+        for (int i = 0; i < contexts.size(); i++) {
+          query.addContext(contexts.get(i), i + 1);
+        }
+        TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4);
+        assertSuggestions(suggest, Arrays.copyOfRange(expectedResults, 0, 4));
+      }
     }
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4);
-    assertSuggestions(suggest, Arrays.copyOfRange(expectedResults, 0, 4));
-
-    reader.close();
-    iw.close();
   }
 }

@@ -273,7 +273,7 @@ public final class Util {
 
     @Override
     public String toString() {
-      return "input=" + input + " cost=" + cost + "context=" + context + "boost=" + boost;
+      return "input=" + input.get() + " cost=" + cost + "context=" + context + "boost=" + boost;
     }
   }
 
@@ -307,7 +307,8 @@ public final class Util {
 
     private final FST.Arc<T> scratchArc = new FST.Arc<>();
     
-    final Comparator<T> comparator;
+    private final Comparator<T> comparator;
+    private final Comparator<FSTPath<T>> pathComparator;
 
     TreeSet<FSTPath<T>> queue = null;
 
@@ -329,7 +330,7 @@ public final class Util {
       this.topN = topN;
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
-
+      this.pathComparator = pathComparator;
       queue = new TreeSet<>(pathComparator);
     }
 
@@ -343,7 +344,7 @@ public final class Util {
 
       if (queue.size() == maxQueueDepth) {
         FSTPath<T> bottom = queue.last();
-        int comp = comparator.compare(cost, bottom.cost);
+        int comp = pathComparator.compare(path, bottom);
         if (comp > 0) {
           // Doesn't compete
           return;
