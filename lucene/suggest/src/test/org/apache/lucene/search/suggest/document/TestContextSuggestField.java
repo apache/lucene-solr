@@ -111,7 +111,8 @@ public class TestContextSuggestField extends LuceneTestCase {
     document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new SuggestField("suggest_field", "suggestion4", 1));
     document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);

@@ -58,7 +58,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "asuggestion", 2));
     document.add(new SuggestField("suggest_field", "ssuggestion", 3));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new SuggestField("suggest_field", "wsuggestion", 4));
     iw.addDocument(document);
 
@@ -87,7 +88,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 4));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 3));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 2));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);
@@ -121,7 +123,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 4));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 3));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 2));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);

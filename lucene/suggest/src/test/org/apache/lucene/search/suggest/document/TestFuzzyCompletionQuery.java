@@ -58,7 +58,7 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "suaggestion", 4));
     document.add(new SuggestField("suggest_field", "ssuggestion", 1));
     iw.addDocument(document);
-    document.clear();
+    document = new Document();
     document.add(new SuggestField("suggest_field", "sugfoo", 1));
     iw.addDocument(document);
 
@@ -91,7 +91,8 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 1));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 1));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 1));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);
@@ -126,7 +127,8 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 1));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 1));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 1));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);

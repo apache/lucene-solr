@@ -72,7 +72,8 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "abd", 4));
     document.add(new SuggestField("suggest_field", "The Foo Fighters", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new SuggestField("suggest_field", "abcdd", 5));
     iw.addDocument(document);
 
@@ -95,12 +96,11 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
     for (int i = 0; i < num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       document.add(new IntField("filter_int_fld", i, Field.Store.NO));
       iw.addDocument(document);
-      document.clear();
 
       if (usually()) {
         iw.commit();
@@ -151,12 +151,12 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "apples", 3));
     iw.addDocument(document);
 
-    document.clear();
+    document = new Document();
     document.add(new IntField("filter_int_fld", 10, Field.Store.NO));
     document.add(new SuggestField("suggest_field", "applle", 4));
     iw.addDocument(document);
 
-    document.clear();
+    document = new Document();
     document.add(new IntField("filter_int_fld", 4, Field.Store.NO));
     document.add(new SuggestField("suggest_field", "apple", 5));
     iw.addDocument(document);

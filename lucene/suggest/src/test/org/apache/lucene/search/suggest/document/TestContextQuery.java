@@ -77,7 +77,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 7));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 6));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 5));
     iw.addDocument(document);
 
@@ -114,7 +115,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "abd", 4));
     document.add(new SuggestField("suggest_field", "The Foo Fighters", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new SuggestField("suggest_field", "abcdd", 5));
     iw.addDocument(document);
 
@@ -144,7 +146,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 
@@ -204,7 +207,8 @@ public class TestContextQuery extends LuceneTestCase {
 
     document.add(new ContextSuggestField("suggest_field", null, "suggestion_no_ctx", 4));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);
 
@@ -234,7 +238,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.emptyList(), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", null, "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 
@@ -267,7 +272,8 @@ public class TestContextQuery extends LuceneTestCase {
 
     document.add(new ContextSuggestField("suggest_field", Arrays.asList("type1", "type2", "type3"), "suggestion", 4));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
     iw.addDocument(document);
 
@@ -304,7 +310,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 
@@ -340,7 +347,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 
@@ -373,7 +381,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 
@@ -405,7 +414,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 7));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 6));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 5));
     iw.addDocument(document);
 
@@ -442,7 +452,8 @@ public class TestContextQuery extends LuceneTestCase {
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
     iw.addDocument(document);
-    document.clear();
+
+    document = new Document();
     document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
     iw.addDocument(document);
 

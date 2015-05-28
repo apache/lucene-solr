@@ -139,7 +139,7 @@ public class TestSuggestField extends LuceneTestCase {
   public void testDupSuggestFieldValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    int num = Math.min(1000, atLeast(300));
+    final int num = Math.min(1000, atLeast(300));
     int[] weights = new int[num];
     for(int i = 0; i < num; i++) {
       Document document = new Document();
@@ -176,10 +176,10 @@ public class TestSuggestField extends LuceneTestCase {
 
     int num = Math.min(1000, atLeast(10));
 
-    Document document = new Document();
     int numLive = 0;
     List<Entry> expectedEntries = new ArrayList<>();
     for (int i = 0; i < num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, num - i));
       if (i % 2 == 0) {
         document.add(newStringField("str_field", "delete", Field.Store.YES));
@@ -189,7 +189,6 @@ public class TestSuggestField extends LuceneTestCase {
         document.add(newStringField("str_field", "no_delete", Field.Store.YES));
       }
       iw.addDocument(document);
-      document.clear();
 
       if (usually()) {
         iw.commit();
@@ -213,12 +212,11 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
     for (int i = 0; i < num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       document.add(newStringField("str_fld", "deleted", Field.Store.NO));
       iw.addDocument(document);
-      document.clear();
 
       if (usually()) {
         iw.commit();
@@ -243,12 +241,11 @@ public class TestSuggestField extends LuceneTestCase {
     // using IndexWriter instead of RandomIndexWriter
     IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
     for (int i = 0; i < num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       document.add(newStringField("delete", "delete", Field.Store.NO));
       iw.addDocument(document);
-      document.clear();
 
       if (usually()) {
         iw.commit();
@@ -273,12 +270,11 @@ public class TestSuggestField extends LuceneTestCase {
     // using IndexWriter instead of RandomIndexWriter
     IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
     for (int i = 1; i <= num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       document.add(new IntField("weight_fld", i, Field.Store.YES));
       iw.addDocument(document);
-      document.clear();
 
       if (usually()) {
         iw.commit();
@@ -306,7 +302,7 @@ public class TestSuggestField extends LuceneTestCase {
     document.add(new SuggestField("sug_field_1", "apple", 4));
     document.add(new SuggestField("sug_field_2", "april", 3));
     iw.addDocument(document);
-    document.clear();
+    document = new Document();
     document.add(new SuggestField("sug_field_1", "aples", 3));
     document.add(new SuggestField("sug_field_2", "apartment", 2));
     iw.addDocument(document);
@@ -340,16 +336,15 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
 
     // have segments of 4 documents
     // with descending suggestion weights
     // suggest should early terminate for
     // segments with docs having lower suggestion weights
     for (int i = num; i > 0; i--) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       iw.addDocument(document);
-      document.clear();
       if (i % 4 == 0) {
         iw.commit();
       }
@@ -369,18 +364,17 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     int num = Math.min(1000, atLeast(10));
-    Document document = new Document();
     List<Entry> entries = new ArrayList<>();
 
     // ensure at least some segments have no suggest field
     for (int i = num; i > 0; i--) {
+      Document document = new Document();
       if (random().nextInt(4) == 1) {
         document.add(new SuggestField("suggest_field", "abc_" + i, i));
         entries.add(new Entry("abc_" + i, i));
       }
       document.add(new IntField("weight_fld", i, Field.Store.YES));
       iw.addDocument(document);
-      document.clear();
       if (usually()) {
         iw.commit();
       }
@@ -401,13 +395,12 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
-    Document document = new Document();
     int num = Math.min(1000, atLeast(10));
     for (int i = 0; i < num; i++) {
+      Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, num));
       document.add(new IntField("int_field", i, Field.Store.YES));
       iw.addDocument(document);
-      document.clear();
 
       if (random().nextBoolean()) {
         iw.commit();
@@ -630,7 +623,7 @@ public class TestSuggestField extends LuceneTestCase {
     return iwcWithSuggestField(analyzer, asSet(suggestFields));
   }
 
-  static IndexWriterConfig iwcWithSuggestField(Analyzer analyzer, Set<String> suggestFields) {
+  static IndexWriterConfig iwcWithSuggestField(Analyzer analyzer, final Set<String> suggestFields) {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     Codec filterCodec = new Lucene50Codec() {
