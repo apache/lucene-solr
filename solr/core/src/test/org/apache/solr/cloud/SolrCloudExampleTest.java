@@ -51,12 +51,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
   }
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
   @Test
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30000);

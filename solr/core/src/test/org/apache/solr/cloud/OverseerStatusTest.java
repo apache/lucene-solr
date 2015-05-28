@@ -27,16 +27,11 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
 
   public OverseerStatusTest() {
     schemaString = "schema15.xml";      // we need a string id
-  }
-
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
+    sliceCount = 1;
   }
 
   @Test
+  @ShardsFixed(num = 1)
   public void test() throws Exception {
 
     waitForThingsToLevelOut(15);

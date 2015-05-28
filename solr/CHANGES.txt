@@ -102,7 +102,9 @@ Other Changes
 * SOLR-7146: MiniSolrCloudCluster based tests can fail with ZooKeeperException NoNode for /live_nodes.
   (Vamsee Yarlagadda via shalin)
 
-* SOLR-7590: Finish and improve MDC context logging support. (Mark Miller)  
+* SOLR-7590: Finish and improve MDC context logging support. (Mark Miller)
+
+* SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
 
 ==================  5.2.0 ==================
 

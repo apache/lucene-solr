@@ -30,7 +30,7 @@
   <codecFactory class="solr.SchemaCodecFactory"/>
 
   <updateHandler>
-    <updateLog enable="${enable.update.log}">
+    <updateLog enable="true">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
   </updateHandler>

@@ -44,20 +44,6 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
   }
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", "2");
-    System.setProperty("solr.xml.persist", "true");
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-  }
-
   // TODO: Custom hash slice deletion test
 
   @Test

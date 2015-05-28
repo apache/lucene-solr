@@ -104,18 +104,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
   
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-  }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
-
-  
   public BasicDistributedZkTest() {
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
@@ -1158,11 +1146,5 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     otherCollectionClients = null;
     List<Runnable> tasks = executor.shutdownNow();
     assertTrue(tasks.isEmpty());
-
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-    
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
   }
 }

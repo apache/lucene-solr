@@ -71,12 +71,6 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
   }
 
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
   public TestCryptoKeys() {
     super();
     sliceCount = 1;

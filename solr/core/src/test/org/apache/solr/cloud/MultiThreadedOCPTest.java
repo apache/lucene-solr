@@ -49,16 +49,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int NUM_COLLECTIONS = 4;
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-
-    useJettyDataDir = false;
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
-
   public MultiThreadedOCPTest() {
     sliceCount = 2;
   }
@@ -294,16 +284,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return (String) innerResponse.get("state");
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-    
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
   }
 
 }

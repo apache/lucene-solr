@@ -48,21 +48,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
-  private CloudSolrClient client;
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-    client = createCloudClient(null);
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    client.close();
-  }
 
   protected String getSolrXml() {
     return "solr-no-core.xml";
@@ -78,15 +63,15 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     String collectionName = "delLiveColl";
     try (CloudSolrClient client = createCloudClient(null)) {
       createCollection(collectionName, client);
-      
+
       waitForRecoveriesToFinish(collectionName, false);
-      
+
       DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(collectionName);
-      
+
       Slice shard1 = null;
       Replica replica1 = null;
-      
+
       // Get an active replica
       for (Slice slice : testcoll.getSlices()) {
         if(replica1 != null)
