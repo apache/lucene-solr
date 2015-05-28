@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -33,6 +34,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
@@ -72,13 +74,18 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     Lock lock = dir.makeLock("testlock");
     boolean success = lock.obtain();
     assertTrue("We could not get the lock when it should be available", success);
-    success = lock.obtain();
+    Lock lock2 = dir.makeLock("testlock");
+    success = lock2.obtain();
     assertFalse("We got the lock but it should be unavailble", success);
-    lock.close();
+    IOUtils.close(lock, lock2);
+    // now repeat after close()
+    lock = dir.makeLock("testlock");
     success = lock.obtain();
     assertTrue("We could not get the lock when it should be available", success);
-    success = lock.obtain();
+    lock2 = dir.makeLock("testlock");
+    success = lock2.obtain();
     assertFalse("We got the lock but it should be unavailble", success);
+    IOUtils.close(lock, lock2);
     dir.close();
   }
   
