@@ -419,42 +419,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
 
-  protected SolrClient startCloudJetty(String collection, String shard) throws Exception {
-    // TODO: use the collection string!!!!
-    collection = DEFAULT_COLLECTION;
-
-    int totalReplicas = getTotalReplicas(collection);
-
-
-    int cnt = this.jettyIntCntr.incrementAndGet();
-
-    File jettyDir = createTempDir("jetty").toFile();
-    jettyDir.mkdirs();
-    setupJettySolrHome(jettyDir);
-    JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);
-    jettys.add(j);
-    SolrClient client = createNewSolrClient(j.getLocalPort());
-    clients.add(client);
-
-    int retries = 60;
-    while (--retries >= 0) {
-      // total replicas changed.. assume it was us
-      if (getTotalReplicas(collection) != totalReplicas) {
-       break;
-      }
-      Thread.sleep(500);
-    }
-
-    if (retries <= 0) {
-      fail("Timeout waiting for " + j + " to appear in clusterstate");
-      printLayout();
-    }
-
-    updateMappingsFromZk(this.jettys, this.clients);
-    return client;
-  }
-
-
   /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
   protected int getTotalReplicas(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
