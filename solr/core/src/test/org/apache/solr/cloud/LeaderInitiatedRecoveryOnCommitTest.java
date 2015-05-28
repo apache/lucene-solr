@@ -39,26 +39,6 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   }
 
   @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    System.clearProperty("numShards");
-
-    super.distribTearDown();
-
-    // close socket proxies after super.distribTearDown
-    if (!proxies.isEmpty()) {
-      for (SocketProxy proxy : proxies.values()) {
-        proxy.close();
-      }
-    }
-  }
-
-  @Override
   @Test
   public void test() throws Exception {
     oneShardTest();

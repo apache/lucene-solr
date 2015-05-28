@@ -42,14 +42,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
     useFactory("solr.StandardDirectoryFactory");
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    System.clearProperty("numShards");
-    super.distribTearDown();
   }
 
   @Test
