@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,25 +86,26 @@ public final class NativeFSLockFactory extends FSLockFactory {
   
   static final class NativeFSLock extends Lock {
 
-    private FileChannel channel;
-    private FileLock lock;
-    private Path path;
-    private Path lockDir;
+    private final Path path;
+    private final Path lockDir;
     private static final Set<String> LOCK_HELD = Collections.synchronizedSet(new HashSet<String>());
 
+    private FileChannel channel; // set when we have the lock
+    private Path realPath;       // unconditionally set in obtain(), for use in close()
 
     public NativeFSLock(Path lockDir, String lockFileName) {
       this.lockDir = lockDir;
       path = lockDir.resolve(lockFileName);
     }
 
-
     @Override
     public synchronized boolean obtain() throws IOException {
 
-      if (lock != null) {
+      if (channel != null) {
         // Our instance is already locked:
-        return false;
+        assert channel.isOpen();
+        assert realPath != null;
+        throw new LockObtainFailedException("this lock instance was already obtained");
       }
 
       // Ensure that lockDir exists and is a directory.
@@ -116,7 +116,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         // we must create the file to have a truly canonical path.
         // if it's already created, we don't care. if it cant be created, it will fail below.
       }
-      final Path canonicalPath = path.toRealPath();
+      realPath = path.toRealPath();
       // Make sure nobody else in-process has this lock held
       // already, and, mark it held if not:
       // This is a pretty crazy workaround for some documented
@@ -131,12 +131,15 @@ public final class NativeFSLockFactory extends FSLockFactory {
       // is that we can't re-obtain the lock in the same JVM but from a different process if that happens. Nevertheless
       // this is super trappy. See LUCENE-5738
       boolean obtained = false;
-      if (LOCK_HELD.add(canonicalPath.toString())) {
+      if (LOCK_HELD.add(realPath.toString())) {
+        FileChannel ch = null;
         try {
-          channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+          ch = FileChannel.open(realPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
           try {
-            lock = channel.tryLock();
-            obtained = lock != null;
+            if (ch.tryLock() != null) {
+              channel = ch;
+              obtained = true;
+            }
           } catch (IOException | OverlappingFileLockException e) {
             // At least on OS X, we will sometimes get an
             // intermittent "Permission Denied" IOException,
@@ -151,10 +154,8 @@ public final class NativeFSLockFactory extends FSLockFactory {
           }
         } finally {
           if (obtained == false) { // not successful - clear up and move out
-            clearLockHeld(path);
-            final FileChannel toClose = channel;
-            channel = null;
-            IOUtils.closeWhileHandlingException(toClose);
+            IOUtils.closeWhileHandlingException(ch);
+            clearLockHeld(realPath);  // clear LOCK_HELD last 
           }
         }
       }
@@ -163,23 +164,17 @@ public final class NativeFSLockFactory extends FSLockFactory {
 
     @Override
     public synchronized void close() throws IOException {
-      try {
-        if (lock != null) {
-          try {
-            lock.release();
-            lock = null;
-          } finally {
-            clearLockHeld(path);
-          }
+      if (channel != null) {
+        try {
+          IOUtils.close(channel);
+        } finally {
+          channel = null;
+          clearLockHeld(realPath); // clear LOCK_HELD last 
         }
-      } finally {
-        IOUtils.close(channel);
-        channel = null;
       }
     }
 
-    private static final void clearLockHeld(Path path) throws IOException {
-      path = path.toRealPath();
+    private static final void clearLockHeld(Path path) {
       boolean remove = LOCK_HELD.remove(path.toString());
       assert remove : "Lock was cleared but never marked as held";
     }
@@ -189,10 +184,14 @@ public final class NativeFSLockFactory extends FSLockFactory {
       // The test for is isLocked is not directly possible with native file locks:
       
       // First a shortcut, if a lock reference in this instance is available
-      if (lock != null) return true;
+      if (channel != null) {
+        return true;
+      }
       
       // Look if lock file is definitely not present; if not, there can definitely be no lock!
-      if (Files.notExists(path)) return false;
+      if (Files.notExists(path)) { 
+        return false;
+      }
       
       // Try to obtain and release (if was locked) the lock
       try {

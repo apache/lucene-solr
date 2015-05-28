@@ -28,6 +28,7 @@ import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
@@ -54,6 +55,7 @@ public class HdfsLockFactory extends LockFactory {
     private final Path lockPath;
     private final String lockName;
     private final Configuration conf;
+    private boolean obtained;
     
     public HdfsLock(Path lockPath, String lockName, Configuration conf) {
       this.lockPath = lockPath;
@@ -63,6 +65,12 @@ public class HdfsLockFactory extends LockFactory {
     
     @Override
     public boolean obtain() throws IOException {
+
+      if (obtained) {
+        // Our instance is already locked:
+        throw new LockObtainFailedException("this lock instance was already obtained");
+      }
+
       FSDataOutputStream file = null;
       FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
       try {
@@ -77,12 +85,11 @@ public class HdfsLockFactory extends LockFactory {
               // just to check for safe mode
               fs.mkdirs(lockPath);
             }
-
             
             file = fs.create(new Path(lockPath, lockName), false);
             break;
           } catch (FileAlreadyExistsException e) {
-            return false;
+            return obtained = false;
           } catch (RemoteException e) {
             if (e.getClassName().equals(
                 "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
@@ -95,10 +102,10 @@ public class HdfsLockFactory extends LockFactory {
               continue;
             }
             log.error("Error creating lock file", e);
-            return false;
+            return obtained = false;
           } catch (IOException e) {
             log.error("Error creating lock file", e);
-            return false;
+            return obtained = false;
           } finally {
             IOUtils.closeQuietly(file);
           }
@@ -106,18 +113,21 @@ public class HdfsLockFactory extends LockFactory {
       } finally {
         IOUtils.closeQuietly(fs);
       }
-      return true;
+      return obtained = true;
     }
     
     @Override
     public void close() throws IOException {
-      FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
-      try {
-        if (fs.exists(new Path(lockPath, lockName))
-            && !fs.delete(new Path(lockPath, lockName), false)) throw new LockReleaseFailedException(
-            "failed to delete " + new Path(lockPath, lockName));
-      } finally {
-        IOUtils.closeQuietly(fs);
+      if (obtained) {
+        FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
+        try {
+          if (fs.exists(new Path(lockPath, lockName))
+              && !fs.delete(new Path(lockPath, lockName), false)) throw new LockReleaseFailedException(
+              "failed to delete " + new Path(lockPath, lockName));
+        } finally {
+          obtained = false;
+          IOUtils.closeQuietly(fs);
+        }
       }
     }
     
@@ -132,7 +142,5 @@ public class HdfsLockFactory extends LockFactory {
       }
       return isLocked;
     }
-    
   }
-  
 }

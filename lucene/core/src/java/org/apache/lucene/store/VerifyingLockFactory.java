@@ -43,6 +43,7 @@ public final class VerifyingLockFactory extends LockFactory {
 
   private class CheckedLock extends Lock {
     private final Lock lock;
+    private boolean obtained = false;
 
     public CheckedLock(Lock lock) {
       this.lock = lock;
@@ -62,9 +63,10 @@ public final class VerifyingLockFactory extends LockFactory {
 
     @Override
     public synchronized boolean obtain() throws IOException {
-      boolean obtained = lock.obtain();
-      if (obtained)
+      obtained = lock.obtain();
+      if (obtained) {
         verify((byte) 1);
+      }
       return obtained;
     }
 
@@ -75,10 +77,11 @@ public final class VerifyingLockFactory extends LockFactory {
 
     @Override
     public synchronized void close() throws IOException {
-      if (isLocked()) {
+      if (obtained) {
+        assert isLocked();
         verify((byte) 0);
-        lock.close();
       }
+      lock.close();
     }
   }
 
