@@ -335,7 +335,7 @@
     -->
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
-      <int name="">${solr.ulog.numVersionBuckets:65536}</int>
+      <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
     </updateLog>
 
     <!-- AutoCommit
