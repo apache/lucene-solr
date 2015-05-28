@@ -221,6 +221,9 @@ Bug Fixes
 * LUCENE-6505: NRT readers now reflect segments_N filename and commit
   user data from previous commits (Mike McCandless)
 
+* LUCENE-6507: Don't let NativeFSLock.close() release other locks
+  (Simon Willnauer, Robert Muir, Uwe Schindler, Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

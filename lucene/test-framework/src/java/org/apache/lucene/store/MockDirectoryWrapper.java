@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DirectoryReader;
@@ -82,7 +84,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
-  Map<String,Exception> openLocks = Collections.synchronizedMap(new HashMap<String,Exception>());
+  ConcurrentMap<String,RuntimeException> openLocks = new ConcurrentHashMap<>();
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
@@ -748,7 +750,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
       if (openLocks.size() > 0) {
         Exception cause = null;
-        Iterator<Exception> stacktraces = openLocks.values().iterator();
+        Iterator<RuntimeException> stacktraces = openLocks.values().iterator();
         if (stacktraces.hasNext()) {
           cause = stacktraces.next();
         }
@@ -1004,6 +1006,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private final class AssertingLock extends Lock {
     private final Lock delegateLock;
     private final String name;
+    private boolean obtained = false;
     
     AssertingLock(Lock delegate, String name) {
       this.delegateLock = delegate;
@@ -1013,23 +1016,37 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     @Override
     public boolean obtain() throws IOException {
       if (delegateLock.obtain()) {
-        assert delegateLock == NoLockFactory.SINGLETON_LOCK || !openLocks.containsKey(name);
-        openLocks.put(name, new RuntimeException("lock \"" + name + "\" was not released"));
-        return true;
+        final RuntimeException exception = openLocks.putIfAbsent(name, new RuntimeException("lock \"" + name + "\" was not released: " + delegateLock));
+        if (exception != null && delegateLock != NoLockFactory.SINGLETON_LOCK) {
+          throw exception;
+        }
+        obtained = true;
       } else {
-        return false;
+        obtained = false;
       }
+
+      return obtained;
     }
 
     @Override
     public void close() throws IOException {
+      if (obtained) {
+        RuntimeException remove = openLocks.remove(name);
+        // TODO: fix stupid tests like TestIndexWriter.testNoSegmentFile to not do this!
+        assert remove != null || delegateLock == NoLockFactory.SINGLETON_LOCK;
+        obtained = false;
+      }
       delegateLock.close();
-      openLocks.remove(name);
     }
 
     @Override
     public boolean isLocked() throws IOException {
       return delegateLock.isLocked();
+    }
+
+    @Override
+    public String toString() {
+      return "AssertingLock(" + delegateLock + ")";
     }
   }  
   
