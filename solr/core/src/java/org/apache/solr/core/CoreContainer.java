@@ -687,13 +687,15 @@ public class CoreContainer {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
-      IOUtils.closeQuietly(core);
+      if(core != null && !core.isClosed())
+        IOUtils.closeQuietly(core);
       throw solrException;
     } catch (Throwable t) {
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
       log.error("Error creating core [{}]: {}", dcore.getName(), t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
-      IOUtils.closeQuietly(core);
+      if(core != null && !core.isClosed())
+        IOUtils.closeQuietly(core);
       throw t;
     } finally {
       MDCLoggingContext.clear();
