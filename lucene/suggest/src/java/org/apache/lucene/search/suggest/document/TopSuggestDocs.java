@@ -43,7 +43,12 @@ public class TopSuggestDocs extends TopDocs {
     /**
      * Matched completion key
      */
-    public CharSequence key;
+    public final CharSequence key;
+
+    /**
+     * Context for the completion
+     */
+    public final CharSequence context;
 
     /**
      * Creates a SuggestScoreDoc instance
@@ -52,11 +57,10 @@ public class TopSuggestDocs extends TopDocs {
      * @param key   matched completion
      * @param score weight of the matched completion
      */
-    public SuggestScoreDoc(int doc, CharSequence key, long score) {
-      // loss of precision but not magnitude
-      // implicit conversion from long -> float
+    public SuggestScoreDoc(int doc, CharSequence key, CharSequence context, float score) {
       super(doc, score);
       this.key = key;
+      this.context = context;
     }
 
     @Override

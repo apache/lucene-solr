@@ -68,9 +68,12 @@ import org.apache.lucene.util.fst.FST;
  *   <li>CompletionIndex (.cmp) --&gt; Header, NumSuggestFields, Entry<sup>NumSuggestFields</sup>, Footer</li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>NumSuggestFields --&gt; {@link DataOutput#writeVInt Uint32}</li>
- *   <li>Entry --&gt; FieldNumber, CompletionDictionaryOffset</li>
+ *   <li>Entry --&gt; FieldNumber, CompletionDictionaryOffset, MinWeight, MaxWeight, Type</li>
  *   <li>FieldNumber --&gt; {@link DataOutput#writeVInt Uint32}</li>
  *   <li>CompletionDictionaryOffset --&gt; {@link DataOutput#writeVLong  Uint64}</li>
+ *   <li>MinWeight --&gt; {@link DataOutput#writeVLong  Uint64}</li>
+ *   <li>MaxWeight --&gt; {@link DataOutput#writeVLong  Uint64}</li>
+ *   <li>Type --&gt; {@link DataOutput#writeByte  Byte}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes:</p>
@@ -80,6 +83,8 @@ import org.apache.lucene.util.fst.FST;
  *   <li>NumSuggestFields is the number of suggest fields indexed</li>
  *   <li>FieldNumber is the fields number from {@link FieldInfos}. (.fnm)</li>
  *   <li>CompletionDictionaryOffset is the file offset of a field's FST in CompletionDictionary (.lkp)</li>
+ *   <li>MinWeight and MaxWeight are the global minimum and maximum weight for the field</li>
+ *   <li>Type indicates if the suggester has context or not</li>
  * </ul>
  *
  * @lucene.experimental

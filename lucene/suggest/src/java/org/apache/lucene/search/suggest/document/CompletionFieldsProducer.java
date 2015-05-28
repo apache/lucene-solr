@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
@@ -98,9 +97,12 @@ final class CompletionFieldsProducer extends FieldsProducer {
       for (int i = 0; i < numFields; i++) {
         int fieldNumber = index.readVInt();
         long offset = index.readVLong();
+        long minWeight = index.readVLong();
+        long maxWeight = index.readVLong();
+        byte type = index.readByte();
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNumber);
         // we don't load the FST yet
-        readers.put(fieldInfo.name, new CompletionsTermsReader(offset));
+        readers.put(fieldInfo.name, new CompletionsTermsReader(dictIn, offset, minWeight, maxWeight, type));
       }
       CodecUtil.checkFooter(index);
       success = true;
@@ -161,68 +163,16 @@ final class CompletionFieldsProducer extends FieldsProducer {
 
   @Override
   public Terms terms(String field) throws IOException {
-    return new CompletionTerms(delegateFieldsProducer.terms(field), readers.get(field));
+    Terms terms = delegateFieldsProducer.terms(field) ;
+    if (terms == null) {
+      return null;
+    }
+    return new CompletionTerms(terms, readers.get(field));
   }
 
   @Override
   public int size() {
     return readers.size();
-  }
-
-  private class CompletionsTermsReader implements Accountable {
-    private final long offset;
-    private NRTSuggester suggester;
-
-    public CompletionsTermsReader(long offset) throws IOException {
-      assert offset >= 0l && offset < dictIn.length();
-      this.offset = offset;
-    }
-
-    public synchronized NRTSuggester suggester() throws IOException {
-      if (suggester == null) {
-        try (IndexInput dictClone = dictIn.clone()) { // let multiple fields load concurrently
-          dictClone.seek(offset);
-          suggester = NRTSuggester.load(dictClone);
-        }
-      }
-      return suggester;
-    }
-
-    @Override
-    public long ramBytesUsed() {
-      return (suggester != null) ? suggester.ramBytesUsed() : 0;
-    }
-
-    @Override
-    public Collection<Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
-  }
-
-  /**
-   * Thin wrapper over {@link org.apache.lucene.index.Terms} with
-   * a {@link NRTSuggester}
-   */
-  public static class CompletionTerms extends FilterLeafReader.FilterTerms {
-
-    private final CompletionsTermsReader reader;
-
-    public CompletionTerms(Terms in, CompletionsTermsReader reader) {
-      super(in);
-      this.reader = reader;
-    }
-
-    /**
-     * Returns a {@link NRTSuggester} for the field
-     * or <code>null</code> if no FST
-     * was indexed for this field
-     */
-    public NRTSuggester suggester() throws IOException {
-      if (reader == null) {
-        return null;
-      }
-      return reader.suggester();
-    }
   }
 
 }

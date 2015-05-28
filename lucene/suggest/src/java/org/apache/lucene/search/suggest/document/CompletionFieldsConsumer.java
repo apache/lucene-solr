@@ -58,7 +58,7 @@ import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat
 final class CompletionFieldsConsumer extends FieldsConsumer {
 
   private final String delegatePostingsFormatName;
-  private final Map<String, Long> seenFields = new HashMap<>();
+  private final Map<String, CompletionMetaData> seenFields = new HashMap<>();
   private final SegmentWriteState state;
   private IndexOutput dictOut;
   private FieldsConsumer delegateFieldsConsumer;
@@ -98,7 +98,10 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
       // store lookup, if needed
       long filePointer = dictOut.getFilePointer();
       if (termWriter.finish(dictOut)) {
-        seenFields.put(field, filePointer);
+        seenFields.put(field, new CompletionMetaData(filePointer,
+            termWriter.minWeight,
+            termWriter.maxWeight,
+            termWriter.type));
       }
     }
   }
@@ -124,10 +127,14 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
       // write # of seen fields
       indexOut.writeVInt(seenFields.size());
       // write field numbers and dictOut offsets
-      for (Map.Entry<String, Long> seenField : seenFields.entrySet()) {
+      for (Map.Entry<String, CompletionMetaData> seenField : seenFields.entrySet()) {
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(seenField.getKey());
         indexOut.writeVInt(fieldInfo.number);
-        indexOut.writeVLong(seenField.getValue());
+        CompletionMetaData metaData = seenField.getValue();
+        indexOut.writeVLong(metaData.filePointer);
+        indexOut.writeVLong(metaData.minWeight);
+        indexOut.writeVLong(metaData.maxWeight);
+        indexOut.writeByte(metaData.type);
       }
       CodecUtil.writeFooter(indexOut);
       CodecUtil.writeFooter(dictOut);
@@ -140,17 +147,36 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     }
   }
 
+  private static class CompletionMetaData {
+    private final long filePointer;
+    private final long minWeight;
+    private final long maxWeight;
+    private final byte type;
+
+    private CompletionMetaData(long filePointer, long minWeight, long maxWeight, byte type) {
+      this.filePointer = filePointer;
+      this.minWeight = minWeight;
+      this.maxWeight = maxWeight;
+      this.type = type;
+    }
+  }
+
   // builds an FST based on the terms written
   private static class CompletionTermWriter {
 
     private PostingsEnum postingsEnum = null;
     private int docCount = 0;
+    private long maxWeight = 0;
+    private long minWeight = Long.MAX_VALUE;
+    private byte type;
+    private boolean first;
 
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final NRTSuggesterBuilder builder;
 
     public CompletionTermWriter() {
       builder = new NRTSuggesterBuilder();
+      first = true;
     }
 
     /**
@@ -160,6 +186,9 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     public boolean finish(IndexOutput output) throws IOException {
       boolean stored = builder.store(output);
       assert stored || docCount == 0 : "the FST is null but docCount is != 0 actual value: [" + docCount + "]";
+      if (docCount == 0) {
+        minWeight = 0;
+      }
       return stored;
     }
 
@@ -181,7 +210,17 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
           scratch.grow(len);
           scratch.setLength(len);
           input.readBytes(scratch.bytes(), 0, scratch.length());
-          builder.addEntry(docID, scratch.get(), input.readVLong() - 1);
+          long weight = input.readVInt() - 1;
+          maxWeight = Math.max(maxWeight, weight);
+          minWeight = Math.min(minWeight, weight);
+          byte type = input.readByte();
+          if (first) {
+            this.type = type;
+            first = false;
+          } else if (this.type != type) {
+            throw new IllegalArgumentException("single field name has mixed types");
+          }
+          builder.addEntry(docID, scratch.get(), weight);
         }
         docFreq++;
         docCount = Math.max(docCount, docFreq + 1);

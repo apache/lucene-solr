@@ -18,7 +18,7 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
@@ -52,18 +52,18 @@ import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_L
  * The token stream uses a {@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute} to store
  * a completion's payload (see {@link CompletionTokenStream#setPayload(org.apache.lucene.util.BytesRef)})
  *
+ * @lucene.experimental
  */
-final class CompletionTokenStream extends TokenStream {
+public final class CompletionTokenStream extends TokenStream {
 
   private final PayloadAttribute payloadAttr = addAttribute(PayloadAttribute.class);
   private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
   private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
 
   private final TokenStream input;
-  private final boolean preserveSep;
-  private final boolean preservePositionIncrements;
-  private final int sepLabel;
-  private final int maxGraphExpansions;
+  final boolean preserveSep;
+  final boolean preservePositionIncrements;
+  final int maxGraphExpansions;
 
   private BytesRef payload;
   private Iterator<IntsRef> finiteStrings;
@@ -77,26 +77,17 @@ final class CompletionTokenStream extends TokenStream {
    * The token stream <code>input</code> is converted to an automaton
    * with the default settings of {@link org.apache.lucene.search.suggest.document.CompletionAnalyzer}
    */
-  public CompletionTokenStream(TokenStream input) {
-    this(input, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, SEP_LABEL, DEFAULT_MAX_GRAPH_EXPANSIONS);
+  CompletionTokenStream(TokenStream input) {
+    this(input, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
-  CompletionTokenStream(TokenStream input, boolean preserveSep, boolean preservePositionIncrements, int sepLabel, int maxGraphExpansions) {
+  CompletionTokenStream(TokenStream input, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
     // Don't call the super(input) ctor - this is a true delegate and has a new attribute source since we consume
     // the input stream entirely in toFiniteStrings(input)
     this.input = input;
     this.preserveSep = preserveSep;
     this.preservePositionIncrements = preservePositionIncrements;
-    this.sepLabel = sepLabel;
     this.maxGraphExpansions = maxGraphExpansions;
-  }
-
-  /**
-   * Returns a separator label that is reserved for the payload
-   * in {@link CompletionTokenStream#setPayload(org.apache.lucene.util.BytesRef)}
-   */
-  public int sepLabel() {
-    return sepLabel;
   }
 
   /**
@@ -111,7 +102,7 @@ final class CompletionTokenStream extends TokenStream {
     clearAttributes();
     if (finiteStrings == null) {
       //TODO: make this return a Iterator<IntsRef> instead?
-      Automaton automaton = toAutomaton(input);
+      Automaton automaton = toAutomaton();
       Set<IntsRef> strings = Operations.getFiniteStrings(automaton, maxGraphExpansions);
 
       posInc = strings.size();
@@ -165,9 +156,17 @@ final class CompletionTokenStream extends TokenStream {
   }
 
   /**
-   * Converts <code>tokenStream</code> to an automaton
+   * Converts the token stream to an automaton,
+   * treating the transition labels as utf-8
    */
-  public Automaton toAutomaton(TokenStream tokenStream) throws IOException {
+  public Automaton toAutomaton() throws IOException {
+    return toAutomaton(false);
+  }
+
+  /**
+   * Converts the tokenStream to an automaton
+   */
+  public Automaton toAutomaton(boolean unicodeAware) throws IOException {
     // TODO refactor this
     // maybe we could hook up a modified automaton from TermAutomatonQuery here?
     Automaton automaton = null;
@@ -184,10 +183,11 @@ final class CompletionTokenStream extends TokenStream {
         tsta = new TokenStreamToAutomaton();
       }
       tsta.setPreservePositionIncrements(preservePositionIncrements);
+      tsta.setUnicodeArcs(unicodeAware);
 
-      automaton = tsta.toAutomaton(tokenStream);
+      automaton = tsta.toAutomaton(input);
     } finally {
-      IOUtils.closeWhileHandlingException(tokenStream);
+      IOUtils.closeWhileHandlingException(input);
     }
 
     // TODO: we can optimize this somewhat by determinizing
@@ -281,11 +281,12 @@ final class CompletionTokenStream extends TokenStream {
   }
 
   private static int[] topoSortStates(Automaton a) {
-    int[] states = new int[a.getNumStates()];
-    final Set<Integer> visited = new HashSet<>();
+    int numStates = a.getNumStates();
+    int[] states = new int[numStates];
+    final BitSet visited = new BitSet(numStates);
     final LinkedList<Integer> worklist = new LinkedList<>();
     worklist.add(0);
-    visited.add(0);
+    visited.set(0);
     int upto = 0;
     states[upto] = 0;
     upto++;
@@ -293,10 +294,10 @@ final class CompletionTokenStream extends TokenStream {
     while (worklist.size() > 0) {
       int s = worklist.removeFirst();
       int count = a.initTransition(s, t);
-      for (int i = 0; i < count; i++) {
+      for (int i=0;i<count;i++) {
         a.getNextTransition(t);
-        if (!visited.contains(t.dest)) {
-          visited.add(t.dest);
+        if (!visited.get(t.dest)) {
+          visited.set(t.dest);
           worklist.add(t.dest);
           states[upto++] = t.dest;
         }
@@ -305,20 +306,36 @@ final class CompletionTokenStream extends TokenStream {
     return states;
   }
 
-  public interface ByteTermAttribute extends TermToBytesRefAttribute {
+  /**
+   * Attribute providing access to the term builder and UTF-16 conversion
+   */
+  private interface ByteTermAttribute extends TermToBytesRefAttribute {
     // marker interface
 
     /**
-     * Return the builder from which the term is derived.
+     * Returns the builder from which the term is derived.
      */
-    public BytesRefBuilder builder();
+    BytesRefBuilder builder();
 
-    public CharSequence toUTF16();
+    /**
+     * Returns the term represented as UTF-16
+     */
+    CharSequence toUTF16();
   }
 
+  /**
+   * Custom attribute implementation for completion token stream
+   */
   public static final class ByteTermAttributeImpl extends AttributeImpl implements ByteTermAttribute, TermToBytesRefAttribute {
     private final BytesRefBuilder bytes = new BytesRefBuilder();
     private CharsRefBuilder charsRef;
+
+    /**
+     * Sole constructor
+     * no-op
+     */
+    public ByteTermAttributeImpl() {
+    }
 
     @Override
     public void fillBytesRef() {
