@@ -2885,9 +2885,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // we committed, if anything goes wrong after this, we are screwed and it's a tragedy:
             commitCompleted = true;
 
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "commit: done writing segments file \"" + committedSegmentsFileName + "\"");
+            }
+
             // NOTE: don't use this.checkpoint() here, because
             // we do not want to increment changeCount:
             deleter.checkpoint(pendingCommit, true);
+
+            // Carry over generation to our master SegmentInfos:
+            segmentInfos.updateGeneration(pendingCommit);
 
             lastCommitChangeCount = pendingCommitChangeCount;
             rollbackSegments = pendingCommit.createBackupSegmentInfos();
@@ -2927,7 +2934,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "commit: wrote segments file \"" + committedSegmentsFileName + "\"");
       infoStream.message("IW", String.format(Locale.ROOT, "commit: took %.1f msec", (System.nanoTime()-startCommitTime)/1000000.0));
       infoStream.message("IW", "commit: done");
     }
@@ -4302,6 +4308,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // (this method unwinds everything it did on
           // an exception)
           toSync.prepareCommit(directory);
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "startCommit: wrote pending segments file \"" + IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", toSync.getGeneration()) + "\"");
+          }
+
           //System.out.println("DONE prepareCommit");
 
           pendingCommitSet = true;

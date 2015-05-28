@@ -835,6 +835,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     } else {
       userData = data;
     }
+
+    changed();
   }
 
   /** Replaces all segments in this instance, but keeps
