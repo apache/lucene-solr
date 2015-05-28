@@ -251,17 +251,29 @@ public final class Util {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRefBuilder input;
+    public final float boost;
+    public final CharSequence context;
 
     /** Sole constructor */
     public FSTPath(T cost, FST.Arc<T> arc, IntsRefBuilder input) {
+      this(cost, arc, input, 0, null);
+    }
+
+    public FSTPath(T cost, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
       this.input = input;
+      this.boost = boost;
+      this.context = context;
+    }
+
+    public FSTPath<T> newPath(T cost, IntsRefBuilder input) {
+      return new FSTPath<>(cost, this.arc, input, this.boost, this.context);
     }
 
     @Override
     public String toString() {
-      return "input=" + input + " cost=" + cost;
+      return "input=" + input + " cost=" + cost + "context=" + context + "boost=" + boost;
     }
   }
 
@@ -307,13 +319,18 @@ public final class Util {
      * @param comparator the comparator to select the top N
      */
     public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator) {
+      this(fst, topN, maxQueueDepth, comparator, new TieBreakByInputComparator<>(comparator));
+    }
+
+    public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator,
+                        Comparator<FSTPath<T>> pathComparator) {
       this.fst = fst;
       this.bytesReader = fst.getBytesReader();
       this.topN = topN;
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
-      queue = new TreeSet<>(new TieBreakByInputComparator<>(comparator));
+      queue = new TreeSet<>(pathComparator);
     }
 
     // If back plus this arc is competitive then add to queue:
@@ -354,25 +371,29 @@ public final class Util {
       IntsRefBuilder newInput = new IntsRefBuilder();
       newInput.copyInts(path.input.get());
       newInput.append(path.arc.label);
-      final FSTPath<T> newPath = new FSTPath<>(cost, path.arc, newInput);
 
-      queue.add(newPath);
+      queue.add(path.newPath(cost, newInput));
 
       if (queue.size() == maxQueueDepth+1) {
         queue.pollLast();
       }
     }
 
+    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input) throws IOException {
+      addStartPaths(node, startOutput, allowEmptyString, input, 0, null);
+    }
+
     /** Adds all leaving arcs, including 'finished' arc, if
      *  the node is final, from this node into the queue.  */
-    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input) throws IOException {
+    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input,
+                              float boost, CharSequence context) throws IOException {
 
       // De-dup NO_OUTPUT since it must be a singleton:
       if (startOutput.equals(fst.outputs.getNoOutput())) {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<>(startOutput, node, input);
+      FSTPath<T> path = new FSTPath<>(startOutput, node, input, boost, context);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
 
       //System.out.println("add start paths");
@@ -493,10 +514,10 @@ public final class Util {
           if (path.arc.label == FST.END_LABEL) {
             // Add final output:
             //System.out.println("    done!: " + path);
-            T finalOutput = fst.outputs.add(path.cost, path.arc.output);
-            if (acceptResult(path.input.get(), finalOutput)) {
+            path.cost = fst.outputs.add(path.cost, path.arc.output);
+            if (acceptResult(path)) {
               //System.out.println("    add result: " + path);
-              results.add(new Result<>(path.input.get(), finalOutput));
+              results.add(new Result<>(path.input.get(), path.cost));
             } else {
               rejectCount++;
             }
@@ -508,6 +529,10 @@ public final class Util {
         }
       }
       return new TopResults<>(rejectCount + topN <= maxQueueDepth, results);
+    }
+
+    protected boolean acceptResult(FSTPath<T> path) {
+      return acceptResult(path.input.get(), path.cost);
     }
 
     protected boolean acceptResult(IntsRef input, T output) {

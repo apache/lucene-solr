@@ -48,20 +48,14 @@ import org.apache.lucene.util.BytesRef;
  * document.add(new SuggestField(name, "suggestion", 4));
  * </pre>
  * To perform document suggestions based on the this field, use
- * {@link SuggestIndexSearcher#suggest(String, CharSequence, int, org.apache.lucene.search.Filter)}
- * <p>
- * Example query usage:
- * <pre class="prettyprint">
- * SuggestIndexSearcher indexSearcher = ..
- * indexSearcher.suggest(name, "su", 2)
- * </pre>
+ * {@link SuggestIndexSearcher#suggest(CompletionQuery, int)}
  *
  * @lucene.experimental
  */
 public class SuggestField extends Field {
 
-  private static final FieldType FIELD_TYPE = new FieldType();
-
+  /** Default field type for suggest field */
+  public static final FieldType FIELD_TYPE = new FieldType();
   static {
     FIELD_TYPE.setTokenized(true);
     FIELD_TYPE.setStored(false);
@@ -71,20 +65,35 @@ public class SuggestField extends Field {
     FIELD_TYPE.freeze();
   }
 
+  static final byte TYPE = 0;
+
   private final BytesRef surfaceForm;
-  private final long weight;
+  private final int weight;
 
   /**
    * Creates a {@link SuggestField}
    *
-   * @param name   of the field
-   * @param value  to get suggestions on
-   * @param weight weight of the suggestion
+   * @param name   field name
+   * @param value  field value to get suggestions on
+   * @param weight field weight
+   *
+   * @throws IllegalArgumentException if either the name or value is null,
+   * if value is an empty string, if the weight is negative, if value contains
+   * any reserved characters
    */
-  public SuggestField(String name, String value, long weight) {
+  public SuggestField(String name, String value, int weight) {
     super(name, value, FIELD_TYPE);
-    if (weight < 0l) {
+    if (weight < 0) {
       throw new IllegalArgumentException("weight must be >= 0");
+    }
+    if (value.length() == 0) {
+      throw new IllegalArgumentException("value must have a length > 0");
+    }
+    for (int i = 0; i < value.length(); i++) {
+      if (isReserved(value.charAt(i))) {
+        throw new IllegalArgumentException("Illegal input [" + value + "] UTF-16 codepoint [0x"
+            + Integer.toHexString((int) value.charAt(i))+ "] at position " + i + " is a reserved character");
+      }
     }
     this.surfaceForm = new BytesRef(value);
     this.weight = weight;
@@ -92,32 +101,50 @@ public class SuggestField extends Field {
 
   @Override
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
-    TokenStream stream = super.tokenStream(analyzer, reuse);
-    CompletionTokenStream completionStream;
-    if (stream instanceof CompletionTokenStream) {
-      completionStream = (CompletionTokenStream) stream;
-    } else {
-      completionStream = new CompletionTokenStream(stream);
-    }
-    BytesRef suggestPayload = buildSuggestPayload(surfaceForm, weight, (char) completionStream.sepLabel());
-    completionStream.setPayload(suggestPayload);
+    CompletionTokenStream completionStream = wrapTokenStream(super.tokenStream(analyzer, reuse));
+    completionStream.setPayload(buildSuggestPayload());
     return completionStream;
   }
 
-  private BytesRef buildSuggestPayload(BytesRef surfaceForm, long weight, char sepLabel) throws IOException {
-    for (int i = 0; i < surfaceForm.length; i++) {
-      if (surfaceForm.bytes[i] == sepLabel) {
-        assert sepLabel == '\u001f';
-        throw new IllegalArgumentException(
-            "surface form cannot contain unit separator character U+001F; this character is reserved");
-      }
+  /**
+   * Wraps a <code>stream</code> with a CompletionTokenStream.
+   *
+   * Subclasses can override this method to change the indexing pipeline.
+   */
+  protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
+    if (stream instanceof CompletionTokenStream) {
+      return (CompletionTokenStream) stream;
+    } else {
+      return new CompletionTokenStream(stream);
     }
+  }
+
+  /**
+   * Returns a byte to denote the type of the field
+   */
+  protected byte type() {
+    return TYPE;
+  }
+
+  private BytesRef buildSuggestPayload() throws IOException {
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     try (OutputStreamDataOutput output = new OutputStreamDataOutput(byteArrayOutputStream)) {
       output.writeVInt(surfaceForm.length);
       output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
-      output.writeVLong(weight + 1);
+      output.writeVInt(weight + 1);
+      output.writeByte(type());
     }
     return new BytesRef(byteArrayOutputStream.toByteArray());
+  }
+
+  private boolean isReserved(char c) {
+    switch (c) {
+      case CompletionAnalyzer.SEP_LABEL:
+      case CompletionAnalyzer.HOLE_CHARACTER:
+      case NRTSuggesterBuilder.END_BYTE:
+        return true;
+      default:
+        return false;
+    }
   }
 }
