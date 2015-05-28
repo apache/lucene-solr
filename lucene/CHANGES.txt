@@ -218,6 +218,9 @@ Bug Fixes
   documents with no payloads and now returns an empty BytesRef instead
   (Marius Grama via Michael McCandless)
 
+* LUCENE-6505: NRT readers now reflect segments_N filename and commit
+  user data from previous commits (Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader

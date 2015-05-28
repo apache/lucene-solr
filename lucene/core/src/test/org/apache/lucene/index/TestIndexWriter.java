@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -2720,6 +2721,104 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, r.leaves().size());
     r.close();
     dir.close();
+  }
+
+  // LUCENE-6505
+  public void testNRTSegmentsFile() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    // creates segments_1
+    w.commit();
+
+    // newly opened NRT reader should see gen=1 segments file
+    DirectoryReader r = DirectoryReader.open(w, true);
+    assertEquals(1, r.getIndexCommit().getGeneration());
+    assertEquals("segments_1", r.getIndexCommit().getSegmentsFileName());
+
+    // newly opened non-NRT reader should see gen=1 segments file
+    DirectoryReader r2 = DirectoryReader.open(dir);
+    assertEquals(1, r2.getIndexCommit().getGeneration());
+    assertEquals("segments_1", r2.getIndexCommit().getSegmentsFileName());
+    r2.close();
+    
+    // make a change and another commit
+    w.addDocument(new Document());
+    w.commit();
+    DirectoryReader r3 = DirectoryReader.openIfChanged(r);
+    r.close();
+    assertNotNull(r3);
+
+    // reopened NRT reader should see gen=2 segments file
+    assertEquals(2, r3.getIndexCommit().getGeneration());
+    assertEquals("segments_2", r3.getIndexCommit().getSegmentsFileName());
+    r3.close();
+
+    // newly opened non-NRT reader should see gen=2 segments file
+    DirectoryReader r4 = DirectoryReader.open(dir);
+    assertEquals(2, r4.getIndexCommit().getGeneration());
+    assertEquals("segments_2", r4.getIndexCommit().getSegmentsFileName());
+    r4.close();
+
+    w.close();
+    dir.close();
+  }
+
+  // LUCENE-6505
+  public void testNRTAfterCommit() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.commit();
+
+    w.addDocument(new Document());
+    DirectoryReader r = DirectoryReader.open(w, true);
+    w.commit();
+
+    // commit even with no other changes counts as a "change" that NRT reader reopen will see:
+    DirectoryReader r2 = DirectoryReader.open(dir);
+    assertNotNull(r2);
+    assertEquals(2, r2.getIndexCommit().getGeneration());
+    assertEquals("segments_2", r2.getIndexCommit().getSegmentsFileName());
+
+    IOUtils.close(r, r2, w, dir);
+  }
+
+  // LUCENE-6505
+  public void testNRTAfterSetUserDataWithoutCommit() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.commit();
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    Map<String,String> m = new HashMap<>();
+    m.put("foo", "bar");
+    w.setCommitData(m);
+
+    // setCommitData with no other changes should count as an NRT change:
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+    assertNotNull(r2);
+
+    IOUtils.close(r2, r, w, dir);
+  }
+
+  // LUCENE-6505
+  public void testNRTAfterSetUserDataWithCommit() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.commit();
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    Map<String,String> m = new HashMap<>();
+    m.put("foo", "bar");
+    w.setCommitData(m);
+    w.commit();
+    // setCommitData and also commit, with no other changes, should count as an NRT change:
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+    assertNotNull(r2);
+    IOUtils.close(r, r2, w, dir);
   }
 }
 
