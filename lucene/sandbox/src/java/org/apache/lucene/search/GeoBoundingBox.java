@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.GeoUtils;
 
-/** NOTE: package private; just used so {@link GeoPointInBBoxQuery} can communicate its bounding box to {@link GeoPointInBBoxQuery}. */
+/** NOTE: package private; just used so {@link GeoPointInPolygonQuery} can communicate its bounding box to {@link GeoPointInBBoxQuery}. */
 class GeoBoundingBox {
   public final double minLon;
   public final double maxLon;

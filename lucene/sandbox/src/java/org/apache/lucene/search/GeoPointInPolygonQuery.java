@@ -109,7 +109,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     if (min != null && max != null &&  min.compareTo(max) > 0) {
       return TermsEnum.EMPTY;
     }
-    return new GeoPolygonTermsEnum(terms.iterator());
+    return new GeoPolygonTermsEnum(terms.iterator(), atts, minLon, minLat, maxLon, maxLat);
   }
 
   @Override
@@ -159,19 +159,33 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     return sb.toString();
   }
 
-  private final class GeoPolygonTermsEnum extends GeoBBoxTermsEnum {
-    GeoPolygonTermsEnum(final TermsEnum tenum) {
-      super(tenum);
+  private final class GeoPolygonTermsEnum extends GeoPointTermsEnum {
+    GeoPolygonTermsEnum(final TermsEnum tenum, AttributeSource atts, final double minLon, final double minLat,
+                        final double maxLon, final double maxLat) {
+      super(tenum, atts, minLon, minLat, maxLon, maxLat);
     }
 
     @Override
-    protected boolean isWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIsWithin(minLon, minLat, maxLon, maxLat, x, y);
+    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectCrossesPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    }
+
+    @Override
+    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectWithinPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    }
+
+    @Override
+    protected boolean cellIntersects(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
 
     /**
      * The two-phase query approach. The parent
-     * {@link org.apache.lucene.search.GeoPointInBBoxQuery.GeoBBoxTermsEnum#accept} method is called to match
+     * {@link org.apache.lucene.search.GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
      * {@link org.apache.lucene.util.GeoUtils#pointInPolygon} method.

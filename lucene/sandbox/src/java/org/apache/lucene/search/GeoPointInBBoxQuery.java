@@ -18,18 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
 
-import org.apache.lucene.document.GeoPointField;
-import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
@@ -56,8 +49,6 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
   protected final double minLat;
   protected final double maxLon;
   protected final double maxLat;
-
-  private static final short DETAIL_LEVEL = 16;
 
   /**
    * Constructs a new GeoBBoxQuery that will match encoded GeoPoint terms that fall within or on the boundary
@@ -95,7 +86,7 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
     if (min != null && max != null &&  min.compareTo(max) > 0) {
       return TermsEnum.EMPTY;
     }
-    return new GeoBBoxTermsEnum(terms.iterator());
+    return new GeoPointTermsEnum(terms.iterator(), atts, minLon, minLat, maxLon, maxLat);
   }
 
   @Override
@@ -152,162 +143,5 @@ public class GeoPointInBBoxQuery extends MultiTermQuery {
         .append("]")
         .append(ToStringUtils.boost(getBoost()))
         .toString();
-  }
-
-  /**
-   * computes all ranges along a space-filling curve that represents
-   * the given bounding box and enumerates all terms contained within those ranges
-   */
-  protected class GeoBBoxTermsEnum extends FilteredTermsEnum {
-    private Range currentRange;
-    private BytesRef currentLowerBound, currentUpperBound;
-    private final LinkedList<Range> rangeBounds = new LinkedList<>();
-
-    GeoBBoxTermsEnum(final TermsEnum tenum) {
-      super(tenum);
-      computeRange(0L, (short) (((GeoUtils.BITS) << 1) - 1));
-      Collections.sort(rangeBounds);
-    }
-
-    /**
-     * entry point for recursively computing ranges
-     */
-    private final void computeRange(long term, final short shift) {
-      final long split = term | (0x1L<<shift);
-      final long upperMax = term | ((0x1L<<(shift+1))-1);
-      final long lowerMax = split-1;
-
-      relateAndRecurse(term, lowerMax, shift);
-      relateAndRecurse(split, upperMax, shift);
-    }
-
-    /**
-     * recurse to higher level precision cells to find ranges along the space-filling curve that fall within the
-     * query box
-     *
-     * @param start starting value on the space-filling curve for a cell at a given res
-     * @param end ending value on the space-filling curve for a cell at a given res
-     * @param res spatial res represented as a bit shift (MSB is lower res)
-     */
-    private void relateAndRecurse(final long start, final long end, final short res) {
-      final double minLon = GeoUtils.mortonUnhashLon(start);
-      final double minLat = GeoUtils.mortonUnhashLat(start);
-      final double maxLon = GeoUtils.mortonUnhashLon(end);
-      final double maxLat = GeoUtils.mortonUnhashLat(end);
-
-      final short level = (short)(62-res>>>1);
-
-      final boolean within = isWithin(minLon, minLat, maxLon, maxLat);
-      final boolean bboxIntersects = (within) ? true : intersects(minLon, minLat, maxLon, maxLat);
-
-      if ((within && res%GeoPointField.PRECISION_STEP == 0) || (bboxIntersects && level == DETAIL_LEVEL)) {
-        rangeBounds.add(new Range(start, end, res, level, !within));
-      } else if (bboxIntersects) {
-        computeRange(start, (short)(res - 1));
-      }
-    }
-
-    protected boolean intersects(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQuery.this.minLon,
-          GeoPointInBBoxQuery.this.minLat, GeoPointInBBoxQuery.this.maxLon, GeoPointInBBoxQuery.this.maxLat);
-    }
-
-    protected boolean isWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIsWithin(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQuery.this.minLon,
-          GeoPointInBBoxQuery.this.minLat, GeoPointInBBoxQuery.this.maxLon, GeoPointInBBoxQuery.this.maxLat);
-    }
-
-    private void nextRange() {
-      currentRange = rangeBounds.removeFirst();
-      currentLowerBound = currentRange.lower;
-      assert currentUpperBound == null || currentUpperBound.compareTo(currentRange.lower) <= 0 :
-          "The current upper bound must be <= the new lower bound";
-
-      currentUpperBound = currentRange.upper;
-    }
-
-    @Override
-    protected final BytesRef nextSeekTerm(BytesRef term) {
-      while (!rangeBounds.isEmpty()) {
-        if (currentRange == null) {
-          nextRange();
-        }
-
-        // if the new upper bound is before the term parameter, the sub-range is never a hit
-        if (term != null && term.compareTo(currentUpperBound) > 0) {
-          nextRange();
-          if (!rangeBounds.isEmpty()) {
-            continue;
-          }
-        }
-        // never seek backwards, so use current term if lower bound is smaller
-        return (term != null && term.compareTo(currentLowerBound) > 0) ?
-            term : currentLowerBound;
-      }
-
-      // no more sub-range enums available
-      assert rangeBounds.isEmpty();
-      currentLowerBound = currentUpperBound = null;
-      return null;
-    }
-
-    /**
-     * The two-phase query approach. {@link #nextSeekTerm} is called to obtain the next term that matches a numeric
-     * range of the bounding box. Those terms that pass the initial range filter are then compared against the
-     * decoded min/max latitude and longitude values of the bounding box only if the range is not a "boundary" range
-     * (e.g., a range that straddles the boundary of the bbox).
-     * @param term term for candidate document
-     * @return match status
-     */
-    @Override
-    protected AcceptStatus accept(BytesRef term) {
-      // validate value is in range
-      while (currentUpperBound == null || term.compareTo(currentUpperBound) > 0) {
-        if (rangeBounds.isEmpty())
-          return AcceptStatus.END;
-        // peek next sub-range, only seek if the current term is smaller than next lower bound
-        if (term.compareTo(rangeBounds.getFirst().lower) < 0)
-          return AcceptStatus.NO_AND_SEEK;
-        // step forward to next range without seeking, as next lower range bound is less or equal current term
-        nextRange();
-      }
-
-      // final-filter boundary ranges by bounding box
-      if (currentRange.boundary) {
-        final long val = NumericUtils.prefixCodedToLong(term);
-        final double lon = GeoUtils.mortonUnhashLon(val);
-        final double lat = GeoUtils.mortonUnhashLat(val);
-        if (!GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat)) {
-          return AcceptStatus.NO;
-        }
-      }
-      return AcceptStatus.YES;
-    }
-
-    /**
-     * Internal class to represent a range along the space filling curve
-     */
-    private final class Range implements Comparable<Range> {
-      final BytesRef lower;
-      final BytesRef upper;
-      final short level;
-      final boolean boundary;
-
-      Range(final long lower, final long upper, final short res, final short level, boolean boundary) {
-        this.level = level;
-        this.boundary = boundary;
-
-        BytesRefBuilder brb = new BytesRefBuilder();
-        NumericUtils.longToPrefixCodedBytes(lower, boundary ? 0 : res, brb);
-        this.lower = brb.get();
-        NumericUtils.longToPrefixCodedBytes(upper, boundary ? 0 : res, (brb = new BytesRefBuilder()));
-        this.upper = brb.get();
-      }
-
-      @Override
-      public final int compareTo(Range other) {
-        return this.lower.compareTo(other.lower);
-      }
-    }
   }
 }

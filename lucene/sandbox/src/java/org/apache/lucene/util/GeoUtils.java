@@ -241,16 +241,28 @@ public final class GeoUtils {
     return s.toString();
   }
 
-  /**
-   * Computes whether a rectangle is wholly within another rectangle (shared boundaries allowed)
-   */
-  public static boolean rectIsWithin(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
+
+  public static boolean rectDisjoint(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
-    return !(aMinX < bMinX || aMinY < bMinY || aMaxX > bMaxX || aMaxY > bMaxY);
+    return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
   }
 
   /**
-   * Computes whether a rectangle intersects another rectangle
+   * Computes whether a rectangle is wholly within another rectangle (shared boundaries allowed)
+   */
+  public static boolean rectWithin(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
+                                   final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
+    return !(aMinX < bMinX || aMinY < bMinY || aMaxX > bMaxX || aMaxY > bMaxY);
+  }
+
+  public static boolean rectCrosses(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
+                                    final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
+    return !(rectDisjoint(aMinX, aMinY, aMaxX, aMaxY, bMinX, bMinY, bMaxX, bMaxY) ||
+        rectWithin(aMinX, aMinY, aMaxX, aMaxY, bMinX, bMinY, bMaxX, bMaxY));
+  }
+
+  /**
+   * Computes whether rectangle a contains rectangle b (touching allowed)
    */
   public static boolean rectContains(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
@@ -258,7 +270,7 @@ public final class GeoUtils {
   }
 
   /**
-   * Computes whether a rectangle contains another rectangle
+   * Computes whether a rectangle intersects another rectangle (crosses, within, touching, etc)
    */
   public static boolean rectIntersects(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                        final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
@@ -266,12 +278,66 @@ public final class GeoUtils {
   }
 
   /**
-   * Computes whether a rectangle is wholly within a given shape (shared boundaries allowed)
+   * Computes whether a rectangle crosses a shape. (touching not allowed)
    */
-  public static boolean rectIsWithin(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                     final double[] shapeX, final double[] shapeY) {
-    // nocommit is this really correct?  poly can be convex, and then all 4 bbox corners can be within it, yet not fully contained?
-    return !(!pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
+  public static final boolean rectCrossesPoly(final double rMinX, final double rMinY, final double rMaxX,
+                                              final double rMaxY, final double[] shapeX, final double[] shapeY,
+                                              final double sMinX, final double sMinY, final double sMaxX,
+                                              final double sMaxY) {
+    // short-circuit: if the bounding boxes are disjoint then the shape does not cross
+    if (rectDisjoint(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY))
+      return false;
+
+    final double[][] bbox = new double[][] { {rMinX, rMinY}, {rMaxX, rMinY}, {rMaxX, rMaxY}, {rMinX, rMaxY}, {rMinX, rMinY} };
+    final int polyLength = shapeX.length-1;
+    double d, s, t, a1, b1, c1, a2, b2, c2;
+    double x00, y00, x01, y01, x10, y10, x11, y11;
+
+    // computes the intersection point between each bbox edge and the polygon edge
+    for (short b=0; b<4; ++b) {
+      a1 = bbox[b+1][1]-bbox[b][1];
+      b1 = bbox[b][0]-bbox[b+1][0];
+      c1 = a1*bbox[b+1][0] + b1*bbox[b+1][1];
+      for (int p=0; p<polyLength; ++p) {
+        a2 = shapeY[p+1]-shapeY[p];
+        b2 = shapeX[p]-shapeX[p+1];
+        // compute determinant
+        d = a1*b2 - a2*b1;
+        if (d != 0) {
+          // lines are not parallel, check intersecting points
+          c2 = a2*shapeX[p+1] + b2*shapeY[p+1];
+          s = (1/d)*(b2*c1 - b1*c2);
+          t = (1/d)*(a1*c2 - a2*c1);
+          x00 = StrictMath.min(bbox[b][0], bbox[b+1][0]) - TOLERANCE;
+          x01 = StrictMath.max(bbox[b][0], bbox[b+1][0]) + TOLERANCE;
+          y00 = StrictMath.min(bbox[b][1], bbox[b+1][1]) - TOLERANCE;
+          y01 = StrictMath.max(bbox[b][1], bbox[b+1][1]) + TOLERANCE;
+          x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - TOLERANCE;
+          x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + TOLERANCE;
+          y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - TOLERANCE;
+          y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + TOLERANCE;
+          // check whether the intersection point is touching one of the line segments
+          boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
+              || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
+          // if line segments are not touching and the intersection point is within the range of either segment
+          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t))
+            return true;
+        }
+      } // for each poly edge
+    } // for each bbox edge
+    return false;
+  }
+
+  /**
+   * Computes whether a rectangle is within a given polygon (shared boundaries allowed)
+   */
+  public static boolean rectWithinPoly(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                       final double[] shapeX, final double[] shapeY, final double sMinX,
+                                       final double sMinY, final double sMaxX, final double sMaxY) {
+    // check if rectangle crosses poly (to handle concave/pacman polys), then check that all 4 corners
+    // are contained
+    return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
+        !pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
         !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
   }
 
@@ -281,5 +347,54 @@ public final class GeoUtils {
 
   public static boolean isValidLon(double lon) {
     return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
+  }
+
+  // nocommit add these to unit test
+  public static void main(String[] args) {
+    // pacman
+    double[] px = {0, 10, 10, 0, -8, -10, -8, 0, 10, 10, 0};
+    double[] py = {0, 5, 9, 10, 9, 0, -9, -10, -9, -5, 0};
+
+    // bbox
+    double xMinA = -10;
+    double xMaxA = 10;
+    double yMinA = -10;
+    double yMaxA = 10;
+
+    // candidate cell
+    double xMin = 2;//-5;
+    double xMax = 11;//0.000001;
+    double yMin = -1;//0;
+    double yMax = 1;//5;
+
+    System.out.println("CELL AND POLY\n--------------");
+    // cell crosses poly (touching not allowed)
+    if (rectCrossesPoly(xMin, yMin, xMax, yMax, px, py, -10, -10, 10, 10)) {
+      System.out.println("CROSSES");
+    } else {
+      System.out.println("NO CROSS");
+    }
+
+    // cell within poly (touching allowed)
+    if (rectWithinPoly(xMin, yMin, xMax, yMax, px, py, -10, -10, 10, 10)) {
+      System.out.println("WITHIN");
+    } else {
+      System.out.println("NOT WITHIN");
+    }
+
+    System.out.println("\nCELL AND BBOX\n--------------");
+    // cell crosses poly (touching not allowed)
+    if (rectCrosses(xMin, yMin, xMax, yMax, xMinA, yMinA, xMaxA, yMaxA)) {
+      System.out.println("CROSSES");
+    } else {
+      System.out.println("NO CROSS");
+    }
+
+    // cell within poly (touching allowed)
+    if (rectWithin(xMin, yMin, xMax, yMax, xMinA, yMinA, xMaxA, yMaxA)) {
+      System.out.println("WITHIN");
+    } else {
+      System.out.println("NOT WITHIN");
+    }
   }
 }
