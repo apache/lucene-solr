@@ -88,25 +88,4 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     IOUtils.close(lock, lock2);
     dir.close();
   }
-  
-  public void testDoubleObtain() throws Exception {
-    String uri = HdfsTestUtil.getURI(dfsCluster);
-    Path lockPath = new Path(uri, "/basedir/lock");
-    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
-    Lock lock = dir.makeLock("foo");
-    assertTrue(lock.obtain());
-    try {
-      lock.obtain();
-      fail("did not hit double-obtain failure");
-    } catch (LockObtainFailedException lofe) {
-      // expected
-    }
-    lock.close();
-    
-    lock = dir.makeLock("foo");
-    assertTrue(lock.obtain());
-    lock.close();
-    dir.close();
-  }
 }
