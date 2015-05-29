@@ -489,7 +489,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Suite failure marker (any error in the test or suite scope).
    */
-  private static TestRuleMarkFailure suiteFailureMarker;
+  protected static TestRuleMarkFailure suiteFailureMarker;
   
   /**
    * Temporary files cleanup rule.
