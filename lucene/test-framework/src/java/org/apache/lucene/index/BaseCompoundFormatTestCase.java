@@ -320,7 +320,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     try {
-      cfs.makeLock("foobar");
+      cfs.obtainLock("foobar");
       fail("didn't get expected exception");
     } catch (UnsupportedOperationException expected) {
       // expected UOE

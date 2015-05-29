@@ -27,7 +27,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -178,7 +177,7 @@ public class TestCheckIndex extends LuceneTestCase {
     try {
       new CheckIndex(dir);
       fail("should not have obtained write lock");
-    } catch (LockObtainFailedException expected) {
+    } catch (IOException expected) {
       // ok
     }
     

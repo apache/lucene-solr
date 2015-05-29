@@ -994,59 +994,53 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized Lock makeLock(String name) {
+  public synchronized Lock obtainLock(String name) throws IOException {
     maybeYield();
     if (wrapLocking) {
-      return new AssertingLock(super.makeLock(name), name);
+      final Lock delegateLock = super.obtainLock(name);
+      return new AssertingLock(delegateLock, name);
     } else {
-      return super.makeLock(name);
+      return super.obtainLock(name);
     }
   }
   
   private final class AssertingLock extends Lock {
     private final Lock delegateLock;
     private final String name;
-    private boolean obtained = false;
+    private volatile boolean closed;
     
     AssertingLock(Lock delegate, String name) {
       this.delegateLock = delegate;
       this.name = name;
-    }
-
-    @Override
-    public boolean obtain() throws IOException {
-      if (delegateLock.obtain()) {
-        final RuntimeException exception = openLocks.putIfAbsent(name, new RuntimeException("lock \"" + name + "\" was not released: " + delegateLock));
-        if (exception != null && delegateLock != NoLockFactory.SINGLETON_LOCK) {
-          throw exception;
-        }
-        obtained = true;
-      } else {
-        obtained = false;
+      final RuntimeException exception = openLocks.putIfAbsent(name, new RuntimeException("lock \"" + name + "\" was not released: " + delegateLock));
+      if (exception != null && delegateLock != NoLockFactory.SINGLETON_LOCK) {
+        throw exception;
       }
-
-      return obtained;
     }
 
     @Override
     public void close() throws IOException {
-      if (obtained) {
+      if (closed) {
+        return;
+      }
+      try {
         RuntimeException remove = openLocks.remove(name);
         // TODO: fix stupid tests like TestIndexWriter.testNoSegmentFile to not do this!
         assert remove != null || delegateLock == NoLockFactory.SINGLETON_LOCK;
-        obtained = false;
+      } finally {
+        closed = true;
       }
       delegateLock.close();
     }
 
     @Override
-    public boolean isLocked() throws IOException {
-      return delegateLock.isLocked();
+    public String toString() {
+      return "AssertingLock(" + delegateLock + ")";
     }
 
     @Override
-    public String toString() {
-      return "AssertingLock(" + delegateLock + ")";
+    public void ensureValid() throws IOException {
+      // TODO
     }
   }  
   
