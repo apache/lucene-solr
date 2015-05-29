@@ -1372,38 +1372,41 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
 
   os.chdir(unpackPath)
 
-  for suffix in '',:
-    print('    run TestBackwardsCompatibility%s..' % suffix)
-    command = 'ant test -Dtestcase=TestBackwardsCompatibility%s -Dtests.verbose=true' % suffix
-    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    stdout, stderr = p.communicate()
-    if p.returncode is not 0:
-      # Not good: the test failed!
-      raise RuntimeError('%s failed:\n%s' % (command, stdout))
-    stdout = stdout.decode('utf-8')
+  print('    run TestBackwardsCompatibility..')
+  command = 'ant test -Dtestcase=TestBackwardsCompatibility -Dtests.verbose=true'
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  stdout, stderr = p.communicate()
+  if p.returncode is not 0:
+    # Not good: the test failed!
+    raise RuntimeError('%s failed:\n%s' % (command, stdout))
+  stdout = stdout.decode('utf-8')
 
-    if stderr is not None:
-      # Should not happen since we redirected stderr to stdout:
-      raise RuntimeError('stderr non-empty')
+  if stderr is not None:
+    # Should not happen since we redirected stderr to stdout:
+    raise RuntimeError('stderr non-empty')
 
-    reIndexName = re.compile(r'TEST: index[\s*=\s*](.*?)(-cfs|-nocfs)$', re.MULTILINE)
-    for name, cfsPart in reIndexName.findall(stdout):
-      # Fragile: decode the inconsistent naming schemes we've used in TestBWC's indices:
-      #print('parse name %s' % name)
-      tup = tuple(name.split('.'))
-      if len(tup) == 3:
-        # ok
-        tup = tuple(int(x) for x in tup)
-      elif tup == ('4', '0', '0', '1'):
-        # CONFUSING: this is the 4.0.0-alpha index??
-        tup = 4, 0, 0, 0
-      elif tup == ('4', '0', '0', '2'):
-        # CONFUSING: this is the 4.0.0-beta index??
-        tup = 4, 0, 0, 1
-      else:
-        raise RuntimeError('could not parse version %s' % name)
-          
-      testedIndices.add(tup)
+  reIndexName = re.compile(r'TEST: index[\s*=\s*](.*?)(-cfs|-nocfs)$', re.MULTILINE)
+  for name, cfsPart in reIndexName.findall(stdout):
+    # Fragile: decode the inconsistent naming schemes we've used in TestBWC's indices:
+    #print('parse name %s' % name)
+    tup = tuple(name.split('.'))
+    if len(tup) == 3:
+      # ok
+      tup = tuple(int(x) for x in tup)
+    elif tup == ('4', '0', '0', '1'):
+      # CONFUSING: this is the 4.0.0-alpha index??
+      tup = 4, 0, 0, 0
+    elif tup == ('4', '0', '0', '2'):
+      # CONFUSING: this is the 4.0.0-beta index??
+      tup = 4, 0, 0, 1
+    elif name == '5x-with-4x-segments':
+      # Mixed version test case; ignore it for our purposes because we only
+      # tally up the "tests single Lucene version" indices
+      continue
+    else:
+      raise RuntimeError('could not parse version %s' % name)
+
+    testedIndices.add(tup)
 
   l = list(testedIndices)
   l.sort()
