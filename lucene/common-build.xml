@@ -1337,6 +1337,9 @@ ant -Dsolr.test.leavetmpdir=true
 # Do *not* filter stack traces emitted to the console.
 ant -Dtests.filterstacks=false
 
+# Skip checking for no-executed tests in modules
+ant -Dtests.ifNoTests=ignore ...
+
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
 ${tests-output}/tests-failures.txt  - failures only (if any)
@@ -1490,7 +1493,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       });
       statsFile.delete();
 
-      if (total == 0) {
+      if (total == 0 && !"ignore".equals(project.getProperty("tests.ifNoTests"))) {
         throw new BuildException("Not even a single test was executed (a typo in the filter pattern maybe?).");
       }
 
