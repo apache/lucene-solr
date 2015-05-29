@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,8 +42,8 @@ public abstract class BaseDirectory extends Directory {
   }
 
   @Override
-  public final Lock makeLock(String name) {
-    return lockFactory.makeLock(this, name);
+  public final Lock obtainLock(String name) throws IOException {
+    return lockFactory.obtainLock(this, name);
   }
 
   @Override

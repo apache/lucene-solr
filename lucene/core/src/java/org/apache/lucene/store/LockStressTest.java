@@ -38,10 +38,12 @@ import org.apache.lucene.util.SuppressForbidden;
  */ 
 
 public class LockStressTest {
+  
+  static final String LOCK_FILE_NAME = "test.lock";
 
   @SuppressForbidden(reason = "System.out required: command line tool")
+  @SuppressWarnings("try")
   public static void main(String[] args) throws Exception {
-
     if (args.length != 7) {
       System.out.println("Usage: java org.apache.lucene.store.LockStressTest myID verifierHost verifierPort lockFactoryClassName lockDirName sleepTimeMS count\n" +
                          "\n" +
@@ -91,7 +93,6 @@ public class LockStressTest {
       out.write(myID);
       out.flush();
       LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
-      Lock l = verifyLF.makeLock(lockDir, "test.lock");
       final Random rnd = new Random();
       
       // wait for starting gun
@@ -100,25 +101,22 @@ public class LockStressTest {
       }
       
       for (int i = 0; i < count; i++) {
-        boolean obtained = false;
-        try {
-          obtained = l.obtain(rnd.nextInt(100) + 10);
-        } catch (LockObtainFailedException e) {}
-        
-        if (obtained) {
+        try (final Lock l = verifyLF.obtainLock(lockDir, LOCK_FILE_NAME)) {
           if (rnd.nextInt(10) == 0) {
             if (rnd.nextBoolean()) {
               verifyLF = new VerifyingLockFactory(getNewLockFactory(lockFactoryClassName), in, out);
             }
-            final Lock secondLock = verifyLF.makeLock(lockDir, "test.lock");
-            if (secondLock.obtain()) {
-              throw new IOException("Double Obtain");
+            try (final Lock secondLock = verifyLF.obtainLock(lockDir, LOCK_FILE_NAME)) {
+              throw new IOException("Double obtain");
+            } catch (IOException ioe) {
+              // pass
             }
           }
           Thread.sleep(sleepTimeMS);
-          l.close();
+        } catch (IOException ioe) {
+          // obtain failed
         }
-        
+
         if (i % 500 == 0) {
           System.out.println((i * 100. / count) + "% done.");
         }

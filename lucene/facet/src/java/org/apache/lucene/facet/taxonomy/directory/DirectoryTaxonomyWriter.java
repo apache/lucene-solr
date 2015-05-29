@@ -43,7 +43,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /*
@@ -154,8 +153,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    *    If null or missing, {@link #defaultTaxonomyWriterCache()} is used.
    * @throws CorruptIndexException
    *     if the taxonomy is corrupted.
-   * @throws LockObtainFailedException
-   *     if the taxonomy is locked by another writer.
    * @throws IOException
    *     if another error occurred.
    */

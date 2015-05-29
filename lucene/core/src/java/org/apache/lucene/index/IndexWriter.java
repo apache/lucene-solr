@@ -56,10 +56,10 @@ import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -118,9 +118,7 @@ import org.apache.lucene.util.Version;
 
   <p>Opening an <code>IndexWriter</code> creates a lock file for the directory in use. Trying to open
   another <code>IndexWriter</code> on the same directory will lead to a
-  {@link LockObtainFailedException}. The {@link LockObtainFailedException}
-  is also thrown if an IndexReader on the same directory is used to delete documents
-  from the index.</p>
+  {@link IOException}.</p>
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
@@ -755,11 +753,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
 
-    directory = d;
+    writeLock = d.obtainLock(WRITE_LOCK_NAME);
+
+    directory = new LockValidatingDirectoryWrapper(d, writeLock);
 
     // Directory we use for merging, so we can abort running merges, and so
     // merge schedulers can optionally rate-limit per-merge IO:
-    mergeDirectory = addMergeRateLimiters(d);
+    mergeDirectory = addMergeRateLimiters(directory);
 
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
@@ -769,11 +769,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
     poolReaders = config.getReaderPooling();
-
-    writeLock = directory.makeLock(WRITE_LOCK_NAME);
-
-    if (!writeLock.obtain(config.getWriteLockTimeout())) // obtain write lock
-      throw new LockObtainFailedException("Index locked for write: " + writeLock);
 
     boolean success = false;
     try {
@@ -2288,13 +2283,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     for(int i=0;i<dirs.length;i++) {
       boolean success = false;
       try {
-        Lock lock = dirs[i].makeLock(WRITE_LOCK_NAME);
+        Lock lock = dirs[i].obtainLock(WRITE_LOCK_NAME);
         locks.add(lock);
-        lock.obtain(config.getWriteLockTimeout());
         success = true;
       } finally {
         if (success == false) {
           // Release all previously acquired locks:
+          // nocommit: addSuppressed
           IOUtils.closeWhileHandlingException(locks);
         }
       }
@@ -2334,8 +2329,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @throws LockObtainFailedException if we were unable to
-   *   acquire the write lock in at least one directory
    * @throws IllegalArgumentException if addIndexes would cause
    *   the index to exceed {@link #MAX_DOCS}
    */
@@ -4358,16 +4351,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       tragicEvent(oom, "startCommit");
     }
     testPoint("finishStartCommit");
-  }
-
-  /**
-   * Returns <code>true</code> iff the index in the named directory is
-   * currently locked.
-   * @param directory the directory to check for a lock
-   * @throws IOException if there is a low-level IO error
-   */
-  public static boolean isLocked(Directory directory) throws IOException {
-    return directory.makeLock(WRITE_LOCK_NAME).isLocked();
   }
 
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has

@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -46,9 +48,10 @@ package org.apache.lucene.store;
 public abstract class LockFactory {
 
   /**
-   * Return a new Lock instance identified by lockName.
+   * Return a new obtained Lock instance identified by lockName.
    * @param lockName name of the lock to be created.
+   * @throws IOException if the lock could not be obtained
    */
-  public abstract Lock makeLock(Directory dir, String lockName);
+  public abstract Lock obtainLock(Directory dir, String lockName) throws IOException;
 
 }

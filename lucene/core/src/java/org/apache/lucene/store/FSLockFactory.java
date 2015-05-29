@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,14 +34,17 @@ public abstract class FSLockFactory extends LockFactory {
   }
 
   @Override
-  public final Lock makeLock(Directory dir, String lockName) {
+  public final Lock obtainLock(Directory dir, String lockName) throws IOException {
     if (!(dir instanceof FSDirectory)) {
       throw new UnsupportedOperationException(getClass().getSimpleName() + " can only be used with FSDirectory subclasses, got: " + dir);
     }
-    return makeFSLock((FSDirectory) dir, lockName);
+    return obtainFSLock((FSDirectory) dir, lockName);
   }
   
-  /** Implement this method to create a lock for a FSDirectory instance. */
-  protected abstract Lock makeFSLock(FSDirectory dir, String lockName);
+  /** 
+   * Implement this method to obtain a lock for a FSDirectory instance. 
+   * @throws IOException if the lock could not be obtained.
+   */
+  protected abstract Lock obtainFSLock(FSDirectory dir, String lockName) throws IOException;
 
 }

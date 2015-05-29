@@ -86,13 +86,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
 
-  /**
-   * Default value for the write lock timeout (1,000 ms).
-   *
-   * @see #setDefaultWriteLockTimeout(long)
-   */
-  public static long WRITE_LOCK_TIMEOUT = 1000;
-
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
 
@@ -113,24 +106,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
   
-  /**
-   * Sets the default (for any instance) maximum time to wait for a write lock
-   * (in milliseconds).
-   */
-  public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
-    WRITE_LOCK_TIMEOUT = writeLockTimeout;
-  }
-
-  /**
-   * Returns the default write lock timeout for newly instantiated
-   * IndexWriterConfigs.
-   *
-   * @see #setDefaultWriteLockTimeout(long)
-   */
-  public static long getDefaultWriteLockTimeout() {
-    return WRITE_LOCK_TIMEOUT;
-  }
-
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
   private SetOnce<IndexWriter> writer = new SetOnce<>();
@@ -260,22 +235,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public MergeScheduler getMergeScheduler() {
     return mergeScheduler;
-  }
-
-  /**
-   * Sets the maximum time to wait for a write lock (in milliseconds) for this
-   * instance. You can change the default value for all instances by calling
-   * {@link #setDefaultWriteLockTimeout(long)}.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
-  public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {
-    this.writeLockTimeout = writeLockTimeout;
-    return this;
-  }
-
-  @Override
-  public long getWriteLockTimeout() {
-    return writeLockTimeout;
   }
 
   /**
