@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -82,7 +83,12 @@ public final class SimpleFSLockFactory extends FSLockFactory {
     Path lockFile = lockDir.resolve(lockName);
     
     // create the file: this will fail if it already exists
-    Files.createFile(lockFile);
+    try {
+      Files.createFile(lockFile);
+    } catch (FileAlreadyExistsException e) {
+      // convert optional specific exception to our optional specific exception
+      throw new LockObtainFailedException("Lock held elsewhere: " + lockFile, e);
+    }
     
     // used as a best-effort check, to see if the underlying file has changed
     final FileTime creationTime = Files.readAttributes(lockFile, BasicFileAttributes.class).creationTime();

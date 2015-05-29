@@ -112,7 +112,9 @@ public abstract class Directory implements Closeable {
   /** 
    * Returns an obtained {@link Lock}.
    * @param name the name of the lock file
-   * @throws IOException if the lock could not be obtained
+   * @throws LockObtainFailedException (optional specific exception) if the lock could
+   *         not be obtained because it is currently held elsewhere.
+   * @throws IOException if any i/o error occurs attempting to gain the lock
    */
   public abstract Lock obtainLock(String name) throws IOException;
 

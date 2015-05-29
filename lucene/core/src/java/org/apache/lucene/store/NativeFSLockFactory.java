@@ -115,7 +115,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         if (lock != null) {
           return new NativeFSLock(lock, channel, realPath, creationTime);
         } else {
-          throw new IOException("Lock held by another program: " + realPath);
+          throw new LockObtainFailedException("Lock held by another program: " + realPath);
         }
       } finally {
         if (lock == null) { // not successful - clear up and move out
@@ -124,7 +124,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         }
       }
     } else {
-      throw new IOException("Lock held by this virtual machine: " + realPath);
+      throw new LockObtainFailedException("Lock held by this virtual machine: " + realPath);
     }
   }
   
