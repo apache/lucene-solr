@@ -251,7 +251,7 @@ API Changes
   (Paul Elschot via Adrien Grand)
 
 * LUCENE-6466: Moved SpanQuery.getSpans() and .extractTerms() to SpanWeight
-  (Alan Woodward)
+  (Alan Woodward, Robert Muir)
 
 * LUCENE-6497: Allow subclasses of FieldType to check frozen state
   (Ryan Ernst)

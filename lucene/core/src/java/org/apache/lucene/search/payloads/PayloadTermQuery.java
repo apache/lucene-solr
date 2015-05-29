@@ -30,7 +30,6 @@ import org.apache.lucene.search.spans.BufferedSpanCollector;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
-import org.apache.lucene.search.spans.SpanSimilarity;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
@@ -38,6 +37,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -71,8 +72,7 @@ public class PayloadTermQuery extends SpanTermQuery {
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     TermContext context = TermContext.build(searcher.getTopReaderContext(), term);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, searcher.termStatistics(term, context));
-    return new PayloadTermWeight(context, similarity);
+    return new PayloadTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null);
   }
 
   private static class PayloadTermCollector implements SpanCollector {
@@ -107,18 +107,19 @@ public class PayloadTermQuery extends SpanTermQuery {
 
   private class PayloadTermWeight extends SpanTermWeight {
 
-    public PayloadTermWeight(TermContext context, SpanSimilarity similarity)
+    public PayloadTermWeight(TermContext context, IndexSearcher searcher, Map<Term, TermContext> terms)
         throws IOException {
-      super(context, similarity, PayloadSpanCollector.FACTORY);
+      super(context, searcher, terms, PayloadSpanCollector.FACTORY);
     }
 
     @Override
     public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       PayloadTermCollector collector = new PayloadTermCollector();
       Spans spans = super.getSpans(context, acceptDocs, collector);
+      Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
       return (spans == null)
               ? null
-              : new PayloadTermSpanScorer(spans, this, collector, similarity.simScorer(context));
+              : new PayloadTermSpanScorer(spans, this, collector, simScorer);
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
@@ -208,7 +209,7 @@ public class PayloadTermQuery extends SpanTermQuery {
         if (newDoc == doc) {
           float freq = scorer.sloppyFreq();
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
-          SimScorer docScorer = similarity.simScorer(context);
+          SimScorer docScorer = similarity.simScorer(simWeight, context);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           Explanation expl = Explanation.match(
               scoreExplanation.getValue(),

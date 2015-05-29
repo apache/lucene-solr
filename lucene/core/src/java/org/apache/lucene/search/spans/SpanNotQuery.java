@@ -106,8 +106,8 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
     SpanWeight includeWeight = include.createWeight(searcher, false, factory);
     SpanWeight excludeWeight = exclude.createWeight(searcher, false, factory);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, includeWeight);
-    return new SpanNotWeight(similarity, factory, includeWeight, excludeWeight);
+    return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
+                                  factory, includeWeight, excludeWeight);
   }
 
   public class SpanNotWeight extends SpanWeight {
@@ -115,9 +115,9 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     final SpanWeight includeWeight;
     final SpanWeight excludeWeight;
 
-    public SpanNotWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
+    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
                          SpanWeight includeWeight, SpanWeight excludeWeight) throws IOException {
-      super(SpanNotQuery.this, similarity, factory);
+      super(SpanNotQuery.this, searcher, terms, factory);
       this.includeWeight = includeWeight;
       this.excludeWeight = excludeWeight;
     }

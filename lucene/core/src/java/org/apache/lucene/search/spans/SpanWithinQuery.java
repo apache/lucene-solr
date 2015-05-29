@@ -18,11 +18,14 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /** Keep matches that are contained within another Spans. */
 public class SpanWithinQuery extends SpanContainQuery {
@@ -52,15 +55,15 @@ public class SpanWithinQuery extends SpanContainQuery {
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
     SpanWeight bigWeight = big.createWeight(searcher, false, factory);
     SpanWeight littleWeight = little.createWeight(searcher, false, factory);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, bigWeight, littleWeight);
-    return new SpanWithinWeight(similarity, factory, bigWeight, littleWeight);
+    return new SpanWithinWeight(searcher, needsScores ? getTermContexts(bigWeight, littleWeight) : null,
+                                      factory, bigWeight, littleWeight);
   }
 
   public class SpanWithinWeight extends SpanContainWeight {
 
-    public SpanWithinWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
+    public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(similarity, factory, bigWeight, littleWeight);
+      super(searcher, terms, factory, bigWeight, littleWeight);
     }
 
     /**

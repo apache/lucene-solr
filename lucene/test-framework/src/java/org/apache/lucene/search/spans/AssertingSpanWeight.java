@@ -20,6 +20,9 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -38,8 +41,8 @@ public class AssertingSpanWeight extends SpanWeight {
    * @param in the SpanWeight to wrap
    * @throws IOException on error
    */
-  public AssertingSpanWeight(SpanWeight in) throws IOException {
-    super((SpanQuery) in.getQuery(), in.similarity, in.collectorFactory);
+  public AssertingSpanWeight(IndexSearcher searcher, SpanWeight in) throws IOException {
+    super((SpanQuery) in.getQuery(), searcher, null, in.collectorFactory);
     this.in = in;
   }
 
@@ -59,5 +62,25 @@ public class AssertingSpanWeight extends SpanWeight {
   @Override
   public void extractTerms(Set<Term> terms) {
     in.extractTerms(terms);
+  }
+
+  @Override
+  public float getValueForNormalization() throws IOException {
+    return in.getValueForNormalization();
+  }
+
+  @Override
+  public void normalize(float queryNorm, float topLevelBoost) {
+    in.normalize(queryNorm, topLevelBoost);
+  }
+
+  @Override
+  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    return in.scorer(context, acceptDocs);
+  }
+
+  @Override
+  public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+    return in.explain(context, doc);
   }
 }

@@ -71,22 +71,21 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
     SpanWeight matchWeight = match.createWeight(searcher, false, factory);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, matchWeight);
-    return new SpanPositionCheckWeight(matchWeight, similarity, factory);
+    return new SpanPositionCheckWeight(matchWeight, searcher, needsScores ? getTermContexts(matchWeight) : null, factory);
   }
 
   public class SpanPositionCheckWeight extends SpanWeight {
 
     final SpanWeight matchWeight;
 
-    public SpanPositionCheckWeight(SpanWeight matchWeight, SpanSimilarity similarity,
+    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms,
                                    SpanCollectorFactory collectorFactory) throws IOException {
-      super(SpanPositionCheckQuery.this, similarity, collectorFactory);
+      super(SpanPositionCheckQuery.this, searcher, terms, collectorFactory);
       this.matchWeight = matchWeight;
     }
 
-    public SpanPositionCheckWeight(SpanWeight matchWeight, SpanSimilarity similarity) throws IOException {
-      this(matchWeight, similarity, SpanCollectorFactory.NO_OP_FACTORY);
+    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
+      this(matchWeight, searcher, terms, SpanCollectorFactory.NO_OP_FACTORY);
     }
 
     @Override
