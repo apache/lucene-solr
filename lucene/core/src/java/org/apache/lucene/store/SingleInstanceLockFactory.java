@@ -41,7 +41,7 @@ public final class SingleInstanceLockFactory extends LockFactory {
       if (locks.add(lockName)) {
         return new SingleInstanceLock(lockName);
       } else {
-        throw new IOException("lock instance already obtained: (dir=" + dir + ", lockName=" + lockName + ")");
+        throw new LockObtainFailedException("lock instance already obtained: (dir=" + dir + ", lockName=" + lockName + ")");
       }
     }
   }

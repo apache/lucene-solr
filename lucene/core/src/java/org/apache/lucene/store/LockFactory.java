@@ -50,7 +50,9 @@ public abstract class LockFactory {
   /**
    * Return a new obtained Lock instance identified by lockName.
    * @param lockName name of the lock to be created.
-   * @throws IOException if the lock could not be obtained
+   * @throws LockObtainFailedException (optional specific exception) if the lock could
+   *         not be obtained because it is currently held elsewhere.
+   * @throws IOException if any i/o error occurs attempting to gain the lock
    */
   public abstract Lock obtainLock(Directory dir, String lockName) throws IOException;
 
