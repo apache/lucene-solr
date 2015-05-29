@@ -91,7 +91,7 @@ public class GeoPoint extends Vector {
   public double getLongitude() {
     if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(y) < MINIMUM_RESOLUTION)
       return 0.0;
-    return Math.atan2(y,z);
+    return Math.atan2(y,x);
   }
   
   /** Compute the linear magnitude of the point.
