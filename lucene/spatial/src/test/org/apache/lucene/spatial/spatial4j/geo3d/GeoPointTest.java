@@ -17,19 +17,21 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
+import com.spatial4j.core.distance.DistanceUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
 
 /**
  * Test basic GeoPoint functionality.
  */
-public class GeoPointTest {
+public class GeoPointTest extends LuceneTestCase {
 
   @Test
   public void testConversion() {
-    final double pLat = 0.123;
-    final double pLon = -0.456;
+    final double pLat = (randomFloat() * 180.0 - 90.0) * DistanceUtils.DEGREES_TO_RADIANS;
+    final double pLon = (randomFloat() * 360.0 - 180.0) * DistanceUtils.DEGREES_TO_RADIANS;
     final GeoPoint p1 = new GeoPoint(PlanetModel.SPHERE, pLat, pLon);
     assertEquals(pLat, p1.getLatitude(), 1e-12);
     assertEquals(pLon, p1.getLongitude(), 1e-12);
