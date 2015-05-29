@@ -108,12 +108,12 @@ public class LockStressTest {
             }
             try (final Lock secondLock = verifyLF.obtainLock(lockDir, LOCK_FILE_NAME)) {
               throw new IOException("Double obtain");
-            } catch (IOException ioe) {
+            } catch (LockObtainFailedException loe) {
               // pass
             }
           }
           Thread.sleep(sleepTimeMS);
-        } catch (IOException ioe) {
+        } catch (LockObtainFailedException loe) {
           // obtain failed
         }
 

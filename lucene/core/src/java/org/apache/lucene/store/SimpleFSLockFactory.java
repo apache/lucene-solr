@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +86,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
     // create the file: this will fail if it already exists
     try {
       Files.createFile(lockFile);
-    } catch (FileAlreadyExistsException e) {
+    } catch (FileAlreadyExistsException | AccessDeniedException e) {
       // convert optional specific exception to our optional specific exception
       throw new LockObtainFailedException("Lock held elsewhere: " + lockFile, e);
     }
