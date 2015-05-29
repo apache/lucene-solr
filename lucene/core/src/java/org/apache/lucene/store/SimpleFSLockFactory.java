@@ -93,7 +93,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
   static final class SimpleFSLock extends Lock {
     private final Path path;
     private final FileTime creationTime;
-    private boolean closed;
+    private volatile boolean closed;
 
     SimpleFSLock(Path path, FileTime creationTime) throws IOException {
       this.path = path;
@@ -101,7 +101,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
     }
 
     @Override
-    public synchronized void ensureValid() throws IOException {
+    public void ensureValid() throws IOException {
       if (closed) {
         throw new AlreadyClosedException("Lock instance already released: " + this);
       }

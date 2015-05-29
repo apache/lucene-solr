@@ -106,21 +106,20 @@ public final class NativeFSLockFactory extends FSLockFactory {
     // used as a best-effort check, to see if the underlying file has changed
     final FileTime creationTime = Files.readAttributes(realPath, BasicFileAttributes.class).creationTime();
     
-    boolean obtained = false;
     if (LOCK_HELD.add(realPath.toString())) {
       FileChannel channel = null;
+      FileLock lock = null;
       try {
         channel = FileChannel.open(realPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        FileLock lock = channel.tryLock();
+        lock = channel.tryLock();
         if (lock != null) {
-          obtained = true;
-          return new NativeFSLock(lock, realPath, creationTime);
+          return new NativeFSLock(lock, channel, realPath, creationTime);
         } else {
           throw new IOException("Lock held by another program: " + realPath);
         }
       } finally {
-        if (obtained == false) { // not successful - clear up and move out
-          IOUtils.closeWhileHandlingException(channel); // nocommit: addSuppressed
+        if (lock == null) { // not successful - clear up and move out
+          IOUtils.close(channel); // nocommit: addSuppressed
           clearLockHeld(realPath);  // clear LOCK_HELD last 
         }
       }
@@ -135,21 +134,26 @@ public final class NativeFSLockFactory extends FSLockFactory {
       throw new AlreadyClosedException("Lock path was cleared but never marked as held: " + path);
     }
   }
-    
+
+  // TODO: kind of bogus we even pass channel:
+  // FileLock has an accessor, but mockfs doesnt yet mock the locks, too scary atm.
+
   static final class NativeFSLock extends Lock {
     private final FileLock lock;
+    private final FileChannel channel;
     private final Path path;
     private final FileTime creationTime;
-    private boolean closed;
+    private volatile boolean closed;
     
-    NativeFSLock(FileLock lock, Path path, FileTime creationTime) {
+    NativeFSLock(FileLock lock, FileChannel channel, Path path, FileTime creationTime) {
       this.lock = lock;
+      this.channel = channel;
       this.path = path;
       this.creationTime = creationTime;
     }
 
     @Override
-    public synchronized void ensureValid() throws IOException {
+    public void ensureValid() throws IOException {
       if (closed) {
         throw new AlreadyClosedException("Lock instance already released: " + this);
       }
@@ -163,7 +167,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
       }
       // try to validate the underlying file descriptor.
       // this will throw IOException if something is wrong.
-      long size = lock.channel().size();
+      long size = channel.size();
       if (size != 0) {
         throw new AlreadyClosedException("Unexpected lock file size: " + size + ", (lock=" + this + ")");
       }
@@ -183,7 +187,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
       }
       // NOTE: we don't validate, as unlike SimpleFSLockFactory, we can't break others locks
       // first release the lock, then the channel
-      try (FileChannel channel = lock.channel();
+      try (FileChannel channel = this.channel;
            FileLock lock = this.lock) {
         assert lock != null;
         assert channel != null;

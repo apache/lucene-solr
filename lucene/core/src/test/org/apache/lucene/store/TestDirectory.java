@@ -86,15 +86,13 @@ public class TestDirectory extends LuceneTestCase {
         assertFalse(slowFileExists(d2, fname));
       }
 
-      Lock lock = dir.makeLock(lockname);
-      assertTrue(lock.obtain());
+      Lock lock = dir.obtainLock(lockname);
 
-      for (int j=0; j<dirs.length; j++) {
-        FSDirectory d2 = dirs[j];
-        Lock lock2 = d2.makeLock(lockname);
+      for (Directory other : dirs) {
         try {
-          assertFalse(lock2.obtain(1));
-        } catch (LockObtainFailedException e) {
+          other.obtainLock(lockname);
+          fail("didnt get exception");
+        } catch (IOException e) {
           // OK
         }
       }
@@ -102,8 +100,7 @@ public class TestDirectory extends LuceneTestCase {
       lock.close();
       
       // now lock with different dir
-      lock = dirs[(i+1)%dirs.length].makeLock(lockname);
-      assertTrue(lock.obtain());
+      lock = dirs[(i+1)%dirs.length].obtainLock(lockname);
       lock.close();
     }
 

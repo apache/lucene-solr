@@ -67,7 +67,6 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
@@ -96,14 +95,7 @@ public class TestIndexWriter extends LuceneTestCase {
         IndexReader reader = null;
         int i;
 
-        long savedWriteLockTimeout = IndexWriterConfig.getDefaultWriteLockTimeout();
-        try {
-          IndexWriterConfig.setDefaultWriteLockTimeout(2000);
-          assertEquals(2000, IndexWriterConfig.getDefaultWriteLockTimeout());
-          writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-        } finally {
-          IndexWriterConfig.setDefaultWriteLockTimeout(savedWriteLockTimeout);
-        }
+        writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
         // add 100 documents
         for (i = 0; i < 100; i++) {
@@ -1725,10 +1717,9 @@ public class TestIndexWriter extends LuceneTestCase {
     RandomIndexWriter w1 = new RandomIndexWriter(random(), d);
     w1.deleteAll();
     try {
-      new RandomIndexWriter(random(), d, newIndexWriterConfig(null)
-                                           .setWriteLockTimeout(100));
+      new RandomIndexWriter(random(), d, newIndexWriterConfig(null));
       fail("should not be able to create another writer");
-    } catch (LockObtainFailedException lofe) {
+    } catch (IOException lofe) {
       // expected
     }
     w1.close();
