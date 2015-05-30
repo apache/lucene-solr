@@ -75,29 +75,37 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   }
   
   public void testConcurrentCreateAndDeleteOverTheSameConfig() {
-    Logger.getLogger("org.apache.solr").setLevel(Level.WARN);
-    final String configName = "testconfig";
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    uploadConfig(configDir, configName); // upload config once, to be used by all collections
-    final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-    final AtomicReference<Exception> failure = new AtomicReference<>();
-    final int timeToRunSec = 30;
-    final Thread[] threads = new Thread[2];
-    for (int i = 0; i < threads.length; i++) {
-      final String collectionName = "collection" + i;
-      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, 
-          timeToRunSec, solrClient, failure);
-    }
-    
-    startAll(threads);
-    joinAll(threads);
-    
-    assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
-    
+    // TODO: no idea what this test needs to override the level, but regardless of reason it should
+    // reset when it's done.
+    final Logger logger = Logger.getLogger("org.apache.solr");
+    final Level SAVED_LEVEL = logger.getLevel();
     try {
-      solrClient.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+      logger.setLevel(Level.WARN);
+      final String configName = "testconfig";
+      final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+      uploadConfig(configDir, configName); // upload config once, to be used by all collections
+      final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+      final AtomicReference<Exception> failure = new AtomicReference<>();
+      final int timeToRunSec = 30;
+      final Thread[] threads = new Thread[2];
+      for (int i = 0; i < threads.length; i++) {
+        final String collectionName = "collection" + i;
+        threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, 
+                                                      timeToRunSec, solrClient, failure);
+      }
+    
+      startAll(threads);
+      joinAll(threads);
+    
+      assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
+      
+      try {
+        solrClient.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } finally {
+      logger.setLevel(SAVED_LEVEL);
     }
   }
   
