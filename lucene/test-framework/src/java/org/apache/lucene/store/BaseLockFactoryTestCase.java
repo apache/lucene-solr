@@ -17,8 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,16 +26,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLock extends LuceneTestCase {
-
+/** Base class for per-LockFactory tests. */
+public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
+  
+  /** Subclass returns the Directory to be tested; if it's
+   *  an FS-based directory it should point to the specified
+   *  path, else it can ignore it. */
+  protected abstract Directory getDirectory(Path path) throws IOException;
+  
   public void testObtainConcurrently() throws InterruptedException, IOException {
-    final Directory directory;
-    if (random().nextBoolean()) {
-      directory = newDirectory();
-    } else {
-      LockFactory lf = random().nextBoolean() ? SimpleFSLockFactory.INSTANCE : NativeFSLockFactory.INSTANCE;
-      directory = newFSDirectory(createTempDir(), lf);
-    }
+    final Directory directory = getDirectory(createTempDir());
     final AtomicBoolean running = new AtomicBoolean(true);
     final AtomicInteger atomicCounter = new AtomicInteger(0);
     final ReentrantLock assertingLock = new ReentrantLock();

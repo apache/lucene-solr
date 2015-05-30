@@ -56,6 +56,7 @@ import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -118,7 +119,7 @@ import org.apache.lucene.util.Version;
 
   <p>Opening an <code>IndexWriter</code> creates a lock file for the directory in use. Trying to open
   another <code>IndexWriter</code> on the same directory will lead to a
-  {@link IOException}.</p>
+  {@link LockObtainFailedException}.</p>
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
@@ -4353,6 +4354,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       tragicEvent(oom, "startCommit");
     }
     testPoint("finishStartCommit");
+  }
+  
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a low-level IO error
+   * @deprecated Use of this method can only lead to race conditions. Try
+   *             to actually obtain a lock instead.
+   */
+  @Deprecated
+  public static boolean isLocked(Directory directory) throws IOException {
+    try {
+      directory.obtainLock(WRITE_LOCK_NAME).close();
+      return false;
+    } catch (LockObtainFailedException failed) {
+      return true;
+    }
   }
 
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has

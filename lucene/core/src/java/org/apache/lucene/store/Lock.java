@@ -42,6 +42,8 @@ public abstract class Lock implements Closeable {
    * of the lock file, or other reasons.
    * <p>
    * {@inheritDoc} 
+   * @throws LockReleaseFailedException optional specific exception) if 
+   *         the lock could not be properly released.
    */
   public abstract void close() throws IOException;
   

@@ -128,14 +128,14 @@ public final class SimpleFSLockFactory extends FSLockFactory {
           ensureValid();
         } catch (Throwable exc) {
           // notify the user they may need to intervene.
-          throw new AlreadyClosedException("Lock file cannot be safely removed. Manual intervention is recommended.", exc);
+          throw new LockReleaseFailedException("Lock file cannot be safely removed. Manual intervention is recommended.", exc);
         }
         // we did a best effort check, now try to remove the file. if something goes wrong,
         // we need to make it clear to the user that the directory may still remain locked.
         try {
           Files.delete(path);
         } catch (Throwable exc) {
-          throw new IOException("Unable to remove lock file. Manual intervention is recommended", exc);
+          throw new LockReleaseFailedException("Unable to remove lock file. Manual intervention is recommended", exc);
         }
       } finally {
         closed = true;
