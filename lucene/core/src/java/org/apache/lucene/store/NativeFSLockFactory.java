@@ -139,11 +139,11 @@ public final class NativeFSLockFactory extends FSLockFactory {
   // FileLock has an accessor, but mockfs doesnt yet mock the locks, too scary atm.
 
   static final class NativeFSLock extends Lock {
-    private final FileLock lock;
-    private final FileChannel channel;
-    private final Path path;
-    private final FileTime creationTime;
-    private volatile boolean closed;
+    final FileLock lock;
+    final FileChannel channel;
+    final Path path;
+    final FileTime creationTime;
+    volatile boolean closed;
     
     NativeFSLock(FileLock lock, FileChannel channel, Path path, FileTime creationTime) {
       this.lock = lock;

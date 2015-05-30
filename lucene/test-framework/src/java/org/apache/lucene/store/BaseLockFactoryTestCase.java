@@ -46,11 +46,11 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
    *  path, else it can ignore it. */
   protected abstract Directory getDirectory(Path path) throws IOException;
   
+  /** Test obtaining and releasing locks, checking validity */
   public void testBasics() throws IOException {
     Directory dir = getDirectory(createTempDir());
     
     Lock l = dir.obtainLock("commit");
-    l.ensureValid();
     try {
       dir.obtainLock("commit");
       fail("succeeded in obtaining lock twice, didn't get exception");
@@ -59,8 +59,44 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     
     // Make sure we can obtain first one again:
     l = dir.obtainLock("commit");
-    l.ensureValid();
     l.close();
+    
+    dir.close();
+  }
+  
+  /** Test closing locks twice */
+  public void testDoubleClose() throws IOException {
+    Directory dir = getDirectory(createTempDir());
+    
+    Lock l = dir.obtainLock("commit");
+    l.close();
+    l.close(); // close again, should be no exception
+    
+    dir.close();
+  }
+  
+  /** Test ensureValid returns true after acquire */
+  public void testValidAfterAcquire() throws IOException {
+    Directory dir = getDirectory(createTempDir());
+
+    Lock l = dir.obtainLock("commit");
+    l.ensureValid(); // no exception
+    l.close();
+    
+    dir.close();
+  }
+  
+  /** Test ensureValid throws exception after close */
+  public void testInvalidAfterClose() throws IOException {
+    Directory dir = getDirectory(createTempDir());
+    
+    Lock l = dir.obtainLock("commit");
+    l.close();
+
+    try {
+      l.ensureValid();
+      fail("didn't get exception");
+    } catch (AlreadyClosedException expected) {}
     
     dir.close();
   }
