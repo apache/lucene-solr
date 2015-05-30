@@ -34,12 +34,12 @@ import org.junit.BeforeClass;
  */
 public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
-  private static org.apache.log4j.Level SAVED_LEVEL = null; // SOLR-7603
+  private static org.apache.log4j.Level SAVED_LEVEL = null; // SOLR-7603 - remove
   
   @BeforeClass
   public static void beforeClass() throws Exception {
 
-    // SOLR-7603
+    // SOLR-7603 - remove
     SAVED_LEVEL = org.apache.log4j.LogManager.getRootLogger().getLevel();
     org.apache.log4j.LogManager.getRootLogger().setLevel(org.apache.log4j.Level.DEBUG);
     
@@ -47,7 +47,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   }
   
   @AfterClass
-  public static void fixLogLevelAfterClass() throws Exception { // SOLR-7603
+  public static void fixLogLevelAfterClass() throws Exception { // SOLR-7603 - remove
     org.apache.log4j.LogManager.getRootLogger().setLevel(SAVED_LEVEL);
   }
 
@@ -85,6 +85,16 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
   public void testUpdateDistribChainSkipping() throws Exception {
 
+    // a key part of this test is verifying that LogUpdateProcessor is found in all chains because it
+    // is a @RunAllways processor -- but in order for that to work, we have to sanity check that the log
+    // level is at least "INFO" otherwise the factory won't even produce a processor and all our assertions
+    // are for nought.  (see LogUpdateProcessorFactory.getInstance)
+    //
+    // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.
+    assertTrue("Tests must be run with INFO level logging "+
+               "otherwise LogUpdateProcessor isn't used and can't be tested.",
+               LogUpdateProcessor.log.isInfoEnabled());
+    
     final int EXPECTED_CHAIN_LENGTH = 5;
     SolrCore core = h.getCore();
     for (final String name : Arrays.asList("distrib-chain-explicit",
@@ -165,3 +175,4 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     return result;
   }
 }
+
