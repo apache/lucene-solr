@@ -58,15 +58,6 @@ public class TestLockFactory extends LuceneTestCase {
         // Both write lock and commit lock should have been created:
         assertEquals("# of unique locks created (after instantiating IndexWriter)",
                      1, lf.locksCreated.size());
-        assertTrue("# calls to makeLock is 0 (after instantiating IndexWriter)",
-                   lf.makeLockCount >= 1);
-        
-        for(final String lockName : lf.locksCreated.keySet()) {
-            MockLockFactory.MockLock lock = (MockLockFactory.MockLock) lf.locksCreated.get(lockName);
-            assertTrue("# calls to Lock.obtain is 0 (after instantiating IndexWriter)",
-                       lock.lockAttempts > 0);
-        }
-        
         writer.close();
     }
 
@@ -75,7 +66,6 @@ public class TestLockFactory extends LuceneTestCase {
     // Verify: NoLockFactory allows two IndexWriters
     public void testRAMDirectoryNoLocking() throws IOException {
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory(NoLockFactory.INSTANCE));
-        dir.setAssertLocks(false); // we are gonna explicitly test we get this back
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
         writer.commit(); // required so the second open succeed 
@@ -166,23 +156,18 @@ public class TestLockFactory extends LuceneTestCase {
     public void testNativeFSLockFactory() throws IOException {
       Directory dir = FSDirectory.open(createTempDir(LuceneTestCase.getTestClass().getSimpleName()), NativeFSLockFactory.INSTANCE);
 
-      Lock l = dir.makeLock("commit");
-      Lock l2 = dir.makeLock("commit");
-
-      assertTrue("failed to obtain lock", l.obtain());
-      assertTrue("succeeded in obtaining lock twice", !l2.obtain());
+      Lock l = dir.obtainLock("commit");
+      l.ensureValid();
+      try {
+        dir.obtainLock("commit");
+        fail("succeeded in obtaining lock twice, didn't get exception");
+      } catch (LockObtainFailedException expected) {}
       l.close();
 
-      assertTrue("failed to obtain 2nd lock after first one was freed", l2.obtain());
-      l2.close();
-
-      // Make sure we can obtain first one again, test isLocked():
-      assertTrue("failed to obtain lock", l.obtain());
-      assertTrue(l.isLocked());
-      assertTrue(l2.isLocked());
+      // Make sure we can obtain first one again:
+      l = dir.obtainLock("commit");
+      l.ensureValid();
       l.close();
-      assertFalse(l.isLocked());
-      assertFalse(l2.isLocked());
     }
 
     
@@ -193,10 +178,8 @@ public class TestLockFactory extends LuceneTestCase {
       Files.createFile(lockFile);
       
       Directory dir = FSDirectory.open(tempDir, NativeFSLockFactory.INSTANCE);
-      Lock l = dir.makeLock("test.lock");
-      assertTrue("failed to obtain lock", l.obtain());
+      Lock l = dir.obtainLock("test.lock");
       l.close();
-      assertFalse("failed to release lock", l.isLocked());
       Files.deleteIfExists(lockFile);
     }
 
@@ -303,32 +286,26 @@ public class TestLockFactory extends LuceneTestCase {
     class MockLockFactory extends LockFactory {
 
         public Map<String,Lock> locksCreated = Collections.synchronizedMap(new HashMap<String,Lock>());
-        public int makeLockCount = 0;
 
         @Override
-        public synchronized Lock makeLock(Directory dir, String lockName) {
+        public synchronized Lock obtainLock(Directory dir, String lockName) {
             Lock lock = new MockLock();
             locksCreated.put(lockName, lock);
-            makeLockCount++;
             return lock;
         }
 
         public class MockLock extends Lock {
-            public int lockAttempts;
 
-            @Override
-            public boolean obtain() {
-                lockAttempts++;
-                return true;
-            }
             @Override
             public void close() {
                 // do nothing
             }
+
             @Override
-            public boolean isLocked() {
-                return false;
+            public void ensureValid() throws IOException {
+              // do nothing
             }
+
         }
     }
 

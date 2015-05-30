@@ -67,6 +67,7 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
@@ -1719,7 +1720,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try {
       new RandomIndexWriter(random(), d, newIndexWriterConfig(null));
       fail("should not be able to create another writer");
-    } catch (IOException lofe) {
+    } catch (LockObtainFailedException lofe) {
       // expected
     }
     w1.close();

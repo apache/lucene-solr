@@ -76,7 +76,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean assertNoDeleteOpenFile = false;
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
-  boolean wrapLocking = true;
   boolean useSlowOpenClosers = LuceneTestCase.TEST_NIGHTLY;
   boolean enableVirusScanner = true;
   boolean allowRandomFileNotFoundException = true;
@@ -701,19 +700,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setAssertNoUnrefencedFilesOnClose(boolean v) {
     assertNoUnreferencedFilesOnClose = v;
   }
-  
-  /**
-   * Set to false if you want to return the pure {@link LockFactory} and not
-   * wrap all lock with {@code AssertingLock}.
-   * <p>
-   * Be careful if you turn this off: {@code MockDirectoryWrapper} might
-   * no longer be able to detect if you forget to close an {@link IndexWriter},
-   * and spit out horribly scary confusing exceptions instead of
-   * simply telling you that.
-   */
-  public void setAssertLocks(boolean v) {
-    this.wrapLocking = v;
-  }
 
   @Override
   public synchronized void close() throws IOException {
@@ -996,53 +982,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   @Override
   public synchronized Lock obtainLock(String name) throws IOException {
     maybeYield();
-    if (wrapLocking) {
-      final Lock delegateLock = super.obtainLock(name);
-      return new AssertingLock(delegateLock, name);
-    } else {
-      return super.obtainLock(name);
-    }
+    return super.obtainLock(name);
+    // TODO: consider mocking locks, but not all the time, can hide bugs
   }
-  
-  private final class AssertingLock extends Lock {
-    private final Lock delegateLock;
-    private final String name;
-    private volatile boolean closed;
-    
-    AssertingLock(Lock delegate, String name) {
-      this.delegateLock = delegate;
-      this.name = name;
-      final RuntimeException exception = openLocks.putIfAbsent(name, new RuntimeException("lock \"" + name + "\" was not released: " + delegateLock));
-      if (exception != null && delegateLock != NoLockFactory.SINGLETON_LOCK) {
-        throw exception;
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (closed) {
-        return;
-      }
-      try {
-        RuntimeException remove = openLocks.remove(name);
-        // TODO: fix stupid tests like TestIndexWriter.testNoSegmentFile to not do this!
-        assert remove != null || delegateLock == NoLockFactory.SINGLETON_LOCK;
-      } finally {
-        closed = true;
-      }
-      delegateLock.close();
-    }
-
-    @Override
-    public String toString() {
-      return "AssertingLock(" + delegateLock + ")";
-    }
-
-    @Override
-    public void ensureValid() throws IOException {
-      // TODO
-    }
-  }  
   
   /** Use this when throwing fake {@code IOException},
    *  e.g. from {@link MockDirectoryWrapper.Failure}. */

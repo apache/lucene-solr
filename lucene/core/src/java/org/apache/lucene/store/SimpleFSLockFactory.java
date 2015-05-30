@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -30,16 +29,11 @@ import java.nio.file.attribute.FileTime;
  * <p>Implements {@link LockFactory} using {@link
  * Files#createFile}.</p>
  *
- * <p><b>NOTE:</b> the {@linkplain File#createNewFile() javadocs
- * for <code>File.createNewFile()</code>} contain a vague
- * yet spooky warning about not using the API for file
- * locking.  This warning was added due to <a target="_top"
- * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4676183">this
- * bug</a>, and in fact the only known problem with using
- * this API for locking is that the Lucene write lock may
- * not be released when the JVM exits abnormally.</p>
-
- * <p>When this happens, an {@link IOException}
+ * <p>The main downside with using this API for locking is 
+ * that the Lucene write lock may not be released when 
+ * the JVM exits abnormally.</p>
+ *
+ * <p>When this happens, an {@link LockObtainFailedException}
  * is hit when trying to create a writer, in which case you may
  * need to explicitly clear the lock file first by
  * manually removing the file.  But, first be certain that
@@ -137,7 +131,7 @@ public final class SimpleFSLockFactory extends FSLockFactory {
           throw new AlreadyClosedException("Lock file cannot be safely removed. Manual intervention is recommended.", exc);
         }
         // we did a best effort check, now try to remove the file. if something goes wrong,
-        // we need to make it clear to the user that the directory my still remain locked.
+        // we need to make it clear to the user that the directory may still remain locked.
         try {
           Files.delete(path);
         } catch (Throwable exc) {

@@ -252,8 +252,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
-  private final Directory directory;  // where this index resides
-  private final Directory mergeDirectory;  // used for merging
+  private final Directory directory;           // where this index resides
+  private final Directory mergeDirectory;      // wrapped with throttling: used for merging
   private final Analyzer analyzer;    // how to analyze text
 
   private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed
@@ -754,8 +754,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     config = conf;
 
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
-
-    directory = new LockValidatingDirectoryWrapper(d, writeLock);
+    directory = d;
+    // nocommit: turn on carefully after we get other stuff going
+    // validatingDirectory = new LockValidatingDirectoryWrapper(d, writeLock);
 
     // Directory we use for merging, so we can abort running merges, and so
     // merge schedulers can optionally rate-limit per-merge IO:
@@ -1031,6 +1032,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
+    // return the original directory the user supplied, unwrapped.
     return directory;
   }
 

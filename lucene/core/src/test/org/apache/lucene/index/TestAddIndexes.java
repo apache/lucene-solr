@@ -40,6 +40,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
@@ -305,7 +306,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.addIndexes(aux, dir);
       assertTrue(false);
     }
-    catch (IOException e) {
+    catch (IllegalArgumentException e) {
       assertEquals(100, writer.maxDoc());
     }
     writer.close();
@@ -1272,7 +1273,7 @@ public class TestAddIndexes extends LuceneTestCase {
     try {
       w2.addIndexes(src);
       fail("did not hit expected exception");
-    } catch (IOException lofe) {
+    } catch (LockObtainFailedException lofe) {
       // expected
     }
 

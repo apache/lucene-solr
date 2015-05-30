@@ -92,7 +92,7 @@ public class TestDirectory extends LuceneTestCase {
         try {
           other.obtainLock(lockname);
           fail("didnt get exception");
-        } catch (IOException e) {
+        } catch (LockObtainFailedException e) {
           // OK
         }
       }

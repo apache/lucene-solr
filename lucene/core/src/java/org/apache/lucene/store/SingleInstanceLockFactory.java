@@ -48,14 +48,14 @@ public final class SingleInstanceLockFactory extends LockFactory {
 
   private class SingleInstanceLock extends Lock {
     private final String lockName;
-    private boolean closed;
+    private volatile boolean closed;
 
     public SingleInstanceLock(String lockName) {
       this.lockName = lockName;
     }
 
     @Override
-    public synchronized void ensureValid() throws IOException {
+    public void ensureValid() throws IOException {
       if (closed) {
         throw new AlreadyClosedException("Lock instance already released: " + this);
       }

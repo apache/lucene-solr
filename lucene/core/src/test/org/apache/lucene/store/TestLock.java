@@ -28,36 +28,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLock extends LuceneTestCase {
 
-    public void testObtain() {
-        LockMock lock = new LockMock();
-        Lock.LOCK_POLL_INTERVAL = 10;
-
-        try {
-            lock.obtain(Lock.LOCK_POLL_INTERVAL);
-            fail("Should have failed to obtain lock");
-        } catch (IOException e) {
-            assertEquals("should attempt to lock more than once", lock.lockAttempts, 2);
-        }
-    }
-
-    private class LockMock extends Lock {
-        public int lockAttempts;
-
-        @Override
-        public boolean obtain() {
-            lockAttempts++;
-            return false;
-        }
-        @Override
-        public void close() {
-            // do nothing
-        }
-        @Override
-        public boolean isLocked() {
-            return false;
-        }
-    }
-
   public void testObtainConcurrently() throws InterruptedException, IOException {
     final Directory directory;
     if (random().nextBoolean()) {
@@ -70,7 +40,7 @@ public class TestLock extends LuceneTestCase {
     final AtomicInteger atomicCounter = new AtomicInteger(0);
     final ReentrantLock assertingLock = new ReentrantLock();
     int numThreads = 2 + random().nextInt(10);
-    final int runs = 500 + random().nextInt(1000);
+    final int runs = atLeast(10000);
     CyclicBarrier barrier = new CyclicBarrier(numThreads);
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
@@ -83,16 +53,14 @@ public class TestLock extends LuceneTestCase {
             throw new RuntimeException(e);
           }
           while (running.get()) {
-            try (Lock lock = directory.makeLock("foo.lock")) {
-              if (lock.isLocked() == false && lock.obtain()) {
-                assertTrue(lock.isLocked());
-                assertFalse(assertingLock.isLocked());
-                if (assertingLock.tryLock()) {
-                  assertingLock.unlock();
-                } else {
-                  fail();
-                }
+            try (Lock lock = directory.obtainLock("foo.lock")) {
+              assertFalse(assertingLock.isLocked());
+              if (assertingLock.tryLock()) {
+                assertingLock.unlock();
+              } else {
+                fail();
               }
+              assert lock != null; // stupid compiler
             } catch (IOException ex) {
               //
             }
