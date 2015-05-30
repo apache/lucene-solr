@@ -22,8 +22,8 @@ import java.nio.file.Path;
 
 import org.apache.lucene.util.TestUtil;
 
-/** Simple tests for SleepingLockFactory */
-public class TestSleepingLockFactory extends BaseLockFactoryTestCase {
+/** Simple tests for SleepingLockWrapper */
+public class TestSleepingLockWrapper extends BaseLockFactoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
@@ -33,11 +33,11 @@ public class TestSleepingLockFactory extends BaseLockFactoryTestCase {
     int which = random().nextInt(3);
     switch (which) {
       case 0:
-        return newDirectory(random(), new SleepingLockFactory(new SingleInstanceLockFactory(), lockWaitTimeout, pollInterval));
+        return new SleepingLockWrapper(newDirectory(random(), new SingleInstanceLockFactory()), lockWaitTimeout, pollInterval);
       case 1:
-        return newFSDirectory(path, new SleepingLockFactory(NativeFSLockFactory.INSTANCE, lockWaitTimeout, pollInterval));
+        return new SleepingLockWrapper(newFSDirectory(path), lockWaitTimeout, pollInterval);
       default:
-        return newFSDirectory(path, new SleepingLockFactory(SimpleFSLockFactory.INSTANCE, lockWaitTimeout, pollInterval));
+        return new SleepingLockWrapper(newFSDirectory(path), lockWaitTimeout, pollInterval);
     }
   }
   

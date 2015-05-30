@@ -60,6 +60,9 @@ public class LiveIndexWriterConfig {
   /** {@link MergeScheduler} to use for running merges. */
   protected volatile MergeScheduler mergeScheduler;
 
+  /** Timeout when trying to obtain the write lock on init. */
+  protected volatile long writeLockTimeout;
+
   /** {@link IndexingChain} that determines how documents are
    *  indexed. */
   protected volatile IndexingChain indexingChain;
@@ -107,6 +110,7 @@ public class LiveIndexWriterConfig {
     openMode = OpenMode.CREATE_OR_APPEND;
     similarity = IndexSearcher.getDefaultSimilarity();
     mergeScheduler = new ConcurrentMergeScheduler();
+    writeLockTimeout = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     codec = Codec.getDefault();
     if (codec == null) {
@@ -347,6 +351,15 @@ public class LiveIndexWriterConfig {
     return mergeScheduler;
   }
   
+  /**
+   * Returns allowed timeout when acquiring the write lock.
+   *
+   * @see IndexWriterConfig#setWriteLockTimeout(long)
+   */
+  public long getWriteLockTimeout() {
+    return writeLockTimeout;
+  }
+  
   /** Returns the current {@link Codec}. */
   public Codec getCodec() {
     return codec;
@@ -468,6 +481,8 @@ public class LiveIndexWriterConfig {
     sb.append("openMode=").append(getOpenMode()).append("\n");
     sb.append("similarity=").append(getSimilarity().getClass().getName()).append("\n");
     sb.append("mergeScheduler=").append(getMergeScheduler()).append("\n");
+    sb.append("default WRITE_LOCK_TIMEOUT=").append(IndexWriterConfig.WRITE_LOCK_TIMEOUT).append("\n");
+    sb.append("writeLockTimeout=").append(getWriteLockTimeout()).append("\n");
     sb.append("codec=").append(getCodec()).append("\n");
     sb.append("infoStream=").append(getInfoStream().getClass().getName()).append("\n");
     sb.append("mergePolicy=").append(getMergePolicy()).append("\n");

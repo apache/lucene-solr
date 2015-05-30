@@ -59,6 +59,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
+import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
@@ -753,8 +754,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
-
-    writeLock = d.obtainLock(WRITE_LOCK_NAME);
+    
+    // obtain the write.lock
+    long timeout = config.getWriteLockTimeout();
+    final Directory lockDir;
+    if (timeout == 0) {
+      // user doesn't want sleep/retries
+      lockDir = d;
+    } else {
+      lockDir = new SleepingLockWrapper(d, timeout);
+    }
+    writeLock = lockDir.obtainLock(WRITE_LOCK_NAME);
+    
     directory = d;
     // nocommit: turn on carefully after we get other stuff going
     // validatingDirectory = new LockValidatingDirectoryWrapper(d, writeLock);
