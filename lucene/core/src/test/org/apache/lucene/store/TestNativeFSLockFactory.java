@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** Simple tests for NativeFSLockFactory */
@@ -28,5 +29,15 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
     return newFSDirectory(path, NativeFSLockFactory.INSTANCE);
   }
   
-  // TODO: specific tests to this impl
+  /** Verify NativeFSLockFactory works correctly if the lock file exists */
+  public void testLockFileExists() throws IOException {
+    Path tempDir = createTempDir();
+    Path lockFile = tempDir.resolve("test.lock");
+    Files.createFile(lockFile);
+    
+    Directory dir = getDirectory(tempDir);
+    Lock l = dir.obtainLock("test.lock");
+    l.close();
+    dir.close();
+  }
 }

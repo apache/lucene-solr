@@ -20,13 +20,40 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+
 /** Simple tests for SingleInstanceLockFactory */
 public class TestSingleInstanceLockFactory extends BaseLockFactoryTestCase {
-
+  
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     return newDirectory(random(), new SingleInstanceLockFactory());
   }
   
-  // TODO: specific tests to this impl
+  // Verify: SingleInstanceLockFactory is the default lock for RAMDirectory
+  // Verify: RAMDirectory does basic locking correctly (can't create two IndexWriters)
+  public void testDefaultRAMDirectory() throws IOException {
+    RAMDirectory dir = new RAMDirectory();
+    
+    assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.lockFactory,
+        dir.lockFactory instanceof SingleInstanceLockFactory);
+    
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    
+    // Create a 2nd IndexWriter.  This should fail:
+    IndexWriter writer2 = null;
+    try {
+      writer2 = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+      fail("Should have hit an IOException with two IndexWriters on default SingleInstanceLockFactory");
+    } catch (IOException e) {
+    }
+    
+    writer.close();
+    if (writer2 != null) {
+      writer2.close();
+    }
+  }
 }

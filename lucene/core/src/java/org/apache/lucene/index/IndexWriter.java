@@ -755,7 +755,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     
-    // obtain the write.lock
+    // obtain the write.lock. If the user configured a timeout,
+    // we wrap with a sleeper and this might take some time.
     long timeout = config.getWriteLockTimeout();
     final Directory lockDir;
     if (timeout == 0) {
