@@ -18,7 +18,6 @@
 package org.apache.solr.request;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -80,6 +79,8 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -108,7 +109,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class SimpleFacets {
   
-  private final static Logger log = Logger.getLogger(SimpleFacets.class);
+  private final static Logger log = LoggerFactory.getLogger(SimpleFacets.class);
 
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
