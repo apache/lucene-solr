@@ -754,6 +754,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
+    infoStream = config.getInfoStream();
     
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
@@ -767,25 +768,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     writeLock = lockDir.obtainLock(WRITE_LOCK_NAME);
     
-    directory = d;
-    // nocommit: turn on carefully after we get other stuff going
-    // validatingDirectory = new LockValidatingDirectoryWrapper(d, writeLock);
-
-    // Directory we use for merging, so we can abort running merges, and so
-    // merge schedulers can optionally rate-limit per-merge IO:
-    mergeDirectory = addMergeRateLimiters(directory);
-
-    analyzer = config.getAnalyzer();
-    infoStream = config.getInfoStream();
-    mergeScheduler = config.getMergeScheduler();
-    mergeScheduler.setInfoStream(infoStream);
-    codec = config.getCodec();
-
-    bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
-    poolReaders = config.getReaderPooling();
-
     boolean success = false;
     try {
+      directory = d;
+      // nocommit: turn on carefully after we get other stuff going
+      // validatingDirectory = new LockValidatingDirectoryWrapper(d, writeLock);
+
+      // Directory we use for merging, so we can abort running merges, and so
+      // merge schedulers can optionally rate-limit per-merge IO:
+      mergeDirectory = addMergeRateLimiters(directory);
+
+      analyzer = config.getAnalyzer();
+      mergeScheduler = config.getMergeScheduler();
+      mergeScheduler.setInfoStream(infoStream);
+      codec = config.getCodec();
+
+      bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
+      poolReaders = config.getReaderPooling();
+
       OpenMode mode = config.getOpenMode();
       boolean create;
       if (mode == OpenMode.CREATE) {
