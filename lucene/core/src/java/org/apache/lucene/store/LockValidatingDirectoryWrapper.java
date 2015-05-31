@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 /** 
  * This class makes a best-effort check that a provided {@link Lock}
@@ -53,5 +54,11 @@ public final class LockValidatingDirectoryWrapper extends FilterDirectory {
   public void renameFile(String source, String dest) throws IOException {
     writeLock.ensureValid();
     in.renameFile(source, dest);
+  }
+
+  @Override
+  public void sync(Collection<String> names) throws IOException {
+    writeLock.ensureValid();
+    in.sync(names);
   }
 }
