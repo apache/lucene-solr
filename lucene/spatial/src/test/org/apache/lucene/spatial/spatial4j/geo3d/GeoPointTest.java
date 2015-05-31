@@ -30,15 +30,25 @@ public class GeoPointTest extends LuceneTestCase {
 
   @Test
   public void testConversion() {
-    final double pLat = (randomFloat() * 180.0 - 90.0) * DistanceUtils.DEGREES_TO_RADIANS;
-    final double pLon = (randomFloat() * 360.0 - 180.0) * DistanceUtils.DEGREES_TO_RADIANS;
-    final GeoPoint p1 = new GeoPoint(PlanetModel.SPHERE, pLat, pLon);
-    assertEquals(pLat, p1.getLatitude(), 1e-12);
-    assertEquals(pLon, p1.getLongitude(), 1e-12);
-    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, pLat, pLon);
-    assertEquals(pLat, p2.getLatitude(), 1e-12);
-    assertEquals(pLon, p2.getLongitude(), 1e-12);
-    
+    testPointRoundTrip(PlanetModel.SPHERE, 90, 0, 1e-12);
+    testPointRoundTrip(PlanetModel.SPHERE, -90, 0, 1e-12);
+    testPointRoundTrip(PlanetModel.WGS84, 90, 0, 1e-12);
+    testPointRoundTrip(PlanetModel.WGS84, -90, 0, 1e-12);
+
+    final int times = atLeast(100);
+    for (int i = 0; i < times; i++) {
+      final double pLat = (randomFloat() * 180.0 - 90.0) * DistanceUtils.DEGREES_TO_RADIANS;
+      final double pLon = (randomFloat() * 360.0 - 180.0) * DistanceUtils.DEGREES_TO_RADIANS;
+      testPointRoundTrip(PlanetModel.SPHERE, pLat, pLon, 1e-6);//1e-6 since there's a square root in there (Karl says)
+      testPointRoundTrip(PlanetModel.WGS84, pLat, pLon, 1e-6);
+    }
+  }
+
+  protected void testPointRoundTrip(PlanetModel planetModel, double pLat, double pLon, double epsilon) {
+    final GeoPoint p1 = new GeoPoint(planetModel, pLat, pLon);
+    final GeoPoint p2 = new GeoPoint(planetModel, p1.getLatitude(), p1.getLongitude());
+    double dist = p1.arcDistance(p2);
+    assertEquals(0, dist, epsilon);
   }
 
 }
