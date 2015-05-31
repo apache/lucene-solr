@@ -734,7 +734,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // super() does not throw IOException currently:
         throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
       }
-      System.out.println("MDW close: " + openLocks);
       if (openLocks.size() > 0) {
         Exception cause = null;
         Iterator<RuntimeException> stacktraces = openLocks.values().iterator();
