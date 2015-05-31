@@ -33,25 +33,29 @@ public class TestSimpleFSLockFactory extends BaseLockFactoryTestCase {
   /** delete the lockfile and test ensureValid fails */
   public void testDeleteLockFile() throws IOException {
     Directory dir = getDirectory(createTempDir());
-    Lock lock = dir.obtainLock("test.lock");
-    lock.ensureValid();
-    
     try {
-      dir.deleteFile("test.lock");
-    } catch (Exception e) {
-      // we can't delete a file for some reason, just clean up and assume the test.
-      IOUtils.closeWhileHandlingException(lock);
-      assumeNoException("test requires the ability to delete a locked file", e);
-    }
-    
-    try {
+      Lock lock = dir.obtainLock("test.lock");
       lock.ensureValid();
-      fail("no exception");
-    } catch (IOException expected) {
-      // ok
+    
+      try {
+        dir.deleteFile("test.lock");
+      } catch (Exception e) {
+        // we can't delete a file for some reason, just clean up and assume the test.
+        IOUtils.closeWhileHandlingException(lock);
+        assumeNoException("test requires the ability to delete a locked file", e);
+      }
+    
+      try {
+        lock.ensureValid();
+        fail("no exception");
+      } catch (IOException expected) {
+        // ok
+      } finally {
+        IOUtils.closeWhileHandlingException(lock);
+      }
     } finally {
-      IOUtils.closeWhileHandlingException(lock);
+      // Do this in finally clause in case the assumeNoException is false:
+      dir.close();
     }
-    dir.close();
   }
 }
