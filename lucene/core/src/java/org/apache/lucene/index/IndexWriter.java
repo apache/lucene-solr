@@ -2304,7 +2304,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       } finally {
         if (success == false) {
           // Release all previously acquired locks:
-          // nocommit: addSuppressed
+          // TODO: addSuppressed? it could be many...
           IOUtils.closeWhileHandlingException(locks);
         }
       }

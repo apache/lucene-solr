@@ -119,7 +119,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         }
       } finally {
         if (lock == null) { // not successful - clear up and move out
-          IOUtils.close(channel); // nocommit: addSuppressed
+          IOUtils.closeWhileHandlingException(channel); // TODO: addSuppressed
           clearLockHeld(realPath);  // clear LOCK_HELD last 
         }
       }
