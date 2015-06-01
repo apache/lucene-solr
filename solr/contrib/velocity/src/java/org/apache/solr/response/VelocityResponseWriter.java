@@ -324,19 +324,18 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   // see: http://svn.apache.org/repos/asf/velocity/tools/branches/2.0.x/src/main/java/org/apache/velocity/tools/generic/ResourceTool.java
   private class SolrVelocityResourceTool extends ResourceTool {
 
-    private final Locale locale;
     private ClassLoader solrClassLoader;
 
     public SolrVelocityResourceTool(ClassLoader cl, String localeString) {
       this.solrClassLoader = cl;
       Locale l = toLocale(localeString);
-      this.locale = (l == null ? Locale.ROOT : l);
+      this.setLocale(l == null ? Locale.ROOT : l);
     }
 
     @Override
     protected ResourceBundle getBundle(String baseName, Object loc) {
       // resource bundles for this tool must be in velocity "package"
-      return ResourceBundle.getBundle("velocity." + baseName, locale, solrClassLoader);
+      return ResourceBundle.getBundle("velocity." + baseName, getLocale(), solrClassLoader);
     }
 
     // Why did Velocity Tools make this private?  Copied from ResourceTools.java
