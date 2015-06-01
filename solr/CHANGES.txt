@@ -90,6 +90,9 @@ Bug Fixes
 * SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
   requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
+* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
+  (ehatcher)
+
 Optimizations
 ----------------------
 (no changes)
@@ -106,8 +109,6 @@ Other Changes
 
 * SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
 
-* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
-  (ehatcher)
 
 ==================  5.2.0 ==================
 
