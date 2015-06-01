@@ -254,7 +254,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
-  private final Directory directory;           // where this index resides
+  private final Directory directoryOrig;       // original user directory
+  private final Directory directory;           // wrapped with additional checks
   private final Directory mergeDirectory;      // wrapped with throttling: used for merging
   private final Analyzer analyzer;    // how to analyze text
 
@@ -645,7 +646,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Make sure no new readers can be opened if another thread just closed us:
       ensureOpen(false);
 
-      assert info.info.dir == directory: "info.dir=" + info.info.dir + " vs " + directory;
+      assert info.info.dir == directoryOrig: "info.dir=" + info.info.dir + " vs " + directoryOrig;
 
       ReadersAndUpdates rld = readerMap.get(info);
       if (rld == null) {
@@ -770,9 +771,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     boolean success = false;
     try {
-      directory = d;
-      // nocommit: turn on carefully after we get other stuff going
-      // validatingDirectory = new LockValidatingDirectoryWrapper(d, writeLock);
+      directoryOrig = d;
+      directory = new LockValidatingDirectoryWrapper(d, writeLock);
 
       // Directory we use for merging, so we can abort running merges, and so
       // merge schedulers can optionally rate-limit per-merge IO:
@@ -831,7 +831,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         // Do not use SegmentInfos.read(Directory) since the spooky
         // retrying it does is not necessary here (we hold the write lock):
-        segmentInfos = SegmentInfos.readCommit(directory, lastSegmentsFile);
+        segmentInfos = SegmentInfos.readCommit(directoryOrig, lastSegmentsFile);
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
@@ -840,9 +840,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // preserve write-once.  This is important if
           // readers are open against the future commit
           // points.
-          if (commit.getDirectory() != directory)
-            throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = SegmentInfos.readCommit(directory, commit.getSegmentsFileName());
+          if (commit.getDirectory() != directoryOrig)
+            throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory, expected=" + directoryOrig + ", got=" + commit.getDirectory());
+          SegmentInfos oldInfos = SegmentInfos.readCommit(directoryOrig, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changed();
           if (infoStream.isEnabled("IW")) {
@@ -857,7 +857,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = getFieldNumberMap();
       config.getFlushPolicy().init(config);
-      docWriter = new DocumentsWriter(this, config, directory);
+      docWriter = new DocumentsWriter(this, config, directoryOrig, directory);
       eventQueue = docWriter.eventQueue();
 
       // Default deleter (for backwards compatibility) is
@@ -946,7 +946,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private void messageState() {
     if (infoStream.isEnabled("IW") && didMessageState == false) {
       didMessageState = true;
-      infoStream.message("IW", "\ndir=" + directory + "\n" +
+      infoStream.message("IW", "\ndir=" + directoryOrig + "\n" +
             "index=" + segString() + "\n" +
             "version=" + Version.LATEST.toString() + "\n" +
             config.toString());
@@ -1046,7 +1046,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
     // return the original directory the user supplied, unwrapped.
-    return directory;
+    return directoryOrig;
   }
 
   /** Returns the analyzer used by this index. */
@@ -2284,7 +2284,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     for(int i=0;i<dirs.length;i++) {
       if (dups.contains(dirs[i]))
         throw new IllegalArgumentException("Directory " + dirs[i] + " appears more than once");
-      if (dirs[i] == directory)
+      if (dirs[i] == directoryOrig)
         throw new IllegalArgumentException("Cannot add directory to itself");
       dups.add(dirs[i]);
     }
@@ -2504,7 +2504,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // abortable so that IW.close(false) is able to stop it
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
-      SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
+      SegmentInfo info = new SegmentInfo(directoryOrig, Version.LATEST, mergedName, -1,
                                          false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
@@ -2608,7 +2608,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
     // Same SI as before but we change directory and name
-    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.maxDoc(),
+    SegmentInfo newInfo = new SegmentInfo(directoryOrig, info.info.getVersion(), segName, info.info.maxDoc(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics(), info.info.getId(), info.info.getAttributes());
     SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), 
@@ -3083,7 +3083,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private synchronized void ensureValidMerge(MergePolicy.OneMerge merge) {
     for(SegmentCommitInfo info : merge.segments) {
       if (!segmentInfos.contains(info)) {
-        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString(), directory);
+        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString(), directoryOrig);
       }
     }
   }
@@ -3607,7 +3607,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         return false;
       }
-      if (info.info.dir != directory) {
+      if (info.info.dir != directoryOrig) {
         isExternal = true;
       }
       if (segmentsToMerge.containsKey(info)) {
@@ -3740,7 +3740,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Version.LATEST, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
     Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
