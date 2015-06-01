@@ -863,7 +863,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
       synchronized(this) {
-        deleter = new IndexFileDeleter(directory,
+        deleter = new IndexFileDeleter(directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
                                        initialIndexExists);
