@@ -106,6 +106,9 @@ Other Changes
 
 * SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
 
+* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
+  (ehatcher)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
