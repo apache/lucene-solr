@@ -69,6 +69,6 @@ public class PrefixCompletionQuery extends CompletionQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
-    return new CompletionWeight(searcher.getIndexReader(), this, stream.toAutomaton());
+    return new CompletionWeight(this, stream.toAutomaton());
   }
 }

@@ -17,8 +17,6 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
-import java.util.Collections;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -87,14 +85,14 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type1"), "sduggestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "sduggestion", 1, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "sudggestion", 1, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "sugdgestion", 1, "type3"));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggdestion", 1, "type4"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -123,14 +121,14 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type1"), "sduggestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type2"), "sudggestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type3"), "sugdgestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "sduggestion", 1, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "sudggestion", 1, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "sugdgestion", 1, "type3"));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggdestion", 1));
-    document.add(new ContextSuggestField("suggest_field", Collections.singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggdestion", 1, "type4"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {

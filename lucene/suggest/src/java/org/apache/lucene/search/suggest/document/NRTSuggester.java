@@ -91,23 +91,16 @@ public final class NRTSuggester implements Accountable {
   private final int payloadSep;
 
   /**
-   * Label used to denote the end of an input in the FST and
-   * the beginning of dedup bytes
-   */
-  private final int endByte;
-
-  /**
    * Maximum queue depth for TopNSearcher
    *
    * NOTE: value should be <= Integer.MAX_VALUE
    */
   private static final long MAX_TOP_N_QUEUE_SIZE = 5000;
 
-  private NRTSuggester(FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep, int endByte) {
+  private NRTSuggester(FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep) {
     this.fst = fst;
     this.maxAnalyzedPathsPerOutput = maxAnalyzedPathsPerOutput;
     this.payloadSep = payloadSep;
-    this.endByte = endByte;
   }
 
   @Override
@@ -170,7 +163,7 @@ public final class NRTSuggester implements Accountable {
     }
     // hits are also returned by search()
     // we do not use it, instead collect at acceptResult
-    Util.TopResults<Pair<Long, BytesRef>> search = searcher.search();
+    searcher.search();
     // search admissibility is not guaranteed
     // see comment on getMaxTopNSearcherQueueSize
     // assert  search.isComplete;
@@ -241,10 +234,14 @@ public final class NRTSuggester implements Accountable {
 
     /* read some meta info */
     int maxAnalyzedPathsPerOutput = input.readVInt();
+    /*
+     * Label used to denote the end of an input in the FST and
+     * the beginning of dedup bytes
+     */
     int endByte = input.readVInt();
     int payloadSep = input.readVInt();
 
-    return new NRTSuggester(fst, maxAnalyzedPathsPerOutput, payloadSep, endByte);
+    return new NRTSuggester(fst, maxAnalyzedPathsPerOutput, payloadSep);
   }
 
   static long encode(long input) {

@@ -17,8 +17,6 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
-import java.util.Collections;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -53,7 +51,7 @@ public class TestContextSuggestField extends LuceneTestCase {
   @Test
   public void testEmptySuggestion() throws Exception {
     try {
-      new ContextSuggestField("suggest_field", Collections.singletonList("type1"), "", 1);
+      new ContextSuggestField("suggest_field", "", 1, "type1");
       fail("no exception thrown when indexing zero length suggestion");
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("value"));
@@ -66,14 +64,14 @@ public class TestContextSuggestField extends LuceneTestCase {
     charsRefBuilder.append("sugg");
     charsRefBuilder.setCharAt(2, (char) ContextSuggestField.CONTEXT_SEPARATOR);
     try {
-      new ContextSuggestField("name", Collections.singletonList(charsRefBuilder.toString()), "sugg", 1);
+      new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString());
       fail("no exception thrown for context value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("[0x1d]"));
     }
 
     try {
-      new ContextSuggestField("name", Collections.singletonList("sugg"), charsRefBuilder.toString(), 1);
+      new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg");
       fail("no exception thrown for value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("[0x1d]"));
@@ -85,7 +83,7 @@ public class TestContextSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     Document document = new Document();
     document.add(new SuggestField("suggest_field", "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.emptyList(), "suggestion2", 3));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3));
 
     try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
         iwcWithSuggestField(analyzer, "suggest_field"))) {
@@ -107,14 +105,14 @@ public class TestContextSuggestField extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "suggestion1", 4));
     document.add(new SuggestField("suggest_field", "suggestion2", 3));
     document.add(new SuggestField("suggest_field", "suggestion3", 2));
-    document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("context_suggest_field", "suggestion1", 4, "type1"));
+    document.add(new ContextSuggestField("context_suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("context_suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
 
     document = new Document();
     document.add(new SuggestField("suggest_field", "suggestion4", 1));
-    document.add(new ContextSuggestField("context_suggest_field", Collections.singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("context_suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {

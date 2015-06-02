@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -58,24 +57,23 @@ public class ContextSuggestField extends SuggestField {
    * Creates a context-enabled suggest field
    *
    * @param name field name
-   * @param contexts associated contexts
    * @param value field value to get suggestion on
    * @param weight field weight
+   * @param contexts associated contexts
    *
    * @throws IllegalArgumentException if either the name or value is null,
    * if value is an empty string, if the weight is negative, if value or
    * contexts contains any reserved characters
    */
-  public ContextSuggestField(String name, Collection<CharSequence> contexts, String value, int weight) {
+  public ContextSuggestField(String name, String value, int weight, CharSequence... contexts) {
     super(name, value, weight);
     validate(value);
+    this.contexts = new HashSet<>((contexts != null) ? contexts.length : 0);
     if (contexts != null) {
       for (CharSequence context : contexts) {
         validate(context);
+        this.contexts.add(context);
       }
-      this.contexts = new HashSet<>(contexts);
-    } else {
-      this.contexts = new HashSet<>();
     }
   }
 

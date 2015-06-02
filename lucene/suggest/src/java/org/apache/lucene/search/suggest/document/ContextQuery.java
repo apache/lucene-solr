@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -205,8 +204,7 @@ public class ContextQuery extends CompletionQuery {
     for (int i = 0; iterator.hasNext(); i++) {
       contextLengthArray[i] = iterator.next();
     }
-    return new ContextCompletionWeight(searcher.getIndexReader(), this, contextsAutomaton,
-        innerWeight, contextMap, contextLengthArray);
+    return new ContextCompletionWeight(this, contextsAutomaton, innerWeight, contextMap, contextLengthArray);
   }
 
   private static class ContextMetaData {
@@ -229,11 +227,10 @@ public class ContextQuery extends CompletionQuery {
     private float currentBoost;
     private CharSequence currentContext;
 
-    public ContextCompletionWeight(IndexReader reader, CompletionQuery query,
-                                   Automaton automaton, CompletionWeight innerWeight,
+    public ContextCompletionWeight(CompletionQuery query, Automaton automaton, CompletionWeight innerWeight,
                                    Map<IntsRef, Float> contextMap,
                                    int[] contextLengths) throws IOException {
-      super(reader, query, automaton);
+      super(query, automaton);
       this.contextMap = contextMap;
       this.contextLengths = contextLengths;
       this.innerWeight = innerWeight;
@@ -258,7 +255,8 @@ public class ContextQuery extends CompletionQuery {
             ref.offset++;
             assert ref.offset < ref.length;
           }
-          assert ref.ints[ref.offset] == ContextSuggestField.CONTEXT_SEPARATOR : "expected CONTEXT_SEPARATOR at offset=" + ref.offset;
+          assert ref.ints[ref.offset] == ContextSuggestField.CONTEXT_SEPARATOR :
+              "expected CONTEXT_SEPARATOR at offset=" + ref.offset;
           if (ref.offset > pathPrefix.offset) {
             currentContext = Util.toBytesRef(new IntsRef(pathPrefix.ints, pathPrefix.offset, ref.offset), scratch).utf8ToString();
           } else {

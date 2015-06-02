@@ -90,7 +90,6 @@ public class RegexCompletionQuery extends CompletionQuery {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new CompletionWeight(searcher.getIndexReader(), this,
-        new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates));
+    return new CompletionWeight(this, new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates));
   }
 }

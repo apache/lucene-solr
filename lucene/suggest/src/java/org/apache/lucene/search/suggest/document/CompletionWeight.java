@@ -20,7 +20,6 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -49,20 +48,15 @@ import org.apache.lucene.util.automaton.Automaton;
 public class CompletionWeight extends Weight {
   private final CompletionQuery completionQuery;
   private final Automaton automaton;
-  private final long maxWeight;
-  private final long minWeight;
 
   /**
    * Creates a weight for <code>query</code> with an <code>automaton</code>,
    * using the <code>reader</code> for index stats
    */
-  public CompletionWeight(final IndexReader reader, final CompletionQuery query,
-                          final Automaton automaton) throws IOException {
+  public CompletionWeight(final CompletionQuery query, final Automaton automaton) throws IOException {
     super(query);
     this.completionQuery = query;
     this.automaton = automaton;
-    this.minWeight = minWeight(query.getField(), reader);
-    this.maxWeight = maxWeight(query.getField(), reader);
   }
 
   /**
@@ -137,49 +131,6 @@ public class CompletionWeight extends Weight {
    */
   protected CharSequence context() {
     return null;
-  }
-
-  private static long minWeight(String field, IndexReader reader) {
-    long minWeight = Long.MAX_VALUE;
-    Terms terms;
-    for (LeafReaderContext context : reader.leaves()) {
-      LeafReader leafReader = context.reader();
-      try {
-        if ((terms = leafReader.terms(field)) == null) {
-          continue;
-        }
-      } catch (IOException e) {
-        continue;
-      }
-      if (terms instanceof CompletionTerms) {
-        CompletionTerms completionTerms = (CompletionTerms) terms;
-        minWeight = Math.min(completionTerms.getMinWeight(), minWeight);
-      }
-    }
-    if (minWeight == Long.MAX_VALUE) {
-      minWeight = 0;
-    }
-    return minWeight;
-  }
-
-  private static long maxWeight(String field, IndexReader reader) {
-    long maxWeight = 0;
-    Terms terms;
-    for (LeafReaderContext context : reader.leaves()) {
-      LeafReader leafReader = context.reader();
-      try {
-        if ((terms = leafReader.terms(field)) == null) {
-          continue;
-        }
-      } catch (IOException e) {
-        continue;
-      }
-      if (terms instanceof CompletionTerms) {
-        CompletionTerms completionTerms = (CompletionTerms) terms;
-        maxWeight = Math.max(completionTerms.getMaxWeight(), maxWeight);
-      }
-    }
-    return maxWeight;
   }
 
   @Override
