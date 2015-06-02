@@ -52,6 +52,10 @@ Other Changes
 
 * SOLR-7590: Finish and improve MDC context logging support. (Mark Miller)  
 
+* SOLR-7623: Fix regression from SOLR-7484 that made it impossible to override 
+  SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
+  functions in HttpSolrCall.  (ryan)
+
 
 ==================  5.2.0 ==================
 
