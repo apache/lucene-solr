@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
@@ -152,7 +151,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
       utf8automaton = Operations.determinize(utf8automaton, maxDeterminizedStates);
       automaton = utf8automaton;
     }
-    return new FuzzyCompletionWeight(searcher.getIndexReader(), this, automaton, refs);
+    return new FuzzyCompletionWeight(this, automaton, refs);
   }
 
   private Automaton toLevenshteinAutomata(Set<IntsRef> ref) {
@@ -218,9 +217,8 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     private final Set<IntsRef> refs;
     int currentBoost = 0;
 
-    public FuzzyCompletionWeight(IndexReader reader, CompletionQuery query,
-                                 Automaton automaton, Set<IntsRef> refs) throws IOException {
-      super(reader, query, automaton);
+    public FuzzyCompletionWeight(CompletionQuery query, Automaton automaton, Set<IntsRef> refs) throws IOException {
+      super(query, automaton);
       this.refs = refs;
     }
 

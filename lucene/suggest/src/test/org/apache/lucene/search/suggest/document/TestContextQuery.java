@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest.document;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -73,13 +72,13 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 8));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 7));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 6));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 8, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 7, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 6, "type3"));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 5));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 5, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -142,12 +141,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -175,8 +174,8 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("typetype"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type"), "suggestion2", 3));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "typetype"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -204,11 +203,11 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", null, "suggestion_no_ctx", 4));
+    document.add(new ContextSuggestField("suggest_field", "suggestion_no_ctx", 4));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -233,12 +232,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", null, "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>emptyList(), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", null, "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -268,10 +267,10 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Arrays.<CharSequence>asList("type1", "type2", "type3"), "suggestion", 4));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 4, "type1", "type2", "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -303,12 +302,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -339,12 +338,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1" ));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -372,12 +371,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -404,12 +403,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Arrays.<CharSequence>asList("type1", "type3"), "suggestion1", 8));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 7));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 6));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 8, "type1", "type3"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 7, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 6, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 5));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 5, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -441,12 +440,12 @@ public class TestContextQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "suggestion1", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "suggestion2", 3));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "suggestion3", 2));
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1" ));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion4", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -488,7 +487,7 @@ public class TestContextQuery extends LuceneTestCase {
           }
           seenWeights.add(weight);
           Document document = new Document();
-          document.add(new ContextSuggestField("suggest_field", Collections.singletonList(context), suggestion, weight));
+          document.add(new ContextSuggestField("suggest_field", suggestion, weight, context));
           iw.addDocument(document);
           expectedEntries.add(new Entry(suggestion, context.toString(), i * weight));
         }

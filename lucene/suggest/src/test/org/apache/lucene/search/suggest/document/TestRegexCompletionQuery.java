@@ -17,8 +17,6 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
-import java.util.Collections;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -83,13 +81,13 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "sduggestion", 5));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "sudggestion", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "sugdgestion", 3));
+    document.add(new ContextSuggestField("suggest_field", "sduggestion", 5, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "sudggestion", 4, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "sugdgestion", 3, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggdestion", 2));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggdestion", 2, "type4"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
@@ -117,13 +115,13 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
     Document document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type1"), "sduggestion", 5));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type2"), "sudggestion", 4));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type3"), "sugdgestion", 3));
+    document.add(new ContextSuggestField("suggest_field", "sduggestion", 5, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "sudggestion", 4, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "sugdgestion", 3, "type3"));
     iw.addDocument(document);
     document = new Document();
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggdestion", 2));
-    document.add(new ContextSuggestField("suggest_field", Collections.<CharSequence>singletonList("type4"), "suggestion", 1));
+    document.add(new ContextSuggestField("suggest_field", "suggdestion", 2, "type4"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type4"));
     iw.addDocument(document);
 
     if (rarely()) {
