@@ -54,4 +54,15 @@ public class ResponseWriterUtil {
     }
     return out;
   }
+
+  public static String getAsString(String field, SolrDocument doc) {
+    Object v = doc.getFirstValue(field);
+    if(v != null) {
+      if(v instanceof IndexableField) {
+        return ((IndexableField)v).stringValue();
+      }
+      return v.toString();
+    }
+    return null;
+  }
 }

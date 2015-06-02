@@ -20,7 +20,9 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWriterUtil;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * A DocTransformer can add, remove or alter a Document before it is written out to the Response.  For instance, there are implementations
@@ -57,6 +59,19 @@ public abstract class DocTransformer
    */
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 
+  /**
+   * When a transformer needs access to fields that are not automaticaly derived from the
+   * input fields names, this option lets us explicitly say the field names that we hope
+   * will be in the SolrDocument.  These fields will be requestd from the 
+   * {@link SolrIndexSearcher} but may or may not be returned in the final
+   * {@link QueryResponseWriter}
+   * 
+   * @return a list of extra lucene fields
+   */
+  public String[] getExtraRequestFields() {
+    return null;
+  }
+  
   @Override
   public String toString() {
     return getName();
