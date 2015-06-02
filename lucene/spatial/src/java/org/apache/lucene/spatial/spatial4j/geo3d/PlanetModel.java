@@ -81,12 +81,18 @@ public class PlanetModel {
     final PlanetModel other = (PlanetModel)o;
     return ab == other.ab && c == other.c;
   }
-  
+
   @Override
   public int hashCode() {
-    return Double.hashCode(ab) + Double.hashCode(c);
+    int result;
+    long temp;
+    temp = Double.doubleToLongBits(ab);
+    result = (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(c);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
   }
-  
+
   @Override
   public String toString() {
     if (this.equals(SPHERE)) {
