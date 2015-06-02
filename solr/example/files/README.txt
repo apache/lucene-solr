@@ -40,7 +40,7 @@ For further explanations, see the frequently asked questions at the end of the g
 
 		bin/solr create -c files -d example/files/conf
 
-* Now you’ve created a core called “files” using a configuration tuned for indexing and query rich text files.
+* Now you’ve created a core called “files” using a configuration tuned for indexing and querying rich text files.
 
 * You should see the following response:
 
@@ -65,6 +65,10 @@ For further explanations, see the frequently asked questions at the end of the g
 		<some number> files indexed.
 		COMMITting Solr index changes to http://localhost:8983/solr/files/update...
 		Time spent: <some amount of time>
+		
+* To see a list of accepted file types, do:
+  	  	bin/post -h
+	
 
 <hr>
 ##BROWSING DOCUMENTS
@@ -73,7 +77,7 @@ For further explanations, see the frequently asked questions at the end of the g
 
 * To view your document information in the HTML interface view, adjust the URL in your address bar to [http://localhost:8983/solr/files/browse](http://localhost:8983/solr/files/browse)
 
-* To view your document information in XML or other formats, add &wt (for writer type) to the end of that URL. i.e.:
+* To view your document information in XML or other formats, add &wt (for writer type) to the end of that URL. i.e. To view your results in xml format direct your browser to:
 	[http://localhost:8983/solr/files/browse?&wt=xml](http://localhost:8983/solr/files/browse?&wt=xml)
 
 <hr>
@@ -81,9 +85,9 @@ For further explanations, see the frequently asked questions at the end of the g
 
 * Another way to verify that your core has been created is to view it in the Admin User Interface.
 
-You can use the Admin_UI as a visual tool for most of the things you’ll be doing with your cores/collections in Solr.
+	- The Admin_UI serves as a visual tool for indexing and querying your index in Solr.
 
-* To access the Admin UI, go to your browser visit :
+* To access the Admin UI, go to your browser and visit :
 	[http://localhost:8983/solr/](http://localhost:8983/solr/)
 
 	- <i>The Admin UI is only accessible when Solr is running</i>
@@ -92,13 +96,14 @@ You can use the Admin_UI as a visual tool for most of the things you’ll be doi
 * Alternatively, you could just go to the core page directly by visiting : [http://localhost:8983/solr/#/files](http://localhost:8983/solr/#/files)
 
 * Now you’ve opened the core page. On this page there are a multitude of different tools you can use to analyze and search your core. You will make use of these features after indexing your documents.
+* Take note of the "Num Docs" field in your core Statistics. If after indexing your documents, it shows Num Docs to be 0, that means there was a problem indexing.
 
 <hr>
 ##QUERYING INDEX
 
 * In the Admin UI, enter a term in the query box to see which documents contain the word. 
 
-* You can filter the results by switching between the different content type tabs.
+* You can filter the results by switching between the different content type tabs. To view an international version of this interface, hover over the globe icon in the top right hand section of the page.
 
 * Notice the tag cloud on the right side, which facets by top phrases extracted during indexing.
   Click on the phrases to see which documents contain them.
@@ -130,27 +135,18 @@ You can use the Admin_UI as a visual tool for most of the things you’ll be doi
 
 * How can I change the /browse UI?
 
-	The primary templates are under example/files/conf/velocity.  In order to edit those files in place (without having to
-	re-create or patch a core/collection with an updated configuration), Solr can be started with a special system property
-	set to the _absolute_ path to the conf/velocity directory, like this:
-
-
-	 bin/solr start -Dvelocity.template.base.dir=</full/path/to>/example/files/conf/velocity/
+	The primary templates are under example/files/conf/velocity.  **In order to edit those files in place (without having to
+	re-create or patch a core/collection with an updated configuration)**, Solr can be started with a special system property
+	set to the _absolute_ path to the conf/velocity directory, like this: 
 	
+		bin/solr start -Dvelocity.template.base.dir=</full/path/to>/example/files/conf/velocity/
 	
-bin/solr stop
-rm -Rf server/solr/files/
+        If you want to adjust the browse templates for an existing collection, edit the core’s configuration
+        under server/solr/files/conf/velocity.
 
-# templates extracted with:
-#    unzip  -j dist/solr-velocity-*.jar velocity/* -x *.properties -d example/files/templates/
-bin/solr start -Dvelocity.template.base.dir=<absolute path to example/files/templates>
-# TODO: make it so an install dir relative path can be used somehow?
-bin/solr create_core -c files
-bin/post -c files ~/Documents
-curl http://localhost:8983/solr/files/config/params -H 'Content-type:application/json'  -d '{
-"update" : {
-  "facets": {
-    "facet.field":"content_type"
-    }
-  }
-}'
+
+=======
+
+* Provenance of free images used in this example:
+  - Globe icon: visualpharm.com
+  - Flag icons: freeflagicons.com

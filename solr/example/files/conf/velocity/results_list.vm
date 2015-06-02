@@ -1,11 +1,11 @@
 <ul id="tabs">
-  <li><a href="#url_for_type('all')" #if("#current_type"=="all")class="selected"#end>All Types ($response.response.facet_counts.facet_queries.all_types)</a></li>
+  <li><a href="#url_for_type('all')" #if("#current_type"=="all")class="selected"#end>$resource.type.all ($response.response.facet_counts.facet_queries.all_types)</a></li>
   #foreach($type in $response.response.facet_counts.facet_fields.doc_type)
     #if($type.key)
-      <li><a href="#url_for_type($type.key)" #if("#current_type"==$type.key)class="selected"#end>$type.key ($type.value)</a></li>
+      <li><a href="#url_for_type($type.key)" #if("#current_type"==$type.key)class="selected"#end> #if($resource.get("type.${type.key}.label"))$resource.get("type.${type.key}.label")#else$type.key#end ($type.value)</a></li>
     #else
       #if($type.value > 0)
-        <li><a href="#url_for_type('unknown')" #if("#current_type"=="unknown")class="selected"#end>Unknown ($type.value)</a></li>
+        <li><a href="#url_for_type('unknown')" #if("#current_type"=="unknown")class="selected"#end>$resource.type.unknown ($type.value)</a></li>
       #end
     #end
   #end
@@ -17,3 +17,5 @@
     #parse("hit.vm")
   #end
 </div>
+
+

@@ -398,6 +398,13 @@
   <fieldType name="tlong" class="solr.TrieLongField" positionIncrementGap="0" precisionStep="8"/>
   <fieldType name="tlongs" class="solr.TrieLongField" positionIncrementGap="0" multiValued="true" precisionStep="8"/>
 
+  <fieldType name="text_email_url" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
+      <filter class="solr.TypeTokenFilterFactory" types="email_url_types.txt" useWhitelist="true"/>
+    </analyzer>
+  </fieldType>
+
   <fieldType name="text_shingles" class="solr.TextField" positionIncrementGap="100" multiValued="true">
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
