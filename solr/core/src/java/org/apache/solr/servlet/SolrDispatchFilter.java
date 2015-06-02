@@ -222,7 +222,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
     
-    HttpSolrCall call = new HttpSolrCall(this, cores, (HttpServletRequest) request, (HttpServletResponse) response, retry);
+    HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
     try {
       Action result = call.call();
       switch (result) {
@@ -239,6 +239,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       call.destroy();
     }
+  }
+  
+  /**
+   * Allow a subclass to modify the HttpSolrCall.  In particular, subclasses may
+   * want to add attributes to the request and send errors differently
+   */
+  protected HttpSolrCall getHttpSolrCall(HttpServletRequest request, HttpServletResponse response, boolean retry) {
+    return new HttpSolrCall(this, cores, request, response, retry);
   }
 
   private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
