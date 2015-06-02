@@ -144,7 +144,7 @@ public class HttpSolrCall {
 
   private List<String> collectionsList;
 
-  HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
+  public HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
                HttpServletRequest request, HttpServletResponse response, boolean retry) {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
