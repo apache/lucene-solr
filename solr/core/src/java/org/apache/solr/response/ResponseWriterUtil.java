@@ -17,6 +17,7 @@ package org.apache.solr.response;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.solr.common.SolrDocument;
@@ -53,5 +54,16 @@ public class ResponseWriterUtil {
       }
     }
     return out;
+  }
+
+  public static String getAsString(String field, SolrDocument doc) {
+    Object v = doc.getFirstValue(field);
+    if(v != null) {
+      if(v instanceof StoredField) {
+        return ((StoredField)v).stringValue();
+      }
+      return v.toString();
+    }
+    return null;
   }
 }

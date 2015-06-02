@@ -84,6 +84,10 @@ New Features
 * SOLR-7389: Expose znodeVersion property for each of the collections returned for the clusterstatus
   operation in the collections API (Marius Grama via shalin)
 
+* SOLR-7622: A DocTransformer can now request fields from the SolrIndexSearcher that are not
+  necessarily returned in the file SolrDocument by returning a list of fields from 
+  DocTransformer#getExtraRequestFields  (ryan)
+
 Bug Fixes
 ----------------------
 
