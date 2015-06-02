@@ -234,7 +234,7 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
 
     cloudClient.commit();
 
-    log.info("\n\n\n Total of "+deletedDocs.size()+" docs deleted \n\n\n");
+    log.info("Total of "+deletedDocs.size()+" docs deleted");
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);

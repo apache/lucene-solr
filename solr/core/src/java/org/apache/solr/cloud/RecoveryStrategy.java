@@ -313,6 +313,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       }
     }
 
+    Future<RecoveryInfo> replayFuture = null;
     while (!successfulRecovery && !isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
@@ -430,7 +431,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         log.info("Begin buffering updates.");
         ulog.bufferUpdates();
         replayed = false;
-        
+
         try {
 
           replicate(zkController.getNodeName(), core, leaderprops);
@@ -439,8 +440,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             log.info("Recovery was cancelled");
             break;
           }
-          
-          replay(core);
+
+          replayFuture = replay(core);
           replayed = true;
           
           if (isClosed()) {
@@ -517,6 +518,14 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       }
 
     }
+
+    // if replay was skipped (possibly to due pulling a full index from the leader),
+    // then we still need to update version bucket seeds after recovery
+    if (successfulRecovery && replayFuture == null) {
+      log.info("Updating version bucket highest from index after successful recovery.");
+      core.seedVersionBuckets();
+    }
+
     log.info("Finished recovery process.");
 
     
