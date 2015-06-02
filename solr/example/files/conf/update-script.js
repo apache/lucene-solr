@@ -57,17 +57,27 @@ function processAdd(cmd) {
         break;
     }
 
-
     // TODO: error handling needed?   What if there is no slash?
     if(doc_type) { doc.setField("doc_type", doc_type); }
     doc.setField("content_type_type_s", ct_type);
     doc.setField("content_type_subtype_s", ct_subtype);
-
-// doc, image, unknown, ...
-    // application/pdf => doc
-    // application/msword => doc
-    // image/* => image
   }
+
+    var analyzer =
+         req.getCore().getLatestSchema()
+         .getFieldTypeByName("text_email_url")
+         .getIndexAnalyzer();
+
+  var token_stream =
+       analyzer.tokenStream("content", new java.io.StringReader(doc.getFieldValue("content")));
+  var term_att = token_stream.getAttribute(org.apache.lucene.analysis.tokenattributes.CharTermAttribute.class);
+  var type_att = token_stream.getAttribute(org.apache.lucene.analysis.tokenattributes.TypeAttribute.class);
+  token_stream.reset();
+  while (token_stream.incrementToken()) {
+    doc.addField(type_att.type().replace(/\<|\>/g,'').toLowerCase()+"_ss", term_att.toString());
+  }
+  token_stream.end();
+  token_stream.close();
 }
 
 function processDelete(cmd) {

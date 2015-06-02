@@ -18,6 +18,7 @@
     "type_fq":"{!field f=doc_type v=$type}",
     "hl":"on",
     "hl.fl":"content",
+    "v.locale":"${locale}",
     "debug":"true",
     "":{"v":0}},
   "velocity":{

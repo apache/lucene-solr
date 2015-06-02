@@ -277,7 +277,7 @@ New Features
   which blends RPT indexes for speed with serialized geometry for accuracy.  Includes a Lucene segment based
   in-memory shape cache. (David Smiley)
 
-* SOLR-7465: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
+* SOLR-7465, SOLR-7610: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
 
 * SOLR-7468: Kerberos authenticaion plugin for Solr. This would allow running a Kerberized Solr.
   (Noble Paul, Ishan Chattopadhyaya, Gregory Chanan, Anshum Gupta)

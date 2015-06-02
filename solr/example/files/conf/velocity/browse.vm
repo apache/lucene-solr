@@ -2,12 +2,13 @@
   <form id="query-form" action="#{url_for_home}" method="GET">
     $resource.find:
     <input type="text" id="q" name="q" style="width: 50%" value="$!esc.html($request.params.get('q'))"/>
-    <input type="submit"/>
+    <input type="submit" value="$resource.submit"/>
     <div id="debug_query" class="debug">
       <span id="parsed_query">$esc.html($response.response.debug.parsedquery)</span>
     </div>
 
     <input type="hidden" name="type" value="#current_type"/>
+    #if("#current_locale"!="")<input type="hidden" value="locale" value="#current_locale"/>#end
     #foreach($fq in $response.responseHeader.params.getAll("fq"))
       <input type="hidden" name="fq" id="allFQs" value="$esc.html($fq)"/>
     #end
@@ -33,7 +34,7 @@
 
   <div id="results_list">
     <div class="pagination">
-      <span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime}ms
+      <span class="results-found">$page.results_found</span> $resource.results_found_in.insert(${response.responseHeader.QTime})
       $resource.page_of.insert($page.current_page_number,$page.page_count)
     </div>
 
@@ -41,7 +42,7 @@
 
     <div class="pagination">
       #link_to_previous_page
-      <span class="results-found">$page.results_found</span> results found.
+      <span class="results-found">$page.results_found</span> $resource.results_found.
       $resource.page_of.insert($page.current_page_number,$page.page_count)
       #link_to_next_page
     </div>
