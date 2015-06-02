@@ -386,6 +386,9 @@ Bug Fixes
   during a commit cannot be upgraded to a write-lock needed to block updates; solution is to move the
   call out of the firstSearcher event path and into the SolrCore constructor. (Timothy Potter)
 
+* SOLR-7625: Ensure that the max value for seeding version buckets is updated after recovery even if
+  the UpdateLog is not replayed. (Timothy Potter)
+
 Optimizations
 ----------------------
 

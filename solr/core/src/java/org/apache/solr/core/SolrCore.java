@@ -545,8 +545,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
                                                         getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
         writer.close();
       }
-
-
   }
 
 
@@ -842,7 +840,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
 
     // seed version buckets with max from index during core initialization ... requires a searcher!
-    seedVersionBucketsWithMaxFromIndex();
+    seedVersionBuckets();
 
     bufferUpdatesIfConstructing(coreDescriptor);
     
@@ -854,13 +852,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     registerConfListener();
   }
 
-  private void seedVersionBucketsWithMaxFromIndex() {
+  public void seedVersionBuckets() {
     UpdateHandler uh = getUpdateHandler();
     if (uh != null && uh.getUpdateLog() != null) {
       RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
       if (newestSearcher != null) {
         try {
-          uh.getUpdateLog().onFirstSearcher(newestSearcher.get());
+          uh.getUpdateLog().seedBucketsWithHighestVersion(newestSearcher.get());
         } finally {
           newestSearcher.decref();
         }
@@ -2630,8 +2628,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
     return false;
   }
-
-
 }
 
 
