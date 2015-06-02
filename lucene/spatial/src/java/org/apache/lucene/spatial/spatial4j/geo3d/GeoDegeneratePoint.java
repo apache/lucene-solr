@@ -26,10 +26,12 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
   public final double latitude;
   public final double longitude;
+  public final PlanetModel planetModel;
   public final GeoPoint[] edgePoints;
 
-  public GeoDegeneratePoint(final double lat, final double lon) {
-    super(lat, lon);
+  public GeoDegeneratePoint(final PlanetModel planetModel, final double lat, final double lon) {
+    super(planetModel, lat, lon);
+    this.planetModel = planetModel;
     this.latitude = lat;
     this.longitude = lon;
     this.edgePoints = new GeoPoint[]{this};
@@ -47,7 +49,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
     final double newBottomLat = latitude - angle;
     final double newLeftLon = longitude - angle;
     final double newRightLon = longitude + angle;
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   /**
@@ -108,15 +110,14 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
     if (!(o instanceof GeoDegeneratePoint))
       return false;
     GeoDegeneratePoint other = (GeoDegeneratePoint) o;
-    return other.latitude == latitude && other.longitude == longitude;
+    return super.equals(other) && other.latitude == latitude && other.longitude == longitude;
   }
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    temp = Double.doubleToLongBits(latitude);
-    result = (int) (temp ^ (temp >>> 32));
+    int result = super.hashCode();
+    long temp = Double.doubleToLongBits(latitude);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(longitude);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
@@ -124,7 +125,7 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
 
   @Override
   public String toString() {
-    return "GeoDegeneratePoint: {lat=" + latitude + "(" + latitude * 180.0 / Math.PI + "), lon=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
+    return "GeoDegeneratePoint: {planetmodel="+planetModel+", lat=" + latitude + "(" + latitude * 180.0 / Math.PI + "), lon=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
   }
 
   /**

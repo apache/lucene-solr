@@ -47,6 +47,9 @@ New Features
   FuzzyCompletionQuery and ContextQuery.
   (Areek Zillur via Mike McCandless)
 
+* LUCENE-6487: Spatial Geo3D API now has a WGS84 ellipsoid world model option.
+  (Karl Wright via David Smiley)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

@@ -22,11 +22,10 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public abstract class GeoBaseExtendedShape implements GeoShape {
-  protected final static GeoPoint NORTH_POLE = new GeoPoint(0.0, 0.0, 1.0);
-  protected final static GeoPoint SOUTH_POLE = new GeoPoint(0.0, 0.0, -1.0);
+public abstract class GeoBaseExtendedShape extends GeoBaseShape implements GeoShape {
 
-  public GeoBaseExtendedShape() {
+  public GeoBaseExtendedShape(final PlanetModel planetModel) {
+    super(planetModel);
   }
 
   /**
@@ -83,12 +82,22 @@ public abstract class GeoBaseExtendedShape implements GeoShape {
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
       bounds = new Bounds();
-    if (isWithin(NORTH_POLE)) {
+    if (isWithin(planetModel.NORTH_POLE)) {
       bounds.noTopLatitudeBound().noLongitudeBound();
     }
-    if (isWithin(SOUTH_POLE)) {
+    if (isWithin(planetModel.SOUTH_POLE)) {
       bounds.noBottomLatitudeBound().noLongitudeBound();
     }
     return bounds;
+  }
+  
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+  
+  @Override
+  public boolean equals(final Object o) {
+    return super.equals(o);
   }
 }

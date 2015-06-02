@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
+public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   public final double longitude;
 
   public final double sinLongitude;
@@ -32,12 +32,13 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
   public final GeoPoint interiorPoint;
   public final GeoPoint[] edgePoints;
 
-  public final static GeoPoint[] planePoints = new GeoPoint[]{NORTH_POLE, SOUTH_POLE};
+  public final GeoPoint[] planePoints;
 
   /**
    * Accepts only values in the following ranges: lon: {@code -PI -> PI}
    */
-  public GeoDegenerateLongitudeSlice(final double longitude) {
+  public GeoDegenerateLongitudeSlice(final PlanetModel planetModel, final double longitude) {
+    super(planetModel);
     // Argument checking
     if (longitude < -Math.PI || longitude > Math.PI)
       throw new IllegalArgumentException("Longitude out of range");
@@ -48,9 +49,10 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
 
     this.plane = new Plane(cosLongitude, sinLongitude);
     // We need a bounding plane too, which is perpendicular to the longitude plane and sided so that the point (0.0, longitude) is inside.
-    this.interiorPoint = new GeoPoint(cosLongitude, sinLongitude, 0.0);
+    this.interiorPoint = new GeoPoint(planetModel, 0.0, sinLongitude, 1.0, cosLongitude);
     this.boundingPlane = new SidedPlane(interiorPoint, -sinLongitude, cosLongitude);
     this.edgePoints = new GeoPoint[]{interiorPoint};
+    this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
   }
 
   @Override
@@ -63,7 +65,7 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
   }
 
   @Override
@@ -100,7 +102,7 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(plane, notablePoints, planePoints, bounds, boundingPlane);
+    return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, boundingPlane);
   }
 
   /**
@@ -138,21 +140,20 @@ public class GeoDegenerateLongitudeSlice extends GeoBBoxBase {
     if (!(o instanceof GeoDegenerateLongitudeSlice))
       return false;
     GeoDegenerateLongitudeSlice other = (GeoDegenerateLongitudeSlice) o;
-    return other.longitude == longitude;
+    return super.equals(other) && other.longitude == longitude;
   }
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    temp = Double.doubleToLongBits(longitude);
-    result = (int) (temp ^ (temp >>> 32));
+    int result = super.hashCode();
+    long temp = Double.doubleToLongBits(longitude);
+    result = result * 31 + (int) (temp ^ (temp >>> 32));
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoDegenerateLongitudeSlice: {longitude=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
+    return "GeoDegenerateLongitudeSlice: {planetmodel="+planetModel+", longitude=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
   }
 }
   

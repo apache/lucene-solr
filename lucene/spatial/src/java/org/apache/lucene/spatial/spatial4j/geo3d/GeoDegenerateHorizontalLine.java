@@ -24,7 +24,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
+public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   public final double latitude;
   public final double leftLon;
   public final double rightLon;
@@ -44,7 +44,8 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    */
-  public GeoDegenerateHorizontalLine(final double latitude, final double leftLon, double rightLon) {
+  public GeoDegenerateHorizontalLine(final PlanetModel planetModel, final double latitude, final double leftLon, double rightLon) {
+    super(planetModel);
     // Argument checking
     if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
       throw new IllegalArgumentException("Latitude out of range");
@@ -71,10 +72,10 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the two points
-    this.LHC = new GeoPoint(sinLatitude, sinLeftLon, cosLatitude, cosLeftLon);
-    this.RHC = new GeoPoint(sinLatitude, sinRightLon, cosLatitude, cosRightLon);
+    this.LHC = new GeoPoint(planetModel, sinLatitude, sinLeftLon, cosLatitude, cosLeftLon);
+    this.RHC = new GeoPoint(planetModel, sinLatitude, sinRightLon, cosLatitude, cosRightLon);
 
-    this.plane = new Plane(sinLatitude);
+    this.plane = new Plane(planetModel, sinLatitude);
 
     // Normalize
     while (leftLon > rightLon) {
@@ -84,7 +85,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
     final double sinMiddleLon = Math.sin(middleLon);
     final double cosMiddleLon = Math.cos(middleLon);
 
-    this.centerPoint = new GeoPoint(sinLatitude, sinMiddleLon, cosLatitude, cosMiddleLon);
+    this.centerPoint = new GeoPoint(planetModel, sinLatitude, sinMiddleLon, cosLatitude, cosMiddleLon);
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
@@ -107,7 +108,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
@@ -148,7 +149,7 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(plane, notablePoints, planePoints, bounds, leftPlane, rightPlane);
+    return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, leftPlane, rightPlane);
   }
 
   /**
@@ -170,12 +171,18 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
 
   @Override
   public int getRelationship(final GeoShape path) {
-    if (path.intersects(plane, planePoints, leftPlane, rightPlane))
+    //System.err.println("getting relationship between "+this+" and "+path);
+    if (path.intersects(plane, planePoints, leftPlane, rightPlane)) {
+      //System.err.println(" overlaps");
       return OVERLAPS;
+    }
 
-    if (path.isWithin(centerPoint))
+    if (path.isWithin(centerPoint)) {
+      //System.err.println(" contains");
       return CONTAINS;
+    }
 
+    //System.err.println(" disjoint");
     return DISJOINT;
   }
 
@@ -184,19 +191,20 @@ public class GeoDegenerateHorizontalLine extends GeoBBoxBase {
     if (!(o instanceof GeoDegenerateHorizontalLine))
       return false;
     GeoDegenerateHorizontalLine other = (GeoDegenerateHorizontalLine) o;
-    return other.LHC.equals(LHC) && other.RHC.equals(RHC);
+    return super.equals(other) && other.LHC.equals(LHC) && other.RHC.equals(RHC);
   }
 
   @Override
   public int hashCode() {
-    int result = LHC.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + LHC.hashCode();
     result = 31 * result + RHC.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoDegenerateHorizontalLine: {latitude=" + latitude + "(" + latitude * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightLon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoDegenerateHorizontalLine: {planetmodel="+planetModel+", latitude=" + latitude + "(" + latitude * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightLon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 }
   

@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoDegenerateVerticalLine extends GeoBBoxBase {
+public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   public final double topLat;
   public final double bottomLat;
   public final double longitude;
@@ -43,7 +43,8 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, longitude: {@code -PI -> PI}
    */
-  public GeoDegenerateVerticalLine(final double topLat, final double bottomLat, final double longitude) {
+  public GeoDegenerateVerticalLine(final PlanetModel planetModel, final double topLat, final double bottomLat, final double longitude) {
+    super(planetModel);
     // Argument checking
     if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
       throw new IllegalArgumentException("Top latitude out of range");
@@ -66,8 +67,8 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
     final double cosLongitude = Math.cos(longitude);
 
     // Now build the two points
-    this.UHC = new GeoPoint(sinTopLat, sinLongitude, cosTopLat, cosLongitude);
-    this.LHC = new GeoPoint(sinBottomLat, sinLongitude, cosBottomLat, cosLongitude);
+    this.UHC = new GeoPoint(planetModel, sinTopLat, sinLongitude, cosTopLat, cosLongitude);
+    this.LHC = new GeoPoint(planetModel, sinBottomLat, sinLongitude, cosBottomLat, cosLongitude);
 
     this.plane = new Plane(cosLongitude, sinLongitude);
 
@@ -75,10 +76,10 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
     final double sinMiddleLat = Math.sin(middleLat);
     final double cosMiddleLat = Math.cos(middleLat);
 
-    this.centerPoint = new GeoPoint(sinMiddleLat, sinLongitude, cosMiddleLat, cosLongitude);
+    this.centerPoint = new GeoPoint(planetModel, sinMiddleLat, sinLongitude, cosMiddleLat, cosLongitude);
 
-    this.topPlane = new SidedPlane(centerPoint, sinTopLat);
-    this.bottomPlane = new SidedPlane(centerPoint, sinBottomLat);
+    this.topPlane = new SidedPlane(centerPoint, planetModel, sinTopLat);
+    this.bottomPlane = new SidedPlane(centerPoint, planetModel, sinBottomLat);
 
     this.boundingPlane = new SidedPlane(centerPoint, -sinLongitude, cosLongitude);
 
@@ -98,7 +99,7 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
@@ -144,7 +145,7 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(plane, notablePoints, planePoints, bounds, boundingPlane, topPlane, bottomPlane);
+    return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, boundingPlane, topPlane, bottomPlane);
   }
 
   /**
@@ -187,12 +188,13 @@ public class GeoDegenerateVerticalLine extends GeoBBoxBase {
     if (!(o instanceof GeoDegenerateVerticalLine))
       return false;
     GeoDegenerateVerticalLine other = (GeoDegenerateVerticalLine) o;
-    return other.UHC.equals(UHC) && other.LHC.equals(LHC);
+    return super.equals(other) && other.UHC.equals(UHC) && other.LHC.equals(LHC);
   }
 
   @Override
   public int hashCode() {
-    int result = UHC.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + UHC.hashCode();
     result = 31 * result + LHC.hashCode();
     return result;
   }

@@ -254,11 +254,11 @@ public class Bounds {
     }
   }
 
-  public Bounds addPoint(Vector v) {
+  public Bounds addPoint(final Vector v) {
     return addPoint(v.x, v.y, v.z);
   }
 
-  public Bounds addPoint(double x, double y, double z) {
+  public Bounds addPoint(final double x, final double y, final double z) {
     if (!noLongitudeBound) {
       // Get a longitude value
       double longitude = Math.atan2(y, x);
@@ -267,7 +267,7 @@ public class Bounds {
     }
     if (!noTopLatitudeBound || !noBottomLatitudeBound) {
       // Compute a latitude value
-      double latitude = Math.asin(z);
+      double latitude = Math.asin(z/Math.sqrt(z * z + x * x + y * y));
       addLatitudeBound(latitude);
     }
     return this;

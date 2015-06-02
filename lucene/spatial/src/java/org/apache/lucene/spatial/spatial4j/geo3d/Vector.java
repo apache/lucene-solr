@@ -114,14 +114,20 @@ public class Vector {
    */
   public boolean isWithin(final Membership[] bounds, final Membership[] moreBounds) {
     // Return true if the point described is within all provided bounds
+    //System.err.println("  checking if "+this+" is within bounds");
     for (Membership bound : bounds) {
-      if (bound != null && !bound.isWithin(this))
+      if (bound != null && !bound.isWithin(this)) {
+        //System.err.println("    NOT within "+bound);
         return false;
+      }
     }
     for (Membership bound : moreBounds) {
-      if (bound != null && !bound.isWithin(this))
+      if (bound != null && !bound.isWithin(this)) {
+        //System.err.println("    NOT within "+bound);
         return false;
+      }
     }
+    //System.err.println("    is within");
     return true;
   }
 
@@ -299,6 +305,28 @@ public class Vector {
    */
   public double magnitude() {
     return Math.sqrt(x * x + y * y + z * z);
+  }
+
+  /** Compute the desired magnitude of a unit vector projected to a given
+   * planet model.
+   * @param planetModel is the planet model.
+   * @param x is the unit vector x value.
+   * @param y is the unit vector y value.
+   * @param z is the unit vector z value.
+   * @return a magnitude value for that (x,y,z) that projects the vector onto the specified ellipsoid.
+   */
+  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
+    return 1.0 / Math.sqrt(x*x*planetModel.inverseAbSquared + y*y*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
+  }
+
+  /** Compute the desired magnitude of a unit vector projected to a given
+   * planet model.  The unit vector is specified only by a z value.
+   * @param planetModel is the planet model.
+   * @param z is the unit vector z value.
+   * @return a magnitude value for that z value that projects the vector onto the specified ellipsoid.
+   */
+  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double z) {
+    return 1.0 / Math.sqrt((1.0-z*z)*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
   }
 
   @Override

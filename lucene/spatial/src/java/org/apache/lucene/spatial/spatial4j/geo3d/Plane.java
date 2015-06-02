@@ -51,11 +51,12 @@ public class Plane extends Vector {
   /**
    * Construct a horizontal plane at a specified Z.
    *
-   * @param height is the specified Z coordinate.
+   * @param planetModel is the planet model.
+   * @param sinLat is the sin(latitude).
    */
-  public Plane(final double height) {
+  public Plane(final PlanetModel planetModel, final double sinLat) {
     super(0.0, 0.0, 1.0);
-    D = -height;
+    D = -sinLat * computeDesiredEllipsoidMagnitude(planetModel, sinLat);
   }
 
   /**
@@ -81,6 +82,15 @@ public class Plane extends Vector {
     this.D = D;
   }
 
+  /** Construct a normalized, vertical plane through an x-y point.  If the x-y point is at (0,0), return null.
+  */
+  public static Plane constructNormalizedVerticalPlane(final double x, final double y) {
+    if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(y) < MINIMUM_RESOLUTION)
+      return null;
+    final double denom = 1.0 / Math.sqrt(x*x + y*y);
+    return new Plane(x * denom, y * denom);
+  }
+  
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
@@ -290,14 +300,26 @@ public class Plane extends Vector {
   }
 
   /**
+   * Public version of findIntersections.
+   */
+  public GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership... bounds) {
+    if (isNumericallyIdentical(q)) {
+      return null;
+    }
+    return findIntersections(planetModel, q, bounds, NO_BOUNDS);
+  }
+  
+  /**
    * Find the intersection points between two planes, given a set of bounds.
    *
+   * @param planetModel is the planet model to use in finding points.
    * @param q          is the plane to intersect with.
    * @param bounds     is the set of bounds.
    * @param moreBounds is another set of bounds.
    * @return the intersection point(s) on the unit sphere, if there are any.
    */
-  protected GeoPoint[] findIntersections(final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
+  protected GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
+    //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
     final Vector lineVector = new Vector(this, q);
     if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
@@ -363,16 +385,18 @@ public class Plane extends Vector {
       z0 = 0.0;
     }
 
-    // Once an intersecting line is determined, the next step is to intersect that line with the unit sphere, which
+    // Once an intersecting line is determined, the next step is to intersect that line with the ellipsoid, which
     // will yield zero, one, or two points.
-    // The equation of the sphere is: 1.0 = x^2 + y^2 + z^2.  Plugging in the parameterized line values yields:
-    // 1.0 = (At+A0)^2 + (Bt+B0)^2 + (Ct+C0)^2
-    // A^2 t^2 + 2AA0t + A0^2 + B^2 t^2 + 2BB0t + B0^2 + C^2 t^2 + 2CC0t + C0^2 - 1,0 = 0.0
-    // [A^2 + B^2 + C^2] t^2 + [2AA0 + 2BB0 + 2CC0] t + [A0^2 + B0^2 + C0^2 - 1,0] = 0.0
+    // The ellipsoid equation: 1,0 = x^2/a^2 + y^2/b^2 + z^2/c^2
+    // 1.0 = (At+A0)^2/a^2 + (Bt+B0)^2/b^2 + (Ct+C0)^2/c^2
+    // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
+    // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x + lineVector.y * lineVector.y + lineVector.z * lineVector.z;
-    final double B = 2.0 * (lineVector.x * x0 + lineVector.y * y0 + lineVector.z * z0);
-    final double C = x0 * x0 + y0 * y0 + z0 * z0 - 1.0;
+    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
+      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
+      lineVector.z * lineVector.z * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
     if (Math.abs(BsquaredMinus) < MINIMUM_RESOLUTION_SQUARED) {
@@ -381,6 +405,8 @@ public class Plane extends Vector {
       // One solution only
       final double t = -B * inverse2A;
       GeoPoint point = new GeoPoint(lineVector.x * t + x0, lineVector.y * t + y0, lineVector.z * t + z0);
+      //System.err.println("  point: "+point);
+      //verifyPoint(planetModel, point, q);
       if (point.isWithin(bounds, moreBounds))
         return new GeoPoint[]{point};
       return NO_POINTS;
@@ -393,6 +419,8 @@ public class Plane extends Vector {
       final double t2 = (-B - sqrtTerm) * inverse2A;
       GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
       GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
+      //verifyPoint(planetModel, point1, q);
+      //verifyPoint(planetModel, point2, q);
       //System.err.println("  "+point1+" and "+point2);
       if (point1.isWithin(bounds, moreBounds)) {
         if (point2.isWithin(bounds, moreBounds))
@@ -408,18 +436,30 @@ public class Plane extends Vector {
     }
   }
 
+  /*
+  protected void verifyPoint(final PlanetModel planetModel, final GeoPoint point, final Plane q) {
+    if (!evaluateIsZero(point))
+      throw new RuntimeException("Intersection point not on original plane; point="+point+", plane="+this);
+    if (!q.evaluateIsZero(point))
+      throw new RuntimeException("Intersection point not on intersected plane; point="+point+", plane="+q);
+    if (Math.abs(point.x * point.x * planetModel.inverseASquared + point.y * point.y * planetModel.inverseBSquared + point.z * point.z * planetModel.inverseCSquared - 1.0) >= MINIMUM_RESOLUTION) 
+      throw new RuntimeException("Intersection point not on ellipsoid; point="+point);
+  }
+  */
+  
   /**
    * Accumulate bounds information for this plane, intersected with another plane
    * and with the unit sphere.
    * Updates both latitude and longitude information, using max/min points found
    * within the specified bounds.
    *
+   * @param planetModel is the planet model to use to determine bounding points
    * @param q          is the plane to intersect with.
    * @param boundsInfo is the info to update with additional bounding information.
    * @param bounds     are the surfaces delineating what's inside the shape.
    */
-  public void recordBounds(final Plane q, final Bounds boundsInfo, final Membership... bounds) {
-    final GeoPoint[] intersectionPoints = findIntersections(q, bounds, NO_BOUNDS);
+  public void recordBounds(final PlanetModel planetModel, final Plane q, final Bounds boundsInfo, final Membership... bounds) {
+    final GeoPoint[] intersectionPoints = findIntersections(planetModel, q, bounds, NO_BOUNDS);
     for (GeoPoint intersectionPoint : intersectionPoints) {
       boundsInfo.addPoint(intersectionPoint);
     }
@@ -430,10 +470,11 @@ public class Plane extends Vector {
    * Updates both latitude and longitude information, using max/min points found
    * within the specified bounds.
    *
+   * @param planetModel is the planet model to use in determining bounds.
    * @param boundsInfo is the info to update with additional bounding information.
    * @param bounds     are the surfaces delineating what's inside the shape.
    */
-  public void recordBounds(final Bounds boundsInfo, final Membership... bounds) {
+  public void recordBounds(final PlanetModel planetModel, final Bounds boundsInfo, final Membership... bounds) {
     // For clarity, load local variables with good names
     final double A = this.x;
     final double B = this.y;
@@ -442,236 +483,27 @@ public class Plane extends Vector {
     // Now compute latitude min/max points
     if (!boundsInfo.checkNoTopLatitudeBound() || !boundsInfo.checkNoBottomLatitudeBound()) {
       //System.err.println("Looking at latitude for plane "+this);
+      // With ellipsoids, we really have only one viable way to do this computation.
+      // Specifically, we compute an appropriate vertical plane, based on the current plane's x-y orientation, and
+      // then intersect it with this one and with the ellipsoid.  This gives us zero, one, or two points to use
+      // as bounds.
+      // There is one special case: horizontal circles.  These require TWO vertical planes: one for the x, and one for
+      // the y, and we use all four resulting points in the bounds computation.
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
-        //System.out.println("A = "+A+" B = "+B+" C = "+C+" D = "+D);
-        // sin (phi) = z
-        // cos (theta - phi) = D
-        // sin (theta) = C  (the dot product of (0,0,1) and (A,B,C) )
-        // Q: what is z?
-        //
-        // cos (theta-phi) = cos(theta)cos(phi) + sin(theta)sin(phi) = D
-
-        if (Math.abs(C) < MINIMUM_RESOLUTION) {
-          // Special case: circle is vertical.
-          //System.err.println(" Degenerate case; it's vertical circle");
-          // cos(phi) = D, and we want sin(phi) = z
-          // There are two solutions for phi given cos(phi) = D: a positive solution and a negative solution.
-          // So, when we compute z = sqrt(1-D^2), it's really z = +/- sqrt(1-D^2) .
-
-          double z;
-          double x;
-          double y;
-
-          final double denom = 1.0 / (A * A + B * B);
-
-          z = Math.sqrt(1.0 - D * D);
-          y = -B * D * denom;
-          x = -A * D * denom;
-          addPoint(boundsInfo, bounds, x, y, z);
-
-          z = -z;
-          addPoint(boundsInfo, bounds, x, y, z);
-        } else if (Math.abs(D) < MINIMUM_RESOLUTION) {
-          //System.err.println(" Plane through origin case");
-          // The general case is degenerate when the plane goes through the origin.
-          // Luckily there's a pretty good way to figure out the max and min for that case though.
-          // We find the two z values by computing the angle of the plane's inclination with the normal.
-          // E.g., if this.z == 1, then our z value is 0, and if this.z == 0, our z value is 1.
-          // Also if this.z == -1, then z value is 0 again.
-          // Another way of putting this is that our z = sqrt(this.x^2 + this.y^2).
-          //
-          // The only tricky part is computing x and y.
-          double z;
-          double x;
-          double y;
-
-          final double denom = 1.0 / (A * A + B * B);
-
-          z = Math.sqrt((A * A + B * B) / (A * A + B * B + C * C));
-          y = -B * (C * z) * denom;
-          x = -A * (C * z) * denom;
-          addPoint(boundsInfo, bounds, x, y, z);
-
-          z = -z;
-          y = -B * (C * z) * denom;
-          x = -A * (C * z) * denom;
-          addPoint(boundsInfo, bounds, x, y, z);
-
-        } else {
-          //System.err.println(" General latitude case");
-          // We might be able to identify a specific new latitude maximum or minimum.
-          //
-          // cos (theta-phi) = cos(theta)cos(phi) + sin(theta)sin(phi) = D
-          //
-          // This is tricky.  If cos(phi) = something, and we want to figure out
-          // what sin(phi) is, in order to capture all solutions we need to recognize
-          // that sin(phi) = +/- sqrt(1 - cos(phi)^2).  Basically, this means that
-          // whatever solution we find we have to mirror it across the x-y plane,
-          // and include both +z and -z solutions.
-          //
-          // cos (phi) = +/- sqrt(1-sin(phi)^2) = +/- sqrt(1-z^2)
-          // cos (theta) = +/- sqrt(1-sin(theta)^2) = +/- sqrt(1-C^2)
-          //
-          // D = cos(theta)cos(phi) + sin(theta)sin(phi)
-          // Substitute:
-          // D = sqrt(1-C^2) * sqrt(1-z^2) -/+ C * z
-          // Solve for z...
-          // D +/- Cz = sqrt(1-C^2)*sqrt(1-z^2) = sqrt(1 - z^2 - C^2 + z^2*C^2)
-          // Square both sides.
-          // (D +/- Cz)^2 = 1 - z^2 - C^2 + z^2*C^2
-          // D^2 +/- 2DCz + C^2*z^2 = 1 - z^2 - C^2 + z^2*C^2
-          // D^2 +/- 2DCz  = 1 - C^2 - z^2
-          // 0 = z^2 +/- 2DCz + (C^2 +D^2-1) = 0
-          //
-          // z = (+/- 2DC +/- sqrt(4*D^2*C^2 - 4*(C^2+D^2-1))) / (2)
-          // z  = +/- DC +/- sqrt(D^2*C^2 + 1 - C^2 - D^2 )
-          //    = +/- DC +/- sqrt(D^2*C^2 + 1 - C^2 - D^2)
-          //
-          // NOTE WELL: The above is clearly degenerate when D = 0.  So we'll have to
-          // code a different solution for that case!
-
-          // To get x and y, we need to plug z into the equations, as follows:
-          //
-          // Ax + By = -Cz - D
-          // x^2 + y^2 = 1 - z^2
-          //
-          // x = (-Cz -D -By) /A
-          // y = (-Cz -D -Ax) /B
-          //
-          // [(-Cz -D -By) /A]^2 + y^2 = 1 - z^2
-          // [-Cz -D -By]^2 + A^2*y^2 = A^2 - A^2*z^2
-          // C^2*z^2 + D^2 + B^2*y^2 + 2CDz + 2CBzy + 2DBy + A^2*y^2 - A^2 + A^2*z^2 = 0
-          // y^2 [A^2 + B^2]  + y [2DB + 2CBz] + [C^2*z^2 + D^2 + 2CDz - A^2 + A^2*z^2] = 0
-          //
-          //
-          // Use quadratic formula, where:
-          // a = [A^2 + B^2]
-          // b = [2BD + 2CBz]
-          // c = [C^2*z^2 + D^2 + 2CDz - A^2 + A^2*z^2]
-          //
-          // y = (-[2BD + 2CBz] +/- sqrt([2BD + 2CBz]^2 - 4 * [A^2 + B^2] * [C^2*z^2 + D^2 + 2CDz - A^2 + A^2*z^2]) ) / (2 * [A^2 + B^2])
-          // Take out a 2:
-          // y = (-[DB +CBz] +/- sqrt([DB + CBz]^2 - [A^2 + B^2] * [C^2*z^2 + D^2 + 2CDz - A^2 + A^2*z^2]) ) / [A^2 + B^2]
-          //
-          // The sqrt term simplifies:
-          //
-          // B^2*D^2 + C^2*B^2*z^2 + 2C*D*B^2*z - [A^2 + B^2] * [C^2*z^2 + D^2 + 2CDz - A^2 + A^2*z^2] = ?
-          // B^2*D^2 + C^2*B^2*z^2 + 2C*D*B^2*z - [A^2 * C^2 * z^2 + A^2 * D^2 + 2 * A^2 * CDz - A^4 + A^4*z^2
-          //                  + B^2 * C^2 * z^2 + B^2 * D^2 + 2 * B^2 * CDz - A^2 * B^2 + B^2 * A^2 * z^2] =?
-          // C^2*B^2*z^2 + 2C*D*B^2*z - [A^2 * C^2 * z^2 + A^2 * D^2 + 2 * A^2 * CDz - A^4 + A^4*z^2
-          //                  + B^2 * C^2 * z^2 + 2 * B^2 * CDz - A^2 * B^2 + B^2 * A^2 * z^2] =?
-          // 2C*D*B^2*z - [A^2 * C^2 * z^2 + A^2 * D^2 + 2 * A^2 * CDz - A^4 + A^4*z^2
-          //                  + 2 * B^2 * CDz - A^2 * B^2 + B^2 * A^2 * z^2] =?
-          // - [A^2 * C^2 * z^2 + A^2 * D^2 + 2 * A^2 * CDz - A^4 + A^4*z^2
-          //                  - A^2 * B^2 + B^2 * A^2 * z^2] =?
-          // - A^2 * [C^2 * z^2 + D^2 + 2 * CDz - A^2 + A^2*z^2
-          //                  - B^2 + B^2 * z^2] =?
-          // - A^2 * [z^2[A^2 + B^2 + C^2] - [A^2 + B^2 - D^2] + 2CDz] =?
-          // - A^2 * [z^2 - [A^2 + B^2 - D^2] + 2CDz] =?
-          //
-          // y = (-[DB +CBz] +/- A*sqrt([A^2 + B^2 - D^2] - z^2 - 2CDz) ) / [A^2 + B^2]
-          //
-          // correspondingly:
-          // x = (-[DA +CAz] +/- B*sqrt([A^2 + B^2 - D^2] - z^2 - 2CDz) ) / [A^2 + B^2]
-          //
-          // However, for the maximum or minimum we seek, the clause inside the sqrt should be zero.  If
-          // it is NOT zero, then we aren't looking at the right z value.
-
-          double z;
-          double x;
-          double y;
-
-          double sqrtValue = D * D * C * C + 1.0 - C * C - D * D;
-          double denom = 1.0 / (A * A + B * B);
-          if (Math.abs(sqrtValue) < MINIMUM_RESOLUTION_SQUARED) {
-            //System.err.println(" One latitude solution");
-            double insideValue;
-            double sqrtTerm;
-
-            z = D * C;
-            // Since we squared both sides of the equation, we may have introduced spurious solutions, so we have to check.
-            // But the same check applies to BOTH solutions -- the +z one as well as the -z one.
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-            // Check the solution on the other side of the x-y plane
-            z = -z;
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-          } else if (sqrtValue > 0.0) {
-            //System.err.println(" Two latitude solutions");
-            double sqrtResult = Math.sqrt(sqrtValue);
-
-            double insideValue;
-            double sqrtTerm;
-
-            z = D * C + sqrtResult;
-            //System.out.println("z= "+z+" D-C*z = " + (D-C*z) + " Math.sqrt(1.0 - z*z - C*C + z*z*C*C) = "+(Math.sqrt(1.0 - z*z - C*C + z*z*C*C)));
-            // Since we squared both sides of the equation, we may have introduced spurios solutions, so we have to check.
-            // But the same check applies to BOTH solutions -- the +z one as well as the -z one.
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            //System.err.println(" z="+z+" C="+C+" D="+D+" inside value "+insideValue);
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-            // Check the solution on the other side of the x-y plane
-            z = -z;
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            //System.err.println(" z="+z+" C="+C+" D="+D+" inside value "+insideValue);
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-            z = D * C - sqrtResult;
-            //System.out.println("z= "+z+" D-C*z = " + (D-C*z) + " Math.sqrt(1.0 - z*z - C*C + z*z*C*C) = "+(Math.sqrt(1.0 - z*z - C*C + z*z*C*C)));
-            // Since we squared both sides of the equation, we may have introduced spurios solutions, so we have to check.
-            // But the same check applies to BOTH solutions -- the +z one as well as the -z one.
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            //System.err.println(" z="+z+" C="+C+" D="+D+" inside value "+insideValue);
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-            // Check the solution on the other side of the x-y plane
-            z = -z;
-            insideValue = A * A + B * B - D * D - z * z - 2.0 * C * D * z;
-            //System.err.println(" z="+z+" C="+C+" D="+D+" inside value "+insideValue);
-            if (Math.abs(insideValue) < MINIMUM_RESOLUTION) {
-              y = -B * (D + C * z) * denom;
-              x = -A * (D + C * z) * denom;
-              if (evaluateIsZero(x, y, z)) {
-                addPoint(boundsInfo, bounds, x, y, z);
-              }
-            }
-          }
+        // NOT a horizontal circle!
+        //System.err.println(" Not a horizontal circle");
+        final Plane verticalPlane = constructNormalizedVerticalPlane(A,B);
+        final GeoPoint[] points = findIntersections(planetModel, verticalPlane, NO_BOUNDS, NO_BOUNDS);
+        for (final GeoPoint point : points) {
+          addPoint(boundsInfo, bounds, point.x, point.y, point.z);
         }
       } else {
-        // Horizontal circle.
-        // Since the recordBounds() method will be called ONLY for planes that constitute edges of a shape,
-        // we can be sure that some part of the horizontal circle will be part of the boundary, so we don't need
-        // to check Membership objects.
-        boundsInfo.addHorizontalCircle(-D * C);
+        // Horizontal circle.  Since a==b, one vertical plane suffices.
+        final Plane verticalPlane = new Plane(1.0,0.0);
+        final GeoPoint[] points = findIntersections(planetModel, verticalPlane, NO_BOUNDS, NO_BOUNDS);
+        // There will always be two points; we only need one.
+        final GeoPoint point = points[0];
+        boundsInfo.addHorizontalCircle(point.z/Math.sqrt(point.x * point.x + point.y * point.y + point.z * point.z));
       }
       //System.err.println("Done latitude bounds");
     }
@@ -697,8 +529,8 @@ public class Plane extends Vector {
             // Geometrically, we have a line segment in x-y space.  We need to locate the endpoints
             // of that line.  But luckily, we know some things: specifically, since it is a
             // degenerate situation in projection, the C value had to have been 0.  That
-            // means that our line's endpoints will coincide with the unit circle.  All we
-            // need to do then is to find the intersection of the unit circle and the line
+            // means that our line's endpoints will coincide with the projected ellipse.  All we
+            // need to do then is to find the intersection of the projected ellipse and the line
             // equation:
             //
             // A x + B y + D = 0
@@ -706,20 +538,20 @@ public class Plane extends Vector {
             // Since A != 0:
             // x = (-By - D)/A
             //
-            // The unit circle:
-            // x^2 + y^2 - 1 = 0
+            // The projected ellipse:
+            // x^2/a^2 + y^2/b^2 - 1 = 0
             // Substitute:
-            // [(-By-D)/A]^2 + y^2 -1 = 0
+            // [(-By-D)/A]^2/a^2 + y^2/b^2 -1 = 0
             // Multiply through by A^2:
-            // [-By - D]^2 + A^2*y^2 - A^2 = 0
+            // [-By - D]^2/a^2 + A^2*y^2/b^2 - A^2 = 0
             // Multiply out:
-            // B^2*y^2 + 2BDy + D^2 + A^2*y^2 - A^2 = 0
+            // B^2*y^2/a^2 + 2BDy/a^2 + D^2/a^2 + A^2*y^2/b^2 - A^2 = 0
             // Group:
-            // y^2 * [B^2 + A^2] + y [2BD] + [D^2-A^2] = 0
+            // y^2 * [B^2/a^2 + A^2/b^2] + y [2BD/a^2] + [D^2/a^2-A^2] = 0
 
-            a = B * B + A * A;
-            b = 2.0 * B * D;
-            c = D * D - A * A;
+            a = B * B * planetModel.inverseAbSquared + A * A * planetModel.inverseAbSquared;
+            b = 2.0 * B * D * planetModel.inverseAbSquared;
+            c = D * D * planetModel.inverseAbSquared - A * A;
 
             double sqrtClause = b * b - 4.0 * a * c;
 
@@ -750,9 +582,9 @@ public class Plane extends Vector {
             // Use equation suitable for B != 0
             // Since I != 0, we rewrite:
             // y = (-Ax - D)/B
-            a = B * B + A * A;
-            b = 2.0 * A * D;
-            c = D * D - B * B;
+            a = B * B * planetModel.inverseAbSquared + A * A * planetModel.inverseAbSquared;
+            b = 2.0 * A * D * planetModel.inverseAbSquared;
+            c = D * D * planetModel.inverseAbSquared - B * B;
 
             double sqrtClause = b * b - 4.0 * a * c;
 
@@ -786,25 +618,25 @@ public class Plane extends Vector {
         // They are for lat/lon calculation purposes only.  x-y is meant to be used for longitude determination,
         // and z for latitude, and that's all the values are good for.
 
-        // (1) Intersect the plane and the unit sphere, and project the results into the x-y plane:
+        // (1) Intersect the plane and the ellipsoid, and project the results into the x-y plane:
         // From plane:
         // z = (-Ax - By - D) / C
-        // From unit sphere:
-        // x^2 + y^2 + [(-Ax - By - D) / C]^2 = 1
+        // From ellipsoid:
+        // x^2/a^2 + y^2/b^2 + [(-Ax - By - D) / C]^2/c^2 = 1
         // Simplify/expand:
-        // C^2*x^2 + C^2*y^2 + (-Ax - By - D)^2 = C^2
+        // C^2*x^2/a^2 + C^2*y^2/b^2 + (-Ax - By - D)^2/c^2 = C^2
         //
-        // x^2 * C^2 + y^2 * C^2 + x^2 * (A^2 + ABxy + ADx) + (ABxy + y^2 * B^2 + BDy) + (ADx + BDy + D^2) = C^2
+        // x^2 * C^2/a^2 + y^2 * C^2/b^2 + x^2 * A^2/c^2 + ABxy/c^2 + ADx/c^2 + ABxy/c^2 + y^2 * B^2/c^2 + BDy/c^2 + ADx/c^2 + BDy/c^2 + D^2/c^2 = C^2
         // Group:
-        // [A^2 + C^2] x^2 + [B^2 + C^2] y^2 + [2AB]xy + [2AD]x + [2BD]y + [D^2-C^2] = 0
+        // [A^2/c^2 + C^2/a^2] x^2 + [B^2/c^2 + C^2/b^2] y^2 + [2AB/c^2]xy + [2AD/c^2]x + [2BD/c^2]y + [D^2/c^2-C^2] = 0
         // For convenience, introduce post-projection coefficient variables to make life easier.
         // E x^2 + F y^2 + G xy + H x + I y + J = 0
-        double E = A * A + C * C;
-        double F = B * B + C * C;
-        double G = 2.0 * A * B;
-        double H = 2.0 * A * D;
-        double I = 2.0 * B * D;
-        double J = D * D - C * C;
+        double E = A * A * planetModel.inverseCSquared + C * C * planetModel.inverseAbSquared;
+        double F = B * B * planetModel.inverseCSquared + C * C * planetModel.inverseAbSquared;
+        double G = 2.0 * A * B * planetModel.inverseCSquared;
+        double H = 2.0 * A * D * planetModel.inverseCSquared;
+        double I = 2.0 * B * D * planetModel.inverseCSquared;
+        double J = D * D * planetModel.inverseCSquared - C * C;
 
         //System.err.println("E = " + E + " F = " + F + " G = " + G + " H = "+ H + " I = " + I + " J = " + J);
 
@@ -962,6 +794,7 @@ public class Plane extends Vector {
    * Determine whether the plane intersects another plane within the
    * bounds provided.
    *
+   * @param planetModel is the planet model to use in determining intersection.
    * @param q                 is the other plane.
    * @param notablePoints     are points to look at to disambiguate cases when the two planes are identical.
    * @param moreNotablePoints are additional points to look at to disambiguate cases when the two planes are identical.
@@ -969,7 +802,7 @@ public class Plane extends Vector {
    * @param moreBounds        are more bounds.
    * @return true if there's an intersection.
    */
-  public boolean intersects(final Plane q, final GeoPoint[] notablePoints, final GeoPoint[] moreNotablePoints, final Membership[] bounds, final Membership... moreBounds) {
+  public boolean intersects(final PlanetModel planetModel, final Plane q, final GeoPoint[] notablePoints, final GeoPoint[] moreNotablePoints, final Membership[] bounds, final Membership... moreBounds) {
     //System.err.println("Does plane "+this+" intersect with plane "+q);
     // If the two planes are identical, then the math will find no points of intersection.
     // So a special case of this is to check for plane equality.  But that is not enough, because
@@ -994,7 +827,7 @@ public class Plane extends Vector {
       //System.err.println("  no notable points inside found; no intersection");
       return false;
     }
-    return findIntersections(q, bounds, moreBounds).length > 0;
+    return findIntersections(planetModel, q, bounds, moreBounds).length > 0;
   }
 
   /**
@@ -1042,8 +875,8 @@ public class Plane extends Vector {
   /**
    * Find a sample point on the intersection between two planes and the unit sphere.
    */
-  public GeoPoint getSampleIntersectionPoint(final Plane q) {
-    final GeoPoint[] intersections = findIntersections(q, NO_BOUNDS, NO_BOUNDS);
+  public GeoPoint getSampleIntersectionPoint(final PlanetModel planetModel, final Plane q) {
+    final GeoPoint[] intersections = findIntersections(planetModel, q, NO_BOUNDS, NO_BOUNDS);
     if (intersections.length == 0)
       return null;
     return intersections[0];
