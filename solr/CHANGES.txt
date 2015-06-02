@@ -109,6 +109,10 @@ Other Changes
 
 * SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
 
+* SOLR-7623: Fix regression from SOLR-7484 that made it impossible to override 
+  SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
+  functions in HttpSolrCall.  (ryan)
+
 
 ==================  5.2.0 ==================
 
