@@ -94,9 +94,6 @@ Bug Fixes
 * SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
   requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
-* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
-  (ehatcher)
-
 Optimizations
 ----------------------
 (no changes)
@@ -388,6 +385,9 @@ Bug Fixes
 
 * SOLR-7625: Ensure that the max value for seeding version buckets is updated after recovery even if
   the UpdateLog is not replayed. (Timothy Potter)
+
+* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
+  (ehatcher)
 
 Optimizations
 ----------------------
