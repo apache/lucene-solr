@@ -24,23 +24,24 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoLongitudeSlice extends GeoBBoxBase {
+public class GeoLongitudeSlice extends GeoBaseBBox {
   public final double leftLon;
   public final double rightLon;
 
   public final SidedPlane leftPlane;
   public final SidedPlane rightPlane;
 
-  public final static GeoPoint[] planePoints = new GeoPoint[]{NORTH_POLE, SOUTH_POLE};
+  public final GeoPoint[] planePoints;
 
   public final GeoPoint centerPoint;
 
-  public final static GeoPoint[] edgePoints = new GeoPoint[]{NORTH_POLE};
+  public final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lon: {@code -PI -> PI}
    */
-  public GeoLongitudeSlice(final double leftLon, double rightLon) {
+  public GeoLongitudeSlice(final PlanetModel planetModel, final double leftLon, double rightLon) {
+    super(planetModel);
     // Argument checking
     if (leftLon < -Math.PI || leftLon > Math.PI)
       throw new IllegalArgumentException("Left longitude out of range");
@@ -66,11 +67,13 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
       rightLon += Math.PI * 2.0;
     }
     final double middleLon = (leftLon + rightLon) * 0.5;
-    this.centerPoint = new GeoPoint(0.0, middleLon);
+    this.centerPoint = new GeoPoint(planetModel, 0.0, middleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
+    this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
+    this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
   }
 
   @Override
@@ -85,7 +88,7 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
   }
 
   @Override
@@ -126,8 +129,8 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(leftPlane, notablePoints, planePoints, bounds, rightPlane) ||
-        p.intersects(rightPlane, notablePoints, planePoints, bounds, leftPlane);
+    return p.intersects(planetModel, leftPlane, notablePoints, planePoints, bounds, rightPlane) ||
+        p.intersects(planetModel, rightPlane, notablePoints, planePoints, bounds, leftPlane);
   }
 
   /**
@@ -154,7 +157,7 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
     if (insideRectangle == SOME_INSIDE)
       return OVERLAPS;
 
-    final boolean insideShape = path.isWithin(NORTH_POLE);
+    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
 
     if (insideRectangle == ALL_INSIDE && insideShape)
       return OVERLAPS;
@@ -180,15 +183,14 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
     if (!(o instanceof GeoLongitudeSlice))
       return false;
     GeoLongitudeSlice other = (GeoLongitudeSlice) o;
-    return other.leftLon == leftLon && other.rightLon == rightLon;
+    return super.equals(other) && other.leftLon == leftLon && other.rightLon == rightLon;
   }
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    temp = Double.doubleToLongBits(leftLon);
-    result = (int) (temp ^ (temp >>> 32));
+    int result = super.hashCode();
+    long temp = Double.doubleToLongBits(leftLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(rightLon);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
@@ -196,7 +198,7 @@ public class GeoLongitudeSlice extends GeoBBoxBase {
 
   @Override
   public String toString() {
-    return "GeoLongitudeSlice: {leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoLongitudeSlice: {planetmodel="+planetModel+", leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 }
   

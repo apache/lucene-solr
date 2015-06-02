@@ -45,7 +45,8 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
    * Create a convex polygon from a list of points.  The first point must be on the
    * external edge.
    */
-  public GeoConvexPolygon(final List<GeoPoint> pointList) {
+  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList) {
+    super(planetModel);
     this.points = pointList;
     this.isInternalEdges = null;
     donePoints(false);
@@ -55,7 +56,8 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
    * Create a convex polygon from a list of points, keeping track of which boundaries
    * are internal.  This is used when creating a polygon as a building block for another shape.
    */
-  public GeoConvexPolygon(final List<GeoPoint> pointList, final BitSet internalEdgeFlags, final boolean returnEdgeInternal) {
+  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final BitSet internalEdgeFlags, final boolean returnEdgeInternal) {
+    super(planetModel);
     this.points = pointList;
     this.isInternalEdges = internalEdgeFlags;
     donePoints(returnEdgeInternal);
@@ -65,7 +67,8 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
    * Create a convex polygon, with a starting latitude and longitude.
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    */
-  public GeoConvexPolygon(final double startLatitude, final double startLongitude) {
+  public GeoConvexPolygon(final PlanetModel planetModel, final double startLatitude, final double startLongitude) {
+    super(planetModel);
     points = new ArrayList<GeoPoint>();
     isInternalEdges = new BitSet();
     // Argument checking
@@ -74,7 +77,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     if (startLongitude < -Math.PI || startLongitude > Math.PI)
       throw new IllegalArgumentException("Longitude out of range");
 
-    final GeoPoint p = new GeoPoint(startLatitude, startLongitude);
+    final GeoPoint p = new GeoPoint(planetModel, startLatitude, startLongitude);
     points.add(p);
   }
 
@@ -94,7 +97,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     if (longitude < -Math.PI || longitude > Math.PI)
       throw new IllegalArgumentException("Longitude out of range");
 
-    final GeoPoint p = new GeoPoint(latitude, longitude);
+    final GeoPoint p = new GeoPoint(planetModel, latitude, longitude);
     isInternalEdges.set(points.size(), isInternalEdge);
     points.add(p);
   }
@@ -191,7 +194,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
             membershipBounds[count++] = edges[otherIndex];
           }
         }
-        if (edge.intersects(p, notablePoints, points, bounds, membershipBounds)) {
+        if (edge.intersects(planetModel, p, notablePoints, points, bounds, membershipBounds)) {
           //System.err.println(" intersects!");
           return true;
         }
@@ -230,7 +233,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
           membershipBounds[count++] = edges[otherIndex];
         }
       }
-      edge.recordBounds(bounds, membershipBounds);
+      edge.recordBounds(planetModel, bounds, membershipBounds);
     }
 
     if (fullDistance >= Math.PI) {
@@ -245,6 +248,8 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     if (!(o instanceof GeoConvexPolygon))
       return false;
     GeoConvexPolygon other = (GeoConvexPolygon) o;
+    if (!super.equals(other))
+      return false;
     if (other.points.size() != points.size())
       return false;
 
@@ -257,17 +262,14 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
 
   @Override
   public int hashCode() {
-    return points.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + points.hashCode();
+    return result;
   }
 
   @Override
   public String toString() {
-    StringBuilder edgeString = new StringBuilder("{");
-    for (int i = 0; i < edges.length; i++) {
-      edgeString.append(edges[i]).append(" internal? ").append(internalEdges[i]).append("; ");
-    }
-    edgeString.append("}");
-    return "GeoConvexPolygon: {points=" + points + " edges=" + edgeString + "}";
+    return "GeoConvexPolygon: {planetmodel=" + planetModel + ", points=" + points + "}";
   }
 }
   

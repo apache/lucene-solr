@@ -53,10 +53,11 @@ public class SidedPlane extends Plane implements Membership {
    * Construct a sided plane from a point and a Z coordinate.
    *
    * @param p      point to evaluate.
-   * @param height is the Z coordinate of the plane.
+   * @param planetModel is the planet model.
+   * @param sinLat is the sin of the latitude of the plane.
    */
-  public SidedPlane(Vector p, double height) {
-    super(height);
+  public SidedPlane(Vector p, final PlanetModel planetModel, double sinLat) {
+    super(planetModel, sinLat);
     sigNum = Math.signum(evaluate(p));
   }
 
@@ -82,6 +83,28 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(Vector p, Vector v, double D) {
     super(v, D);
     sigNum = Math.signum(evaluate(p));
+  }
+
+  /** Construct a sided plane from two points and a third normal vector.
+   */
+  public static SidedPlane constructNormalizedPerpendicularSidedPlane(final Vector insidePoint,
+    final Vector normalVector, final Vector point1, final Vector point2) {
+    final Vector pointsVector = new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z);
+    final Vector newNormalVector = new Vector(normalVector, pointsVector).normalize();
+    // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
+    return new SidedPlane(insidePoint, newNormalVector, -newNormalVector.dotProduct(point1));
+  }
+  
+  /** Construct a sided plane from three points.
+   */
+  public static SidedPlane constructNormalizedThreePointSidedPlane(final Vector insidePoint,
+    final Vector point1, final Vector point2, final Vector point3) {
+    final Vector planeNormal = new Vector(
+      new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z),
+      new Vector(point2.x - point3.x, point2.y - point3.y, point2.z - point3.z)).normalize();
+    if (planeNormal == null)
+      return null;
+    return new SidedPlane(insidePoint, planeNormal, -planeNormal.dotProduct(point2));
   }
 
   /**

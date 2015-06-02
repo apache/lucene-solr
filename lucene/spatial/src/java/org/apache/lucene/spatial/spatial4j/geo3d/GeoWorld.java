@@ -22,11 +22,13 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoWorld extends GeoBBoxBase {
-  protected final static GeoPoint originPoint = new GeoPoint(1.0, 0.0, 0.0);
+public class GeoWorld extends GeoBaseBBox {
   protected final static GeoPoint[] edgePoints = new GeoPoint[0];
-
-  public GeoWorld() {
+  protected final GeoPoint originPoint;
+  
+  public GeoWorld(final PlanetModel planetModel) {
+    super(planetModel);
+    originPoint = new GeoPoint(planetModel.ab, 1.0, 0.0, 0.0);
   }
 
   @Override
@@ -100,16 +102,16 @@ public class GeoWorld extends GeoBBoxBase {
   public boolean equals(Object o) {
     if (!(o instanceof GeoWorld))
       return false;
-    return true;
+    return super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return 0;
+    return super.hashCode();
   }
 
   @Override
   public String toString() {
-    return "GeoWorld";
+    return "GeoWorld: {planetmodel="+planetModel+"}";
   }
 }

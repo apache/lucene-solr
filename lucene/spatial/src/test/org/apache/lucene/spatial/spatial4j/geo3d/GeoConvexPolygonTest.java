@@ -30,37 +30,37 @@ public class GeoConvexPolygonTest {
   public void testPolygonPointWithin() {
     GeoConvexPolygon c;
     GeoPoint gp;
-    c = new GeoConvexPolygon(-0.1, -0.5);
+    c = new GeoConvexPolygon(PlanetModel.SPHERE, -0.1, -0.5);
     c.addPoint(0.0, -0.6, false);
     c.addPoint(0.1, -0.5, false);
     c.addPoint(0.0, -0.4, false);
     c.donePoints(false);
     // Sample some points within
-    gp = new GeoPoint(0.0, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.55);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.45);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(-0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.05, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
     assertTrue(c.isWithin(gp));
     // Sample some nearby points outside
-    gp = new GeoPoint(0.0, -0.65);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.35);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(-0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
     assertFalse(c.isWithin(gp));
     // Random points outside
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
   }
 
@@ -69,7 +69,7 @@ public class GeoConvexPolygonTest {
     GeoConvexPolygon c;
     Bounds b;
 
-    c = new GeoConvexPolygon(-0.1, -0.5);
+    c = new GeoConvexPolygon(PlanetModel.SPHERE, -0.1, -0.5);
     c.addPoint(0.0, -0.6, false);
     c.addPoint(0.1, -0.5, false);
     c.addPoint(0.0, -0.4, false);

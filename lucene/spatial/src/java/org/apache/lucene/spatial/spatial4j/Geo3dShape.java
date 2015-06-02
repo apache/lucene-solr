@@ -28,6 +28,7 @@ import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoAreaFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
+import org.apache.lucene.spatial.spatial4j.geo3d.PlanetModel;
 
 /**
  * A 3D planar geometry based Spatial4j Shape implementation.
@@ -38,17 +39,23 @@ public class Geo3dShape implements Shape {
 
   public final SpatialContext ctx;
   public final GeoShape shape;
+  public final PlanetModel planetModel;
 
   private Rectangle boundingBox = null;
 
   public final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
   public final static double DEGREES_PER_RADIAN = 1.0 / RADIANS_PER_DEGREE;
 
-  public Geo3dShape(GeoShape shape, SpatialContext ctx) {
+  public Geo3dShape(final GeoShape shape, final SpatialContext ctx) {
+    this(PlanetModel.SPHERE, shape, ctx);
+  }
+  
+  public Geo3dShape(final PlanetModel planetModel, final GeoShape shape, final SpatialContext ctx) {
     if (!ctx.isGeo()) {
       throw new IllegalArgumentException("SpatialContext.isGeo() must be true");
     }
     this.ctx = ctx;
+    this.planetModel = planetModel;
     this.shape = shape;
   }
 
@@ -64,7 +71,8 @@ public class Geo3dShape implements Shape {
 
   protected SpatialRelation relate(Rectangle r) {
     // Construct the right kind of GeoArea first
-    GeoArea geoArea = GeoAreaFactory.makeGeoArea(r.getMaxY() * RADIANS_PER_DEGREE,
+    GeoArea geoArea = GeoAreaFactory.makeGeoArea(planetModel,
+        r.getMaxY() * RADIANS_PER_DEGREE,
         r.getMinY() * RADIANS_PER_DEGREE,
         r.getMinX() * RADIANS_PER_DEGREE,
         r.getMaxX() * RADIANS_PER_DEGREE);
@@ -83,7 +91,7 @@ public class Geo3dShape implements Shape {
 
   protected SpatialRelation relate(Point p) {
     // Create a GeoPoint
-    GeoPoint point = new GeoPoint(p.getY()*RADIANS_PER_DEGREE, p.getX()*RADIANS_PER_DEGREE);
+    GeoPoint point = new GeoPoint(planetModel, p.getY()*RADIANS_PER_DEGREE, p.getX()*RADIANS_PER_DEGREE);
     if (shape.isWithin(point)) {
       // Point within shape
       return SpatialRelation.CONTAINS;
@@ -91,7 +99,9 @@ public class Geo3dShape implements Shape {
     return SpatialRelation.DISJOINT;
   }
 
-  protected final double ROUNDOFF_ADJUSTMENT = 0.01;
+  // The required size of this adjustment depends on the actual planetary model chosen.
+  // This value is big enough to account for WGS84.
+  protected final double ROUNDOFF_ADJUSTMENT = 0.05;
   
   @Override
   public Rectangle getBoundingBox() {
@@ -150,7 +160,7 @@ public class Geo3dShape implements Shape {
 
   @Override
   public String toString() {
-    return "Geo3dShape{" + shape + '}';
+    return "Geo3dShape{planetmodel=" + planetModel+", shape="+shape + '}';
   }
 
   @Override
@@ -158,11 +168,11 @@ public class Geo3dShape implements Shape {
     if (!(other instanceof Geo3dShape))
       return false;
     Geo3dShape tr = (Geo3dShape)other;
-    return tr.shape.equals(shape);
+    return tr.planetModel.equals(planetModel) && tr.shape.equals(shape);
   }
 
   @Override
   public int hashCode() {
-    return shape.hashCode();
+    return planetModel.hashCode() + shape.hashCode();
   }
 }
