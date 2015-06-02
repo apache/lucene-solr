@@ -516,10 +516,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         try {
           if (IndexWriter.isLocked(dir)) {
             log.error(logid
-                + "Solr index directory '{}' is locked.  Throwing exception",
+                + "Solr index directory '{}' is locked.  Throwing exception.",
                 indexDir);
             throw new LockObtainFailedException(
-                "Index locked for write for core " + name);
+                "Index locked for write for core '" + name +
+                "'. Solr now longer supports forceful unlocking via 'unlockOnStartup'. Please verify locks manually!");
           }
         } finally {
           directoryFactory.release(dir);

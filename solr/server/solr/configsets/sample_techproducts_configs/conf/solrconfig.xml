@@ -246,19 +246,6 @@
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
-    <!-- Unlock On Startup
-
-         If true, unlock any held write or commit locks on startup.
-         This defeats the locking mechanism that allows multiple
-         processes to safely access a lucene index, and should be used
-         with care. Default is "false".
-
-         This is not needed if lock type is 'single'
-     -->
-    <!--
-    <unlockOnStartup>false</unlockOnStartup>
-      -->
-
     <!-- Commit Deletion Policy
          Custom deletion policies can be specified here. The class must
          implement org.apache.lucene.index.IndexDeletionPolicy.
