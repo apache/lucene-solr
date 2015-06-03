@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
@@ -38,8 +39,7 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
 
     // find existing command counts because collection may be created by base test class too
     int numCollectionCreates = 0, numOverseerCreates = 0;
-    NamedList<Object> resp = invokeCollectionApi("action",
-        CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+    NamedList<Object> resp = new CollectionAdminRequest.OverseerStatus().process(cloudClient).getResponse();
     if (resp != null) {
       NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
       if (collection_operations != null)  {
@@ -59,8 +59,7 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
 
     String collectionName = "overseer_status_test";
     CollectionAdminResponse response = createCollection(collectionName, 1, 1, 1);
-    resp = invokeCollectionApi("action",
-        CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+    resp = new CollectionAdminRequest.OverseerStatus().process(cloudClient).getResponse();
     NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
     NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");
     SimpleOrderedMap<Object> createcollection = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
@@ -68,22 +67,25 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
     createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
     assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
 
-    invokeCollectionApi("action", CollectionParams.CollectionAction.RELOAD.toLower(), "name", collectionName);
-    resp = invokeCollectionApi("action",
-        CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+    // Reload the collection
+    new CollectionAdminRequest.Reload().setCollectionName(collectionName).process(cloudClient);
+
+
+    resp = new CollectionAdminRequest.OverseerStatus().process(cloudClient).getResponse();
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
     SimpleOrderedMap<Object> reload = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
     try {
-      invokeCollectionApi("action", CollectionParams.CollectionAction.SPLITSHARD.toLower(),
-          "collection", "non_existent_collection",
-          "shard", "non_existent_shard");
+      new CollectionAdminRequest.SplitShard()
+              .setCollectionName("non_existent_collection")
+              .setShardName("non_existent_shard")
+              .process(cloudClient);
+      fail("Split shard for non existent collection should have failed");
     } catch (Exception e) {
       // expected because we did not correctly specify required params for split
     }
-    resp = invokeCollectionApi("action",
-        CollectionParams.CollectionAction.OVERSEERSTATUS.toLower());
+    resp = new CollectionAdminRequest.OverseerStatus().process(cloudClient).getResponse();
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
     SimpleOrderedMap<Object> split = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.SPLITSHARD.toLower());
     assertEquals("No stats for split in OverseerCollectionProcessor", 1, split.get("errors"));

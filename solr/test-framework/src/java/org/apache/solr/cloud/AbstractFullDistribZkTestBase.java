@@ -1769,25 +1769,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
 
-  protected NamedList<Object> invokeCollectionApi(String... args) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrRequest request = new QueryRequest(params);
-    for (int i = 0; i < args.length - 1; i+=2) {
-      params.add(args[i], args[i+1]);
-    }
-    request.setPath("/admin/collections");
-
-    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
-        .getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
-
-    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
-      baseClient.setConnectionTimeout(15000);
-      baseClient.setSoTimeout(60000 * 5);
-      return baseClient.request(request);
-    }
-  }
-
   protected void createCollection(String collName,
                                   CloudSolrClient client,
                                   int replicationFactor ,
