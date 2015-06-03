@@ -65,6 +65,9 @@
     <testResources>
       <testResource>
         <directory>${module-path}/../test-files</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
       </testResource>
       <testResource>
         <directory>${project.build.testSourceDirectory}</directory>
