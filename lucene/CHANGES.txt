@@ -50,6 +50,10 @@ New Features
 * LUCENE-6487: Spatial Geo3D API now has a WGS84 ellipsoid world model option.
   (Karl Wright via David Smiley)
 
+* LUCENE-6477: Add experimental BKD geospatial tree doc values format
+  and queries, for fast "bbox/polygon contains lat/lon points" (Mike
+  McCandless)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
