@@ -94,6 +94,10 @@ Bug Fixes
 * SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
   requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
+* SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
+  can result in incorrect results or an exception. (yonik)
+
+
 Optimizations
 ----------------------
 (no changes)
