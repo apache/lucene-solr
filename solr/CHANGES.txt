@@ -389,6 +389,10 @@ Bug Fixes
 * SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
   (ehatcher)
 
+* SOLR-7614: Distributed pivot facet refinement was broken due to a single correlation counter
+  used across multiple requests as if it was private to each request. (yonik)
+
+
 Optimizations
 ----------------------
 
