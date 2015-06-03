@@ -65,12 +65,7 @@ public class FacetComponent extends SearchComponent {
   private static final String PIVOT_KEY = "facet_pivot";
   private static final String PIVOT_REFINE_PREFIX = "{!"+PivotFacet.REFINE_PARAM+"=";
 
-  /**
-   * Incremented counter used to track the values being refined in a given request.
-   * This counter is used in conjunction with {@link PivotFacet#REFINE_PARAM} to identify
-   * which refinement values are associated with which pivots.
-   */
-  int pivotRefinementCounter = 0;
+
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -271,14 +266,14 @@ public class FacetComponent extends SearchComponent {
 
       if ( ! queuedRefinementsForShard.isEmpty() ) {
         
-        String fieldsKey = PivotFacet.REFINE_PARAM + pivotRefinementCounter;
+        String fieldsKey = PivotFacet.REFINE_PARAM + fi.pivotRefinementCounter;
         String command;
         
         if (pivotFacet.localParams != null) {
-          command = PIVOT_REFINE_PREFIX + pivotRefinementCounter + " "
+          command = PIVOT_REFINE_PREFIX + fi.pivotRefinementCounter + " "
             + pivotFacet.facetStr.substring(2);
         } else {
-          command = PIVOT_REFINE_PREFIX + pivotRefinementCounter + "}"
+          command = PIVOT_REFINE_PREFIX + fi.pivotRefinementCounter + "}"
             + pivotFacet.getKey();
         }
         
@@ -290,7 +285,7 @@ public class FacetComponent extends SearchComponent {
           
         }
       }
-      pivotRefinementCounter++;
+      fi.pivotRefinementCounter++;
     }
     
     rb.addRequest(this, shardsRefineRequestPivot);
@@ -981,13 +976,12 @@ public class FacetComponent extends SearchComponent {
   
   @Override
   public void finishStage(ResponseBuilder rb) {
-    pivotRefinementCounter = 0;
     if (!rb.doFacets || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
     
     FacetInfo fi = rb._facetInfo;
-    
+
     NamedList<Object> facet_counts = new SimpleOrderedMap<>();
     
     NamedList<Number> facet_queries = new SimpleOrderedMap<>();
@@ -1111,6 +1105,12 @@ public class FacetComponent extends SearchComponent {
    * <b>This API is experimental and subject to change</b>
    */
   public static class FacetInfo {
+    /**
+     * Incremented counter used to track the values being refined in a given request.
+     * This counter is used in conjunction with {@link PivotFacet#REFINE_PARAM} to identify
+     * which refinement values are associated with which pivots.
+     */
+    int pivotRefinementCounter = 0;
 
     public LinkedHashMap<String,QueryFacet> queryFacets;
     public LinkedHashMap<String,DistribFieldFacet> facets;
