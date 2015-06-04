@@ -113,15 +113,21 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       
       // General intersection case
       final PathSegment prevSegment = segments.get(i-1);
-      if (prevSegment.upperConnectingPlane.isNumericallyIdentical(currentSegment.upperConnectingPlane) &&
-          prevSegment.lowerConnectingPlane.isNumericallyIdentical(currentSegment.lowerConnectingPlane)) {
+      // We construct four separate planes, and evaluate which one includes all interior points with least overlap
+      final SidedPlane candidate1 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.URHC, currentSegment.ULHC, currentSegment.LLHC);
+      final SidedPlane candidate2 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.ULHC, currentSegment.LLHC, prevSegment.LRHC);
+      final SidedPlane candidate3 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.LLHC, prevSegment.LRHC, prevSegment.URHC);
+      final SidedPlane candidate4 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.LRHC, prevSegment.URHC, currentSegment.ULHC);
+
+      if (candidate1 == null && candidate2 == null && candidate3 == null && candidate4 == null) {
         // The planes are identical.  We don't need a circle at all.  Special constructor...
         endPoints.add(new SegmentEndpoint(currentSegment.start));
       } else {
         endPoints.add(new SegmentEndpoint(currentSegment.start,
           prevSegment.endCutoffPlane, currentSegment.startCutoffPlane,
           prevSegment.URHC, prevSegment.LRHC,
-          currentSegment.ULHC, currentSegment.LLHC));
+          currentSegment.ULHC, currentSegment.LLHC,
+          candidate1, candidate2, candidate3, candidate4));
       }
     }
     // Do final endpoint
@@ -458,8 +464,9 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
      */
     public SegmentEndpoint(final GeoPoint point,
       final SidedPlane prevCutoffPlane, final SidedPlane nextCutoffPlane,
-      final GeoPoint prevUpperGeoPoint, final GeoPoint prevLowerGeoPoint,
-      final GeoPoint nextUpperGeoPoint, final GeoPoint nextLowerGeoPoint) {
+      final GeoPoint notCand2Point, final GeoPoint notCand1Point,
+      final GeoPoint notCand3Point, final GeoPoint notCand4Point,
+      final SidedPlane candidate1, final SidedPlane candidate2, final SidedPlane candidate3, final SidedPlane candidate4) {
       // Note: What we really need is a single plane that goes through all four points.
       // Since that's not possible in the ellipsoid case (because three points determine a plane, not four), we
       // need an approximation that at least creates a boundary that has no interruptions.
@@ -472,38 +479,35 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       this.point = point;
       
       // We construct four separate planes, and evaluate which one includes all interior points with least overlap
-      final SidedPlane candidate1 = SidedPlane.constructNormalizedThreePointSidedPlane(point, prevUpperGeoPoint, nextUpperGeoPoint, nextLowerGeoPoint);
-      final SidedPlane candidate2 = SidedPlane.constructNormalizedThreePointSidedPlane(point, nextUpperGeoPoint, nextLowerGeoPoint, prevLowerGeoPoint);
-      final SidedPlane candidate3 = SidedPlane.constructNormalizedThreePointSidedPlane(point, nextLowerGeoPoint, prevLowerGeoPoint, prevUpperGeoPoint);
-      final SidedPlane candidate4 = SidedPlane.constructNormalizedThreePointSidedPlane(point, prevLowerGeoPoint, prevUpperGeoPoint, nextUpperGeoPoint);
+      // (Constructed beforehand because we need them for degeneracy check)
 
-      final boolean cand1IsOtherWithin = candidate1.isWithin(prevLowerGeoPoint);
-      final boolean cand2IsOtherWithin = candidate2.isWithin(prevUpperGeoPoint);
-      final boolean cand3IsOtherWithin = candidate3.isWithin(nextUpperGeoPoint);
-      final boolean cand4IsOtherWithin = candidate4.isWithin(nextLowerGeoPoint);
+      final boolean cand1IsOtherWithin = candidate1!=null?candidate1.isWithin(notCand1Point):false;
+      final boolean cand2IsOtherWithin = candidate2!=null?candidate2.isWithin(notCand2Point):false;
+      final boolean cand3IsOtherWithin = candidate3!=null?candidate3.isWithin(notCand3Point):false;
+      final boolean cand4IsOtherWithin = candidate4!=null?candidate4.isWithin(notCand4Point):false;
       
       if (cand1IsOtherWithin && cand2IsOtherWithin && cand3IsOtherWithin && cand4IsOtherWithin) {
         // The only way we should see both within is if all four points are coplanar.  In that case, we default to the simplest treatment.
         this.circlePlane = candidate1;  // doesn't matter which
-        this.notablePoints = new GeoPoint[]{prevUpperGeoPoint, nextUpperGeoPoint, prevLowerGeoPoint, nextLowerGeoPoint};
+        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand1Point, notCand4Point};
         this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane), new SidedPlane(nextCutoffPlane)};
       } else if (cand1IsOtherWithin) {
         // Use candidate1, and DON'T include prevCutoffPlane in the cutoff planes list
         this.circlePlane = candidate1;
-        this.notablePoints = new GeoPoint[]{prevUpperGeoPoint, nextUpperGeoPoint, nextLowerGeoPoint};
+        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand4Point};
         this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
       } else if (cand2IsOtherWithin) {
         // Use candidate2
         this.circlePlane = candidate2;
-        this.notablePoints = new GeoPoint[]{nextUpperGeoPoint, nextLowerGeoPoint, prevLowerGeoPoint};
+        this.notablePoints = new GeoPoint[]{notCand3Point, notCand4Point, notCand1Point};
         this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
       } else if (cand3IsOtherWithin) {
         this.circlePlane = candidate3;
-        this.notablePoints = new GeoPoint[]{nextLowerGeoPoint, prevLowerGeoPoint, prevUpperGeoPoint};
+        this.notablePoints = new GeoPoint[]{notCand4Point, notCand1Point, notCand2Point};
         this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
       } else if (cand4IsOtherWithin) {
         this.circlePlane = candidate4;
-        this.notablePoints = new GeoPoint[]{prevLowerGeoPoint, prevUpperGeoPoint, nextUpperGeoPoint};
+        this.notablePoints = new GeoPoint[]{notCand1Point, notCand2Point, notCand3Point};
         this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
       } else {
         // dunno what happened

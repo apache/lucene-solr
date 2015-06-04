@@ -60,6 +60,9 @@ Bug fixes
   closed listeners. This was fixed by LUCENE-6501.
   (Adrien Grand, Uwe Schindler)
 
+* LUCENE-6520: Geo3D GeoPath.done() would throw an NPE if adjacent path
+  segments were co-linear. (Karl Wright via David Smiley)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
