@@ -17,14 +17,6 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
@@ -50,6 +42,15 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 // TODO: can test framework assert we don't leak temp files?
 
@@ -353,7 +354,10 @@ public class TestBKDTree extends LuceneTestCase {
     verify(lats, lons);
   }
 
+  private static final double TOLERANCE = 1e-7;
+
   private static void verify(final double[] lats, final double[] lons) throws Exception {
+
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -415,6 +419,7 @@ public class TestBKDTree extends LuceneTestCase {
     final int iters = atLeast(100);
 
     final CountDownLatch startingGun = new CountDownLatch(1);
+    final AtomicBoolean failed = new AtomicBoolean();
 
     for(int i=0;i<numThreads;i++) {
       Thread thread = new Thread() {
@@ -423,6 +428,7 @@ public class TestBKDTree extends LuceneTestCase {
             try {
               _run();
             } catch (Exception e) {
+              failed.set(true);
               throw new RuntimeException(e);
             }
           }
@@ -432,7 +438,7 @@ public class TestBKDTree extends LuceneTestCase {
 
             NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
-            for (int iter=0;iter<iters;iter++) {
+            for (int iter=0;iter<iters && failed.get() == false;iter++) {
               double lat0 = randomLat();
               double lat1 = randomLat();
               double lon0 = randomLon();
@@ -506,7 +512,16 @@ public class TestBKDTree extends LuceneTestCase {
                 int id = (int) docIDToID.get(docID);
                 boolean expected = deleted.contains(id) == false && rectContainsPointEnc(lat0, lat1, lon0, lon1, lats[id], lons[id]);
                 if (hits.get(docID) != expected) {
-                  fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query);
+                  if (query instanceof BKDPointInPolygonQuery &&
+                      (Math.abs(lat0-lats[id]) < TOLERANCE ||
+                       Math.abs(lat1-lats[id]) < TOLERANCE ||
+                       Math.abs(lon0-lons[id]) < TOLERANCE ||
+                       Math.abs(lon1-lons[id]) < TOLERANCE)) {
+                    // The poly check quantizes slightly differently, so we allow for boundary cases to disagree
+                  } else {
+                    // We do exact quantized comparison so the bbox query should never disagree:
+                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query);
+                  }
                 }
               }
             }
