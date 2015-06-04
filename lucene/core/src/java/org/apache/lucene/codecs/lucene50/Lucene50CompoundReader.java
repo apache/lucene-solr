@@ -179,7 +179,7 @@ final class Lucene50CompoundReader extends Directory {
   }
   
   @Override
-  public Lock makeLock(String name) {
+  public Lock obtainLock(String name) {
     throw new UnsupportedOperationException();
   }
 

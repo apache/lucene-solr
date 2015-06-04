@@ -71,8 +71,8 @@ public class FileSwitchDirectory extends Directory {
   }
   
   @Override
-  public Lock makeLock(String name) {
-    return getDirectory(name).makeLock(name);
+  public Lock obtainLock(String name) throws IOException {
+    return getDirectory(name).obtainLock(name);
   }
 
   @Override

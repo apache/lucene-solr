@@ -102,8 +102,9 @@ final class IndexFileDeleter implements Closeable {
   private List<CommitPoint> commitsToDelete = new ArrayList<>();
 
   private final InfoStream infoStream;
-  private Directory directory;
-  private IndexDeletionPolicy policy;
+  private final Directory directoryOrig; // for commit point metadata
+  private final Directory directory;
+  private final IndexDeletionPolicy policy;
 
   final boolean startingCommitDeleted;
   private SegmentInfos lastSegmentInfos;
@@ -126,7 +127,7 @@ final class IndexFileDeleter implements Closeable {
    * any files not referenced by any of the commits.
    * @throws IOException if there is a low-level IO error
    */
-  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
+  public IndexFileDeleter(Directory directoryOrig, Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
                           InfoStream infoStream, IndexWriter writer, boolean initialIndexExists) throws IOException {
     Objects.requireNonNull(writer);
     this.infoStream = infoStream;
@@ -139,6 +140,7 @@ final class IndexFileDeleter implements Closeable {
     }
 
     this.policy = policy;
+    this.directoryOrig = directoryOrig;
     this.directory = directory;
 
     // First pass: walk the files and initialize our ref
@@ -165,7 +167,7 @@ final class IndexFileDeleter implements Closeable {
             }
             SegmentInfos sis = null;
             try {
-              sis = SegmentInfos.readCommit(directory, fileName);
+              sis = SegmentInfos.readCommit(directoryOrig, fileName);
             } catch (FileNotFoundException | NoSuchFileException e) {
               // LUCENE-948: on NFS (and maybe others), if
               // you have writers switching back and forth
@@ -179,7 +181,7 @@ final class IndexFileDeleter implements Closeable {
               }
             }
             if (sis != null) {
-              final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
+              final CommitPoint commitPoint = new CommitPoint(commitsToDelete, directoryOrig, sis);
               if (sis.getGeneration() == segmentInfos.getGeneration()) {
                 currentCommitPoint = commitPoint;
               }
@@ -205,14 +207,14 @@ final class IndexFileDeleter implements Closeable {
       // try now to explicitly open this commit point:
       SegmentInfos sis = null;
       try {
-        sis = SegmentInfos.readCommit(directory, currentSegmentsFile);
+        sis = SegmentInfos.readCommit(directoryOrig, currentSegmentsFile);
       } catch (IOException e) {
         throw new CorruptIndexException("unable to read current segments_N file", currentSegmentsFile, e);
       }
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "forced open of current segments file " + segmentInfos.getSegmentsFileName());
       }
-      currentCommitPoint = new CommitPoint(commitsToDelete, directory, sis);
+      currentCommitPoint = new CommitPoint(commitsToDelete, directoryOrig, sis);
       commits.add(currentCommitPoint);
       incRef(sis, true);
     }
@@ -557,7 +559,7 @@ final class IndexFileDeleter implements Closeable {
 
     if (isCommit) {
       // Append to our commits list:
-      commits.add(new CommitPoint(commitsToDelete, directory, segmentInfos));
+      commits.add(new CommitPoint(commitsToDelete, directoryOrig, segmentInfos));
 
       // Tell policy so it can remove commits:
       policy.onCommit(commits);
@@ -780,14 +782,14 @@ final class IndexFileDeleter implements Closeable {
     Collection<String> files;
     String segmentsFileName;
     boolean deleted;
-    Directory directory;
+    Directory directoryOrig;
     Collection<CommitPoint> commitsToDelete;
     long generation;
     final Map<String,String> userData;
     private final int segmentCount;
 
-    public CommitPoint(Collection<CommitPoint> commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
-      this.directory = directory;
+    public CommitPoint(Collection<CommitPoint> commitsToDelete, Directory directoryOrig, SegmentInfos segmentInfos) throws IOException {
+      this.directoryOrig = directoryOrig;
       this.commitsToDelete = commitsToDelete;
       userData = segmentInfos.getUserData();
       segmentsFileName = segmentInfos.getSegmentsFileName();
@@ -818,7 +820,7 @@ final class IndexFileDeleter implements Closeable {
 
     @Override
     public Directory getDirectory() {
-      return directory;
+      return directoryOrig;
     }
 
     @Override

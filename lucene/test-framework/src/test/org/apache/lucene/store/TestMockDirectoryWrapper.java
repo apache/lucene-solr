@@ -47,32 +47,6 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     super.testThreadSafety();
   }
   
-  public void testFailIfIndexWriterNotClosed() throws IOException {
-    MockDirectoryWrapper dir = newMockDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    try {
-      dir.close();
-      fail();
-    } catch (Exception expected) {
-      assertTrue(expected.getMessage().contains("there are still open locks"));
-    } finally {
-      IOUtils.closeWhileHandlingException(iw);
-    }
-  }
-  
-  public void testFailIfIndexWriterNotClosedChangeLockFactory() throws IOException {
-    MockDirectoryWrapper dir = newMockDirectory(random(), new SingleInstanceLockFactory());
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    try {
-      dir.close();
-      fail();
-    } catch (Exception expected) {
-      assertTrue(expected.getMessage().contains("there are still open locks"));
-    } finally {
-      IOUtils.closeWhileHandlingException(iw);
-    }
-  }
-  
   public void testDiskFull() throws IOException {
     // test writeBytes
     MockDirectoryWrapper dir = newMockDirectory();

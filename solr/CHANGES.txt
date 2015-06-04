@@ -72,6 +72,16 @@ Upgrading from Solr 5.2
 * SolrJ's CollectionAdminRequest class is now marked as abstract. Use one of its concrete
   sub-classes instead.
 
+* Solr no longer supports forcefully unlocking an index.
+  This is no longer supported by the underlying Lucene locking
+  framework. The setting in solrconfig.xml has no effect anymore.
+  Background: If you use native lock factory, unlocking should
+  not be needed, because the locks are cleared after process
+  shutdown automatically by the operating system. If you are
+  using simple lock factory (not recommended) or hdfs lock
+  factory, you may need to manually unlock by deleting the lock
+  file from filesystem / HDFS.
+
 Detailed Change List
 ----------------------
 
@@ -127,6 +137,9 @@ Other Changes
 
 * SOLR-7636: CLUSTERSTATUS API is executed at CollectionsHandler (noble)
 
+* LUCENE-6508: Remove ability to forcefully unlock an index.
+  This is no longer supported by the underlying Lucene locking
+  framework.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
 ==================  5.2.0 ==================
 

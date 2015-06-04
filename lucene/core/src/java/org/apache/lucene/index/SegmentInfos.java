@@ -441,7 +441,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           segnOutput.writeInt(e.getKey());
           segnOutput.writeSetOfStrings(e.getValue());
         }
-        assert si.dir == directory;
       }
       segnOutput.writeMapOfStrings(userData);
       CodecUtil.writeFooter(segnOutput);

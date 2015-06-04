@@ -54,6 +54,14 @@ New Features
   and queries, for fast "bbox/polygon contains lat/lon points" (Mike
   McCandless)
 
+API Changes
+
+* LUCENE-6508: Simplify Lock api, there is now just 
+  Directory.obtainLock() which returns a Lock that can be 
+  released (or fails with exception). Add lock verification 
+  to IndexWriter. Improve exception messages when locking fails.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

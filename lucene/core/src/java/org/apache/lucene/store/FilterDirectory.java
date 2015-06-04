@@ -90,8 +90,8 @@ public class FilterDirectory extends Directory {
   }
 
   @Override
-  public Lock makeLock(String name) {
-    return in.makeLock(name);
+  public Lock obtainLock(String name) throws IOException {
+    return in.obtainLock(name);
   }
 
   @Override

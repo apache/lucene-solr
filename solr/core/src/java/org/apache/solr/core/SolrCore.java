@@ -506,7 +506,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     synchronized (SolrCore.class) {
       firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
     }
-    boolean removeLocks = solrConfig.unlockOnStartup;
 
     initIndexReaderFactory();
 
@@ -516,20 +515,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           getSolrConfig().indexConfig.lockType);
       try {
         if (IndexWriter.isLocked(dir)) {
-          if (removeLocks) {
-            log.warn(
-                logid
-                    + "WARNING: Solr index directory '{}' is locked.  Unlocking...",
-                indexDir);
-            dir.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
-          } else {
-            log.error(logid
-                + "Solr index directory '{}' is locked.  Throwing exception",
-                indexDir);
-            throw new LockObtainFailedException(
-                "Index locked for write for core " + name);
-          }
-
+          log.error(logid
+              + "Solr index directory '{}' is locked.  Throwing exception.",
+              indexDir);
+          throw new LockObtainFailedException(
+              "Index locked for write for core '" + name +
+              "'. Solr now longer supports forceful unlocking via 'unlockOnStartup'. Please verify locks manually!");
         }
       } finally {
         directoryFactory.release(dir);

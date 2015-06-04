@@ -20,126 +20,39 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.util.ThreadInterruptedException;
-
 /** An interprocess mutex lock.
  * <p>Typical use might look like:<pre class="prettyprint">
- * new Lock.With(directory.makeLock("my.lock")) {
- *     public Object doBody() {
- *       <i>... code to execute while locked ...</i>
- *     }
- *   }.run();
+ *   try (final Lock lock = directory.obtainLock("my.lock")) {
+ *     // ... code to execute while locked ...
+ *   }
  * </pre>
  *
- * @see Directory#makeLock(String)
+ * @see Directory#obtainLock(String)
  *
  * @lucene.internal
  */
 public abstract class Lock implements Closeable {
 
-  /** How long {@link #obtain(long)} waits, in milliseconds,
-   *  in between attempts to acquire the lock. */
-  public static long LOCK_POLL_INTERVAL = 1000;
-
-  /** Pass this value to {@link #obtain(long)} to try
-   *  forever to obtain the lock. */
-  public static final long LOCK_OBTAIN_WAIT_FOREVER = -1;
-
-  /** Attempts to obtain exclusive access and immediately return
-   *  upon success or failure.  Use {@link #close} to
-   *  release the lock.
-   * @return true iff exclusive access is obtained
+  /** 
+   * Releases exclusive access.
+   * <p>
+   * Note that exceptions thrown from close may require
+   * human intervention, as it may mean the lock was no
+   * longer valid, or that fs permissions prevent removal
+   * of the lock file, or other reasons.
+   * <p>
+   * {@inheritDoc} 
+   * @throws LockReleaseFailedException optional specific exception) if 
+   *         the lock could not be properly released.
    */
-  public abstract boolean obtain() throws IOException;
-
-  /**
-   * If a lock obtain called, this failureReason may be set
-   * with the "root cause" Exception as to why the lock was
-   * not obtained.
-   */
-  protected Throwable failureReason;
-
-  /** Attempts to obtain an exclusive lock within amount of
-   *  time given. Polls once per {@link #LOCK_POLL_INTERVAL}
-   *  (currently 1000) milliseconds until lockWaitTimeout is
-   *  passed.
-   * @param lockWaitTimeout length of time to wait in
-   *        milliseconds or {@link
-   *        #LOCK_OBTAIN_WAIT_FOREVER} to retry forever
-   * @return true if lock was obtained
-   * @throws LockObtainFailedException if lock wait times out
-   * @throws IllegalArgumentException if lockWaitTimeout is
-   *         out of bounds
-   * @throws IOException if obtain() throws IOException
-   */
-  public final boolean obtain(long lockWaitTimeout) throws IOException {
-    failureReason = null;
-    boolean locked = obtain();
-    if (lockWaitTimeout < 0 && lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER)
-      throw new IllegalArgumentException("lockWaitTimeout should be LOCK_OBTAIN_WAIT_FOREVER or a non-negative number (got " + lockWaitTimeout + ")");
-
-    long maxSleepCount = lockWaitTimeout / LOCK_POLL_INTERVAL;
-    long sleepCount = 0;
-    while (!locked) {
-      if (lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER && sleepCount++ >= maxSleepCount) {
-        String reason = "Lock obtain timed out: " + this.toString();
-        if (failureReason != null) {
-          reason += ": " + failureReason;
-        }
-        throw new LockObtainFailedException(reason, failureReason);
-      }
-      try {
-        Thread.sleep(LOCK_POLL_INTERVAL);
-      } catch (InterruptedException ie) {
-        throw new ThreadInterruptedException(ie);
-      }
-      locked = obtain();
-    }
-    return locked;
-  }
-
-  /** Releases exclusive access. */
   public abstract void close() throws IOException;
-
-  /** Returns true if the resource is currently locked.  Note that one must
-   * still call {@link #obtain()} before using the resource. */
-  public abstract boolean isLocked() throws IOException;
-
-
-  /** Utility class for executing code with exclusive access. */
-  public abstract static class With {
-    private Lock lock;
-    private long lockWaitTimeout;
-
-
-    /** Constructs an executor that will grab the named lock. */
-    public With(Lock lock, long lockWaitTimeout) {
-      this.lock = lock;
-      this.lockWaitTimeout = lockWaitTimeout;
-    }
-
-    /** Code to execute with exclusive access. */
-    protected abstract Object doBody() throws IOException;
-
-    /** Calls {@link #doBody} while <i>lock</i> is obtained.  Blocks if lock
-     * cannot be obtained immediately.  Retries to obtain lock once per second
-     * until it is obtained, or until it has tried ten times. Lock is released when
-     * {@link #doBody} exits.
-     * @throws LockObtainFailedException if lock could not
-     * be obtained
-     * @throws IOException if {@link Lock#obtain} throws IOException
-     */
-    public Object run() throws IOException {
-      boolean locked = false;
-      try {
-         locked = lock.obtain(lockWaitTimeout);
-         return doBody();
-      } finally {
-        if (locked) {
-          lock.close();
-        }
-      }
-    }
-  }
-
+  
+  /** 
+   * Best effort check that this lock is still valid. Locks
+   * could become invalidated externally for a number of reasons,
+   * for example if a user deletes the lock file manually or
+   * when a network filesystem is in use. 
+   * @throws IOException if the lock is no longer valid.
+   */
+  public abstract void ensureValid() throws IOException;
 }

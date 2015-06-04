@@ -47,7 +47,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -356,7 +355,7 @@ public class CheckIndex implements Closeable {
 
   /** Create a new CheckIndex on the directory. */
   public CheckIndex(Directory dir) throws IOException {
-    this(dir, dir.makeLock(IndexWriter.WRITE_LOCK_NAME));
+    this(dir, dir.obtainLock(IndexWriter.WRITE_LOCK_NAME));
   }
   
   /** 
@@ -370,9 +369,6 @@ public class CheckIndex implements Closeable {
     this.dir = dir;
     this.writeLock = writeLock;
     this.infoStream = null;
-    if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) { // obtain write lock
-      throw new LockObtainFailedException("Index locked for write: " + writeLock);
-    }
   }
   
   private void ensureOpen() {
