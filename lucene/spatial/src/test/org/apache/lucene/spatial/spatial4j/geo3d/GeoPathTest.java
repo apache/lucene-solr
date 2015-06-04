@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 import org.junit.Test;
 
+import static java.lang.Math.toRadians;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -180,6 +181,16 @@ public class GeoPathTest {
     assertEquals(-0.3999999, b.getMinLatitude(), 0.000001);
     assertEquals(0.3999999, b.getMaxLatitude(), 0.000001);
 
+  }
+
+  @Test
+  public void testCoLinear() {
+    // p1: (12,-90), p2: (11, -55), (129, -90)
+    GeoPath p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p.addPoint(toRadians(-90), toRadians(12));//south pole
+    p.addPoint(toRadians(-55), toRadians(11));
+    p.addPoint(toRadians(-90), toRadians(129));//south pole again
+    p.done();//at least test this doesn't bomb like it used too -- LUCENE-6520
   }
 
 }
