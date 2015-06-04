@@ -118,6 +118,8 @@ Other Changes
   SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
   functions in HttpSolrCall.  (ryan)
 
+* SOLR-7636: CLUSTERSTATUS API is executed at CollectionsHandler (noble)
+
 
 ==================  5.2.0 ==================
 
