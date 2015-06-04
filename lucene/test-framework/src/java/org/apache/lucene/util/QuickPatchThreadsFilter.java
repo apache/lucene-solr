@@ -26,15 +26,21 @@ public class QuickPatchThreadsFilter implements ThreadFilter {
   static final boolean isJ9;
   
   static {
-    isJ9 = System.getProperty("java.vm.info", "<?>").contains("IBM J9");
+    isJ9 = Constants.JAVA_VENDOR.startsWith("IBM");
   }
 
   @Override
   public boolean reject(Thread t) {
     if (isJ9) {
+      // LUCENE-6518
+      if ("ClassCache Reaper".equals(t.getName())) {
+        return true;
+      }
+
+      // LUCENE-4736
       StackTraceElement [] stack = t.getStackTrace();
       if (stack.length > 0 && stack[stack.length - 1].getClassName().equals("java.util.Timer$TimerImpl")) {
-        return true; // LUCENE-4736
+        return true;
       }
     }
     return false;
