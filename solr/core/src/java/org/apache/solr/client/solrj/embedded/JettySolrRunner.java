@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -393,6 +394,8 @@ public class JettySolrRunner {
           }
         }
       }
+      
+      if (config.waitForLoadingCoresToFinishMs != null && config.waitForLoadingCoresToFinishMs > 0L) waitForLoadingCoresToFinish(config.waitForLoadingCoresToFinishMs);
     } finally {
       if (prevContext != null)  {
         MDC.setContextMap(prevContext);
@@ -561,5 +564,15 @@ public class JettySolrRunner {
    */
   public String getSolrHome() {
     return solrHome;
+  }
+
+  private void waitForLoadingCoresToFinish(long timeoutMs) {
+    if (dispatchFilter != null) {
+      SolrDispatchFilter solrFilter = (SolrDispatchFilter) dispatchFilter.getFilter();
+      CoreContainer cores = solrFilter.getCores();
+      if (cores != null) {
+        cores.waitForLoadingCoresToFinish(timeoutMs);
+      }
+    }
   }
 }

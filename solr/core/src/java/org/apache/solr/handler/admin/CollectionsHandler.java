@@ -20,6 +20,10 @@ package org.apache.solr.handler.admin;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,9 +48,13 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -55,9 +63,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -597,10 +607,13 @@ public class CollectionsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
           throws KeeperException, InterruptedException {
-        return req.getParams().getAll(null,
+        Map<String, Object> all = req.getParams().getAll(null,
             COLLECTION_PROP,
             SHARD_ID_PROP,
             _ROUTE_);
+        new ClusterStatus(handler.coreContainer.getZkController().getZkStateReader(),
+            new ZkNodeProps(all)).getClusterStatus(rsp.getValues());
+        return null;
       }
     },
     ADDREPLICAPROP_OP(ADDREPLICAPROP) {
@@ -759,4 +772,4 @@ public class CollectionsHandler extends RequestHandlerBase {
       MAX_SHARDS_PER_NODE,
       AUTO_ADD_REPLICAS);
 
-}
+ }

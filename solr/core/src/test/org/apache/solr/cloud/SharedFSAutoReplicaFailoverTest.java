@@ -88,7 +88,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     useJettyDataDir = false;
-    System.setProperty("solr.xml.persist", "true");
   }
   
   protected String getSolrXml() {
@@ -100,8 +99,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
-    checkCreatedVsState = false;
-    
   }
 
   @Test
@@ -263,6 +260,5 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    System.clearProperty("solr.xml.persist");
   }
 }

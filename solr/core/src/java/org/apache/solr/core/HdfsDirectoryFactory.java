@@ -24,13 +24,16 @@ import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
@@ -441,5 +444,78 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public Collection<SolrInfoMBean> offerMBeans() {
     return Arrays.<SolrInfoMBean>asList(MetricsHolder.metrics);
+  }
+
+  @Override
+  public void cleanupOldIndexDirectories(final String dataDir, final String currentIndexDir) {
+
+    // Get the FileSystem object
+    final Path dataDirPath = new Path(dataDir);
+    final Configuration conf = getConf();
+    FileSystem fileSystem = null;
+    try {
+      fileSystem = tmpFsCache.get(dataDir, new Callable<FileSystem>() {
+        @Override
+        public FileSystem call() throws IOException {
+          return FileSystem.get(dataDirPath.toUri(), conf);
+        }
+      });
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    boolean pathExists = false;
+    try {
+      pathExists = fileSystem.exists(dataDirPath);
+    } catch (IOException e) {
+      LOG.error("Error checking if hdfs path "+dataDir+" exists", e);
+    }
+    if (!pathExists) {
+      LOG.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDir);
+      return;
+    }
+
+    final Path currentIndexDirPath = new Path(currentIndexDir); // make sure we don't delete the current
+    final FileSystem fs = fileSystem;
+    FileStatus[] oldIndexDirs = null;
+    try {
+      oldIndexDirs = fileSystem.listStatus(dataDirPath, new PathFilter() {
+        @Override
+        public boolean accept(Path path) {
+          boolean accept = false;
+          String pathName = path.getName();
+          try {
+            accept = fs.isDirectory(path) && !path.equals(currentIndexDirPath) &&
+                (pathName.equals("index") || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
+          } catch (IOException e) {
+            LOG.error("Error checking if path {} is an old index directory, caused by: {}", path, e);
+          }
+          return accept;
+        }
+      });
+    } catch (IOException ioExc) {
+      LOG.error("Error checking for old index directories to clean-up.", ioExc);
+    }
+
+    if (oldIndexDirs == null || oldIndexDirs.length == 0)
+      return; // nothing to clean-up
+
+    Set<String> livePaths = getLivePaths();
+    for (FileStatus oldDir : oldIndexDirs) {
+      Path oldDirPath = oldDir.getPath();
+      if (livePaths.contains(oldDirPath.toString())) {
+        LOG.warn("Cannot delete directory {} because it is still being referenced in the cache.", oldDirPath);
+      } else {
+        try {
+          if (fileSystem.delete(oldDirPath, true)) {
+            LOG.info("Deleted old index directory {}", oldDirPath);
+          } else {
+            LOG.warn("Failed to delete old index directory {}", oldDirPath);
+          }
+        } catch (IOException e) {
+          LOG.error("Failed to delete old index directory {} due to: {}", oldDirPath, e);
+        }
+      }
+    }
   }
 }

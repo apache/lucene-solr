@@ -1,5 +1,7 @@
 package org.apache.solr.common.util;
 
+import java.util.Collection;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,41 +37,36 @@ import org.slf4j.MDC;
 public class ExecutorUtil {
   public static Logger log = LoggerFactory.getLogger(ExecutorUtil.class);
   
+  // this will interrupt the threads! Lucene and Solr do not like this because it can close channels, so only use
+  // this if you know what you are doing - you probably want shutdownAndAwaitTermination
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     pool.shutdown(); // Disable new tasks from being submitted
-    pool.shutdownNow(); // Cancel currently executing tasks
+    pool.shutdownNow(); // Cancel currently executing tasks  - NOTE: this interrupts!
     boolean shutdown = false;
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(5, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(1, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
       }
       if (!shutdown) {
-        pool.shutdownNow(); // Cancel currently executing tasks
+        pool.shutdownNow(); // Cancel currently executing tasks - NOTE: this interrupts!
       }
     }
   }
-  
-  public static void shutdownAndAwaitTermination(ExecutorService pool) {
-    shutdownAndAwaitTermination(pool, 60, TimeUnit.SECONDS);
-  }
 
-  public static void shutdownAndAwaitTermination(ExecutorService pool, long timeout, TimeUnit timeUnit) {
+  public static void shutdownAndAwaitTermination(ExecutorService pool) {
     pool.shutdown(); // Disable new tasks from being submitted
     boolean shutdown = false;
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(timeout, timeUnit);
+        shutdown = pool.awaitTermination(1, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
-      }
-      if (!shutdown) {
-        pool.shutdownNow(); // Cancel currently executing tasks
       }
     }
   }
@@ -128,8 +125,19 @@ public class ExecutorUtil {
     @Override
     public void execute(final Runnable command) {
       final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
-      String ctxStr = submitterContext != null && !submitterContext.isEmpty() ?
-          submitterContext.toString().replace("/", "//") : "";
+      StringBuilder contextString = new StringBuilder();
+      if (submitterContext != null) {
+        Collection<String> values = submitterContext.values();
+        
+        for (String value : values) {
+          contextString.append(value + " ");
+        }
+        if (contextString.length() > 1) {
+          contextString.setLength(contextString.length() - 1);
+        }
+      }
+      
+      String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = new Exception("Submitter stack trace");
       super.execute(new Runnable() {

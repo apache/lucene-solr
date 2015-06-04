@@ -264,6 +264,14 @@ public class SolrReturnFields extends ReturnFields {
             MapSolrParams augmenterParams = new MapSolrParams( augmenterArgs );
             DocTransformer t = factory.create(disp, augmenterParams, req);
             if(t!=null) {
+              if(!_wantsAllFields) {
+                String[] extra = t.getExtraRequestFields();
+                if(extra!=null) {
+                  for(String f : extra) {
+                    fields.add(f); // also request this field from IndexSearcher
+                  }
+                }
+              }
               augmenters.addTransformer( t );
             }
           }

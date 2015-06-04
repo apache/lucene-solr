@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.zookeeper.KeeperException;
@@ -42,14 +43,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
     useFactory("solr.StandardDirectoryFactory");
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    System.clearProperty("numShards");
-    super.distribTearDown();
   }
 
   @Test
@@ -77,7 +71,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
       int n = random().nextInt(getShardCount());
       String nodeName = cloudJettys.get(n).nodeName;
       log.info("Chose {} as overseer designate", nodeName);
-      invokeCollectionApi(CollectionParams.ACTION, CollectionParams.CollectionAction.ADDROLE.toLower(), "role", "overseer", "node", nodeName);
+      new CollectionAdminRequest.AddRole().setRole("overseer").setNode(nodeName).process(cloudClient);
       designates.add(nodeName);
       designateJettys.add(cloudJettys.get(n));
     }

@@ -174,10 +174,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     
       @Override
       protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, TermContext states) {
-        // TODO: would be nice to not lose term-state here.
-        // we could add a hack option to SpanOrQuery, but the hack would only work if this is the top-level Span
-        // (if you put this thing in another span query, it would extractTerms/double-seek anyway)
-        final SpanTermQuery q = new SpanTermQuery(term);
+        final SpanTermQuery q = new SpanTermQuery(term, states);
         q.setBoost(boost);
         topLevel.addClause(q);
       }
@@ -221,7 +218,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
 
         @Override
         protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
-          final SpanTermQuery q = new SpanTermQuery(term);
+          final SpanTermQuery q = new SpanTermQuery(term, states);
           q.setBoost(boost);
           topLevel.addClause(q);
         }

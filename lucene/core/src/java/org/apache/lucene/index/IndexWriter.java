@@ -60,6 +60,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -118,9 +119,7 @@ import org.apache.lucene.util.Version;
 
   <p>Opening an <code>IndexWriter</code> creates a lock file for the directory in use. Trying to open
   another <code>IndexWriter</code> on the same directory will lead to a
-  {@link LockObtainFailedException}. The {@link LockObtainFailedException}
-  is also thrown if an IndexReader on the same directory is used to delete documents
-  from the index.</p>
+  {@link LockObtainFailedException}.</p>
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
@@ -254,8 +253,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
-  private final Directory directory;  // where this index resides
-  private final Directory mergeDirectory;  // used for merging
+  private final Directory directoryOrig;       // original user directory
+  private final Directory directory;           // wrapped with additional checks
+  private final Directory mergeDirectory;      // wrapped with throttling: used for merging
   private final Analyzer analyzer;    // how to analyze text
 
   private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed
@@ -645,7 +645,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Make sure no new readers can be opened if another thread just closed us:
       ensureOpen(false);
 
-      assert info.info.dir == directory: "info.dir=" + info.info.dir + " vs " + directory;
+      assert info.info.dir == directoryOrig: "info.dir=" + info.info.dir + " vs " + directoryOrig;
 
       ReadersAndUpdates rld = readerMap.get(info);
       if (rld == null) {
@@ -754,29 +754,37 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
-
-    directory = d;
-
-    // Directory we use for merging, so we can abort running merges, and so
-    // merge schedulers can optionally rate-limit per-merge IO:
-    mergeDirectory = addMergeRateLimiters(d);
-
-    analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
-    mergeScheduler = config.getMergeScheduler();
-    mergeScheduler.setInfoStream(infoStream);
-    codec = config.getCodec();
-
-    bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
-    poolReaders = config.getReaderPooling();
-
-    writeLock = directory.makeLock(WRITE_LOCK_NAME);
-
-    if (!writeLock.obtain(config.getWriteLockTimeout())) // obtain write lock
-      throw new LockObtainFailedException("Index locked for write: " + writeLock);
-
+    
+    // obtain the write.lock. If the user configured a timeout,
+    // we wrap with a sleeper and this might take some time.
+    long timeout = config.getWriteLockTimeout();
+    final Directory lockDir;
+    if (timeout == 0) {
+      // user doesn't want sleep/retries
+      lockDir = d;
+    } else {
+      lockDir = new SleepingLockWrapper(d, timeout);
+    }
+    writeLock = lockDir.obtainLock(WRITE_LOCK_NAME);
+    
     boolean success = false;
     try {
+      directoryOrig = d;
+      directory = new LockValidatingDirectoryWrapper(d, writeLock);
+
+      // Directory we use for merging, so we can abort running merges, and so
+      // merge schedulers can optionally rate-limit per-merge IO:
+      mergeDirectory = addMergeRateLimiters(directory);
+
+      analyzer = config.getAnalyzer();
+      mergeScheduler = config.getMergeScheduler();
+      mergeScheduler.setInfoStream(infoStream);
+      codec = config.getCodec();
+
+      bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
+      poolReaders = config.getReaderPooling();
+
       OpenMode mode = config.getOpenMode();
       boolean create;
       if (mode == OpenMode.CREATE) {
@@ -822,7 +830,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         // Do not use SegmentInfos.read(Directory) since the spooky
         // retrying it does is not necessary here (we hold the write lock):
-        segmentInfos = SegmentInfos.readCommit(directory, lastSegmentsFile);
+        segmentInfos = SegmentInfos.readCommit(directoryOrig, lastSegmentsFile);
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
@@ -831,9 +839,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // preserve write-once.  This is important if
           // readers are open against the future commit
           // points.
-          if (commit.getDirectory() != directory)
-            throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = SegmentInfos.readCommit(directory, commit.getSegmentsFileName());
+          if (commit.getDirectory() != directoryOrig)
+            throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory, expected=" + directoryOrig + ", got=" + commit.getDirectory());
+          SegmentInfos oldInfos = SegmentInfos.readCommit(directoryOrig, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changed();
           if (infoStream.isEnabled("IW")) {
@@ -848,13 +856,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = getFieldNumberMap();
       config.getFlushPolicy().init(config);
-      docWriter = new DocumentsWriter(this, config, directory);
+      docWriter = new DocumentsWriter(this, config, directoryOrig, directory);
       eventQueue = docWriter.eventQueue();
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
       synchronized(this) {
-        deleter = new IndexFileDeleter(directory,
+        deleter = new IndexFileDeleter(directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
                                        initialIndexExists);
@@ -937,7 +945,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private void messageState() {
     if (infoStream.isEnabled("IW") && didMessageState == false) {
       didMessageState = true;
-      infoStream.message("IW", "\ndir=" + directory + "\n" +
+      infoStream.message("IW", "\ndir=" + directoryOrig + "\n" +
             "index=" + segString() + "\n" +
             "version=" + Version.LATEST.toString() + "\n" +
             config.toString());
@@ -1036,7 +1044,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
-    return directory;
+    // return the original directory the user supplied, unwrapped.
+    return directoryOrig;
   }
 
   /** Returns the analyzer used by this index. */
@@ -2274,7 +2283,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     for(int i=0;i<dirs.length;i++) {
       if (dups.contains(dirs[i]))
         throw new IllegalArgumentException("Directory " + dirs[i] + " appears more than once");
-      if (dirs[i] == directory)
+      if (dirs[i] == directoryOrig)
         throw new IllegalArgumentException("Cannot add directory to itself");
       dups.add(dirs[i]);
     }
@@ -2288,13 +2297,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     for(int i=0;i<dirs.length;i++) {
       boolean success = false;
       try {
-        Lock lock = dirs[i].makeLock(WRITE_LOCK_NAME);
+        Lock lock = dirs[i].obtainLock(WRITE_LOCK_NAME);
         locks.add(lock);
-        lock.obtain(config.getWriteLockTimeout());
         success = true;
       } finally {
         if (success == false) {
           // Release all previously acquired locks:
+          // TODO: addSuppressed? it could be many...
           IOUtils.closeWhileHandlingException(locks);
         }
       }
@@ -2334,8 +2343,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @throws LockObtainFailedException if we were unable to
-   *   acquire the write lock in at least one directory
    * @throws IllegalArgumentException if addIndexes would cause
    *   the index to exceed {@link #MAX_DOCS}
    */
@@ -2496,7 +2503,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // abortable so that IW.close(false) is able to stop it
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
 
-      SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
+      SegmentInfo info = new SegmentInfo(directoryOrig, Version.LATEST, mergedName, -1,
                                          false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
 
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
@@ -2600,7 +2607,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
     // Same SI as before but we change directory and name
-    SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.maxDoc(),
+    SegmentInfo newInfo = new SegmentInfo(directoryOrig, info.info.getVersion(), segName, info.info.maxDoc(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics(), info.info.getId(), info.info.getAttributes());
     SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), 
@@ -2880,9 +2887,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             // we committed, if anything goes wrong after this, we are screwed and it's a tragedy:
             commitCompleted = true;
 
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "commit: done writing segments file \"" + committedSegmentsFileName + "\"");
+            }
+
             // NOTE: don't use this.checkpoint() here, because
             // we do not want to increment changeCount:
             deleter.checkpoint(pendingCommit, true);
+
+            // Carry over generation to our master SegmentInfos:
+            segmentInfos.updateGeneration(pendingCommit);
 
             lastCommitChangeCount = pendingCommitChangeCount;
             rollbackSegments = pendingCommit.createBackupSegmentInfos();
@@ -2922,7 +2936,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "commit: wrote segments file \"" + committedSegmentsFileName + "\"");
       infoStream.message("IW", String.format(Locale.ROOT, "commit: took %.1f msec", (System.nanoTime()-startCommitTime)/1000000.0));
       infoStream.message("IW", "commit: done");
     }
@@ -3069,7 +3082,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private synchronized void ensureValidMerge(MergePolicy.OneMerge merge) {
     for(SegmentCommitInfo info : merge.segments) {
       if (!segmentInfos.contains(info)) {
-        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString(), directory);
+        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.info.name + ") that is not in the current index " + segString(), directoryOrig);
       }
     }
   }
@@ -3593,7 +3606,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         return false;
       }
-      if (info.info.dir != directory) {
+      if (info.info.dir != directoryOrig) {
         isExternal = true;
       }
       if (segmentsToMerge.containsKey(info)) {
@@ -3726,7 +3739,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     final String mergeSegmentName = newSegmentName();
-    SegmentInfo si = new SegmentInfo(directory, Version.LATEST, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
     Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
@@ -4297,6 +4310,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // (this method unwinds everything it did on
           // an exception)
           toSync.prepareCommit(directory);
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "startCommit: wrote pending segments file \"" + IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", toSync.getGeneration()) + "\"");
+          }
+
           //System.out.println("DONE prepareCommit");
 
           pendingCommitSet = true;
@@ -4355,9 +4372,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use of this method can only lead to race conditions. Try
+   *             to actually obtain a lock instead.
    */
+  @Deprecated
   public static boolean isLocked(Directory directory) throws IOException {
-    return directory.makeLock(WRITE_LOCK_NAME).isLocked();
+    try {
+      directory.obtainLock(WRITE_LOCK_NAME).close();
+      return false;
+    } catch (LockObtainFailedException failed) {
+      return true;
+    }
   }
 
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has

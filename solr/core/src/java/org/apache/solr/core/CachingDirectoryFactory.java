@@ -500,4 +500,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
     return livePaths;
   }
+
+  @Override
+  protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
+    Set<String> livePaths = getLivePaths();
+    if (livePaths.contains(oldDirPath)) {
+      log.warn("Cannot delete directory {} as it is still being referenced in the cache!", oldDirPath);
+      return false;
+    }
+
+    return super.deleteOldIndexDirectory(oldDirPath);
+  }
 }

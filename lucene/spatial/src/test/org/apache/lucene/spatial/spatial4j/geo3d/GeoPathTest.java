@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 import org.junit.Test;
 
+import static java.lang.Math.toRadians;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -30,47 +31,47 @@ public class GeoPathTest {
     // Start with a really simple case
     GeoPath p;
     GeoPoint gp;
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(0.0, 0.0);
     p.addPoint(0.0, 0.1);
     p.addPoint(0.0, 0.2);
     p.done();
-    gp = new GeoPoint(Math.PI * 0.5, 0.15);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.15);
     assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.0);
-    gp = new GeoPoint(0.05, 0.15);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, 0.15);
     assertEquals(0.15 + 0.05, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(0.0, 0.12);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.12);
     assertEquals(0.12 + 0.0, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(-0.15, 0.05);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, 0.05);
     assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(0.0, 0.25);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.25);
     assertEquals(0.20 + 0.05, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(0.0, -0.05);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.05);
     assertEquals(0.0 + 0.05, p.computeArcDistance(gp), 0.000001);
 
     // Compute path distances now
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(0.0, 0.0);
     p.addPoint(0.0, 0.1);
     p.addPoint(0.0, 0.2);
     p.done();
-    gp = new GeoPoint(0.05, 0.15);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, 0.15);
     assertEquals(0.15 + 0.05, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(0.0, 0.12);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.12);
     assertEquals(0.12, p.computeArcDistance(gp), 0.000001);
 
     // Now try a vertical path, and make sure distances are as expected
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(-Math.PI * 0.25, -0.5);
     p.addPoint(Math.PI * 0.25, -0.5);
     p.done();
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.0);
-    gp = new GeoPoint(-0.1, -1.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -1.0);
     assertEquals(Double.MAX_VALUE, p.computeArcDistance(gp), 0.0);
-    gp = new GeoPoint(Math.PI * 0.25 + 0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.25 + 0.05, -0.5);
     assertEquals(Math.PI * 0.5 + 0.05, p.computeArcDistance(gp), 0.000001);
-    gp = new GeoPoint(-Math.PI * 0.25 - 0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -Math.PI * 0.25 - 0.05, -0.5);
     assertEquals(0.0 + 0.05, p.computeArcDistance(gp), 0.000001);
   }
 
@@ -79,47 +80,48 @@ public class GeoPathTest {
     // Tests whether we can properly detect whether a point is within a path or not
     GeoPath p;
     GeoPoint gp;
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     // Build a diagonal path crossing the equator
     p.addPoint(-0.2, -0.2);
     p.addPoint(0.2, 0.2);
     p.done();
     // Test points on the path
-    gp = new GeoPoint(-0.2, -0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.2, -0.2);
     assertTrue(p.isWithin(gp));
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertTrue(p.isWithin(gp));
-    gp = new GeoPoint(0.1, 0.1);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.1, 0.1);
     assertTrue(p.isWithin(gp));
     // Test points off the path
-    gp = new GeoPoint(-0.2, 0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.2, 0.2);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(-Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(0.2, -0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.2, -0.2);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(p.isWithin(gp));
     // Repeat the test, but across the terminator
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     // Build a diagonal path crossing the equator
     p.addPoint(-0.2, Math.PI - 0.2);
     p.addPoint(0.2, -Math.PI + 0.2);
+    p.done();
     // Test points on the path
-    gp = new GeoPoint(-0.2, Math.PI - 0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.2, Math.PI - 0.2);
     assertTrue(p.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertTrue(p.isWithin(gp));
-    gp = new GeoPoint(0.1, -Math.PI + 0.1);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.1, -Math.PI + 0.1);
     assertTrue(p.isWithin(gp));
     // Test points off the path
-    gp = new GeoPoint(-0.2, -Math.PI + 0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.2, -Math.PI + 0.2);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(-Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(0.2, Math.PI - 0.2);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.2, Math.PI - 0.2);
     assertFalse(p.isWithin(gp));
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(p.isWithin(gp));
 
   }
@@ -131,31 +133,31 @@ public class GeoPathTest {
 
     // Start by testing the basic kinds of relationship, increasing in order of difficulty.
 
-    p = new GeoPath(0.1);
+    p = new GeoPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(-0.3, -0.3);
     p.addPoint(0.3, 0.3);
     p.done();
     // Easiest: The path is wholly contains the georect
-    rect = new GeoRectangle(0.05, -0.05, -0.05, 0.05);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.05, -0.05, -0.05, 0.05);
     assertEquals(GeoArea.CONTAINS, rect.getRelationship(p));
     // Next easiest: Some endpoints of the rectangle are inside, and some are outside.
-    rect = new GeoRectangle(0.05, -0.05, -0.05, 0.5);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.05, -0.05, -0.05, 0.5);
     assertEquals(GeoArea.OVERLAPS, rect.getRelationship(p));
     // Now, all points are outside, but the figures intersect
-    rect = new GeoRectangle(0.05, -0.05, -0.5, 0.5);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.05, -0.05, -0.5, 0.5);
     assertEquals(GeoArea.OVERLAPS, rect.getRelationship(p));
     // Finally, all points are outside, and the figures *do not* intersect
-    rect = new GeoRectangle(0.5, -0.5, -0.5, 0.5);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.5, -0.5, -0.5, 0.5);
     assertEquals(GeoArea.WITHIN, rect.getRelationship(p));
     // Check that segment edge overlap detection works
-    rect = new GeoRectangle(0.1, 0.0, -0.1, 0.0);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.1, 0.0, -0.1, 0.0);
     assertEquals(GeoArea.OVERLAPS, rect.getRelationship(p));
-    rect = new GeoRectangle(0.2, 0.1, -0.2, -0.1);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.2, 0.1, -0.2, -0.1);
     assertEquals(GeoArea.DISJOINT, rect.getRelationship(p));
     // Check if overlap at endpoints behaves as expected next
-    rect = new GeoRectangle(0.5, -0.5, -0.5, -0.35);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.5, -0.5, -0.5, -0.35);
     assertEquals(GeoArea.OVERLAPS, rect.getRelationship(p));
-    rect = new GeoRectangle(0.5, -0.5, -0.5, -0.45);
+    rect = new GeoRectangle(PlanetModel.SPHERE, 0.5, -0.5, -0.5, -0.45);
     assertEquals(GeoArea.DISJOINT, rect.getRelationship(p));
 
   }
@@ -165,7 +167,7 @@ public class GeoPathTest {
     GeoPath c;
     Bounds b;
 
-    c = new GeoPath(0.1);
+    c = new GeoPath(PlanetModel.SPHERE, 0.1);
     c.addPoint(-0.3, -0.3);
     c.addPoint(0.3, 0.3);
     c.done();
@@ -179,6 +181,16 @@ public class GeoPathTest {
     assertEquals(-0.3999999, b.getMinLatitude(), 0.000001);
     assertEquals(0.3999999, b.getMaxLatitude(), 0.000001);
 
+  }
+
+  @Test
+  public void testCoLinear() {
+    // p1: (12,-90), p2: (11, -55), (129, -90)
+    GeoPath p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p.addPoint(toRadians(-90), toRadians(12));//south pole
+    p.addPoint(toRadians(-55), toRadians(11));
+    p.addPoint(toRadians(-90), toRadians(129));//south pole again
+    p.done();//at least test this doesn't bomb like it used too -- LUCENE-6520
   }
 
 }

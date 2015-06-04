@@ -84,14 +84,12 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() {
-      AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
+    // this is necessary because AbstractZkTestCase.buildZooKeeper is used by AbstractDistribZkTestBase
+    // and the auto-detected SOLRHOME=TEST_HOME() does not exist for solrj tests
+    // todo fix this
+    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
   }
-  
-  @AfterClass
-  public static void afterSuperClass() {
-    
-  }
-  
+
   protected String getCloudSolrConfig() {
     return "solrconfig.xml";
   }
@@ -103,15 +101,6 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
   
   public static String SOLR_HOME() {
     return SOLR_HOME;
-  }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-    
-    System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
   public CloudSolrClientTest() {

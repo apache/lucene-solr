@@ -265,7 +265,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /**
    * Sets the maximum time to wait for a write lock (in milliseconds) for this
    * instance. You can change the default value for all instances by calling
-   * {@link #setDefaultWriteLockTimeout(long)}.
+   * {@link #setDefaultWriteLockTimeout(long)}. Note that the value can be zero,
+   * for no sleep/retry behavior.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {

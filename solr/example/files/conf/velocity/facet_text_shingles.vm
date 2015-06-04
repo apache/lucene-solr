@@ -1,5 +1,5 @@
 <div id="facet_$field.name">
-  <span class="facet-field">Top Phrases</span><br/>
+  <span class="facet-field">$resource.top_phrases</span><br/>
 
   <ul id="tagcloud">
     #foreach($facet in $sort.sort($field.values,"name"))

@@ -29,29 +29,25 @@ import java.util.List;
  * @lucene.experimental
  */
 public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
+  
   public final double cutoffAngle;
-  public final double cutoffOffset;
-  public final double originDistance;
-  public final double chordDistance;
+  public final double sinAngle;
+  public final double cosAngle;
 
-  public final List<SegmentEndpoint> points = new ArrayList<SegmentEndpoint>();
+  public final List<GeoPoint> points = new ArrayList<GeoPoint>();
+  
+  public final List<SegmentEndpoint> endPoints = new ArrayList<SegmentEndpoint>();
   public final List<PathSegment> segments = new ArrayList<PathSegment>();
 
   public GeoPoint[] edgePoints = null;
 
-  public GeoPath(final double cutoffAngle) {
-    super();
-    if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI * 0.5)
+  public GeoPath(final PlanetModel planetModel, final double maxCutoffAngle) {
+    super(planetModel);
+    if (maxCutoffAngle <= 0.0 || maxCutoffAngle > Math.PI * 0.5)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
-    this.cutoffAngle = cutoffAngle;
-    final double cosAngle = Math.cos(cutoffAngle);
-    final double sinAngle = Math.sin(cutoffAngle);
-    // Cutoff offset is the linear distance given the angle
-    this.cutoffOffset = sinAngle;
-    this.originDistance = cosAngle;
-    // Compute chord distance
-    double xDiff = 1.0 - cosAngle;
-    this.chordDistance = Math.sqrt(xDiff * xDiff + sinAngle * sinAngle);
+    this.cutoffAngle = maxCutoffAngle;
+    this.cosAngle = Math.cos(maxCutoffAngle);
+    this.sinAngle = Math.sin(maxCutoffAngle);
   }
 
   public void addPoint(double lat, double lon) {
@@ -59,57 +55,86 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       throw new IllegalArgumentException("Latitude out of range");
     if (lon < -Math.PI || lon > Math.PI)
       throw new IllegalArgumentException("Longitude out of range");
-    final GeoPoint end = new GeoPoint(lat, lon);
-    if (points.size() > 0) {
-      final GeoPoint start = points.get(points.size() - 1).point;
-      final PathSegment ps = new PathSegment(start, end, cutoffOffset, cutoffAngle, chordDistance);
-      // Check for degeneracy; if the segment is degenerate, don't include the point
-      if (ps.isDegenerate())
-        return;
-      segments.add(ps);
-    } else {
-      // First point.  We compute the basic set of edgepoints here because we've got the lat and lon available.
-      // Move from center only in latitude.  Then, if we go past the north pole, adjust the longitude also.
-      double newLat = lat + cutoffAngle;
-      double newLon = lon;
-      if (newLat > Math.PI * 0.5) {
-        newLat = Math.PI - newLat;
-        newLon += Math.PI;
-      }
-      while (newLon > Math.PI) {
-        newLon -= Math.PI * 2.0;
-      }
-      final GeoPoint edgePoint = new GeoPoint(newLat, newLon);
-      this.edgePoints = new GeoPoint[]{edgePoint};
-    }
-    final SegmentEndpoint se = new SegmentEndpoint(end, originDistance, cutoffOffset, cutoffAngle, chordDistance);
-    points.add(se);
+    points.add(new GeoPoint(planetModel, lat, lon));
   }
-
+  
   public void done() {
     if (points.size() == 0)
       throw new IllegalArgumentException("Path must have at least one point");
-    if (segments.size() > 0) {
-      edgePoints = new GeoPoint[]{points.get(0).circlePlane.getSampleIntersectionPoint(segments.get(0).invertedStartCutoffPlane)};
-    }
-    for (int i = 0; i < points.size(); i++) {
-      final SegmentEndpoint pathPoint = points.get(i);
-      Membership previousEndBound = null;
-      GeoPoint[] previousEndNotablePoints = null;
-      Membership nextStartBound = null;
-      GeoPoint[] nextStartNotablePoints = null;
-      if (i > 0) {
-        final PathSegment previousSegment = segments.get(i - 1);
-        previousEndBound = previousSegment.invertedEndCutoffPlane;
-        previousEndNotablePoints = previousSegment.endCutoffPlanePoints;
+    // Compute an offset to use for all segments.  This will be based on the minimum magnitude of 
+    // the entire ellipsoid.
+    final double cutoffOffset = this.sinAngle * planetModel.getMinimumMagnitude();
+    
+    // First, build all segments.  We'll then go back and build corresponding segment endpoints.
+    GeoPoint lastPoint = null;
+    for (final GeoPoint end : points) {
+      if (lastPoint != null) {
+        final Plane normalizedConnectingPlane = new Plane(lastPoint, end).normalize();
+        if (normalizedConnectingPlane == null) {
+          continue;
+        }
+        segments.add(new PathSegment(planetModel, lastPoint, end, normalizedConnectingPlane, cutoffOffset));
       }
-      if (i < segments.size()) {
-        final PathSegment nextSegment = segments.get(i);
-        nextStartBound = nextSegment.invertedStartCutoffPlane;
-        nextStartNotablePoints = nextSegment.startCutoffPlanePoints;
-      }
-      pathPoint.setCutoffPlanes(previousEndNotablePoints, previousEndBound, nextStartNotablePoints, nextStartBound);
+      lastPoint = end;
     }
+    
+    if (segments.size() == 0) {
+      // Simple circle
+      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(points.get(0), cutoffOffset);
+      endPoints.add(onlyEndpoint);
+      // Find an edgepoint
+      // We already have circle plane, which is the definitive determination of the edge of the "circle".
+      // Next, compute vertical plane going through origin and the center point (C = 0, D = 0).
+      Plane verticalPlane = Plane.constructNormalizedVerticalPlane(onlyEndpoint.point.x, onlyEndpoint.point.y);
+      if (verticalPlane == null) {
+        verticalPlane = new Plane(1.0,0.0);
+      }
+      // Finally, use Plane.findIntersections() to find the intersection points.
+      final GeoPoint edgePoint = onlyEndpoint.circlePlane.getSampleIntersectionPoint(planetModel, verticalPlane);
+      if (edgePoint == null) {
+        throw new RuntimeException("Could not find edge point for path endpoint="+onlyEndpoint.point+" cutoffOffset="+cutoffOffset+" planetModel="+planetModel);
+      }
+      this.edgePoints = new GeoPoint[]{edgePoint};
+      return;
+    }
+    
+    // Create segment endpoints.  Use an appropriate constructor for the start and end of the path.
+    for (int i = 0; i < segments.size(); i++) {
+      final PathSegment currentSegment = segments.get(i);
+      
+      if (i == 0) {
+        // Starting endpoint
+        final SegmentEndpoint startEndpoint = new SegmentEndpoint(currentSegment.start, 
+          currentSegment.startCutoffPlane, currentSegment.ULHC, currentSegment.LLHC);
+        endPoints.add(startEndpoint);
+        this.edgePoints = new GeoPoint[]{currentSegment.ULHC};
+        continue;
+      }
+      
+      // General intersection case
+      final PathSegment prevSegment = segments.get(i-1);
+      // We construct four separate planes, and evaluate which one includes all interior points with least overlap
+      final SidedPlane candidate1 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.URHC, currentSegment.ULHC, currentSegment.LLHC);
+      final SidedPlane candidate2 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.ULHC, currentSegment.LLHC, prevSegment.LRHC);
+      final SidedPlane candidate3 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.LLHC, prevSegment.LRHC, prevSegment.URHC);
+      final SidedPlane candidate4 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.LRHC, prevSegment.URHC, currentSegment.ULHC);
+
+      if (candidate1 == null && candidate2 == null && candidate3 == null && candidate4 == null) {
+        // The planes are identical.  We don't need a circle at all.  Special constructor...
+        endPoints.add(new SegmentEndpoint(currentSegment.start));
+      } else {
+        endPoints.add(new SegmentEndpoint(currentSegment.start,
+          prevSegment.endCutoffPlane, currentSegment.startCutoffPlane,
+          prevSegment.URHC, prevSegment.LRHC,
+          currentSegment.ULHC, currentSegment.LLHC,
+          candidate1, candidate2, candidate3, candidate4));
+      }
+    }
+    // Do final endpoint
+    final PathSegment lastSegment = segments.get(segments.size()-1);
+    endPoints.add(new SegmentEndpoint(lastSegment.end,
+      lastSegment.endCutoffPlane, lastSegment.URHC, lastSegment.LRHC));
+
   }
 
   /**
@@ -132,7 +157,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
     int segmentIndex = 0;
     currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : points) {
+    for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathNormalDistance(point);
       if (distance != Double.MAX_VALUE)
         return currentDistance + distance;
@@ -194,7 +219,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
     int segmentIndex = 0;
     currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : points) {
+    for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathLinearDistance(point);
       if (distance != Double.MAX_VALUE)
         return currentDistance + distance;
@@ -251,7 +276,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
     int segmentIndex = 0;
     currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : points) {
+    for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(point);
       if (distance != Double.MAX_VALUE)
         return currentDistance + distance;
@@ -264,20 +289,26 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
   @Override
   public boolean isWithin(final Vector point) {
-    for (SegmentEndpoint pathPoint : points) {
-      if (pathPoint.isWithin(point))
+    //System.err.println("Assessing whether point "+point+" is within geopath "+this);
+    for (SegmentEndpoint pathPoint : endPoints) {
+      if (pathPoint.isWithin(point)) {
+        //System.err.println(" point is within SegmentEndpoint "+pathPoint);
         return true;
+      }
     }
     for (PathSegment pathSegment : segments) {
-      if (pathSegment.isWithin(point))
+      if (pathSegment.isWithin(point)) {
+        //System.err.println(" point is within PathSegment "+pathSegment);
         return true;
+      }
     }
+    //System.err.println(" point is not within geopath");
     return false;
   }
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    for (SegmentEndpoint pathPoint : points) {
+    for (SegmentEndpoint pathPoint : endPoints) {
       if (pathPoint.isWithin(x, y, z))
         return true;
     }
@@ -304,15 +335,15 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     // any of the intersection points are within the bounds, then we've detected an intersection.
     // Well, sort of.  We can detect intersections also due to overlap of segments with each other.
     // But that's an edge case and we won't be optimizing for it.
-
-    for (final SegmentEndpoint pathPoint : points) {
-      if (pathPoint.intersects(plane, notablePoints, bounds)) {
+    //System.err.println(" Looking for intersection of plane "+plane+" with path "+this);
+    for (final SegmentEndpoint pathPoint : endPoints) {
+      if (pathPoint.intersects(planetModel, plane, notablePoints, bounds)) {
         return true;
       }
     }
 
     for (final PathSegment pathSegment : segments) {
-      if (pathSegment.intersects(plane, notablePoints, bounds)) {
+      if (pathSegment.intersects(planetModel, plane, notablePoints, bounds)) {
         return true;
       }
     }
@@ -336,10 +367,10 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     // never more than 180 degrees longitude at a pop or we risk having the
     // bounds object get itself inverted.  So do the edges first.
     for (PathSegment pathSegment : segments) {
-      pathSegment.getBounds(bounds);
+      pathSegment.getBounds(planetModel, bounds);
     }
-    for (SegmentEndpoint pathPoint : points) {
-      pathPoint.getBounds(bounds);
+    for (SegmentEndpoint pathPoint : endPoints) {
+      pathPoint.getBounds(planetModel, bounds);
     }
     return bounds;
   }
@@ -349,13 +380,15 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     if (!(o instanceof GeoPath))
       return false;
     GeoPath p = (GeoPath) o;
-    if (points.size() != p.points.size())
+    if (!super.equals(p))
+      return false;
+    if (endPoints.size() != p.endPoints.size())
       return false;
     if (cutoffAngle != p.cutoffAngle)
       return false;
-    for (int i = 0; i < points.size(); i++) {
-      SegmentEndpoint point = points.get(i);
-      SegmentEndpoint point2 = p.points.get(i);
+    for (int i = 0; i < endPoints.size(); i++) {
+      SegmentEndpoint point = endPoints.get(i);
+      SegmentEndpoint point2 = p.endPoints.get(i);
       if (!point.equals(point2))
         return false;
     }
@@ -364,101 +397,166 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    temp = Double.doubleToLongBits(cutoffAngle);
-    result = (int) (temp ^ (temp >>> 32));
-    result = 31 * result + points.hashCode();
+    int result = super.hashCode();
+    long temp = Double.doubleToLongBits(cutoffAngle);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    result = 31 * result + endPoints.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoPath: {width=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + "), points={" + points + "}}";
+    return "GeoPath: {planetmodel=" + planetModel+", width=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + "), points={" + points + "}}";
   }
 
   /**
    * This is precalculated data for segment endpoint.
+   * Note well: This is not necessarily a circle.  There are four cases:
+   * (1) The path consists of a single endpoint.  In this case, we build a simple circle with the proper cutoff offset.
+   * (2) This is the end of a path.  The circle plane must be constructed to go through two supplied points and be perpendicular to a connecting plane.
+   * (3) This is an intersection in a path.  We are supplied FOUR planes.  If there are intersections within bounds for both upper and lower, then
+   *    we generate no circle at all.  If there is one intersection only, then we generate a plane that includes that intersection, as well as the remaining
+   *    cutoff plane/edge plane points.
    */
   public static class SegmentEndpoint {
     public final GeoPoint point;
     public final SidedPlane circlePlane;
-    public final double cutoffNormalDistance;
-    public final double cutoffAngle;
-    public final double chordDistance;
-    public Membership[] cutoffPlanes = null;
-    public GeoPoint[] notablePoints = null;
+    public final Membership[] cutoffPlanes;
+    public final GeoPoint[] notablePoints;
 
     public final static GeoPoint[] circlePoints = new GeoPoint[0];
 
-    public SegmentEndpoint(final GeoPoint point, final double originDistance, final double cutoffOffset, final double cutoffAngle, final double chordDistance) {
+    /** Base case.  Does nothing at all.
+     */
+    public SegmentEndpoint(final GeoPoint point) {
       this.point = point;
-      this.cutoffNormalDistance = cutoffOffset;
-      this.cutoffAngle = cutoffAngle;
-      this.chordDistance = chordDistance;
-      this.circlePlane = new SidedPlane(point, point, -originDistance);
+      this.circlePlane = null;
+      this.cutoffPlanes = null;
+      this.notablePoints = null;
     }
+    
+    /** Constructor for case (1).
+     * Generate a simple circle cutoff plane.
+     */
+    public SegmentEndpoint(final GeoPoint point, final double cutoffOffset) {
+      this.point = point;
+      final double magnitude = point.magnitude();
+      // Normalize vector to make D value correct
+      this.circlePlane = new SidedPlane(point, point.normalize(), -Math.sqrt(magnitude * magnitude - cutoffOffset * cutoffOffset));
+      this.cutoffPlanes = new Membership[0];
+      this.notablePoints = new GeoPoint[0];
+    }
+    
+    /** Constructor for case (2).
+     * Generate an endpoint, given a single cutoff plane plus upper and lower edge points.
+     */
+    public SegmentEndpoint(final GeoPoint point,
+      final SidedPlane cutoffPlane, final GeoPoint topEdgePoint, final GeoPoint bottomEdgePoint) {
+      this.point = point;
+      this.cutoffPlanes = new Membership[]{new SidedPlane(cutoffPlane)};
+      this.notablePoints = new GeoPoint[]{topEdgePoint, bottomEdgePoint};
+      // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
+      this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, cutoffPlane, topEdgePoint, bottomEdgePoint);
+    }
+    
+    /** Constructor for case (3).
+     * Generate an endpoint for an intersection, given four points.
+     */
+    public SegmentEndpoint(final GeoPoint point,
+      final SidedPlane prevCutoffPlane, final SidedPlane nextCutoffPlane,
+      final GeoPoint notCand2Point, final GeoPoint notCand1Point,
+      final GeoPoint notCand3Point, final GeoPoint notCand4Point,
+      final SidedPlane candidate1, final SidedPlane candidate2, final SidedPlane candidate3, final SidedPlane candidate4) {
+      // Note: What we really need is a single plane that goes through all four points.
+      // Since that's not possible in the ellipsoid case (because three points determine a plane, not four), we
+      // need an approximation that at least creates a boundary that has no interruptions.
+      // There are three obvious choices for the third point: either (a) one of the two remaining points, or (b) the top or bottom edge
+      // intersection point.  (a) has no guarantee of continuity, while (b) is capable of producing something very far from a circle if
+      // the angle between segments is acute.
+      // The solution is to look for the side (top or bottom) that has an intersection within the shape.  We use the two points from
+      // the opposite side to determine the plane, AND we pick the third to be either of the two points on the intersecting side
+      // PROVIDED that the other point is within the final circle we come up with.
+      this.point = point;
+      
+      // We construct four separate planes, and evaluate which one includes all interior points with least overlap
+      // (Constructed beforehand because we need them for degeneracy check)
 
-    public void setCutoffPlanes(final GeoPoint[] previousEndNotablePoints, final Membership previousEndPlane,
-                                final GeoPoint[] nextStartNotablePoints, final Membership nextStartPlane) {
-      if (previousEndNotablePoints == null && nextStartNotablePoints == null) {
-        cutoffPlanes = new Membership[0];
-        notablePoints = new GeoPoint[0];
-      } else if (previousEndNotablePoints != null && nextStartNotablePoints == null) {
-        cutoffPlanes = new Membership[]{previousEndPlane};
-        notablePoints = previousEndNotablePoints;
-      } else if (previousEndNotablePoints == null && nextStartNotablePoints != null) {
-        cutoffPlanes = new Membership[]{nextStartPlane};
-        notablePoints = nextStartNotablePoints;
+      final boolean cand1IsOtherWithin = candidate1!=null?candidate1.isWithin(notCand1Point):false;
+      final boolean cand2IsOtherWithin = candidate2!=null?candidate2.isWithin(notCand2Point):false;
+      final boolean cand3IsOtherWithin = candidate3!=null?candidate3.isWithin(notCand3Point):false;
+      final boolean cand4IsOtherWithin = candidate4!=null?candidate4.isWithin(notCand4Point):false;
+      
+      if (cand1IsOtherWithin && cand2IsOtherWithin && cand3IsOtherWithin && cand4IsOtherWithin) {
+        // The only way we should see both within is if all four points are coplanar.  In that case, we default to the simplest treatment.
+        this.circlePlane = candidate1;  // doesn't matter which
+        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand1Point, notCand4Point};
+        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane), new SidedPlane(nextCutoffPlane)};
+      } else if (cand1IsOtherWithin) {
+        // Use candidate1, and DON'T include prevCutoffPlane in the cutoff planes list
+        this.circlePlane = candidate1;
+        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand4Point};
+        this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
+      } else if (cand2IsOtherWithin) {
+        // Use candidate2
+        this.circlePlane = candidate2;
+        this.notablePoints = new GeoPoint[]{notCand3Point, notCand4Point, notCand1Point};
+        this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
+      } else if (cand3IsOtherWithin) {
+        this.circlePlane = candidate3;
+        this.notablePoints = new GeoPoint[]{notCand4Point, notCand1Point, notCand2Point};
+        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
+      } else if (cand4IsOtherWithin) {
+        this.circlePlane = candidate4;
+        this.notablePoints = new GeoPoint[]{notCand1Point, notCand2Point, notCand3Point};
+        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
       } else {
-        cutoffPlanes = new Membership[]{previousEndPlane, nextStartPlane};
-        notablePoints = new GeoPoint[previousEndNotablePoints.length + nextStartNotablePoints.length];
-        int i = 0;
-        for (GeoPoint p : previousEndNotablePoints) {
-          notablePoints[i++] = p;
-        }
-        for (GeoPoint p : nextStartNotablePoints) {
-          notablePoints[i++] = p;
-        }
+        // dunno what happened
+        throw new RuntimeException("Couldn't come up with a plane through three points that included the fourth");
       }
     }
 
     public boolean isWithin(final Vector point) {
+      if (circlePlane == null)
+        return false;
       return circlePlane.isWithin(point);
     }
 
     public boolean isWithin(final double x, final double y, final double z) {
+      if (circlePlane == null)
+        return false;
       return circlePlane.isWithin(x, y, z);
     }
 
     public double pathDistance(final GeoPoint point) {
-      double dist = this.point.arcDistance(point);
-      if (dist > cutoffAngle)
+      if (!isWithin(point))
         return Double.MAX_VALUE;
-      return dist;
+      return this.point.arcDistance(point);
     }
 
     public double pathNormalDistance(final GeoPoint point) {
-      double dist = this.point.normalDistance(point);
-      if (dist > cutoffNormalDistance)
+      if (!isWithin(point))
         return Double.MAX_VALUE;
-      return dist;
+      return this.point.normalDistance(point);
     }
 
     public double pathLinearDistance(final GeoPoint point) {
-      double dist = this.point.linearDistance(point);
-      if (dist > chordDistance)
+      if (!isWithin(point))
         return Double.MAX_VALUE;
-      return dist;
+      return this.point.linearDistance(point);
     }
 
-    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
-      return circlePlane.intersects(p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
+    public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
+      //System.err.println("  looking for intersection between plane "+p+" and circle "+circlePlane+" on proper side of "+cutoffPlanes+" within "+bounds);
+      if (circlePlane == null)
+        return false;
+      return circlePlane.intersects(planetModel, p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
     }
 
-    public void getBounds(Bounds bounds) {
+    public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       bounds.addPoint(point);
-      circlePlane.recordBounds(bounds);
+      if (circlePlane == null)
+        return;
+      circlePlane.recordBounds(planetModel, bounds);
     }
 
     @Override
@@ -494,69 +592,70 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     public final SidedPlane lowerConnectingPlane;
     public final SidedPlane startCutoffPlane;
     public final SidedPlane endCutoffPlane;
+    public final GeoPoint URHC;
+    public final GeoPoint LRHC;
+    public final GeoPoint ULHC;
+    public final GeoPoint LLHC;
     public final GeoPoint[] upperConnectingPlanePoints;
     public final GeoPoint[] lowerConnectingPlanePoints;
     public final GeoPoint[] startCutoffPlanePoints;
     public final GeoPoint[] endCutoffPlanePoints;
     public final double planeBoundingOffset;
-    public final double arcWidth;
-    public final double chordDistance;
 
-    // For the adjoining SegmentEndpoint...
-    public final SidedPlane invertedStartCutoffPlane;
-    public final SidedPlane invertedEndCutoffPlane;
-
-    public PathSegment(final GeoPoint start, final GeoPoint end, final double planeBoundingOffset, final double arcWidth, final double chordDistance) {
+    public PathSegment(final PlanetModel planetModel, final GeoPoint start, final GeoPoint end,
+      final Plane normalizedConnectingPlane, final double planeBoundingOffset) {
       this.start = start;
       this.end = end;
+      this.normalizedConnectingPlane = normalizedConnectingPlane;
       this.planeBoundingOffset = planeBoundingOffset;
-      this.arcWidth = arcWidth;
-      this.chordDistance = chordDistance;
 
       fullDistance = start.arcDistance(end);
       fullNormalDistance = start.normalDistance(end);
       fullLinearDistance = start.linearDistance(end);
-      normalizedConnectingPlane = new Plane(start, end).normalize();
-      if (normalizedConnectingPlane == null) {
-        upperConnectingPlane = null;
-        lowerConnectingPlane = null;
-        startCutoffPlane = null;
-        endCutoffPlane = null;
-        upperConnectingPlanePoints = null;
-        lowerConnectingPlanePoints = null;
-        startCutoffPlanePoints = null;
-        endCutoffPlanePoints = null;
-        invertedStartCutoffPlane = null;
-        invertedEndCutoffPlane = null;
-      } else {
-        // Either start or end should be on the correct side
-        upperConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, -planeBoundingOffset);
-        lowerConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, planeBoundingOffset);
-        // Cutoff planes use opposite endpoints as correct side examples
-        startCutoffPlane = new SidedPlane(end, normalizedConnectingPlane, start);
-        endCutoffPlane = new SidedPlane(start, normalizedConnectingPlane, end);
-        final Membership[] upperSide = new Membership[]{upperConnectingPlane};
-        final Membership[] lowerSide = new Membership[]{lowerConnectingPlane};
-        final Membership[] startSide = new Membership[]{startCutoffPlane};
-        final Membership[] endSide = new Membership[]{endCutoffPlane};
-        final GeoPoint ULHC = upperConnectingPlane.findIntersections(startCutoffPlane, lowerSide, endSide)[0];
-        final GeoPoint URHC = upperConnectingPlane.findIntersections(endCutoffPlane, lowerSide, startSide)[0];
-        final GeoPoint LLHC = lowerConnectingPlane.findIntersections(startCutoffPlane, upperSide, endSide)[0];
-        final GeoPoint LRHC = lowerConnectingPlane.findIntersections(endCutoffPlane, upperSide, startSide)[0];
-        upperConnectingPlanePoints = new GeoPoint[]{ULHC, URHC};
-        lowerConnectingPlanePoints = new GeoPoint[]{LLHC, LRHC};
-        startCutoffPlanePoints = new GeoPoint[]{ULHC, LLHC};
-        endCutoffPlanePoints = new GeoPoint[]{URHC, LRHC};
-        invertedStartCutoffPlane = new SidedPlane(startCutoffPlane);
-        invertedEndCutoffPlane = new SidedPlane(endCutoffPlane);
+      // Either start or end should be on the correct side
+      upperConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, -planeBoundingOffset);
+      lowerConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, planeBoundingOffset);
+      // Cutoff planes use opposite endpoints as correct side examples
+      startCutoffPlane = new SidedPlane(end, normalizedConnectingPlane, start);
+      endCutoffPlane = new SidedPlane(start, normalizedConnectingPlane, end);
+      final Membership[] upperSide = new Membership[]{upperConnectingPlane};
+      final Membership[] lowerSide = new Membership[]{lowerConnectingPlane};
+      final Membership[] startSide = new Membership[]{startCutoffPlane};
+      final Membership[] endSide = new Membership[]{endCutoffPlane};
+      GeoPoint[] points;
+      points = upperConnectingPlane.findIntersections(planetModel, startCutoffPlane, lowerSide, endSide);
+      if (points.length == 0) {
+        throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
       }
-    }
-
-    public boolean isDegenerate() {
-      return normalizedConnectingPlane == null;
+      this.ULHC = points[0];
+      points = upperConnectingPlane.findIntersections(planetModel, endCutoffPlane, lowerSide, startSide);
+      if (points.length == 0) {
+        throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
+      }
+      this.URHC = points[0];
+      points = lowerConnectingPlane.findIntersections(planetModel, startCutoffPlane, upperSide, endSide);
+      if (points.length == 0) {
+        throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
+      }
+      this.LLHC = points[0];
+      points = lowerConnectingPlane.findIntersections(planetModel, endCutoffPlane, upperSide, startSide);
+      if (points.length == 0) {
+        throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
+      }
+      this.LRHC = points[0];
+      upperConnectingPlanePoints = new GeoPoint[]{ULHC, URHC};
+      lowerConnectingPlanePoints = new GeoPoint[]{LLHC, LRHC};
+      startCutoffPlanePoints = new GeoPoint[]{ULHC, LLHC};
+      endCutoffPlanePoints = new GeoPoint[]{URHC, LRHC};
     }
 
     public boolean isWithin(final Vector point) {
+      //System.err.println(" assessing whether point "+point+" is within path segment "+this);
+      //System.err.println("  within "+startCutoffPlane+": "+startCutoffPlane.isWithin(point));
+      //System.err.println("  within "+endCutoffPlane+": "+endCutoffPlane.isWithin(point));
+      //System.err.println("  within "+upperConnectingPlane+": "+upperConnectingPlane.isWithin(point));
+      //System.err.println("  within "+lowerConnectingPlane+": "+lowerConnectingPlane.isWithin(point));
+
       return startCutoffPlane.isWithin(point) &&
           endCutoffPlane.isWithin(point) &&
           upperConnectingPlane.isWithin(point) &&
@@ -640,22 +739,22 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       return point.linearDistance(normLineX, normLineY, normLineZ) + start.linearDistance(normLineX, normLineY, normLineZ);
     }
 
-    public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
-      return upperConnectingPlane.intersects(p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
-          lowerConnectingPlane.intersects(p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+    public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
+      return upperConnectingPlane.intersects(planetModel, p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
+          lowerConnectingPlane.intersects(planetModel, p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
     }
 
-    public void getBounds(Bounds bounds) {
+    public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       // We need to do all bounding planes as well as corner points
       bounds.addPoint(start).addPoint(end);
-      upperConnectingPlane.recordBounds(startCutoffPlane, bounds, lowerConnectingPlane, endCutoffPlane);
-      startCutoffPlane.recordBounds(lowerConnectingPlane, bounds, endCutoffPlane, upperConnectingPlane);
-      lowerConnectingPlane.recordBounds(endCutoffPlane, bounds, upperConnectingPlane, startCutoffPlane);
-      endCutoffPlane.recordBounds(upperConnectingPlane, bounds, startCutoffPlane, lowerConnectingPlane);
-      upperConnectingPlane.recordBounds(bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
-      lowerConnectingPlane.recordBounds(bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
-      startCutoffPlane.recordBounds(bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
-      endCutoffPlane.recordBounds(bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+      upperConnectingPlane.recordBounds(planetModel, startCutoffPlane, bounds, lowerConnectingPlane, endCutoffPlane);
+      startCutoffPlane.recordBounds(planetModel, lowerConnectingPlane, bounds, endCutoffPlane, upperConnectingPlane);
+      lowerConnectingPlane.recordBounds(planetModel, endCutoffPlane, bounds, upperConnectingPlane, startCutoffPlane);
+      endCutoffPlane.recordBounds(planetModel, upperConnectingPlane, bounds, startCutoffPlane, lowerConnectingPlane);
+      upperConnectingPlane.recordBounds(planetModel, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
+      lowerConnectingPlane.recordBounds(planetModel, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+      startCutoffPlane.recordBounds(planetModel, bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+      endCutoffPlane.recordBounds(planetModel, bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
       if (fullDistance >= Math.PI) {
         // Too large a segment basically means that we can confuse the Bounds object.  Specifically, if our span exceeds 180 degrees
         // in longitude (which even a segment whose actual length is less than that might if it goes close to a pole).

@@ -1,7 +1,10 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -118,5 +121,28 @@ public class KerberosTestUtil {
       }
       return krb5LoginModuleName;
     }
+  }
+
+  /**
+   *  These Locales don't generate dates that are compatibile with Hadoop MiniKdc.
+   */
+  private final static List<String> brokenLanguagesWithMiniKdc =
+      Arrays.asList(
+          new Locale("th").getLanguage(), 
+          new Locale("ja").getLanguage(), 
+          new Locale("hi").getLanguage()
+          );
+  /** 
+   *returns the currently set locale, and overrides it with {@link Locale#US} if it's 
+   * currently something MiniKdc can not handle
+   *
+   * @see Locale#setDefault
+   */
+  public static final Locale overrideLocaleIfNotSpportedByMiniKdc() {
+    Locale old = Locale.getDefault();
+    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
+      Locale.setDefault(Locale.US);
+    }
+    return old;
   }
 }

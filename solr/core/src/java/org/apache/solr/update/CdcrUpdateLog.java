@@ -238,6 +238,30 @@ public class CdcrUpdateLog extends UpdateLog {
     }
   }
 
+  /**
+   * expert: Reset the update log before initialisation. This is needed by the IndexFetcher during a
+   * a Recovery operation in order to re-initialise the UpdateLog with a new set of tlog files.
+   */
+  public void reset() {
+    synchronized (this) {
+      // Close readers
+      for (CdcrLogReader reader : new ArrayList<>(logPointers.keySet())) {
+        reader.close();
+      }
+
+      // Close and clear logs
+      for (TransactionLog log : logs) {
+        log.deleteOnClose = false;
+        log.decref();
+        log.forceClose();
+      }
+      logs.clear();
+
+      // reset lastDataDir for #init()
+      lastDataDir = null;
+    }
+  }
+
   @Override
   public void close(boolean committed, boolean deleteOnClose) {
     for (CdcrLogReader reader : new ArrayList<>(logPointers.keySet())) {

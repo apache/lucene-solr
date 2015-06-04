@@ -153,7 +153,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     Indexer indexer = new Indexer(cloudClient, splitKey, 1, 30);
     indexer.start();
 
-    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), targetCollection);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), targetCollection);
 
     try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 

@@ -35,8 +35,8 @@ public class GeoAreaFactory {
    * @param rightLon  is the right longitude
    * @return a GeoArea corresponding to what was specified.
    */
-  public static GeoArea makeGeoArea(double topLat, double bottomLat, double leftLon, double rightLon) {
-    return GeoBBoxFactory.makeGeoBBox(topLat, bottomLat, leftLon, rightLon);
+  public static GeoArea makeGeoArea(final PlanetModel planetModel, final double topLat, final double bottomLat, final double leftLon, final double rightLon) {
+    return GeoBBoxFactory.makeGeoBBox(planetModel, topLat, bottomLat, leftLon, rightLon);
   }
 
 }

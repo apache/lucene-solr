@@ -441,7 +441,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           segnOutput.writeInt(e.getKey());
           segnOutput.writeSetOfStrings(e.getValue());
         }
-        assert si.dir == directory;
       }
       segnOutput.writeMapOfStrings(userData);
       CodecUtil.writeFooter(segnOutput);
@@ -757,6 +756,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     } else {
       userData = data;
     }
+
+    changed();
   }
 
   /** Replaces all segments in this instance, but keeps

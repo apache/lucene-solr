@@ -18,18 +18,16 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
-import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,34 +51,32 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     dfsCluster = null;
   }
   
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
   @Test
   public void testBasic() throws IOException {
     String uri = HdfsTestUtil.getURI(dfsCluster);
     Path lockPath = new Path(uri, "/basedir/lock");
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
-    Lock lock = dir.makeLock("testlock");
-    boolean success = lock.obtain();
-    assertTrue("We could not get the lock when it should be available", success);
-    success = lock.obtain();
-    assertFalse("We got the lock but it should be unavailble", success);
-    lock.close();
-    success = lock.obtain();
-    assertTrue("We could not get the lock when it should be available", success);
-    success = lock.obtain();
-    assertFalse("We got the lock but it should be unavailble", success);
+    
+    try (Lock lock = dir.obtainLock("testlock")) {
+      assert lock != null;
+      try (Lock lock2 = dir.obtainLock("testlock")) {
+        assert lock2 != null;
+        fail("Locking should fail");
+      } catch (LockObtainFailedException lofe) {
+        // pass
+      }
+    }
+    // now repeat after close()
+    try (Lock lock = dir.obtainLock("testlock")) {
+      assert lock != null;
+      try (Lock lock2 = dir.obtainLock("testlock")) {
+        assert lock2 != null;
+        fail("Locking should fail");
+      } catch (LockObtainFailedException lofe) {
+        // pass
+      }
+    }
     dir.close();
   }
-  
-
 }

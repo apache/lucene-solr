@@ -23,19 +23,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.CollectionTerminatedException;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.suggest.analyzing.FSTUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
@@ -48,17 +42,10 @@ import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProc
 
 /**
  * <p>
- * NRTSuggester returns Top N completions with corresponding documents matching a provided automaton.
- * The completions are returned in descending order of their corresponding weight.
- * Deleted documents are filtered out in near real time using the provided reader.
- * A {@link org.apache.lucene.search.DocIdSet} can be passed in at query time to filter out documents.
- * </p>
+ * NRTSuggester executes Top N search on a weighted FST specified by a {@link CompletionScorer}
  * <p>
- * See {@link #lookup(LeafReader, Automaton, int, DocIdSet, TopSuggestDocsCollector)} for more implementation
+ * See {@link #lookup(CompletionScorer, TopSuggestDocsCollector)} for more implementation
  * details.
- * <p>
- * Builder: {@link NRTSuggesterBuilder}
- * </p>
  * <p>
  * FST Format:
  * <ul>
@@ -68,16 +55,17 @@ import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProc
  * <p>
  * NOTE:
  * <ul>
- *   <li>currently only {@link org.apache.lucene.search.DocIdSet} with random access capabilities are supported.</li>
  *   <li>having too many deletions or using a very restrictive filter can make the search inadmissible due to
- *     over-pruning of potential paths</li>
- *   <li>when a {@link org.apache.lucene.search.DocIdSet} is used, it is assumed that the filter will roughly
- *     filter out half the number of documents that match the provided automaton</li>
+ *     over-pruning of potential paths. See {@link CompletionScorer#accept(int)}</li>
+ *   <li>when matched documents are arbitrarily filtered ({@link CompletionScorer#filtered} set to <code>true</code>,
+ *     it is assumed that the filter will roughly filter out half the number of documents that match
+ *     the provided automaton</li>
  *   <li>lookup performance will degrade as more accepted completions lead to filtered out documents</li>
  * </ul>
  *
+ * @lucene.experimental
  */
-final class NRTSuggester implements Accountable {
+public final class NRTSuggester implements Accountable {
 
   /**
    * FST<Weight,Surface>:
@@ -103,23 +91,16 @@ final class NRTSuggester implements Accountable {
   private final int payloadSep;
 
   /**
-   * Label used to denote the end of an input in the FST and
-   * the beginning of dedup bytes
-   */
-  private final int endByte;
-
-  /**
    * Maximum queue depth for TopNSearcher
    *
    * NOTE: value should be <= Integer.MAX_VALUE
    */
-  private static final long MAX_TOP_N_QUEUE_SIZE = 1000;
+  private static final long MAX_TOP_N_QUEUE_SIZE = 5000;
 
-  private NRTSuggester(FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep, int endByte) {
+  private NRTSuggester(FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep) {
     this.fst = fst;
     this.maxAnalyzedPathsPerOutput = maxAnalyzedPathsPerOutput;
     this.payloadSep = payloadSep;
-    this.endByte = endByte;
   }
 
   @Override
@@ -132,6 +113,81 @@ final class NRTSuggester implements Accountable {
     return Collections.emptyList();
   }
 
+  /**
+   * Collects at most {@link TopSuggestDocsCollector#getCountToCollect()} completions that
+   * match the provided {@link CompletionScorer}.
+   * <p>
+   * The {@link CompletionScorer#automaton} is intersected with the {@link #fst}.
+   * {@link CompletionScorer#weight} is used to compute boosts and/or extract context
+   * for each matched partial paths. A top N search is executed on {@link #fst} seeded with
+   * the matched partial paths. Upon reaching a completed path, {@link CompletionScorer#accept(int)}
+   * and {@link CompletionScorer#score(float, float)} is used on the document id, index weight
+   * and query boost to filter and score the entry, before being collected via
+   * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}
+   */
+  public void lookup(final CompletionScorer scorer, final TopSuggestDocsCollector collector) throws IOException {
+    final double liveDocsRatio = calculateLiveDocRatio(scorer.reader.numDocs(), scorer.reader.maxDoc());
+    if (liveDocsRatio == -1) {
+      return;
+    }
+    final List<FSTUtil.Path<Pair<Long, BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(scorer.automaton, fst);
+    final int queueSize = getMaxTopNSearcherQueueSize(collector.getCountToCollect() * prefixPaths.size(),
+        scorer.reader.numDocs(), liveDocsRatio, scorer.filtered);
+    Comparator<Pair<Long, BytesRef>> comparator = getComparator();
+    Util.TopNSearcher<Pair<Long, BytesRef>> searcher = new Util.TopNSearcher<Pair<Long, BytesRef>>(fst,
+        collector.getCountToCollect(), queueSize, comparator, new ScoringPathComparator(scorer)) {
+
+      private final CharsRefBuilder spare = new CharsRefBuilder();
+
+      @Override
+      protected boolean acceptResult(Util.FSTPath<Pair<Long, BytesRef>> path) {
+        int payloadSepIndex = parseSurfaceForm(path.cost.output2, payloadSep, spare);
+        int docID = parseDocID(path.cost.output2, payloadSepIndex);
+        if (!scorer.accept(docID)) {
+          return false;
+        }
+        try {
+          float score = scorer.score(decode(path.cost.output1), path.boost);
+          collector.collect(docID, spare.toCharsRef(), path.context, score);
+          return true;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+
+    for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
+      scorer.weight.setNextMatch(path.input.get());
+      searcher.addStartPaths(path.fstNode, path.output, false, path.input, scorer.weight.boost(),
+          scorer.weight.context());
+    }
+    // hits are also returned by search()
+    // we do not use it, instead collect at acceptResult
+    searcher.search();
+    // search admissibility is not guaranteed
+    // see comment on getMaxTopNSearcherQueueSize
+    // assert  search.isComplete;
+  }
+
+  /**
+   * Compares partial completion paths using {@link CompletionScorer#score(float, float)},
+   * breaks ties comparing path inputs
+   */
+  private static class ScoringPathComparator implements Comparator<Util.FSTPath<Pair<Long, BytesRef>>> {
+    private final CompletionScorer scorer;
+
+    public ScoringPathComparator(CompletionScorer scorer) {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public int compare(Util.FSTPath<Pair<Long, BytesRef>> first, Util.FSTPath<Pair<Long, BytesRef>> second) {
+      int cmp = Float.compare(scorer.score(decode(second.cost.output1), second.boost),
+          scorer.score(decode(first.cost.output1), first.boost));
+      return (cmp != 0) ? cmp : first.input.get().compareTo(second.input.get());
+    }
+  }
+
   private static Comparator<Pair<Long, BytesRef>> getComparator() {
     return new Comparator<Pair<Long, BytesRef>>() {
       @Override
@@ -139,93 +195,6 @@ final class NRTSuggester implements Accountable {
         return Long.compare(o1.output1, o2.output1);
       }
     };
-  }
-
-  /**
-   * Collects at most Top <code>num</code> completions, filtered by <code>filter</code> on
-   * corresponding documents, which has a prefix accepted by <code>automaton</code>
-   * <p>
-   * Supports near real time deleted document filtering using <code>reader</code>
-   * <p>
-   * {@link TopSuggestDocsCollector#collect(int, CharSequence, long)} is called
-   * for every matched completion
-   * <p>
-   * Completion collection can be early terminated by throwing {@link org.apache.lucene.search.CollectionTerminatedException}
-   */
-  public void lookup(final LeafReader reader, final Automaton automaton, final int num, final DocIdSet filter, final TopSuggestDocsCollector collector) {
-    final Bits filterDocs;
-    try {
-      if (filter != null) {
-        if (filter.iterator() == null) {
-          return;
-        }
-        if (filter.bits() == null) {
-          throw new IllegalArgumentException("DocIDSet does not provide random access interface");
-        } else {
-          filterDocs = filter.bits();
-        }
-      } else {
-        filterDocs = null;
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    int queueSize = getMaxTopNSearcherQueueSize(num, reader, filterDocs != null);
-    if (queueSize == -1) {
-      return;
-    }
-
-    final Bits liveDocs = reader.getLiveDocs();
-    try {
-      final List<FSTUtil.Path<Pair<Long, BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(automaton, fst);
-      Util.TopNSearcher<Pair<Long, BytesRef>> searcher = new Util.TopNSearcher<Pair<Long, BytesRef>>(fst, num, queueSize, getComparator()) {
-
-        private final CharsRefBuilder spare = new CharsRefBuilder();
-
-        @Override
-        protected boolean acceptResult(IntsRef input, Pair<Long, BytesRef> output) {
-          int payloadSepIndex = parseSurfaceForm(output.output2, payloadSep, spare);
-          int docID = parseDocID(output.output2, payloadSepIndex);
-
-          // filter out deleted docs only if no filter is set
-          if (filterDocs == null && liveDocs != null && !liveDocs.get(docID)) {
-            return false;
-          }
-
-          // filter by filter context
-          if (filterDocs != null && !filterDocs.get(docID)) {
-            return false;
-          }
-
-          try {
-            collector.collect(docID, spare.toCharsRef(), decode(output.output1));
-            return true;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
-
-      // TODO: add fuzzy support
-      for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
-        searcher.addStartPaths(path.fstNode, path.output, false, path.input);
-      }
-
-      try {
-        // hits are also returned by search()
-        // we do not use it, instead collect at acceptResult
-        Util.TopResults<Pair<Long, BytesRef>> search = searcher.search();
-        // search admissibility is not guaranteed
-        // see comment on getMaxTopNSearcherQueueSize
-        // assert  search.isComplete;
-      } catch (CollectionTerminatedException e) {
-        // terminate
-      }
-
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
   }
 
   /**
@@ -241,17 +210,13 @@ final class NRTSuggester implements Accountable {
    * <p>
    * The maximum queue size is {@link #MAX_TOP_N_QUEUE_SIZE}
    */
-  private int getMaxTopNSearcherQueueSize(int num, LeafReader reader, boolean filterEnabled) {
-    double liveDocsRatio = calculateLiveDocRatio(reader.numDocs(), reader.maxDoc());
-    if (liveDocsRatio == -1) {
-      return -1;
-    }
-    long maxQueueSize = num * maxAnalyzedPathsPerOutput;
+  private int getMaxTopNSearcherQueueSize(int topN, int numDocs, double liveDocsRatio, boolean filterEnabled) {
+    long maxQueueSize = topN * maxAnalyzedPathsPerOutput;
     // liveDocRatio can be at most 1.0 (if no docs were deleted)
     assert liveDocsRatio <= 1.0d;
     maxQueueSize = (long) (maxQueueSize / liveDocsRatio);
     if (filterEnabled) {
-      maxQueueSize = maxQueueSize + (reader.numDocs()/2);
+      maxQueueSize = maxQueueSize + (numDocs/2);
     }
     return (int) Math.min(MAX_TOP_N_QUEUE_SIZE, maxQueueSize);
   }
@@ -269,21 +234,27 @@ final class NRTSuggester implements Accountable {
 
     /* read some meta info */
     int maxAnalyzedPathsPerOutput = input.readVInt();
+    /*
+     * Label used to denote the end of an input in the FST and
+     * the beginning of dedup bytes
+     */
     int endByte = input.readVInt();
     int payloadSep = input.readVInt();
 
-    return new NRTSuggester(fst, maxAnalyzedPathsPerOutput, payloadSep, endByte);
+    return new NRTSuggester(fst, maxAnalyzedPathsPerOutput, payloadSep);
   }
 
   static long encode(long input) {
-    if (input < 0) {
+    if (input < 0 || input > Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("cannot encode value: " + input);
     }
-    return Long.MAX_VALUE - input;
+    return Integer.MAX_VALUE - input;
   }
 
   static long decode(long output) {
-    return (Long.MAX_VALUE - output);
+    assert output >= 0 && output <= Integer.MAX_VALUE :
+        "decoded output: " + output + " is not within 0 and Integer.MAX_VALUE";
+    return Integer.MAX_VALUE - output;
   }
 
   /**
@@ -307,7 +278,8 @@ final class NRTSuggester implements Accountable {
 
     static int parseDocID(final BytesRef output, int payloadSepIndex) {
       assert payloadSepIndex != -1 : "payload sep index can not be -1";
-      ByteArrayDataInput input = new ByteArrayDataInput(output.bytes, payloadSepIndex + output.offset + 1, output.length - (payloadSepIndex + output.offset));
+      ByteArrayDataInput input = new ByteArrayDataInput(output.bytes, payloadSepIndex + output.offset + 1,
+          output.length - (payloadSepIndex + output.offset));
       return input.readVInt();
     }
 

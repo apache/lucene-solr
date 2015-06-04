@@ -52,12 +52,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   public TestCollectionAPI() {
     schemaString = "schema15.xml";      // we need a string id
-  }
-
-  @Override
-  public void distribSetUp() throws Exception {
     sliceCount = 2;
-    super.distribSetUp();
   }
 
   @Test

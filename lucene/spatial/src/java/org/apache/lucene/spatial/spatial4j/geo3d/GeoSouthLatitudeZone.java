@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoSouthLatitudeZone extends GeoBBoxBase {
+public class GeoSouthLatitudeZone extends GeoBaseBBox {
   public final double topLat;
   public final double cosTopLat;
   public final SidedPlane topPlane;
@@ -34,22 +34,20 @@ public class GeoSouthLatitudeZone extends GeoBBoxBase {
   // Edge points
   public final GeoPoint[] edgePoints;
 
-  public GeoSouthLatitudeZone(final double topLat) {
+  public GeoSouthLatitudeZone(final PlanetModel planetModel, final double topLat) {
+    super(planetModel);
     this.topLat = topLat;
 
     final double sinTopLat = Math.sin(topLat);
     this.cosTopLat = Math.cos(topLat);
 
-    // Construct sample points, so we get our sidedness right
-    final Vector topPoint = new Vector(0.0, 0.0, sinTopLat);
-
     // Compute an interior point.  Pick one whose lat is between top and bottom.
     final double middleLat = (topLat - Math.PI * 0.5) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
-    this.interiorPoint = new GeoPoint(Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 0.0, sinMiddleLat);
-    this.topBoundaryPoint = new GeoPoint(Math.sqrt(1.0 - sinTopLat * sinTopLat), 0.0, sinTopLat);
+    this.interiorPoint = new GeoPoint(planetModel, sinMiddleLat, 0.0, Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 1.0);
+    this.topBoundaryPoint = new GeoPoint(planetModel, sinTopLat, 0.0, Math.sqrt(1.0 - sinTopLat * sinTopLat), 1.0);
 
-    this.topPlane = new SidedPlane(interiorPoint, sinTopLat);
+    this.topPlane = new SidedPlane(interiorPoint, planetModel, sinTopLat);
 
     this.edgePoints = new GeoPoint[]{topBoundaryPoint};
   }
@@ -58,7 +56,7 @@ public class GeoSouthLatitudeZone extends GeoBBoxBase {
   public GeoBBox expand(final double angle) {
     final double newTopLat = topLat + angle;
     final double newBottomLat = -Math.PI * 0.5;
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, -Math.PI, Math.PI);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, -Math.PI, Math.PI);
   }
 
   @Override
@@ -98,7 +96,7 @@ public class GeoSouthLatitudeZone extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(topPlane, notablePoints, planePoints, bounds);
+    return p.intersects(planetModel, topPlane, notablePoints, planePoints, bounds);
   }
 
   /**
@@ -155,18 +153,19 @@ public class GeoSouthLatitudeZone extends GeoBBoxBase {
     if (!(o instanceof GeoSouthLatitudeZone))
       return false;
     GeoSouthLatitudeZone other = (GeoSouthLatitudeZone) o;
-    return other.topPlane.equals(topPlane);
+    return super.equals(other) && other.topBoundaryPoint.equals(topBoundaryPoint);
   }
 
   @Override
   public int hashCode() {
-    int result = topPlane.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + topBoundaryPoint.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoSouthLatitudeZone: {toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + ")}";
+    return "GeoSouthLatitudeZone: {planetmodel="+planetModel+", toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + ")}";
   }
 }
 

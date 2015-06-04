@@ -52,21 +52,6 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger logger = LoggerFactory.getLogger(AliasIntegrationTest.class);
   
-  @BeforeClass
-  public static void beforeSuperClass() throws Exception {
-  }
-  
-  @AfterClass
-  public static void afterSuperClass() {
-    
-  }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
   public AliasIntegrationTest() {
     super();
     sliceCount = 1;

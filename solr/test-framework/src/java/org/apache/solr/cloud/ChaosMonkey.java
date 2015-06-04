@@ -533,8 +533,8 @@ public class ChaosMonkey {
     DirectUpdateHandler2.commitOnClose = true;
     
     float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
-    if (runtime > 20 && stops.get() == 0) {
-      LuceneTestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");
+    if (runtime > 30 && stops.get() == 0) {
+      LuceneTestCase.fail("The Monkey ran for over 30 seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 

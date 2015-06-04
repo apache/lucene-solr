@@ -117,16 +117,15 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     for (SpanQuery q : clauses) {
       subWeights.add(q.createWeight(searcher, false, factory));
     }
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, subWeights);
-    return new SpanNearWeight(subWeights, similarity, factory);
+    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, factory);
   }
 
   public class SpanNearWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanNearWeight(List<SpanWeight> subWeights, SpanSimilarity similarity, SpanCollectorFactory factory) throws IOException {
-      super(SpanNearQuery.this, similarity, factory);
+    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory) throws IOException {
+      super(SpanNearQuery.this, searcher, terms, factory);
       this.subWeights = subWeights;
     }
 

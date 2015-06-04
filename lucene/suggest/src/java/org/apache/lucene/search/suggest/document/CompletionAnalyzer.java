@@ -17,22 +17,10 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
-import org.apache.lucene.util.automaton.Transition;
 
 /**
  * Wraps an {@link org.apache.lucene.analysis.Analyzer}
@@ -40,15 +28,15 @@ import org.apache.lucene.util.automaton.Transition;
  * (e.g. preserving token separators, preserving position increments while converting
  * a token stream to an automaton)
  * <p>
- * Can be used to index {@link SuggestField}
- * and as a query analyzer to {@link SuggestIndexSearcher}
+ * Can be used to index {@link SuggestField} and {@link ContextSuggestField}
+ * and as a query analyzer to {@link PrefixCompletionQuery} amd {@link FuzzyCompletionQuery}
  * <p>
- * NOTE: In most cases, index and query analyzer should have same values for {@link #preservePositionIncrements}
- * and {@link #preserveSep}
+ * NOTE: In most cases, index and query analyzer should have same values for {@link #preservePositionIncrements()}
+ * and {@link #preserveSep()}
  *
  * @lucene.experimental
  */
-public class CompletionAnalyzer extends AnalyzerWrapper {
+public final class CompletionAnalyzer extends AnalyzerWrapper {
 
   /**
    * Represents the separation between tokens, if
@@ -64,7 +52,7 @@ public class CompletionAnalyzer extends AnalyzerWrapper {
    */
   final static int HOLE_CHARACTER = TokenStreamToAutomaton.HOLE;
 
-  final static int DEFAULT_MAX_GRAPH_EXPANSIONS = -1;
+  final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
   final static boolean DEFAULT_PRESERVE_SEP = true;
   final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
 
@@ -133,6 +121,22 @@ public class CompletionAnalyzer extends AnalyzerWrapper {
     this(analyzer, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, maxGraphExpansions);
   }
 
+  /**
+   * Returns true if separation between tokens are preserved when converting
+   * the token stream to an automaton
+   */
+  public boolean preserveSep() {
+    return preserveSep;
+  }
+
+  /**
+   * Returns true if position increments are preserved when converting
+   * the token stream to an automaton
+   */
+  public boolean preservePositionIncrements() {
+    return preservePositionIncrements;
+  }
+
   @Override
   protected Analyzer getWrappedAnalyzer(String fieldName) {
     return analyzer;
@@ -141,33 +145,7 @@ public class CompletionAnalyzer extends AnalyzerWrapper {
   @Override
   protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
     CompletionTokenStream tokenStream = new CompletionTokenStream(components.getTokenStream(),
-        preserveSep, preservePositionIncrements, SEP_LABEL, maxGraphExpansions);
+        preserveSep, preservePositionIncrements, maxGraphExpansions);
     return new TokenStreamComponents(components.getTokenizer(), tokenStream);
   }
-
-  /**
-   * Converts <code>key</code> to an automaton using
-   * {@link #preservePositionIncrements}, {@link #preserveSep}
-   * and {@link #maxGraphExpansions}
-   */
-  public Automaton toAutomaton(String field, CharSequence key) throws IOException {
-    for (int i = 0; i < key.length(); i++) {
-      switch (key.charAt(i)) {
-        case HOLE_CHARACTER:
-          throw new IllegalArgumentException("lookup key cannot contain HOLE character U+001E; this character is reserved");
-        case SEP_LABEL:
-          throw new IllegalArgumentException("lookup key cannot contain unit separator character U+001F; this character is reserved");
-        default:
-          break;
-      }
-    }
-
-    try (TokenStream tokenStream = analyzer.tokenStream(field, key.toString())) {
-      try(CompletionTokenStream stream = new CompletionTokenStream(tokenStream,
-          preserveSep, preservePositionIncrements, SEP_LABEL, maxGraphExpansions)) {
-        return stream.toAutomaton(tokenStream);
-      }
-    }
-  }
-
 }

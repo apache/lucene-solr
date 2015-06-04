@@ -117,7 +117,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
       assertSearcherHasNotChanged(expectedSearcher);
 
       assertU(delI("0")); // no doc has this id, yet
-      assertU(commit());
+      assertU(commit("softCommit","true"));
       assertSearcherHasNotChanged(expectedSearcher);
 
     } finally {

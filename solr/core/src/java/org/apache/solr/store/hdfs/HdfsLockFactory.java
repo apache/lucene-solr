@@ -28,6 +28,7 @@ import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
@@ -41,98 +42,83 @@ public class HdfsLockFactory extends LockFactory {
   private HdfsLockFactory() {}
   
   @Override
-  public Lock makeLock(Directory dir, String lockName) {
+  public Lock obtainLock(Directory dir, String lockName) throws IOException {
     if (!(dir instanceof HdfsDirectory)) {
       throw new UnsupportedOperationException("HdfsLockFactory can only be used with HdfsDirectory subclasses, got: " + dir);
     }
     final HdfsDirectory hdfsDir = (HdfsDirectory) dir;
-    return new HdfsLock(hdfsDir.getHdfsDirPath(), lockName, hdfsDir.getConfiguration());
+    final Configuration conf = hdfsDir.getConfiguration();
+    final Path lockPath = hdfsDir.getHdfsDirPath();
+    final Path lockFile = new Path(lockPath, lockName);
+    
+    FSDataOutputStream file = null;
+    final FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
+    while (true) {
+      try {
+        if (!fs.exists(lockPath)) {
+          boolean success = fs.mkdirs(lockPath);
+          if (!success) {
+            throw new RuntimeException("Could not create directory: " + lockPath);
+          }
+        } else {
+          // just to check for safe mode
+          fs.mkdirs(lockPath);
+        }
+        
+        file = fs.create(lockFile, false);
+        break;
+      } catch (FileAlreadyExistsException e) {
+        throw new LockObtainFailedException("Cannot obtain lock file: " + lockFile, e);
+      } catch (RemoteException e) {
+        if (e.getClassName().equals(
+            "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+          log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException e1) {
+            Thread.interrupted();
+          }
+          continue;
+        }
+        throw new LockObtainFailedException("Cannot obtain lock file: " + lockFile, e);
+      } catch (IOException e) {
+        throw new LockObtainFailedException("Cannot obtain lock file: " + lockFile, e);
+      } finally {
+        IOUtils.closeQuietly(file);
+      }
+    }
+
+    return new HdfsLock(fs, lockFile);
   }
   
-  static class HdfsLock extends Lock {
+  private static final class HdfsLock extends Lock {
     
-    private final Path lockPath;
-    private final String lockName;
-    private final Configuration conf;
+    private final FileSystem fs;
+    private final Path lockFile;
+    private volatile boolean closed;
     
-    public HdfsLock(Path lockPath, String lockName, Configuration conf) {
-      this.lockPath = lockPath;
-      this.lockName = lockName;
-      this.conf = conf;
-    }
-    
-    @Override
-    public boolean obtain() throws IOException {
-      FSDataOutputStream file = null;
-      FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
-      try {
-        while (true) {
-          try {
-            if (!fs.exists(lockPath)) {
-              boolean success = fs.mkdirs(lockPath);
-              if (!success) {
-                throw new RuntimeException("Could not create directory: " + lockPath);
-              }
-            } else {
-              // just to check for safe mode
-              fs.mkdirs(lockPath);
-            }
-
-            
-            file = fs.create(new Path(lockPath, lockName), false);
-            break;
-          } catch (FileAlreadyExistsException e) {
-            return false;
-          } catch (RemoteException e) {
-            if (e.getClassName().equals(
-                "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
-              log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
-              try {
-                Thread.sleep(5000);
-              } catch (InterruptedException e1) {
-                Thread.interrupted();
-              }
-              continue;
-            }
-            log.error("Error creating lock file", e);
-            return false;
-          } catch (IOException e) {
-            log.error("Error creating lock file", e);
-            return false;
-          } finally {
-            IOUtils.closeQuietly(file);
-          }
-        }
-      } finally {
-        IOUtils.closeQuietly(fs);
-      }
-      return true;
+    HdfsLock(FileSystem fs, Path lockFile) {
+      this.fs = fs;
+      this.lockFile = lockFile;
     }
     
     @Override
     public void close() throws IOException {
-      FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
+      if (closed) {
+        return;
+      }
       try {
-        if (fs.exists(new Path(lockPath, lockName))
-            && !fs.delete(new Path(lockPath, lockName), false)) throw new LockReleaseFailedException(
-            "failed to delete " + new Path(lockPath, lockName));
+        if (fs.exists(lockFile) && !fs.delete(lockFile, false)) {
+          throw new LockReleaseFailedException("failed to delete: " + lockFile);
+        }
       } finally {
         IOUtils.closeQuietly(fs);
       }
     }
-    
+
     @Override
-    public boolean isLocked() throws IOException {
-      boolean isLocked = false;
-      FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
-      try {
-        isLocked = fs.exists(new Path(lockPath, lockName));
-      } finally {
-        IOUtils.closeQuietly(fs);
-      }
-      return isLocked;
+    public void ensureValid() throws IOException {
+      // no idea how to implement this on HDFS
     }
-    
   }
-  
 }

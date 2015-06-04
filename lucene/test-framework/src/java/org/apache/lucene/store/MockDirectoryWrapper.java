@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DirectoryReader;
@@ -74,7 +76,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean assertNoDeleteOpenFile = false;
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
-  boolean wrapLocking = true;
   boolean useSlowOpenClosers = LuceneTestCase.TEST_NIGHTLY;
   boolean enableVirusScanner = true;
   boolean allowRandomFileNotFoundException = true;
@@ -82,7 +83,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
-  Map<String,Exception> openLocks = Collections.synchronizedMap(new HashMap<String,Exception>());
+  ConcurrentMap<String,RuntimeException> openLocks = new ConcurrentHashMap<>();
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
@@ -699,19 +700,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setAssertNoUnrefencedFilesOnClose(boolean v) {
     assertNoUnreferencedFilesOnClose = v;
   }
-  
-  /**
-   * Set to false if you want to return the pure {@link LockFactory} and not
-   * wrap all lock with {@code AssertingLock}.
-   * <p>
-   * Be careful if you turn this off: {@code MockDirectoryWrapper} might
-   * no longer be able to detect if you forget to close an {@link IndexWriter},
-   * and spit out horribly scary confusing exceptions instead of
-   * simply telling you that.
-   */
-  public void setAssertLocks(boolean v) {
-    this.wrapLocking = v;
-  }
 
   @Override
   public synchronized void close() throws IOException {
@@ -748,7 +736,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
       if (openLocks.size() > 0) {
         Exception cause = null;
-        Iterator<Exception> stacktraces = openLocks.values().iterator();
+        Iterator<RuntimeException> stacktraces = openLocks.values().iterator();
         if (stacktraces.hasNext()) {
           cause = stacktraces.next();
         }
@@ -992,46 +980,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized Lock makeLock(String name) {
+  public synchronized Lock obtainLock(String name) throws IOException {
     maybeYield();
-    if (wrapLocking) {
-      return new AssertingLock(super.makeLock(name), name);
-    } else {
-      return super.makeLock(name);
-    }
+    return super.obtainLock(name);
+    // TODO: consider mocking locks, but not all the time, can hide bugs
   }
-  
-  private final class AssertingLock extends Lock {
-    private final Lock delegateLock;
-    private final String name;
-    
-    AssertingLock(Lock delegate, String name) {
-      this.delegateLock = delegate;
-      this.name = name;
-    }
-
-    @Override
-    public boolean obtain() throws IOException {
-      if (delegateLock.obtain()) {
-        assert delegateLock == NoLockFactory.SINGLETON_LOCK || !openLocks.containsKey(name);
-        openLocks.put(name, new RuntimeException("lock \"" + name + "\" was not released"));
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegateLock.close();
-      openLocks.remove(name);
-    }
-
-    @Override
-    public boolean isLocked() throws IOException {
-      return delegateLock.isLocked();
-    }
-  }  
   
   /** Use this when throwing fake {@code IOException},
    *  e.g. from {@link MockDirectoryWrapper.Failure}. */

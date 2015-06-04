@@ -25,9 +25,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.spatial.spatial4j.geo3d.Bounds;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
@@ -35,26 +33,30 @@ import org.apache.lucene.spatial.spatial4j.geo3d.GeoPath;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoPolygonFactory;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
+import org.apache.lucene.spatial.spatial4j.geo3d.PlanetModel;
 import org.junit.Rule;
 import org.junit.Test;
 
 import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
-public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
+public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTestCase {
+  protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
+
   @Rule
   public final LogRule testLog = LogRule.instance;
 
-  static Random random() {
+  protected static Random random() {
     return RandomizedContext.current().getRandom();
   }
 
-  {
-    ctx = SpatialContext.GEO;
+  protected final PlanetModel planetModel;
+
+  public Geo3dShapeRectRelationTestCase(PlanetModel planetModel) {
+    super(SpatialContext.GEO);
+    this.planetModel = planetModel;
   }
 
-  protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
-
-  protected static GeoBBox getBoundingBox(final GeoShape path) {
+  protected GeoBBox getBoundingBox(final GeoShape path) {
       Bounds bounds = path.getBounds(null);
 
       double leftLon;
@@ -78,7 +80,7 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
       } else {
         maxLat = bounds.getMaxLatitude().doubleValue();
       }
-      return GeoBBoxFactory.makeGeoBBox(maxLat, minLat, leftLon, rightLon);
+      return GeoBBoxFactory.makeGeoBBox(planetModel, maxLat, minLat, leftLon, rightLon);
   }
 
   @Test
@@ -91,9 +93,9 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
           final int circleRadius = random().nextInt(179) + 1;//no 0-radius
           final Point point = nearP;
           try {
-            final GeoShape shape = new GeoCircle(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+            final GeoShape shape = new GeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
                 circleRadius * DEGREES_TO_RADIANS);
-            return new Geo3dShape(shape, ctx);
+            return new Geo3dShape(planetModel, shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
             // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
@@ -131,11 +133,11 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
           ulhcPoint = lrhcPoint;
           lrhcPoint = temp;
         }
-        final GeoShape shape = GeoBBoxFactory.makeGeoBBox(ulhcPoint.getY() * DEGREES_TO_RADIANS,
+        final GeoShape shape = GeoBBoxFactory.makeGeoBBox(planetModel, ulhcPoint.getY() * DEGREES_TO_RADIANS,
             lrhcPoint.getY() * DEGREES_TO_RADIANS,
             ulhcPoint.getX() * DEGREES_TO_RADIANS,
             lrhcPoint.getX() * DEGREES_TO_RADIANS);
-        return new Geo3dShape(shape, ctx);
+        return new Geo3dShape(planetModel, shape, ctx);
       }
 
       @Override
@@ -160,13 +162,13 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
             final Point point = randomPoint();
             if (ctx.getDistCalc().distance(point,centerPoint) > maxDistance)
               continue;
-            final GeoPoint gPt = new GeoPoint(point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
+            final GeoPoint gPt = new GeoPoint(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
             geoPoints.add(gPt);
           }
           final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
           try {
-            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(geoPoints, convexPointIndex);
-            return new Geo3dShape(shape, ctx);
+            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints, convexPointIndex);
+            return new Geo3dShape(planetModel, shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
             // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
@@ -201,7 +203,7 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
         final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
         while (true) {
           try {
-            final GeoPath path = new GeoPath(width);
+            final GeoPath path = new GeoPath(planetModel, width);
             int i = 0;
             while (i < pointCount) {
               final Point nextPoint = randomPoint();
@@ -211,7 +213,7 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
               i++;
             }
             path.done();
-            return new Geo3dShape(path, ctx);
+            return new Geo3dShape(planetModel, path, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
             // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
@@ -235,41 +237,7 @@ public class Geo3dShapeRectRelationTest extends RandomizedShapeTestCase {
   }
 
   private Point geoPointToSpatial4jPoint(GeoPoint geoPoint) {
-    return ctx.makePoint(geoPoint.x * DistanceUtils.RADIANS_TO_DEGREES,
-        geoPoint.y * DistanceUtils.RADIANS_TO_DEGREES);
-  }
-
-  @Test
-  public void testFailure1() {
-    final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
-    final List<GeoPoint> points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
-    points.add(new GeoPoint(43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
-    points.add(new GeoPoint(30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
-    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(points,0);
-
-    final GeoPoint point = new GeoPoint(34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
-
-    // Apparently the rectangle thinks the polygon is completely within it... "shape inside rectangle"
-    assertTrue(GeoArea.WITHIN == rect.getRelationship(path));
-
-    // Point is within path? Apparently not...
-    assertFalse(path.isWithin(point));
-
-    // If it is within the path, it must be within the rectangle, and similarly visa versa
-    assertFalse(rect.isWithin(point));
-
-  }
-
-  @Test
-  public void testFailure2_LUCENE6475() {
-    GeoShape geo3dCircle = new GeoCircle(1.6282053147165243E-4 * RADIANS_PER_DEGREE,
-        -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
-    Geo3dShape geo3dShape = new Geo3dShape(geo3dCircle, ctx);
-    Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);
-    assertTrue(geo3dShape.relate(rect).intersects());
-    // thus the bounding box must intersect too
-    assertTrue(geo3dShape.getBoundingBox().relate(rect).intersects());
-
+    return ctx.makePoint(geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES,
+        geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES);
   }
 }

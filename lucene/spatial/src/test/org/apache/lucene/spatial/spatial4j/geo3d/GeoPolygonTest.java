@@ -36,49 +36,49 @@ public class GeoPolygonTest {
     List<GeoPoint> points;
 
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(-0.1, -0.5));
-    points.add(new GeoPoint(0.0, -0.6));
-    points.add(new GeoPoint(0.1, -0.5));
-    points.add(new GeoPoint(0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
 
-    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
     // Sample some points within
-    gp = new GeoPoint(0.0, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.55);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.45);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(-0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.05, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
     assertTrue(c.isWithin(gp));
     // Sample some nearby points outside
-    gp = new GeoPoint(0.0, -0.65);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.35);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(-0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
     assertFalse(c.isWithin(gp));
     // Random points outside
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
 
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(-0.1, -0.5));
-    points.add(new GeoPoint(-0.01, -0.6));
-    points.add(new GeoPoint(-0.1, -0.7));
-    points.add(new GeoPoint(0.0, -0.8));
-    points.add(new GeoPoint(0.1, -0.7));
-    points.add(new GeoPoint(0.01, -0.6));
-    points.add(new GeoPoint(0.1, -0.5));
-    points.add(new GeoPoint(0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.01, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.7));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.8));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.7));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.01, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
         
         /*
         System.out.println("Points: ");
@@ -87,33 +87,33 @@ public class GeoPolygonTest {
         }
         */
 
-    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
     // Sample some points within
-    gp = new GeoPoint(0.0, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.55);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.45);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(-0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.05, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.05, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
     assertTrue(c.isWithin(gp));
-    gp = new GeoPoint(0.0, -0.7);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.7);
     assertTrue(c.isWithin(gp));
     // Sample some nearby points outside
-    gp = new GeoPoint(0.0, -0.35);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(-0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.15, -0.5);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
     assertFalse(c.isWithin(gp));
     // Random points outside
-    gp = new GeoPoint(0.0, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(Math.PI * 0.5, 0.0);
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
     assertFalse(c.isWithin(gp));
-    gp = new GeoPoint(0.0, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
 
   }
@@ -125,12 +125,12 @@ public class GeoPolygonTest {
     List<GeoPoint> points;
 
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(-0.1, -0.5));
-    points.add(new GeoPoint(0.0, -0.6));
-    points.add(new GeoPoint(0.1, -0.5));
-    points.add(new GeoPoint(0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
 
-    c = GeoPolygonFactory.makeGeoPolygon(points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
 
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());

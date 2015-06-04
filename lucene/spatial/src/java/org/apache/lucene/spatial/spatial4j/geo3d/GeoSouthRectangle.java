@@ -25,7 +25,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoSouthRectangle extends GeoBBoxBase {
+public class GeoSouthRectangle extends GeoBaseBBox {
   public final double topLat;
   public final double leftLon;
   public final double rightLon;
@@ -45,12 +45,13 @@ public class GeoSouthRectangle extends GeoBBoxBase {
 
   public final GeoPoint centerPoint;
 
-  public final GeoPoint[] edgePoints = new GeoPoint[]{SOUTH_POLE};
+  public final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    */
-  public GeoSouthRectangle(final double topLat, final double leftLon, double rightLon) {
+  public GeoSouthRectangle(final PlanetModel planetModel, final double topLat, final double leftLon, double rightLon) {
+    super(planetModel);
     // Argument checking
     if (topLat > Math.PI * 0.5 || topLat < -Math.PI * 0.5)
       throw new IllegalArgumentException("Top latitude out of range");
@@ -77,8 +78,8 @@ public class GeoSouthRectangle extends GeoBBoxBase {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the four points
-    this.ULHC = new GeoPoint(sinTopLat, sinLeftLon, cosTopLat, cosLeftLon);
-    this.URHC = new GeoPoint(sinTopLat, sinRightLon, cosTopLat, cosRightLon);
+    this.ULHC = new GeoPoint(planetModel, sinTopLat, sinLeftLon, cosTopLat, cosLeftLon);
+    this.URHC = new GeoPoint(planetModel, sinTopLat, sinRightLon, cosTopLat, cosRightLon);
 
     final double middleLat = (topLat - Math.PI * 0.5) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
@@ -91,15 +92,18 @@ public class GeoSouthRectangle extends GeoBBoxBase {
     final double sinMiddleLon = Math.sin(middleLon);
     final double cosMiddleLon = Math.cos(middleLon);
 
-    this.centerPoint = new GeoPoint(sinMiddleLat, sinMiddleLon, cosMiddleLat, cosMiddleLon);
+    this.centerPoint = new GeoPoint(planetModel, sinMiddleLat, sinMiddleLon, cosMiddleLat, cosMiddleLon);
 
-    this.topPlane = new SidedPlane(centerPoint, sinTopLat);
+    this.topPlane = new SidedPlane(centerPoint, planetModel, sinTopLat);
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
     this.topPlanePoints = new GeoPoint[]{ULHC, URHC};
-    this.leftPlanePoints = new GeoPoint[]{ULHC, SOUTH_POLE};
-    this.rightPlanePoints = new GeoPoint[]{URHC, SOUTH_POLE};
+    this.leftPlanePoints = new GeoPoint[]{ULHC, planetModel.SOUTH_POLE};
+    this.rightPlanePoints = new GeoPoint[]{URHC, planetModel.SOUTH_POLE};
+    
+    this.edgePoints = new GeoPoint[]{planetModel.SOUTH_POLE};
+
   }
 
   @Override
@@ -116,7 +120,7 @@ public class GeoSouthRectangle extends GeoBBoxBase {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
@@ -160,9 +164,9 @@ public class GeoSouthRectangle extends GeoBBoxBase {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(topPlane, notablePoints, topPlanePoints, bounds, leftPlane, rightPlane) ||
-        p.intersects(leftPlane, notablePoints, leftPlanePoints, bounds, rightPlane, topPlane) ||
-        p.intersects(rightPlane, notablePoints, rightPlanePoints, bounds, leftPlane, topPlane);
+    return p.intersects(planetModel, topPlane, notablePoints, topPlanePoints, bounds, leftPlane, rightPlane) ||
+        p.intersects(planetModel, leftPlane, notablePoints, leftPlanePoints, bounds, rightPlane, topPlane) ||
+        p.intersects(planetModel, rightPlane, notablePoints, rightPlanePoints, bounds, leftPlane, topPlane);
   }
 
   /**
@@ -192,7 +196,7 @@ public class GeoSouthRectangle extends GeoBBoxBase {
       return OVERLAPS;
     }
 
-    final boolean insideShape = path.isWithin(SOUTH_POLE);
+    final boolean insideShape = path.isWithin(planetModel.SOUTH_POLE);
 
     if (insideRectangle == ALL_INSIDE && insideShape) {
       //System.err.println(" inside of each other");
@@ -224,19 +228,20 @@ public class GeoSouthRectangle extends GeoBBoxBase {
     if (!(o instanceof GeoSouthRectangle))
       return false;
     GeoSouthRectangle other = (GeoSouthRectangle) o;
-    return other.ULHC.equals(ULHC) && other.URHC.equals(URHC);
+    return super.equals(other) && other.ULHC.equals(ULHC) && other.URHC.equals(URHC);
   }
 
   @Override
   public int hashCode() {
-    int result = ULHC.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + ULHC.hashCode();
     result = 31 * result + URHC.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoSouthRectangle: {toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoSouthRectangle: {planetmodel="+planetModel+", toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 }
   

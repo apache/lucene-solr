@@ -23,9 +23,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.http.HttpException;
@@ -63,12 +60,6 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
   static String requestUsername = MockAuthenticationPlugin.expectedUsername;
   static String requestPassword = MockAuthenticationPlugin.expectedPassword;
   
-  protected final static List<String> brokenLocales =
-      Arrays.asList(
-        "th_TH_TH_#u-nu-thai",
-        "ja_JP_JP_#u-ca-japanese",
-        "hi_IN");
-
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -80,9 +71,6 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
 
   @Override
   public void setUp() throws Exception {
-    if (brokenLocales.contains(Locale.getDefault().toString())) {
-      Locale.setDefault(Locale.US);
-    }
     setupAuthenticationPlugin();
     super.setUp();
   }

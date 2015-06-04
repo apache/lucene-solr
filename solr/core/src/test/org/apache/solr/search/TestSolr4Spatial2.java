@@ -126,23 +126,38 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertEquals("1", cache.getStatistics().get("cumulative_hits").toString());
 
     assertEquals("1 segment",
-        1, ((SolrIndexSearcher) h.getCore().getInfoRegistry().get("searcher")).getRawReader().leaves().size());
+        1, getSearcher().getRawReader().leaves().size());
+    // Get key of first leaf reader -- this one contains the match for sure.
+    Object leafKey1 = getFirstLeafReaderKey();
+
     // add new segment
     assertU(adoc("id", "3"));
+
     assertU(commit()); // sometimes merges (to one seg), sometimes won't
-    boolean newSeg =
-      (((SolrIndexSearcher)h.getCore().getInfoRegistry().get("searcher")).getRawReader().leaves().size() > 1);
 
     // can still find the same document
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-    // when there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
-    assertEquals(newSeg ? "2" : "1", cache.getStatistics().get("cumulative_hits").toString());
+    // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+    // Checking equality for the first reader's cache key indicates wether the cache should still be valid.
+    Object leafKey2 = getFirstLeafReaderKey();
+    assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cache.getStatistics().get("cumulative_hits").toString());
+
 
     // Now try to see if heatmaps work:
     assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
         "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
 
+  }
+
+  protected SolrIndexSearcher getSearcher() {
+    // neat trick; needn't deal with the hassle RefCounted
+    return (SolrIndexSearcher) h.getCore().getInfoRegistry().get("searcher");
+  }
+
+
+  protected Object getFirstLeafReaderKey() {
+    return getSearcher().getRawReader().leaves().get(0).reader().getCoreCacheKey();
   }
 
 }

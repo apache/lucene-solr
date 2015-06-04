@@ -30,20 +30,23 @@ import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestSc
  * score, along with document id
  * <p>
  * Non scoring collector that collect completions in order of their
- * pre-defined weight.
+ * pre-computed scores.
  * <p>
  * NOTE: One document can be collected multiple times if a document
  * is matched for multiple unique completions for a given query
  * <p>
- * Subclasses should only override {@link TopSuggestDocsCollector#collect(int, CharSequence, long)},
- * {@link #setScorer(org.apache.lucene.search.Scorer)} is not
- * used
+ * Subclasses should only override
+ * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}.
+ * <p>
+ * NOTE: {@link #setScorer(org.apache.lucene.search.Scorer)} and
+ * {@link #collect(int)} is not used
  *
  * @lucene.experimental
  */
 public class TopSuggestDocsCollector extends SimpleCollector {
 
   private final SuggestScoreDocPriorityQueue priorityQueue;
+  private final int num;
 
   /**
    * Document base offset for the current Leaf
@@ -60,7 +63,15 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     if (num <= 0) {
       throw new IllegalArgumentException("'num' must be > 0");
     }
+    this.num = num;
     this.priorityQueue = new SuggestScoreDocPriorityQueue(num);
+  }
+
+  /**
+   * Returns the number of results to be collected
+   */
+  public int getCountToCollect() {
+    return num;
   }
 
   @Override
@@ -76,8 +87,8 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * NOTE: collection at the leaf level is guaranteed to be in
    * descending order of score
    */
-  public void collect(int docID, CharSequence key, long score) throws IOException {
-    SuggestScoreDoc current = new SuggestScoreDoc(docBase + docID, key, score);
+  public void collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+    SuggestScoreDoc current = new SuggestScoreDoc(docBase + docID, key, context, score);
     if (current == priorityQueue.insertWithOverflow(current)) {
       // if the current SuggestScoreDoc has overflown from pq,
       // we can assume all of the successive collections from
@@ -104,7 +115,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    */
   @Override
   public void collect(int doc) throws IOException {
-    // {@link #collect(int, CharSequence, long)} is used
+    // {@link #collect(int, CharSequence, CharSequence, long)} is used
     // instead
   }
 
@@ -113,6 +124,6 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    */
   @Override
   public boolean needsScores() {
-    return false;
+    return true;
   }
 }

@@ -72,6 +72,16 @@ Upgrading from Solr 5.2
 * SolrJ's CollectionAdminRequest class is now marked as abstract. Use one of its concrete
   sub-classes instead.
 
+* Solr no longer supports forcefully unlocking an index.
+  This is no longer supported by the underlying Lucene locking
+  framework. The setting in solrconfig.xml has no effect anymore.
+  Background: If you use native lock factory, unlocking should
+  not be needed, because the locks are cleared after process
+  shutdown automatically by the operating system. If you are
+  using simple lock factory (not recommended) or hdfs lock
+  factory, you may need to manually unlock by deleting the lock
+  file from filesystem / HDFS.
+
 Detailed Change List
 ----------------------
 
@@ -84,9 +94,26 @@ New Features
 * SOLR-7389: Expose znodeVersion property for each of the collections returned for the clusterstatus
   operation in the collections API (Marius Grama via shalin)
 
+* SOLR-7622: A DocTransformer can now request fields from the SolrIndexSearcher that are not
+  necessarily returned in the file SolrDocument by returning a list of fields from 
+  DocTransformer#getExtraRequestFields  (ryan)
+
 Bug Fixes
 ----------------------
-(no changes)
+
+* SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
+  requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
+
+* SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
+  can result in incorrect results or an exception. (yonik)
+
+* SOLR-7518: New Facet Module should respect shards.tolerant and process all non-failing shards
+  instead of throwing an exception. (yonik)
+
+* SOLR-4506: Clean-up old (unused) index directories in the background after initializing a new index;
+  previously, Solr would leave old index.yyyyMMddHHmmssSSS directories left behind after failed recoveries
+  in the data directory, which unnecessarily consumes disk space. (Mark Miller, Timothy Potter)
+
 
 Optimizations
 ----------------------
@@ -96,6 +123,23 @@ Other Changes
 ----------------------
 
 * SOLR-7595: Allow method chaining for all CollectionAdminRequests in Solrj. (shalin)
+
+* SOLR-7146: MiniSolrCloudCluster based tests can fail with ZooKeeperException NoNode for /live_nodes.
+  (Vamsee Yarlagadda via shalin)
+
+* SOLR-7590: Finish and improve MDC context logging support. (Mark Miller)
+
+* SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
+
+* SOLR-7623: Fix regression from SOLR-7484 that made it impossible to override 
+  SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
+  functions in HttpSolrCall.  (ryan)
+
+* SOLR-7636: CLUSTERSTATUS API is executed at CollectionsHandler (noble)
+
+* LUCENE-6508: Remove ability to forcefully unlock an index.
+  This is no longer supported by the underlying Lucene locking
+  framework.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
 ==================  5.2.0 ==================
 
@@ -259,7 +303,7 @@ New Features
   which blends RPT indexes for speed with serialized geometry for accuracy.  Includes a Lucene segment based
   in-memory shape cache. (David Smiley)
 
-* SOLR-7465: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
+* SOLR-7465, SOLR-7610: New file indexing example, under example/files.  (Esther Quansah, Erik Hatcher)
 
 * SOLR-7468: Kerberos authenticaion plugin for Solr. This would allow running a Kerberized Solr.
   (Noble Paul, Ishan Chattopadhyaya, Gregory Chanan, Anshum Gupta)
@@ -359,6 +403,21 @@ Bug Fixes
 
 * SOLR-7585: Fix NoSuchElementException in LFUCache resulting from heavy writes
   making concurrent put() calls. (Maciej Zasada via Shawn Heisey)
+
+* SOLR-7587: Seeding bucket versions from index when the firstSearcher event fires has a race condition
+  that leads to an infinite wait on VersionInfo's ReentrantReadWriteLock because the read-lock acquired
+  during a commit cannot be upgraded to a write-lock needed to block updates; solution is to move the
+  call out of the firstSearcher event path and into the SolrCore constructor. (Timothy Potter)
+
+* SOLR-7625: Ensure that the max value for seeding version buckets is updated after recovery even if
+  the UpdateLog is not replayed. (Timothy Potter)
+
+* SOLR-7610: Fix VelocityResponseWriter's $resource.locale to accurately report locale in use.
+  (ehatcher)
+
+* SOLR-7614: Distributed pivot facet refinement was broken due to a single correlation counter
+  used across multiple requests as if it was private to each request. (yonik)
+
 
 Optimizations
 ----------------------
@@ -490,6 +549,9 @@ Other Changes
 * SOLR-7582: Allow auto-commit to be set with system properties in data_driven_schema_configs and
   enable auto soft-commits for the bin/solr -e cloud example using the Config API.
   (Timothy Potter)
+
+* SOLR-7183: Fix Locale blacklisting for Minikdc based tests. (Ishan Chattopadhyaya, hossman
+  via Anshum Gupta)
 
 ==================  5.1.0 ==================
 

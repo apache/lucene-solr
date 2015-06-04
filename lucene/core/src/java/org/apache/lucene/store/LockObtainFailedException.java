@@ -24,7 +24,7 @@ import java.io.IOException;
  * could not be acquired.  This
  * happens when a writer tries to open an index
  * that another writer already has open.
- * @see Lock#obtain(long)
+ * @see LockFactory#obtainLock(Directory, String)
  */
 public class LockObtainFailedException extends IOException {
   public LockObtainFailedException(String message) {

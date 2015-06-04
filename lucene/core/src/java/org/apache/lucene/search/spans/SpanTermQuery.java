@@ -17,8 +17,10 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
@@ -29,6 +31,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -37,11 +40,23 @@ import java.util.Set;
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
  */
 public class SpanTermQuery extends SpanQuery {
-  protected Term term;
+
+  protected final Term term;
+  protected final TermContext termContext;
 
   /** Construct a SpanTermQuery matching the named term's spans. */
   public SpanTermQuery(Term term) {
     this.term = Objects.requireNonNull(term);
+    this.termContext = null;
+  }
+
+  /**
+   * Expert: Construct a SpanTermQuery matching the named term's spans, using
+   * the provided TermContext
+   */
+  public SpanTermQuery(Term term, TermContext context) {
+    this.term = Objects.requireNonNull(term);
+    this.termContext = context;
   }
 
   /** Return the term whose spans are matched. */
@@ -52,18 +67,25 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    TermContext context = TermContext.build(searcher.getTopReaderContext(), term);
-    SpanSimilarity similarity = SpanSimilarity.build(this, searcher, needsScores, searcher.termStatistics(term, context));
-    return new SpanTermWeight(context, similarity, factory);
+    final TermContext context;
+    final IndexReaderContext topContext = searcher.getTopReaderContext();
+    if (termContext == null || termContext.topReaderContext != topContext) {
+      context = TermContext.build(topContext, term);
+    }
+    else {
+      context = termContext;
+    }
+    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, factory);
   }
 
   public class SpanTermWeight extends SpanWeight {
 
     final TermContext termContext;
 
-    public SpanTermWeight(TermContext termContext, SpanSimilarity similarity, SpanCollectorFactory factory) throws IOException {
-      super(SpanTermQuery.this, similarity, factory);
+    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory) throws IOException {
+      super(SpanTermQuery.this, searcher, terms, factory);
       this.termContext = termContext;
+      assert termContext != null : "TermContext must not be null";
     }
 
     @Override
@@ -79,8 +101,11 @@ public class SpanTermQuery extends SpanQuery {
     @Override
     public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
 
+      assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+
       final TermState state = termContext.get(context.ord);
       if (state == null) { // term is not present in that reader
+        assert context.reader().docFreq(term) == 0 : "no termstate found but term exists in reader term=" + term;
         return null;
       }
 

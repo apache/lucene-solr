@@ -18,7 +18,11 @@
 package org.apache.solr.core;
 
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoLockFactory;
@@ -26,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.junit.AfterClass;
@@ -53,7 +58,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     System.clearProperty(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_MAXMERGESIZEMB);
     dfsCluster = null;
   }
-  
+
   @Test
   public void testInitArgsOrSysPropConfig() throws Exception {
     
@@ -128,6 +133,37 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     assertEquals(false, hdfsFactory.getConfig(HdfsDirectoryFactory.BLOCKCACHE_ENABLED, false));
     
     hdfsFactory.close();
+  }
+
+  @Test
+  public void testCleanupOldIndexDirectories() throws Exception {
+
+    HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory();
+
+    System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
+    hdfsFactory.init(new NamedList<>());
+    String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
+    assertTrue(dataHome.endsWith("/solr1/mock/data"));
+    System.clearProperty("solr.hdfs.home");
+
+    FileSystem hdfs = dfsCluster.getFileSystem();
+
+    org.apache.hadoop.fs.Path dataHomePath = new org.apache.hadoop.fs.Path(dataHome);
+    org.apache.hadoop.fs.Path currentIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index");
+    assertTrue(!hdfs.isDirectory(currentIndexDirPath));
+    hdfs.mkdirs(currentIndexDirPath);
+    assertTrue(hdfs.isDirectory(currentIndexDirPath));
+
+    String timestamp1 = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+    org.apache.hadoop.fs.Path oldIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index."+timestamp1);
+    assertTrue(!hdfs.isDirectory(oldIndexDirPath));
+    hdfs.mkdirs(oldIndexDirPath);
+    assertTrue(hdfs.isDirectory(oldIndexDirPath));
+
+    hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString());
+
+    assertTrue(hdfs.isDirectory(currentIndexDirPath));
+    assertTrue(!hdfs.isDirectory(oldIndexDirPath));
   }
 
 }

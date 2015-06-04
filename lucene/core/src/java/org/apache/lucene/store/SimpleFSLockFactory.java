@@ -17,26 +17,24 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 
 /**
  * <p>Implements {@link LockFactory} using {@link
  * Files#createFile}.</p>
  *
- * <p><b>NOTE:</b> the {@linkplain File#createNewFile() javadocs
- * for <code>File.createNewFile()</code>} contain a vague
- * yet spooky warning about not using the API for file
- * locking.  This warning was added due to <a target="_top"
- * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4676183">this
- * bug</a>, and in fact the only known problem with using
- * this API for locking is that the Lucene write lock may
- * not be released when the JVM exits abnormally.</p>
-
- * <p>When this happens, a {@link LockObtainFailedException}
- * is hit when trying to create a writer, in which case you
+ * <p>The main downside with using this API for locking is 
+ * that the Lucene write lock may not be released when 
+ * the JVM exits abnormally.</p>
+ *
+ * <p>When this happens, an {@link LockObtainFailedException}
+ * is hit when trying to create a writer, in which case you may
  * need to explicitly clear the lock file first by
  * manually removing the file.  But, first be certain that
  * no writer is in fact writing to the index otherwise you
@@ -70,55 +68,83 @@ public final class SimpleFSLockFactory extends FSLockFactory {
   private SimpleFSLockFactory() {}
 
   @Override
-  protected Lock makeFSLock(FSDirectory dir, String lockName) {
-    return new SimpleFSLock(dir.getDirectory(), lockName);
+  protected Lock obtainFSLock(FSDirectory dir, String lockName) throws IOException {
+    Path lockDir = dir.getDirectory();
+    
+    // Ensure that lockDir exists and is a directory.
+    // note: this will fail if lockDir is a symlink
+    Files.createDirectories(lockDir);
+    
+    Path lockFile = lockDir.resolve(lockName);
+    
+    // create the file: this will fail if it already exists
+    try {
+      Files.createFile(lockFile);
+    } catch (FileAlreadyExistsException | AccessDeniedException e) {
+      // convert optional specific exception to our optional specific exception
+      throw new LockObtainFailedException("Lock held elsewhere: " + lockFile, e);
+    }
+    
+    // used as a best-effort check, to see if the underlying file has changed
+    final FileTime creationTime = Files.readAttributes(lockFile, BasicFileAttributes.class).creationTime();
+    
+    return new SimpleFSLock(lockFile, creationTime);
   }
   
-  static class SimpleFSLock extends Lock {
+  static final class SimpleFSLock extends Lock {
+    private final Path path;
+    private final FileTime creationTime;
+    private volatile boolean closed;
 
-    Path lockFile;
-    Path lockDir;
-
-    public SimpleFSLock(Path lockDir, String lockFileName) {
-      this.lockDir = lockDir;
-      lockFile = lockDir.resolve(lockFileName);
+    SimpleFSLock(Path path, FileTime creationTime) throws IOException {
+      this.path = path;
+      this.creationTime = creationTime;
     }
 
     @Override
-    public boolean obtain() throws IOException {
-      try {
-        Files.createDirectories(lockDir);
-        Files.createFile(lockFile);
-        return true;
-      } catch (IOException ioe) {
-        // On Windows, on concurrent createNewFile, the 2nd process gets "access denied".
-        // In that case, the lock was not aquired successfully, so return false.
-        // We record the failure reason here; the obtain with timeout (usually the
-        // one calling us) will use this as "root cause" if it fails to get the lock.
-        failureReason = ioe;
-        return false;
+    public void ensureValid() throws IOException {
+      if (closed) {
+        throw new AlreadyClosedException("Lock instance already released: " + this);
+      }
+      // try to validate the backing file name, that it still exists,
+      // and has the same creation time as when we obtained the lock. 
+      // if it differs, someone deleted our lock file (and we are ineffective)
+      FileTime ctime = Files.readAttributes(path, BasicFileAttributes.class).creationTime(); 
+      if (!creationTime.equals(ctime)) {
+        throw new AlreadyClosedException("Underlying file changed by an external force at " + creationTime + ", (lock=" + this + ")");
       }
     }
 
     @Override
-    public void close() throws LockReleaseFailedException {
-      // TODO: wierd that clearLock() throws the raw IOException...
-      try {
-        Files.deleteIfExists(lockFile);
-      } catch (Throwable cause) {
-        throw new LockReleaseFailedException("failed to delete " + lockFile, cause);
+    public synchronized void close() throws IOException {
+      if (closed) {
+        return;
       }
-    }
-
-    @Override
-    public boolean isLocked() {
-      return Files.exists(lockFile);
+      try {
+        // NOTE: unlike NativeFSLockFactory, we can potentially delete someone else's
+        // lock if things have gone wrong. we do best-effort check (ensureValid) to
+        // avoid doing this.
+        try {
+          ensureValid();
+        } catch (Throwable exc) {
+          // notify the user they may need to intervene.
+          throw new LockReleaseFailedException("Lock file cannot be safely removed. Manual intervention is recommended.", exc);
+        }
+        // we did a best effort check, now try to remove the file. if something goes wrong,
+        // we need to make it clear to the user that the directory may still remain locked.
+        try {
+          Files.delete(path);
+        } catch (Throwable exc) {
+          throw new LockReleaseFailedException("Unable to remove lock file. Manual intervention is recommended", exc);
+        }
+      } finally {
+        closed = true;
+      }
     }
 
     @Override
     public String toString() {
-      return "SimpleFSLock@" + lockFile;
+      return "SimpleFSLock(path=" + path + ",ctime=" + creationTime + ")";
     }
   }
-
 }

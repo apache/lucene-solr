@@ -33,7 +33,59 @@ API Changes
   implementation returning the empty list.  (Robert Muir)
 
 ======================= Lucene 5.3.0 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-6485: Add CustomSeparatorBreakIterator to postings
+  highlighter which splits on any character. For example, it 
+  can be used with getMultiValueSeparator render whole field
+  values.  (Luca Cavanna via Robert Muir)
+
+* LUCENE-6459: Add common suggest API that mirrors Lucene's
+  Query/IndexSearcher APIs for Document based suggester.
+  Adds PrefixCompletionQuery, RegexCompletionQuery,
+  FuzzyCompletionQuery and ContextQuery.
+  (Areek Zillur via Mike McCandless)
+
+* LUCENE-6487: Spatial Geo3D API now has a WGS84 ellipsoid world model option.
+  (Karl Wright via David Smiley)
+
+* LUCENE-6477: Add experimental BKD geospatial tree doc values format
+  and queries, for fast "bbox/polygon contains lat/lon points" (Mike
+  McCandless)
+
+API Changes
+
+* LUCENE-6508: Simplify Lock api, there is now just 
+  Directory.obtainLock() which returns a Lock that can be 
+  released (or fails with exception). Add lock verification 
+  to IndexWriter. Improve exception messages when locking fails.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
+Bug fixes
+
+* LUCENE-6500: ParallelCompositeReader did not always call
+  closed listeners. This was fixed by LUCENE-6501.
+  (Adrien Grand, Uwe Schindler)
+
+* LUCENE-6520: Geo3D GeoPath.done() would throw an NPE if adjacent path
+  segments were co-linear. (Karl Wright via David Smiley)
+
+Changes in Runtime Behavior
+
+* LUCENE-6501: The subreader structure in ParallelCompositeReader
+  was flattened, because the current implementation had too many
+  hidden bugs regarding refounting and close listeners.
+  If you create a new ParallelCompositeReader, it will just take
+  all leaves of the passed readers and form a flat structure of
+  ParallelLeafReaders instead of trying to assemble the original
+  structure of composite and leaf readers.  (Adrien Grand,
+  Uwe Schindler)
+
+Build
+
+* LUCENE-6518: Don't report false thread leaks from IBM J9
+  ClassCache Reaper in test framework. (Dawid Weiss)
 
 ======================= Lucene 5.2.0 =======================
 
@@ -189,6 +241,12 @@ Bug Fixes
   documents with no payloads and now returns an empty BytesRef instead
   (Marius Grama via Michael McCandless)
 
+* LUCENE-6505: NRT readers now reflect segments_N filename and commit
+  user data from previous commits (Mike McCandless)
+
+* LUCENE-6507: Don't let NativeFSLock.close() release other locks
+  (Simon Willnauer, Robert Muir, Uwe Schindler, Mike McCandless)
+
 API Changes
 
 * LUCENE-6377: SearcherFactory#newSearcher now accepts the previous reader
@@ -216,7 +274,7 @@ API Changes
   (Paul Elschot via Adrien Grand)
 
 * LUCENE-6466: Moved SpanQuery.getSpans() and .extractTerms() to SpanWeight
-  (Alan Woodward)
+  (Alan Woodward, Robert Muir)
 
 * LUCENE-6497: Allow subclasses of FieldType to check frozen state
   (Ryan Ernst)

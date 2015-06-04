@@ -27,54 +27,34 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
-public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
-  private CloudSolrClient client;
-
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-    client = createCloudClient(null);
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    client.close();
-  }
+public class CollectionStateFormat2Test extends AbstractFullDistribZkTestBase {
 
   protected String getSolrXml() {
     return "solr-no-core.xml";
   }
 
-  public ExternalCollectionsTest() {
-    checkCreatedVsState = false;
-  }
-
-
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    testZkNodeLocation();
-    testConfNameAndCollectionNameSame();
+    try (CloudSolrClient client = createCloudClient(null))  {
+      testZkNodeLocation(client);
+      testConfNameAndCollectionNameSame(client);
+    }
   }
-
-
 
   @Override
   protected String getStateFormat() {
     return "2";
   }
 
-  private void testConfNameAndCollectionNameSame() throws Exception{
+  private void testConfNameAndCollectionNameSame(CloudSolrClient client) throws Exception{
     // .system collection precreates the configset
 
     createCollection(".system", client, 2, 1);
     waitForRecoveriesToFinish(".system", false);
   }
 
-  private void testZkNodeLocation() throws Exception{
+  private void testZkNodeLocation(CloudSolrClient client) throws Exception{
 
     String collectionName = "myExternColl";
 
@@ -103,7 +83,7 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
 
     client.request(request);
 
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     assertFalse("collection state should not exist externally", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
   }

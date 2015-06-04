@@ -49,7 +49,7 @@ final class NRTSuggesterBuilder {
    * Marks end of the analyzed input and start of dedup
    * byte.
    */
-  private static final int END_BYTE = 0x0;
+  public static final int END_BYTE = 0x0;
 
   private final PairOutputs<Long, BytesRef> outputs;
   private final Builder<PairOutputs.Pair<Long, BytesRef>> builder;

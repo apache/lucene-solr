@@ -37,23 +37,17 @@ public final class NoLockFactory extends LockFactory {
   private NoLockFactory() {}
 
   @Override
-  public Lock makeLock(Directory dir, String lockName) {
+  public Lock obtainLock(Directory dir, String lockName) {
     return SINGLETON_LOCK;
   }
   
   private static class NoLock extends Lock {
     @Override
-    public boolean obtain() throws IOException {
-      return true;
-    }
-
-    @Override
     public void close() {
     }
 
     @Override
-    public boolean isLocked() {
-      return false;
+    public void ensureValid() throws IOException {
     }
 
     @Override
@@ -61,5 +55,4 @@ public final class NoLockFactory extends LockFactory {
       return "NoLock";
     }
   }
-
 }

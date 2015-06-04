@@ -329,6 +329,7 @@ public class ZkStateReader implements Closeable {
               // update volatile
               ZkStateReader.this.clusterState = constructState(ln, thisWatch);
             }
+            log.info("Updated cluster state version to " + ZkStateReader.this.clusterState.getZkClusterStateVersion());
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED
                 || e.code() == KeeperException.Code.CONNECTIONLOSS) {

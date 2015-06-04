@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import javax.security.auth.login.Configuration;
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -62,14 +60,9 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
     REPLICATION_FACTOR = 2;
   }
   
-  protected final static List<String> brokenLocales =
-      Arrays.asList(
-        "th_TH_TH_#u-nu-thai",
-        "ja_JP_JP_#u-ca-japanese",
-        "hi_IN");
-
   private MiniKdc kdc;
 
+  private Locale savedLocale; // in case locale is broken and we need to fill in a working locale
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -81,9 +74,7 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
 
   @Override
   public void setUp() throws Exception {
-    if (brokenLocales.contains(Locale.getDefault().toString())) {
-      Locale.setDefault(Locale.US);
-    }
+    savedLocale = KerberosTestUtil.overrideLocaleIfNotSpportedByMiniKdc();
     super.setUp();
     setupMiniKdc();
   }
@@ -171,6 +162,7 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
     if (kdc != null) {
       kdc.stop();
     }
+    Locale.setDefault(savedLocale);
     super.tearDown();
   }
 }

@@ -54,12 +54,6 @@ public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
     sliceCount = 1;
   }
   
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
   @Test
   public void testReloadedLeaderStateAfterZkSessionLoss() throws Exception {
     waitForThingsToLevelOut(30000);

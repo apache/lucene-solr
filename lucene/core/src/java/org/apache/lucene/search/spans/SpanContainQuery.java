@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 
@@ -54,9 +55,9 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     final SpanWeight bigWeight;
     final SpanWeight littleWeight;
 
-    public SpanContainWeight(SpanSimilarity similarity, SpanCollectorFactory factory,
+    public SpanContainWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
                              SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(SpanContainQuery.this, similarity, factory);
+      super(SpanContainQuery.this, searcher, terms, factory);
       this.bigWeight = bigWeight;
       this.littleWeight = littleWeight;
     }

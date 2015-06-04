@@ -38,17 +38,6 @@ import org.junit.Test;
 @Slow
 public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final int MAX_TIMEOUT_SECONDS = 60;
-  private static final boolean DEBUG = false;
-
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-
-    useJettyDataDir = false;
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
 
   public CollectionsAPIAsyncDistributedZkTest() {
     sliceCount = 1;
@@ -100,10 +89,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   
       assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
     }
-
-    if (DEBUG) {
-      printLayout();
-    }
   }
 
   private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
@@ -128,15 +113,4 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return (String) innerResponse.get("state");
   }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-    
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
-  }
-
 }

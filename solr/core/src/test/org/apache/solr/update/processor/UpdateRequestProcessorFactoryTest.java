@@ -20,22 +20,36 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
  * 
  */
 public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
+
+  private static org.apache.log4j.Level SAVED_LEVEL = null; // SOLR-7603 - remove
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+
+    // SOLR-7603 - remove
+    SAVED_LEVEL = org.apache.log4j.LogManager.getRootLogger().getLevel();
+    org.apache.log4j.LogManager.getRootLogger().setLevel(org.apache.log4j.Level.DEBUG);
+    
     initCore("solrconfig-transformers.xml", "schema.xml");
   }
   
+  @AfterClass
+  public static void fixLogLevelAfterClass() throws Exception { // SOLR-7603 - remove
+    org.apache.log4j.LogManager.getRootLogger().setLevel(SAVED_LEVEL);
+  }
 
   public void testConfiguration() throws Exception 
   {
@@ -70,48 +84,95 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
+
+    // a key part of this test is verifying that LogUpdateProcessor is found in all chains because it
+    // is a @RunAllways processor -- but in order for that to work, we have to sanity check that the log
+    // level is at least "INFO" otherwise the factory won't even produce a processor and all our assertions
+    // are for nought.  (see LogUpdateProcessorFactory.getInstance)
+    //
+    // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.
+    assertTrue("Tests must be run with INFO level logging "+
+               "otherwise LogUpdateProcessor isn't used and can't be tested.",
+               LogUpdateProcessor.log.isInfoEnabled());
+    
+    final int EXPECTED_CHAIN_LENGTH = 5;
     SolrCore core = h.getCore();
     for (final String name : Arrays.asList("distrib-chain-explicit",
                                            "distrib-chain-implicit",
                                            "distrib-chain-noop")) {
 
       UpdateRequestProcessor proc;
+      List<UpdateRequestProcessor> procs;
+      
       UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(name);
       assertNotNull(name, chain);
 
       // either explicitly, or because of injection
-      assertEquals(name + " chain length", 5,
+      assertEquals(name + " chain length: " + chain.toString(), EXPECTED_CHAIN_LENGTH,
                    chain.getFactories().length);
 
-      // Custom comes first in all three of our chains
+      // test a basic (non distrib) chain
       proc = chain.createProcessor(req(), new SolrQueryResponse());
-      assertTrue(name + " first processor isn't a CustomUpdateRequestProcessor: " 
-                 + proc.getClass().getName(),
-                 proc instanceof CustomUpdateRequestProcessor);
+      procs = procToList(proc);
+      assertEquals(name + " procs size: " + procs.toString(),
+                   // -1 = NoOpDistributingUpdateProcessorFactory produces no processor
+                   EXPECTED_CHAIN_LENGTH - ("distrib-chain-noop".equals(name) ? 1 : 0),
+                   procs.size());
+      
+      // Custom comes first in all three of our chains
+      assertTrue(name + " first processor isn't a CustomUpdateRequestProcessor: " + procs.toString(),
+                 ( // compare them both just because i'm going insane and the more checks the better
+                   proc instanceof CustomUpdateRequestProcessor
+                   && procs.get(0) instanceof CustomUpdateRequestProcessor));
 
-      // varies depending on chain, but definitely shouldn't be Custom
+      // Log should always come second in our chain.
+      assertNotNull(name + " proc.next is null", proc.next);
+      assertNotNull(name + " second proc is null", procs.get(1));
+
+      assertTrue(name + " second proc isn't LogUpdateProcessor: " + procs.toString(),
+                 ( // compare them both just because i'm going insane and the more checks the better
+                   proc.next instanceof LogUpdateProcessor
+                   && procs.get(1) instanceof LogUpdateProcessor));
+
+      // fetch the distributed version of this chain
       proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "non_blank_value"),
                                    new SolrQueryResponse());
-      assertFalse(name + " post distrib proc should not be a CustomUpdateRequestProcessor: " 
-                 + proc.getClass().getName(),
-                 proc instanceof CustomUpdateRequestProcessor);
+      procs = procToList(proc);
+      assertNotNull(name + " (distrib) chain produced null proc", proc);
+      assertFalse(name + " (distrib) procs is empty", procs.isEmpty());
 
-      int n=0;
-      boolean foundLog = false;
-      for (;;) {
-        n++;
-        if (proc instanceof LogUpdateProcessor) {
-          foundLog = true;
-        }
-        proc = proc.next;
-        if (proc == null) break;
-      }
+      // for these 3 (distrib) chains, the first proc should always be LogUpdateProcessor
+      assertTrue(name + " (distrib) first proc should be LogUpdateProcessor because of @RunAllways: "
+                 + procs.toString(),
+                 ( // compare them both just because i'm going insane and the more checks the better
+                   proc instanceof LogUpdateProcessor
+                   && procs.get(0) instanceof LogUpdateProcessor));
 
-      assertTrue( n < chain.getFactories().length );   // some processors should have been dropped
-      assertTrue( foundLog );  // make sure the marker interface was successful in keeping the log processor
+      // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
+      assertTrue(name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),
+                 procs.get(procs.size()-1) instanceof RunUpdateProcessor );
 
+      // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
+      assertEquals(name + " (distrib) chain has wrong length: " + procs.toString(),
+                   // -1 = all chains lose CustomUpdateRequestProcessorFactory
+                   // -1 = distrib-chain-noop: NoOpDistributingUpdateProcessorFactory produces no processor
+                   // -1 = distrib-chain-implicit: does RemoveBlank before distrib
+                   EXPECTED_CHAIN_LENGTH - ( "distrib-chain-explicit".equals(name) ? 1 : 2),
+                   procs.size());
     }
 
   }
 
+  /**
+   * walks the "next" values of the proc building up a List of the procs for easier testing
+   */
+  public static List<UpdateRequestProcessor> procToList(UpdateRequestProcessor proc) {
+    List<UpdateRequestProcessor> result = new ArrayList<UpdateRequestProcessor>(7);
+    while (null != proc) {
+      result.add(proc);
+      proc = proc.next;
+    }
+    return result;
+  }
 }
+

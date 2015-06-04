@@ -38,16 +38,16 @@ public class GeoPolygonFactory {
    *                         its neighbors determines inside/outside for the entire polygon.
    * @return a GeoMembershipShape corresponding to what was specified.
    */
-  public static GeoMembershipShape makeGeoPolygon(List<GeoPoint> pointList, int convexPointIndex) {
+  public static GeoMembershipShape makeGeoPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final int convexPointIndex) {
     // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
     // describing membership.
-    return buildPolygonShape(pointList, convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
+    return buildPolygonShape(planetModel, pointList, convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
         new SidedPlane(pointList.get(getLegalIndex(convexPointIndex - 1, pointList.size())),
             pointList.get(convexPointIndex), pointList.get(getLegalIndex(convexPointIndex + 1, pointList.size()))),
         false);
   }
 
-  public static GeoMembershipShape buildPolygonShape(List<GeoPoint> pointsList, int startPointIndex, int endPointIndex, SidedPlane startingEdge, boolean isInternalEdge) {
+  public static GeoMembershipShape buildPolygonShape(final PlanetModel planetModel, final List<GeoPoint> pointsList, final int startPointIndex, final int endPointIndex, final SidedPlane startingEdge, final boolean isInternalEdge) {
     // Algorithm as follows:
     // Start with sided edge.  Go through all points in some order.  For each new point, determine if the point is within all edges considered so far.
     // If not, put it into a list of points for recursion.  If it is within, add new edge and keep going.
@@ -112,7 +112,7 @@ public class GeoPolygonFactory {
             }
             // We want the other side for the recursion
             SidedPlane otherSideNewBoundary = new SidedPlane(newBoundary);
-            rval.addShape(buildPolygonShape(recursionList, recursionList.size() - 2, recursionList.size() - 1, otherSideNewBoundary, true));
+            rval.addShape(buildPolygonShape(planetModel, recursionList, recursionList.size() - 2, recursionList.size() - 1, otherSideNewBoundary, true));
             recursionList.clear();
           }
           currentList.add(newPoint);
@@ -140,11 +140,11 @@ public class GeoPolygonFactory {
       SidedPlane newBoundary = new SidedPlane(currentList.get(currentList.size() - 2), currentList.get(0), currentList.get(currentList.size() - 1));
       // We want the other side for the recursion
       SidedPlane otherSideNewBoundary = new SidedPlane(newBoundary);
-      rval.addShape(buildPolygonShape(recursionList, recursionList.size() - 2, recursionList.size() - 1, otherSideNewBoundary, true));
+      rval.addShape(buildPolygonShape(planetModel, recursionList, recursionList.size() - 2, recursionList.size() - 1, otherSideNewBoundary, true));
       recursionList.clear();
     }
     // Now, add in the current shape.
-    rval.addShape(new GeoConvexPolygon(currentList, internalEdgeList, returnEdgeInternalBoundary));
+    rval.addShape(new GeoConvexPolygon(planetModel, currentList, internalEdgeList, returnEdgeInternalBoundary));
     //System.out.println("Done creating polygon");
     return rval;
   }

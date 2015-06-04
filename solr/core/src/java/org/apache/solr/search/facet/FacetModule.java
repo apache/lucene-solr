@@ -169,6 +169,7 @@ public class FacetModule extends SearchComponent {
     for (ShardResponse shardRsp : sreq.responses) {
       SolrResponse rsp = shardRsp.getSolrResponse();
       NamedList<Object> top = rsp.getResponse();
+      if (top == null) continue; // shards.tolerant=true will cause this to happen on exceptions/errors
       Object facet = top.get("facets");
       if (facet == null) continue;
       if (facetState.merger == null) {

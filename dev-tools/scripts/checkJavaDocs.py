@@ -274,7 +274,7 @@ def checkSummary(fullPath):
       if lineLower.startswith('package ') or lineLower.startswith('<h1 title="package" '):
         sawPackage = True
       elif sawPackage:
-        if lineLower.startswith('<table ') or lineLower.startswith('<b>see: '):
+        if lineLower.startswith('<table ') or lineLower.startswith('<b>see: ') or lineLower.startswith('<p>see:'):
           desc = ' '.join(desc)
           desc = reMarkup.sub(' ', desc)
           desc = desc.strip()

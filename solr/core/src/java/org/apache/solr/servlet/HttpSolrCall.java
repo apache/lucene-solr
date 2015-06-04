@@ -1,5 +1,37 @@
 package org.apache.solr.servlet;
 
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,22 +51,6 @@ package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -54,8 +70,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -73,7 +89,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.logging.MDCUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -85,66 +101,50 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN; 
+import org.slf4j.LoggerFactory; 
 
 /**
  * This class represents a call made to Solr
  **/
 public class HttpSolrCall {
-  private static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
+  protected static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
 
-  private final SolrDispatchFilter solrDispatchFilter;
-  private final CoreContainer cores;
-  private final HttpServletRequest req;
-  private final HttpServletResponse response;
-  private final boolean retry;
-  private SolrCore core = null;
-  private SolrQueryRequest solrReq = null;
-  private SolrRequestHandler handler = null;
-  private final SolrParams queryParams;
-  private String path;
-  private Action action;
-  private String coreUrl;
-  private SolrConfig config;
-  private Map<String, Integer> invalidStates;
+  protected final SolrDispatchFilter solrDispatchFilter;
+  protected final CoreContainer cores;
+  protected final HttpServletRequest req;
+  protected final HttpServletResponse response;
+  protected final boolean retry;
+  protected SolrCore core = null;
+  protected SolrQueryRequest solrReq = null;
+  protected SolrRequestHandler handler = null;
+  protected final SolrParams queryParams;
+  protected String path;
+  protected Action action;
+  protected String coreUrl;
+  protected SolrConfig config;
+  protected Map<String, Integer> invalidStates;
 
   public RequestType getRequestType() {
     return requestType;
   }
 
-  private RequestType requestType;
+  protected RequestType requestType;
 
 
   public List<String> getCollectionsList() {
     return collectionsList;
   }
 
-  private List<String> collectionsList;
+  protected List<String> collectionsList;
 
-  HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
+  public HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
                HttpServletRequest request, HttpServletResponse response, boolean retry) {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
@@ -233,6 +233,14 @@ public class HttpSolrCall {
         core = cores.getCore(corename);
         if (core != null) {
           path = path.substring(idx);
+        } else if (cores.isCoreLoading(corename)) { // extra mem barriers, so don't look at this before trying to get core
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is loading");
+        } else {
+          // the core may have just finished loading
+          core = cores.getCore(corename);
+          if (core != null) {
+            path = path.substring(idx);
+          } 
         }
       }
       if (core == null) {
@@ -242,15 +250,12 @@ public class HttpSolrCall {
       }
     }
 
-    if (core != null) addMDCValues();
-
     if (core == null && cores.isZooKeeperAware()) {
       // we couldn't find the core - lets make sure a collection was not specified instead
       core = getCoreByCollection(corename);
       if (core != null) {
         // we found a core, update the path
         path = path.substring(idx);
-        addMDCValues();
         if (collectionsList == null)
           collectionsList = new ArrayList<>();
         collectionsList.add(corename);
@@ -263,12 +268,12 @@ public class HttpSolrCall {
       // try the default core
       if (core == null) {
         core = cores.getCore("");
-        if (core != null) addMDCValues();
       }
     }
 
     // With a valid core...
     if (core != null) {
+      MDCLoggingContext.setCore(core);
       config = core.getSolrConfig();
       // get or create/cache the parser for the core
       SolrRequestParsers parser = config.getRequestParsers();
@@ -378,15 +383,12 @@ public class HttpSolrCall {
    * This method processes the request.
    */
   public Action call() throws IOException {
-    MDCUtils.clearMDC();
+    MDCLoggingContext.reset();
+    MDCLoggingContext.setNode(cores);
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");
       return RETURN;
-    }
-
-    if (cores.isZooKeeperAware()) {
-      MDC.put(NODE_NAME_PROP, cores.getZkController().getNodeName());
     }
 
     if (solrDispatchFilter.abortErrorMessage != null) {
@@ -461,6 +463,8 @@ public class HttpSolrCall {
         t = t.getCause();
       }
       return RETURN;
+    } finally {
+      MDCLoggingContext.clear();
     }
 
   }
@@ -614,21 +618,11 @@ public class HttpSolrCall {
     }
   }
 
-  void sendError(int code, String message) throws IOException {
+  protected void sendError(int code, String message) throws IOException {
     try {
       response.sendError(code, message);
     } catch (EOFException e) {
       SolrDispatchFilter.log.info("Unable to write error response, client closed connection or we are shutting down", e);
-    }
-  }
-
-  private void addMDCValues() {
-    MDCUtils.setCore(core.getName());
-    if (cores.isZooKeeperAware()) {
-      CloudDescriptor cloud = core.getCoreDescriptor().getCloudDescriptor();
-      MDCUtils.setCollection(cloud.getCollectionName());
-      MDCUtils.setShard(cloud.getShardId());
-      MDCUtils.setReplica(cloud.getCoreNodeName());
     }
   }
 

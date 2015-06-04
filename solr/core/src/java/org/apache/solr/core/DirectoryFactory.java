@@ -19,10 +19,12 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -44,6 +46,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   // Stayed away from upper bounds of the int/long in case any other code tried to aggregate these numbers.
   // A large estimate should currently have no other side effects.
   public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
+
+  protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
   // hint about what the directory contains - default is index directory
   public enum DirContext {DEFAULT, META_DATA}
@@ -270,5 +274,49 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public Collection<SolrInfoMBean> offerMBeans() {
     return Collections.emptySet();
+  }
+
+  public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath) {
+    File dataDir = new File(dataDirPath);
+    if (!dataDir.isDirectory()) {
+      log.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
+      return;
+    }
+
+    final File currentIndexDir = new File(currentIndexDirPath);
+    File[] oldIndexDirs = dataDir.listFiles(new FileFilter() {
+      @Override
+      public boolean accept(File file) {
+        String fileName = file.getName();
+        return file.isDirectory() &&
+               !file.equals(currentIndexDir) &&
+               (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
+      }
+    });
+
+    if (oldIndexDirs == null || oldIndexDirs.length == 0)
+      return; // nothing to do (no log message needed)
+
+    log.info("Found {} old index directories to clean-up under {}", oldIndexDirs.length, dataDirPath);
+    for (File dir : oldIndexDirs) {
+
+      String dirToRmPath = dir.getAbsolutePath();
+      try {
+        if (deleteOldIndexDirectory(dirToRmPath)) {
+          log.info("Deleted old index directory: {}", dirToRmPath);
+        } else {
+          log.warn("Delete old index directory {} failed.", dirToRmPath);
+        }
+      } catch (IOException ioExc) {
+        log.error("Failed to delete old directory {} due to: {}", dir.getAbsolutePath(), ioExc.toString());
+      }
+    }
+  }
+
+  // Extension point to allow sub-classes to infuse additional code when deleting old index directories
+  protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
+    File dirToRm = new File(oldDirPath);
+    FileUtils.deleteDirectory(dirToRm);
+    return !dirToRm.isDirectory();
   }
 }

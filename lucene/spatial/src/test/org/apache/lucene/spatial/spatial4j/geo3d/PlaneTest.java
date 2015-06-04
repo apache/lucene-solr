@@ -30,7 +30,7 @@ public class PlaneTest {
 
   @Test
   public void testIdenticalPlanes() {
-    final GeoPoint p = new GeoPoint(0.123, -0.456);
+    final GeoPoint p = new GeoPoint(PlanetModel.SPHERE, 0.123, -0.456);
     final Plane plane1 = new Plane(p, 0.0);
     final Plane plane2 = new Plane(p, 0.0);
     assertTrue(plane1.isNumericallyIdentical(plane2));

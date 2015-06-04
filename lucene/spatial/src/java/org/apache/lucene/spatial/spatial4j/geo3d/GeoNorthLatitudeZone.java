@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public class GeoNorthLatitudeZone extends GeoBBoxBase {
+public class GeoNorthLatitudeZone extends GeoBaseBBox {
   public final double bottomLat;
   public final double cosBottomLat;
   public final SidedPlane bottomPlane;
@@ -34,22 +34,20 @@ public class GeoNorthLatitudeZone extends GeoBBoxBase {
   // Edge points
   public final GeoPoint[] edgePoints;
 
-  public GeoNorthLatitudeZone(final double bottomLat) {
+  public GeoNorthLatitudeZone(final PlanetModel planetModel, final double bottomLat) {
+    super(planetModel);
     this.bottomLat = bottomLat;
 
     final double sinBottomLat = Math.sin(bottomLat);
     this.cosBottomLat = Math.cos(bottomLat);
 
-    // Construct sample points, so we get our sidedness right
-    final Vector bottomPoint = new Vector(0.0, 0.0, sinBottomLat);
-
     // Compute an interior point.  Pick one whose lat is between top and bottom.
     final double middleLat = (Math.PI * 0.5 + bottomLat) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
-    this.interiorPoint = new GeoPoint(Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 0.0, sinMiddleLat);
-    this.bottomBoundaryPoint = new GeoPoint(Math.sqrt(1.0 - sinBottomLat * sinBottomLat), 0.0, sinBottomLat);
+    this.interiorPoint = new GeoPoint(planetModel, sinMiddleLat, 0.0, Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 1.0);
+    this.bottomBoundaryPoint = new GeoPoint(planetModel, sinBottomLat, 0.0, Math.sqrt(1.0 - sinBottomLat * sinBottomLat), 1.0);
 
-    this.bottomPlane = new SidedPlane(interiorPoint, sinBottomLat);
+    this.bottomPlane = new SidedPlane(interiorPoint, planetModel, sinBottomLat);
 
     this.edgePoints = new GeoPoint[]{bottomBoundaryPoint};
   }
@@ -58,7 +56,7 @@ public class GeoNorthLatitudeZone extends GeoBBoxBase {
   public GeoBBox expand(final double angle) {
     final double newTopLat = Math.PI * 0.5;
     final double newBottomLat = bottomLat - angle;
-    return GeoBBoxFactory.makeGeoBBox(newTopLat, newBottomLat, -Math.PI, Math.PI);
+    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, -Math.PI, Math.PI);
   }
 
   @Override
@@ -101,7 +99,7 @@ public class GeoNorthLatitudeZone extends GeoBBoxBase {
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     return
-        p.intersects(bottomPlane, notablePoints, planePoints, bounds);
+        p.intersects(planetModel, bottomPlane, notablePoints, planePoints, bounds);
   }
 
   /**
@@ -159,18 +157,19 @@ public class GeoNorthLatitudeZone extends GeoBBoxBase {
     if (!(o instanceof GeoNorthLatitudeZone))
       return false;
     GeoNorthLatitudeZone other = (GeoNorthLatitudeZone) o;
-    return other.bottomPlane.equals(bottomPlane);
+    return super.equals(other) && other.bottomBoundaryPoint.equals(bottomBoundaryPoint);
   }
 
   @Override
   public int hashCode() {
-    int result = bottomPlane.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + bottomBoundaryPoint.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "GeoNorthLatitudeZone: {bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + ")}";
+    return "GeoNorthLatitudeZone: {planetmodel="+planetModel+", bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + ")}";
   }
 }
 

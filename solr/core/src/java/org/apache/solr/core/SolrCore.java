@@ -90,7 +90,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.logging.MDCUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -500,53 +500,45 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   void initIndex(boolean reload) throws IOException {
 
-      String indexDir = getNewIndexDir();
-      boolean indexExists = getDirectoryFactory().exists(indexDir);
-      boolean firstTime;
-      synchronized (SolrCore.class) {
-        firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
-      }
-      boolean removeLocks = solrConfig.unlockOnStartup;
+    String indexDir = getNewIndexDir();
+    boolean indexExists = getDirectoryFactory().exists(indexDir);
+    boolean firstTime;
+    synchronized (SolrCore.class) {
+      firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
+    }
 
-      initIndexReaderFactory();
+    initIndexReaderFactory();
 
-      if (indexExists && firstTime && !reload) {
+    if (indexExists && firstTime && !reload) {
 
-        Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT,
-            getSolrConfig().indexConfig.lockType);
-        try {
-          if (IndexWriter.isLocked(dir)) {
-            if (removeLocks) {
-              log.warn(
-                  logid
-                      + "WARNING: Solr index directory '{}' is locked.  Unlocking...",
-                  indexDir);
-              dir.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
-            } else {
-              log.error(logid
-                  + "Solr index directory '{}' is locked.  Throwing exception",
-                  indexDir);
-              throw new LockObtainFailedException(
-                  "Index locked for write for core " + name);
-            }
-
-          }
-        } finally {
-          directoryFactory.release(dir);
+      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT,
+          getSolrConfig().indexConfig.lockType);
+      try {
+        if (IndexWriter.isLocked(dir)) {
+          log.error(logid
+              + "Solr index directory '{}' is locked.  Throwing exception.",
+              indexDir);
+          throw new LockObtainFailedException(
+              "Index locked for write for core '" + name +
+              "'. Solr now longer supports forceful unlocking via 'unlockOnStartup'. Please verify locks manually!");
         }
+      } finally {
+        directoryFactory.release(dir);
       }
+    }
 
-      // Create the index if it doesn't exist.
-      if(!indexExists) {
-        log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
-                + " Creating new index...");
+    // Create the index if it doesn't exist.
+    if(!indexExists) {
+      log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
+              + " Creating new index...");
 
-        SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
-                                                        getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
-        writer.close();
-      }
+      SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
+                                                      getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
+      writer.close();
+    }
 
 
+    cleanupOldIndexDirectories();
   }
 
 
@@ -711,7 +703,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     
     this.coreDescriptor = coreDescriptor;
     setName(name);
-    MDCUtils.setCore(name); // show the core name in the error logs
+    MDCLoggingContext.setCore(this);
     
     resourceLoader = config.getResourceLoader();
     this.solrConfig = config;
@@ -841,6 +833,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
 
+    // seed version buckets with max from index during core initialization ... requires a searcher!
+    seedVersionBuckets();
+
     bufferUpdatesIfConstructing(coreDescriptor);
     
     // For debugging   
@@ -849,16 +844,20 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     this.ruleExpiryLock = new ReentrantLock();
     registerConfListener();
+  }
 
-    // seed version buckets with max from index during core initialization
-    if (this.updateHandler != null && this.updateHandler.getUpdateLog() != null) {
+  public void seedVersionBuckets() {
+    UpdateHandler uh = getUpdateHandler();
+    if (uh != null && uh.getUpdateLog() != null) {
       RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
       if (newestSearcher != null) {
         try {
-          this.updateHandler.getUpdateLog().onFirstSearcher(newestSearcher.get());
+          uh.getUpdateLog().seedBucketsWithHighestVersion(newestSearcher.get());
         } finally {
           newestSearcher.decref();
         }
+      } else {
+        log.warn("No searcher available! Cannot seed version buckets with max from index.");
       }
     }
   }
@@ -1657,7 +1656,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         newestSearcher.decref();
       }
     }
-
   }
 
   /**
@@ -2624,7 +2622,28 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return false;
   }
 
-
+  public void cleanupOldIndexDirectories() {
+    final DirectoryFactory myDirFactory = getDirectoryFactory();
+    final String myDataDir = getDataDir();
+    final String myIndexDir = getIndexDir();
+    final String coreName = getName();
+    if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
+      Thread cleanupThread = new Thread() {
+        @Override
+        public void run() {
+          log.info("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
+          try {
+            myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
+          } catch (Exception exc) {
+            log.error("Failed to cleanup old index directories for core "+coreName, exc);
+          }
+        }
+      };
+      cleanupThread.setName("OldIndexDirectoryCleanupThreadForCore-"+coreName);
+      cleanupThread.setDaemon(true);
+      cleanupThread.start();
+    }
+  }
 }
 
 

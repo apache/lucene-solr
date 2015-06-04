@@ -37,7 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.logging.MDCUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -181,6 +181,8 @@ public class ZkContainer {
     Thread thread = new Thread() {
       @Override
       public void run() {
+        MDCLoggingContext.setCore(core);
+        try {
           try {
             zkController.register(core.getName(), core.getCoreDescriptor());
           } catch (InterruptedException e) {
@@ -198,20 +200,23 @@ public class ZkContainer {
             }
             SolrException.log(log, "", e);
           }
+        } finally {
+          MDC.clear();
         }
-
+      }
+      
     };
     
     if (zkController != null) {
-      MDCUtils.setCore(core.getName());
-      try {
-        if (background) {
-          coreZkRegister.execute(thread);
-        } else {
+      if (background) {
+        coreZkRegister.execute(thread);
+      } else {
+        MDCLoggingContext.setCore(core);
+        try {
           thread.run();
+        } finally {
+          MDC.clear();
         }
-      } finally {
-        MDC.remove(CORE_NAME_PROP);
       }
     }
   }

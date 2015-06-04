@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,41 +57,43 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     assertU(commit());
 
+    ModifiableSolrParams p = params("sort","id asc");
+
     // test debugging
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id", "debugQuery","true")
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id", "debugQuery","true")
         ,"/debug/join/{!join from=dept_s to=dept_id_s}title:MTS=={'_MATCH_':'fromSetSize,toSetSize', 'fromSetSize':2, 'toSetSize':3}"
     );
 
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id")
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // empty from
-    assertJQ(req("q","{!join from=noexist_s to=dept_id_s}*:*", "fl","id")
+    assertJQ(req(p, "q","{!join from=noexist_s to=dept_id_s}*:*", "fl","id")
         ,"/response=={'numFound':0,'start':0,'docs':[]}"
     );
 
     // empty to
-    assertJQ(req("q","{!join from=dept_s to=noexist_s}*:*", "fl","id")
+    assertJQ(req(p, "q","{!join from=dept_s to=noexist_s}*:*", "fl","id")
         ,"/response=={'numFound':0,'start':0,'docs':[]}"
     );
 
     // self join... return everyone with she same title as Dave
-    assertJQ(req("q","{!join from=title to=title}name:dave", "fl","id")
+    assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
         ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
     );
 
     // find people that develop stuff
-    assertJQ(req("q","{!join from=dept_id_s to=dept_s}text:develop", "fl","id")
+    assertJQ(req(p, "q","{!join from=dept_id_s to=dept_s}text:develop", "fl","id")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // self join on multivalued text field
-    assertJQ(req("q","{!join from=title to=title}name:dave", "fl","id")
+    assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
         ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
     );
 
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id", "debugQuery","true")
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id", "debugQuery","true")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
     
@@ -99,12 +102,12 @@ public class TestJoin extends SolrTestCaseJ4 {
       "/response=={'numFound':2,'start':0,'docs':[{'id':'10'},{'id':'13'}]}";
 
     // straight forward query
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s}name:dave", 
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s}name:dave",
                  "fl","id"),
              davesDepartments);
 
     // variable deref for sub-query parsing
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s v=$qq}", 
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s v=$qq}",
                  "qq","{!dismax}dave",
                  "qf","name",
                  "fl","id", 
@@ -112,14 +115,14 @@ public class TestJoin extends SolrTestCaseJ4 {
              davesDepartments);
 
     // variable deref for sub-query parsing w/localparams
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s v=$qq}", 
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s v=$qq}",
                  "qq","{!dismax qf=name}dave",
                  "fl","id", 
                  "debugQuery","true"),
              davesDepartments);
 
     // defType local param to control sub-query parsing
-    assertJQ(req("q","{!join from=dept_s to=dept_id_s defType=dismax}dave", 
+    assertJQ(req(p, "q","{!join from=dept_s to=dept_id_s defType=dismax}dave",
                  "qf","name",
                  "fl","id", 
                  "debugQuery","true"),
@@ -127,7 +130,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
-    assertJQ(req("q","{!join from=dept_id_s to=dept_s}text:develop", "fl","id", "fq", "name:john")
+    assertJQ(req(p, "q","{!join from=dept_id_s to=dept_s}text:develop", "fl","id", "fq", "name:john")
              ,"/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
             );
 

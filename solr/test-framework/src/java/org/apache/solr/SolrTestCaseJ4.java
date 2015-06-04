@@ -17,9 +17,41 @@
 
 package org.apache.solr;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -55,7 +87,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.core.ZkContainer;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -83,42 +114,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
@@ -209,7 +207,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
-    setupLogging();
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -229,13 +226,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     try {
       deleteCore();
       resetExceptionIgnores();
-      endTrackingSearchers();
-      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-      if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-        assertNull(orr, orr);
-      } else {
-        if (orr != null) {
-          log.warn("Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation.");
+      
+      if (suiteFailureMarker.wasSuccessful()) {
+        // if the tests passed, make sure everything was closed / released
+        endTrackingSearchers();
+        String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+        if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+          assertNull(orr, orr);
+        } else {
+          if (orr != null) {
+            log.warn(
+                "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation.");
+          }
         }
       }
       resetFactory();
@@ -394,33 +396,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public void tearDown() throws Exception {
     log.info("###Ending " + getTestName());    
     super.tearDown();
-  }
-
-  public static SolrLogFormatter formatter;
-
-  public static void setupLogging() {
-    boolean register = false;
-    Handler[] handlers = java.util.logging.Logger.getLogger("").getHandlers();
-    ConsoleHandler consoleHandler = null;
-    for (Handler handler : handlers) {
-      if (handler instanceof ConsoleHandler) {
-        consoleHandler = (ConsoleHandler)handler;
-        break;
-      }
-    }
-
-    if (consoleHandler == null) {
-      consoleHandler = new ConsoleHandler();
-      register = true;
-    }
-
-    consoleHandler.setLevel(Level.ALL);
-    formatter = new SolrLogFormatter();
-    consoleHandler.setFormatter(formatter);
-
-    if (register) {
-      java.util.logging.Logger.getLogger("").addHandler(consoleHandler);
-    }
   }
 
   public static void setLoggingLevel(Level level) {
