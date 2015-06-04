@@ -25,6 +25,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 
@@ -57,6 +58,7 @@ public abstract class MockFileSystemTestCase extends LuceneTestCase {
   
   /** Test that URIs are not corrumpted */
   public void testURI() throws IOException {
+    assumeFalse("broken on J9: see https://issues.apache.org/jira/browse/LUCENE-6517", Constants.JAVA_VENDOR.startsWith("IBM"));
     Path dir = wrap(createTempDir());
 
     Path f1 = dir.resolve("file1");
