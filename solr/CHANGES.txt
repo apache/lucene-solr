@@ -97,6 +97,9 @@ Bug Fixes
 * SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
   can result in incorrect results or an exception. (yonik)
 
+* SOLR-7518: New Facet Module should respect shards.tolerant and process all non-failing shards
+  instead of throwing an exception. (yonik)
+
 
 Optimizations
 ----------------------
