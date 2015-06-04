@@ -96,6 +96,7 @@ import org.apache.lucene.util.InfoStream;
  */
 
 final class DocumentsWriter implements Closeable, Accountable {
+  private final Directory directoryOrig; // no wrapping, for infos
   private final Directory directory;
 
   private volatile boolean closed;
@@ -124,7 +125,8 @@ final class DocumentsWriter implements Closeable, Accountable {
   private final Queue<Event> events;
 
   
-  DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directory) {
+  DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory) {
+    this.directoryOrig = directoryOrig;
     this.directory = directory;
     this.config = config;
     this.infoStream = config.getInfoStream();
@@ -394,7 +396,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (state.isActive() && state.dwpt == null) {
       final FieldInfos.Builder infos = new FieldInfos.Builder(
           writer.globalFieldNumberMap);
-      state.dwpt = new DocumentsWriterPerThread(writer.newSegmentName(),
+      state.dwpt = new DocumentsWriterPerThread(writer.newSegmentName(), directoryOrig,
                                                 directory, config, infoStream, deleteQueue, infos,
                                                 writer.pendingNumDocs, writer.enableTestPoints);
     }

@@ -235,7 +235,7 @@ final class Lucene40CompoundReader extends Directory {
   }
   
   @Override
-  public Lock makeLock(String name) {
+  public Lock obtainLock(String name) {
     throw new UnsupportedOperationException();
   }
   

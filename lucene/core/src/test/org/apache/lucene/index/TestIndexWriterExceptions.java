@@ -2204,7 +2204,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     
     // even though we hit exception: we are closed, no locks or files held, index in good state
     assertTrue(iw.isClosed());
-    assertFalse(IndexWriter.isLocked(dir));
+    dir.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
     
     r = DirectoryReader.open(dir);
     assertEquals(10, r.maxDoc());
@@ -2273,7 +2273,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       
       // even though we hit exception: we are closed, no locks or files held, index in good state
       assertTrue(iw.isClosed());
-      assertFalse(IndexWriter.isLocked(dir));
+      dir.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
       
       r = DirectoryReader.open(dir);
       assertEquals(10, r.maxDoc());

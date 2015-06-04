@@ -24,7 +24,7 @@ import java.util.HashSet;
  * Implements {@link LockFactory} for a single in-process instance,
  * meaning all locking will take place through this one instance.
  * Only use this {@link LockFactory} when you are certain all
- * IndexReaders and IndexWriters for a given index are running
+ * IndexWriters for a given index are running
  * against a single shared in-process Directory instance.  This is
  * currently the default locking for RAMDirectory.
  *
@@ -33,51 +33,53 @@ import java.util.HashSet;
 
 public final class SingleInstanceLockFactory extends LockFactory {
 
-  private final HashSet<String> locks = new HashSet<>();
+  final HashSet<String> locks = new HashSet<>();
 
   @Override
-  public Lock makeLock(Directory dir, String lockName) {
-    return new SingleInstanceLock(locks, lockName);
+  public Lock obtainLock(Directory dir, String lockName) throws IOException {
+    synchronized (locks) {
+      if (locks.add(lockName)) {
+        return new SingleInstanceLock(lockName);
+      } else {
+        throw new LockObtainFailedException("lock instance already obtained: (dir=" + dir + ", lockName=" + lockName + ")");
+      }
+    }
   }
 
-  private static class SingleInstanceLock extends Lock {
-
+  private class SingleInstanceLock extends Lock {
     private final String lockName;
-    private final HashSet<String> locks;
-    private boolean obtained = false;
+    private volatile boolean closed;
 
-    public SingleInstanceLock(HashSet<String> locks, String lockName) {
-      this.locks = locks;
+    public SingleInstanceLock(String lockName) {
       this.lockName = lockName;
     }
 
     @Override
-    public boolean obtain() throws IOException {
-      synchronized(locks) {
-        if (obtained) {
-          // Our instance is already locked:
-          throw new LockObtainFailedException("this lock instance was already obtained");
-        }
-        obtained = locks.add(lockName);
-
-        return obtained;
+    public void ensureValid() throws IOException {
+      if (closed) {
+        throw new AlreadyClosedException("Lock instance already released: " + this);
       }
-    }
-
-    @Override
-    public void close() {
-      synchronized(locks) {
-        if (obtained) {
-          locks.remove(lockName);
-          obtained = false;
+      // check we are still in the locks map (some debugger or something crazy didn't remove us)
+      synchronized (locks) {
+        if (!locks.contains(lockName)) {
+          throw new AlreadyClosedException("Lock instance was invalidated from map: " + this);
         }
       }
     }
 
     @Override
-    public boolean isLocked() {
-      synchronized(locks) {
-        return locks.contains(lockName);
+    public synchronized void close() throws IOException {
+      if (closed) {
+        return;
+      }
+      try {
+        synchronized (locks) {
+          if (!locks.remove(lockName)) {
+            throw new AlreadyClosedException("Lock was already released: " + this);
+          }
+        }
+      } finally {
+        closed = true;
       }
     }
 

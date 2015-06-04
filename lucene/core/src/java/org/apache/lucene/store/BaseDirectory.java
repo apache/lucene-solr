@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
 
 /**
  * Base implementation for a concrete {@link Directory} that uses a {@link LockFactory} for locking.
@@ -40,8 +41,8 @@ public abstract class BaseDirectory extends Directory {
   }
 
   @Override
-  public final Lock makeLock(String name) {
-    return lockFactory.makeLock(this, name);
+  public final Lock obtainLock(String name) throws IOException {
+    return lockFactory.obtainLock(this, name);
   }
 
   @Override

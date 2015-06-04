@@ -23,12 +23,10 @@
 
   <indexConfig>
     <useCompoundFile>true</useCompoundFile>
-    <unlockOnStartup>false</unlockOnStartup>
   </indexConfig>
   <!-- BEGIN BAD: multiple indexConfig sections -->
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <unlockOnStartup>true</unlockOnStartup>
   </indexConfig>
   <!-- END BAD -->
 

@@ -1268,7 +1268,6 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dest = newDirectory();
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setWriteLockTimeout(1);
     RandomIndexWriter w2 = new RandomIndexWriter(random(), dest, iwc);
 
     try {

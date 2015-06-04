@@ -269,7 +269,6 @@ public class SolrConfig extends Config implements MapSerializable {
       conf = new CacheConfig(FastLRUCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
-    unlockOnStartup = getBool(indexConfigPrefix + "/unlockOnStartup", false);
     useColdSearcher = getBool("query/useColdSearcher", false);
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
@@ -499,7 +498,6 @@ public class SolrConfig extends Config implements MapSerializable {
   private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<>();
 
   public final int maxWarmingSearchers;
-  public final boolean unlockOnStartup;
   public final boolean useColdSearcher;
   public final Version luceneMatchVersion;
   protected String dataDir;

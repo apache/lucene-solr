@@ -50,8 +50,7 @@ public abstract class Directory implements Closeable {
   public abstract String[] listAll() throws IOException;
 
   /** Removes an existing file in the directory. */
-  public abstract void deleteFile(String name)
-       throws IOException;
+  public abstract void deleteFile(String name) throws IOException;
 
   /**
    * Returns the length of a file in the directory. This method follows the
@@ -110,10 +109,14 @@ public abstract class Directory implements Closeable {
     return new BufferedChecksumIndexInput(openInput(name, context));
   }
   
-  /** Construct a {@link Lock}.
+  /** 
+   * Returns an obtained {@link Lock}.
    * @param name the name of the lock file
+   * @throws LockObtainFailedException (optional specific exception) if the lock could
+   *         not be obtained because it is currently held elsewhere.
+   * @throws IOException if any i/o error occurs attempting to gain the lock
    */
-  public abstract Lock makeLock(String name);
+  public abstract Lock obtainLock(String name) throws IOException;
 
   /** Closes the store. */
   @Override
