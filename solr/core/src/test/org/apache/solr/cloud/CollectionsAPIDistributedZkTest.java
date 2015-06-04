@@ -181,6 +181,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @ShardsFixed(num = 4)
   public void test() throws Exception {
     testNodesUsedByCreate();
+    testNoConfigSetExist();
     testCollectionsAPI();
     testCollectionsAPIAddRemoveStress();
     testErrorHandling();
@@ -510,6 +511,40 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     cloudClient.getZkStateReader().updateClusterState(true);
     assertTrue( cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
     assertTrue(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
+  }
+
+  private void testNoConfigSetExist() throws Exception {
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection3"));
+
+    // try and create a SolrCore with no collection name
+    Create createCmd = new Create();
+    createCmd.setCoreName("corewithnocollection3");
+    createCmd.setCollection("");
+    String dataDir = createTempDir().toFile().getAbsolutePath();
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(1);
+    createCmd.setCollectionConfigName("conf123");
+    boolean gotExp = false;
+    try {
+      makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), createCmd);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+
+    assertTrue(gotExp);
+    TimeUnit.MILLISECONDS.sleep(200);
+    // in both cases, the collection should have default to the core name
+    cloudClient.getZkStateReader().updateClusterState(true);
+
+    Collection<Slice> slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices("corewithnocollection3");
+    assertNull(slices);
+
+    CollectionAdminRequest.List list = new CollectionAdminRequest.List();
+    CollectionAdminResponse res = new CollectionAdminResponse();
+        res.setResponse(makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), list));
+    List<String> collections = (List<String>) res.getResponse().get("collections");
+    assertFalse(collections.contains("corewithnocollection3"));
   }
 
   private void testNodesUsedByCreate() throws Exception {
