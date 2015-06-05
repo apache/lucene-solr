@@ -33,7 +33,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -41,29 +40,6 @@ import org.apache.lucene.util.ToStringUtils;
  * other terms with a {@link BooleanQuery}.
  */
 public class TermQuery extends Query {
-
-  private static final Similarity.SimScorer NON_SCORING_SIM_SCORER = new Similarity.SimScorer() {
-
-    @Override
-    public float score(int doc, float freq) {
-      return 0f;
-    }
-
-    @Override
-    public float computeSlopFactor(int distance) {
-      return 1f;
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return 1f;
-    }
-
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return Explanation.match(0f, "Match on doc=" + doc);
-    }
-  };
 
   private final Term term;
   private final TermContext perReaderTermState;
@@ -130,14 +106,7 @@ public class TermQuery extends Query {
       }
       PostingsEnum docs = termsEnum.postings(acceptDocs, null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
       assert docs != null;
-      final Similarity.SimScorer simScorer;
-      if (needsScores) {
-        simScorer = similarity.simScorer(stats, context);
-      } else {
-        // avoids loading other scoring factors such as norms
-        simScorer = NON_SCORING_SIM_SCORER;
-      }
-      return new TermScorer(this, docs, simScorer);
+      return new TermScorer(this, docs, similarity.simScorer(stats, context));
     }
 
     /**

@@ -183,31 +183,4 @@ public class TestTermScorer extends LuceneTestCase {
     }
   }
 
-  public void testDoesNotLoadNorms() throws IOException {
-    Term allTerm = new Term(FIELD, "all");
-    TermQuery termQuery = new TermQuery(allTerm);
-
-    LeafReader forbiddenNorms = new FilterLeafReader(indexReader) {
-      @Override
-      public NumericDocValues getNormValues(String field) throws IOException {
-        fail("Norms should not be loaded");
-        // unreachable
-        return null;
-      }
-    };
-    IndexSearcher indexSearcher = newSearcher(forbiddenNorms);
-
-    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
-    try {
-      weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
-      fail("Should load norms");
-    } catch (AssertionError e) {
-      // ok
-    }
-
-    weight = indexSearcher.createNormalizedWeight(termQuery, false);
-    // should not fail this time since norms are not necessary
-    weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
-  }
-
 }
