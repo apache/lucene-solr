@@ -8,6 +8,7 @@
   "facets":{
     "facet":"on",
     "facet.mincount":"1",
+    "f.doc_type.facet.mincount":"0",
     "facet.field":["text_shingles","{!ex=type}doc_type"],
     "f.text_shingles.facet.limit":10,
     "facet.query":"{!ex=type key=all_types}*:*",

@@ -13,15 +13,23 @@
 
 <script type="text/javascript">
   $(document).ready(function(){
+
     $("#tagcloud").tx3TagCloud({
       multiplier: 5
     });
 
+    $('.menu').dropit();
 
-     $('.menu').dropit();
+    $( document ).ajaxComplete(function() {
+        $("#tagcloud").tx3TagCloud({
+        multiplier: 5
+        });
+    });
+
+    $('\#q').keyup(function() {
+      $('#browse_results').load('#{url_for_home}?#lensNoQ&v.layout.enabled=false&v.template=results&q='+encodeURI($('\#q').val()));
+    });
   });
-
-
 </script>
 
 <style>
@@ -219,4 +227,7 @@
   margin: 0;
   }
   .dropit .dropit-open .dropit-submenu { display: block; }
+
+
+  
 </style>
