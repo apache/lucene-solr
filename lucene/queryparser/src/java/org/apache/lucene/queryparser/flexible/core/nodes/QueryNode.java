@@ -95,4 +95,11 @@ public interface QueryNode {
    * Removes this query node from its parent.
    */
   public void removeFromParent();
+
+
+  /**
+   * Remove a child node
+   * @param childNode Which child to remove
+   */
+  public void removeChildren(QueryNode childNode);
 }
