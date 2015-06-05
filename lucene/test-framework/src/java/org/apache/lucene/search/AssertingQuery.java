@@ -19,10 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 
 /** Assertion-enabled query. */
 public class AssertingQuery extends Query {
@@ -43,7 +41,7 @@ public class AssertingQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return AssertingWeight.wrap(new Random(random.nextLong()), in.createWeight(searcher, needsScores));
+    return new AssertingWeight(new Random(random.nextLong()), in.createWeight(searcher, needsScores), needsScores);
   }
 
   @Override

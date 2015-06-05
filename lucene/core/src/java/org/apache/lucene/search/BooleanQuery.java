@@ -22,10 +22,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ToStringUtils;
@@ -204,10 +202,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           }
         } else {
           // our single clause is a filter
-          if (query.getBoost() != 0f) {
-            query = query.clone();
-            query.setBoost(0);
-          }
+          query = new ConstantScoreQuery(query);
+          query.setBoost(0);
         }
 
         return query;

@@ -24,8 +24,11 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -40,7 +43,7 @@ public class TestTermScorer extends LuceneTestCase {
   protected String[] values = new String[] {"all", "dogs dogs", "like",
       "playing", "fetch", "all"};
   protected IndexSearcher indexSearcher;
-  protected IndexReader indexReader;
+  protected LeafReader indexReader;
   
   @Override
   public void setUp() throws Exception {
@@ -179,5 +182,5 @@ public class TestTermScorer extends LuceneTestCase {
       return "TestHit{" + "doc=" + doc + ", score=" + score + "}";
     }
   }
-  
+
 }
