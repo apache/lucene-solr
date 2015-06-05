@@ -74,6 +74,9 @@ Bug fixes
 * LUCENE-6520: Geo3D GeoPath.done() would throw an NPE if adjacent path
   segments were co-linear. (Karl Wright via David Smiley)
 
+* LUCENE-5805: QueryNodeImpl.removeFromParent was doing nothing in a
+  costly manner (Christoph Kaser, Cao Manh Dat via Mike McCAndless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
