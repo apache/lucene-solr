@@ -362,12 +362,34 @@ public class BooleanWeight extends Weight {
     if (required.size() == 1) {
       Scorer req = required.get(0);
 
-      if (needsScores == false ||
-          (requiredScoring.size() == 1 && (disableCoord || maxCoord == 1))) {
+      if (needsScores == false) {
         return req;
-      } else {
-        return new BooleanTopLevelScorers.BoostedScorer(req, coord(requiredScoring.size(), maxCoord));
       }
+
+      if (requiredScoring.isEmpty()) {
+        // Scores are needed but we only have a filter clause
+        // BooleanWeight expects that calling score() is ok so we need to wrap
+        // to prevent score() from being propagated
+        return new FilterScorer(req) {
+          @Override
+          public float score() throws IOException {
+            return 0f;
+          }
+          @Override
+          public int freq() throws IOException {
+            return 0;
+          }
+        };
+      }
+      
+      float boost = 1f;
+      if (disableCoord == false) {
+        boost = coord(1, maxCoord);
+      }
+      if (boost == 1f) {
+        return req;
+      }
+      return new BooleanTopLevelScorers.BoostedScorer(req, boost);
     } else {
       return new ConjunctionScorer(this, required, requiredScoring,
                                    disableCoord ? 1.0F : coord(requiredScoring.size(), maxCoord));

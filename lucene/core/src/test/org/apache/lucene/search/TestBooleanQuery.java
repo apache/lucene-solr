@@ -575,7 +575,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     // Single clauses rewrite to a term query
     final Query rewritten1 = query1.rewrite(reader);
-    assertTrue(rewritten1 instanceof TermQuery);
+    assertTrue(rewritten1 instanceof ConstantScoreQuery);
     assertEquals(0f, rewritten1.getBoost(), 0f);
 
     // When there are two clauses, we cannot rewrite, but if one of them creates
@@ -586,8 +586,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
     final Weight weight = searcher.createNormalizedWeight(query2, true);
     final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
-    assertTrue(scorer.getClass().getName(), scorer instanceof BooleanTopLevelScorers.BoostedScorer);
-    assertEquals(0, ((BooleanTopLevelScorers.BoostedScorer) scorer).boost, 0f);
+    assertEquals(0, scorer.nextDoc());
+    assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
+    assertEquals(0f, scorer.score(), 0f);
 
     reader.close();
     w.close();

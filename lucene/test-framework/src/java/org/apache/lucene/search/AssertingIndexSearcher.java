@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.Bits;
 
 /**
  * Helper class that adds some extra checks to ensure correct
@@ -57,7 +56,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
   @Override
   public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
     final Weight w = super.createNormalizedWeight(query, needsScores);
-    return new AssertingWeight(random, w) {
+    return new AssertingWeight(random, w, needsScores) {
 
       @Override
       public void normalize(float norm, float topLevelBoost) {
@@ -75,7 +74,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
   @Override
   public Weight createWeight(Query query, boolean needsScores) throws IOException {
     // this adds assertions to the inner weights/scorers too
-    return new AssertingWeight(random, super.createWeight(query, needsScores));
+    return new AssertingWeight(random, super.createWeight(query, needsScores), needsScores);
   }
 
   @Override
@@ -89,8 +88,8 @@ public class AssertingIndexSearcher extends IndexSearcher {
 
   @Override
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
-    // TODO: shouldn't we AssertingCollector.wrap(collector) here?
-    super.search(leaves, AssertingWeight.wrap(random, weight), AssertingCollector.wrap(random, collector));
+    assert weight instanceof AssertingWeight;
+    super.search(leaves, weight, AssertingCollector.wrap(random, collector));
   }
 
   @Override

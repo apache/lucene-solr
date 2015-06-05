@@ -54,6 +54,9 @@ New Features
   and queries, for fast "bbox/polygon contains lat/lon points" (Mike
   McCandless)
 
+* LUCENE-6526: Asserting(Query|Weight|Scorer) now ensure scores are not computed
+  if they are not needed. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

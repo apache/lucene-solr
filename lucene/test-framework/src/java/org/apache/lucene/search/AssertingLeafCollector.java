@@ -41,7 +41,7 @@ class AssertingLeafCollector extends FilterLeafCollector {
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    super.setScorer(AssertingScorer.wrap(random, scorer));
+    super.setScorer(AssertingScorer.wrap(random, scorer, true));
   }
 
   @Override
