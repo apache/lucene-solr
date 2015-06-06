@@ -77,6 +77,9 @@ Bug fixes
 * LUCENE-5805: QueryNodeImpl.removeFromParent was doing nothing in a
   costly manner (Christoph Kaser, Cao Manh Dat via Mike McCAndless)
 
+* LUCENE-6523: NRT readers now reflect a new commit even if there is
+  no change to the commit user data (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

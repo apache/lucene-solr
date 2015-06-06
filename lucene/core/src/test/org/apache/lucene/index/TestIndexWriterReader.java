@@ -103,9 +103,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.forceMerge(1); // make sure all merging is done etc.
     DirectoryReader reader = writer.getReader();
     writer.commit(); // no changes that are not visible to the reader
+
+    // A commit is now seen as a change to an NRT reader:
+    assertFalse(reader.isCurrent());
+    reader.close();
+    reader = writer.getReader();
     assertTrue(reader.isCurrent());
     writer.close();
-    assertTrue(reader.isCurrent()); // all changes are visible to the reader
+
+    assertTrue(reader.isCurrent());
     iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir1, iwc);
     assertTrue(reader.isCurrent());
@@ -160,11 +166,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
     r1.close();
     assertTrue(r2.isCurrent());
     writer.close();
-    assertTrue(r2.isCurrent());
+    // writer.close wrote a new commit
+    assertFalse(r2.isCurrent());
     
     DirectoryReader r3 = DirectoryReader.open(dir1);
     assertTrue(r3.isCurrent());
-    assertTrue(r2.isCurrent());
+    assertFalse(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r3));
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r3));
 
@@ -172,7 +179,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "a b c", Field.Store.NO));
     writer.addDocument(doc);
-    assertTrue(r2.isCurrent());
+    assertFalse(r2.isCurrent());
     assertTrue(r3.isCurrent());
 
     writer.close();
@@ -216,7 +223,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(2, nrtReader.maxDoc()); // sees the actual document added
     assertEquals(1, dirReader.maxDoc());
     writer.close(); // close is actually a commit both should see the changes
-    assertTrue(nrtReader.isCurrent()); 
+    assertFalse(nrtReader.isCurrent()); 
     assertFalse(dirReader.isCurrent()); // this reader has been opened before the writer was closed / committed
     
     dirReader.close();
@@ -259,7 +266,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(r1.isCurrent());
 
     writer.commit();
-    assertTrue(r1.isCurrent()); // we have seen all changes - no change after opening the NRT reader
+
+    // A commit is seen as a change to NRT reader:
+    assertFalse(r1.isCurrent());
 
     assertEquals(200, r1.maxDoc());
 
