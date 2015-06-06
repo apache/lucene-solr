@@ -117,10 +117,16 @@ import org.slf4j.LoggerFactory;
 public class HttpSolrCall {
   protected static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
 
-  protected static Random random;
+  static final Random random;
   static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
     String seed = System.getProperty("tests.seed");
-    random = new Random(seed != null ? Long.parseLong(seed) : System.currentTimeMillis());
+    if (seed == null) {
+      random = new Random();
+    } else {
+      random = new Random(seed.hashCode());
+    }
   }
 
   protected final SolrDispatchFilter solrDispatchFilter;
