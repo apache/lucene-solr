@@ -1583,6 +1583,10 @@ public class CheckIndex implements Closeable {
             for(int i=seekCount-1;i>=0;i--) {
               long ord = i*(termCount/seekCount);
               termsEnum.seekExact(ord);
+              long actualOrd = termsEnum.ord();
+              if (actualOrd != ord) {
+                throw new RuntimeException("seek to ord " + ord + " returned ord " + actualOrd);
+              }
               seekTerms[i] = BytesRef.deepCopyOf(termsEnum.term());
             }
             

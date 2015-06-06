@@ -1133,6 +1133,9 @@ public class RandomPostingsTester {
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
       }
+      
+      // check we really seeked to the right place
+      assertEquals(fieldAndTerm.term, termsEnum.term());
 
       long termOrd;
       if (supportsOrds) {
