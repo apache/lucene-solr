@@ -114,6 +114,9 @@ Bug Fixes
   previously, Solr would leave old index.yyyyMMddHHmmssSSS directories left behind after failed recoveries
   in the data directory, which unnecessarily consumes disk space. (Mark Miller, Timothy Potter)
 
+* SOLR-7493: Requests aren't distributed evenly if the collection isn't present locally.
+  (Jeff Wartes, shalin)
+
 
 Optimizations
 ----------------------
