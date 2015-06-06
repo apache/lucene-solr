@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /*
@@ -115,6 +116,18 @@ import org.slf4j.LoggerFactory;
  **/
 public class HttpSolrCall {
   protected static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
+
+  static final Random random;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      random = new Random();
+    } else {
+      random = new Random(seed.hashCode());
+    }
+  }
 
   protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
@@ -836,9 +849,16 @@ public class HttpSolrCall {
                             boolean byCoreName, boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    for (Slice slice : slices) {
-      Map<String, Replica> sliceShards = slice.getReplicasMap();
-      for (Replica replica : sliceShards.values()) {
+    List<Slice> randomizedSlices = new ArrayList<>(slices.size());
+    randomizedSlices.addAll(slices);
+    Collections.shuffle(randomizedSlices, random);
+
+    for (Slice slice : randomizedSlices) {
+      List<Replica> randomizedReplicas = new ArrayList<>();
+      randomizedReplicas.addAll(slice.getReplicas());
+      Collections.shuffle(randomizedReplicas, random);
+
+      for (Replica replica : randomizedReplicas) {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
