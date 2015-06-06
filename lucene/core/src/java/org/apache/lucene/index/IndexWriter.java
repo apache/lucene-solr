@@ -2720,6 +2720,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
               readerPool.commit(segmentInfos);
 
+              if (changeCount.get() != lastCommitChangeCount) {
+                // There are changes to commit, so we will write a new segments_N in startCommit.
+                // The act of committing is itself an NRT-visible change (an NRT reader that was
+                // just opened before this should see it on reopen) so we increment changeCount
+                // and segments version so a future NRT reopen will see the change:
+                changeCount.incrementAndGet();
+                segmentInfos.changed();
+              }
+
               // Must clone the segmentInfos while we still
               // hold fullFlushLock and while sync'd so that
               // no partial changes (eg a delete w/o

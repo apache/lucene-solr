@@ -2736,5 +2736,26 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNotNull(r2);
     IOUtils.close(r, r2, w, dir);
   }
+
+  // LUCENE-6523
+  public void testCommitImmediaatelyAfterNRTReopen() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.commit();
+
+    w.addDocument(new Document());
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    w.commit();
+
+    assertFalse(r.isCurrent());
+
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+    assertNotNull(r2);
+    // segments_N should have changed:
+    assertFalse(r2.getIndexCommit().getSegmentsFileName().equals(r.getIndexCommit().getSegmentsFileName()));
+    IOUtils.close(r, r2, w, dir);
+  }
 }
 
