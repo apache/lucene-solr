@@ -59,29 +59,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
   
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
-  @Override
-  public void distribTearDown() throws Exception {
-    
-    log.info("tearing down replicationFactorTest!");
-    
-    System.clearProperty("numShards");
-    
-    super.distribTearDown();
-
-    log.info("super.distribTearDown complete, closing all socket proxies");
-    if (!proxies.isEmpty()) {
-      for (SocketProxy proxy : proxies.values()) {
-        proxy.close();
-      }
-    }    
-  }
-  
   /**
    * Overrides the parent implementation so that we can configure a socket proxy
    * to sit infront of each Jetty server, which gives us the ability to simulate

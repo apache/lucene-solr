@@ -64,13 +64,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     schemaString = "schema15.xml";      // we need a string id
   }
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
-
   @Test
   public void test() throws Exception {
 
@@ -248,7 +241,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 
@@ -322,7 +315,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-    String url = CustomCollectionTest.getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
 

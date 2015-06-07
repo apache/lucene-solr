@@ -103,22 +103,14 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final String DEFAULT_COLLECTION = "collection1";
-  private static final boolean DEBUG = false;
 
   // we randomly use a second config set rather than just one
   private boolean secondConfigSet = random().nextBoolean();
-  
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-
-  }
   
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     
-    useJettyDataDir = false;
-
     if (secondConfigSet ) {
       String zkHost = zkServer.getZkHost();
       String zkAddress = zkServer.getZkAddress();
@@ -146,9 +138,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       AbstractZkTestCase.putConfig("conf2", zkClient, solrhome, "elevate.xml");
       zkClient.close();
     }
-    
-    System.setProperty("numShards", Integer.toString(sliceCount));
-
   }
   
   protected String getSolrXml() {
@@ -192,10 +181,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // last
     deleteCollectionWithDownNodes();
     addReplicaTest();
-
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
   private void deleteCollectionRemovesStaleZkCollectionsNode() throws Exception {
@@ -224,7 +209,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       
     }
     
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     
     assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
 
@@ -252,8 +237,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
 
     makeRequest(baseUrl, request);
-    
-    checkForMissingCollection(collectionName);
+
+    assertCollectionNotExists(collectionName, 45);
     
     // now creating that collection should work
     params = new ModifiableSolrParams();
@@ -784,7 +769,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     makeRequest(baseUrl, request);
     
     // ensure its out of the state
-    checkForMissingCollection(collectionName);
+    assertCollectionNotExists(collectionName, 45);
     
     //collectionNameList.remove(collectionName);
 
@@ -1197,16 +1182,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     waitForRecoveriesToFinish(COLL_NAME, false);
   }
   
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
-  }
-
   private void clusterPropTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       assertTrue("cluster property not set", setClusterProp(client, ZkStateReader.LEGACY_CLOUD, "false"));

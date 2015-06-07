@@ -81,12 +81,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
   
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
   /**
    * Overrides the parent implementation to install a SocketProxy in-front of the Jetty server.
    */

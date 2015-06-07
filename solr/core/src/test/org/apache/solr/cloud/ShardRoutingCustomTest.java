@@ -17,6 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +55,31 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
   private void doCustomSharding() throws Exception {
     printLayout();
 
-    startCloudJetty(collection, "shardA");
+    int totalReplicas = getTotalReplicas(collection);
+
+    File jettyDir = createTempDir("jetty").toFile();
+    jettyDir.mkdirs();
+    setupJettySolrHome(jettyDir);
+    JettySolrRunner j = createJetty(jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
+    jettys.add(j);
+    SolrClient client = createNewSolrClient(j.getLocalPort());
+    clients.add(client);
+
+    int retries = 60;
+    while (--retries >= 0) {
+      // total replicas changed.. assume it was us
+      if (getTotalReplicas(collection) != totalReplicas) {
+       break;
+      }
+      Thread.sleep(500);
+    }
+
+    if (retries <= 0) {
+      fail("Timeout waiting for " + j + " to appear in clusterstate");
+      printLayout();
+    }
+
+    updateMappingsFromZk(this.jettys, this.clients);
 
     printLayout();
   }

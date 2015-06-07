@@ -114,16 +114,6 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     assertTrue(response1.isSuccess());
   }
 
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("zkHost");
-
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
-  }
-
   public static void postAndCheck(CloudSolrClient cloudClient, String baseUrl, String blobName, ByteBuffer bytes, int count) throws Exception {
     postData(cloudClient, baseUrl, blobName, bytes);
 

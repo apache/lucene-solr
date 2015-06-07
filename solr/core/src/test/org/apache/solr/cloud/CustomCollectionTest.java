@@ -72,19 +72,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
-  private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
-
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-  }
-
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
 
   protected String getSolrXml() {
     return "solr-no-core.xml";
@@ -450,15 +438,5 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     QueryResponse rsp = getCommonCloudSolrClient().query(params);
     return rsp;
-  }
-
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
   }
 }

@@ -104,18 +104,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
   
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-  }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    System.setProperty("solr.xml.persist", "true");
-  }
-
-  
   public BasicDistributedZkTest() {
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
@@ -1116,21 +1104,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  volatile CloudSolrClient commondCloudSolrClient;
-  protected CloudSolrClient getCommonCloudSolrClient() {
-    if (commondCloudSolrClient == null) {
-      synchronized(this) {
-        commondCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
-        commondCloudSolrClient.setParallelUpdates(random().nextBoolean());
-        commondCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
-        commondCloudSolrClient.getLbClient().setConnectionTimeout(15000);
-        commondCloudSolrClient.getLbClient().setSoTimeout(30000);
-        commondCloudSolrClient.connect();
-      }
-    }
-    return commondCloudSolrClient;
-  }
-
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException, IOException {
 
@@ -1147,9 +1120,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    if (commondCloudSolrClient != null) {
-      commondCloudSolrClient.close();
-    }
     if (otherCollectionClients != null) {
       for (List<SolrClient> clientList : otherCollectionClients.values()) {
         IOUtils.close(clientList);
@@ -1158,11 +1128,5 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     otherCollectionClients = null;
     List<Runnable> tasks = executor.shutdownNow();
     assertTrue(tasks.isEmpty());
-
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-    
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
   }
 }

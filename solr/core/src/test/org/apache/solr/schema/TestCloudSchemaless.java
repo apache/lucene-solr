@@ -47,19 +47,9 @@ import java.util.TreeMap;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
+  private static final Logger log = LoggerFactory.getLogger(TestCloudSchemaless.class);
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
-  @Override
-  public void distribSetUp() throws Exception {
-
-    super.distribSetUp();
-
-    useJettyDataDir = false;
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
   @After
   public void teardDown() throws Exception {
     super.tearDown();
@@ -76,7 +66,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   @BeforeClass
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "true");
   }
 
   @Override
