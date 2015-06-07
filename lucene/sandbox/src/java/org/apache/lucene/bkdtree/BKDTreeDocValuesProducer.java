@@ -153,6 +153,7 @@ class BKDTreeDocValuesProducer extends DocValuesProducer {
     for(Map.Entry<String,BKDTreeReader> ent : treeReaders.entrySet()) {
       resources.add(Accountables.namedAccountable("field " + ent.getKey(), ent.getValue()));
     }
+    resources.add(Accountables.namedAccountable("delegate", delegate));
 
     return resources;
   }
@@ -164,6 +165,6 @@ class BKDTreeDocValuesProducer extends DocValuesProducer {
 
   @Override
   public long ramBytesUsed() {
-    return ramBytesUsed.get();
+    return ramBytesUsed.get() + delegate.ramBytesUsed();
   }
 }

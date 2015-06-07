@@ -40,7 +40,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * smaller rectangles, until the smallest rectangles have approximately
  * between X/2 and X (X default is 1024) points in them, at which point
  * such leaf cells are written as a block to disk, while the index tree
- * structure recording how space was sub-divided is loaded into HEAP
+ * structure records how space was sub-divided is loaded into HEAP
  * at search time.  At search time, the tree is recursed based on whether
  * each of left or right child overlap with the query shape, and once
  * a leaf block is reached, all documents in that leaf block are collected
