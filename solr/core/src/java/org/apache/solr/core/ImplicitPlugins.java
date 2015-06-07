@@ -83,7 +83,7 @@ public class ImplicitPlugins {
     implicits.add(getReqHandlerInfo("/admin/logging", LoggingHandler.class, null));
     implicits.add(getReqHandlerInfo("/admin/file", ShowFileRequestHandler.class, null));
     PluginInfo ping = getReqHandlerInfo("/admin/ping", PingRequestHandler.class, null);
-    ping.initArgs.add(INVARIANTS, new NamedList<>(makeMap("echoParams", "all", "q", "solrpingquery")));
+    ping.initArgs.add(INVARIANTS, new NamedList<>(makeMap("echoParams", "all", "q", "{!lucene}*:*")));
     implicits.add(ping);
     implicits.add(getReqHandlerInfo("/admin/segments", SegmentsInfoRequestHandler.class, null));
     return implicits;
