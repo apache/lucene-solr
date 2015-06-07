@@ -21,6 +21,8 @@
     "hl.fl":"content",
     "v.locale":"${locale}",
     "debug":"true",
+    "hl.simple.pre":"HL_START",
+    "hl.simple.post":"HL_END",
     "":{"v":0}},
   "velocity":{
     "wt":"velocity",
