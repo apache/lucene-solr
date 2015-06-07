@@ -117,6 +117,8 @@ Bug Fixes
 * SOLR-7493: Requests aren't distributed evenly if the collection isn't present locally.
   (Jeff Wartes, shalin)
 
+* SOLR-7108: Change default query used by /admin/ping to not rely on other parameters such as query parser or
+  default field. (ehatcher)
 
 Optimizations
 ----------------------
