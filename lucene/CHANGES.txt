@@ -80,6 +80,9 @@ Bug fixes
 * LUCENE-6523: NRT readers now reflect a new commit even if there is
   no change to the commit user data (Mike McCandless)
 
+* LUCENE-6482: Fix class loading deadlock relating to Codec initialization,
+  default codec and SPI discovery.  (Shikhar Bhushan, Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

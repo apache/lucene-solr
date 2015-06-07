@@ -17,6 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.ServiceLoader; // javadocs
 
@@ -38,8 +39,26 @@ import org.apache.lucene.util.NamedSPILoader;
  */
 public abstract class Codec implements NamedSPILoader.NamedSPI {
 
-  private static final NamedSPILoader<Codec> loader =
-    new NamedSPILoader<>(Codec.class);
+  /**
+   * This static holder class prevents classloading deadlock by delaying
+   * init of default codecs and available codecs until needed.
+   */
+  private static final class Holder {
+    private static final NamedSPILoader<Codec> LOADER = new NamedSPILoader<>(Codec.class);
+    
+    private Holder() {}
+    
+    static NamedSPILoader<Codec> getLoader() {
+      if (LOADER == null) {
+        throw new IllegalStateException("You tried to lookup a Codec by name before all Codecs could be initialized. "+
+          "This likely happens if you call Codec#forName from a Codec's ctor.");
+      }
+      return LOADER;
+    }
+    
+    // TODO: should we use this, or maybe a system property is better?
+    static Codec defaultCodec = LOADER.lookup("Lucene50");
+  }
 
   private final String name;
 
@@ -91,20 +110,12 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** looks up a codec by name */
   public static Codec forName(String name) {
-    if (loader == null) {
-      throw new IllegalStateException("You called Codec.forName() before all Codecs could be initialized. "+
-          "This likely happens if you call it from a Codec's ctor.");
-    }
-    return loader.lookup(name);
+    return Holder.getLoader().lookup(name);
   }
   
   /** returns a list of all available codec names */
   public static Set<String> availableCodecs() {
-    if (loader == null) {
-      throw new IllegalStateException("You called Codec.availableCodecs() before all Codecs could be initialized. "+
-          "This likely happens if you call it from a Codec's ctor.");
-    }
-    return loader.availableServices();
+    return Holder.getLoader().availableServices();
   }
   
   /** 
@@ -119,24 +130,25 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
    * of new codecs on the given classpath/classloader!</em>
    */
   public static void reloadCodecs(ClassLoader classloader) {
-    loader.reload(classloader);
+    Holder.getLoader().reload(classloader);
   }
-  
-  private static Codec defaultCodec = Codec.forName("Lucene50");
-  
+    
   /** expert: returns the default codec used for newly created
    *  {@link IndexWriterConfig}s.
    */
-  // TODO: should we use this, or maybe a system property is better?
   public static Codec getDefault() {
-    return defaultCodec;
+    if (Holder.defaultCodec == null) {
+      throw new IllegalStateException("You tried to lookup the default Codec before all Codecs could be initialized. "+
+        "This likely happens if you try to get it from a Codec's ctor.");
+    }
+    return Holder.defaultCodec;
   }
   
   /** expert: sets the default codec used for newly created
    *  {@link IndexWriterConfig}s.
    */
   public static void setDefault(Codec codec) {
-    defaultCodec = codec;
+    Holder.defaultCodec = Objects.requireNonNull(codec);
   }
 
   /**
