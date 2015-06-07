@@ -76,13 +76,16 @@ public class TestCodecLoadingDeadlock extends Assert {
         p.destroy();
       }
     }, 30, TimeUnit.SECONDS);
-    final int exitCode = p.waitFor();
-    scheduler.shutdownNow();
-    while (!scheduler.awaitTermination(1, TimeUnit.MINUTES));
-    if (f.isDone()) {
-      fail("Process did not exit after 30 secs -> classloader deadlock?");
-    } else {
-      assertEquals("Process died abnormally", 0, exitCode);
+    try {
+      final int exitCode = p.waitFor();
+      if (f.cancel(false)) {
+        assertEquals("Process died abnormally", 0, exitCode);
+      } else {
+        fail("Process did not exit after 30 secs -> classloader deadlock?");
+      }
+    } finally {
+      scheduler.shutdown();
+      while (!scheduler.awaitTermination(1, TimeUnit.MINUTES));
     }
   }
   
