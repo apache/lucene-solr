@@ -205,8 +205,8 @@
     <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
     <loadfile srcfile="${Codec.java}" property="defaultCodec" encoding="UTF-8">
       <filterchain>
-        <!--  private static Codec defaultCodec   =   Codec    .   forName    (   "LuceneXXX"                 )   ; -->
-        <containsregex pattern="^.*defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
+        <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
       </filterchain>
     </loadfile>
 
