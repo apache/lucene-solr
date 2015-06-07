@@ -360,8 +360,6 @@ class BKDTreeWriter {
 
     LongBitSet bitSet = new LongBitSet(pointCount);
 
-    // TODO: we should use in-memory sort here, if number of points is small enough:
-
     long countPerLeaf = pointCount;
     long innerNodeCount = 1;
 
@@ -549,6 +547,7 @@ class BKDTreeWriter {
         lastValue = value;
 
         if (value == splitValue) {
+          // TODO: we could simplify this, by allowing splitValue to be on either side?
           // If we have identical points at the split, we move the count back to before the identical points:
           leftCount = i;
           break;
@@ -576,7 +575,7 @@ class BKDTreeWriter {
     return leftCount;
   }
 
-  /** dim=0 means we split on lat, dim=1 means lon.  The incoming PathSlice for the dim we will split is already partitioned/sorted. */
+  /** The incoming PathSlice for the dim we will split is already partitioned/sorted. */
   private void build(int nodeID, int leafNodeOffset,
                      PathSlice lastLatSorted,
                      PathSlice lastLonSorted,
@@ -592,6 +591,7 @@ class BKDTreeWriter {
     long latRange = (long) maxLatEnc - (long) minLatEnc;
     long lonRange = (long) maxLonEnc - (long) minLonEnc;
 
+    // Compute which dim we should split on at this level:
     int splitDim;
     if (latRange >= lonRange) {
       // Split by lat:
