@@ -35,7 +35,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
@@ -591,5 +594,25 @@ public class TestBKDTree extends LuceneTestCase {
 
     int y = BKDTreeWriter.encodeLon(Math.nextAfter(180.0, Double.POSITIVE_INFINITY));
     assertTrue(y < Integer.MAX_VALUE);
+  }
+
+  public void testAccountableHasDelegate() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    Codec codec = TestUtil.alwaysDocValuesFormat(new BKDTreeDocValuesFormat());
+    iwc.setCodec(codec);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(new BKDPointField("field", -18.2861, 147.7));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+
+    // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
+    IndexSearcher s = newSearcher(r, false);
+    // Need to run a query so the DV field is really loaded:
+    TopDocs hits = s.search(new BKDPointInBBoxQuery("field", -30, 0, 140, 150), 1);
+    assertEquals(1, hits.totalHits);
+    assertTrue(Accountables.toString((Accountable) r.leaves().get(0).reader()).contains("delegate"));
+    IOUtils.close(r, w, dir);
   }
 }
