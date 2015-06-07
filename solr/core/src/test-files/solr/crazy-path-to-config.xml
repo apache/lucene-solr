@@ -42,8 +42,6 @@
       <str name="fl">implicit</str>
     </lst>
   </requestHandler>
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  
   
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter" startup="lazy"/>

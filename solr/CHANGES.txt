@@ -149,6 +149,9 @@ Other Changes
 * SOLR-3719: Add as-you-type "instant search" to example/files /browse.
   (Esther Quansah, ehatcher)
 
+* SOLR-7645: Remove explicitly defined request handlers from example and test solrconfig's that are
+  already defined implicitly, such as /admin/ping, /admin/system, and several others.  (ehatcher)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

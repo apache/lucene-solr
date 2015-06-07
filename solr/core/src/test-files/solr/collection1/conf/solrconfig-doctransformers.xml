@@ -42,8 +42,6 @@
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
   </requestDispatcher>
 
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
   <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>

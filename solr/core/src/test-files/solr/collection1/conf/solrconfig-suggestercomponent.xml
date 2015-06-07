@@ -139,9 +139,7 @@
       <str>suggest</str>
     </arr>
   </requestHandler>
-  
-  <requestHandler name="/update" class="solr.UpdateRequestHandler" />
-  
+
   <query><useColdSearcher>false</useColdSearcher></query>
 
 </config>

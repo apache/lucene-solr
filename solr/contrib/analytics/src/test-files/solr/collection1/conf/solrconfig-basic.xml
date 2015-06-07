@@ -34,8 +34,6 @@
     </arr>
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler" />
-
   <searchComponent name="analytics" class="org.apache.solr.handler.component.AnalyticsComponent" />
 
 </config>

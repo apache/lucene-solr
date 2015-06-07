@@ -47,9 +47,6 @@
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
-
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
     <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />

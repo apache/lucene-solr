@@ -32,8 +32,6 @@
 	  </arr>
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler" />
-
   <requestDispatcher handleSelect="true" >
     <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
     <httpCaching never304="true" />

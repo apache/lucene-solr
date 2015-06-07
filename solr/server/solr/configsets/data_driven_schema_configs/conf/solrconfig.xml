@@ -1010,59 +1010,12 @@
                   class="solr.DocumentAnalysisRequestHandler"
                   startup="lazy" />
 
-  <!-- This single handler is equivalent to the following... -->
-  <!--
-     <requestHandler name="/admin/luke"       class="solr.admin.LukeRequestHandler" />
-     <requestHandler name="/admin/system"     class="solr.admin.SystemInfoHandler" />
-     <requestHandler name="/admin/plugins"    class="solr.admin.PluginInfoHandler" />
-     <requestHandler name="/admin/threads"    class="solr.admin.ThreadDumpHandler" />
-     <requestHandler name="/admin/properties" class="solr.admin.PropertiesRequestHandler" />
-     <requestHandler name="/admin/file"       class="solr.admin.ShowFileRequestHandler" >
-    -->
-
-
-
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
     <lst name="defaults">
       <str name="echoParams">explicit</str>
       <str name="echoHandler">true</str>
     </lst>
-  </requestHandler>
-
-  <!-- Solr Replication
-
-       The SolrReplicationHandler supports replicating indexes from a
-       "master" used for indexing and "slaves" used for queries.
-
-       http://wiki.apache.org/solr/SolrReplication 
-
-       It is also necessary for SolrCloud to function (in Cloud mode, the
-       replication handler is used to bulk transfer segments when nodes 
-       are added or need to recover).
-
-       https://wiki.apache.org/solr/SolrCloud/
-    -->
-  <requestHandler name="/replication" class="solr.ReplicationHandler" >
-    <!--
-       To enable simple master/slave replication, uncomment one of the 
-       sections below, depending on whether this solr instance should be
-       the "master" or a "slave".  If this instance is a "slave" you will 
-       also need to fill in the masterUrl to point to a real machine.
-    -->
-    <!--
-       <lst name="master">
-         <str name="replicateAfter">commit</str>
-         <str name="replicateAfter">startup</str>
-         <str name="confFiles">schema.xml,stopwords.txt</str>
-       </lst>
-    -->
-    <!--
-       <lst name="slave">
-         <str name="masterUrl">http://your-master-hostname:8983/solr</str>
-         <str name="pollInterval">00:00:60</str>
-       </lst>
-    -->
   </requestHandler>
 
   <!-- Search Components

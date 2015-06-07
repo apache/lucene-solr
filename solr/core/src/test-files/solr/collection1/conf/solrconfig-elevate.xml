@@ -106,8 +106,6 @@
 
   </query>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <!-- test elevation -->
   <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
     <str name="queryFieldType">string</str>

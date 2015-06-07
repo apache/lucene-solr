@@ -38,14 +38,6 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
-
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy"/>
-
   <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">
       <str name="update.chain">cdcr-processor-chain</str>
@@ -78,8 +70,6 @@
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
-
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers"/>
 
 </config>
 
