@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -67,11 +69,20 @@ public class TestCodecLoadingDeadlock extends Assert {
       pfName,
       dvfName
     ).inheritIO().start();
-    if (p.waitFor(30, TimeUnit.SECONDS)) {
-      assertEquals("Process died abnormally", 0, p.waitFor());
-    } else {
-      p.destroyForcibly().waitFor();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("processKiller"));
+    final ScheduledFuture<?> f = scheduler.schedule(new Runnable() {
+      @Override
+      public void run() {
+        p.destroy();
+      }
+    }, 30, TimeUnit.SECONDS);
+    final int exitCode = p.waitFor();
+    scheduler.shutdownNow();
+    while (!scheduler.awaitTermination(1, TimeUnit.MINUTES));
+    if (f.isDone()) {
       fail("Process did not exit after 30 secs -> classloader deadlock?");
+    } else {
+      assertEquals("Process died abnormally", 0, exitCode);
     }
   }
   
