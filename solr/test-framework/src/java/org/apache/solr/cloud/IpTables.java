@@ -19,9 +19,6 @@ package org.apache.solr.cloud;
 
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,31 +34,6 @@ public class IpTables {
       .getLogger(IpTables.class);
   
   private static boolean ENABLED = Boolean.getBoolean("solr.tests.use.iptables");
-  static class ThreadPumper {
-
-    public ThreadPumper() {}
-    
-    public static Thread start(final InputStream from, final OutputStream to, final boolean verbose) {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          try {
-            byte [] buffer = new byte [1024];
-            int len;
-            while ((len = from.read(buffer)) != -1) {
-              if (verbose) {
-                to.write(buffer, 0, len);
-              }
-            }
-          } catch (IOException e) {
-            System.err.println("Couldn't pipe from the forked process: " + e.toString());
-          }
-        }
-      };
-      t.start();
-      return t;
-    }
-  }
   
   private static Set<Integer> BLOCK_PORTS = Collections.synchronizedSet(new HashSet<Integer>());
   
@@ -97,20 +69,10 @@ public class IpTables {
     }
   }
   
-  private static void runCmd(String[] cmd) throws IOException, InterruptedException {
-    ProcessBuilder pb = new ProcessBuilder(cmd);
-
-    pb.redirectErrorStream(true);
-    Process p = pb.start();
-
-    // We pump everything to stderr.
-    PrintStream childOut = System.err; 
-    Thread stdoutPumper = ThreadPumper.start(p.getInputStream(), childOut, true);
-    Thread stderrPumper = ThreadPumper.start(p.getErrorStream(), childOut, true);
-    if (true) childOut.println(">>> Begin subprocess output");
-    p.waitFor();
-    stdoutPumper.join();
-    stderrPumper.join();
-    if (true) childOut.println("<<< End subprocess output");
+  private static void runCmd(String... cmd) throws IOException, InterruptedException {
+    final int exitCode = new ProcessBuilder(cmd).inheritIO().start().waitFor();
+    if (exitCode != 0) {
+      throw new IOException("iptables process did not exit successfully, exit code was: " + exitCode);
+    }
   }
 }

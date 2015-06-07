@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,11 +98,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
   public void forkTest() throws Exception {
     List<String> cmd = new ArrayList<>();
-    cmd.add(System.getProperty("java.home") 
-        + System.getProperty("file.separator")
-        + "bin"
-        + System.getProperty("file.separator")
-        + "java");
+    cmd.add(Paths.get(System.getProperty("java.home"), "bin", "java").toString());
     cmd.add("-Xmx512m");
     cmd.add("-Dtests.crashmode=true");
     // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
@@ -112,19 +110,18 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add(System.getProperty("java.class.path"));
     cmd.add("org.junit.runner.JUnitCore");
     cmd.add(getClass().getName());
-    ProcessBuilder pb = new ProcessBuilder(cmd);
-    pb.directory(tempDir.toFile());
-    pb.redirectErrorStream(true);
+    ProcessBuilder pb = new ProcessBuilder(cmd)
+      .directory(tempDir.toFile())
+      .redirectInput(Redirect.INHERIT)
+      .redirectErrorStream(true);
     Process p = pb.start();
 
     // We pump everything to stderr.
     PrintStream childOut = System.err; 
     Thread stdoutPumper = ThreadPumper.start(p.getInputStream(), childOut);
-    Thread stderrPumper = ThreadPumper.start(p.getErrorStream(), childOut);
     if (VERBOSE) childOut.println(">>> Begin subprocess output");
     p.waitFor();
     stdoutPumper.join();
-    stderrPumper.join();
     if (VERBOSE) childOut.println("<<< End subprocess output");
   }
 
@@ -135,7 +132,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         @Override
         public void run() {
           try {
-            byte [] buffer = new byte [1024];
+            byte[] buffer = new byte [1024];
             int len;
             while ((len = from.read(buffer)) != -1) {
               if (VERBOSE) {
