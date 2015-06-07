@@ -30,15 +30,13 @@ import org.slf4j.LoggerFactory;
  * To use, tests must be able to run iptables, eg sudo chmod u+s iptables
  */
 public class IpTables {
-  static final Logger log = LoggerFactory
-      .getLogger(IpTables.class);
+  static final Logger log = LoggerFactory.getLogger(IpTables.class);
   
-  private static boolean ENABLED = Boolean.getBoolean("solr.tests.use.iptables");
+  private static final boolean ENABLED = Boolean.getBoolean("solr.tests.use.iptables");
   
-  private static Set<Integer> BLOCK_PORTS = Collections.synchronizedSet(new HashSet<Integer>());
+  private static final Set<Integer> BLOCK_PORTS = Collections.synchronizedSet(new HashSet<Integer>());
   
-  public static void blockPort(int port) throws IOException,
-      InterruptedException {
+  public static void blockPort(int port) throws IOException, InterruptedException {
     if (ENABLED) {
       log.info("Block port with iptables: " + port);
       BLOCK_PORTS.add(port);
@@ -49,21 +47,22 @@ public class IpTables {
     }
   }
   
-  public static void unblockPort(int port) throws IOException,
-      InterruptedException {
-    if (ENABLED) {
+  public static void unblockPort(int port) throws IOException, InterruptedException {
+    if (ENABLED && BLOCK_PORTS.contains(port)) {
       log.info("Unblock port with iptables: " + port);
       runCmd(("iptables -D INPUT -p tcp --dport " + port + " -j DROP")
           .split("\\s"));
       runCmd(("iptables -D OUTPUT -p tcp --dport " + port + " -j DROP")
           .split("\\s"));
+      BLOCK_PORTS.remove(port);
     }
   }
   
   public static void unblockAllPorts() throws IOException, InterruptedException {
     if (ENABLED) {
       log.info("Unblocking any ports previously blocked with iptables...");
-      for (Integer port : BLOCK_PORTS) {
+      final Integer[] ports = BLOCK_PORTS.toArray(new Integer[BLOCK_PORTS.size()]);
+      for (Integer port : ports) {
         IpTables.unblockPort(port);
       }
     }
