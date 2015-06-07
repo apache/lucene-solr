@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,7 +103,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   
   public SolrRecordWriter(TaskAttemptContext context, Path outputShardDir, int batchSize) {
     this.batchSize = batchSize;
-    this.batch = new ArrayList(batchSize);
+    this.batch = new ArrayList<>(batchSize);
     Configuration conf = context.getConfiguration();
 
     // setLogLevel("org.apache.solr.core", "WARN");
@@ -134,9 +133,6 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   public static EmbeddedSolrServer createEmbeddedSolrServer(Path solrHomeDir, FileSystem fs, Path outputShardDir)
       throws IOException {
 
-    if (solrHomeDir == null) {
-      throw new IOException("Unable to find solr home setting");
-    }
     LOG.info("Creating embedded Solr server with solrHomeDir: " + solrHomeDir + ", fs: " + fs + ", outputShardDir: " + outputShardDir);
 
     Path solrDataDir = new Path(outputShardDir, "data");
@@ -186,7 +182,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
     }
   }
 
-  public static void incrementCounter(TaskID taskId, Enum counterName, long incr) {
+  public static void incrementCounter(TaskID taskId, Enum<?> counterName, long incr) {
     Reducer<?,?,?,?>.Context context = contextMap.get(taskId);
     if (context != null) {
       context.getCounter(counterName).increment(incr);
@@ -199,52 +195,18 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   }
 
   public static Path findSolrConfig(Configuration conf) throws IOException {
-    Path solrHome = null;
     // FIXME when mrunit supports the new cache apis
     //URI[] localArchives = context.getCacheArchives();
     Path[] localArchives = DistributedCache.getLocalCacheArchives(conf);
-    if (localArchives.length == 0) {
-      throw new IOException(String.format(Locale.ENGLISH,
-          "No local cache archives, where is %s:%s", SolrOutputFormat
-              .getSetupOk(), SolrOutputFormat.getZipName(conf)));
-    }
     for (Path unpackedDir : localArchives) {
-      // Only logged if debugging
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(String.format(Locale.ENGLISH, "Examining unpack directory %s for %s",
-            unpackedDir, SolrOutputFormat.getZipName(conf)));
-
-        ProcessBuilder lsCmd = new ProcessBuilder(new String[] { "/bin/ls",
-            "-lR", unpackedDir.toString() });
-        lsCmd.redirectErrorStream();
-        Process ls = lsCmd.start();
-        byte[] buf = new byte[16 * 1024];
-        InputStream all = ls.getInputStream();
-        try {
-          int count;
-          while ((count = all.read(buf)) >= 0) {
-            System.err.write(buf, 0, count);
-          }
-        } catch (IOException ignore) {
-        } finally {
-          all.close();
-        }
-        String exitValue;
-        try {
-          exitValue = String.valueOf(ls.waitFor());
-        } catch (InterruptedException e) {
-          exitValue = "interrupted";
-        }
-        System.err.format(Locale.ENGLISH, "Exit value of 'ls -lR' is %s%n", exitValue);
-      }
       if (unpackedDir.getName().equals(SolrOutputFormat.getZipName(conf))) {
         LOG.info("Using this unpacked directory as solr home: {}", unpackedDir);
-        solrHome = unpackedDir;
-        break;
+        return unpackedDir;
       }
     }
-
-    return solrHome;
+    throw new IOException(String.format(Locale.ENGLISH,
+        "No local cache archives, where is %s:%s", SolrOutputFormat
+            .getSetupOk(), SolrOutputFormat.getZipName(conf)));
   }
 
   /**
