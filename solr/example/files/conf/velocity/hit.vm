@@ -46,7 +46,7 @@
 
   #set($pad = "")
   #foreach($v in $response.response.highlighting.get($docId).get("content"))
-    $pad$v
+    $pad$esc.html($v).replace("HL_START","<em>").replace("HL_END","</em>")
     #set($pad = " ... ")
   #end
 
