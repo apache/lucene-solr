@@ -740,7 +740,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             // currently allow it, so, we must call
             // a.tokenStream inside the try since we may
             // hit the exc on init:
-            ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(evilReader, remainder) : evilReader);
+            ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
             ts.reset();
             while (ts.incrementToken());
             fail("did not hit exception");
