@@ -57,6 +57,10 @@ New Features
 * LUCENE-6526: Asserting(Query|Weight|Scorer) now ensure scores are not computed
   if they are not needed. (Adrien Grand)
 
+* LUCENE-6481: Add GeoPointField, GeoPointInBBoxQuery,
+  GeoPointInPolygonQuery for simple "indexed lat/lon point in
+  bbox/shape" searching.  (Nick Knize via Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
