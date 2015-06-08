@@ -9,6 +9,28 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 
+==================  5.2.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.10.v20150310
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-7588: Fix javascript bug introduced by SOLR-7409 that breaks the
+  dataimport screen in the admin UI. (Bill Bell via Shawn Heisey)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
