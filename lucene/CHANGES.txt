@@ -3,6 +3,13 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 5.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-6482: Fix class loading deadlock relating to Codec initialization,
+  default codec and SPI discovery.  (Shikhar Bhushan, Uwe Schindler)
+
 ======================= Lucene 5.2.0 =======================
 
 New Features
