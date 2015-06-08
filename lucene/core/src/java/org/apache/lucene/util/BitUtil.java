@@ -90,6 +90,15 @@ public final class BitUtil {
     0x8765421, 0x876543, 0x8765431, 0x8765432, 0x87654321
   };
 
+  // magic numbers for bit interleaving
+  private static final long MAGIC[] = {
+      0x5555555555555555L, 0x3333333333333333L,
+      0x0F0F0F0F0F0F0F0FL, 0x00FF00FF00FF00FFL,
+      0x0000FFFF0000FFFFL, 0x00000000FFFFFFFFL
+  };
+  // shift values for bit interleaving
+  private static final short SHIFT[] = {1, 2, 4, 8, 16};
+
   private BitUtil() {} // no instance
 
   /** Return the number of bits sets in b. 
@@ -191,6 +200,39 @@ public final class BitUtil {
     v |= v >> 32;
     v++;
     return v;
+  }
+
+  /**
+   * Interleaves the first 32 bits of each long value
+   *
+   * Adapted from: http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
+   */
+  public static long interleave(long v1, long v2) {
+    v1 = (v1 | (v1 << SHIFT[4])) & MAGIC[4];
+    v1 = (v1 | (v1 << SHIFT[3])) & MAGIC[3];
+    v1 = (v1 | (v1 << SHIFT[2])) & MAGIC[2];
+    v1 = (v1 | (v1 << SHIFT[1])) & MAGIC[1];
+    v1 = (v1 | (v1 << SHIFT[0])) & MAGIC[0];
+    v2 = (v2 | (v2 << SHIFT[4])) & MAGIC[4];
+    v2 = (v2 | (v2 << SHIFT[3])) & MAGIC[3];
+    v2 = (v2 | (v2 << SHIFT[2])) & MAGIC[2];
+    v2 = (v2 | (v2 << SHIFT[1])) & MAGIC[1];
+    v2 = (v2 | (v2 << SHIFT[0])) & MAGIC[0];
+
+    return (v2<<1) | v1;
+  }
+
+  /**
+   * Deinterleaves long value back to two concatenated 32bit values
+   */
+  public static long deinterleave(long b) {
+    b &= MAGIC[0];
+    b = (b ^ (b >>> SHIFT[0])) & MAGIC[1];
+    b = (b ^ (b >>> SHIFT[1])) & MAGIC[2];
+    b = (b ^ (b >>> SHIFT[2])) & MAGIC[3];
+    b = (b ^ (b >>> SHIFT[3])) & MAGIC[4];
+    b = (b ^ (b >>> SHIFT[4])) & MAGIC[5];
+    return b;
   }
 
    /** Same as {@link #zigZagEncode(long)} but on integers. */
