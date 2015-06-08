@@ -114,37 +114,37 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
  * This class represents a call made to Solr
  **/
 public class HttpSolrCall {
-  private static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
+  protected static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
 
-  private final SolrDispatchFilter solrDispatchFilter;
-  private final CoreContainer cores;
-  private final HttpServletRequest req;
-  private final HttpServletResponse response;
-  private final boolean retry;
-  private SolrCore core = null;
-  private SolrQueryRequest solrReq = null;
-  private SolrRequestHandler handler = null;
-  private final SolrParams queryParams;
-  private String path;
-  private Action action;
-  private String coreUrl;
-  private SolrConfig config;
-  private Map<String, Integer> invalidStates;
+  protected final SolrDispatchFilter solrDispatchFilter;
+  protected final CoreContainer cores;
+  protected final HttpServletRequest req;
+  protected final HttpServletResponse response;
+  protected final boolean retry;
+  protected SolrCore core = null;
+  protected SolrQueryRequest solrReq = null;
+  protected SolrRequestHandler handler = null;
+  protected final SolrParams queryParams;
+  protected String path;
+  protected Action action;
+  protected String coreUrl;
+  protected SolrConfig config;
+  protected Map<String, Integer> invalidStates;
 
   public RequestType getRequestType() {
     return requestType;
   }
 
-  private RequestType requestType;
+  protected RequestType requestType;
 
 
   public List<String> getCollectionsList() {
     return collectionsList;
   }
 
-  private List<String> collectionsList;
+  protected List<String> collectionsList;
 
-  HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
+  public HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
                HttpServletRequest request, HttpServletResponse response, boolean retry) {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
