@@ -75,12 +75,6 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-  <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
-    <lst name="invariants">
-      <str name="hidden">bogus.txt</str>
-    </lst>
-  </requestHandler>
-
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
     <processor class="solr.RegexReplaceProcessorFactory">

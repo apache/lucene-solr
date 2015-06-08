@@ -34,15 +34,6 @@
     </updateLog>
   </updateHandler>
 
-  <!-- realtime get handler, guaranteed to return the latest stored fields
-    of any document, without the need to commit or open a new searcher. The current
-    implementation relies on the updateLog feature being enabled. -->
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
-
   <!--
    Distributed Stream processing.
  -->
@@ -58,21 +49,7 @@
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
   </requestDispatcher>
 
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
-
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
-  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
-    <lst name="invariants">
-      <str name="q">*:*</str>
-    </lst>
-    <lst name="defaults">
-      <str name="echoParams">all</str>
-    </lst>
-    <str name="healthcheckFile">server-enabled.txt</str>
-  </requestHandler>
 
   <!-- config for the admin interface -->
   <admin>

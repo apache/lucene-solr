@@ -28,5 +28,4 @@
 	  	<str>componentThatAddsHeader</str>
 	  </arr>
   </requestHandler>
-  <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 </config>

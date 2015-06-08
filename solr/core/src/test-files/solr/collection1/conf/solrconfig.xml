@@ -224,12 +224,6 @@
 
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
-  <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
-    <lst name="invariants">
-      <str name="hidden">bogus.txt</str>
-    </lst>
-  </requestHandler>
-
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">

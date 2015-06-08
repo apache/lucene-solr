@@ -380,22 +380,6 @@
   </requestHandler>
 
   <!--
-    Please refer to http://wiki.apache.org/solr/SolrReplication for
-    details on configuring replication
-  -->
-  <!-- remove the <lst name="master"> section if this is just a slave -->
-  <!-- remove  the <lst name="slave"> section if this is just a master -->
-  <!--
-    <requestHandler name="/replication" class="solr.ReplicationHandler"
-    > <lst name="master"> <str name="replicateAfter">commit</str> <str
-    name="replicateAfter">startup</str> <str
-    name="confFiles">schema.xml,stopwords.txt</str> </lst> <lst
-    name="slave"> <str
-    name="masterUrl">http://localhost:8983/solr/replication</str> <str
-    name="pollInterval">00:00:60</str> </lst> </requestHandler>
-  -->
-
-  <!--
     DisMaxRequestHandler allows easy searching across multiple fields
     for simple user-entered phrases. Its implementation is now just the
     standard SearchHandler with a default query parser of "dismax". see
@@ -630,19 +614,6 @@
     </arr>
   </requestHandler>
 
-
-
-
-  <!--
-    Update request handler. Note: Since solr1.1 requestHandlers requires
-    a valid content type header if posted in the body. For example, curl
-    now requires: -H 'Content-type:text/xml; charset=utf-8' The response
-    format differs from solr1.1 formatting and returns a standard error
-    code. To enable solr1.1 behavior, remove the /update handler or
-    change its path
-  -->
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <!--
     Analysis request handler. Since Solr 1.3. Use to return how a
     document is analyzed. Useful for debugging and as a token server for
@@ -691,31 +662,6 @@
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler"
     startup="lazy" />
-
-
-  <!--
-    Admin Handlers - This will register all the standard admin
-    RequestHandlers. Adding this single handler is equivalent to
-    registering: <requestHandler name="/admin/luke"
-    class="org.apache.solr.handler.admin.LukeRequestHandler" />
-    <requestHandler name="/admin/system"
-    class="org.apache.solr.handler.admin.SystemInfoHandler" />
-    <requestHandler name="/admin/plugins"
-    class="org.apache.solr.handler.admin.PluginInfoHandler" />
-    <requestHandler name="/admin/threads"
-    class="org.apache.solr.handler.admin.ThreadDumpHandler" />
-    <requestHandler name="/admin/properties"
-    class="org.apache.solr.handler.admin.PropertiesRequestHandler" />
-    <requestHandler name="/admin/file"
-    class="org.apache.solr.handler.admin.ShowFileRequestHandler" > If
-    you wish to hide files under ${solr.home}/conf, explicitly register
-    the ShowFileRequestHandler using: <requestHandler name="/admin/file"
-    class="org.apache.solr.handler.admin.ShowFileRequestHandler" > <lst
-    name="invariants"> <str name="hidden">synonyms.txt</str> <str
-    name="hidden">anotherfile.txt</str> </lst> </requestHandler>
-  -->
-  <requestHandler name="/admin/"
-    class="org.apache.solr.handler.admin.AdminHandlers" />
 
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler">

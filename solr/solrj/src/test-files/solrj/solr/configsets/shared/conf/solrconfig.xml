@@ -39,9 +39,7 @@
   </requestDispatcher>
   
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-      
+
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>solr</defaultQuery>

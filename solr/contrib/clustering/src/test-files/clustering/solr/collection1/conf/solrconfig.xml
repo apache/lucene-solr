@@ -415,38 +415,6 @@
     </lst>
   </searchComponent>
 
-  <!-- Update request handler.  
-  
-       Note: Since solr1.1 requestHandlers requires a valid content type header if posted in 
-       the body. For example, curl now requires: -H 'Content-type:text/xml; charset=utf-8'
-       The response format differs from solr1.1 formatting and returns a standard error code.
-       
-       To enable solr1.1 behavior, remove the /update handler or change its path
-    -->
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
-
-  <!-- 
-   Admin Handlers - This will register all the standard admin RequestHandlers.  Adding 
-   this single handler is equivolent to registering:
-   
-  <requestHandler name="/admin/luke"       class="org.apache.solr.handler.admin.LukeRequestHandler" />
-  <requestHandler name="/admin/system"     class="org.apache.solr.handler.admin.SystemInfoHandler" />
-  <requestHandler name="/admin/plugins"    class="org.apache.solr.handler.admin.PluginInfoHandler" />
-  <requestHandler name="/admin/threads"    class="org.apache.solr.handler.admin.ThreadDumpHandler" />
-  <requestHandler name="/admin/properties" class="org.apache.solr.handler.admin.PropertiesRequestHandler" />
-  <requestHandler name="/admin/file"       class="org.apache.solr.handler.admin.ShowFileRequestHandler" >
-  
-  If you wish to hide files under ${solr.home}/conf, explicitly register the ShowFileRequestHandler using:
-  <requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" >
-    <lst name="invariants">
-     <str name="hidden">synonyms.txt</str> 
-     <str name="hidden">anotherfile.txt</str> 
-    </lst>
-  </requestHandler>
-  -->
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-  
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
     <lst name="defaults">

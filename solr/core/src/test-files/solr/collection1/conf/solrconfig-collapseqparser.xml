@@ -235,8 +235,6 @@ based HashBitset. -->
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
     <str name="queryAnalyzerFieldType">lowerpunctfilt</str>
