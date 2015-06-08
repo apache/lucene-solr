@@ -614,7 +614,7 @@ public class HttpSolrCall {
     }
   }
 
-  void sendError(int code, String message) throws IOException {
+  protected void sendError(int code, String message) throws IOException {
     try {
       response.sendError(code, message);
     } catch (EOFException e) {
