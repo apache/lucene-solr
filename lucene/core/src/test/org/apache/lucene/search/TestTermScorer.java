@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -195,7 +194,8 @@ public class TestTermScorer extends LuceneTestCase {
         return null;
       }
     };
-    IndexSearcher indexSearcher = newSearcher(forbiddenNorms);
+    // We don't use newSearcher because it sometimes runs checkIndex which loads norms
+    IndexSearcher indexSearcher = new IndexSearcher(forbiddenNorms);
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     try {
