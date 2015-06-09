@@ -44,6 +44,10 @@ public abstract class AuthorizationContext {
   
   public abstract Enumeration getHeaderNames();
 
+  public abstract String getRemoteAddr();
+
+  public abstract String getRemoteHost();
+
   public abstract List<CollectionRequest> getCollectionRequests() ;
   
   public abstract RequestType getRequestType();
