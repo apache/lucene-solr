@@ -38,6 +38,9 @@ Other Changes
   SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
   functions in HttpSolrCall.  (ryan)
 
+* SOLR-7648: Expose remote IP and Host via the AuthorizationContext to be used by the authorization plugin.
+  (Ishan Chattopadhyaya via Anshum Gupta)
+
 ==================  5.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

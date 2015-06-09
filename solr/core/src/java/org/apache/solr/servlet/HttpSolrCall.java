@@ -17,6 +17,7 @@ package org.apache.solr.servlet;
  * limitations under the License.
  */
 
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.EOFException;
@@ -967,6 +968,16 @@ public class HttpSolrCall {
         
         response.append("], Path: [").append(resource).append("]");
         return response.toString();
+      }
+
+      @Override
+      public String getRemoteAddr() {
+        return getReq().getRemoteAddr();
+      }
+
+      @Override
+      public String getRemoteHost() {
+        return getReq().getRemoteHost();
       }
     };
 
