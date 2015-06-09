@@ -174,18 +174,23 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
 
+  public void indexSimple(Client client) throws Exception {
+    client.deleteByQuery("*:*", null);
+    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2", "val_b", "true", "sparse_s", "one"), null);
+    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ", "num_d", "-9", "num_i", "-5", "val_b", "false"), null);
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ", "num_d", "2", "num_i", "3"), null);
+    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ", "num_d", "11", "num_i", "7", "sparse_s", "two"),null);
+    client.commit();
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5"),null);
+    client.commit();
+  }
+
 
   public void testStatsSimple() throws Exception {
-    assertU(delQ("*:*"));
-    assertU(add(doc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2", "val_b", "true",      "sparse_s","one")));
-    assertU(add(doc("id", "2", "cat_s", "B", "where_s", "NJ", "num_d", "-9", "num_i", "-5", "val_b", "false")));
-    assertU(add(doc("id", "3")));
-    assertU(commit());
-    assertU(add(doc("id", "4", "cat_s", "A", "where_s", "NJ", "num_d", "2", "num_i", "3")));
-    assertU(add(doc("id", "5", "cat_s", "B", "where_s", "NJ", "num_d", "11", "num_i", "7",                      "sparse_s","two")));
-    assertU(commit());
-    assertU(add(doc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5")));
-    assertU(commit());
+    Client client = Client.localClient();
+    indexSimple(client);
 
     // test multiple json.facet commands
     assertJQ(req("q", "*:*", "rows", "0"
@@ -1039,7 +1044,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
+  public void testTolerant() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332:/ignore_exception");
+    indexSimple(client);
 
+    try {
+      client.testJQ(params("ignore_exception", "true", "shards.tolerant", "false", "q", "*:*"
+              , "json.facet", "{f:{type:terms, field:cat_s}}"
+          )
+          , "facets=={ count:6," +
+              "f:{ buckets:[{val:B,count:3},{val:A,count:2}] }" +
+              "}"
+      );
+      fail("we should have failed");
+    } catch (Exception e) {
+      // ok
+    }
+
+    client.testJQ(params("ignore_exception", "true", "shards.tolerant", "true", "q", "*:*"
+            , "json.facet", "{f:{type:terms, field:cat_s}}"
+        )
+        , "facets=={ count:6," +
+            "f:{ buckets:[{val:B,count:3},{val:A,count:2}] }" +
+            "}"
+    );
+  }
 
   public void XtestPercentiles() {
     AVLTreeDigest catA = new AVLTreeDigest(100);
