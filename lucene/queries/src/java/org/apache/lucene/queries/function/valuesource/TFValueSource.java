@@ -54,7 +54,7 @@ public class TFValueSource extends TermFreqValueSource {
     Fields fields = readerContext.reader().fields();
     final Terms terms = fields.terms(indexedField);
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), indexedField);
+    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(true), indexedField);
     if (similarity == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }

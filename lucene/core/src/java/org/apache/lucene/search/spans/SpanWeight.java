@@ -56,7 +56,7 @@ public abstract class SpanWeight extends Weight {
   public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanCollectorFactory collectorFactory) throws IOException {
     super(query);
     this.field = query.getField();
-    this.similarity = searcher.getSimilarity();
+    this.similarity = searcher.getSimilarity(termContexts != null);
     this.collectorFactory = collectorFactory;
     this.simWeight = buildSimWeight(query, searcher, termContexts);
   }
@@ -71,7 +71,7 @@ public abstract class SpanWeight extends Weight {
       i++;
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
-    return searcher.getSimilarity().computeWeight(query.getBoost(), collectionStats, termStats);
+    return searcher.getSimilarity(true).computeWeight(query.getBoost(), collectionStats, termStats);
   }
 
   /**

@@ -255,7 +255,7 @@ public class PhraseQuery extends Query {
         throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
       }
       this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity();
+      this.similarity = searcher.getSimilarity(needsScores);
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
       TermStatistics termStats[] = new TermStatistics[terms.size()];

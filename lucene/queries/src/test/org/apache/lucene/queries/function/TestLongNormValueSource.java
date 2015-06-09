@@ -85,7 +85,7 @@ public class TestLongNormValueSource extends LuceneTestCase {
   }
 
   public void testNorm() throws Exception {
-    Similarity saved = searcher.getSimilarity();
+    Similarity saved = searcher.getSimilarity(true);
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(sim);

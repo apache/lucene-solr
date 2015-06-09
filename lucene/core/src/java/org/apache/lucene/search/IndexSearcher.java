@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.index.DirectoryReader; // javadocs
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter; // javadocs
@@ -45,6 +46,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements search over a single IndexReader.
@@ -74,6 +76,54 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class IndexSearcher {
 
+  /** A search-time {@link Similarity} that does not make use of scoring factors
+   *  and may be used when scores are not needed. */
+  private static final Similarity NON_SCORING_SIMILARITY = new Similarity() {
+
+    @Override
+    public long computeNorm(FieldInvertState state) {
+      throw new UnsupportedOperationException("This Similarity may only be used for searching, not indexing");
+    }
+
+    @Override
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimWeight() {
+
+        @Override
+        public float getValueForNormalization() {
+          return 1f;
+        }
+
+        @Override
+        public void normalize(float queryNorm, float topLevelBoost) {}
+
+      };
+    }
+
+    @Override
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+      return new SimScorer() {
+
+        @Override
+        public float score(int doc, float freq) {
+          return 0f;
+        }
+
+        @Override
+        public float computeSlopFactor(int distance) {
+          return 1f;
+        }
+
+        @Override
+        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+          return 1f;
+        }
+
+      };
+    }
+
+  };
+
   // disabled by default
   private static QueryCache DEFAULT_QUERY_CACHE = null;
   private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
@@ -100,7 +150,7 @@ public class IndexSearcher {
    * Expert: returns a default Similarity instance.
    * In general, this method is only called to initialize searchers and writers.
    * User code and query implementations should respect
-   * {@link IndexSearcher#getSimilarity()}.
+   * {@link IndexSearcher#getSimilarity(boolean)}.
    * @lucene.internal
    */
   public static Similarity getDefaultSimilarity() {
@@ -273,8 +323,15 @@ public class IndexSearcher {
     this.similarity = similarity;
   }
 
-  public Similarity getSimilarity() {
-    return similarity;
+  /** Expert: Get the {@link Similarity} to use to compute scores. When
+   *  {@code needsScores} is {@code false}, this method will return a simple
+   *  {@link Similarity} that does not leverage scoring factors such as norms.
+   *  When {@code needsScores} is {@code true}, this returns the
+   *  {@link Similarity} that has been set through {@link #setSimilarity(Similarity)}
+   *  or the {@link #getDefaultSimilarity()} default {@link Similarity} if none
+   *  has been set explicitely. */
+  public Similarity getSimilarity(boolean needsScores) {
+    return needsScores ? similarity : NON_SCORING_SIMILARITY;
   }
 
   /**
@@ -625,7 +682,7 @@ public class IndexSearcher {
     query = rewrite(query);
     Weight weight = createWeight(query, needsScores);
     float v = weight.getValueForNormalization();
-    float norm = getSimilarity().queryNorm(v);
+    float norm = getSimilarity(needsScores).queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm)) {
       norm = 1.0f;
     }

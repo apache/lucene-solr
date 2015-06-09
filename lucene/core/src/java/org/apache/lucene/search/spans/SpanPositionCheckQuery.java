@@ -84,10 +84,6 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
       this.matchWeight = matchWeight;
     }
 
-    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
-      this(matchWeight, searcher, terms, SpanCollectorFactory.NO_OP_FACTORY);
-    }
-
     @Override
     public void extractTerms(Set<Term> terms) {
       matchWeight.extractTerms(terms);

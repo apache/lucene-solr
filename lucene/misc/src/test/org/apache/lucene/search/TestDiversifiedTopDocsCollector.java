@@ -373,7 +373,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     artistDocValues = ar.getSortedDocValues("artist");
 
     // All searches sort by song popularity 
-    final Similarity base = searcher.getSimilarity();
+    final Similarity base = searcher.getSimilarity(true);
     searcher.setSimilarity(new DocValueSimilarity(base, "weeksAtNumberOne"));
   }
 

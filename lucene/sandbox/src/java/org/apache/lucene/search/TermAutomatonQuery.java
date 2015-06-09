@@ -342,7 +342,7 @@ public class TermAutomatonQuery extends Query {
       this.automaton = automaton;
       this.searcher = searcher;
       this.termStates = termStates;
-      this.similarity = searcher.getSimilarity();
+      this.similarity = searcher.getSimilarity(true);
       List<TermStatistics> allTermStats = new ArrayList<>();
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();

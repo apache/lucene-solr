@@ -92,6 +92,9 @@ Bug fixes
 * LUCENE-6482: Fix class loading deadlock relating to Codec initialization,
   default codec and SPI discovery.  (Shikhar Bhushan, Uwe Schindler)
 
+* LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
+  in order to not load unnecessary information like norms. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
