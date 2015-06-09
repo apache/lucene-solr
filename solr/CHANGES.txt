@@ -104,9 +104,6 @@ Bug Fixes
 * SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
   requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
-* SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
-  can result in incorrect results or an exception. (yonik)
-
 * SOLR-7518: New Facet Module should respect shards.tolerant and process all non-failing shards
   instead of throwing an exception. (yonik)
 
@@ -173,6 +170,10 @@ Bug Fixes
 
 * SOLR-7588: Fix javascript bug introduced by SOLR-7409 that breaks the
   dataimport screen in the admin UI. (Bill Bell via Shawn Heisey)
+
+* SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
+  can result in incorrect results or an exception. (yonik)
+
 
 Other Changes
 ----------------------
