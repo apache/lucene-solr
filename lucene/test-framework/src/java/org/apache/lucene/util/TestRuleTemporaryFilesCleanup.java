@@ -250,7 +250,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
               "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
                 + javaTempDir.toAbsolutePath());            
         }
-        f = javaTempDir.resolve(prefix + " " + ctx.getRunnerSeedAsString() 
+        f = javaTempDir.resolve(prefix + "_" + ctx.getRunnerSeedAsString() 
               + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
         try {
           Files.createDirectory(f);

@@ -59,6 +59,13 @@
       <artifact name="hadoop-mapreduce-client-jobclient" type="jar" ext="jar" />
       <artifact name="hadoop-mapreduce-client-jobclient" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
+    
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-applicationhistoryservice" rev="${/org.apache.hadoop/hadoop-yarn-server-applicationhistoryservice}" conf="test"/>
+    <dependency org="org.fusesource.leveldbjni" name="leveldbjni" rev="${/org.fusesource.leveldbjni/leveldbjni}" conf="test"/>
+    <dependency org="org.iq80.leveldb" name="leveldb" rev="${/org.iq80.leveldb/leveldb}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.iq80.leveldb" name="leveldb-api" rev="${/org.iq80.leveldb/leveldb-api}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.apache.curator" name="curator-framework" rev="${/org.apache.curator/curator-framework}" conf="test"/>
+    <dependency org="org.apache.curator" name="curator-client" rev="${/org.apache.curator/curator-client}" conf="test"/>
 
     <dependency org="aopalliance" name="aopalliance" rev="${/aopalliance/aopalliance}" conf="test" />
     <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="${/com.sun.xml.bind/jaxb-impl}" conf="test" />
