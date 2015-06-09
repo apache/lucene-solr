@@ -93,6 +93,26 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
+  public void testFailureLucene6535() throws IOException {
+    setupStrategy();
+
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    final GeoPath path = new GeoPath(PlanetModel.SPHERE, 29 * DEGREES_TO_RADIANS);
+    path.addPoint(55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS);
+    path.addPoint(-90.0 * DEGREES_TO_RADIANS, 0.0);
+    path.addPoint(54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS);
+    path.addPoint(-90.0 * DEGREES_TO_RADIANS, 0.0);
+    path.done();
+    final Shape shape = new Geo3dShape(path,ctx);
+    final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
+    testOperation(rect,SpatialOperation.Intersects,shape,true);
+  }
+
+  @Test
   @Repeat(iterations = 10)
   public void testOperations() throws IOException {
     setupStrategy();
