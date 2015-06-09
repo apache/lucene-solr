@@ -194,7 +194,7 @@ final class ZooKeeperInspector {
       Files.move(dir, confDir);
       dir = confDir.getParentFile();
     }
-    FileUtils.writeStringToFile(new File(dir, "solr.xml"), "<solr></solr>", "UTF-8");
+    FileUtils.writeStringToFile(new File(dir, "solr.xml"), "<solr><solrcloud></solrcloud></solr>", "UTF-8");
     verifyConfigDir(confDir);
     return dir;
   }

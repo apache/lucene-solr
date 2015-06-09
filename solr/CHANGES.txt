@@ -176,7 +176,9 @@ Bug Fixes
 
 * SOLR-7574: A request with a json content type but no body caused a null pointer exception (yonik)
   
-
+* SOLR-7512: SolrOutputFormat creates an invalid solr.xml in the solr home zip for MapReduceIndexerTool.
+  (Mark Miller, Adam McElwee)
+  
 Other Changes
 ----------------------
 
