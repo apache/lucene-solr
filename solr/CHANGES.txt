@@ -104,9 +104,6 @@ Bug Fixes
 * SOLR-7361: Slow loading SolrCores should not hold up all other SolrCores that have finished loading from serving
   requests. (Mark Miller, Timothy Potter, Ramkumar Aiyengar)
 
-* SOLR-7518: New Facet Module should respect shards.tolerant and process all non-failing shards
-  instead of throwing an exception. (yonik)
-
 * SOLR-4506: Clean-up old (unused) index directories in the background after initializing a new index;
   previously, Solr would leave old index.yyyyMMddHHmmssSSS directories left behind after failed recoveries
   in the data directory, which unnecessarily consumes disk space. (Mark Miller, Timothy Potter)
@@ -174,6 +171,8 @@ Bug Fixes
 * SOLR-7616: Faceting on a numeric field with a unique() subfacet function on another numeric field
   can result in incorrect results or an exception. (yonik)
 
+* SOLR-7518: New Facet Module should respect shards.tolerant and process all non-failing shards
+  instead of throwing an exception. (yonik)
 
 Other Changes
 ----------------------
