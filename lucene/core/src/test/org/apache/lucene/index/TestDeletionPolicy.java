@@ -17,14 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,6 +29,15 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -286,6 +287,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
         // 1 second resolution, allow +1 second in commit
         // age tolerance:
         SegmentInfos sis = SegmentInfos.readCommit(dir, fileName);
+        assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
+        assertEquals(Version.LATEST, sis.getMinSegmentLuceneVersion());
         long modTime = Long.parseLong(sis.getUserData().get("commitTime"));
         oneSecondResolution &= (modTime % 1000) == 0;
         final long leeway = (long) ((SECONDS + (oneSecondResolution ? 1.0:0.0))*1000);

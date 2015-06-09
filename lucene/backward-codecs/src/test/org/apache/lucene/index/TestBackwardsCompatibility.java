@@ -483,6 +483,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         fail("DirectoryReader.open should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
+        if (VERBOSE) {
+          System.out.println("TEST: got expected exc:");
+          e.printStackTrace(System.out);
+        }
       } finally {
         if (reader != null) reader.close();
         reader = null;
@@ -758,6 +762,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void changeIndexWithAdds(Random random, Directory dir, Version nameVersion) throws IOException {
+    SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+    if (nameVersion.onOrAfter(Version.LUCENE_5_3_0)) {
+      assertEquals(nameVersion, infos.getCommitLuceneVersion());
+    }
+
+    if (nameVersion.onOrAfter(Version.LUCENE_4_10_0)) {
+      // Before 4.10.0 we only tracked minor (not bugfix) versions, so a 4.6.2 backwards index would have 4.6.0 as its version:
+      assertEquals(nameVersion, infos.getMinSegmentLuceneVersion());
+    }
+
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
                                                  .setOpenMode(OpenMode.APPEND)
