@@ -89,6 +89,16 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "response/numFound==1"
     );
 
+    // test multiple json params with one being zero length
+    client.testJQ( params("json","{query:'cat_s:A'}", "json","{filter:'where_s:NY'}", "json","")
+        , "response/numFound==1"
+    );
+
+    // test multiple json params with one being a comment
+    client.testJQ( params("json","{query:'cat_s:A'}", "json","{filter:'where_s:NY'}", "json","/* */")
+        , "response/numFound==1"
+    );
+
     // test merging multi-valued params into list
     client.testJQ( params("json","{query:'*:*'}", "json","{filter:'where_s:NY'}", "json","{filter:'cat_s:A'}")
         , "response/numFound==1"
@@ -111,6 +121,11 @@ public class TestJsonRequest extends SolrTestCaseHS {
 
     // test inserting and merging with paths
     client.testJQ( params("json.query","'*:*'", "json.filter","'where_s:NY'", "json.filter","'cat_s:A'")
+        , "response/numFound==1"
+    );
+
+    // test inserting and merging with paths with an empty string and a comment
+    client.testJQ( params("json.query","'*:*'", "json.filter","'where_s:NY'", "json.filter","'cat_s:A'", "json.filter","", "json.filter","/* */")
         , "response/numFound==1"
     );
 

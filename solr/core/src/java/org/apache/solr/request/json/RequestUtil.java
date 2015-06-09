@@ -76,7 +76,9 @@ public class RequestUtil {
 
         try {
           String jsonString = IOUtils.toString( cs.getReader() );
-          MultiMapSolrParams.addParam(JSON, jsonString, map);
+          if (jsonString != null) {
+            MultiMapSolrParams.addParam(JSON, jsonString, map);
+          }
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exception reading content stream for request:"+req, e);
         }
@@ -257,7 +259,10 @@ public class RequestUtil {
       path = path.subList(1, path.size());
       for (String jsonStr : vals) {
         Object o = ObjectBuilder.fromJSON(jsonStr);
-        ObjectUtil.mergeObjects(json, path, o, handler);
+        // zero-length strings or comments can cause this to be null (and a zero-length string can result from a json content-type w/o a body)
+        if (o != null) {
+          ObjectUtil.mergeObjects(json, path, o, handler);
+        }
       }
     } catch (IOException e) {
       // impossible
