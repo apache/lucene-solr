@@ -81,10 +81,6 @@ Other Changes
 
 * SOLR-7599: Remove cruft from SolrCloud tests. (shalin)
 
-* SOLR-7623: Fix regression from SOLR-7484 that made it impossible to override 
-  SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
-  functions in HttpSolrCall.  (ryan)
-
 * SOLR-7636: CLUSTERSTATUS API is executed at CollectionsHandler (noble)
 
 * LUCENE-6508: Remove ability to forcefully unlock an index.
@@ -121,6 +117,10 @@ Bug Fixes
 
 Other Changes
 ----------------------
+
+* SOLR-7623: Fix regression from SOLR-7484 that made it impossible to override 
+  SolrDispatchFilter#execute() and SolrDispatchFilter#sendError().  You can now override these
+  functions in HttpSolrCall.  (ryan)
 
 * SOLR-7648: Expose remote IP and Host via the AuthorizationContext to be used by the authorization plugin.
   (Ishan Chattopadhyaya via Anshum Gupta)
