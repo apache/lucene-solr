@@ -70,11 +70,12 @@ function processAdd(cmd) {
 
   var token_stream =
        analyzer.tokenStream("content", new java.io.StringReader(doc.getFieldValue("content")));
-  var term_att = token_stream.getAttribute(org.apache.lucene.analysis.tokenattributes.CharTermAttribute.class);
-  var type_att = token_stream.getAttribute(org.apache.lucene.analysis.tokenattributes.TypeAttribute.class);
+
+  var term_att = token_stream.getAttribute(Packages.org.apache.lucene.analysis.tokenattributes.CharTermAttribute);
+  var type_att = token_stream.getAttribute(Packages.org.apache.lucene.analysis.tokenattributes.TypeAttribute);
   token_stream.reset();
   while (token_stream.incrementToken()) {
-    doc.addField(type_att.type().replace(/\<|\>/g,'').toLowerCase()+"_ss", term_att.toString());
+    doc.addField(type_att.type().replaceAll(/\<|\>/g,"").toLowerCase()+"_ss", term_att.toString());
   }
   token_stream.end();
   token_stream.close();
