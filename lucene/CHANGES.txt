@@ -75,6 +75,9 @@ Bug fixes
   closed listeners. This was fixed by LUCENE-6501.
   (Adrien Grand, Uwe Schindler)
 
+* LUCENE-6520: Geo3D GeoPath.done() would throw an NPE if adjacent path
+  segments were co-linear. (Karl Wright via David Smiley)
+
 * LUCENE-5805: QueryNodeImpl.removeFromParent was doing nothing in a
   costly manner (Christoph Kaser, Cao Manh Dat via Mike McCAndless)
 
@@ -99,13 +102,6 @@ Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
   ClassCache Reaper in test framework. (Dawid Weiss)
-
-======================= Lucene 5.2.1 =======================
-
-Bug fixes
-
-* LUCENE-6520: Geo3D GeoPath.done() would throw an NPE if adjacent path
-  segments were co-linear. (Karl Wright via David Smiley)
 
 ======================= Lucene 5.2.0 =======================
 
