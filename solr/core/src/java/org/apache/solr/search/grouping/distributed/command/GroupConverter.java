@@ -43,7 +43,7 @@ import org.apache.solr.schema.TrieField;
  * it all with bytes, to not change any wire serialization etc.
  */
 class GroupConverter {
-
+  
   static Collection<SearchGroup<BytesRef>> fromMutable(SchemaField field, Collection<SearchGroup<MutableValue>> values) {
     if (values == null) {
       return null;
@@ -64,7 +64,7 @@ class GroupConverter {
     }
     return result;
   }
-
+  
   static Collection<SearchGroup<MutableValue>> toMutable(SchemaField field, Collection<SearchGroup<BytesRef>> values) {
     FieldType fieldType = field.getType();
     List<SearchGroup<MutableValue>> result = new ArrayList<>(values.size());
@@ -132,17 +132,17 @@ class GroupConverter {
     }
     return result;
   }
-
+  
   static TopGroups<BytesRef> fromMutable(SchemaField field, TopGroups<MutableValue> values) {
     if (values == null) {
       return null;
     }
-
+    
     FieldType fieldType = field.getType();
-
+    
     @SuppressWarnings("unchecked")
     GroupDocs<BytesRef> groupDocs[] = new GroupDocs[values.groups.length];
-
+    
     for (int i = 0; i < values.groups.length; i++) {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;
@@ -155,7 +155,7 @@ class GroupConverter {
       }
       groupDocs[i] = new GroupDocs<BytesRef>(original.score, original.maxScore, original.totalHits, original.scoreDocs, groupValue, original.groupSortValues);
     }
-
+    
     return new TopGroups<BytesRef>(values.groupSort, values.withinGroupSort, values.totalHitCount, values.totalGroupedHitCount, groupDocs, values.maxScore);
   }
 }

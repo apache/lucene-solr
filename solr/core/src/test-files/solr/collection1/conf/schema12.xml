@@ -524,7 +524,6 @@
 
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
    <dynamicField name="*_is"  type="int"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_idv"  type="int"    indexed="true"  stored="true" docValues="true" multiValued="false" />
    <dynamicField name="*_s1"  type="string"  indexed="true" stored="true" multiValued="false"/>
    <!-- :TODO: why are these identical?!?!?! -->
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" multiValued="true"/>
