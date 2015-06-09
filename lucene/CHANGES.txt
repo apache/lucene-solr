@@ -61,6 +61,11 @@ New Features
   GeoPointInPolygonQuery for simple "indexed lat/lon point in
   bbox/shape" searching.  (Nick Knize via Mike McCandless)
 
+* LUCENE-5954: The segments_N commit point now stores the Lucene
+  version that wrote the commit as well as the lucene version that
+  wrote the oldest segment in the index, for faster checking of "too
+  old" indices (Ryan Ernst, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
