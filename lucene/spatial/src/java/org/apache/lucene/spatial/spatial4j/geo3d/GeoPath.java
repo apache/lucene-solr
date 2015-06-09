@@ -120,8 +120,12 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       final SidedPlane candidate4 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.LRHC, prevSegment.URHC, currentSegment.ULHC);
 
       if (candidate1 == null && candidate2 == null && candidate3 == null && candidate4 == null) {
-        // The planes are identical.  We don't need a circle at all.  Special constructor...
-        endPoints.add(new SegmentEndpoint(currentSegment.start));
+        // The planes are identical.  We wouldn't need a circle at all except for the possibility of
+        // backing up, which is hard to detect here.
+        final SegmentEndpoint midEndpoint = new SegmentEndpoint(currentSegment.start, 
+          prevSegment.endCutoffPlane, currentSegment.startCutoffPlane, currentSegment.ULHC, currentSegment.LLHC);
+        //don't need a circle at all.  Special constructor...
+        endPoints.add(midEndpoint);
       } else {
         endPoints.add(new SegmentEndpoint(currentSegment.start,
           prevSegment.endCutoffPlane, currentSegment.startCutoffPlane,
@@ -414,6 +418,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
    * Note well: This is not necessarily a circle.  There are four cases:
    * (1) The path consists of a single endpoint.  In this case, we build a simple circle with the proper cutoff offset.
    * (2) This is the end of a path.  The circle plane must be constructed to go through two supplied points and be perpendicular to a connecting plane.
+   * (2.5) Intersection, but the path on both sides is linear.  We generate a circle, but we use the cutoff planes to limit its influence in the straight line case.
    * (3) This is an intersection in a path.  We are supplied FOUR planes.  If there are intersections within bounds for both upper and lower, then
    *    we generate no circle at all.  If there is one intersection only, then we generate a plane that includes that intersection, as well as the remaining
    *    cutoff plane/edge plane points.
@@ -457,6 +462,18 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       this.notablePoints = new GeoPoint[]{topEdgePoint, bottomEdgePoint};
       // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, cutoffPlane, topEdgePoint, bottomEdgePoint);
+    }
+
+    /** Constructor for case (2.5).
+     * Generate an endpoint, given two cutoff planes plus upper and lower edge points.
+     */
+    public SegmentEndpoint(final GeoPoint point,
+      final SidedPlane cutoffPlane1, final SidedPlane cutoffPlane2, final GeoPoint topEdgePoint, final GeoPoint bottomEdgePoint) {
+      this.point = point;
+      this.cutoffPlanes = new Membership[]{new SidedPlane(cutoffPlane1), new SidedPlane(cutoffPlane2)};
+      this.notablePoints = new GeoPoint[]{topEdgePoint, bottomEdgePoint};
+      // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
+      this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, cutoffPlane1, topEdgePoint, bottomEdgePoint);
     }
     
     /** Constructor for case (3).
