@@ -240,7 +240,7 @@ public class TestBoolean2 extends LuceneTestCase {
     query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
 
     int[] expDocNrs = {2, 3};
-    Similarity oldSimilarity = searcher.getSimilarity();
+    Similarity oldSimilarity = searcher.getSimilarity(true);
     try {
       searcher.setSimilarity(new DefaultSimilarity(){
         @Override
@@ -276,7 +276,7 @@ public class TestBoolean2 extends LuceneTestCase {
         QueryUtils.check(random(), q1,searcher); // baseline sim
         try {
           // a little hackish, QueryUtils.check is too costly to do on bigSearcher in this loop.
-          searcher.setSimilarity(bigSearcher.getSimilarity()); // random sim
+          searcher.setSimilarity(bigSearcher.getSimilarity(true)); // random sim
           QueryUtils.check(random(), q1, searcher);
         } finally {
           searcher.setSimilarity(new DefaultSimilarity()); // restore

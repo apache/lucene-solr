@@ -46,9 +46,9 @@ public class SpanWeight extends Weight {
   protected final SpanQuery query;
   protected Similarity.SimWeight stats;
 
-  public SpanWeight(SpanQuery query, IndexSearcher searcher) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, boolean needsScores) throws IOException {
     super(query);
-    this.similarity = searcher.getSimilarity();
+    this.similarity = searcher.getSimilarity(needsScores);
     this.query = query;
 
     termContexts = new HashMap<>();

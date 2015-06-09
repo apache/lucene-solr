@@ -68,7 +68,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     // no boosting
     IndexSearcher searcher1 = newSearcher(ir, false);
-    final Similarity base = searcher1.getSimilarity();
+    final Similarity base = searcher1.getSimilarity(true);
     // boosting
     IndexSearcher searcher2 = newSearcher(ir, false);
     searcher2.setSimilarity(new PerFieldSimilarityWrapper() {
