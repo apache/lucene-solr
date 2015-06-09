@@ -122,6 +122,11 @@ public class LibVersionsCheckTask extends Task {
   private File commonBuildDir;
 
   /**
+   * Location of ivy cache resolution directory.
+   */
+  private File ivyResolutionCacheDir;
+  
+  /**
    * A logging level associated with verbose logging.
    */
   private int verboseLevel = Project.MSG_VERBOSE;
@@ -173,6 +178,10 @@ public class LibVersionsCheckTask extends Task {
 
   public void setIvySettingsFile(File file) {
     ivySettingsFile = file;
+  }
+  
+  public void setIvyResolutionCacheDir(File dir) {
+    ivyResolutionCacheDir = dir;
   }
 
   public void setCommonBuildDir(File file) {
@@ -673,6 +682,7 @@ public class LibVersionsCheckTask extends Task {
     try {
       ivySettings.setVariable("common.build.dir", commonBuildDir.getAbsolutePath());
       ivySettings.setVariable("ivy.exclude.types", "source|javadoc");
+      ivySettings.setVariable("ivy.resolution-cache.dir", ivyResolutionCacheDir.getAbsolutePath());
       ivySettings.setBaseDir(commonBuildDir);
       ivySettings.setDefaultConflictManager(new NoConflictManager());
       ivy = Ivy.newInstance(ivySettings);

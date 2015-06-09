@@ -75,9 +75,14 @@
   <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
   <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
 
+  <property name="build.dir" location="build"/>
+  <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
+  <property name="common.build.dir" location="${common.dir}/build"/>
+
   <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
   <property name="ivy.sync" value="true"/>
+  <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
@@ -229,9 +234,6 @@
   <property name="resources.dir" location="${src.dir}/../resources"/>
   <property name="tests.src.dir" location="src/test"/>
   <available property="module.has.tests" type="dir" file="${tests.src.dir}"/>
-  <property name="build.dir" location="build"/>
-  <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
-  <property name="common.build.dir" location="${common.dir}/build"/>
   <property name="dist.dir" location="${common.dir}/dist"/>
   <property name="maven.dist.dir" location="${dist.dir}/maven"/>
   <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>

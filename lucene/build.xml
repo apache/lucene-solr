@@ -97,6 +97,7 @@
     <lib-versions-check-macro dir="${common.dir}/.."
                               centralized.versions.file="${common.dir}/ivy-versions.properties"
                               ivy.settings.file="${common.dir}/ivy-settings.xml"
+    	                      ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
                               common.build.dir="${common.build.dir}"
                               ignore.conflicts.file="${common.dir}/ivy-ignore-conflicts.properties"/>
   </target>
