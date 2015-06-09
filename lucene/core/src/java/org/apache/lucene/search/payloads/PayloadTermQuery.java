@@ -67,14 +67,14 @@ public class PayloadTermQuery extends SpanTermQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PayloadTermWeight(this, searcher);
+    return new PayloadTermWeight(this, searcher, needsScores);
   }
 
   protected class PayloadTermWeight extends SpanWeight {
 
-    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher)
+    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher, boolean needsScores)
         throws IOException {
-      super(query, searcher);
+      super(query, searcher, needsScores);
     }
 
     @Override

@@ -354,9 +354,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
       assertTrue("similarity doesn't extend DefaultSimilarity, " + 
                  "config or defaults have changed since test was written",
-                 searcher.getSimilarity() instanceof DefaultSimilarity);
+                 searcher.getSimilarity(true) instanceof DefaultSimilarity);
 
-      DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity();
+      DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity(true);
       
       NumericDocValues titleNorms = reader.getNormValues("title");
       NumericDocValues fooNorms = reader.getNormValues("foo_t");

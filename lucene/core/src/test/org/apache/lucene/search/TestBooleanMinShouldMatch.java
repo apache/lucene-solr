@@ -396,7 +396,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
 
     public void testRewriteCoord1() throws Exception {
-      final Similarity oldSimilarity = s.getSimilarity();
+      final Similarity oldSimilarity = s.getSimilarity(true);
       try {
         s.setSimilarity(new DefaultSimilarity() {
           @Override
@@ -418,7 +418,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
     
     public void testRewriteNegate() throws Exception {
-      final Similarity oldSimilarity = s.getSimilarity();
+      final Similarity oldSimilarity = s.getSimilarity(true);
       try {
         s.setSimilarity(new DefaultSimilarity() {
           @Override

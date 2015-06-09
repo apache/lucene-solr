@@ -138,7 +138,7 @@ public class MultiPhraseQuery extends Query {
       throws IOException {
       super(MultiPhraseQuery.this);
       this.needsScores = needsScores;
-      this.similarity = searcher.getSimilarity();
+      this.similarity = searcher.getSimilarity(needsScores);
       final IndexReaderContext context = searcher.getTopReaderContext();
       
       // compute idf

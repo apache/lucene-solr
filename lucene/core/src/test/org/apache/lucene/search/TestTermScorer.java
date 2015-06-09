@@ -24,8 +24,10 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -40,7 +42,7 @@ public class TestTermScorer extends LuceneTestCase {
   protected String[] values = new String[] {"all", "dogs dogs", "like",
       "playing", "fetch", "all"};
   protected IndexSearcher indexSearcher;
-  protected IndexReader indexReader;
+  protected LeafReader indexReader;
   
   @Override
   public void setUp() throws Exception {
@@ -180,4 +182,31 @@ public class TestTermScorer extends LuceneTestCase {
     }
   }
   
+  public void testDoesNotLoadNorms() throws IOException {
+    Term allTerm = new Term(FIELD, "all");
+    TermQuery termQuery = new TermQuery(allTerm);
+    
+    LeafReader forbiddenNorms = new FilterLeafReader(indexReader) {
+      @Override
+      public NumericDocValues getNormValues(String field) throws IOException {
+        fail("Norms should not be loaded");
+        // unreachable
+        return null;
+      }
+    };
+    // We don't use newSearcher because it sometimes runs checkIndex which loads norms
+    IndexSearcher indexSearcher = new IndexSearcher(forbiddenNorms);
+    
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
+    try {
+      weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
+      fail("Should load norms");
+    } catch (AssertionError e) {
+      // ok
+    }
+    
+    weight = indexSearcher.createNormalizedWeight(termQuery, false);
+    // should not fail this time since norms are not necessary
+    weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
+  }
 }

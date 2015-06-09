@@ -71,7 +71,7 @@ public class PayloadNearQuery extends SpanNearQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PayloadNearSpanWeight(this, searcher);
+    return new PayloadNearSpanWeight(this, searcher, needsScores);
   }
 
   @Override
@@ -129,9 +129,9 @@ public class PayloadNearQuery extends SpanNearQuery {
   }
 
   public class PayloadNearSpanWeight extends SpanWeight {
-    public PayloadNearSpanWeight(SpanQuery query, IndexSearcher searcher)
+    public PayloadNearSpanWeight(SpanQuery query, IndexSearcher searcher, boolean needsScores)
         throws IOException {
-      super(query, searcher);
+      super(query, searcher, needsScores);
     }
 
     @Override

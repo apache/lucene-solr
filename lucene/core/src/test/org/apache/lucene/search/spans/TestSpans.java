@@ -293,7 +293,7 @@ public class TestSpans extends LuceneTestCase {
         }
       };
   
-      final Similarity oldSim = searcher.getSimilarity();
+      final Similarity oldSim = searcher.getSimilarity(true);
       Scorer spanScorer;
       try {
         searcher.setSimilarity(sim);

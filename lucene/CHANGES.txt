@@ -13,6 +13,9 @@ Bug Fixes
 * LUCENE-6523: NRT readers now reflect a new commit even if there is
   no change to the commit user data (Mike McCandless)
 
+* LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
+  in order to not load unnecessary information like norms. (Adrien Grand)
+
 ======================= Lucene 5.2.0 =======================
 
 New Features
