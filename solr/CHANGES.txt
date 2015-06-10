@@ -46,6 +46,9 @@ Bug Fixes
 
 * SOLR-7655: The DefaultSolrHighlighter since 5.0 was determining if payloads were present in a way
   that was slow, especially when lots of fields were highlighted.  It's now fast.  (David Smiley)
+
+* SOLR-7493: Requests aren't distributed evenly if the collection isn't present locally.
+  (Jeff Wartes, shalin)
   
 Other Changes
 ----------------------

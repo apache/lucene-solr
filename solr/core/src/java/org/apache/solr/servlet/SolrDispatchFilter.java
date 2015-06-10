@@ -93,7 +93,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {
       String[] excludeArray = exclude.split(",");
-      excludePatterns = new ArrayList();
+      excludePatterns = new ArrayList<>();
       for (String element : excludeArray) {
         excludePatterns.add(Pattern.compile(element));
       }
