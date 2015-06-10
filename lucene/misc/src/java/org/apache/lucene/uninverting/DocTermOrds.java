@@ -67,13 +67,11 @@ import org.apache.lucene.util.StringHelper;
  * are also de-dup'd (ie if doc has same term more than once
  * in this field, you'll only get that ord back once).
  *
- * This class tests whether the provided reader is able to
- * retrieve terms by ord (ie, it's single segment, and it
- * uses an ord-capable terms index).  If not, this class
+ * This class
  * will create its own term index internally, allowing to
  * create a wrapped TermsEnum that can handle ord.  The
  * {@link #getOrdTermsEnum} method then provides this
- * wrapped enum, if necessary.
+ * wrapped enum.
  *
  * The RAM consumption of this class can be high!
  *
@@ -152,7 +150,7 @@ public class DocTermOrds implements Accountable {
   protected long sizeOfIndexedStrings;
 
   /** Holds the indexed (by default every 128th) terms. */
-  protected BytesRef[] indexedTermsArray;
+  protected BytesRef[] indexedTermsArray = new BytesRef[0];
 
   /** If non-null, only terms matching this prefix were
    *  indexed. */
@@ -219,27 +217,27 @@ public class DocTermOrds implements Accountable {
     indexInterval = 1 << indexIntervalBits;
   }
 
-  /** Returns a TermsEnum that implements ord.  If the
-   *  provided reader supports ord, we just return its
-   *  TermsEnum; if it does not, we build a "private" terms
+  /** 
+   * Returns a TermsEnum that implements ord, or null if no terms in field.
+   * <p>
+   *  we build a "private" terms
    *  index internally (WARNING: consumes RAM) and use that
    *  index to implement ord.  This also enables ord on top
    *  of a composite reader.  The returned TermsEnum is
    *  unpositioned.  This returns null if there are no terms.
-   *
+   * </p>
    *  <p><b>NOTE</b>: you must pass the same reader that was
-   *  used when creating this class */
+   *  used when creating this class 
+   */
   public TermsEnum getOrdTermsEnum(LeafReader reader) throws IOException {
-    if (indexedTermsArray == null) {
-      //System.out.println("GET normal enum");
-      final Terms terms = reader.terms(field);
-      if (terms == null) {
-        return null;
-      } else {
-        return terms.iterator();
-      }
+    // NOTE: see LUCENE-6529 before attempting to optimize this method to
+    // return a TermsEnum directly from the reader if it already supports ord().
+
+    assert null != indexedTermsArray;
+    
+    if (0 == indexedTermsArray.length) {
+      return null;
     } else {
-      //System.out.println("GET wrapped enum ordBase=" + ordBase);
       return new OrdWrappedTermsEnum(reader);
     }
   }
@@ -297,12 +295,9 @@ public class DocTermOrds implements Accountable {
       return;
     }
 
-    // If we need our "term index wrapper", these will be
-    // init'd below:
-    List<BytesRef> indexedTerms = null;
-    PagedBytes indexedTermsBytes = null;
-
-    boolean testedOrd = false;
+    // For our "term index wrapper"
+    final List<BytesRef> indexedTerms = new ArrayList<>();
+    final PagedBytes indexedTermsBytes = new PagedBytes(15);
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -336,23 +331,9 @@ public class DocTermOrds implements Accountable {
       }
       //System.out.println("visit term=" + t.utf8ToString() + " " + t + " termNum=" + termNum);
 
-      if (!testedOrd) {
-        try {
-          ordBase = (int) te.ord();
-          //System.out.println("got ordBase=" + ordBase);
-        } catch (UnsupportedOperationException uoe) {
-          // Reader cannot provide ord support, so we wrap
-          // our own support by creating our own terms index:
-          indexedTerms = new ArrayList<>();
-          indexedTermsBytes = new PagedBytes(15);
-          //System.out.println("NO ORDS");
-        }
-        testedOrd = true;
-      }
-
       visitTerm(te, termNum);
 
-      if (indexedTerms != null && (termNum & indexIntervalMask) == 0) {
+      if ((termNum & indexIntervalMask) == 0) {
         // Index this term
         sizeOfIndexedStrings += t.length;
         BytesRef indexedTerm = new BytesRef();
@@ -547,9 +528,7 @@ public class DocTermOrds implements Accountable {
       }
 
     }
-    if (indexedTerms != null) {
-      indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
-    }
+    indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
 
     long endTime = System.currentTimeMillis();
 
@@ -598,9 +577,10 @@ public class DocTermOrds implements Accountable {
     return pos;
   }
 
-  /* Only used if original IndexReader doesn't implement
-   * ord; in this case we "wrap" our own terms index
-   * around it. */
+  /** 
+   * "wrap" our own terms index around the original IndexReader. 
+   * Only valid if there are terms for this field rom the original reader
+   */
   private final class OrdWrappedTermsEnum extends TermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
@@ -608,6 +588,7 @@ public class DocTermOrds implements Accountable {
     
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
+      assert 0 != indexedTermsArray.length;
       termsEnum = reader.fields().terms(field).iterator();
     }
 

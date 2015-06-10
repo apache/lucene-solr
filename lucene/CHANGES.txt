@@ -81,6 +81,10 @@ API Changes
   SpanPayloadNearCheckQuery have moved from the .spans package to the .payloads
   package. (Alan Woodward, David Smiley, Paul Elschot, Robert Muir)
 
+* LUCENE-6529: Removed an optimization in UninvertingReader that was causing
+  incorrect results for Numeric fields using precisionStep
+  (hossman, Robert Muir)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
