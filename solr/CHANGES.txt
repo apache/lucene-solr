@@ -141,6 +141,8 @@ Other Changes
 * SOLR-7645: Remove explicitly defined request handlers from example and test solrconfig's that are
   already defined implicitly, such as /admin/ping, /admin/system, and several others.  (ehatcher)
 
+* SOLR-7603: Fix test only bug in UpdateRequestProcessorFactoryTest (hossman)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
