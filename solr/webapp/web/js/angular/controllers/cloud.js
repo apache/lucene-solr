@@ -67,7 +67,6 @@ var treeSubController = function($scope, Zookeeper) {
     $scope.initTree = function() {
       Zookeeper.simple(function(data) {
         $scope.tree = data.tree;
-        //$scope.jstree.json_data.data = data.tree;
       });
     };
 
@@ -78,6 +77,8 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
     $scope.showTree = false;
     $scope.showGraph = true;
 
+    $scope.filterType = "status";
+
     $scope.helperData = {
         protocol: [],
         host: [],
@@ -86,98 +87,158 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
         pathname: []
     };
 
+    $scope.next = function() {
+        $scope.pos += $scope.rows;
+        $scope.initGraph();
+    }
 
-    Zookeeper.liveNodes(function (data) {
-        var live_nodes = {};
-        for (var c in data.tree[0].children) {
-            live_nodes[data.tree[0].children[c].data.title] = true;
-        }
-        Zookeeper.clusterState(function (data) {
-            eval("var state=" + data.znode.data); // @todo fix horrid means to parse JSON
+    $scope.previous = function() {
+        $scope.pos = Math.max(0, $scope.pos - $scope.rows);
+        $scope.initGraph();
+    }
 
-            var leaf_count = 0;
-            var graph_data = {
-                name: null,
-                children: []
-            };
+    $scope.resetGraph = function() {
+        $scope.pos = 0;
+        $scope.initGraph();
+    }
 
-            for (var c in state) {
-                var shards = [];
-                for (var s in state[c].shards) {
-                    var nodes = [];
-                    for (var n in state[c].shards[s].replicas) {
-                        leaf_count++;
-                        var replica = state[c].shards[s].replicas[n]
-
-                        var uri = replica.base_url;
-                        var parts = uri.match(/^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/);
-                        var uri_parts = {
-                            protocol: parts[1],
-                            host: parts[2],
-                            hostname: parts[3],
-                            port: parseInt(parts[5] || 80, 10),
-                            pathname: parts[6]
-                        };
-
-                        $scope.helperData.protocol.push(uri_parts.protocol);
-                        $scope.helperData.host.push(uri_parts.host);
-                        $scope.helperData.hostname.push(uri_parts.hostname);
-                        $scope.helperData.port.push(uri_parts.port);
-                        $scope.helperData.pathname.push(uri_parts.pathname);
-
-                        var status = replica.state;
-
-                        if (!live_nodes[replica.node_name]) {
-                            status = 'gone';
-                        }
-
-                        var node = {
-                            name: uri,
-                            data: {
-                                type: 'node',
-                                state: status,
-                                leader: 'true' === replica.leader,
-                                uri: uri_parts
-                            }
-                        };
-                        nodes.push(node);
-                    }
-
-                    var shard = {
-                        name: s,
-                        data: {
-                            type: 'shard'
-                        },
-                        children: nodes
-                    };
-                    shards.push(shard);
-                }
-
-                var collection = {
-                    name: c,
-                    data: {
-                        type: 'collection'
-                    },
-                    children: shards
-                };
-                graph_data.children.push(collection);
+    $scope.initGraph = function() {
+        Zookeeper.liveNodes(function (data) {
+            var live_nodes = {};
+            for (var c in data.tree[0].children) {
+                live_nodes[data.tree[0].children[c].data.title] = true;
             }
 
-            $scope.helperData.protocol = $.unique($scope.helperData.protocol);
-            $scope.helperData.host = $.unique($scope.helperData.host);
-            $scope.helperData.hostname = $.unique($scope.helperData.hostname);
-            $scope.helperData.port = $.unique($scope.helperData.port);
-            $scope.helperData.pathname = $.unique($scope.helperData.pathname);
+            var params = {view: "graph"};
+            if ($scope.rows) {
+                params.start = $scope.pos;
+                params.rows = $scope.rows;
+            }
 
+            var filter = ($scope.filterType=='status') ? $scope.pagingStatusFilter : $scope.pagingFilter;
 
-            $scope.graphData = graph_data;
-            $scope.leafCount = leaf_count;
-            $scope.isRadial = isRadial;
-            console.log("AFTER PREPARE GRAPH:");
-            console.dir(data);
-            console.log("LEAF COUNT: " + leaf_count);
+            if (filter) {
+                params.filterType = $scope.filterType;
+                params.filter = filter;
+            }
+
+            Zookeeper.clusterState(params, function (data) {
+                    eval("var state=" + data.znode.data); // @todo fix horrid means to parse JSON
+
+                    var leaf_count = 0;
+                    var graph_data = {
+                        name: null,
+                        children: []
+                    };
+
+                    for (var c in state) {
+                        var shards = [];
+                        for (var s in state[c].shards) {
+                            var nodes = [];
+                            for (var n in state[c].shards[s].replicas) {
+                                leaf_count++;
+                                var replica = state[c].shards[s].replicas[n]
+
+                                var uri = replica.base_url;
+                                var parts = uri.match(/^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/);
+                                var uri_parts = {
+                                    protocol: parts[1],
+                                    host: parts[2],
+                                    hostname: parts[3],
+                                    port: parseInt(parts[5] || 80, 10),
+                                    pathname: parts[6]
+                                };
+
+                                $scope.helperData.protocol.push(uri_parts.protocol);
+                                $scope.helperData.host.push(uri_parts.host);
+                                $scope.helperData.hostname.push(uri_parts.hostname);
+                                $scope.helperData.port.push(uri_parts.port);
+                                $scope.helperData.pathname.push(uri_parts.pathname);
+
+                                var status = replica.state;
+
+                                if (!live_nodes[replica.node_name]) {
+                                    status = 'gone';
+                                }
+
+                                var node = {
+                                    name: uri,
+                                    data: {
+                                        type: 'node',
+                                        state: status,
+                                        leader: 'true' === replica.leader,
+                                        uri: uri_parts
+                                    }
+                                };
+                                nodes.push(node);
+                            }
+
+                            var shard = {
+                                name: s,
+                                data: {
+                                    type: 'shard'
+                                },
+                                children: nodes
+                            };
+                            shards.push(shard);
+                        }
+
+                        var collection = {
+                            name: c,
+                            data: {
+                                type: 'collection'
+                            },
+                            children: shards
+                        };
+                        graph_data.children.push(collection);
+                    }
+
+                    $scope.helperData.protocol = $.unique($scope.helperData.protocol);
+                    $scope.helperData.host = $.unique($scope.helperData.host);
+                    $scope.helperData.hostname = $.unique($scope.helperData.hostname);
+                    $scope.helperData.port = $.unique($scope.helperData.port);
+                    $scope.helperData.pathname = $.unique($scope.helperData.pathname);
+
+                    if (!isRadial && data.znode && data.znode.paging) {
+                        $scope.showPaging = true;
+
+                        var parr = data.znode.paging.split('|');
+                        if (parr.length < 3) {
+                            $scope.showPaging = false;
+                        } else {
+                            $scope.start = Math.max(parseInt(parr[0]), 0);
+                            $scope.prevEnabled = ($scope.start > 0);
+                            $scope.rows = parseInt(parr[1]);
+                            $scope.total = parseInt(parr[2]);
+
+                            if ($scope.rows == -1) {
+                                $scope.showPaging = false;
+                            } else {
+                                var filterType = parr.length > 3 ? parr[3] : '';
+
+                                if (filterType == '' || filterType == 'none') filterType = 'status';
+
+                                +$('#cloudGraphPagingFilterType').val(filterType);
+
+                                var filter = parr.length > 4 ? parr[4] : '';
+                                var page = Math.floor($scope.start / $scope.rows) + 1;
+                                var pages = Math.ceil($scope.total / $scope.rows);
+                                $scope.last = Math.min($scope.start + $scope.rows, $scope.total);
+                                $scope.nextEnabled = ($scope.last < $scope.total);
+                            }
+                        }
+                    }
+                    else {
+                        $scope.showPaging = false;
+                    }
+                    $scope.graphData = graph_data;
+                    $scope.leafCount = leaf_count;
+                    $scope.isRadial = isRadial;
+                });
         });
-    });
+    };
+
+    $scope.initGraph();
 };
 
 solrAdminApp.directive('graph', function() {
@@ -244,7 +305,6 @@ solrAdminApp.directive('graph', function() {
 
             scope.$watch("data", function(newValue, oldValue) {
                 if (newValue) {
-                    console.log("NEW VALUE");
                     if (scope.isRadial) {
                         radialGraph(element, scope.data, scope.leafCount);
                     } else {
@@ -263,6 +323,7 @@ solrAdminApp.directive('graph', function() {
                     return [d.y, d.x];
                 });
 
+                d3.select('#canvas', element).html('');
                 var vis = d3.select('#canvas', element).append('svg')
                     .attr('width', w)
                     .attr('height', h)
@@ -319,6 +380,7 @@ solrAdminApp.directive('graph', function() {
                         return [d.y, d.x / 180 * Math.PI];
                     });
 
+                d3.select('#canvas', element).html('');
                 var vis = d3.select('#canvas').append('svg')
                     .attr('width', r * 2)
                     .attr('height', r * 2)

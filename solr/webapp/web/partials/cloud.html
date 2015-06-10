@@ -19,7 +19,7 @@ limitations under the License.
   <div id="frame">
 
     <div id="tree-content" class="content clearfix" ng-show="showTree">
-    <jstree class="tree" on-select="showTreeLink(url)" id="tree"></jstree>
+    <jstree class="tree" on-select="showTreeLink(url)" id="tree" data="tree"></jstree>
 
       <div id="file-content" class="clearfix">
 
@@ -60,6 +60,33 @@ limitations under the License.
           <li class="recovery_failed"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Recovery Failed</li>
           <li class="gone"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Gone</li>
         </ul>
+      </div>
+      <div style="width: 100%; text-align: center;" ng-show="showPaging">
+        <div id="cloudGraphPaging">
+         <button ng-show="prevEnabled" ng-click="previous()" id="cloudGraphPagingPrev">&lt; Previous</button>
+         <span ng-show="total==0">No collections found.</span>
+         <span ng-hide="total==0">Collections {{start}} - {{last}} of {{total}}.</span>&nbsp;
+
+         Filter by:&nbsp;<select ng-model="filterType" ng-change="initGraph()" id="cloudGraphPagingFilterType">
+           <option value="status">Status</option>
+           <option value="name">Name</option>
+         </select>&nbsp;T:{{filterType}}
+
+         <span ng-show="filterType=='status'">
+           <select ng-model="pagingStatusFilter" id="cloudGraphPagingStatusFilter" ng-change="resetGraph()">
+             <option value=""> - Any - </option>
+             <option value="healthy">Healthy</option>
+             <option value="degraded">Degraded</option>
+             <option value="downed_shard">Downed Shard</option>
+             <option value="recovering">Replica in Recovery</option>
+           </select>
+         </span>
+         <span ng-show="filterType=='name'">
+           <input ng-model="pagingFilter" type="text" size="10" name="filter" ng-change="resetGraph()"/>&nbsp;
+         </span>
+         Show <input ng-model="rows" ng-change="resetGraph()" type="text" size="2" name="rows" /> per page.
+         <button ng-show="nextEnabled" ng-click="next()">Next &gt;</button>
+        </div>
       </div>
 
     </div>
