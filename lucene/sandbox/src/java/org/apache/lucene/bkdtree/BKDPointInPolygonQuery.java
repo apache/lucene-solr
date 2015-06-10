@@ -17,10 +17,6 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -33,7 +29,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -73,6 +74,8 @@ public class BKDPointInPolygonQuery extends Query {
 
     this.polyLats = polyLats;
     this.polyLons = polyLons;
+
+    // TODO: we could also compute the maximal innner bounding box, to make relations faster to compute?
 
     double minLon = Double.POSITIVE_INFINITY;
     double minLat = Double.POSITIVE_INFINITY;
@@ -161,7 +164,22 @@ public class BKDPointInPolygonQuery extends Query {
                                          new BKDTreeReader.LatLonFilter() {
                                            @Override
                                            public boolean accept(double lat, double lon) {
-                                             return pointInPolygon(lat, lon);
+                                             return GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon);
+                                           }
+
+                                           @Override
+                                           public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
+                                             if (GeoUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                                                         polyLons, polyLats,
+                                                                         minLon, minLat, maxLon, maxLat)) {
+                                               return BKDTreeReader.Relation.INSIDE;
+                                             } else if (GeoUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                                                                 polyLons, polyLats,
+                                                                                 minLon, minLat, maxLon, maxLat)) {
+                                               return BKDTreeReader.Relation.CROSSES;
+                                             } else {
+                                               return BKDTreeReader.Relation.OUTSIDE;
+                                             }
                                            }
                                          }, treeDV.delegate);
 
@@ -201,36 +219,6 @@ public class BKDPointInPolygonQuery extends Query {
         };
       }
     };
-  }
-
-  // TODO: share w/ GeoUtils:
-
-  /**
-   * simple even-odd point in polygon computation
-   *    1.  Determine if point is contained in the longitudinal range
-   *    2.  Determine whether point crosses the edge by computing the latitudinal delta
-   *        between the end-point of a parallel vector (originating at the point) and the
-   *        y-component of the edge sink
-   *
-   * NOTE: Requires polygon point (x,y) order either clockwise or counter-clockwise
-   */
-  boolean pointInPolygon(double lat, double lon) {
-    /**
-     * Note: This is using a euclidean coordinate system which could result in
-     * upwards of 110KM error at the equator.
-     * TODO convert coordinates to cylindrical projection (e.g. mercator)
-     */
-
-    // TODO: this quantizes a bit differently ... boundary cases will fail here:
-    boolean inPoly = false;
-    for (int i = 1; i < polyLons.length; i++) {
-      if (polyLons[i] <= lon && polyLons[i-1] > lon || polyLons[i-1] <= lon && polyLons[i] > lon) {
-        if (polyLats[i] + (lon - polyLons[i]) / (polyLons[i-1] - polyLons[i]) * (polyLats[i-1] - polyLats[i]) <= lat) {
-          inPoly = !inPoly;
-        }
-      }
-    }
-    return inPoly;
   }
 
   @Override
