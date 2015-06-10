@@ -39,6 +39,7 @@ import java.io.IOException;
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
+  String i1dv="a_idv";
   String i1="a_i1";
   String s1="a_s";
   String tlong = "other_tl1";
@@ -63,32 +64,32 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH");
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
-    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men",
+    indexr(id,1, i1, 100, tlong, 100, i1dv, 100, t1,"now is the time for all good men",
            tdate_a, "2010-04-20T11:00:00Z",
            tdate_b, "2009-08-20T11:00:00Z",
            "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.",
+    indexr(id,2, i1, 50 , tlong, 50, i1dv, 50, t1,"to come to the aid of their country.",
            tdate_a, "2010-05-02T11:00:00Z",
            tdate_b, "2009-11-02T11:00:00Z");
     indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow",
            tdate_a, "2010-05-03T11:00:00Z");
-    indexr(id,4, i1, -100 ,tlong, 101,
+    indexr(id,4, i1, -100 ,tlong, 101, i1dv, 101,
            t1,"the quick fox jumped over the lazy dog",
            tdate_a, "2010-05-03T11:00:00Z",
            tdate_b, "2010-05-03T11:00:00Z");
-    indexr(id,5, i1, 500, tlong, 500 ,
+    indexr(id,5, i1, 500, tlong, 500 , i1dv, 500,
            t1,"the quick fox jumped way over the lazy dog",
            tdate_a, "2010-05-05T11:00:00Z");
-    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
-    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
+    indexr(id,6, i1, -600, tlong, 600 , i1dv, 600, t1,"humpty dumpy sat on a wall");
+    indexr(id,7, i1, 123, tlong, 123 ,i1dv, 123, t1,"humpty dumpy had a great fall");
     indexr(id,8, i1, 876, tlong, 876,
            tdate_b, "2010-01-05T11:00:00Z",
            t1,"all the kings horses and all the kings men");
-    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
-    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
-    indexr(id,11, i1, -987, tlong, 987,
+    indexr(id,9, i1, 7, tlong, 7, i1dv, 7, t1,"couldn't put humpty together again");
+    indexr(id,10, i1, 4321, tlong, 4321, i1dv, 4321, t1,"this too shall pass");
+    indexr(id,11, i1, -987, tlong, 987, i1dv, 2015,
            t1,"An eye for eye only ends up making the whole world blind.");
-    indexr(id,12, i1, 379, tlong, 379,
+    indexr(id,12, i1, 379, tlong, 379, i1dv, 379,
            t1,"Great works are performed, not by strength, but by perseverance.");
 
     indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
@@ -101,32 +102,32 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     indexr(id, 17, "SubjectTerms_mfacet", vals);
 
     indexr(
-        id, 18, i1, 232, tlong, 332,
+        id, 18, i1, 232, tlong, 332, i1dv, 150,
         t1,"no eggs on wall, lesson learned",
         oddField, "odd man out"
     );
     indexr(
-        id, 19, i1, 232, tlong, 432,
+        id, 19, i1, 232, tlong, 432, i1dv, 300,
         t1, "many eggs on wall",
         oddField, "odd man in"
     );
     indexr(
-        id, 20, i1, 232, tlong, 532,
+        id, 20, i1, 232, tlong, 532, i1dv, 150,
         t1, "some eggs on wall",
         oddField, "odd man between"
     );
     indexr(
-        id, 21, i1, 232, tlong, 632,
+        id, 21, i1, 232, tlong, 632, i1dv, 120,
         t1, "a few eggs on wall",
         oddField, "odd man under"
     );
     indexr(
-        id, 22, i1, 232, tlong, 732,
+        id, 22, i1, 232, tlong, 732, i1dv, 120,
         t1, "any eggs on wall",
         oddField, "odd man above"
     );
     indexr(
-        id, 23, i1, 233, tlong, 734,
+        id, 23, i1, 233, tlong, 734, i1dv, 120,
         t1, "dirty eggs",
         oddField, "odd eggs"
     );
@@ -170,6 +171,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc");
+
+    query("q", "*:*", "fl", "id," + i1dv, "group", "true", "group.field", i1dv, "group.limit", 10, "sort", i1 + " asc, id asc");
 
     // SOLR-4150: what if group.query has no matches, 
     // or only matches on one shard
