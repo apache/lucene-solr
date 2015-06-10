@@ -39,6 +39,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -213,8 +214,19 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     QueryScorer scorer = new QueryScorer(query,
         request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false) ? fieldName : null);
     scorer.setExpandMultiTermQuery(request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM, true));
-    scorer.setUsePayloads(request.getParams().getFieldBool(fieldName, HighlightParams.PAYLOADS,
-        request.getSearcher().getLeafReader().getFieldInfos().fieldInfo(fieldName).hasPayloads()));
+
+    boolean defaultPayloads = true;//overwritten below
+    try {
+      // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
+      // indicator.
+      final Terms terms = request.getSearcher().getLeafReader().fields().terms(fieldName);
+      if (terms != null) {
+        defaultPayloads = terms.hasPayloads();
+      }
+    } catch (IOException e) {
+      log.error("Couldn't check for existence of payloads", e);
+    }
+    scorer.setUsePayloads(request.getParams().getFieldBool(fieldName, HighlightParams.PAYLOADS, defaultPayloads));
     return scorer;
   }
 
