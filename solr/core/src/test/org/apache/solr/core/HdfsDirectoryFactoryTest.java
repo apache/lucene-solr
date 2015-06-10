@@ -17,23 +17,34 @@
 
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -165,5 +176,51 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     assertTrue(hdfs.isDirectory(currentIndexDirPath));
     assertTrue(!hdfs.isDirectory(oldIndexDirPath));
   }
-
+  
+  @Test
+  public void testLocalityReporter() throws Exception {
+    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+    conf.set("dfs.permissions.enabled", "false");
+    
+    HdfsDirectoryFactory factory = new HdfsDirectoryFactory();
+    Map<String,String> props = new HashMap<String,String>();
+    props.put(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr");
+    props.put(HdfsDirectoryFactory.BLOCKCACHE_ENABLED, "false");
+    props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
+    factory.init(new NamedList<>(props));
+    
+    Iterator<SolrInfoMBean> it = factory.offerMBeans().iterator();
+    it.next(); // skip
+    SolrInfoMBean localityBean = it.next(); // brittle, but it's ok
+    
+    // Make sure we have the right bean.
+    assertEquals("hdfs-locality", localityBean.getName());
+    
+    // We haven't done anything, so there should be no data
+    NamedList<?> statistics = localityBean.getStatistics();
+    assertEquals(0l, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
+    assertEquals(0, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_RATIO));
+    
+    // create a directory and a file
+    String path = HdfsTestUtil.getURI(dfsCluster) + "/solr3/";
+    Directory dir = factory.create(path, NoLockFactory.INSTANCE, DirContext.DEFAULT);
+    try(IndexOutput writer = dir.createOutput("output", null)) {
+      writer.writeLong(42l);
+    }
+    
+    final long long_bytes = Long.SIZE / Byte.SIZE;
+    
+    // no locality because hostname not set
+    statistics = localityBean.getStatistics();
+    assertEquals(long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
+    assertEquals(1, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_TOTAL));
+    assertEquals(0, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_LOCAL));
+    
+    // set hostname and check again
+    factory.setHost("127.0.0.1");
+    statistics = localityBean.getStatistics();
+    assertEquals(long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL));
+    
+    factory.close();
+  }
 }
