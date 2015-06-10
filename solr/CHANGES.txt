@@ -62,9 +62,17 @@ Other Changes
   
 
 ==================  5.3.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
 Versions of Major Components
 ---------------------
-(no changes)
+Apache Tika 1.7
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.11.v20150529
 
 Upgrading from Solr 5.2
 -----------------------
@@ -142,6 +150,8 @@ Other Changes
   already defined implicitly, such as /admin/ping, /admin/system, and several others.  (ehatcher)
 
 * SOLR-7603: Fix test only bug in UpdateRequestProcessorFactoryTest (hossman)
+
+* SOLR-7634: Upgrade Jetty to 9.2.11.v20150529 (Bill Bell, shalin)
 
 ==================  5.2.1 ==================
 
