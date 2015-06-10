@@ -337,7 +337,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       }
     });
     System.get(function(data) {
-      $scope.isCloudEnabledCloud = data.mode.match( /solrcloud/i )
+      $scope.isCloudEnabled = data.mode.match( /solrcloud/i )
     });
   };
   $scope.refresh();
