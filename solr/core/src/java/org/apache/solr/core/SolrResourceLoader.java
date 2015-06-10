@@ -738,6 +738,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
         CodecFactory.class,
+        DirectoryFactory.class,
         ManagedIndexSchemaFactory.class,
         QueryResponseWriter.class,
         SearchComponent.class,

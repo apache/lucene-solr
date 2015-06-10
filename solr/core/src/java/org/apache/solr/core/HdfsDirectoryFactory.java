@@ -53,16 +53,20 @@ import org.apache.solr.store.blockcache.BufferStore;
 import org.apache.solr.store.blockcache.Cache;
 import org.apache.solr.store.blockcache.Metrics;
 import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.HdfsUtil;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
-public class HdfsDirectoryFactory extends CachingDirectoryFactory {
+public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrCoreAware {
   public static Logger LOG = LoggerFactory
       .getLogger(HdfsDirectoryFactory.class);
   
@@ -108,7 +112,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
         }
       })
       .build();
-  
+
   private final static class MetricsHolder {
     // [JCIP SE, Goetz, 16.6] Lazy initialization
     // Won't load until MetricsHolder is referenced
@@ -124,6 +128,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     }
     tmpFsCache.invalidateAll();
     tmpFsCache.cleanUp();
+  }
+
+  private final static class LocalityHolder {
+    public static final HdfsLocalityReporter reporter = new HdfsLocalityReporter();
   }
 
   @Override
@@ -177,6 +185,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     boolean blockCacheGlobal = getConfig(BLOCKCACHE_GLOBAL, false); // default to false for back compat
     boolean blockCacheReadEnabled = getConfig(BLOCKCACHE_READ_ENABLED, true);
     
+    final HdfsDirectory hdfsDir;
     final Directory dir;
     if (blockCacheEnabled && dirContext != DirContext.META_DATA) {
       int numberOfBlocksPerBank = getConfig(NUMBEROFBLOCKSPERBANK, 16384);
@@ -204,12 +213,15 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
           bufferSize, bufferCount, blockCacheGlobal);
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
-      HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), lockFactory, conf);
-      dir = new BlockDirectory(path, hdfsDirectory, cache, null, blockCacheReadEnabled, false);
+      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      dir = new BlockDirectory(path, hdfsDir, cache, null, blockCacheReadEnabled, false);
     } else {
-      dir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      dir = hdfsDir;
     }
     
+    LocalityHolder.reporter.registerDirectory(hdfsDir);
+
     boolean nrtCachingDirectory = getConfig(NRTCACHINGDIRECTORY_ENABLE, true);
     if (nrtCachingDirectory) {
       double nrtCacheMaxMergeSizeMB = getConfig(NRTCACHINGDIRECTORY_MAXMERGESIZEMB, 16);
@@ -443,7 +455,17 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   public Collection<SolrInfoMBean> offerMBeans() {
-    return Arrays.<SolrInfoMBean>asList(MetricsHolder.metrics);
+    return Arrays.<SolrInfoMBean>asList(MetricsHolder.metrics, LocalityHolder.reporter);
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    setHost(core.getCoreDescriptor().getCoreContainer().getHostName());
+  }
+
+  @VisibleForTesting
+  void setHost(String hostname) {
+    LocalityHolder.reporter.setHost(hostname);
   }
 
   @Override

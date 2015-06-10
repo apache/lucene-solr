@@ -98,6 +98,8 @@ New Features
   necessarily returned in the file SolrDocument by returning a list of fields from 
   DocTransformer#getExtraRequestFields  (ryan)
 
+* SOLR-7458: Expose HDFS Block Locality Metrics via JMX (Mike Drob via Mark Miller)
+
 Bug Fixes
 ----------------------
 
