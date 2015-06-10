@@ -55,9 +55,9 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     final SpanWeight bigWeight;
     final SpanWeight littleWeight;
 
-    public SpanContainWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
+    public SpanContainWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
                              SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(SpanContainQuery.this, searcher, terms, factory);
+      super(SpanContainQuery.this, searcher, terms);
       this.bigWeight = bigWeight;
       this.littleWeight = littleWeight;
     }
@@ -71,12 +71,12 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
       littleWeight.extractTerms(terms);
     }
 
-    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
-      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, collector);
+    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, Postings postings) throws IOException {
+      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, postings);
       if (bigSpans == null) {
         return null;
       }
-      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, collector);
+      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, postings);
       if (littleSpans == null) {
         return null;
       }

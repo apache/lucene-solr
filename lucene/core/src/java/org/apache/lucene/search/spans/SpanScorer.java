@@ -40,7 +40,11 @@ public class SpanScorer extends Scorer {
   
   private int lastScoredDoc = -1; // last doc we called setFreqCurrentDoc() for
 
-  protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
+  /**
+   * Creates a new SpanScorer
+   * @lucene.internal
+   */
+  public SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.spans = Objects.requireNonNull(spans);

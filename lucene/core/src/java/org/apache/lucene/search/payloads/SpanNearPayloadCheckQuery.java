@@ -16,75 +16,27 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanPositionCheckQuery;
-import org.apache.lucene.search.spans.SpanWeight;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.ToStringUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 
 
 /**
  * Only return those matches that have a specific payload at
  * the given position.
+ *
+ * @deprecated Use {@link SpanPayloadCheckQuery}
  */
-public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
-
-  protected final Collection<byte[]> payloadToMatch;
+@Deprecated
+public class SpanNearPayloadCheckQuery extends SpanPayloadCheckQuery {
 
   /**
    * @param match          The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.Collection} of payloads to match
    */
   public SpanNearPayloadCheckQuery(SpanNearQuery match, Collection<byte[]> payloadToMatch) {
-    super(match);
-    this.payloadToMatch = Objects.requireNonNull(payloadToMatch);
-  }
-
-  @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return createWeight(searcher, needsScores, PayloadSpanCollector.FACTORY);
-  }
-
-  @Override
-  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
-
-    PayloadSpanCollector payloadCollector = (PayloadSpanCollector) collector;
-
-    payloadCollector.reset();
-    spans.collect(payloadCollector);
-
-    Collection<byte[]> candidate = payloadCollector.getPayloads();
-    if (candidate.size() == payloadToMatch.size()) {
-      //TODO: check the byte arrays are the same
-      //hmm, can't rely on order here
-      int matches = 0;
-      for (byte[] candBytes : candidate) {
-        //Unfortunately, we can't rely on order, so we need to compare all
-        for (byte[] payBytes : payloadToMatch) {
-          if (Arrays.equals(candBytes, payBytes) == true) {
-            matches++;
-            break;
-          }
-        }
-      }
-      if (matches == payloadToMatch.size()){
-        //we've verified all the bytes
-        return AcceptStatus.YES;
-      } else {
-        return AcceptStatus.NO;
-      }
-    } else {
-      return AcceptStatus.NO;
-    }
-
+    super(match, payloadToMatch);
   }
 
   @Override

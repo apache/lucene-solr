@@ -66,7 +66,7 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     final TermContext context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
     if (termContext == null || termContext.topReaderContext != topContext) {
@@ -75,15 +75,15 @@ public class SpanTermQuery extends SpanQuery {
     else {
       context = termContext;
     }
-    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, factory);
+    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null);
   }
 
   public class SpanTermWeight extends SpanWeight {
 
     final TermContext termContext;
 
-    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory) throws IOException {
-      super(SpanTermQuery.this, searcher, terms, factory);
+    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
+      super(SpanTermQuery.this, searcher, terms);
       this.termContext = termContext;
       assert termContext != null : "TermContext must not be null";
     }
@@ -99,7 +99,7 @@ public class SpanTermQuery extends SpanQuery {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
 
       assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
 
@@ -118,7 +118,7 @@ public class SpanTermQuery extends SpanQuery {
       final TermsEnum termsEnum = terms.iterator();
       termsEnum.seekExact(term.bytes(), state);
 
-      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, collector.requiredPostings());
+      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, requiredPostings.getRequiredPostings());
       return new TermSpans(postings, term);
     }
   }

@@ -36,18 +36,18 @@ import java.io.IOException;
 public class MultiSpansWrapper {
 
   public static Spans wrap(IndexReader reader, SpanQuery spanQuery) throws IOException {
-    return wrap(reader, spanQuery, SpanCollector.NO_OP);
+    return wrap(reader, spanQuery, SpanWeight.Postings.POSITIONS);
   }
 
-  public static Spans wrap(IndexReader reader, SpanQuery spanQuery, SpanCollector collector) throws IOException {
+  public static Spans wrap(IndexReader reader, SpanQuery spanQuery, SpanWeight.Postings requiredPostings) throws IOException {
 
     LeafReader lr = SlowCompositeReaderWrapper.wrap(reader); // slow, but ok for testing
     LeafReaderContext lrContext = lr.getContext();
     IndexSearcher searcher = new IndexSearcher(lr);
     searcher.setQueryCache(null);
 
-    SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
+    SpanWeight w = spanQuery.createWeight(searcher, false);
 
-    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), collector);
+    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), requiredPostings);
   }
 }

@@ -38,17 +38,15 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
     this.end = end;
   }
 
-
   @Override
-  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
     assert spans.startPosition() != spans.endPosition();
     AcceptStatus res = (spans.startPosition() >= end)
-                      ? AcceptStatus.NO_MORE_IN_CURRENT_DOC
-                      : (spans.startPosition() >= start && spans.endPosition() <= end)
-                      ? AcceptStatus.YES : AcceptStatus.NO;
+        ? AcceptStatus.NO_MORE_IN_CURRENT_DOC
+        : (spans.startPosition() >= start && spans.endPosition() <= end)
+        ? AcceptStatus.YES : AcceptStatus.NO;
     return res;
   }
-
 
   /**
    * @return The minimum position permitted in a match

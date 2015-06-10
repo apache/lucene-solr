@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
@@ -39,9 +40,41 @@ import java.util.Map;
  */
 public abstract class SpanWeight extends Weight {
 
+  /**
+   * Enumeration defining what postings information should be retrieved from the
+   * index for a given Spans
+   */
+  public enum Postings {
+    POSITIONS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.POSITIONS;
+      }
+    },
+    PAYLOADS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS;
+      }
+    },
+    OFFSETS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS | PostingsEnum.OFFSETS;
+      }
+    };
+
+    public abstract int getRequiredPostings();
+
+    public Postings atLeast(Postings postings) {
+      if (postings.compareTo(this) > 0)
+        return postings;
+      return this;
+    }
+  }
+
   protected final Similarity similarity;
   protected final Similarity.SimWeight simWeight;
-  protected final SpanCollectorFactory collectorFactory;
   protected final String field;
 
   /**
@@ -50,14 +83,12 @@ public abstract class SpanWeight extends Weight {
    * @param searcher the IndexSearcher to query against
    * @param termContexts a map of terms to termcontexts for use in building the similarity.  May
    *                     be null if scores are not required
-   * @param collectorFactory a SpanCollectorFactory to be used for Span collection
    * @throws IOException on error
    */
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanCollectorFactory collectorFactory) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts) throws IOException {
     super(query);
     this.field = query.getField();
     this.similarity = searcher.getSimilarity(termContexts != null);
-    this.collectorFactory = collectorFactory;
     this.simWeight = buildSimWeight(query, searcher, termContexts);
   }
 
@@ -84,23 +115,10 @@ public abstract class SpanWeight extends Weight {
    * Expert: Return a Spans object iterating over matches from this Weight
    * @param ctx a LeafReaderContext for this Spans
    * @param acceptDocs a bitset of documents to check
-   * @param collector a SpanCollector to use for postings data collection
    * @return a Spans
    * @throws IOException on error
    */
-  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs, SpanCollector collector) throws IOException;
-
-  /**
-   * Expert: Return a Spans object iterating over matches from this Weight, without
-   * collecting any postings data.
-   * @param ctx a LeafReaderContext for this Spans
-   * @param acceptDocs a bitset of documents to check
-   * @return a Spans
-   * @throws IOException on error
-   */
-  public final Spans getSpans(LeafReaderContext ctx, Bits acceptDocs) throws IOException {
-    return getSpans(ctx, acceptDocs, collectorFactory.newCollector());
-  }
+  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs, Postings requiredPostings) throws IOException;
 
   @Override
   public float getValueForNormalization() throws IOException {
@@ -123,7 +141,7 @@ public abstract class SpanWeight extends Weight {
     if (terms != null && terms.hasPositions() == false) {
       throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
     }
-    Spans spans = getSpans(context, acceptDocs, collectorFactory.newCollector());
+    Spans spans = getSpans(context, acceptDocs, Postings.POSITIONS);
     Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
     return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
   }

@@ -112,20 +112,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, factory));
+      subWeights.add(q.createWeight(searcher, false));
     }
-    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, factory);
+    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null);
   }
 
   public class SpanNearWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory) throws IOException {
-      super(SpanNearQuery.this, searcher, terms, factory);
+    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
+      super(SpanNearQuery.this, searcher, terms);
       this.subWeights = subWeights;
     }
 
@@ -137,7 +137,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, SpanCollector collector) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
 
       Terms terms = context.reader().terms(field);
       if (terms == null) {
@@ -145,9 +145,8 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
-      SpanCollector subSpanCollector = inOrder ? collector.bufferedCollector() : collector;
       for (SpanWeight w : subWeights) {
-        Spans subSpan = w.getSpans(context, acceptDocs, subSpanCollector);
+        Spans subSpan = w.getSpans(context, acceptDocs, requiredPostings);
         if (subSpan != null) {
           subSpans.add(subSpan);
         } else {

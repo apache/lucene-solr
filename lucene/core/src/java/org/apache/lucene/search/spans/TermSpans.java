@@ -106,30 +106,9 @@ public class TermSpans extends Spans {
     return postings.cost();
   }
 
-  /*
-  @Override
-  public Collection<byte[]> getPayload() throws IOException {
-    final BytesRef payload = postings.getPayload();
-    readPayload = true;
-    final byte[] bytes;
-    if (payload != null) {
-      bytes = new byte[payload.length];
-      System.arraycopy(payload.bytes, payload.offset, bytes, 0, payload.length);
-    } else {
-      bytes = null;
-    }
-    return Collections.singletonList(bytes);
-  }
-
-  @Override
-  public boolean isPayloadAvailable() throws IOException {
-    return readPayload == false && postings.getPayload() != null;
-  }
-  */
-
   @Override
   public void collect(SpanCollector collector) throws IOException {
-    collector.collectLeaf(postings, term);
+    collector.collectLeaf(postings, position, term);
   }
 
   @Override

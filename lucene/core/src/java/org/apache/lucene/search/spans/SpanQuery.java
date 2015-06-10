@@ -21,7 +21,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -36,21 +35,8 @@ public abstract class SpanQuery extends Query {
    */
   public abstract String getField();
 
-  /**
-   * Create a SpanWeight for this query
-   * @param searcher the IndexSearcher to be searched across
-   * @param needsScores if the query needs scores
-   * @param collectorFactory a SpanCollectorFactory to use in collecting postings data
-   * @return a SpanWeight
-   * @throws IOException on error
-   */
-  public abstract SpanWeight createWeight(IndexSearcher searcher, boolean needsScores,
-                                          SpanCollectorFactory collectorFactory) throws IOException;
-
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return createWeight(searcher, needsScores, SpanCollectorFactory.NO_OP_FACTORY);
-  }
+  public abstract SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException;
 
   /**
    * Build a map of terms to termcontexts, for use in constructing SpanWeights

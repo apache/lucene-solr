@@ -42,7 +42,7 @@ public class AssertingSpanWeight extends SpanWeight {
    * @throws IOException on error
    */
   public AssertingSpanWeight(IndexSearcher searcher, SpanWeight in) throws IOException {
-    super((SpanQuery) in.getQuery(), searcher, null, in.collectorFactory);
+    super((SpanQuery) in.getQuery(), searcher, null);
     this.in = in;
   }
 
@@ -52,8 +52,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public Spans getSpans(LeafReaderContext context, Bits liveDocs, SpanCollector collector) throws IOException {
-    Spans spans = in.getSpans(context, liveDocs, collector);
+  public Spans getSpans(LeafReaderContext context, Bits liveDocs, Postings requiredPostings) throws IOException {
+    Spans spans = in.getSpans(context, liveDocs, requiredPostings);
     if (spans == null)
       return null;
     return new AssertingSpans(spans);

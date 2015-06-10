@@ -52,18 +52,18 @@ public class SpanWithinQuery extends SpanContainQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    SpanWeight bigWeight = big.createWeight(searcher, false, factory);
-    SpanWeight littleWeight = little.createWeight(searcher, false, factory);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    SpanWeight bigWeight = big.createWeight(searcher, false);
+    SpanWeight littleWeight = little.createWeight(searcher, false);
     return new SpanWithinWeight(searcher, needsScores ? getTermContexts(bigWeight, littleWeight) : null,
-                                      factory, bigWeight, littleWeight);
+                                      bigWeight, littleWeight);
   }
 
   public class SpanWithinWeight extends SpanContainWeight {
 
-    public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
+    public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(searcher, terms, factory, bigWeight, littleWeight);
+      super(searcher, terms, bigWeight, littleWeight);
     }
 
     /**
@@ -71,8 +71,8 @@ public class SpanWithinQuery extends SpanContainQuery {
      * The payload is from the spans of <code>little</code>.
      */
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
-      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, collector);
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
+      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, requiredPostings);
       if (containerContained == null) {
         return null;
       }

@@ -184,7 +184,7 @@ public class PayloadSpanUtil {
 
     PayloadSpanCollector collector = new PayloadSpanCollector();
     for (LeafReaderContext leafReaderContext : context.leaves()) {
-      final Spans spans = w.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), collector);
+      final Spans spans = w.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), SpanWeight.Postings.PAYLOADS);
       if (spans != null) {
         while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
           while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {

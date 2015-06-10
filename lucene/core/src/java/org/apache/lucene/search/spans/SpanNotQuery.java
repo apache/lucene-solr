@@ -17,8 +17,8 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -30,8 +30,8 @@ import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery or which are
  * within x tokens before or y tokens after another SpanQuery.
@@ -103,11 +103,11 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, false, factory);
-    SpanWeight excludeWeight = exclude.createWeight(searcher, false, factory);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    SpanWeight includeWeight = include.createWeight(searcher, false);
+    SpanWeight excludeWeight = exclude.createWeight(searcher, false);
     return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
-                                  factory, includeWeight, excludeWeight);
+                                  includeWeight, excludeWeight);
   }
 
   public class SpanNotWeight extends SpanWeight {
@@ -115,9 +115,9 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     final SpanWeight includeWeight;
     final SpanWeight excludeWeight;
 
-    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory,
+    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
                          SpanWeight includeWeight, SpanWeight excludeWeight) throws IOException {
-      super(SpanNotQuery.this, searcher, terms, factory);
+      super(SpanNotQuery.this, searcher, terms);
       this.includeWeight = includeWeight;
       this.excludeWeight = excludeWeight;
     }
@@ -128,13 +128,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector) throws IOException {
-      Spans includeSpans = includeWeight.getSpans(context, acceptDocs, collector);
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
+      Spans includeSpans = includeWeight.getSpans(context, acceptDocs, requiredPostings);
       if (includeSpans == null) {
         return null;
       }
 
-      Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs, collector);
+      Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs, requiredPostings);
       if (excludeSpans == null) {
         return includeSpans;
       }

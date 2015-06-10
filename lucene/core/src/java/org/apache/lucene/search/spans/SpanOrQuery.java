@@ -138,20 +138,20 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, factory));
+      subWeights.add(q.createWeight(searcher, false));
     }
-    return new SpanOrWeight(searcher, needsScores ? getTermContexts(subWeights) : null, factory, subWeights);
+    return new SpanOrWeight(searcher, needsScores ? getTermContexts(subWeights) : null, subWeights);
   }
 
   public class SpanOrWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanOrWeight(IndexSearcher searcher, Map<Term, TermContext> terms, SpanCollectorFactory factory, List<SpanWeight> subWeights) throws IOException {
-      super(SpanOrQuery.this, searcher, terms, factory);
+    public SpanOrWeight(IndexSearcher searcher, Map<Term, TermContext> terms, List<SpanWeight> subWeights) throws IOException {
+      super(SpanOrQuery.this, searcher, terms);
       this.subWeights = subWeights;
     }
 
@@ -170,13 +170,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, SpanCollector collector)
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings)
         throws IOException {
 
       ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
       for (SpanWeight w : subWeights) {
-        Spans spans = w.getSpans(context, acceptDocs, collector);
+        Spans spans = w.getSpans(context, acceptDocs, requiredPostings);
         if (spans != null) {
           subSpans.add(spans);
         }

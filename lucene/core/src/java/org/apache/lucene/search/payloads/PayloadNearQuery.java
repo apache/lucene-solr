@@ -26,7 +26,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.spans.SpanCollectorFactory;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
@@ -75,10 +74,10 @@ public class PayloadNearQuery extends SpanNearQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, SpanCollectorFactory factory) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, PayloadSpanCollector.FACTORY));
+      subWeights.add(q.createWeight(searcher, false));
     }
     return new PayloadNearSpanWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null);
   }
@@ -141,17 +140,14 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     public PayloadNearSpanWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms)
         throws IOException {
-      super(subWeights, searcher, terms, PayloadSpanCollector.FACTORY);
+      super(subWeights, searcher, terms);
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      PayloadSpanCollector collector = (PayloadSpanCollector) collectorFactory.newCollector();
-      Spans spans = super.getSpans(context, acceptDocs, collector);
+      Spans spans = super.getSpans(context, acceptDocs, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
-      return (spans == null)
-              ? null
-              : new PayloadNearSpanScorer(spans, this, collector, simScorer);
+      return (spans == null) ? null : new PayloadNearSpanScorer(spans, this, simScorer);
     }
     
     @Override
@@ -187,13 +183,11 @@ public class PayloadNearQuery extends SpanNearQuery {
     Spans spans;
     protected float payloadScore;
     private int payloadsSeen;
-    private final PayloadSpanCollector collector;
+    private final PayloadSpanCollector collector = new PayloadSpanCollector();
 
-    protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, PayloadSpanCollector collector,
-                                    Similarity.SimScorer docScorer) throws IOException {
+    protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
       this.spans = spans;
-      this.collector = collector;
     }
 
     // TODO change the whole spans api to use bytesRef, or nuke spans

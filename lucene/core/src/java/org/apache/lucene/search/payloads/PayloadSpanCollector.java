@@ -19,10 +19,7 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.spans.BufferedSpanCollector;
 import org.apache.lucene.search.spans.SpanCollector;
-import org.apache.lucene.search.spans.SpanCollectorFactory;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -30,36 +27,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * SpanCollector implementation that collects payloads from a {@link Spans}
+ * SpanCollector for collecting payloads
  */
 public class PayloadSpanCollector implements SpanCollector {
 
-  public static final SpanCollectorFactory FACTORY = new SpanCollectorFactory() {
-    @Override
-    public PayloadSpanCollector newCollector() {
-      return new PayloadSpanCollector();
-    }
-  };
-
   private final Collection<byte[]> payloads = new ArrayList<>();
-  BufferedPayloadCollector bufferedCollector;
-
-  public Collection<byte[]> getPayloads() {
-    return payloads;
-  }
 
   @Override
-  public void reset() {
-    payloads.clear();
-  }
-
-  @Override
-  public int requiredPostings() {
-    return PostingsEnum.PAYLOADS;
-  }
-
-  @Override
-  public void collectLeaf(PostingsEnum postings, Term term) throws IOException {
+  public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
     BytesRef payload = postings.getPayload();
     if (payload == null)
       return;
@@ -69,43 +44,14 @@ public class PayloadSpanCollector implements SpanCollector {
   }
 
   @Override
-  public BufferedSpanCollector buffer() {
-    if (bufferedCollector == null)
-      bufferedCollector = new BufferedPayloadCollector();
-    bufferedCollector.reset();
-    return bufferedCollector;
+  public void reset() {
+    payloads.clear();
   }
 
-  @Override
-  public SpanCollector bufferedCollector() {
-    if (bufferedCollector == null)
-      bufferedCollector = new BufferedPayloadCollector();
-    return bufferedCollector.candidateCollector;
-  }
-
-  class BufferedPayloadCollector implements BufferedSpanCollector {
-
-    final Collection<byte[]> buffer = new ArrayList<>();
-    PayloadSpanCollector candidateCollector = new PayloadSpanCollector();
-
-    void reset() {
-      buffer.clear();
-    }
-
-    @Override
-    public void collectCandidate(Spans spans) throws IOException {
-      candidateCollector.reset();
-      spans.collect(candidateCollector);
-    }
-
-    @Override
-    public void accept() {
-      buffer.addAll(candidateCollector.payloads);
-    }
-
-    @Override
-    public void replay() {
-      payloads.addAll(buffer);
-    }
+  /**
+   * @return the collected payloads
+   */
+  public Collection<byte[]> getPayloads() {
+    return payloads;
   }
 }

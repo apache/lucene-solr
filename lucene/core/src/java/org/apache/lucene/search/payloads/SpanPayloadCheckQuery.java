@@ -16,60 +16,130 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanPositionCheckQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
- * Only return those matches that have a specific payload at
- * the given position.
- * <p>
- * Do not use this with a SpanQuery that contains a {@link org.apache.lucene.search.spans.SpanNearQuery}.
- * Instead, use {@link org.apache.lucene.search.payloads.SpanNearPayloadCheckQuery} since it properly handles the fact that payloads
- * aren't ordered by {@link org.apache.lucene.search.spans.SpanNearQuery}.
+ * Only return those matches that have a specific payload at the given position.
  */
-public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
+public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final Collection<byte[]> payloadToMatch;
+  protected final SpanQuery match;
 
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.Collection} of payloads to match
    */
   public SpanPayloadCheckQuery(SpanQuery match, Collection<byte[]> payloadToMatch) {
-    super(match);
-    if (match instanceof SpanNearQuery){
-      throw new IllegalArgumentException("SpanNearQuery not allowed");
-    }
+    this.match = match;
     this.payloadToMatch = payloadToMatch;
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return super.createWeight(searcher, needsScores, PayloadSpanCollector.FACTORY);
+  public String getField() {
+    return match.getField();
   }
 
   @Override
-  protected AcceptStatus acceptPosition(Spans spans, SpanCollector collector) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, false);
+    return new SpanPayloadCheckWeight(searcher, needsScores ? getTermContexts(matchWeight) : null, matchWeight);
+  }
 
-    PayloadSpanCollector payloadCollector = (PayloadSpanCollector) collector;
+  /**
+   * Weight that pulls its Spans using a PayloadSpanCollector
+   */
+  public class SpanPayloadCheckWeight extends SpanWeight {
 
-    payloadCollector.reset();
-    spans.collect(payloadCollector);
+    final SpanWeight matchWeight;
 
-    Collection<byte[]> candidate = payloadCollector.getPayloads();
+    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanWeight matchWeight) throws IOException {
+      super(SpanPayloadCheckQuery.this, searcher, termContexts);
+      this.matchWeight = matchWeight;
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      matchWeight.extractTerms(terms);
+    }
+
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      matchWeight.extractTermContexts(contexts);
+    }
+
+    @Override
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
+      final PayloadSpanCollector collector = new PayloadSpanCollector();
+      Spans matchSpans = matchWeight.getSpans(context, acceptDocs, requiredPostings.atLeast(Postings.PAYLOADS));
+      return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
+        @Override
+        protected AcceptStatus accept(Spans candidate) throws IOException {
+
+          collector.reset();
+          candidate.collect(collector);
+          Collection<byte[]> collected = collector.getPayloads();
+
+          if (match instanceof SpanNearQuery) {
+            return checkCompositePayloads(collected);
+          }
+          else {
+            return checkOrderedPayloads(collected);
+          }
+        }
+      };
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      if (field == null)
+        return null;
+
+      Terms terms = context.reader().terms(field);
+      if (terms != null && terms.hasPositions() == false) {
+        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
+      }
+
+      Spans spans = getSpans(context, acceptDocs, Postings.PAYLOADS);
+      Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
+      return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
+    }
+  }
+
+  /**
+   * Check to see if the collected payloads match the required set.
+   *
+   * This is called for Near span queries which collect their sub spans
+   * out-of-order, meaning that we can't rely on the order of payloads
+   * in the collection
+   *
+   * @param candidate a collection of payloads from the current Spans
+   * @return whether or not the payloads match
+   */
+  protected AcceptStatus checkOrderedPayloads(Collection<byte[]> candidate) {
     if (candidate.size() == payloadToMatch.size()){
       //TODO: check the byte arrays are the same
       Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
@@ -86,7 +156,36 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery {
     } else {
       return AcceptStatus.NO;
     }
+  }
 
+  /**
+   * Check to see if the collected payloads match the required set.
+   * @param candidate a collection of payloads from the current Spans
+   * @return whether or not the payloads match
+   */
+  protected AcceptStatus checkCompositePayloads(Collection<byte[]> candidate) {
+    if (candidate.size() == payloadToMatch.size()) {
+      //TODO: check the byte arrays are the same
+      //hmm, can't rely on order here
+      int matches = 0;
+      for (byte[] candBytes : candidate) {
+        //Unfortunately, we can't rely on order, so we need to compare all
+        for (byte[] payBytes : payloadToMatch) {
+          if (Arrays.equals(candBytes, payBytes) == true) {
+            matches++;
+            break;
+          }
+        }
+      }
+      if (matches == payloadToMatch.size()){
+        //we've verified all the bytes
+        return AcceptStatus.YES;
+      } else {
+        return AcceptStatus.NO;
+      }
+    } else {
+      return AcceptStatus.NO;
+    }
   }
 
   @Override

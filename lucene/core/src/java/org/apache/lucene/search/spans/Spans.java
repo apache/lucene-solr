@@ -50,7 +50,11 @@ public abstract class Spans extends DocIdSetIterator {
   public abstract int endPosition();
 
   /**
-   * Collect data from the current Spans
+   * Collect postings data from the leaves of the current Spans.
+   *
+   * This method should only be called after {@link #nextStartPosition()}, and before
+   * {@link #NO_MORE_POSITIONS} has been reached.
+   *
    * @param collector a SpanCollector
    *
    * @lucene.experimental

@@ -26,7 +26,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.search.spans.BufferedSpanCollector;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
@@ -80,58 +79,39 @@ public class PayloadTermQuery extends SpanTermQuery {
     BytesRef payload;
 
     @Override
-    public void reset() {
-      payload = null;
-    }
-
-    @Override
-    public int requiredPostings() {
-      return PostingsEnum.PAYLOADS;
-    }
-
-    @Override
-    public void collectLeaf(PostingsEnum postings, Term term) throws IOException {
+    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
       payload = postings.getPayload();
     }
 
     @Override
-    public BufferedSpanCollector buffer() {
-      throw new UnsupportedOperationException();
+    public void reset() {
+      payload = null;
     }
 
-    @Override
-    public SpanCollector bufferedCollector() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   private class PayloadTermWeight extends SpanTermWeight {
 
     public PayloadTermWeight(TermContext context, IndexSearcher searcher, Map<Term, TermContext> terms)
         throws IOException {
-      super(context, searcher, terms, PayloadSpanCollector.FACTORY);
+      super(context, searcher, terms);
     }
 
     @Override
     public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      PayloadTermCollector collector = new PayloadTermCollector();
-      Spans spans = super.getSpans(context, acceptDocs, collector);
+      Spans spans = super.getSpans(context, acceptDocs, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
-      return (spans == null)
-              ? null
-              : new PayloadTermSpanScorer(spans, this, collector, simScorer);
+      return (spans == null) ? null : new PayloadTermSpanScorer(spans, this, simScorer);
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
       protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
-      private final PayloadTermCollector payloadCollector;
+      private final PayloadTermCollector payloadCollector = new PayloadTermCollector();
 
-      public PayloadTermSpanScorer(Spans spans, SpanWeight weight, PayloadTermCollector collector,
-                                   Similarity.SimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
-        this.payloadCollector = collector;
       }
 
       @Override
@@ -144,7 +124,10 @@ public class PayloadTermQuery extends SpanTermQuery {
         assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
         do {
           int matchLength = spans.endPosition() - startPos;
-
+          if (docScorer == null) {
+            freq = 1;
+            return;
+          }
           freq += docScorer.computeSlopFactor(matchLength);
           numMatches++;
           payloadCollector.reset();
@@ -156,13 +139,11 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       protected void processPayload() throws IOException {
-
         float payloadFactor = payloadCollector.payload == null ? 1F :
             docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payloadCollector.payload);
         payloadScore = function.currentScore(docID(), term.field(), spans.startPosition(), spans.endPosition(),
-                                             payloadsSeen, payloadScore, payloadFactor);
+            payloadsSeen, payloadScore, payloadFactor);
         payloadsSeen++;
-
       }
 
       /**
