@@ -95,6 +95,10 @@ Bug fixes
 * LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
   in order to not load unnecessary information like norms. (Adrien Grand)
 
+* LUCENE-6533: SlowCompositeReaderWrapper no longer caches its live docs
+  instance since this can prevent future improvements like a
+  disk-backed live docs (Adrien Grand, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
