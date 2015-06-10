@@ -59,19 +59,19 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     }
     assertEquals(3, nodeNames.size());
 
-    new CollectionAdminRequest.Create()
-        .setCollectionName("a1x2")
-        .setNumShards(1)
-        .setReplicationFactor(2)
-        .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
-        .process(cloudClient);
+    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
+    create.setCollectionName("a1x2");
+    create.setNumShards(1);
+    create.setReplicationFactor(2);
+    create.setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1));
+    create.process(cloudClient);
 
-    new CollectionAdminRequest.Create()
-        .setCollectionName("b1x1")
-        .setNumShards(1)
-        .setReplicationFactor(1)
-        .setCreateNodeSet(nodeNames.get(2))
-        .process(cloudClient);
+    create = new CollectionAdminRequest.Create();
+    create.setCollectionName("b1x1");
+    create.setNumShards(1);
+    create.setReplicationFactor(1);
+    create.setCreateNodeSet(nodeNames.get(2));
+    create.process(cloudClient);
 
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
