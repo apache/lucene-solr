@@ -106,6 +106,13 @@ Changes in Runtime Behavior
   structure of composite and leaf readers.  (Adrien Grand,
   Uwe Schindler)
 
+* LUCENE-6537: NearSpansOrdered no longer tries to minimize its
+  Span matches.  This means that the matching algorithm is entirely
+  lazy.  All spans returned by the previous implementation are still 
+  reported, but matching documents may now also return additional 
+  spans that were previously discarded in preference to shorter 
+  overlapping ones. (Alan Woodward, Adrien Grand, Paul Elschot)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9

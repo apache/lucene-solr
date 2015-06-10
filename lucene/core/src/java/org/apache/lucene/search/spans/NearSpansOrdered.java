@@ -20,7 +20,8 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.List;
 
-/** A Spans that is formed from the ordered subspans of a SpanNearQuery
+/**
+ * A Spans that is formed from the ordered subspans of a SpanNearQuery
  * where the subspans do not overlap and have a maximum slop between them.
  * <p>
  * The formed spans only contains minimum slop matches.<br>
@@ -38,44 +39,38 @@ import java.util.List;
  * <pre>t1 t2 .. t3      </pre>
  * <pre>      t1 .. t2 t3</pre>
  *
- * Because the algorithm used to minimize the size of a match consumes
- * child Spans eagerly, this uses a BufferedSpanCollector to collect
- * information from subspans.
- *
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
 public class NearSpansOrdered extends NearSpans {
 
-  protected int matchDoc = -1;
   protected int matchStart = -1;
   protected int matchEnd = -1;
+  protected int matchWidth = -1;
 
-  protected final SpanCollector collector;
-  protected BufferedSpanCollector buffer;
-
-  public NearSpansOrdered(SpanNearQuery query, List<Spans> subSpans, SpanCollector collector) throws IOException {
+  public NearSpansOrdered(SpanNearQuery query, List<Spans> subSpans) throws IOException {
     super(query, subSpans);
     this.atFirstInCurrentDoc = true; // -1 startPosition/endPosition also at doc -1
-    this.collector = collector;
   }
 
   @Override
   boolean twoPhaseCurrentDocMatches() throws IOException {
-    subSpansToFirstStartPosition();
-    while (true) {
-      if (! stretchToOrder()) {
-        return false;
-      }
-      if (shrinkToAfterShortestMatch()) {
-        atFirstInCurrentDoc = true;
-        return true;
-      }
-      // not a match, after shortest ordered spans
-      if (oneExhaustedInCurrentDoc) {
-        return false;
+    assert unpositioned();
+    oneExhaustedInCurrentDoc = false;
+    while (subSpans[0].nextStartPosition() != NO_MORE_POSITIONS && !oneExhaustedInCurrentDoc) {
+      if (stretchToOrder() && matchWidth <= allowedSlop) {
+        return atFirstInCurrentDoc = true;
       }
     }
+    return false;
+  }
+
+  private boolean unpositioned() {
+    for (Spans span : subSpans) {
+      if (span.startPosition() != -1)
+        return false;
+    }
+    return true;
   }
 
   @Override
@@ -84,42 +79,27 @@ public class NearSpansOrdered extends NearSpans {
       atFirstInCurrentDoc = false;
       return matchStart;
     }
-    while (true) {
-      if (oneExhaustedInCurrentDoc) {
-        matchStart = NO_MORE_POSITIONS;
-        matchEnd = NO_MORE_POSITIONS;
-        return NO_MORE_POSITIONS;
-      }
-      if (! stretchToOrder()) {
-        matchStart = NO_MORE_POSITIONS;
-        matchEnd = NO_MORE_POSITIONS;
-        return NO_MORE_POSITIONS;
-      }
-      if (shrinkToAfterShortestMatch()) { // may also leave oneExhaustedInCurrentDoc
+    oneExhaustedInCurrentDoc = false;
+    while (subSpans[0].nextStartPosition() != NO_MORE_POSITIONS && !oneExhaustedInCurrentDoc) {
+      if (stretchToOrder() && matchWidth <= allowedSlop) {
         return matchStart;
       }
-      // after shortest ordered spans, or oneExhaustedInCurrentDoc
     }
+    return matchStart = matchEnd = NO_MORE_POSITIONS;
   }
 
-  private void subSpansToFirstStartPosition() throws IOException {
-    for (Spans spans : subSpans) {
-      assert spans.startPosition() == -1 : "spans="+spans;
-      spans.nextStartPosition();
-      assert spans.startPosition() != NO_MORE_POSITIONS;
-    }
-    oneExhaustedInCurrentDoc = false;
-  }
-
-  /** Order the subSpans within the same document by using nextStartPosition on all subSpans
+  /**
+   * Order the subSpans within the same document by using nextStartPosition on all subSpans
    * after the first as little as necessary.
    * Return true when the subSpans could be ordered in this way,
    * otherwise at least one is exhausted in the current doc.
    */
   private boolean stretchToOrder() throws IOException {
     Spans prevSpans = subSpans[0];
+    matchStart = prevSpans.startPosition();
     assert prevSpans.startPosition() != NO_MORE_POSITIONS : "prevSpans no start position "+prevSpans;
     assert prevSpans.endPosition() != NO_MORE_POSITIONS;
+    matchWidth = 0;
     for (int i = 1; i < subSpans.length; i++) {
       Spans spans = subSpans[i];
       assert spans.startPosition() != NO_MORE_POSITIONS;
@@ -127,68 +107,15 @@ public class NearSpansOrdered extends NearSpans {
 
       while (prevSpans.endPosition() > spans.startPosition()) { // while overlapping spans
         if (spans.nextStartPosition() == NO_MORE_POSITIONS) {
+          oneExhaustedInCurrentDoc = true;
           return false;
         }
       }
+      matchWidth += (spans.startPosition() - prevSpans.endPosition());
       prevSpans = spans;
     }
+    matchEnd = subSpans[subSpans.length - 1].endPosition();
     return true; // all subSpans ordered and non overlapping
-  }
-
-  /** The subSpans are ordered in the same doc, so there is a possible match.
-   * Compute the slop while making the match as short as possible by using nextStartPosition
-   * on all subSpans, except the last one, in reverse order.
-   */
-  protected boolean shrinkToAfterShortestMatch() throws IOException {
-    Spans lastSubSpans = subSpans[subSpans.length - 1];
-    matchStart = lastSubSpans.startPosition();
-    matchEnd = lastSubSpans.endPosition();
-
-    buffer = collector.buffer();
-    buffer.collectCandidate(subSpans[subSpans.length - 1]);
-    buffer.accept();
-
-    int matchSlop = 0;
-    int lastStart = matchStart;
-    for (int i = subSpans.length - 2; i >= 0; i--) {
-      Spans prevSpans = subSpans[i];
-      buffer.collectCandidate(prevSpans);
-
-      int prevStart = prevSpans.startPosition();
-      int prevEnd = prevSpans.endPosition();
-      while (true) { // prevSpans nextStartPosition until after (lastStart, lastEnd)
-        if (prevSpans.nextStartPosition() == NO_MORE_POSITIONS) {
-          oneExhaustedInCurrentDoc = true;
-          break; // Check remaining subSpans for match.
-        }
-        int ppStart = prevSpans.startPosition();
-        int ppEnd = prevSpans.endPosition();
-        if (ppEnd > lastStart) { // if overlapping spans
-          break; // Check remaining subSpans.
-        }
-        // prevSpans still before (lastStart, lastEnd)
-        prevStart = ppStart;
-        prevEnd = ppEnd;
-        buffer.collectCandidate(prevSpans);
-      }
-
-      buffer.accept();
-
-      assert prevStart <= matchStart;
-      if (matchStart > prevEnd) { // Only non overlapping spans add to slop.
-        matchSlop += (matchStart - prevEnd);
-      }
-
-      /* Do not break on (matchSlop > allowedSlop) here to make sure
-       * that on return the first subSpans has nextStartPosition called.
-       */
-      matchStart = prevStart;
-      lastStart = prevStart;
-    }
-
-    boolean match = matchSlop <= allowedSlop;
-
-    return match; // ordered and allowed slop
   }
 
   @Override
@@ -202,15 +129,16 @@ public class NearSpansOrdered extends NearSpans {
   }
 
   @Override
-  public void collect(SpanCollector collector) {
-    assert collector == this.collector
-        : "You must collect using the same SpanCollector as was passed to the NearSpans constructor";
-    buffer.replay();
+  public void collect(SpanCollector collector) throws IOException {
+    for (Spans span : subSpans) {
+      span.collect(collector);
+    }
   }
 
   @Override
   public String toString() {
     return "NearSpansOrdered("+query.toString()+")@"+docID()+": "+startPosition()+" - "+endPosition();
   }
+
 }
 

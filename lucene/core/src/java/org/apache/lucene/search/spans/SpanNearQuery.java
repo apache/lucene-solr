@@ -157,7 +157,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
       // all NearSpans require at least two subSpans
       return (!inOrder) ? new NearSpansUnordered(SpanNearQuery.this, subSpans)
-          : new NearSpansOrdered(SpanNearQuery.this, subSpans, collector);
+          : new NearSpansOrdered(SpanNearQuery.this, subSpans);
     }
 
     @Override

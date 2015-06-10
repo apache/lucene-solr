@@ -68,7 +68,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3 zz",
     "w1 xx w2 yy w3",
-    "w1 w3 xx w2 yy w3 zz"
+    "w1 w3 xx w2 yy w3 zz",
+    "t1 t2 t2 t1"
   };
 
   protected SpanNearQuery makeQuery(String s1, String s2, String s3,
@@ -208,8 +209,38 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     SpanNearQuery q = makeOverlappedQuery("w3", "w4", true, "w5", true);
     CheckHits.checkHits(random(), q, FIELD, searcher, new int[] {0});
   }
-  
-  
+
+  public void testOrderedSpanIteration() throws Exception {
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanOrQuery(new SpanTermQuery(new Term(FIELD, "w1")), new SpanTermQuery(new Term(FIELD, "w2"))),
+        new SpanTermQuery(new Term(FIELD, "w4"))
+    }, 10, true);
+    Spans spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans,0,0,4);
+    assertNext(spans,0,1,4);
+    assertFinished(spans);
+  }
+
+  public void testOrderedSpanIterationSameTerms1() throws Exception {
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "t1")), new SpanTermQuery(new Term(FIELD, "t2"))
+    }, 1, true);
+    Spans spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans,4,0,2);
+    assertFinished(spans);
+  }
+
+  public void testOrderedSpanIterationSameTerms2() throws Exception {
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "t2")), new SpanTermQuery(new Term(FIELD, "t1"))
+    }, 1, true);
+    Spans spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans,4,1,4);
+    assertNext(spans,4,2,4);
+    assertFinished(spans);
+  }
+
+
   /**
    * not a direct test of NearSpans, but a demonstration of how/when
    * this causes problems
