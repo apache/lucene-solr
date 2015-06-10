@@ -46,7 +46,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
   private final Fields fields;
-  private final Bits liveDocs;
   private final boolean merging;
   
   /** This method is sugar for getting an {@link LeafReader} from
@@ -66,7 +65,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
-    liveDocs = MultiFields.getLiveDocs(in);
     in.registerParentReader(this);
     this.merging = merging;
   }
@@ -230,7 +228,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return liveDocs;
+    return MultiFields.getLiveDocs(in);
   }
 
   @Override
