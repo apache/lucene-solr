@@ -66,6 +66,10 @@ New Features
   wrote the oldest segment in the index, for faster checking of "too
   old" indices (Ryan Ernst, Robert Muir, Mike McCandless)
 
+* LUCENE-6519: BKDPointInPolygonQuery is much faster by avoiding
+  the per-hit polygon check when a leaf cell is fully contained by the
+  polygon.  (Nick Knize, Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
