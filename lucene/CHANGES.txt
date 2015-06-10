@@ -86,15 +86,6 @@ Bug fixes
 * LUCENE-5805: QueryNodeImpl.removeFromParent was doing nothing in a
   costly manner (Christoph Kaser, Cao Manh Dat via Mike McCAndless)
 
-* LUCENE-6523: NRT readers now reflect a new commit even if there is
-  no change to the commit user data (Mike McCandless)
-
-* LUCENE-6482: Fix class loading deadlock relating to Codec initialization,
-  default codec and SPI discovery.  (Shikhar Bhushan, Uwe Schindler)
-
-* LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
-  in order to not load unnecessary information like norms. (Adrien Grand)
-
 * LUCENE-6533: SlowCompositeReaderWrapper no longer caches its live docs
   instance since this can prevent future improvements like a
   disk-backed live docs (Adrien Grand, Mike McCandless)
@@ -121,6 +112,20 @@ Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
   ClassCache Reaper in test framework. (Dawid Weiss)
+
+======================= Lucene 5.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-6482: Fix class loading deadlock relating to Codec initialization,
+  default codec and SPI discovery.  (Shikhar Bhushan, Uwe Schindler)
+
+* LUCENE-6523: NRT readers now reflect a new commit even if there is
+  no change to the commit user data (Mike McCandless)
+
+* LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
+  in order to not load unnecessary information like norms. (Adrien Grand)
+
 
 ======================= Lucene 5.2.0 =======================
 

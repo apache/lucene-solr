@@ -54,6 +54,13 @@ public final class Version {
   public static final Version LUCENE_5_2_0 = new Version(5, 2, 0);
 
   /**
+   * Match settings and bugs in Lucene's 5.2.1 release.
+   * @deprecated Use latest
+   */
+  @Deprecated
+  public static final Version LUCENE_5_2_1 = new Version(5, 2, 1);
+
+  /**
    * Match settings and bugs in Lucene's 5.3.0 release.
    * @deprecated Use latest
    */
