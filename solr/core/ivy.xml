@@ -84,7 +84,41 @@
 
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
-    <dependency org="org.apache.directory.server" name="apacheds-all" rev="${/org.apache.directory.server/apacheds-all}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core" rev="${/org.apache.directory.server/apacheds-core}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-api" rev="${/org.apache.directory.server/apacheds-core-api}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-avl" rev="${/org.apache.directory.server/apacheds-core-avl}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-core-shared" rev="${/org.apache.directory.server/apacheds-core-shared}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptor-kerberos" rev="${/org.apache.directory.server/apacheds-interceptor-kerberos}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-admin" rev="${/org.apache.directory.server/apacheds-interceptors-admin}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-authn" rev="${/org.apache.directory.server/apacheds-interceptors-authn}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-authz" rev="${/org.apache.directory.server/apacheds-interceptors-authz}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-changelog" rev="${/org.apache.directory.server/apacheds-interceptors-changelog}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-collective" rev="${/org.apache.directory.server/apacheds-interceptors-collective}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-event" rev="${/org.apache.directory.server/apacheds-interceptors-event}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-exception" rev="${/org.apache.directory.server/apacheds-interceptors-exception}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-journal" rev="${/org.apache.directory.server/apacheds-interceptors-journal}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-normalization" rev="${/org.apache.directory.server/apacheds-interceptors-normalization}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-operational" rev="${/org.apache.directory.server/apacheds-interceptors-operational}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-referral" rev="${/org.apache.directory.server/apacheds-interceptors-referral}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-schema" rev="${/org.apache.directory.server/apacheds-interceptors-schema}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-subtree" rev="${/org.apache.directory.server/apacheds-interceptors-subtree}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-interceptors-trigger" rev="${/org.apache.directory.server/apacheds-interceptors-trigger}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-i18n" rev="${/org.apache.directory.server/apacheds-i18n}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-jdbm-partition" rev="${/org.apache.directory.server/apacheds-jdbm-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-kerberos-codec" rev="${/org.apache.directory.server/apacheds-kerberos-codec}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-ldif-partition" rev="${/org.apache.directory.server/apacheds-ldif-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-mavibot-partition" rev="${/org.apache.directory.server/apacheds-mavibot-partition}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-protocol-kerberos" rev="${/org.apache.directory.server/apacheds-protocol-kerberos}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-protocol-ldap" rev="${/org.apache.directory.server/apacheds-protocol-ldap}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-protocol-shared" rev="${/org.apache.directory.server/apacheds-protocol-shared}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.server" name="apacheds-xdbm-partition" rev="${/org.apache.directory.server/apacheds-xdbm-partition}" conf="test.MiniKdc"/>
+
+    <dependency org="org.apache.directory.api" name="api-all" rev="${/org.apache.directory.api/api-all}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.directory.jdbm" name="apacheds-jdbm1" rev="${/org.apache.directory.jdbm/apacheds-jdbm1}" conf="test.MiniKdc"/>
+    <dependency org="org.apache.mina" name="mina-core" rev="${/org.apache.mina/mina-core}" conf="test.MiniKdc"/>
+    <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="${/org.bouncycastle/bcprov-jdk15}" conf="test.MiniKdc"/>
+    <dependency org="antlr" name="antlr" rev="${/antlr/antlr}" conf="test.MiniKdc"/>
+    <dependency org="net.sf.ehcache" name="ehcache-core" rev="${/net.sf.ehcache/ehcache-core}" conf="test.MiniKdc"/>
 
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
