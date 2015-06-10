@@ -26,7 +26,6 @@ import java.util.List;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -34,23 +33,11 @@ import org.junit.BeforeClass;
  */
 public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
-  private static org.apache.log4j.Level SAVED_LEVEL = null; // SOLR-7603 - remove
-  
   @BeforeClass
   public static void beforeClass() throws Exception {
-
-    // SOLR-7603 - remove
-    SAVED_LEVEL = org.apache.log4j.LogManager.getRootLogger().getLevel();
-    org.apache.log4j.LogManager.getRootLogger().setLevel(org.apache.log4j.Level.DEBUG);
-    
     initCore("solrconfig-transformers.xml", "schema.xml");
   }
   
-  @AfterClass
-  public static void fixLogLevelAfterClass() throws Exception { // SOLR-7603 - remove
-    org.apache.log4j.LogManager.getRootLogger().setLevel(SAVED_LEVEL);
-  }
-
   public void testConfiguration() throws Exception 
   {
     SolrCore core = h.getCore();
