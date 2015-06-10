@@ -289,7 +289,9 @@ def main():
   if url is not None:
     print('  URL: %s' % url)
     print('Next set the PYTHON_EXEC env var and you can run the smoker tester:')
-    print('  $PYTHON_EXEC %s %s' % (sys.argv[0], url))
+    p = re.compile("(.*)\/")
+    m = p.match(sys.argv[0])
+    print(' $PYTHON_EXEC %ssmokeTestRelease.py %s' % (m.group(), url))
 
 if __name__ == '__main__':
   try:
