@@ -635,6 +635,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     assertEquals(6, cms.getMaxMergeCount());
   }
 
+  public void testAutoIOThrottleGetter() throws Exception {
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    cms.disableAutoIOThrottle();
+    assertFalse(cms.getAutoIOThrottle());
+    cms.enableAutoIOThrottle();
+    assertTrue(cms.getAutoIOThrottle());
+  }
+
   public void testNonSpinningDefaults() throws Exception {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     cms.setDefaultMaxMergesAndThreads(false);

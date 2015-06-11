@@ -214,6 +214,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     updateMergeThreads();
   }
 
+  /** Returns true if auto IO throttling is currently enabled. */
+  public synchronized boolean getAutoIOThrottle() {
+    return doAutoIOThrottle;
+  }
+
   /** Returns the currently set per-merge IO writes rate limit, if {@link #enableAutoIOThrottle}
    *  was called, else {@code Double.POSITIVE_INFINITY}. */
   public synchronized double getIORateLimitMBPerSec() {

@@ -51,6 +51,9 @@ API Changes
   to IndexWriter. Improve exception messages when locking fails.
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-6511: Add missing ConcurrentMergeScheduler.getAutoIOThrottle
+  getter (Simon Willnauer, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
