@@ -623,7 +623,7 @@
       <!-- If possible, include the svnversion -->
       <exec dir="." executable="${svnversion.exe}" outputproperty="-svnversion-raw" failifexecutionfails="false"/>
       <condition property="svnversion" value="${-svnversion-raw}" else="unknown">
-        <matches pattern="[\d:MSP]+" string="${-svnversion-raw}" casesensitive="true"/>
+        <matches pattern="^\s*[\d:MSP]+\s*$" string="${-svnversion-raw}" casesensitive="true"/>
       </condition>
 
       <manifest file="@{manifest.file}">
