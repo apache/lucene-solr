@@ -91,7 +91,7 @@ API Changes
   incorrect results for Numeric fields using precisionStep
   (hossman, Robert Muir)
 
-* LUCENE-6511: Add missing ConcurrentMergeScheduler.getAutoIOThrottle
+* LUCENE-6551: Add missing ConcurrentMergeScheduler.getAutoIOThrottle
   getter (Simon Willnauer, Mike McCandless)
 
 Bug fixes
