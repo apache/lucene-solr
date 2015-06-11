@@ -319,10 +319,14 @@ public class TestIndexWriterMerging extends LuceneTestCase
         if (merge == null) {
           break;
         }
+        int numDocs = 0;
         for(int i=0;i<merge.segments.size();i++) {
-          assert merge.segments.get(i).info.maxDoc() < 20;
+          int maxDoc = merge.segments.get(i).info.maxDoc();
+          numDocs += maxDoc;
+          assertTrue(maxDoc < 20);
         }
         writer.merge(merge);
+        assertEquals(numDocs, merge.getMergeInfo().info.maxDoc());
       }
     }
 

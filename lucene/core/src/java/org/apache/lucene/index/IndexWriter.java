@@ -3753,7 +3753,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
-    merge.setInfo(new SegmentCommitInfo(si, 0, -1L, -1L, -1L));
+    merge.setMergeInfo(new SegmentCommitInfo(si, 0, -1L, -1L, -1L));
 
 //    System.out.println("[" + Thread.currentThread().getName() + "] IW._mergeInit: " + segString(merge.segments) + " into " + si);
 
@@ -3861,7 +3861,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
-    IOContext context = new IOContext(merge.getMergeInfo());
+    IOContext context = new IOContext(merge.getStoreMergeInfo());
 
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(mergeDirectory);
 

@@ -122,10 +122,10 @@ public final class SortingMergePolicy extends MergePolicy {
     }
     
     @Override
-    public void setInfo(SegmentCommitInfo info) {
+    public void setMergeInfo(SegmentCommitInfo info) {
       Map<String,String> diagnostics = info.info.getDiagnostics();
       diagnostics.put(SORTER_ID_PROP, sorter.getID());
-      super.setInfo(info);
+      super.setMergeInfo(info);
     }
 
     private PackedLongValues getDeletes(List<CodecReader> readers) {

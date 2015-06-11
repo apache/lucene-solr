@@ -160,11 +160,19 @@ public abstract class MergePolicy {
     }
     
     /**
-     * Expert: Sets the {@link SegmentCommitInfo} of this {@link OneMerge}.
+     * Expert: Sets the {@link SegmentCommitInfo} of the merged segment.
      * Allows sub-classes to e.g. set diagnostics properties.
      */
-    public void setInfo(SegmentCommitInfo info) {
+    public void setMergeInfo(SegmentCommitInfo info) {
       this.info = info;
+    }
+
+    /**
+     * Returns the {@link SegmentCommitInfo} for the merged segment,
+     * or null if it hasn't been set yet.
+     */
+    public SegmentCommitInfo getMergeInfo() {
+      return info;
     }
 
     /** Expert: If {@link #getMergeReaders()} reorders document IDs, this method
@@ -239,7 +247,7 @@ public abstract class MergePolicy {
     }
 
     /** Return {@link MergeInfo} describing this merge. */
-    public MergeInfo getMergeInfo() {
+    public MergeInfo getStoreMergeInfo() {
       return new MergeInfo(totalMaxDoc, estimatedMergeBytes, isExternal, maxNumSegments);
     }    
   }

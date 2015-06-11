@@ -561,10 +561,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         }
     
         @Override
-        public void setInfo(SegmentCommitInfo info) {
+        public void setMergeInfo(SegmentCommitInfo info) {
           // Record that this merged segment is current as of this schemaGen:
           info.info.getDiagnostics().put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
-          super.setInfo(info);
+          super.setMergeInfo(info);
         }
 
         @Override

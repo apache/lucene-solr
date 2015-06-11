@@ -94,6 +94,9 @@ API Changes
 * LUCENE-6551: Add missing ConcurrentMergeScheduler.getAutoIOThrottle
   getter (Simon Willnauer, Mike McCandless)
 
+* LUCENE-6552: Add MergePolicy.OneMerge.getMergeInfo and rename
+  setInfo to setMergeInfo (Simon Willnauer, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
