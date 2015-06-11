@@ -153,6 +153,10 @@ Other Changes
 
 * SOLR-7634: Upgrade Jetty to 9.2.11.v20150529 (Bill Bell, shalin)
 
+* SOLR-7659: Rename releaseCommitPointAndExtendReserve in DirectoryFileStream
+  to extendReserveAndReleaseCommitPoint, and reverse the code to match.
+  (shalin, Shawn Heisey)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
