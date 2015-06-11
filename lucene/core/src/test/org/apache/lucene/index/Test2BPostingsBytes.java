@@ -18,10 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -39,10 +43,24 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
-@Monster("takes ~20GB-30GB of space and 10 minutes, and more heap space sometimes")
+@Monster("takes ~20GB-30GB of space and 10 minutes")
 public class Test2BPostingsBytes extends LuceneTestCase {
 
   public void test() throws Exception {
+    IndexWriterConfig defaultConfig = new IndexWriterConfig(null);
+    Codec defaultCodec = defaultConfig.getCodec();
+    if ((new IndexWriterConfig(null)).getCodec() instanceof CompressingCodec) {
+      Pattern regex = Pattern.compile("maxDocsPerChunk=(\\d+), blockSize=(\\d+)");
+      Matcher matcher = regex.matcher(defaultCodec.toString());
+      assertTrue("Unexpected CompressingCodec toString() output: " + defaultCodec.toString(), matcher.find());
+      int maxDocsPerChunk = Integer.parseInt(matcher.group(1));
+      int blockSize = Integer.parseInt(matcher.group(2));
+      int product = maxDocsPerChunk * blockSize;
+      assumeTrue(defaultCodec.getName() + " maxDocsPerChunk (" + maxDocsPerChunk
+          + ") * blockSize (" + blockSize + ") < 16 - this can trigger OOM with -Dtests.heapsize=30g",
+          product >= 16);
+    }
+
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPostingsBytes1"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
