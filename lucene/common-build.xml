@@ -617,8 +617,14 @@
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
+      <local name="-svnversion-raw"/>
+      <local name="svnversion"/>
+      
       <!-- If possible, include the svnversion -->
-      <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false"/>
+      <exec dir="." executable="${svnversion.exe}" outputproperty="-svnversion-raw" failifexecutionfails="false"/>
+      <condition property="svnversion" value="${-svnversion-raw}" else="unknown">
+        <matches pattern="[\d:MSP]+" string="${-svnversion-raw}" casesensitive="true"/>
+      </condition>
 
       <manifest file="@{manifest.file}">
         <!--
