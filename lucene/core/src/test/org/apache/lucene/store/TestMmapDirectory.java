@@ -27,6 +27,8 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new MMapDirectory(path);
+    MMapDirectory m = new MMapDirectory(path);
+    m.setPreload(random().nextBoolean());
+    return m;
   }
 }
