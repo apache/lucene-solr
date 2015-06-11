@@ -70,6 +70,8 @@ New Features
   the per-hit polygon check when a leaf cell is fully contained by the
   polygon.  (Nick Knize, Mike McCandless)
 
+* LUCENE-6549: Add preload option to MMapDirectory. (Robert Muir)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
