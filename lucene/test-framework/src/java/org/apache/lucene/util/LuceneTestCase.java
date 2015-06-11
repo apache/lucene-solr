@@ -915,6 +915,7 @@ public abstract class LuceneTestCase extends Assert {
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       if (random().nextBoolean()) {
         cms.disableAutoIOThrottle();
+        assertFalse(cms.getAutoIOThrottle());
       }
       cms.setForceMergeMBPerSec(10 + 10*random().nextDouble());
       c.setMergeScheduler(cms);
@@ -1180,11 +1181,18 @@ public abstract class LuceneTestCase extends Assert {
       // change CMS merge parameters
       MergeScheduler ms = c.getMergeScheduler();
       if (ms instanceof ConcurrentMergeScheduler) {
+        ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
         int maxThreadCount = TestUtil.nextInt(r, 1, 4);
         int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
-        ((ConcurrentMergeScheduler)ms).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+        boolean enableAutoIOThrottle = random().nextBoolean();
+        if (enableAutoIOThrottle) {
+          cms.enableAutoIOThrottle();
+        } else {
+          cms.disableAutoIOThrottle();
+        }
+        cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+        didChange = true;
       }
-      didChange = true;
     }
     
     if (rarely(r)) {
