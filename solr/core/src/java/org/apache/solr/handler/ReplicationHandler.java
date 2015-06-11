@@ -1354,15 +1354,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    protected void releaseCommitPointAndExtendReserve() {
+    protected void extendReserveAndReleaseCommitPoint() {
       if(indexGen != null) {
-        //release the commit point as the write is complete
-        delPolicy.releaseCommitPoint(indexGen);
-
         //Reserve the commit point for another 10s for the next file to be to fetched.
         //We need to keep extending the commit reservation between requests so that the replica can fetch
         //all the files correctly.
         delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
+
+        //release the commit point as the write is complete
+        delPolicy.releaseCommitPoint(indexGen);
       }
 
     }
@@ -1423,7 +1423,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (in != null) {
           in.close();
         }
-        releaseCommitPointAndExtendReserve();
+        extendReserveAndReleaseCommitPoint();
       }
     }
 
@@ -1487,7 +1487,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         LOG.warn("Exception while writing response for params: " + params, e);
       } finally {
         IOUtils.closeQuietly(inputStream);
-        releaseCommitPointAndExtendReserve();
+        extendReserveAndReleaseCommitPoint();
       }
     }
   }
