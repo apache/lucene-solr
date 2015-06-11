@@ -23,11 +23,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.carrotsearch.hppc.IntOpenHashSet;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.Random;
 
 public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
@@ -517,9 +512,32 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/float[@name='id'][.='1.0']", //Elevated
         "//result/doc[2]/float[@name='id'][.='4.0']", //Elevated
         "//result/doc[3]/float[@name='id'][.='8.0']"); //Boosted during rerank.
-
-
-
   }
 
+  @Test
+  public void testRerankQueryParsingShouldFailWithoutMandatoryReRankQueryParameter() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {"id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc1));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("start", "0");
+    params.add("rows", "2");
+
+    try {
+      h.query(req(params));
+      fail("A syntax error should be thrown when reRankQuery parameter is not specified");
+    } catch (SolrException e) {
+      assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
+    }
+  }
 }
