@@ -78,8 +78,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public Query parse() throws SyntaxError {
-
       String reRankQueryString = localParams.get("reRankQuery");
+      if (reRankQueryString == null || reRankQueryString.trim().length() == 0)  {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "reRankQuery parameter is mandatory");
+      }
       QParser reRankParser = QParser.getParser(reRankQueryString, null, req);
       Query reRankQuery = reRankParser.parse();
 

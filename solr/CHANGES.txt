@@ -121,6 +121,9 @@ Bug Fixes
 * SOLR-7108: Change default query used by /admin/ping to not rely on other parameters such as query parser or
   default field. (ehatcher)
 
+* SOLR-6835: ReRankQueryParserPlugin checks now whether the reRankQuery parameter is present and not empty.
+  (帅广应, Marius Grama via shalin)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
