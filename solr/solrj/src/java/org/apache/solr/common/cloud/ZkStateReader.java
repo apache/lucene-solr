@@ -17,22 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ByteUtils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
-import org.apache.zookeeper.data.Stat;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -52,6 +36,22 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ByteUtils;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
@@ -455,17 +455,15 @@ public class ZkStateReader implements Closeable {
     }
   }
 
-  private ClusterState constructState(Set<String> ln, Watcher watcher)
-      throws KeeperException, InterruptedException {
+  private ClusterState constructState(Set<String> ln, Watcher watcher) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
     byte[] data = zkClient.getData(CLUSTER_STATE, watcher, stat, true);
-    ClusterState loadedData = ClusterState.load(stat.getVersion(), data, ln,
-        CLUSTER_STATE);
-    Map<String,ClusterState.CollectionRef> result = new LinkedHashMap<>();
-    result.putAll(loadedData.getCollectionStates());// first load all
-                                                    // collections in
-                                                    // clusterstate.json
-    for (String s : getIndividualColls()) {
+    ClusterState loadedData = ClusterState.load(stat.getVersion(), data, ln, CLUSTER_STATE);
+
+    // first load all collections in /clusterstate.json (i.e. stateFormat=1)
+    Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>(loadedData.getCollectionStates());
+
+    for (String s : getStateFormat2CollectionNames()) {
       synchronized (this) {
         if (watchedCollections.contains(s)) {
           DocCollection live = getCollectionLive(this, s);
@@ -487,7 +485,9 @@ public class ZkStateReader implements Closeable {
             }
 
             @Override
-            public boolean isLazilyLoaded() { return true; }
+            public boolean isLazilyLoaded() {
+              return true;
+            }
           });
         }
       }
@@ -496,7 +496,7 @@ public class ZkStateReader implements Closeable {
   }
 
 
-  private Set<String> getIndividualColls() throws KeeperException, InterruptedException {
+  private Set<String> getStateFormat2CollectionNames() throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
       children = zkClient.getChildren(COLLECTIONS_ZKNODE, null, true);
@@ -506,10 +506,14 @@ public class ZkStateReader implements Closeable {
       return new HashSet<>();
     }
     if (children == null || children.isEmpty()) return new HashSet<>();
-    HashSet<String> result = new HashSet<>(children.size());
-    
+    HashSet<String> result = new HashSet<>(children.size(), 1.0f);
+
     for (String c : children) {
       try {
+        // this exists call is necessary because we only want to return
+        // those collections which have their own state.json.
+        // The getCollectionPath() calls returns the complete path to the
+        // collection's state.json
         if (zkClient.exists(getCollectionPath(c), true)) {
           result.add(c);
         }
@@ -529,15 +533,12 @@ public class ZkStateReader implements Closeable {
     if (immediate) {
       ClusterState clusterState;
       synchronized (getUpdateLock()) {
-        List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE, null,
-            true);
-        Set<String> liveNodesSet = new HashSet<>();
-        liveNodesSet.addAll(liveNodes);
+        List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
+        Set<String> liveNodesSet = new HashSet<>(liveNodes);
         
         if (!onlyLiveNodes) {
           log.debug("Updating cloud state from ZooKeeper... ");
-          
-          clusterState = constructState(liveNodesSet,null);
+          clusterState = constructState(liveNodesSet, null);
         } else {
           log.debug("Updating live nodes from ZooKeeper... ({})", liveNodesSet.size());
           clusterState = this.clusterState;
@@ -572,8 +573,7 @@ public class ZkStateReader implements Closeable {
             try {
               List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
                   null, true);
-              Set<String> liveNodesSet = new HashSet<>();
-              liveNodesSet.addAll(liveNodes);
+              Set<String> liveNodesSet = new HashSet<>(liveNodes);
               
               if (!onlyLiveNodes) {
                 log.debug("Updating cloud state from ZooKeeper... ");
@@ -877,7 +877,6 @@ public class ZkStateReader implements Closeable {
       String coll) {
     String collectionPath = getCollectionPath(coll);
     try {
-      if (!zkStateReader.getZkClient().exists(collectionPath, true)) return null;
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionPath, null, stat, true);
       ClusterState state = ClusterState.load(stat.getVersion(), data,

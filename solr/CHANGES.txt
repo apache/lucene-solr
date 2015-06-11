@@ -68,7 +68,7 @@ Bug Fixes
 
 Optimizations
 ----------------------
-(no changes)
+* SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
 
 Other Changes
 ----------------------
