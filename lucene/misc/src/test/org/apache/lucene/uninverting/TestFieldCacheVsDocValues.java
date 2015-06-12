@@ -50,10 +50,18 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestFieldCacheVsDocValues extends LuceneTestCase {
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    assumeFalse("test unsupported on J9 temporarily, see https://issues.apache.org/jira/browse/LUCENE-6522",
+                Constants.JAVA_VENDOR.startsWith("IBM"));
+  }
   
   public void testByteMissingVsFieldCache() throws Exception {
     int numIterations = atLeast(1);
