@@ -17,20 +17,6 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -53,10 +39,12 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.queries.CustomScoreProvider;
+import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -95,6 +83,20 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * JUnit Test for Highlighter class.
@@ -136,6 +138,28 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       throws IOException {
     return TokenSources.getTokenStream(fieldName, searcher.getIndexReader().getTermVectors(docId),
         searcher.doc(docId).get(fieldName), analyzer, -1);
+  }
+
+  public void testCustomScoreQueryHighlight() throws Exception{
+    TermQuery termQuery = new TermQuery(new Term(FIELD_NAME, "very"));
+    CustomScoreQuery query = new CustomScoreQuery(termQuery);
+
+    searcher = newSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(2, hits.totalHits);
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    final int docId0 = hits.scoreDocs[0].doc;
+    Document doc = searcher.doc(docId0);
+    String storedField = doc.get(FIELD_NAME);
+
+    TokenStream stream = getAnyTokenStream(FIELD_NAME, docId0);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("Hello this is a piece of text that is <B>very</B> long and contains too much preamble and the meat is really here which says kennedy has been shot", fragment);
+
   }
 
   public void testQueryScorerHits() throws Exception {
