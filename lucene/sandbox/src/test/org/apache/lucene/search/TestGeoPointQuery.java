@@ -180,7 +180,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   @Nightly
   public void testRandomBig() throws Exception {
-    doTestRandom(1000000);
+    doTestRandom(200000);
   }
 
   private void doTestRandom(int count) throws Exception {
