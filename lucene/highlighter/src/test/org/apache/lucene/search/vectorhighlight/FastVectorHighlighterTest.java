@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -77,6 +78,36 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     FieldQuery fieldQuery  = highlighter.getFieldQuery( new TermQuery(new Term("field", "foo")), reader );
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     // highlighted results are centered 
+    assertEquals("This is a test where <b>foo</b> is highlighed and should be highlighted", bestFragments[0]);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 52, 1);
+    assertEquals("This is a test where <b>foo</b> is highlighed and should be", bestFragments[0]);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 30, 1);
+    assertEquals("a test where <b>foo</b> is highlighed", bestFragments[0]);
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testCustomScoreQueryHighlight() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+    Field field = new Field("field", "This is a test where foo is highlighed and should be highlighted", type);
+
+    doc.add(field);
+    writer.addDocument(doc);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+
+    IndexReader reader = DirectoryReader.open(writer, true);
+    int docId = 0;
+    FieldQuery fieldQuery  = highlighter.getFieldQuery( new CustomScoreQuery(new TermQuery(new Term("field", "foo"))), reader );
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
+    // highlighted results are centered
     assertEquals("This is a test where <b>foo</b> is highlighed and should be highlighted", bestFragments[0]);
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 52, 1);
     assertEquals("This is a test where <b>foo</b> is highlighed and should be", bestFragments[0]);

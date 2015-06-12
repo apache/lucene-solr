@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -127,7 +128,12 @@ public class FieldQuery {
       if (q != null) {
         flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
       }
-    } else if (reader != null){
+    } else if (sourceQuery instanceof CustomScoreQuery) {
+      final Query q = ((CustomScoreQuery) sourceQuery).getSubQuery();
+      if (q != null) {
+        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
+      }
+    } else if (reader != null) {
       Query query = sourceQuery;
       if (sourceQuery instanceof MultiTermQuery) {
         MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();

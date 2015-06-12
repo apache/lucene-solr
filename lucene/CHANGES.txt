@@ -116,6 +116,9 @@ Bug fixes
   instance since this can prevent future improvements like a
   disk-backed live docs (Adrien Grand, Mike McCandless)
 
+* LUCENE-6558: Highlighters now work with CustomScoreQuery (Cao Manh
+  Dat via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

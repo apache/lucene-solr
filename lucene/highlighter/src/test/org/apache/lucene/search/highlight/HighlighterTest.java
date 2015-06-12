@@ -55,9 +55,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.queries.CustomScoreProvider;
+import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -137,6 +140,28 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       throws IOException {
     return TokenSources.getTokenStream(fieldName, searcher.getIndexReader().getTermVectors(docId),
         searcher.doc(docId).get(fieldName), analyzer, -1);
+  }
+
+  public void testCustomScoreQueryHighlight() throws Exception{
+    TermQuery termQuery = new TermQuery(new Term(FIELD_NAME, "very"));
+    CustomScoreQuery query = new CustomScoreQuery(termQuery);
+
+    searcher = newSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(2, hits.totalHits);
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    final int docId0 = hits.scoreDocs[0].doc;
+    StoredDocument doc = searcher.doc(docId0);
+    String storedField = doc.get(FIELD_NAME);
+
+    TokenStream stream = getAnyTokenStream(FIELD_NAME, docId0);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("Hello this is a piece of text that is <B>very</B> long and contains too much preamble and the meat is really here which says kennedy has been shot", fragment);
+
   }
 
   public void testQueryScorerHits() throws Exception {
