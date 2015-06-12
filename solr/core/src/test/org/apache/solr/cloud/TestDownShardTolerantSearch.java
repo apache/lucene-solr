@@ -40,7 +40,7 @@ public class TestDownShardTolerantSearch extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 2)
-  public void test() throws Exception {
+  public void searchingShouldFailWithoutTolerantSearchSetToTrue() throws Exception {
     waitForRecoveriesToFinish(true);
 
     indexAbunchOfDocs();
@@ -56,12 +56,13 @@ public class TestDownShardTolerantSearch extends AbstractFullDistribZkTestBase {
     assertTrue(response.getResults().getNumFound() > 0);
 
     try {
-      response = cloudClient.query(new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false));
+      cloudClient.query(new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false));
       fail("Request should have failed because we killed shard1 jetty");
     } catch (SolrServerException e) {
       log.info("error from server", e);
       assertNotNull(e.getCause());
-      assertTrue("Error message from server should have the name of the down shard", e.getCause().getMessage().contains("shard1"));
+      assertTrue("Error message from server should have the name of the down shard",
+          e.getCause().getMessage().contains(SHARD1));
     } catch (IOException e) {
       e.printStackTrace();
     }
