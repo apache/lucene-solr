@@ -51,7 +51,7 @@ final class Lucene40SkipListReader extends MultiLevelSkipListReader {
   }
 
   /** Per-term initialization. */
-  public void init(long skipPointer, long freqBasePointer, long proxBasePointer, int df, boolean storesPayloads, boolean storesOffsets) {
+  public void init(long skipPointer, long freqBasePointer, long proxBasePointer, int df, boolean storesPayloads, boolean storesOffsets) throws IOException {
     super.init(skipPointer, df);
     this.currentFieldStoresPayloads = storesPayloads;
     this.currentFieldStoresOffsets = storesOffsets;

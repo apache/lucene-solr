@@ -54,7 +54,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     if (buffers.length == 1) {
       return new SingleBufferImpl(resourceDescription, buffers[0], length, chunkSizePower, cleaner, clones);
     } else {
-      return new DefaultImpl(resourceDescription, buffers, length, chunkSizePower, cleaner, clones);
+      return new MultiBufferImpl(resourceDescription, buffers, 0, length, chunkSizePower, cleaner, clones);
     }
   }
   
@@ -301,9 +301,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
       newBuffers[0].position(offset);
       return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice(), length, chunkSizePower, this.cleaner, this.clones);
     } else {
-      return (offset == 0) ?
-        new DefaultImpl(newResourceDescription, newBuffers, length, chunkSizePower, cleaner, clones) :
-        new WithOffsetImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, cleaner, clones);
+      return new MultiBufferImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, cleaner, clones);
     }
   }
   
@@ -385,21 +383,6 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
    */
   static interface BufferCleaner {
     void freeBuffer(ByteBufferIndexInput parent, ByteBuffer b) throws IOException;
-  }
-  
-  /** Default implementation of ByteBufferIndexInput, supporting multiple buffers, but no offset. */
-  static final class DefaultImpl extends ByteBufferIndexInput {
-
-    DefaultImpl(String resourceDescription, ByteBuffer[] buffers, long length, int chunkSizePower, 
-        BufferCleaner cleaner, WeakIdentityMap<ByteBufferIndexInput,Boolean> clones) {
-      super(resourceDescription, buffers, length, chunkSizePower, cleaner, clones);
-      try {
-        seek(0L);
-      } catch (IOException ioe) {
-        throw new AssertionError(ioe);
-      }
-    }
-    
   }
   
   /** Optimization of ByteBufferIndexInput for when there is only one buffer */
@@ -501,10 +484,10 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
   }
   
   /** This class adds offset support to ByteBufferIndexInput, which is needed for slices. */
-  static final class WithOffsetImpl extends ByteBufferIndexInput {
+  static final class MultiBufferImpl extends ByteBufferIndexInput {
     private final int offset;
     
-    WithOffsetImpl(String resourceDescription, ByteBuffer[] buffers, int offset, long length, int chunkSizePower,
+    MultiBufferImpl(String resourceDescription, ByteBuffer[] buffers, int offset, long length, int chunkSizePower,
         BufferCleaner cleaner, WeakIdentityMap<ByteBufferIndexInput,Boolean> clones) {
       super(resourceDescription, buffers, length, chunkSizePower, cleaner, clones);
       this.offset = offset;
@@ -517,10 +500,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     
     @Override
     public void seek(long pos) throws IOException {
-      // necessary in case offset != 0 and pos < 0, but pos >= -offset
-      if (pos < 0L) {
-        throw new IllegalArgumentException("Seeking to negative position: " + this);
-      }
+      assert pos >= 0L;
       super.seek(pos + offset);
     }
     

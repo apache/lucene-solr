@@ -79,7 +79,7 @@ final class Lucene41SkipReader extends MultiLevelSkipListReader {
     return df % blockSize == 0? df - 1: df;
   }
 
-  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) {
+  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) throws IOException {
     super.init(skipPointer, trim(df));
     lastDocPointer = docBasePointer;
     lastPosPointer = posBasePointer;

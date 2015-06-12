@@ -23,6 +23,8 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.MultiLevelSkipListReader;
 import org.apache.lucene.store.IndexInput;
 
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
+
 /**
  * Implements the skip list reader for block postings format
  * that stores positions and payloads.
@@ -51,8 +53,6 @@ import org.apache.lucene.store.IndexInput;
  *
  */
 final class Lucene50SkipReader extends MultiLevelSkipListReader {
-  private final int blockSize;
-
   private long docPointer[];
   private long posPointer[];
   private long payPointer[];
@@ -65,9 +65,8 @@ final class Lucene50SkipReader extends MultiLevelSkipListReader {
   private long lastDocPointer;
   private int lastPosBufferUpto;
 
-  public Lucene50SkipReader(IndexInput skipStream, int maxSkipLevels, int blockSize, boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
-    super(skipStream, maxSkipLevels, blockSize, 8);
-    this.blockSize = blockSize;
+  public Lucene50SkipReader(IndexInput skipStream, int maxSkipLevels, boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
+    super(skipStream, maxSkipLevels, BLOCK_SIZE, 8);
     docPointer = new long[maxSkipLevels];
     if (hasPos) {
       posPointer = new long[maxSkipLevels];
@@ -97,10 +96,10 @@ final class Lucene50SkipReader extends MultiLevelSkipListReader {
    *
    */
   protected int trim(int df) {
-    return df % blockSize == 0? df - 1: df;
+    return df % BLOCK_SIZE == 0? df - 1: df;
   }
 
-  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) {
+  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) throws IOException {
     super.init(skipPointer, trim(df));
     lastDocPointer = docBasePointer;
     lastPosPointer = posBasePointer;
