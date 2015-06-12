@@ -170,7 +170,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       if (action == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       CollectionOperation operation = CollectionOperation.get(action);
-      log.info("Invoked Collection Action :{} with params{} ", action.toLower(), req.getParamString());
+      log.info("Invoked Collection Action :{} with params {} ", action.toLower(), req.getParamString());
       Map<String, Object> result = operation.call(req, rsp, this);
       if (result != null) {
         result.put(QUEUE_OPERATION, operation.action.toLower());
