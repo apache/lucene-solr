@@ -137,6 +137,9 @@ Changes in Runtime Behavior
   spans that were previously discarded in preference to shorter 
   overlapping ones. (Alan Woodward, Adrien Grand, Paul Elschot)
 
+* LUCENE-6538: Also include java.vm.version and java.runtime.version
+  in per-segment diagnostics (Robert Muir, Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
