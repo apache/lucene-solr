@@ -53,7 +53,6 @@ public abstract class MultiLevelSkipListReader implements Closeable {
   private int numberOfLevelsToBuffer = 1;
   
   private int docCount;
-  private boolean haveSkipped;
 
   /** skipStream for each level. */
   private IndexInput[] skipStream;
@@ -120,12 +119,7 @@ public abstract class MultiLevelSkipListReader implements Closeable {
    *  greater than or equal to <i>target</i>. Returns the current doc count. 
    */
   public int skipTo(int target) throws IOException {
-    if (!haveSkipped) {
-      // first time, load skip levels
-      loadSkipLevels();
-      haveSkipped = true;
-    }
-  
+
     // walk up the levels until highest level is found that has a skip
     // for this target
     int level = 0;
@@ -196,7 +190,7 @@ public abstract class MultiLevelSkipListReader implements Closeable {
   }
 
   /** Initializes the reader, for reuse on a new term. */
-  public void init(long skipPointer, int df) {
+  public void init(long skipPointer, int df) throws IOException {
     this.skipPointer[0] = skipPointer;
     this.docCount = df;
     assert skipPointer >= 0 && skipPointer <= skipStream[0].length() 
@@ -205,10 +199,10 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     Arrays.fill(numSkipped, 0);
     Arrays.fill(childPointer, 0);
     
-    haveSkipped = false;
     for (int i = 1; i < numberOfSkipLevels; i++) {
       skipStream[i] = null;
     }
+    loadSkipLevels();
   }
   
   /** Loads the skip levels  */

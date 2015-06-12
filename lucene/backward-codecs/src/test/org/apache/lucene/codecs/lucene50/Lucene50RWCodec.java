@@ -1,3 +1,5 @@
+package org.apache.lucene.codecs.lucene50;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,9 +17,18 @@
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.NormsFormat;
+
 /**
- * Components from the Lucene 5.0 index format
- * See {@link org.apache.lucene.codecs.lucene53} for an overview
- * of the index format.
+ * Codec for testing 5.0 index format
+ * @deprecated Only for testing old 5.0-5.2 segments
  */
-package org.apache.lucene.codecs.lucene50;
+@Deprecated
+final class Lucene50RWCodec extends Lucene50Codec {
+  private final NormsFormat normsFormat = new Lucene50RWNormsFormat();
+
+  @Override
+  public NormsFormat normsFormat() {
+    return normsFormat;
+  }
+}

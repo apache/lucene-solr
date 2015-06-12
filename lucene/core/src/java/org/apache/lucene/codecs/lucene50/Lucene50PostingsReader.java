@@ -414,7 +414,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
                                            MAX_SKIP_LEVELS,
-                                           BLOCK_SIZE,
                                            indexHasPos,
                                            indexHasOffsets,
                                            indexHasPayloads);
@@ -692,7 +691,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
                                            MAX_SKIP_LEVELS,
-                                           BLOCK_SIZE,
                                            true,
                                            indexHasOffsets,
                                            indexHasPayloads);
@@ -1121,7 +1119,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
                                         MAX_SKIP_LEVELS,
-                                        BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
                                         indexHasPayloads);

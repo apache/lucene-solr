@@ -72,6 +72,9 @@ New Features
 
 * LUCENE-6549: Add preload option to MMapDirectory. (Robert Muir)
 
+* LUCENE-6504: Add Lucene53Codec, with norms implemented directly
+  via the Directory's RandomAccessInput api. (Robert Muir)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

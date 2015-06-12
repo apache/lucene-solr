@@ -1,3 +1,5 @@
+package org.apache.lucene.codecs.lucene50;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,9 +17,20 @@
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.index.SegmentWriteState;
+
 /**
- * Components from the Lucene 5.0 index format
- * See {@link org.apache.lucene.codecs.lucene53} for an overview
- * of the index format.
+ * Read-write version of 5.0 norms format for testing
+ * @deprecated for test purposes only
  */
-package org.apache.lucene.codecs.lucene50;
+@Deprecated
+final class Lucene50RWNormsFormat extends Lucene50NormsFormat {
+  
+  @Override
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    return new Lucene50NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+  }
+}

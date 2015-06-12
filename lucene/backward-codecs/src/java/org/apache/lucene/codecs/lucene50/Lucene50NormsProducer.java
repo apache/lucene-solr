@@ -17,13 +17,13 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.CONST_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.INDIRECT;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_BITSET;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_TABLE;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.UNCOMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.CONST_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.INDIRECT;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.PATCHED_BITSET;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.PATCHED_TABLE;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_CURRENT;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_START;
 
@@ -58,8 +58,10 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Reader for {@link Lucene50NormsFormat}
+ * @deprecated Only for reading old 5.0-5.2 segments
  */
-class Lucene50NormsProducer extends NormsProducer {
+@Deprecated
+final class Lucene50NormsProducer extends NormsProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NormsEntry> norms = new HashMap<>();
   private final IndexInput data;

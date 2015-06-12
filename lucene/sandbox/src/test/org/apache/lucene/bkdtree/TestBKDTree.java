@@ -19,7 +19,7 @@ package org.apache.lucene.bkdtree;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50Codec;
+import org.apache.lucene.codecs.lucene53.Lucene53Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -369,7 +369,7 @@ public class TestBKDTree extends LuceneTestCase {
       iwc.setMaxBufferedDocs(lats.length/100);
     }
     final DocValuesFormat dvFormat = new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
-    Codec codec = new Lucene50Codec() {
+    Codec codec = new Lucene53Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
           if (field.equals("point")) {

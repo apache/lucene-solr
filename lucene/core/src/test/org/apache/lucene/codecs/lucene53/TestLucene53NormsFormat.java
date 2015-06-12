@@ -1,3 +1,5 @@
+package org.apache.lucene.codecs.lucene53;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,9 +17,18 @@
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseNormsFormatTestCase;
+
 /**
- * Components from the Lucene 5.0 index format
- * See {@link org.apache.lucene.codecs.lucene53} for an overview
- * of the index format.
+ * Tests Lucene53NormsFormat
  */
-package org.apache.lucene.codecs.lucene50;
+public class TestLucene53NormsFormat extends BaseNormsFormatTestCase {
+  private final Codec codec = new Lucene53Codec();
+  
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
+
+}

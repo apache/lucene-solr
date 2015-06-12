@@ -28,10 +28,10 @@ import org.apache.lucene.index.BaseNormsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene49NormsFormat
+ * Tests Lucene50NormsFormat
  */
 public class TestLucene50NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = TestUtil.getDefaultCodec();
+  private final Codec codec = new Lucene50RWCodec();
   
   @Override
   protected Codec getCodec() {

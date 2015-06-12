@@ -53,9 +53,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * These two options can be configured like this:
  * <pre class="prettyprint">
  *   // the default: for high performance
- *   indexWriterConfig.setCodec(new Lucene50Codec(Mode.BEST_SPEED));
+ *   indexWriterConfig.setCodec(new Lucene53Codec(Mode.BEST_SPEED));
  *   // instead for higher performance (but slower):
- *   // indexWriterConfig.setCodec(new Lucene50Codec(Mode.BEST_COMPRESSION));
+ *   // indexWriterConfig.setCodec(new Lucene53Codec(Mode.BEST_COMPRESSION));
  * </pre>
  * <p><b>File formats</b>
  * <p>Stored fields are represented by two files:

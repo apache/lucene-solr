@@ -39,15 +39,10 @@ import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_CURR
 
 /**
  * Writer for {@link Lucene50NormsFormat}
+ * @deprecated Only for testing old 5.0-5.2 segments
  */
-class Lucene50NormsConsumer extends NormsConsumer { 
-  static final byte DELTA_COMPRESSED = 0;
-  static final byte TABLE_COMPRESSED = 1;
-  static final byte CONST_COMPRESSED = 2;
-  static final byte UNCOMPRESSED = 3;
-  static final byte INDIRECT = 4;
-  static final byte PATCHED_BITSET = 5;
-  static final byte PATCHED_TABLE = 6;
+@Deprecated
+final class Lucene50NormsConsumer extends NormsConsumer { 
   static final int BLOCK_SIZE = 1 << 14;
   
   // threshold for indirect encoding, computed as 1 - 1/log2(maxint)
@@ -181,13 +176,13 @@ class Lucene50NormsConsumer extends NormsConsumer {
   
   private void addConstant(byte constant) throws IOException {
     meta.writeVInt(0);
-    meta.writeByte(CONST_COMPRESSED);
+    meta.writeByte(Lucene50NormsFormat.CONST_COMPRESSED);
     meta.writeLong(constant);
   }
 
   private void addUncompressed(Iterable<Number> values, int count) throws IOException {
     meta.writeVInt(count);
-    meta.writeByte(UNCOMPRESSED); // uncompressed byte[]
+    meta.writeByte(Lucene50NormsFormat.UNCOMPRESSED); // uncompressed byte[]
     meta.writeLong(data.getFilePointer());
     for (Number nv : values) {
       data.writeByte(nv.byteValue());
@@ -196,7 +191,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
   
   private void addTableCompressed(Iterable<Number> values, FormatAndBits compression, int count, NormMap uniqueValues) throws IOException {
     meta.writeVInt(count);
-    meta.writeByte(TABLE_COMPRESSED); // table-compressed
+    meta.writeByte(Lucene50NormsFormat.TABLE_COMPRESSED); // table-compressed
     meta.writeLong(data.getFilePointer());
 
     writeTable(values, compression, count, uniqueValues, uniqueValues.size);
@@ -226,7 +221,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
   
   private void addDeltaCompressed(Iterable<Number> values, int count) throws IOException {
     meta.writeVInt(count);
-    meta.writeByte(DELTA_COMPRESSED); // delta-compressed
+    meta.writeByte(Lucene50NormsFormat.DELTA_COMPRESSED); // delta-compressed
     meta.writeLong(data.getFilePointer());
     data.writeVInt(PackedInts.VERSION_CURRENT);
     data.writeVInt(BLOCK_SIZE);
@@ -245,7 +240,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
     int commonCount = uniqueValues.freqs[0];
     
     meta.writeVInt(count - commonCount);
-    meta.writeByte(PATCHED_BITSET);
+    meta.writeByte(Lucene50NormsFormat.PATCHED_BITSET);
     meta.writeLong(data.getFilePointer());
     
     // write docs with value
@@ -268,7 +263,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
   // the exceptions should not be accessed very often, since the values are uncommon
   private void addPatchedTable(FieldInfo field, final Iterable<Number> values, final int numCommonValues, int commonValuesCount, int count, final NormMap uniqueValues) throws IOException {
     meta.writeVInt(count);
-    meta.writeByte(PATCHED_TABLE);
+    meta.writeByte(Lucene50NormsFormat.PATCHED_TABLE);
     meta.writeLong(data.getFilePointer());
 
     assert numCommonValues == 3 || numCommonValues == 15;
@@ -287,7 +282,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
     int commonCount = uniqueValues.freqs[minOrd];
     
     meta.writeVInt(count - commonCount);
-    meta.writeByte(INDIRECT);
+    meta.writeByte(Lucene50NormsFormat.INDIRECT);
     meta.writeLong(data.getFilePointer());
     
     // write docs with value
