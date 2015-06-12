@@ -63,6 +63,36 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestDocTermOrds extends LuceneTestCase {
 
+  public void testEmptyIndex() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    iw.close();
+    
+    final DirectoryReader ir = DirectoryReader.open(dir);
+    TestUtil.checkReader(ir);
+    
+    final LeafReader composite = SlowCompositeReaderWrapper.wrap(ir);
+    TestUtil.checkReader(composite);
+    
+    // check the leaves
+    // (normally there are none for an empty index, so this is really just future
+    // proofing in case that changes for some reason)
+    for (LeafReaderContext rc : ir.leaves()) {
+      final LeafReader r = rc.reader();
+      final DocTermOrds dto = new DocTermOrds(r, r.getLiveDocs(), "any_field");
+      assertNull("OrdTermsEnum should be null (leaf)", dto.getOrdTermsEnum(r));
+      assertEquals("iterator should be empty (leaf)", 0, dto.iterator(r).getValueCount());
+    }
+
+    // check the composite 
+    final DocTermOrds dto = new DocTermOrds(composite, composite.getLiveDocs(), "any_field");
+    assertNull("OrdTermsEnum should be null (composite)", dto.getOrdTermsEnum(composite));
+    assertEquals("iterator should be empty (composite)", 0, dto.iterator(composite).getValueCount());
+
+    ir.close();
+    dir.close();
+  }
+
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
@@ -82,6 +112,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     w.close();
 
     final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+    TestUtil.checkReader(ar);
     final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
     SortedSetDocValues iter = dto.iterator(ar);
     
@@ -185,6 +216,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: top reader");
     }
     LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    TestUtil.checkReader(slowR);
     verify(slowR, idToOrds, termsArray, null);
 
     FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
@@ -270,6 +302,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    TestUtil.checkReader(slowR);
     for(String prefix : prefixesArray) {
 
       final BytesRef prefixRef = prefix == null ? null : new BytesRef(prefix);

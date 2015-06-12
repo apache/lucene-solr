@@ -54,6 +54,10 @@ API Changes
   to IndexWriter. Improve exception messages when locking fails.
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-6529: Removed an optimization in UninvertingReader that was causing
+  incorrect results for Numeric fields using precisionStep
+  (hossman, Robert Muir)
+
 * LUCENE-6551: Add missing ConcurrentMergeScheduler.getAutoIOThrottle
   getter (Simon Willnauer, Mike McCandless)
 
