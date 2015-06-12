@@ -90,6 +90,9 @@ Changes in Runtime Behavior
   structure of composite and leaf readers.  (Adrien Grand,
   Uwe Schindler)
 
+* LUCENE-6538: Also include java.vm.version and java.runtime.version
+  in per-segment diagnostics (Robert Muir, Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9

@@ -3783,6 +3783,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     diagnostics.put("os.version", Constants.OS_VERSION);
     diagnostics.put("java.version", Constants.JAVA_VERSION);
     diagnostics.put("java.vendor", Constants.JAVA_VENDOR);
+    // On IBM J9 JVM this is better than java.version which is just 1.7.0 (no update level):
+    diagnostics.put("java.runtime.version", System.getProperty("java.runtime.version", "undefined"));
+    // Hotspot version, e.g. 2.8 for J9:
+    diagnostics.put("java.vm.version", System.getProperty("java.vm.version", "undefined"));
     diagnostics.put("timestamp", Long.toString(new Date().getTime()));
     if (details != null) {
       diagnostics.putAll(details);
