@@ -124,6 +124,8 @@ Bug Fixes
 * SOLR-6835: ReRankQueryParserPlugin checks now whether the reRankQuery parameter is present and not empty.
   (帅广应, Marius Grama via shalin)
 
+* SOLR-7566: Search requests should return the shard name that is down. (Marius Grama, shalin)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)

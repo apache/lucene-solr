@@ -58,8 +58,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Strings;
 import org.slf4j.MDC;
 
 public class HttpShardHandler extends ShardHandler {
@@ -467,6 +465,15 @@ public class HttpShardHandler extends ShardHandler {
               }
               String url = ZkCoreNodeProps.getCoreUrl(replica);
               sliceShardsStr.append(url);
+            }
+
+            if (sliceShardsStr.length() == 0) {
+              boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
+              if (!tolerant) {
+                // stop the check when there are no replicas available for a shard
+                throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                    "no servers hosting shard: " + rb.slices[i]);
+              }
             }
 
             rb.shards[i] = sliceShardsStr.toString();
