@@ -1011,7 +1011,7 @@ if [ "$EXAMPLE" != "" ]; then
                                   
                   # check to see if something is already bound to that port
                   if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
-                    PORT_IN_USE=`lsof -Pni:$CLOUD_PORT`
+                    PORT_IN_USE=`lsof -PniTCP:$CLOUD_PORT -sTCP:LISTEN`
                     if [ "$PORT_IN_USE" != "" ]; then
                       read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
                     else
@@ -1408,7 +1408,7 @@ function launch_solr() {
       (loops=0
       while true
       do
-        running=`lsof -Pni:$SOLR_PORT`
+        running=`lsof -PniTCP:$SOLR_PORT -sTCP:LISTEN`
         if [ -z "$running" ]; then
           if [ $loops -lt 6 ]; then
             sleep 5

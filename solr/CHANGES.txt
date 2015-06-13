@@ -129,6 +129,9 @@ Bug Fixes
 * SOLR-7667: Add missing _root_ field to managed-schema template so that the default data driven 
   config set can index nested documents by default.  (yonik)
 
+* SOLR-7635: Limit lsof port check in bin/solr to just listening ports
+  (Upayavira, Ramkumar Aiyengar)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
