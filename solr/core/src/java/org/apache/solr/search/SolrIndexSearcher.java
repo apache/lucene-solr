@@ -872,6 +872,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     getDocSet(query);
   }
 
+  public BitDocSet getDocSetBits(Query q) throws IOException {
+    DocSet answer = getDocSet(q);
+    if (answer instanceof BitDocSet) {
+      return (BitDocSet)answer;
+    }
+
+    FixedBitSet bs = new FixedBitSet(maxDoc());
+    DocIterator iter = answer.iterator();
+    while (iter.hasNext()) {
+      bs.set(iter.nextDoc());
+    }
+
+    BitDocSet answerBits = new BitDocSet(bs , answer.size());
+    if (filterCache != null) {
+      filterCache.put(q, answerBits);
+    }
+    return answerBits;
+  }
+
   /**
    * Returns the set of document ids matching a query.
    * This method is cache-aware and attempts to retrieve the answer from the cache if possible.
