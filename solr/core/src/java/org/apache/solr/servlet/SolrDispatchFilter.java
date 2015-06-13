@@ -89,7 +89,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    log.info("SolrDispatchFilter.init()" + this.getClass().getClassLoader());
+    log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {
       String[] excludeArray = exclude.split(",");
@@ -157,7 +157,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     if ("zookeeper".equalsIgnoreCase(solrxmlLocation)) {
       String zkHost = System.getProperty("zkHost");
-      log.info("Trying to read solr.xml from " + zkHost);
+      log.info("Trying to read solr.xml from {}", zkHost);
       if (StringUtils.isEmpty(zkHost))
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Could not load solr.xml from zookeeper: zkHost system property not set");
@@ -207,12 +207,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       request = wrappedRequest.get();
     }
     if (cores.getAuthenticationPlugin() != null) {
-      log.debug("User principal: "+((HttpServletRequest)request).getUserPrincipal());
+      log.debug("User principal: {}", ((HttpServletRequest)request).getUserPrincipal());
     }
 
     // No need to even create the HttpSolrCall object if this path is excluded.
     if(excludePatterns != null) {
-      String servletPath = ((HttpServletRequest) request).getServletPath().toString();
+      String servletPath = ((HttpServletRequest) request).getServletPath();
       for (Pattern p : excludePatterns) {
         Matcher matcher = p.matcher(servletPath);
         if (matcher.lookingAt()) {
@@ -256,7 +256,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       return true;
     } else {
       try {
-        log.debug("Request to authenticate: "+request+", domain: "+request.getLocalName()+", port: "+request.getLocalPort());
+        log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
         authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
           public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
