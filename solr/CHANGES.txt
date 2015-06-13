@@ -90,6 +90,9 @@ Upgrading from Solr 5.2
   factory, you may need to manually unlock by deleting the lock
   file from filesystem / HDFS.
 
+* The zkCredientialsProvider element in solrcloud section of solr.xml is now deprecated.
+  Use the correct spelling (zkCredentialsProvider) instead.
+
 Detailed Change List
 ----------------------
 
@@ -167,6 +170,10 @@ Other Changes
 * SOLR-7659: Rename releaseCommitPointAndExtendReserve in DirectoryFileStream
   to extendReserveAndReleaseCommitPoint, and reverse the code to match.
   (shalin, Shawn Heisey)
+
+* SOLR-7624: Add correct spelling (zkCredentialsProvider) as an alternative to
+  zkCredientialsProvider element in solrcloud section of solr.xml.
+  (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
 
 ==================  5.2.1 ==================
 

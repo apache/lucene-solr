@@ -37,6 +37,8 @@
     <int name="hostPort">${hostPort:44}</int>
     <int name="zkClientTimeout">77</int>
     <str name="zkHost">testZkHost</str>
+    <str name="zkACLProvider">DefaultZkACLProvider</str>
+    <str name="zkCredentialsProvider">DefaultZkCredentialsProvider</str>
   </solrcloud>
 
   <logging>
