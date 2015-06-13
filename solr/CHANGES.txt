@@ -44,6 +44,9 @@ Upgrading from Solr 5.x
 
 * SolrClient.shutdown() has been removed, use SolrClient.close() instead.
 
+* The deprecated zkCredientialsProvider element in solrcloud section of solr.xml
+  is now removed. Use the correct spelling (zkCredentialsProvider) instead.
+
 Detailed Change List
 ----------------------
 
@@ -59,7 +62,9 @@ Other Changes
 
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
   affects HDFS support. (Ben Manes via Shawn Heisey)
-  
+
+* SOLR-7624: Remove deprecated zkCredientialsProvider element in solrcloud section of solr.xml.
+  (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
 
 ==================  5.3.0 ==================
 
