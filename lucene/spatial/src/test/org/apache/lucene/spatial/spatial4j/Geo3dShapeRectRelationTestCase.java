@@ -83,9 +83,27 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       return GeoBBoxFactory.makeGeoBBox(planetModel, maxLat, minLat, leftLon, rightLon);
   }
 
+  abstract class Geo3dRectIntersectionTestHelper extends RectIntersectionTestHelper<Geo3dShape> {
+
+    public Geo3dRectIntersectionTestHelper(SpatialContext ctx) {
+      super(ctx);
+    }
+
+    @Override
+    protected int getMaxLaps() {
+      //sometimes, getWithinMinimum needs some more attempts then normal; 20k is suggested max.
+      return 200_000;//200k
+    }
+
+    @Override
+    protected int getDefaultMinimumPredicateFrequency(int maxLaps) {
+      return 20;//20 times each -- should be plenty in 200k
+    }
+  }
+
   @Test
   public void testGeoCircleRect() {
-    new RectIntersectionTestHelper<Geo3dShape>(ctx) {
+    new Geo3dRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
@@ -115,7 +133,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
   @Test
   public void testGeoBBoxRect() {
-    new RectIntersectionTestHelper<Geo3dShape>(ctx) {
+    new Geo3dRectIntersectionTestHelper(ctx) {
 
       @Override
       protected boolean isRandomShapeRectangular() {
@@ -149,7 +167,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
   @Test
   public void testGeoPolygonRect() {
-    new RectIntersectionTestHelper<Geo3dShape>(ctx) {
+    new Geo3dRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
@@ -184,8 +202,8 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
       @Override
       protected int getWithinMinimum(int laps) {
-        // Long/thin so only 10% of the usual figure
-        return laps/10000;
+        // Long/thin so lets just find 1.
+        return 1;
       }
 
     }.testRelateWithRectangle();
@@ -193,7 +211,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
   @Test
   public void testGeoPathRect() {
-    new RectIntersectionTestHelper<Geo3dShape>(ctx) {
+    new Geo3dRectIntersectionTestHelper(ctx) {
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
@@ -229,8 +247,8 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
       @Override
       protected int getWithinMinimum(int laps) {
-        // Long/thin so only 10% of the usual figure
-        return laps/10000;
+        // Long/thin so lets just find 1.
+        return 1;
       }
 
     }.testRelateWithRectangle();
