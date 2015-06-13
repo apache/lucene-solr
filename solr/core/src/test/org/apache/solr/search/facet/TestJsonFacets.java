@@ -1072,6 +1072,82 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
   }
 
+
+
+  @Test
+  public void testBlockJoin() throws Exception {
+    doBlockJoin(Client.localClient());
+  }
+
+  public void doBlockJoin(Client client) throws Exception {
+    ModifiableSolrParams p = params("rows","0");
+
+    client.deleteByQuery("*:*", null);
+
+    SolrInputDocument parent;
+    parent = sdoc("id", "1", "type_s","book", "book_s","A", "v_t","q");
+    client.add(parent, null);
+
+    parent = sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w");
+    parent.addChildDocument( sdoc("id","2.1", "type_s","page", "page_s","a", "v_t","x y z")  );
+    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e");
+    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","d", "v_t","x    ")  );
+    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","e", "v_t","  y  ")  );
+    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","f", "v_t","    z")  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e");
+    client.add(parent, null);
+
+    client.commit();
+
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{ " +
+                "pages:{ type:query, domain:{blockChildren:'type_s:book'} , facet:{ x:{field:v_t} } }" +
+                ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'} }" +
+                ",books:{ type:query, domain:{blockParent:'type_s:book'}  , facet:{ x:{field:v_t} } }" +
+                ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book'} }" +
+                ",pageof3:{ type:query, q:'id:3', facet : { x : { type:terms, field:page_s, domain:{blockChildren:'type_s:book'}}} }" +
+                ",bookof22:{ type:query, q:'id:2.2', facet : { x : { type:terms, field:book_s, domain:{blockParent:'type_s:book'}}} }" +
+                ",missing_blockParent:{ type:query, domain:{blockParent:'type_s:does_not_exist'} }" +
+                ",missing_blockChildren:{ type:query, domain:{blockChildren:'type_s:does_not_exist'} }" +
+                "}"
+        )
+        , "facets=={ count:10" +
+            ", pages:{count:6 , x:{buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ]}  }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", books:{count:4 , x:{buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ]}  }" +
+            ", books2:{ buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ] }" +
+            ", pageof3:{count:1 , x:{buckets:[ {val:d,count:1},{val:e,count:1},{val:f,count:1} ]}  }" +
+            ", bookof22:{count:1 , x:{buckets:[ {val:B,count:1} ]}  }" +
+            ", missing_blockParent:{count:0}" +
+            ", missing_blockChildren:{count:0}" +
+            "}"
+    );
+
+    // no matches in base query
+    client.testJQ(params("q", "no_match_s:NO_MATCHES"
+            , "json.facet", "{ processEmpty:true," +
+                "pages:{ type:query, domain:{blockChildren:'type_s:book'} }" +
+                ",books:{ type:query, domain:{blockParent:'type_s:book'} }" +
+                "}"
+        )
+        , "facets=={ count:0" +
+            ", pages:{count:0}" +
+            ", books:{count:0}" +
+            "}"
+    );
+
+
+  }
+
+
+
+
   public void XtestPercentiles() {
     AVLTreeDigest catA = new AVLTreeDigest(100);
     catA.add(4);

@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -41,6 +42,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FunctionQParser;
@@ -54,8 +56,17 @@ import org.apache.solr.search.SyntaxError;
 public abstract class FacetRequest {
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
   protected Map<String,FacetRequest> subFacets;     // list of facets
-  protected List<String> excludeTags;
+  protected List<String> filters;
   protected boolean processEmpty;
+  protected Domain domain;
+
+  // domain changes
+  public static class Domain {
+    public List<String> excludeTags;
+    public boolean toParent;
+    public boolean toChildren;
+    public String parents;
+  }
 
   public FacetRequest() {
     facetStats = new LinkedHashMap<>();
@@ -140,7 +151,42 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   protected void handleDomainChanges() throws IOException {
-    if (freq.excludeTags == null || freq.excludeTags.size() == 0) {
+    if (freq.domain == null) return;
+    handleFilterExclusions();
+    handleBlockJoin();
+  }
+
+  private void handleBlockJoin() throws IOException {
+    if (!(freq.domain.toChildren || freq.domain.toParent)) return;
+
+    // TODO: avoid query parsing per-bucket somehow...
+    String parentStr = freq.domain.parents;
+    Query parentQuery;
+    try {
+      QParser parser = QParser.getParser(parentStr, null, fcontext.req);
+      parentQuery = parser.getQuery();
+    } catch (SyntaxError err) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);
+    }
+
+    BitDocSet parents = fcontext.searcher.getDocSetBits(parentQuery);
+    DocSet input = fcontext.base;
+    DocSet result;
+
+    if (freq.domain.toChildren) {
+      DocSet filt = fcontext.searcher.getDocSetBits( new MatchAllDocsQuery() );
+      result = BlockJoin.toChildren(input, parents, filt, fcontext.qcontext);
+    } else {
+      result = BlockJoin.toParents(input, parents, fcontext.qcontext);
+    }
+
+    fcontext.base = result;
+  }
+
+  private void handleFilterExclusions() throws IOException {
+    List<String> excludeTags = freq.domain.excludeTags;
+
+    if (excludeTags == null || excludeTags.size() == 0) {
       return;
     }
 
@@ -153,7 +199,7 @@ class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
 
     IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<>();
-    for (String excludeTag : freq.excludeTags) {
+    for (String excludeTag : excludeTags) {
       Object olst = tagMap.get(excludeTag);
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
@@ -487,7 +533,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     } else if ("query".equals(type)) {
       return parseQueryFacet(key, args);
     } else if ("range".equals(type)) {
-     return parseRangeFacet(key, args);
+      return parseRangeFacet(key, args);
     }
 
     return parseStat(key, type, args);
@@ -528,10 +574,41 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   }
 
 
+  private FacetRequest.Domain getDomain() {
+    if (facet.domain == null) {
+      facet.domain = new FacetRequest.Domain();
+    }
+    return facet.domain;
+  }
+
   protected void parseCommonParams(Object o) {
     if (o instanceof Map) {
       Map<String,Object> m = (Map<String,Object>)o;
-      facet.excludeTags = getStringList(m, "excludeTags");
+      List<String> excludeTags = getStringList(m, "excludeTags");
+      if (excludeTags != null) {
+        getDomain().excludeTags = excludeTags;
+      }
+
+      Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
+      if (domainMap != null) {
+        excludeTags = getStringList(m, "excludeTags");
+        if (excludeTags != null) {
+          getDomain().excludeTags = excludeTags;
+        }
+
+        String blockParent = (String)domainMap.get("blockParent");
+        String blockChildren = (String)domainMap.get("blockChildren");
+
+        if (blockParent != null) {
+          getDomain().toParent = true;
+          getDomain().parents = blockParent;
+        } else if (blockChildren != null) {
+          getDomain().toChildren = true;
+          getDomain().parents = blockChildren;
+        }
+
+      }
+
     }
   }
 
@@ -695,6 +772,34 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
     return facet;
   }
 }
+
+/*** not a separate type of parser for now...
+class FacetBlockParentParser extends FacetParser<FacetBlockParent> {
+  public FacetBlockParentParser(FacetParser parent, String key) {
+    super(parent, key);
+    facet = new FacetBlockParent();
+  }
+
+  @Override
+  public FacetBlockParent parse(Object arg) throws SyntaxError {
+    parseCommonParams(arg);
+
+    if (arg instanceof String) {
+      // just the field name...
+      facet.parents = (String)arg;
+
+    } else if (arg instanceof Map) {
+      Map<String, Object> m = (Map<String, Object>) arg;
+      facet.parents = getString(m, "parents", null);
+
+      parseSubs( m.get("facet") );
+    }
+
+    return facet;
+  }
+}
+***/
+
 
 class FacetFieldParser extends FacetParser<FacetField> {
   public FacetFieldParser(FacetParser parent, String key) {

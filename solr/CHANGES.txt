@@ -116,6 +116,13 @@ New Features
 
 * SOLR-7458: Expose HDFS Block Locality Metrics via JMX (Mike Drob via Mark Miller)
 
+* SOLR-7676: Faceting on nested objects / Block-join faceting with the new JSON Facet API.
+  Example: Assuming books with nested pages and an input domain of pages, the following
+  will switch the domain to books before faceting on the author field:
+    authors:{ type:terms, field:author, domain:{toParent:"type:book"} }
+  (yonik)
+
+
 Bug Fixes
 ----------------------
 

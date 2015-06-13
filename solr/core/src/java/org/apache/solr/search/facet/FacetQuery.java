@@ -59,3 +59,4 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
 
 
 }
+

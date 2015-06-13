@@ -26,8 +26,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestInfo;
 
-/**
- * Bridge between old style context and a real class
+/*
+ * Bridge between old style context and a real class.
+ * This is currently slightly more heavy weight than necessary because of the need to inherit from IdentityHashMap rather than
+ * instantiate it on demand (and the need to put "searcher" in the map)
  * @lucene.experimental
  */
 public class QueryContext extends IdentityHashMap implements Closeable {
@@ -45,7 +47,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
   public QueryContext(IndexSearcher searcher) {
     this.searcher = searcher instanceof SolrIndexSearcher ? (SolrIndexSearcher)searcher : null;
     indexSearcher = searcher;
-    this.put("searcher", searcher); // see ValueSource.newContext()
+    this.put("searcher", searcher); // see ValueSource.newContext()  // TODO: move check to "get"?
   }
 
 
