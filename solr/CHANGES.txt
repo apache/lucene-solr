@@ -126,6 +126,9 @@ Bug Fixes
 
 * SOLR-7566: Search requests should return the shard name that is down. (Marius Grama, shalin)
 
+* SOLR-7667: Add missing _root_ field to managed-schema template so that the default data driven 
+  config set can index nested documents by default.  (yonik)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
