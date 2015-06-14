@@ -181,6 +181,7 @@ public  class LeaderElector {
         String watchedNode = holdElectionPath + "/" + seqs.get(toWatch);
 
         zkClient.getData(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath , watchedNode,seq, context) , null, true);
+        log.info("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
@@ -278,7 +279,7 @@ public  class LeaderElector {
     while (cont) {
       try {
         if(joinAtHead){
-          log.info("node {} Trying to join election at the head ", id);
+          log.info("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerCollectionProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
@@ -293,14 +294,13 @@ public  class LeaderElector {
             }
             leaderSeqPath = shardsElectZkPath + "/" + id + "-n_"+ m.group(1);
             zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
-            log.info("Joined at the head  {}", leaderSeqPath );
-
           }
         } else {
           leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
+        log.info("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
