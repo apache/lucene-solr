@@ -59,6 +59,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
+import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;

@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -60,7 +61,11 @@ public class LiveIndexWriterConfig {
   /** {@link MergeScheduler} to use for running merges. */
   protected volatile MergeScheduler mergeScheduler;
 
-  /** Timeout when trying to obtain the write lock on init. */
+  /** 
+   * Timeout when trying to obtain the write lock on init. 
+   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
+   */
+  @Deprecated
   protected volatile long writeLockTimeout;
 
   /** {@link IndexingChain} that determines how documents are
@@ -355,7 +360,9 @@ public class LiveIndexWriterConfig {
    * Returns allowed timeout when acquiring the write lock.
    *
    * @see IndexWriterConfig#setWriteLockTimeout(long)
+   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
    */
+  @Deprecated
   public long getWriteLockTimeout() {
     return writeLockTimeout;
   }

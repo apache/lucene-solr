@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SetOnce;
@@ -87,11 +88,11 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
 
   /**
-   * Default value for the write lock timeout (1,000 ms).
-   *
-   * @see #setDefaultWriteLockTimeout(long)
+   * Default value for the write lock timeout (0 ms: no sleeping).
+   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
    */
-  public static long WRITE_LOCK_TIMEOUT = 1000;
+  @Deprecated
+  public static final long WRITE_LOCK_TIMEOUT = 0;
 
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
@@ -113,24 +114,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
   
-  /**
-   * Sets the default (for any instance) maximum time to wait for a write lock
-   * (in milliseconds).
-   */
-  public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
-    WRITE_LOCK_TIMEOUT = writeLockTimeout;
-  }
-
-  /**
-   * Returns the default write lock timeout for newly instantiated
-   * IndexWriterConfigs.
-   *
-   * @see #setDefaultWriteLockTimeout(long)
-   */
-  public static long getDefaultWriteLockTimeout() {
-    return WRITE_LOCK_TIMEOUT;
-  }
-
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
   private SetOnce<IndexWriter> writer = new SetOnce<>();
@@ -264,11 +247,12 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   /**
    * Sets the maximum time to wait for a write lock (in milliseconds) for this
-   * instance. You can change the default value for all instances by calling
-   * {@link #setDefaultWriteLockTimeout(long)}. Note that the value can be zero,
-   * for no sleep/retry behavior.
+   * instance. Note that the value can be zero, for no sleep/retry behavior.
    *
-   * <p>Only takes effect when IndexWriter is first created. */
+   * <p>Only takes effect when IndexWriter is first created.
+   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
+   */
+  @Deprecated
   public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {
     this.writeLockTimeout = writeLockTimeout;
     return this;
