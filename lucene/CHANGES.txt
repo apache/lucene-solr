@@ -148,6 +148,9 @@ Build
 * LUCENE-6518: Don't report false thread leaks from IBM J9
   ClassCache Reaper in test framework. (Dawid Weiss)
 
+* LUCENE-6564: Add milliseconds to timestamp in InfoStream output for tests
+  (Ramkumar Aiyengar)
+
 ======================= Lucene 5.2.1 =======================
 
 Bug Fixes
