@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.store;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,10 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** 
@@ -31,7 +27,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * <p>
  * This is not a good idea.
  */
-final class SleepingLockWrapper extends FilterDirectory {
+public final class SleepingLockWrapper extends FilterDirectory {
  
   /** 
    * Pass this lockWaitTimeout to try forever to obtain the lock. 
