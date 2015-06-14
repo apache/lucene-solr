@@ -130,6 +130,9 @@ Other Changes
 * SOLR-7619: Fix SegmentsInfoRequestHandlerTest when more than one segment is created.
   (Ramkumar Aiyengar, Steve Rowe)
 
+* SOLR-7680: Use POST instead of GET when finding versions for mismatches with
+  CloudInspectUtil for tests (Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
