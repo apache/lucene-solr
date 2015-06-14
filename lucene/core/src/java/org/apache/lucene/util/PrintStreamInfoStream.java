@@ -36,7 +36,7 @@ public class PrintStreamInfoStream extends InfoStream {
   private static final AtomicInteger MESSAGE_ID = new AtomicInteger();
   protected final int messageID;
 
-  protected static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
+  private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
   
   protected final PrintStream stream;
   
