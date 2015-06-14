@@ -190,6 +190,9 @@ Other Changes
 * SOLR-7619: Fix SegmentsInfoRequestHandlerTest when more than one segment is created.
   (Ramkumar Aiyengar, Steve Rowe)
 
+* SOLR-7678: Switch RTimer to use nanoTime (improves accuracy of QTime, and other times
+  returned by Solr handlers) (Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
