@@ -2,6 +2,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -145,7 +146,7 @@ public class CloudInspectUtil {
     
     StringBuilder sb = new StringBuilder("SolrDocumentList[sz=" + lst.size());
     if (lst.size() != lst.getNumFound()) {
-      sb.append(" numFound=" + lst.getNumFound());
+      sb.append(" numFound=").append(lst.getNumFound());
     }
     sb.append("]=");
     sb.append(lst.subList(0, maxSz / 2).toString());
@@ -187,12 +188,12 @@ public class CloudInspectUtil {
     controlDocList = controlClient.query(q).getResults();
     if (controlDocs != controlDocList.getNumFound()) {
       log.error("Something changed! control now " + controlDocList.getNumFound());
-    };
+    }
 
     cloudDocList = cloudClient.query(q).getResults();
     if (cloudClientDocs != cloudDocList.getNumFound()) {
       log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
-    };
+    }
 
     if (controlDocs != cloudClientDocs && (addFails != null || deleteFails != null)) {
       boolean legal = CloudInspectUtil.checkIfDiffIsLegal(controlDocList, cloudDocList,
@@ -205,28 +206,35 @@ public class CloudInspectUtil {
     Set<Map> differences = CloudInspectUtil.showDiff(controlDocList, cloudDocList,
         "controlDocList", "cloudDocList");
 
-    // get versions for the mismatched ids
-    boolean foundId = false;
-    StringBuilder ids = new StringBuilder("id:(");
-    for (Map doc : differences) {
-      ids.append(" "+doc.get("id"));
-      foundId = true;
+    try {
+      // get versions for the mismatched ids
+      boolean foundId = false;
+      StringBuilder ids = new StringBuilder("id:(");
+      for (Map doc : differences) {
+        ids.append(" ").append(doc.get("id"));
+        foundId = true;
+      }
+      ids.append(")");
+
+      if (foundId) {
+        // get versions for those ids that don't match
+        q = SolrTestCaseJ4.params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
+            "sort", "id asc", "tests",
+            "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
+        // debugging via logs
+
+        // use POST, the ids in the query above is constructed and could be huge
+        SolrDocumentList a = controlClient.query(q, SolrRequest.METHOD.POST).getResults();
+        SolrDocumentList b = cloudClient.query(q, SolrRequest.METHOD.POST).getResults();
+
+        log.error("controlClient :" + a + "\n\tcloudClient :" + b);
+      }
+    } catch (Exception e) {
+      // swallow any exceptions, this is just useful for producing debug output,
+      // and shouldn't usurp the original issue with mismatches.
+      log.error("Unable to find versions for mismatched ids", e);
     }
-    ids.append(")");
-    
-    if (foundId) {
-      // get versions for those ids that don't match
-      q = SolrTestCaseJ4.params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
-          "sort", "id asc", "tests",
-          "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
-                                                       // debugging via logs
-      
-      SolrDocumentList a = controlClient.query(q).getResults();
-      SolrDocumentList b = cloudClient.query(q).getResults();
-      
-      log.error("controlClient :" + a + "\n\tcloudClient :" + b);
-    }
-    
+
     return true;
   }
 

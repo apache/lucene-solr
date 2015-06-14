@@ -193,6 +193,9 @@ Other Changes
 * SOLR-7678: Switch RTimer to use nanoTime (improves accuracy of QTime, and other times
   returned by Solr handlers) (Ramkumar Aiyengar)
 
+* SOLR-7680: Use POST instead of GET when finding versions for mismatches with
+  CloudInspectUtil for tests (Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
