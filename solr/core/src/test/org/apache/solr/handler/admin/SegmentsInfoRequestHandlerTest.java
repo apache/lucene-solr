@@ -51,7 +51,7 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
   public void testSegmentInfos() {   
     assertQ("No segments mentioned in result",
         req("qt","/admin/segments"),
-          "1=count(//lst[@name='segments']/lst)");
+          "0<count(//lst[@name='segments']/lst)");
   }
   
   @Test
@@ -59,8 +59,8 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
     assertQ("No segments mentioned in result",
         req("qt","/admin/segments"),
           //#Document
-          DOC_COUNT+"=//lst[@name='segments']/lst[1]/int[@name='size']",
+          DOC_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='size'])",
           //#Deletes
-          DEL_COUNT+"=//lst[@name='segments']/lst[1]/int[@name='delCount']");
+          DEL_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='delCount'])");
   }
 }

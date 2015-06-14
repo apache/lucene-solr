@@ -187,6 +187,9 @@ Other Changes
   zkCredientialsProvider element in solrcloud section of solr.xml.
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
 
+* SOLR-7619: Fix SegmentsInfoRequestHandlerTest when more than one segment is created.
+  (Ramkumar Aiyengar, Steve Rowe)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
