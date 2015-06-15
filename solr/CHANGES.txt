@@ -234,6 +234,8 @@ Bug Fixes
 * SOLR-7512: SolrOutputFormat creates an invalid solr.xml in the solr home zip for MapReduceIndexerTool.
   (Mark Miller, Adam McElwee)
 
+* SOLR-7652: Fix example/files update-script.js to work with Java 7 (ehatcher)
+
 * SOLR-7638: Fix new (Angular-based) admin UI Cloud pane (Upayavira via ehatcher)
 
 * SOLR-7655: The DefaultSolrHighlighter since 5.0 was determining if payloads were present in a way
