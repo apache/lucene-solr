@@ -122,6 +122,9 @@ Bug fixes
 * LUCENE-6558: Highlighters now work with CustomScoreQuery (Cao Manh
   Dat via Mike McCandless)
 
+* LUCENE-6560: BKDPointInBBoxQuery now handles "dateline crossing"
+  correctly (Nick Knize, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

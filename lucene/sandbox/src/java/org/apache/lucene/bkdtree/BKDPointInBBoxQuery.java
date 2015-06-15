@@ -17,13 +17,13 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -33,6 +33,9 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.Set;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *
@@ -163,6 +166,28 @@ public class BKDPointInBBoxQuery extends Query {
       }
     };
   }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    // Crosses date line: we just rewrite into OR of two bboxes:
+    if (maxLon < minLon) {
+
+      // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
+      BooleanQuery q = new BooleanQuery(true);
+
+      // E.g.: maxLon = -179, minLon = 179
+      BKDPointInBBoxQuery left = new BKDPointInBBoxQuery(field, minLat, maxLat, BKDTreeWriter.MIN_LON_INCL, maxLon);
+      left.setBoost(getBoost());
+      q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
+      BKDPointInBBoxQuery right = new BKDPointInBBoxQuery(field, minLat, maxLat, minLon, BKDTreeWriter.MAX_LON_INCL);
+      right.setBoost(getBoost());
+      q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
+      return q;
+    } else {
+      return this;
+    }
+  }
+
   @Override
   public int hashCode() {
     int hash = super.hashCode();
