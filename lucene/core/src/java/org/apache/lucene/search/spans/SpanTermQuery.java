@@ -99,7 +99,7 @@ public class SpanTermQuery extends SpanQuery {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
 
       assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
 
@@ -118,7 +118,7 @@ public class SpanTermQuery extends SpanQuery {
       final TermsEnum termsEnum = terms.iterator();
       termsEnum.seekExact(term.bytes(), state);
 
-      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
+      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, requiredPostings.getRequiredPostings());
       return new TermSpans(postings, term);
     }
   }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
@@ -38,6 +39,39 @@ import org.apache.lucene.util.Bits;
  * Expert-only.  Public for use by other weight implementations
  */
 public abstract class SpanWeight extends Weight {
+
+  /**
+   * Enumeration defining what postings information should be retrieved from the
+   * index for a given Spans
+   */
+  public enum Postings {
+    POSITIONS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.POSITIONS;
+      }
+    },
+    PAYLOADS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS;
+      }
+    },
+    OFFSETS {
+      @Override
+      public int getRequiredPostings() {
+        return PostingsEnum.PAYLOADS | PostingsEnum.OFFSETS;
+      }
+    };
+
+    public abstract int getRequiredPostings();
+
+    public Postings atLeast(Postings postings) {
+      if (postings.compareTo(this) > 0)
+        return postings;
+      return this;
+    }
+  }
 
   protected final Similarity similarity;
   protected final Similarity.SimWeight simWeight;
@@ -81,10 +115,11 @@ public abstract class SpanWeight extends Weight {
    * Expert: Return a Spans object iterating over matches from this Weight
    * @param ctx a LeafReaderContext for this Spans
    * @param acceptDocs a bitset of documents to check
+   * @param requiredPostings the postings information required
    * @return a Spans
    * @throws IOException on error
    */
-  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs) throws IOException;
+  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs, Postings requiredPostings) throws IOException;
 
   @Override
   public float getValueForNormalization() throws IOException {
@@ -108,7 +143,7 @@ public abstract class SpanWeight extends Weight {
       throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
     }
 
-    Spans spans = getSpans(context, acceptDocs);
+    Spans spans = getSpans(context, acceptDocs, Postings.POSITIONS);
     Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
     return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
   }

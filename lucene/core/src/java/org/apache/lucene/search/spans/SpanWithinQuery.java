@@ -71,8 +71,8 @@ public class SpanWithinQuery extends SpanContainQuery {
      * The payload is from the spans of <code>little</code>.
      */
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs);
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
+      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, requiredPostings);
       if (containerContained == null) {
         return null;
       }

@@ -36,7 +36,6 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
     super(match, 0, end);
   }
 
-  @Override
   protected AcceptStatus acceptPosition(Spans spans) throws IOException {
     assert spans.startPosition() != spans.endPosition() : "start equals end: " + spans.startPosition();
     if (spans.startPosition() >= end)
@@ -46,7 +45,6 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
     else
       return AcceptStatus.NO;
   }
-
 
   @Override
   public String toString(String field) {

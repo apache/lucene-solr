@@ -70,6 +70,13 @@ API Changes
 * LUCENE-6466: Moved SpanQuery.getSpans() and .extractTerms() to SpanWeight
   (Alan Woodward, Robert Muir)
 
+* LUCENE-6371, LUCENE-6490: Payload collection from Spans is moved to a more generic
+  SpanCollector framework.  Spans no longer implements .hasPayload() and
+  .getPayload() methods, and instead exposes a collect() method that allows
+  the collection of arbitrary postings information. SpanPayloadCheckQuery and
+  SpanPayloadNearCheckQuery have moved from the .spans package to the .payloads
+  package. (Alan Woodward, David Smiley, Paul Elschot, Robert Muir)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

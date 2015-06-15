@@ -1,4 +1,4 @@
-package org.apache.lucene.search.spans;
+package org.apache.lucene.search.payloads;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,60 +16,27 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
+
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.util.ToStringUtils;
 
 
 /**
  * Only return those matches that have a specific payload at
  * the given position.
+ *
+ * @deprecated Use {@link SpanPayloadCheckQuery}
  */
-public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
-  protected final Collection<byte[]> payloadToMatch;
+@Deprecated
+public class SpanNearPayloadCheckQuery extends SpanPayloadCheckQuery {
 
   /**
-   * @param match          The underlying {@link SpanQuery} to check
+   * @param match          The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.Collection} of payloads to match
    */
   public SpanNearPayloadCheckQuery(SpanNearQuery match, Collection<byte[]> payloadToMatch) {
-    super(match);
-    this.payloadToMatch = Objects.requireNonNull(payloadToMatch);
-  }
-
-  @Override
-  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
-    boolean result = spans.isPayloadAvailable();
-    if (result == true) {
-      Collection<byte[]> candidate = spans.getPayload();
-      if (candidate.size() == payloadToMatch.size()) {
-        //TODO: check the byte arrays are the same
-        //hmm, can't rely on order here
-        int matches = 0;
-        for (byte[] candBytes : candidate) {
-          //Unfortunately, we can't rely on order, so we need to compare all
-          for (byte[] payBytes : payloadToMatch) {
-            if (Arrays.equals(candBytes, payBytes) == true) {
-              matches++;
-              break;
-            }
-          }
-        }
-        if (matches == payloadToMatch.size()){
-          //we've verified all the bytes
-          return AcceptStatus.YES;
-        } else {
-          return AcceptStatus.NO;
-        }
-      } else {
-        return AcceptStatus.NO;
-      }
-    }
-    return AcceptStatus.NO;
+    super(match, payloadToMatch);
   }
 
   @Override

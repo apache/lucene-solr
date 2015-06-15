@@ -17,6 +17,10 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -24,10 +28,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Wraps a SpanWeight with additional asserts
@@ -52,8 +52,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public Spans getSpans(LeafReaderContext context, Bits liveDocs) throws IOException {
-    Spans spans = in.getSpans(context, liveDocs);
+  public Spans getSpans(LeafReaderContext context, Bits liveDocs, Postings requiredPostings) throws IOException {
+    Spans spans = in.getSpans(context, liveDocs, requiredPostings);
     if (spans == null)
       return null;
     return new AssertingSpans(spans);

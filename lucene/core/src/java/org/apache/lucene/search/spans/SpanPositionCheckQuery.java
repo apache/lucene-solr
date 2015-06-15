@@ -94,8 +94,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Spans matchSpans = matchWeight.getSpans(context, acceptDocs);
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
+      Spans matchSpans = matchWeight.getSpans(context, acceptDocs, requiredPostings);
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {

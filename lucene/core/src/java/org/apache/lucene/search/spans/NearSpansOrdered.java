@@ -18,9 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Collection;
 
 /**
  * A Spans that is formed from the ordered subspans of a SpanNearQuery
@@ -131,22 +129,10 @@ public class NearSpansOrdered extends NearSpans {
   }
 
   @Override
-  public Collection<byte[]> getPayload() throws IOException {
-    List<byte[]> payloads = new ArrayList<>();
+  public void collect(SpanCollector collector) throws IOException {
     for (Spans spans : subSpans) {
-      if (spans.isPayloadAvailable())
-        payloads.addAll(spans.getPayload());
+      spans.collect(collector);
     }
-    return payloads;
-  }
-
-  @Override
-  public boolean isPayloadAvailable() throws IOException {
-    for (Spans spans : subSpans) {
-      if (spans.isPayloadAvailable())
-        return true;
-    }
-    return false;
   }
 
   @Override

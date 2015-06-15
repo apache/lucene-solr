@@ -179,21 +179,22 @@ public class PayloadSpanUtil {
 
     final IndexSearcher searcher = new IndexSearcher(context);
     searcher.setQueryCache(null);
+
     SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(query, false);
+
+    PayloadSpanCollector collector = new PayloadSpanCollector();
     for (LeafReaderContext leafReaderContext : context.leaves()) {
-      final Spans spans = w.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs());
+      final Spans spans = w.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), SpanWeight.Postings.PAYLOADS);
       if (spans != null) {
         while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
           while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-            if (spans.isPayloadAvailable()) {
-              Collection<byte[]> payload = spans.getPayload();
-              for (byte [] bytes : payload) {
-                payloads.add(bytes);
-              }
-            }
+            collector.reset();
+            spans.collect(collector);
+            payloads.addAll(collector.getPayloads());
           }
         }
       }
     }
   }
+
 }

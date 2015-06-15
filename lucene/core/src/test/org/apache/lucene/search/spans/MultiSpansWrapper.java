@@ -27,7 +27,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
 /**
- * 
+ *
  * A wrapper to perform span operations on a non-leaf reader context
  * <p>
  * NOTE: This should be used for testing purposes only
@@ -36,14 +36,18 @@ import org.apache.lucene.util.Bits;
 public class MultiSpansWrapper {
 
   public static Spans wrap(IndexReader reader, SpanQuery spanQuery) throws IOException {
+    return wrap(reader, spanQuery, SpanWeight.Postings.POSITIONS);
+  }
+
+  public static Spans wrap(IndexReader reader, SpanQuery spanQuery, SpanWeight.Postings requiredPostings) throws IOException {
 
     LeafReader lr = SlowCompositeReaderWrapper.wrap(reader); // slow, but ok for testing
     LeafReaderContext lrContext = lr.getContext();
     IndexSearcher searcher = new IndexSearcher(lr);
     searcher.setQueryCache(null);
 
-    SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
+    SpanWeight w = spanQuery.createWeight(searcher, false);
 
-    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()));
+    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), requiredPostings);
   }
 }

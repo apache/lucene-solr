@@ -137,7 +137,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
 
       Terms terms = context.reader().terms(field);
       if (terms == null) {
@@ -146,7 +146,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
       ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
       for (SpanWeight w : subWeights) {
-        Spans subSpan = w.getSpans(context, acceptDocs);
+        Spans subSpan = w.getSpans(context, acceptDocs, requiredPostings);
         if (subSpan != null) {
           subSpans.add(subSpan);
         } else {

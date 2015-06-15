@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
@@ -60,19 +59,14 @@ final class JustCompileSearchSpans {
     public int endPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public void collect(SpanCollector collector) throws IOException {
+
+    }
+
     @Override
     public int nextStartPosition() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Collection<byte[]> getPayload() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -127,19 +121,14 @@ final class JustCompileSearchSpans {
     public int endPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public void collect(SpanCollector collector) throws IOException {
+
+    }
+
     @Override
     public int nextStartPosition() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Collection<byte[]> getPayload() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

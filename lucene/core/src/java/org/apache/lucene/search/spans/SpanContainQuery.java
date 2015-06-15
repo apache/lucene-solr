@@ -71,12 +71,12 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
       littleWeight.extractTerms(terms);
     }
 
-    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      Spans bigSpans = bigWeight.getSpans(context, acceptDocs);
+    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
+      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, requiredPostings);
       if (bigSpans == null) {
         return null;
       }
-      Spans littleSpans = littleWeight.getSpans(context, acceptDocs);
+      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, requiredPostings);
       if (littleSpans == null) {
         return null;
       }

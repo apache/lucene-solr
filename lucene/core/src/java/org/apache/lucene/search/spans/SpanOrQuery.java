@@ -19,7 +19,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -170,13 +169,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs)
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings)
         throws IOException {
 
       final ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
       for (SpanWeight w : subWeights) {
-        Spans spans = w.getSpans(context, acceptDocs);
+        Spans spans = w.getSpans(context, acceptDocs, requiredPostings);
         if (spans != null) {
           subSpans.add(spans);
         }
@@ -329,17 +328,8 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         }
 
         @Override
-        public Collection<byte[]> getPayload() throws IOException {
-          return topPositionSpans == null
-              ? null
-              : topPositionSpans.isPayloadAvailable()
-              ? new ArrayList<>(topPositionSpans.getPayload())
-              : null;
-        }
-
-        @Override
-        public boolean isPayloadAvailable() throws IOException {
-          return (topPositionSpans != null) && topPositionSpans.isPayloadAvailable();
+        public void collect(SpanCollector collector) throws IOException {
+          topPositionSpans.collect(collector);
         }
 
         @Override

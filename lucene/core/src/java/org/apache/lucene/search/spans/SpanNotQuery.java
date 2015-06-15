@@ -129,13 +129,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      Spans includeSpans = includeWeight.getSpans(context, acceptDocs);
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
+      Spans includeSpans = includeWeight.getSpans(context, acceptDocs, requiredPostings);
       if (includeSpans == null) {
         return null;
       }
 
-      final Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs);
+      final Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs, requiredPostings);
       if (excludeSpans == null) {
         return includeSpans;
       }

@@ -31,12 +31,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -74,6 +74,22 @@ public class PayloadTermQuery extends SpanTermQuery {
     return new PayloadTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null);
   }
 
+  private static class PayloadTermCollector implements SpanCollector {
+
+    BytesRef payload;
+
+    @Override
+    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+      payload = postings.getPayload();
+    }
+
+    @Override
+    public void reset() {
+      payload = null;
+    }
+
+  }
+
   private class PayloadTermWeight extends SpanTermWeight {
 
     public PayloadTermWeight(TermContext context, IndexSearcher searcher, Map<Term, TermContext> terms)
@@ -83,22 +99,21 @@ public class PayloadTermQuery extends SpanTermQuery {
 
     @Override
     public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Spans spans = super.getSpans(context, acceptDocs);
+      Spans spans = super.getSpans(context, acceptDocs, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
       return (spans == null)
               ? null
-              : new PayloadTermSpanScorer((TermSpans) spans, this, simScorer);
+              : new PayloadTermSpanScorer(spans, this, simScorer);
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
       protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
-      private final TermSpans termSpans;
+      private final PayloadTermCollector payloadCollector = new PayloadTermCollector();
 
-      public PayloadTermSpanScorer(TermSpans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
+      public PayloadTermSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
         super(spans, weight, docScorer);
-        termSpans = spans; // CHECKME: generics to use SpansScorer.spans as TermSpans.
       }
 
       @Override
@@ -111,32 +126,26 @@ public class PayloadTermQuery extends SpanTermQuery {
         assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
         do {
           int matchLength = spans.endPosition() - startPos;
-
+          if (docScorer == null) {
+            freq = 1;
+            return;
+          }
           freq += docScorer.computeSlopFactor(matchLength);
           numMatches++;
-          processPayload(similarity);
+          payloadCollector.reset();
+          spans.collect(payloadCollector);
+          processPayload();
 
           startPos = spans.nextStartPosition();
         } while (startPos != Spans.NO_MORE_POSITIONS);
       }
 
-      protected void processPayload(Similarity similarity) throws IOException {
-        if (spans.isPayloadAvailable()) {
-          final PostingsEnum postings = termSpans.getPostings();
-          payload = postings.getPayload();
-          if (payload != null) {
-            payloadScore = function.currentScore(docID(), term.field(),
-                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore,
-                                                 docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payload));
-          } else {
-            payloadScore = function.currentScore(docID(), term.field(),
-                                                 spans.startPosition(), spans.endPosition(), payloadsSeen, payloadScore, 1F);
-          }
-          payloadsSeen++;
-
-        } else {
-          // zero out the payload?
-        }
+      protected void processPayload() throws IOException {
+        float payloadFactor = payloadCollector.payload == null ? 1F :
+            docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payloadCollector.payload);
+        payloadScore = function.currentScore(docID(), term.field(), spans.startPosition(), spans.endPosition(),
+            payloadsSeen, payloadScore, payloadFactor);
+        payloadsSeen++;
       }
 
       /**
